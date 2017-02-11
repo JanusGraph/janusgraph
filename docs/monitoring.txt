@@ -1,9 +1,7 @@
 [[monitoring]]
-Monitoring JanusGraph
----------------------
+== Monitoring JanusGraph
 
-Metrics in JanusGraph
-~~~~~~~~~~~~~~~~~~~~~
+=== Metrics in JanusGraph
 
 Starting in version 0.4.0, JanusGraph supports http://metrics.codahale.com/[Metrics].  JanusGraph can measure the following:
 
@@ -11,8 +9,7 @@ Starting in version 0.4.0, JanusGraph supports http://metrics.codahale.com/[Metr
 * The number of attempts and failures of each storage backend operation type
 * The response time distribution of each storage backend operation type
 
-Configuring Metrics Collection
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Configuring Metrics Collection
 
 To enable Metrics collection, set the following in JanusGraph's properties file:
 
@@ -24,8 +21,7 @@ metrics.enabled = true
 
 This setting makes JanusGraph record measurements at runtime using Metrics classes like Timer, Counter, Histogram, etc.  To access these measurements, one or more Metrics reporters must be configured as described in the section <<metrics-reporters>>.
 
-Customizing the Default Metric Names
-++++++++++++++++++++++++++++++++++++
+===== Customizing the Default Metric Names
 
 JanusGraph prefixes all metric names with "org.janusgraph" by default.  This prefix can be set through the `metrics.prefix` configuration property.  For example, to shorten the default "org.janusgraph" prefix to just "janusgraph":
 
@@ -47,14 +43,12 @@ JanusGraph graph = ...;
 TransactionBuilder tbuilder = graph.buildTransaction();
 JanusGraphTransaction tx = tbuilder.groupName("foobar").start();
 
-Separating Metrics by Backend Store
-+++++++++++++++++++++++++++++++++++
+===== Separating Metrics by Backend Store
 
 JanusGraph combines the Metrics for its various internal storage backend handles by default.  All Metrics for storage backend interactions follow the pattern "<prefix>.stores.<opname>", regardless of whether they come from the ID store, edge store, etc.  When `metrics.merge-basic-metrics = false` is set in JanusGraph's properties file, the "stores" string in metric names is replaced by "idStore", "edgeStore", "vertexIndexStore", or "edgeIndexStore".
 
 [[metrics-reporters]]
-Configuring Metrics Reporting
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Configuring Metrics Reporting
 
 JanusGraph supports the following Metrics reporters:
 
@@ -71,8 +65,7 @@ JanusGraph supports the following Metrics reporters:
 Each reporter type is independent of and can coexist with the others.  For example, it's possible to configure Ganglia, JMX, and Slf4j Metrics reporters to operate simultaneously.  Just set all their respective configuration keys in janusgraph.properties (and enable metrics as directed above).
 
 [[metrics-console]]
-Console Reporter Configuration
-++++++++++++++++++++++++++++++
+===== Console Reporter Configuration
 
 .Metrics Console Reporter Configuration Options
 [cols="2, 1, 5, 1", options="header"]
@@ -89,8 +82,7 @@ metrics.enabled = true
 metrics.console.interval = 60000
 
 [[metrics-csv]]
-CSV File Reporter Configuration
-+++++++++++++++++++++++++++++++
+===== CSV File Reporter Configuration
 
 .Metrics CSV Reporter Configuration Options
 [cols="2, 1, 5, 1", options="header"]
@@ -109,8 +101,7 @@ metrics.csv.interval = 60000
 metrics.csv.dir = foo/bar
 
 [[metrics-ganglia]]
-Ganglia Reporter Configuration
-++++++++++++++++++++++++++++++
+===== Ganglia Reporter Configuration
 
 .Metrics Ganglia Reporter Configuration Options
 [cols="2, 1, 5, 1", options="header"]
@@ -148,8 +139,7 @@ metrics.ganglia.port = 6789
 metrics.ganglia.spoof = 10.0.0.1:zombo.com
 
 [[metrics-graphite]]
-Graphite Reporter Configuration
-+++++++++++++++++++++++++++++++
+===== Graphite Reporter Configuration
 
 .Metrics Graphite Reporter Configuration Options
 [cols="2, 1, 5, 1", options="header"]
@@ -171,8 +161,7 @@ metrics.graphite.hostname = 192.168.0.1
 metrics.graphite.interval = 60000
 
 [[metrics-jmx]]
-JMX Reporter Configuration
-++++++++++++++++++++++++++
+===== JMX Reporter Configuration
 
 .Metrics JMX Reporter Configuration Options
 [cols="2, 1, 5, 1", options="header"]
@@ -194,8 +183,7 @@ metrics.jmx.domain = foo
 metrics.jmx.agentid = baz
 
 [[metrics-slf4j]]
-Slf4j Reporter Configuration
-++++++++++++++++++++++++++++
+===== Slf4j Reporter Configuration
 
 .Metrics Slf4j Reporter Configuration Options
 [cols="2, 1, 5, 1", options="header"]
@@ -215,8 +203,7 @@ metrics.slf4j.interval = 60000
 metrics.slf4j.logger = foo
 
 [[metrics-custom]]
-User-Provided/Custom Reporter Configuration
-+++++++++++++++++++++++++++++++++++++++++++
+===== User-Provided/Custom Reporter Configuration
 
 In case the Metrics reporter configuration options listed above are insufficient, JanusGraph provides a utility method to access the single `MetricRegistry` instance which holds all of its measurements.
 

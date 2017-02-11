@@ -1,6 +1,5 @@
 [[advanced]]
-Advanced Topics
-===============
+= Advanced Topics
 
 include::advschema.txt[]
 

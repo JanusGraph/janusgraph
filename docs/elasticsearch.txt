@@ -1,6 +1,5 @@
 [[elasticsearch]]
-Elasticsearch
--------------
+== Elasticsearch
 
 [quote, 'http://www.elasticsearch.org/overview/[Elasticsearch Overview]']
 Elasticsearch is a flexible and powerful open source, distributed, real-time search and analytics engine. Architected from the ground up for use in distributed environments where reliability and scalability are must haves, Elasticsearch gives you the ability to move easily beyond simple full-text search.
@@ -20,8 +19,7 @@ Please see <<version-compat>> for details on what versions of ES will work with 
 [IMPORTANT]
 JanusGraph currently requires http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-scripting.html#_enabling_dynamic_scripting[Elasticsearch's dynamic scripting feature].  The `script.disable_dynamic` setting must be `false` or `sandbox` on the Elasticsearch cluster.  This configuration requirement may be removed in future JanusGraph versions.
 
-Elasticsearch Configuration Overview
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Elasticsearch Configuration Overview
 
 JanusGraph supports two distinct configuration tracks for Elasticsearch.  "Track" in this chapter means a set of configuration options.
 
@@ -37,8 +35,7 @@ JanusGraph's index options start with the string "`index.[X].`" where "`[X]`" is
 It's recommended that index names contain only alphanumeric lowercase characters and hyphens, and that they start with a lowercase letter.
 
 [[es-cfg-interface-track]]
-The `interface` Configuration Track
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== The `interface` Configuration Track
 
 The `interface` track is activated by setting either one of the following:
 
@@ -70,13 +67,11 @@ Configuration on the `interface` track proceeds through roughly the following st
 . `script.disable_dynamic` is set to false
 
 [[es-cfg-common-opts]]
-Common Options
-^^^^^^^^^^^^^^
+==== Common Options
 
 Arbitrary Elasticsearch settings can be specified through one or several of the following mechanisms.
 
-Specifying an external ES `conf-file`
-+++++++++++++++++++++++++++++++++++++
+===== Specifying an external ES `conf-file`
 
 The `index.[X].conf-file` option is interpreted as a path to an Elasticsearch YAML/JSON/properties file.  The file must exist.  If the path is relative, and the path appears in a JanusGraph properties file on disk, then the path will be interpreted relative to the directory containing the JanusGraph properties file in which it appears.  The file will be opened and loaded using Elasticsearch's `ImmutableSettings.Builder.loadFromStream` method.  This method will attempt to guess the file content's syntax by the filename extension; for this reason, it's recommended that the filename end in either ".json", ".yml", ".yaml", or ".properties", as appropriate, so that ES uses the correct parser.  Here's an example configuration fragment:
 
@@ -94,8 +89,7 @@ node.name=alice
 ----
 
 [[es-cfg-ext]]
-Embedding ES settings with `ext`
-++++++++++++++++++++++++++++++++
+===== Embedding ES settings with `ext`
 
 JanusGraph iterates over all properties prefixed with `index.[X].elasticsearch.ext.`, where `[X]` is an index name such as `search`.  It strips the prefix from each property key.  The remainder of the stripped key will be interpreted as an Elasticsearch configuration key.  The value associated with the key is not modified.  The stripped key and unmodified value are passed into the Elasticsearch client configuration.  This allows embedding arbitrary Elasticsearch settings in JanusGraph's properties.  Here's an example configuration fragment showing how to specify the Elasticsearch `node.name` setting using the `ext` config mechanism:
 
@@ -109,8 +103,7 @@ index.search.elasticsearch.ext.node.name=bob
 [TIP]
 The `conf-file` and `ext` mechanisms can be used together.  The `conf-file`, when present, is loaded first.  Any settings under `ext` are then applied.  Hence, if a key exists in both `ext` and `conf-file`, the value from `ext` will take precedence.
 
-JanusGraph `index.[X]` and `index.[X].elasticsearch` options
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+===== JanusGraph `index.[X]` and `index.[X].elasticsearch` options
 
 After processing `conf-file` and `ext`, JanusGraph checks for the following common options.  On the `interface` config track, JanusGraph's only uses default values for `index-name` and `health-request-timeout`.  If `ignore-cluster-name` or `cluster-name` is unset in JanusGraph's configuration, then Elasticsearch's internal defaults, any setting from `conf-file`, and any setting from `ext` apply, in that order.  See <<config-ref>> for descriptions of these options and their accepted values.
 
@@ -120,8 +113,7 @@ After processing `conf-file` and `ext`, JanusGraph checks for the following comm
 * `index.[X].elasticsearch.health-request-timeout`
 
 [[es-cfg-transport-opts]]
-Transport Client Options
-^^^^^^^^^^^^^^^^^^^^^^^^
+==== Transport Client Options
 
 In addition to common options described in <<es-cfg-common-opts>>, the Transport client requires one or more hosts to which to connect.  These are supplied via JanusGraph's `index.[X].hostname` key.  Each host or host:port pair specified here will be added to the Transport client's round-robin list of request targets.  This setting has no analog in an Elasticsearch configuration file and must be set through JanusGraph's `index.[X].hostname` option.  Here's a minimal Transport client configuration that will round-robin over 10.0.0.10 on the default Elasticsearch native protocol port (9300) and 10.0.0.20 on port 7777:
 
@@ -133,8 +125,7 @@ index.search.hostname=10.0.0.10, 10.0.0.20:7777
 Furthermore, the Transport client accepts the `index.[X].client-sniff` option.  This can be set just as effectively through the `conf-file` or `ext` mechanisms.  However, it can also be controlled through this JanusGraph config option.  This option exists for continuity with the legacy config track.
 
 [[es-cfg-node-opts]]
-Node Client Options
-^^^^^^^^^^^^^^^^^^^
+==== Node Client Options
 
 In addition to common options described in <<es-cfg-common-opts>>, the Node client also respects the following JanusGraph config options.  See <<config-ref>> for descriptions of these options and their accepted values.
 
@@ -151,8 +142,7 @@ However, there is one unique aspect to `index.[X].directory`.  When `index.[X].d
 Note that `index.[X].hostname` is not in the list above.  The recommended way to set a list of hostnames with the Node client is to use Elasticsearch's own config keys via `ext` or `conf-file`.  See the Elasticsearch documentation on the http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-discovery-zen.html[`discovery` module] and the http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-transport.html[`transport` module] for relevant ES config keys.  Also see <<es-cfg-unicast-zen>> for an example configuration using the Elasticsearch Zen discovery module and unicast addressing.
 
 [[es-cfg-jvmlocal-iface]]
-Node Example: JVM-local Discovery
-+++++++++++++++++++++++++++++++++
+===== Node Example: JVM-local Discovery
 
 The following JanusGraph configuration and accompanying Elasticsearch config file create a Node which uses ES's JVM-local discovery.  This means that the Node can only see other Nodes within the JVM.  The Node does not listen for connections on network sockets or attempt to discover a cluster over the network.  This is convenient when testing JanusGraph in a single-machine setup.
 
@@ -190,8 +180,7 @@ index.search.elasticsearch.ext.node.local=true
 ----
 
 [[es-cfg-unicast-zen]]
-Node Example: Connecting to a Remote Cluster
-++++++++++++++++++++++++++++++++++++++++++++
+===== Node Example: Connecting to a Remote Cluster
 
 The following JanusGraph configuration and accompanying Elasticsearch config file create a Node which discovers its cluster by sending unicast packets to `host1` on the default port and `host2` on `customport`.  The Node client will attempt to learn all members of the cluster using `unicast.hosts` as the initial points of contact.  Since the following config sets 'node.data=false' and 'node.client=true', the Node started by JanusGraph won't store any persistent index data or attempt to become a master node.  It discovers the cluster and routes requests using that information, but it doesn't hold any important state, so it can be lost without affecting Elasticsearch's availability or durability.
 
@@ -223,8 +212,7 @@ index.search.elasticsearch.ext.discovery.zen.ping.multicast.enabled=false
 index.search.elasticsearch.ext.discovery.zen.ping.unicast.hosts=host1, host2:customport
 ----
 
-Node Example: Joining an ES Cluster as a Data Node
-++++++++++++++++++++++++++++++++++++++++++++++++++
+===== Node Example: Joining an ES Cluster as a Data Node
 
 This is similar to the example in the previous section, except the Node holds Elasticsearch data.  This means JanusGraph's Elasticsearch instance will be a full-fledged member of the Elasticsearch cluster, and if the process containing JanusGraph and the ES Node dies, it could affect Elasticsearch's availability or durability.  This is an uncommon configuration.
 
@@ -266,8 +254,7 @@ index.search.elasticsearch.ext.discovery.zen.ping.unicast.hosts=host1, host2:cus
 ----
 
 [[es-cfg-legacy-track]]
-The Legacy Configuration track
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== The Legacy Configuration track
 
 The legacy configuration track allows running either a Transport client or a Node in JVM-local discovery mode.  Running a Node that discovers the cluster over network sockets is not supported.
 
@@ -277,8 +264,7 @@ This track is activated by omitting the `index.[X].elasticsearch.interface` opti
 The legacy track is not recommended for new deployments.  Consider using the newer <<es-cfg-interface-track, `interface` track>> instead.
 
 [[es-cfg-jvmlocal-legacy]]
-Embedded JVM-local Node Configuration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Embedded JVM-local Node Configuration
 
 The legacy track supports starting an Elasticsearch Node with JVM-local transport.  Network transport and discovery are not supported on the legacy track.  Due to this limitation, it's only useful running a single-node embedded ES instance, such as in testing.
 
@@ -299,8 +285,7 @@ Elasticsearch will not be accessible from outside of this particular JanusGraph 
 In the above configuration, the index backend is named `search`. Replace `search` by a different name to change the name of the index.
 
 [[es-cfg-transportclient-legacy]]
-Transport Client Configuration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Transport Client Configuration
 
 The legacy track supports the Transport client.  This can connect to Elasticsearch nodes running on the same machine or a cluster of remote machines.
 
@@ -317,8 +302,7 @@ Make sure that the Elasticsearch cluster is running prior to starting a JanusGra
 
 In the above configuration, the index backend is named `search`. Replace `search` by a different name to change the name of the index.
 
-Legacy Configuration Options
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Legacy Configuration Options
 
 This section lists the subset of ES options that are effective on the legacy configuration track.  See <<config-ref>> for descriptions of these options and their accepted values.
 
@@ -333,8 +317,7 @@ This section lists the subset of ES options that are effective on the legacy con
 
 On the legacy track, setting `cluster-name` automatically enables cluster name validation.  Leaving `cluster-name` unset disables cluster name validation.
 
-Secure Elasticsearch
-~~~~~~~~~~~~~~~~~~~~
+=== Secure Elasticsearch
 
 Elasticsearch does not perform authentication or authorization.  A client that can connect to ES is trusted by ES.  When Elasticsearch runs on an unsecured or public network, particularly the Internet, it should be deployed with some type of external security.  This is generally done with a combination of firewalling and tunneling of Elasticsearch's ports.  Elasticsearch has two client-facing ports to consider:
 
@@ -347,8 +330,7 @@ Tunnel ES's native "transport" protocol::  This approach can be implemented with
 Add a firewall rule that allows only trusted clients to connect on Elasticsearch's native protocol port:: This is typically done at the host firewall level.  This doesn't require any configuration changes in JanusGraph or Elasticsearch, nor does it require helper processes like stunnel.  Easy to configure, but very weak security by itself.
 
 [[es-cfg-index-create]]
-Index Creation Options
-~~~~~~~~~~~~~~~~~~~~~~
+=== Index Creation Options
 
 Since 0.5.3, JanusGraph supports customization of the index settings it uses when creating its Elasticsearch index.  The customization mechanism is based on but distinct from the `ext` config prefix described in <<es-cfg-ext>>.  It allows setting arbitrary key-value pairs on the `settings` object in the http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/indices-create-index.html[Elasticsearch `create index` request] issued by JanusGraph.  Here is a non-exhaustive sample of Elasticsearch index settings that can be customized using this mechanism:
 
@@ -358,8 +340,7 @@ Since 0.5.3, JanusGraph supports customization of the index settings it uses whe
 
 Settings customized through this mechanism are only applied when JanusGraph attempts to create its index in Elasticsearch.  If JanusGraph finds that its index already exists, then it does not attempt to recreate it, and these settings have no effect.
 
-Embedding ES index creation settings with `create.ext`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Embedding ES index creation settings with `create.ext`
 
 JanusGraph iterates over all properties prefixed with `index.[X].elasticsearch.create.ext.`, where `[X]` is an index name such as `search`.  It strips the prefix from each property key.  The remainder of the stripped key will be interpreted as an Elasticsearch index creation setting.  The value associated with the key is not modified.  The stripped key and unmodified value are passed as part of the `settings` object in the Elasticsearch create index request that JanusGraph issues when bootstrapping on ES.  This allows embedding arbitrary index creation settings settings in JanusGraph's properties.  Here's an example configuration fragment that customizes three Elasticsearch index settings using the `create.ext` config mechanism:
 
@@ -387,33 +368,27 @@ The `create.ext` config prefix described in this section is similar but not iden
 [TIP]
 The `create.ext` mechanism for specifying index creation settings is compatible with both of JanusGraph's Elasticsearch configuration tracks.  
 
-Troubleshooting
-~~~~~~~~~~~~~~~
+=== Troubleshooting
 
-Connection Issues to remote Elasticsearch cluster
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Connection Issues to remote Elasticsearch cluster
 
 Check that the Elasticsearch cluster nodes are reachable on the native "transport" protocol port from the JanusGraph nodes.  Check the node listen port by examining the Elasticsearch node configuration logs or using a general diagnostic utility like `netstat`.  Check the JanusGraph configuration; try the Transport client while troubleshoot connectivity issues, since it's easier to control which ES hosts the Transport client will use.  Disable sniffing to restrict the Transport client to just the configured host list.  Check that the client and server have the same major version: 0.90.x and 1.x are not compatible.
 
-Classpath or Field errors
-^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Classpath or Field errors
 
 When you see exception referring to lucene implementation details, make sure you don't have a conflicting version of Lucene on the classpath. Exception may look like this:
 
 [source, text]
 java.lang.NoSuchFieldError: LUCENE_4_10_4
 
-Optimizing Elasticsearch
-~~~~~~~~~~~~~~~~~~~~~~~~
+=== Optimizing Elasticsearch
 
-Write Optimization
-^^^^^^^^^^^^^^^^^^
+==== Write Optimization
 
 For <<bulk-loading, bulk loading>> or other write-intense applications, consider increasing Elasticsearch's refresh interval. Refer to https://groups.google.com/d/topic/elasticsearch/yp6bTiP2JYE/discussion[this discussion] on how to increase the refresh interval and its impact on write performance. Note, that a higher refresh interval means that it takes a longer time for graph mutations to be available in the index.
 
 For additional suggestions on how to increase write performance in Elasticsearch with detailed instructions, please read http://blog.bugsense.com/post/35580279634/indexing-bigdata-with-elasticsearch[this blog post].
 
-Further Reading
-^^^^^^^^^^^^^^^
+==== Further Reading
 
 * Please refer to the http://elasticsearch.org[Elasticsearch homepage] and available documentation for more information on Elasticsearch and how to setup an Elasticsearch cluster.

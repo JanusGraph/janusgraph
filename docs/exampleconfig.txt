@@ -1,13 +1,11 @@
 [[example-config]]
-Example Graph Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Example Graph Configuration
 
 This page illustrates a number of common graph configurations. Please refer to <<config-ref>> and the pages of the respective <<storage-backends, storage backend>>  <<index-backends, index backend>> for more information.
 
 Also, note that the JanusGraph distribution includes local configuration files in the `conf/` directory.
 
-BerkeleyDB
-^^^^^^^^^^
+==== BerkeleyDB
 
 [source, properties]
 ----
@@ -24,11 +22,9 @@ This configuration file configures JanusGraph to use <<bdb, BerkeleyDB>> as an e
 
 In addition, this configures an embedded <<elasticsearch, Elasticsearch>> index backend with the name `search`. JanusGraph will start Elasticsearch internally and it will not be externally accessible since `local-mode` is enabled. Elasticsearch stores all data for the `search` index in `/tmp/searchindex`. Configuring an index backend is optional.
 
-Cassandra
-^^^^^^^^^
+==== Cassandra
 
-Cassandra Remote
-++++++++++++++++
+===== Cassandra Remote
 
 [source, properties]
 ----
@@ -44,8 +40,7 @@ This configuration file configures JanusGraph to use <<cassandra, Cassandra>> as
 
 In addition, this configures a remote <<elasticsearch, Elasticsearch>> index backend with the name `search`. It assumes that an Elasticsearch cluster is running and accessible at the given IP addresses. Enabling `client-only` ensures that the local instance does not join the existing Elasticsearch cluster as another node but only connects to it. Configuring an index backend is optional.
 
-Embedded Cassandra
-++++++++++++++++++
+===== Embedded Cassandra
 
 [source, properties]
 ----
@@ -62,8 +57,7 @@ This configuration file configures JanusGraph to start <<cassandra, Cassandra>> 
 
 The optional index backend configuration is identical to embedded index configuration described above.
 
-HBase
-^^^^^
+==== HBase
 
 [source, properties]
 ----

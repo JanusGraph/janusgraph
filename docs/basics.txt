@@ -1,10 +1,8 @@
 [[basics]]
-JanusGraph Basics
-=================
+= JanusGraph Basics
 
 [[configuration]]
-Configuration
--------------
+== Configuration
 
 A JanusGraph graph database cluster consists of one or multiple JanusGraph instances. To open a JanusGraph instance a configuration has to be provided which specifies how JanusGraph should be set up.
 
@@ -13,13 +11,11 @@ A JanusGraph configuration specifies which components JanusGraph should use, con
 At a minimum, a JanusGraph configuration must define the persistence engine that JanusGraph should use as a storage backend. <<storage-backends>> lists all supported persistence engines and how to configure them respectively.
 If advanced graph query support (e.g full-text search, geo search, or range queries) is required an additional indexing backend must be configured.  See <<index-backends>> for details. If query performance is a concern, then caching should be enabled.  Cache configuration and tuning is described in <<caching>>.
 
-Example Configurations
-~~~~~~~~~~~~~~~~~~~~~~
+=== Example Configurations
 
 Below are some example configuration files to demonstrate how to configure the most commonly used storage backends, indexing systems, and performance components. This covers only a tiny portion of the available configuration options. Refer to <<config-ref>> for the complete list of all options.
 
-Cassandra+Elasticsearch
-^^^^^^^^^^^^^^^^^^^^^^^
+==== Cassandra+Elasticsearch
 
 Sets up JanusGraph to use the Cassandra persistence engine running locally and a remote Elastic search indexing system:
 
@@ -33,8 +29,7 @@ index.search.hostname=100.100.101.1, 100.100.101.2
 index.search.elasticsearch.client-only=true
 ----
 
-HBase+Caching
-^^^^^^^^^^^^^
+==== HBase+Caching
 
 Sets up JanusGraph to use the HBase persistence engine running remotely and uses JanusGraph's caching component for better performance.
 
@@ -51,8 +46,7 @@ cache.db-cache-size = 0.5
 ----
 
 
-BerkeleyDB
-^^^^^^^^^^
+==== BerkeleyDB
 
 Sets up JanusGraph to use BerkeleyDB as an embedded persistence engine with ElasticSearch as an embedded indexing system.
 
@@ -69,8 +63,7 @@ index.search.elasticsearch.local-mode=true
 
 <<config-ref>>_ describes all of these configuration options in detail. The +conf+ directory of the JanusGraph distribution contains additional configuration examples.
 
-Further Examples
-^^^^^^^^^^^^^^^^
+==== Further Examples
 
 There are several example configuration files in the `conf/` directory that can be used to get started with JanusGraph quickly.  Paths to these files can be passed to `JanusGraphFactory.open(...)` as shown below:
 
@@ -83,16 +76,13 @@ graph = JanusGraphFactory.open("conf/janusgraph-hbase.properties")
 ----
 
 
-Using Configuration
-~~~~~~~~~~~~~~~~~~~
+=== Using Configuration
 
 How the configuration is provided to JanusGraph depends on the instantiation mode.
 
-JanusGraphFactory
-^^^^^^^^^^^^^^^^^
+==== JanusGraphFactory
 
-Console
-+++++++
+===== Console
 
 The JanusGraph distribution contains a command line Console which makes it easy to get started and interact with JanusGraph. Invoke `bin/gremlin.sh` (Unix/Linux) or `bin/gremlin.bat`
 (Windows) to start the Console and then open a JanusGraph graph using the factory with the configuration stored in an accessible properties configuration file:
@@ -102,13 +92,11 @@ The JanusGraph distribution contains a command line Console which makes it easy 
 graph = JanusGraphFactory.open('path/to/configuration.properties')
 ----
 
-JanusGraph Embedded
-+++++++++++++++++++
+===== JanusGraph Embedded
 
 JanusGraphFactory can also be used to open an embedded JanusGraph graph instance from within a JVM-based user application. In that case, JanusGraph is part of the user application and the application can call upon JanusGraph directly through its public API.
 
-Short Codes
-+++++++++++
+===== Short Codes
 
 If the JanusGraph graph cluster has been previously configured and/or only the storage backend needs to be defined, JanusGraphFactory accepts a colon-separated string representation of the storage backend name and hostname or directory.
 
@@ -123,8 +111,7 @@ graph = JanusGraphFactory.open('berkeleyje:/tmp/graph')
 ----
 
 
-JanusGraph Server
-^^^^^^^^^^^^^^^^^
+==== JanusGraph Server
 
 JanusGraph, by itself, is simply a set of jar files with no thread of execution.  There are two basic patterns for connecting to, and using a JanusGraph database:
 
@@ -151,14 +138,12 @@ The entry for `graphs` defines the bindings to specific `JanusGraph` configurati
 
 Learn more about configuring and using JanusGraph Server in <<server>>.
 
-Server Distribution
-+++++++++++++++++++
+===== Server Distribution
 
 The JanusGraph zip file contains a quick start server component that helps make it easier to get started with Gremlin Server and JanusGraph. Invoke `bin/janusgraph.sh start` to start Gremlin Server with Cassandra and ElasticSearch.  
 
 [[configuration-global]]
-Global Configuration
-~~~~~~~~~~~~~~~~~~~~
+=== Global Configuration
 
 JanusGraph distinguishes between local and global configuration options. Local configuration options apply to an individual JanusGraph instance. Global configuration options apply to all instances in a cluster. More specifically, JanusGraph distinguishes the following five scopes for configuration options:
 
@@ -183,8 +168,7 @@ mgmt.commit()
 // Changes take effect
 ----
 
-Changing Offline Options
-^^^^^^^^^^^^^^^^^^^^^^^^
+==== Changing Offline Options
 
 Changing configuration options does not affect running instances and only applies to newly started ones. Changing _GLOBAL_OFFLINE_ configuration options requires restarting the cluster so that the changes take effect immediately for all instances.
 To change _GLOBAL_OFFLINE_ options follow these steps:
@@ -202,8 +186,7 @@ Refer to the full list of configuration options in <<config-ref>> for more infor
 
 
 [[schema]]
-Schema and Data Modeling
-------------------------
+== Schema and Data Modeling
 
 Each JanusGraph graph has a schema comprised of the edge labels, property keys, and vertex labels used therein. A JanusGraph schema can either be explicitly or implicitly defined. Users are encouraged to explicitly define the graph schema during application development. An explicitly defined schema is an important component of a robust graph application and greatly improves collaborative software development. Note, that a JanusGraph schema can be evolved over time without any interruption of normal database operations. Extending the schema does not slow down query answering and does not require database downtime.
 
@@ -211,15 +194,13 @@ The schema type - i.e. edge label, property key, or vertex label - is assigned t
 
 Beyond the schema definition options explained in this section, schema types provide performance tuning options that are discussed in <<advanced-schema>>.
 
-Defining Edge Labels
-~~~~~~~~~~~~~~~~~~~~
+=== Defining Edge Labels
 
 Each edge connecting two vertices has a label which defines the semantics of the relationship. For instance, an edge labeled `friend` between vertices A and B encodes a friendship between the two individuals.
 
 To define an edge label, call `makeEdgeLabel(String)` on an open graph or management transaction and provide the name of the edge label as the argument. Edge label names must be unique in the graph. This method returns a builder for edge labels that allows to define its multiplicity. The *multiplicity* of an edge label defines a multiplicity constraint on all edges of this label, that is, a maximum number of edges between pairs of vertices. JanusGraph recognizes the following multiplicity settings.
 
-Edge Label Multiplicity
-^^^^^^^^^^^^^^^^^^^^^^^
+==== Edge Label Multiplicity
 
 .Multiplicity Settings
 * *MULTI*: Allows multiple edges of the same label between any pair of vertices. In other words, the graph is a _multi graph_ with respect to such edge label. There is no constraint on edge multiplicity.
@@ -236,15 +217,13 @@ follow = mgmt.makeEdgeLabel('follow').multiplicity(MULTI).make()
 mother = mgmt.makeEdgeLabel('mother').multiplicity(MANY2ONE).make()
 mgmt.commit()
 
-Defining Property Keys
-~~~~~~~~~~~~~~~~~~~~~~
+=== Defining Property Keys
 
 Properties on vertices and edges are key-value pairs. For instance, the property `name='Daniel'` has the key `name` and the value `'Daniel'`. Property keys are part of the JanusGraph schema and can constrain the allowed data types and cardinality of values.
 
 To define a property key, call `makePropertyKey(String)` on an open graph or management transaction and provide the name of the property key as the argument. Property key names must be unique in the graph. This method returns a builder for the property keys.
 
-Property Key Data Type
-^^^^^^^^^^^^^^^^^^^^^^
+==== Property Key Data Type
 
 Use `dataType(Class)` to define the data type of a property key. JanusGraph will enforce that all values associated with the key have the configured data type and thereby ensures that data added to the graph is valid. For instance, one can define that the `name` key has a String data type.
 
@@ -275,8 +254,7 @@ JanusGraph natively supports the following data types.
 
 
 [[property-cardinality]]
-Property Key Cardinality
-^^^^^^^^^^^^^^^^^^^^^^^^
+==== Property Key Cardinality
 
 Use `cardinality(Cardinality)` to define the allowed cardinality of the values associated with the key on any given vertex.
 
@@ -295,8 +273,7 @@ name = mgmt.makePropertyKey('name').dataType(String.class).cardinality(Cardinali
 sensorReading = mgmt.makePropertyKey('sensorReading').dataType(Double.class).cardinality(Cardinality.LIST).make()
 mgmt.commit()
 
-Relation Types
-~~~~~~~~~~~~~~
+=== Relation Types
 
 Edge labels and property keys are jointly referred to as *relation types*. Names of relation types must be unique in the graph which means that property keys and edge labels cannot have the same name. There are methods in the JanusGraph API to query for the existence or retrieve relation types which encompasses both property keys and edge labels.
 
@@ -307,8 +284,7 @@ if (mgmt.containsRelationType('name'))
 mgmt.getRelationTypes(EdgeLabel.class)
 mgmt.commit()
 
-Defining Vertex Labels
-~~~~~~~~~~~~~~~~~~~~~~
+=== Defining Vertex Labels
 
 Like edges, vertices have labels. Unlike edge labels, vertex labels are optional.  Vertex labels are useful to distinguish different types of vertices, e.g. _user_ vertices and _product_ vertices.
 
@@ -326,8 +302,7 @@ person = graph.addVertex(label, 'person')
 v = graph.addVertex()
 graph.tx().commit()
 
-Automatic Schema Maker
-~~~~~~~~~~~~~~~~~~~~~~
+=== Automatic Schema Maker
 
 If an edge label, property key, or vertex label has not been defined explicitly, it will be defined implicitly when it is first used during the addition of an edge, vertex or the setting of a property. The `DefaultSchemaMaker` configured for the JanusGraph graph defines such types.
 
@@ -335,8 +310,7 @@ By default, implicitly created edge labels have multiplicity MULTI and implicitl
 
 It is strongly encouraged to explicitly define all schema elements and to disable automatic schema creation by setting `schema.default=none` in the JanusGraph graph configuration.
 
-Changing Schema Elements
-~~~~~~~~~~~~~~~~~~~~~~~~
+=== Changing Schema Elements
 
 The definition of an edge label, property key, or vertex label cannot be changed once its committed into the graph. However, the names of schema elements can be changed via `JanusGraphManagement.changeName(JanusGraphSchemaElement, String)` as shown in the following example where the property key `place` is renamed to `location`.
 
@@ -356,8 +330,7 @@ However, note that this would not affect vertices, edges, or properties previous
 
 
 [[gremlin]]
-Gremlin Query Language
-----------------------
+== Gremlin Query Language
 
 image:http://tinkerpop.apache.org/docs/{tinkerpop_version}/images/gremlin-logo.png[link="http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference"]
 
@@ -371,8 +344,7 @@ This section is a brief overview of the Gremlin query language. For more informa
 * http://sql2gremlin.com[Gremlin for SQL developers *Gremlin2 Syntax*]
 
 
-Introductory Traversals
-~~~~~~~~~~~~~~~~~~~~~~~
+=== Introductory Traversals
 
 A Gremlin query is a chain of operations/functions that are evaluated from left to right. A simple grandfather query is provided below over the _Graph of the Gods_ dataset discussed in <<getting-started>>.
 
@@ -473,19 +445,16 @@ The Gremlin overview presented in this section focused on the Gremlin-Groovy lan
 
 
 [[server]]
-JanusGraph Server
------------------
+== JanusGraph Server
 
 JanusGraph uses the http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-server[Gremlin Server] engine as the server component to process and answer client queries.  When packaged in JanusGraph, Gremlin Server is called JanusGraph Server.
 
 JanusGraph Server must be started manually in order to use it.  JanusGraph Server provides a way to remotely execute Gremlin scripts against one or more JanusGraph instances hosted within it. This section will describe how to use the WebSockets configuration, as well as describe how to configure JanusGraph Server to handle REST-style interactions.
 
 [[server-getting-started]]
-Getting Started
-~~~~~~~~~~~~~~~
+=== Getting Started
 
-Using the Pre-Packaged Distribution
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Using the Pre-Packaged Distribution
 
 The JanusGraph https://github.com/JanusGraph/janusgraph/releases[release] comes pre-configured to run JanusGraph Server out of the box leveraging a sample Cassandra and ElasticSearch configuration to allow users to get started quickly with JanusGraph Server.  This configuration defaults to client applications that can connect to JanusGraph Server via WebSockets with a custom subprotocol.  There are a number of clients developed in different languages to help support the subprotocol.  The most familiar client to use the WebSocket interface is the gremlin.sh shell. The quick-start bundle is not intended to be representative of a production installation, but does provide a way to perform development with JanusGraph Server, run tests and see how the components are wired together. To use this default configuration:
 
@@ -506,8 +475,7 @@ Run gremlin.sh to connect.
 ----
 
 [[first-example-connecting-gremlin-server]]
-Connecting to Gremlin Server
-++++++++++++++++++++++++++++
+===== Connecting to Gremlin Server
 
 After running janusgraph.sh, Gremlin Server will be ready to listen for WebSocket connections.  The easiest way to test the connection is with Gremlin Console.
 
@@ -534,8 +502,7 @@ gremlin> :> g.V().values('name')
 
 The `:remote` command tells the console to configure a remote connection to Gremlin Server using the `conf/remote.yaml` file to connect.  That file points to a Gremlin Server instance running on `localhost`.  The `:>` is the "submit" command which sends the Gremlin on that line to the currently active remote.
 
-JanusGraph Server as a WebSocket Endpoint
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== JanusGraph Server as a WebSocket Endpoint
 
 The default configuration described in <<server-getting-started>> is already a WebSocket configuration.  If you want to alter the default configuration to work with your own Cassandra or HBase environment rather than use the quick start environment, follow these steps:
 
@@ -583,8 +550,7 @@ IMPORTANT: Do not use bin/janusgraph.sh.  That starts the default configuration,
 
 
 
-JanusGraph Server as a REST-style Endpoint
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== JanusGraph Server as a REST-style Endpoint
 
 The default configuration described in <<server-getting-started>> is a WebSocket configuration.  If you want to alter the default configuration in order to use JanusGraph Server as a REST endpoint for your JanusGraph database, follow these steps:
 
@@ -639,11 +605,9 @@ bin/gremlin-server.sh ./conf/gremlin-server/rest-gremlin-server.yaml
 curl -XPOST -Hcontent-type:application/json -d '{"gremlin":"g.V().count()"}' http://[IP for JanusGraph server host]:8182
 ```
 
-Advanced JanusGraph Server Configurations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Advanced JanusGraph Server Configurations
 
-WebSocket versus REST
-^^^^^^^^^^^^^^^^^^^^^
+==== WebSocket versus REST
 
 JanusGraph Server must be run with a configuration for either WebSockets (for gremlin shell or other WebSocket programs) or re-configured for REST to work with REST clients.
 
@@ -656,8 +620,7 @@ port: 8182
 In the future, the option to have one running instance of JanusGraph Server supporting multiple protocols may be possible.
 
 [[gremlin-server-with-janusgraph]]
-Using TinkerPop Gremlin Server with JanusGraph
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Using TinkerPop Gremlin Server with JanusGraph
 
 Since JanusGraph Server is, essentially, TinkerPop Gremlin Server packaged with configuration files for JanusGraph, a version compatible 
 TinkerPop Gremlin Server can be downloaded separately and used with JanusGraph.  Get started by link:http://tinkerpop.apache.org/[downloading] the appropriate version of Gremlin Server, which needs to <<versions.txt#version-compat,match a version>> supported by the JanusGraph version in use.  
@@ -752,8 +715,7 @@ $ bin/gremlin-server.sh conf/gremlin-server-janusgraph.yaml
 
 The following section explains how to connect to the running server.
 
-Connecting to JanusGraph via Gremlin Server
-+++++++++++++++++++++++++++++++++++++++++++
+===== Connecting to JanusGraph via Gremlin Server
 
 Gremlin Server will be ready to listen for WebSocket connections when it is started.  The easiest way to test the connection is with Gremlin Console.
 
@@ -773,21 +735,18 @@ client.submit("g.V()").all().get();
 By adding the `JanusGraphIoRegistry` to the `org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0`, the driver will know how to properly deserialize custom data types returned by JanusGraph.
 
 [[indexes]]
-Indexing for better Performance
--------------------------------
+== Indexing for better Performance
 
 JanusGraph supports two different kinds of indexing to speed up query processing: *graph indexes* and *vertex-centric indexes*. Most graph queries start the traversal from a list of vertices or edges that are identified by their properties. Graph indexes make these global retrieval operations efficient on large graphs. Vertex-centric indexes speed up the actual traversal through the graph, in particular when traversing through vertices with many incident edges.
 
-Extending JanusGraph Server
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Extending JanusGraph Server
 
 It is possible to extend Gremlin Server with other means of communication by implementing the interfaces that it provides and leverage this with JanusGraph.  See more details in the appropriate TinkerPop documentation.
 
 
 
 [[graph-indexes]]
-Graph Index
-~~~~~~~~~~~
+=== Graph Index
 
 Graph indexes are global index structures over the entire graph which allow efficient retrieval of vertices or edges by their properties for sufficiently selective conditions. For instance, consider the following queries
 
@@ -805,8 +764,7 @@ Graph indexes built against newly defined property keys, i.e. property keys that
 [NOTE]
 In the absence of an index, JanusGraph will default to a full graph scan in order to retrieve the desired list of vertices. While this produces the correct result set, the graph scan can be very inefficient and lead to poor overall system performance in a production environment. Enable the `force-index` configuration option in production deployments of JanusGraph to prohibit graph scans.
 
-Composite Index
-^^^^^^^^^^^^^^^
+==== Composite Index
 
 Composite indexes retrieve vertices or edges by one or a (fixed) composition of multiple keys.
 Consider the following composite index definitions.
@@ -854,8 +812,7 @@ Composite indexes do not require configuration of an external indexing backend a
 A composite index may comprise just one or multiple keys. A composite index with just one key is sometimes referred to as a key-index.
 
 [[index-unique]]
-Index Uniqueness
-++++++++++++++++
+===== Index Uniqueness
 
 Composite indexes can also be used to enforce property uniqueness in the graph. If a composite graph index is defined as `unique()` there can be at most one vertex or edge for any given concatenation of property values associated with the keys of that index.
 For instance, to enforce that names are unique across the entire graph the following composite graph index would be defined.
@@ -877,8 +834,7 @@ mgmt.commit()
 To enforce uniqueness against an eventually consistent storage backend, the <<eventual-consistency, consistency>> of the index must be explicitly set to enabling locking.
 
 [[index-mixed]]
-Mixed Index
-^^^^^^^^^^^
+==== Mixed Index
 
 Mixed indexes retrieve vertices or edges by any combination of previously added property keys.
 Mixed indexes provide more flexibility than composite indexes and support additional condition predicates beyond equality. On the other hand, mixed indexes are slower for most equality queries than composite indexes.
@@ -920,8 +876,7 @@ Mixed indexes support full-text search, range search, geo search and others. Ref
 [NOTE]
 Unlike composite indexes, mixed indexes do not support uniqueness.
 
-Adding Property Keys
-++++++++++++++++++++
+===== Adding Property Keys
 
 Property keys can be added to an existing mixed index which allows subsequent queries to include this key in the query condition.
 
@@ -944,13 +899,11 @@ To add a newly defined key, we first retrieve the existing index from the manage
 
 If the added key is defined in the same management transaction, it will be immediately available for querying. If the property key has already been in use, adding the key requires the execution of a <<reindex, reindex procedure>> to ensure that the index contains all previously added elements. Until the reindex procedure has completed, the key will not be available in the mixed index.
 
-Mapping Parameters
-++++++++++++++++++
+===== Mapping Parameters
 
 When adding a property key to a mixed index - either through the index builder or the `addIndexKey` method - a list of parameters can be optionally specified to adjust how the property value is mapped into the indexing backend. Refer to the <<text-search, mapping parameters overview>> for a complete list of parameter types supported by each indexing backend.
 
-Ordering
-^^^^^^^^
+==== Ordering
 
 The order in which the results of a graph query are returned can be defined using the `order().by()` directive. The `order().by()` method expects two parameters:
 
@@ -964,8 +917,7 @@ When using `order().by()` it is important to note that:
 * Composite graph indexes do not natively support ordering search results. All results will be retrieved and then sorted in-memory. For large result sets, this can be very expensive.
 * Mixed indexes support ordering natively and efficiently. However, the property key used in the order().by() method must have been previously added to the mixed indexed for native result ordering support. This is important in cases where the the order().by() key is different from the query keys. If the property key is not part of the index, then sorting requires loading all results into memory.
 
-Label Constraint
-^^^^^^^^^^^^^^^^
+==== Label Constraint
 
 In many cases it is desirable to only index vertices or edges with a particular label. For instance, one may want to index only gods by their name and not every single vertex that has a name property.
 When defining an index it is possible to restrict the index to a particular vertex or edge label using the `indexOnly` method of the index builder. The following creates a composite index for the property key `name` that indexes only vertices labeled `god`.
@@ -987,8 +939,7 @@ mgmt.commit()
 
 Label restrictions similarly apply to mixed indexes. When a composite index with label restriction is defined as unique, the uniqueness constraint only applies to properties on vertices or edges for the specified label.
 
-Composite vs Mixed Index
-^^^^^^^^^^^^^^^^^^^^^^^^
+==== Composite vs Mixed Index
 
 . Use a composite index for exact match index retrievals. Composite indexes do not require configuring or operating an external index system and are often significantly faster than mixed indexes.
 .. As an exception, use a mixed index for exact matches when the number of distinct values for query constraint is relatively small or if one value is expected to be associated with many elements in the graph (i.e. in case of low selectivity).
@@ -996,8 +947,7 @@ Composite vs Mixed Index
 
 
 [[vertex-indexes]]
-Vertex-centric Index
-~~~~~~~~~~~~~~~~~~~~
+=== Vertex-centric Index
 
 Vertex-centric indexes are local index structures built individually per vertex. In large graphs vertices can have thousands of incident edges. Traversing through those vertices can be very slow because a large subset of the incident edges has to be retrieved and then filtered in memory to match the conditions of the traversal. Vertex-centric indexes can speed up such traversals by using localized index structures to retrieve only those edges that need to be traversed.
 
@@ -1066,8 +1016,7 @@ JanusGraph automatically builds vertex-centric indexes per edge label and proper
 
 Vertex-centric indexes cannot speed up unconstrained traversals which require traversing through all incident edges of a particular label. Those traversals will become slower as the number of incident edges increases. Often, such traversals can be rewritten as constrained traversals that can utilize a vertex-centric index to ensure acceptable performance at scale.
 
-Ordered Traversals
-^^^^^^^^^^^^^^^^^^
+==== Ordered Traversals
 
 The following queries specify an order in which the incident edges are to be traversed. Use the `localLimit` command to retrieve a subset of the edges (in a given order) for EACH vertex that is traversed.
 
@@ -1085,8 +1034,7 @@ Ordered vertex queries are a JanusGraph extension to Gremlin which causes the ve
 
 
 [[tx]]
-Transactions
-------------
+== Transactions
 
 Almost all interaction with JanusGraph is associated with a transaction.  JanusGraph transactions are safe for concurrent use by multiple threads.  Methods on a JanusGraph instance like `graph.v(...)` and `graph.commit()` perform a `ThreadLocal` lookup to retrieve or create a transaction associated with the calling thread.  Callers can alternatively forego `ThreadLocal` transaction management in favor of calling `graph.newTransaction()`, which returns a reference to a transaction object with methods to read/write graph data and commit or rollback.
 
@@ -1094,8 +1042,7 @@ JanusGraph transactions are not necessarily ACID.  They can be so configured on 
 
 This section describes JanusGraph's transactional semantics and API.
 
-Transaction Handling
-~~~~~~~~~~~~~~~~~~~~
+=== Transaction Handling
 
 Every graph operation in JanusGraph occurs within the context of a transaction. According to the TinkerPop's transactional specification, each thread opens its own transaction against the graph database with the first operation (i.e. retrieval or mutation) on the graph:
 
@@ -1109,8 +1056,7 @@ graph.tx().commit() //Commits transaction
 
 In this example, a local JanusGraph graph database is opened. Adding the vertex "juno" is the first operation (in this thread) which automatically opens a new transaction. All subsequent operations occur in the context of that same transaction until the transaction is explicitly stopped or the graph database is `shutdown()`.  If transactions are still open when `shutdown()` is called, then the behavior of the outstanding transactions is technically undefined.  In practice, any non-thread-bound transactions will usually be effectively rolled back, but the thread-bound transaction belonging to the thread that invoked shutdown will first be committed. Note, that both read and write operations occur within the context of a transaction.
 
-Transactional Scope
-~~~~~~~~~~~~~~~~~~~
+=== Transactional Scope
 
 All graph elements (vertices, edges, and types) are associated with the transactional scope in which they were retrieved or created. Under TinkerPop's default transactional semantics, transactions are automatically created with the first operation on the graph and closed explicitly using `commit()` or `rollback()`. Once the transaction is closed, all graph elements associated with that transaction become stale and unavailable. However, JanusGraph will automatically transition vertices and types into the new transactional scope as shown in this example:
 
@@ -1128,8 +1074,7 @@ graph.tx().commit() //Ends transaction
 e = g.E(e).next() //Need to refresh edge
 e.property("time", 99)
 
-Transaction Failures
-~~~~~~~~~~~~~~~~~~~~
+=== Transaction Failures
 
 When committing a transaction, JanusGraph will attempt to persist all changes to the storage backend. This might not always be successful due to IO exceptions, network errors, machine crashes or resource unavailability. Hence, transactions can fail. In fact, transactions *will eventually fail* in sufficiently large systems. Therefore, we highly recommend that your code expects and accommodates such failures:
 
@@ -1159,8 +1104,7 @@ Permanent exceptions that can fail a transaction include:
 * PermanentLockingException(*Expected value mismatch for X: expected=Y vs actual=Z*): The verification that the value read in this transaction is the same as the one in the datastore after applying for the lock failed. In other words, another transaction modified the value after it had been read and modified.
 
 [[multi-thread-tx]]
-Multi-Threaded Transactions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Multi-Threaded Transactions
 
 JanusGraph supports multi-threaded transactions through TinkerPop's http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#_threaded_transactions[threaded transactions]. Hence, to speed up transaction processing and utilize multi-core architectures multiple threads can run concurrently in a single transaction.
 
@@ -1182,13 +1126,11 @@ The `createThreadedTx()` method returns a new `Graph` object that represents thi
 
 JanusGraph relies on optimized concurrent data structures to support hundreds of concurrent threads running efficiently in a single transaction.
 
-Concurrent Algorithms
-~~~~~~~~~~~~~~~~~~~~~
+=== Concurrent Algorithms
 
 Thread independent transactions started through `createThreadedTx()` are particularly useful when implementing concurrent graph algorithms. Most traversal or message-passing (ego-centric) like graph algorithms are http://en.wikipedia.org/wiki/Embarrassingly_parallel[embarrassingly parallel] which means they can be parallelized and executed through multiple threads with little effort. Each of these threads can operate on a single `Graph` object returned by `createThreadedTx()` without blocking each other.
 
-Nested Transactions
-~~~~~~~~~~~~~~~~~~~
+=== Nested Transactions
 
 Another use case for thread independent transactions is nested transactions that ought to be independent from the surrounding transaction.
 
@@ -1217,8 +1159,7 @@ v1.addEdge("related", g.V(v2).next()) // Need to load v2 into outer transaction
 graph.tx().commit() // Can't fail due to uniqueName write lock contention involving v2
 
 
-Common Transaction Handling Problems
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Common Transaction Handling Problems
 
 Transactions are started automatically with the first operation executed against the graph. One does NOT have to start a transaction manually. The method `newTransaction` is used to start <<multi-thread-tx, multi-threaded transactions>> only.
 
@@ -1247,8 +1188,7 @@ graph.tx().commit()
 When using multi-threaded transactions via `newTransaction` all vertices and edges retrieved or created in the scope of that transaction are *not* available outside the scope of that transaction. Accessing such elements after the transaction has been closed will result in an exception. As demonstrated in the example above, such elements have to be explicitly refreshed in the new transaction using `g.V(existingVertex)` or `g.E(existingEdge)`.
 
 [[tx-config]]
-Transaction Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Transaction Configuration
 
 JanusGraph's `JanusGraph.buildTransaction()` method gives the user the ability to configure and start a new <<multi-thread-tx, multi-threaded transaction>> against a `JanusGraph`. Hence, it is identical to `JanusGraph.newTransaction()` with additional configuration options.
 
@@ -1265,17 +1205,14 @@ JanusGraph's `JanusGraph.buildTransaction()` method gives the user the ability t
 Once, the desired configuration options have been specified, the new transaction is started via `start()` which returns a `JanusGraphTransaction`.
 
 [[caching]]
-JanusGraph Cache
-----------------
+== JanusGraph Cache
 
-Caching
-~~~~~~~
+=== Caching
 
 JanusGraph employs multiple layers of data caching to facilitate fast graph traversals. The caching layers are listed here in the order they are accessed from within a JanusGraph transaction. The closer the cache is to the transaction, the faster the cache access and the higher the memory footprint and maintenance overhead.
 
 [[tx-cache]]
-Transaction-Level Caching
-~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Transaction-Level Caching
 
 Within an open transaction, JanusGraph maintains two caches:
 
@@ -1287,8 +1224,7 @@ transaction cache size can be configured via `cache.tx-cache-size` or on a
 per transaction basis by opening a transaction via the transaction builder
 `graph.buildTransaction()` and using the `setVertexCacheSize(int)` method.
 
-Vertex Cache
-^^^^^^^^^^^^
+==== Vertex Cache
 
 The vertex cache contains vertices and the subset of their adjacency list that has been retrieved in a particular transaction. The maximum number of vertices maintained in this cache is equal to the transaction cache size. If the transaction workload is an iterative traversal, the vertex cache will significantly speed it up. If the same vertex is not accessed again in the transaction, the transaction level cache will make no difference.
 
@@ -1296,16 +1232,14 @@ Note, that the size of the vertex cache on heap is not only determined by the nu
 
 Furthermore note, that modified vertices are _pinned_ in the cache, which means they cannot be evicted since that would entail loosing their changes. Therefore, transaction which contain a lot of modifications may end up with a larger than configured vertex cache.
 
-Index Cache
-^^^^^^^^^^^
+==== Index Cache
 
 The index cache contains the results of index queries executed in the context of this transaction. Subsequent identical index calls will be served from this cache and are therefore significantly cheaper. If the same index call never occurs twice in the same transaction, the index cache makes no difference.
 
 Each entry in the index cache is given a weight equal to `2 + result set size` and the total weight of the cache will not exceed half of the transaction cache size.
 
 [[db-cache]]
-Database Level Caching
-~~~~~~~~~~~~~~~~~~~~~~
+=== Database Level Caching
 
 The database level cache retains adjacency lists (or subsets thereof) across multiple transactions and beyond the duration of a single transaction. The database level cache is shared by all transactions across a database. It is more space efficient than the transaction level caches but also slightly slower to access. In contrast to the transaction level caches, the database level caches do not expire immediately after closing a transaction. Hence, the database level cache significantly speeds up graph traversals for read heavy workloads across transactions.
 
@@ -1313,8 +1247,7 @@ The database level cache retains adjacency lists (or subsets thereof) across mul
 
 Most importantly, the database level cache is disabled by default in the current release version of JanusGraph. To enable it, set `cache.db-cache=true`.
 
-Cache Expiration Time
-^^^^^^^^^^^^^^^^^^^^^
+==== Cache Expiration Time
 
 The most important setting for performance and query behavior is the cache expiration time which is configured via `cache.db-cache-time`. The cache will hold graph elements for at most that many milliseconds. If an element expires, the data will be re-read from the storage backend on the next access.
 
@@ -1324,8 +1257,7 @@ If there are multiple JanusGraph instances accessing the storage backend, the ti
 If any change should be immediately visible to all JanusGraph instances, the database level cache should be disabled in a distributed setup. However, for most applications it is acceptable that a particular JanusGraph instance sees remote modifications with some delay. The larger the maximally allowed delay, the better the cache performance.
 Note, that a given JanusGraph instance will always immediately see its own modifications to the graph irrespective of the configured cache expiration time.
 
-Cache Size
-^^^^^^^^^^
+==== Cache Size
 
 The configuration option `cache.db-cache-size` controls how much heap space JanusGraph's database level cache is allowed to consume. The larger the cache, the more effective it will be. However, large cache sizes can lead to excessive GC and poor performance.
 
@@ -1333,8 +1265,7 @@ The cache size can be configured as a percentage (expressed as a decimal between
 
 Note, that the cache size refers to the amount of heap space that is exclusively occupied by the cache. JanusGraph's other data structures and each open transaction will occupy additional heap space. If additional software layers are running in the same JVM, those may occupy a significant amount of heap space as well (e.g. Gremlin Server, embedded Cassandra, etc). Be conservative in your heap memory estimation. Configuring a cache that is too large can lead to out-of-memory exceptions and excessive GC.
 
-Clean Up Wait Time
-^^^^^^^^^^^^^^^^^^
+==== Clean Up Wait Time
 
 When a vertex is locally modified (e.g. an edge is added) all of the vertex's related database level cache entries are marked as expired and eventually evicted. This will cause JanusGraph to refresh the vertex's data from the storage backend on the next access and re-populate the cache.
 
@@ -1342,16 +1273,14 @@ However, when the storage backend is eventually consistent, the modifications th
 
 If JanusGraph runs locally or against a storage backend that guarantees immediate visibility of modifications, this value can be set to 0.
 
-Storage Backend Caching
-~~~~~~~~~~~~~~~~~~~~~~~
+=== Storage Backend Caching
 
 Each storage backend maintains its own data caching layer. These caches benefit from compression, data compactness, coordinated expiration and are often maintained off heap which means that large caches can be used without running into garbage collection issues. While these caches can be significantly larger than the database level cache, they are also slower to access.
 
 The exact type of caching and its properties depends on the particular <<storage-backends, storage backend>>. Please refer to the respective documentation for more information about the caching infrastructure and how to optimize it.
 
 [[log]]
-Transaction Log
----------------
+== Transaction Log
 
 JanusGraph can automatically log transactional changes for additional processing or as a record of change. To enable logging for a particular transaction, specify the name of the target log during the start of the transaction.
 
@@ -1432,85 +1361,70 @@ logProcessor.addLogProcessor("battle").
 
 The log processor above processes transactions for the `battle` log identifier with a single change processor which evaluates `battled` edges that were added to Hercules. This example demonstrates that the transaction handle passed into the change processor is a normal `JanusGraphTransaction` which query the JanusGraph graph and make changes to it.
 
-Transaction Log Use Cases
-~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Transaction Log Use Cases
 
-Record of Change
-^^^^^^^^^^^^^^^^
+==== Record of Change
 
 The user transaction log can be used to keep a record of all changes made against the graph. By using separate log identifiers, changes can be recorded in different logs to distinguish separate transaction types.
 
 At any time, a log processor can be built which can processes all recorded changes starting from the desired start time. This can be used for forensic analysis, to replay changes against a different graph, or to compute an aggregate.
 
-Downstream Updates
-^^^^^^^^^^^^^^^^^^
+==== Downstream Updates
 
 It is often the case that a JanusGraph graph cluster is part of a larger architecture. The user transaction log and the log processor framework provide the tools needed to broadcast changes to other components of the overall system without slowing down the original transactions causing the change. This is particularly useful when transaction latencies need to be low and/or there are a number of other systems that need to be alerted to a change in the graph.
 
-Triggers
-^^^^^^^^
+==== Triggers
 
 The user transaction log provides the basic infrastructure to implement triggers that can scale to a large number of concurrent transactions and very large graphs. A trigger is registered with a particular change of data and either triggers an event in an external system or additional changes to the graph. At scale, it is not advisable to implement triggers in the original transaction but rather process triggers with a slight delay through the log processor framework. The second example shows how changes to the graph can be evaluated and trigger additional modifications.
 
-Log Configuration
-~~~~~~~~~~~~~~~~~
+=== Log Configuration
 
 There are a number of configuration options to fine tune how the log processor reads from the log. Refer to the complete list of configuration options <<config-ref>> for the options under the `log` namespace. To configure the user transaction log, use the `log.user` namespace. The options listed there allow the configuration of the number of threads to be used, the number of log records read in each batch, the read interval, and whether the transaction change records should automatically expire and be removed from the log after a configurable amount of time (TTL).
 
 include::configref.txt[]
 
 [[common-questions]]
-Common Questions
-----------------
+== Common Questions
 
-Accidental type creation
-~~~~~~~~~~~~~~~~~~~~~~~~
+=== Accidental type creation
 
 By default, JanusGraph will automatically create property keys and edge labels when a new type is encountered. It is strongly encouraged that users explicitly schemata as documented in <<schema>> before loading any data and disable automatic type creation by setting the option `schema.default = none`.
 
 Automatic type creation can cause problems in multi-threaded or highly concurrent environments. Since JanusGraph needs to ensure that types are unique, multiple attempts at creating the same type will lead to locking or other exceptions. It is generally recommended to create all needed types up front or in one batch when new property keys and edge labels are needed.
 
-Custom Class Datatype
-~~~~~~~~~~~~~~~~~~~~~
+=== Custom Class Datatype
 
 JanusGraph supports arbitrary objects as attribute values on properties. To use a custom class as data type in JanusGraph, either register a custom serializer or ensure that the class has a no-argument constructor and implements the `equals` method because JanusGraph will verify that it can successfully de-/serialize objects of that class. Please see <<serializer>> for more information.
 
-Transactional Scope for Edges
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Transactional Scope for Edges
 
 Edges should not be accessed outside the scope in which they were originally created or retrieved.
 
-Locking Exceptions
-~~~~~~~~~~~~~~~~~~
+=== Locking Exceptions
 
 When defining unique types with <<eventual-consistency, locking enabled>> (i.e. requesting that JanusGraph ensures uniqueness) it is likely to encounter locking exceptions of the type `PermanentLockingException` under concurrent modifications to the graph.
 
 Such exceptions are to be expected, since JanusGraph cannot know how to recover from a transactional state where an earlier read value has been modified by another transaction since this may invalidate the state of the transaction. In most cases it is sufficient to simply re-run the transaction. If locking exceptions are very frequent, try to analyze and remove the source of congestion.
 
-Floating point numbers in Vertex-centric Indices
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Floating point numbers in Vertex-centric Indices
 
 JanusGraph does not allow property keys with `Double` or `Float` data type to be part of a vertex centric index because their serialization does not support index creation. Use custom, fixed-digit data types `Decimal` (3 decimal digits) or `Precision (6 decimal digits) instead.
 
-Ghost Vertices
-~~~~~~~~~~~~~~
+=== Ghost Vertices
 
 When the same vertex is concurrently removed in one transaction and modified in another, both transactions will successfully commit on eventually consistent storage backends and the vertex will still exist with only the modified properties or edges. This is referred to as a ghost vertex. It is possible to guard against ghost vertices on eventually consistent backends using key <<index-unique, uniqueness>> but this is prohibitively expensive in most cases. A more scalable approach is to allow ghost vertices temporarily and clearing them out in regular time intervals.
 
 Another option is to detect them at read-time using the option `checkInternalVertexExistence()` documented in <<tx-config>>.
 
-Debug-level Logging Slows Execution
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Debug-level Logging Slows Execution
 
 When the log level is set to `DEBUG` JanusGraph produces *a lot* of logging output which is useful to understand how particular queries get compiled, optimized, and executed. However, the output is so large that it will impact the query performance noticeably. Hence, use `INFO` severity or higher for production systems or benchmarking.
 
-JanusGraph OutOfMemoryException or excessive Garbage Collection
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== JanusGraph OutOfMemoryException or excessive Garbage Collection
 
 If you experience memory issues or excessive garbage collection while running JanusGraph it is likely that the caches are configured incorrectly. If the caches are too large, the heap may fill up with cache entries. Try reducing the size of the transaction level cache before tuning the database level cache, in particular if you have many concurrent transactions. See <<caching>> for more information.
 
-JAMM Warning Messages
-~~~~~~~~~~~~~~~~~~~~~
+=== JAMM Warning Messages
 
 When launching JanusGraph with embedded Cassandra, the following warnings may be displayed:
 
@@ -1521,19 +1435,16 @@ Cassandra uses a Java agent called `MemoryMeter` which allows it to measure the 
 [source, bash]
 export JANUSGRAPH_JAVA_OPTS=-javaagent:$JANUSGRAPH_HOME/lib/jamm-$MAVEN{jamm.version}.jar
 
-Cassandra Connection Problem
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Cassandra Connection Problem
 
 By default, JanusGraph uses the Astyanax library to connect to Cassandra clusters. On EC2 and Rackspace, it has been reported that Astyanax was unable to establish a connection to the cluster. In those cases, changing the backend to `storage.backend=cassandrathrift` solved the problem.
 
-ElasticSearch OutOfMemoryException
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== ElasticSearch OutOfMemoryException
 
 When numerous clients are connecting to ElasticSearch, it is likely that an `OutOfMemoryException` occurs. This is not due to a memory issue, but to the OS not allowing more threads to be spawned by the user (the user running ElasticSearch). To circumvent this issue, increase the number of allowed processes to the user running ElasticSearch. For example, increase the `ulimit -u` from the default 1024 to 10024.
 
 [[limitations]]
-Technical Limitations
----------------------
+== Technical Limitations
 
 There are various limitations and "gotchas" that one should be aware
 of when using JanusGraph. Some of these limitations are necessary design
@@ -1541,20 +1452,17 @@ choices and others are issues that will be rectified as JanusGraph
 development continues. Finally, the last section provides solutions to
 common issues.
 
-Design Limitations
-~~~~~~~~~~~~~~~~~~
+=== Design Limitations
 
 These limitations reflect long-term tradeoffs design tradeoffs which
 are either difficult or impractical to change.  These limitations are
 unlikely to be removed in the near future.
 
-Size Limitation
-^^^^^^^^^^^^^^^
+==== Size Limitation
 
 JanusGraph can store up to a quintillion edges (2^60) and half as many vertices. That limitation is imposed by JanusGraph's id scheme.
 
-DataType Definitions
-^^^^^^^^^^^^^^^^^^^^
+==== DataType Definitions
 
 When declaring the data type of a property key using `dataType(Class)` JanusGraph will enforce that all properties for that key have the declared type, unless that type is `Object.class`. This is an equality type check, meaning that sub-classes will not be allowed. For instance, one cannot declare the data type to be `Number.class` and use `Integer` or `Long`. For efficiency reasons, the type needs to match exactly. Hence, use `Object.class` as the data type for type flexibility. In all other cases, declare the actual data type to benefit from increased performance and type safety.
 
@@ -1565,13 +1473,11 @@ Retrieving an edge by id, e.g `tx.getEdge(edge.getId())`, is not a constant time
 
 This also applies to index retrievals for edges via a standard or external index.
 
-Type Definitions cannot be changed
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Type Definitions cannot be changed
 
 The definition of an edge label, property key, or vertex label cannot be changed once it has been committed to the graph. However, a type can be renamed and new types can be created at runtime to accommodate an evolving schema.
 
-Reserved Keywords
-^^^^^^^^^^^^^^^^^
+==== Reserved Keywords
 
 There are certain keywords that JanusGraph uses internally for types that cannot be used otherwise.  These types include vertex labels, edge labels, and property keys. The following are keywords that cannot be used:
 
@@ -1584,19 +1490,16 @@ There are certain keywords that JanusGraph uses internally for types that cannot
 
 For example, if you attempt to create a vertex with the label of `property`, you will receive an exception regarding protected system types.
 
-Temporary Limitations
-~~~~~~~~~~~~~~~~~~~~~
+=== Temporary Limitations
 
 These are limitations in JanusGraph's current implementation.  These
 limitations could reasonably be removed in upcoming versions of JanusGraph.
 
-Limited Mixed Index Support
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Limited Mixed Index Support
 
 Mixed indexes only support a subset of the data types that JanusGraph supports. See <<mixeddatatypes, Mixed Index Data Types>> for a current listing. Also, mixed indexes do not currently support property keys with SET or LIST cardinality.
 
-Batch Loading Speed
-^^^^^^^^^^^^^^^^^^^
+==== Batch Loading Speed
 
 JanusGraph provides a batch loading mode that can be enabled through the <<config-ref, graph configuration>>. However, this batch mode only facilitates faster loading into the storage backend, it does not use storage backend specific batch loading techniques that prepare the data in memory for disk storage. As such, batch loading in JanusGraph is currently slower than batch loading modes provided by single machine databases. <<bulk-loading>> contains information on speeding up batch loading in JanusGraph.
 
