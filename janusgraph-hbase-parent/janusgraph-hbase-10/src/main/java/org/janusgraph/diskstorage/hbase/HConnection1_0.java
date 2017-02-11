@@ -18,7 +18,6 @@ import java.io.IOException;
 
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
 
 public class HConnection1_0 implements ConnectionMask
 {
@@ -39,7 +38,7 @@ public class HConnection1_0 implements ConnectionMask
     @Override
     public AdminMask getAdmin() throws IOException
     {
-        return new HBaseAdmin1_0(new HBaseAdmin(cnx));
+        return new HBaseAdmin1_0(cnx.getAdmin());
     }
 
     @Override
