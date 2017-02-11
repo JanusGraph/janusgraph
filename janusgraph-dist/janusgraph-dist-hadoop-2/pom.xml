@@ -24,13 +24,19 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-client</artifactId>
-            <version>${hbase098.version}</version>
+            <version>${hbase100.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-server</artifactId>
             <!-- Need the -server artifact for hbase.mapreduce.TableInputFormat (Faunus) -->
-            <version>${hbase098.version}</version>
+            <version>${hbase100.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.lmax</groupId>
+                    <artifactId>disruptor</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
