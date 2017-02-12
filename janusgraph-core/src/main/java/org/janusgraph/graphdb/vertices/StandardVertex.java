@@ -16,7 +16,6 @@ package org.janusgraph.graphdb.vertices;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
@@ -26,10 +25,6 @@ import org.janusgraph.graphdb.transaction.addedrelations.AddedRelationsContainer
 import org.janusgraph.graphdb.transaction.addedrelations.ConcurrentAddedRelations;
 import org.janusgraph.graphdb.transaction.addedrelations.SimpleAddedRelations;
 import org.janusgraph.util.datastructures.Retriever;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 /**

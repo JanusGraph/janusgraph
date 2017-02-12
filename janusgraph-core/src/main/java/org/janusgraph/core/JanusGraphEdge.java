@@ -16,7 +16,6 @@
 package org.janusgraph.core;
 
 import com.google.common.collect.ImmutableList;
-import org.janusgraph.graphdb.relations.EdgeDirection;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

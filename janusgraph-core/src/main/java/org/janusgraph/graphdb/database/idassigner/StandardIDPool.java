@@ -16,9 +16,6 @@ package org.janusgraph.graphdb.database.idassigner;
 
 import java.time.Duration;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
@@ -38,7 +35,6 @@ import org.janusgraph.diskstorage.IDBlock;
 
 import org.janusgraph.diskstorage.IDAuthority;
 
-import org.janusgraph.diskstorage.util.time.Temporals;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

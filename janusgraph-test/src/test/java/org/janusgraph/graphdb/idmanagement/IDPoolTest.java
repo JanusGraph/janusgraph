@@ -16,7 +16,6 @@ package org.janusgraph.graphdb.idmanagement;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.easymock.EasyMock.*;
@@ -24,16 +23,12 @@ import static org.easymock.EasyMock.*;
 import java.time.Duration;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
-
-
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.IDAuthority;
 import org.janusgraph.diskstorage.IDBlock;
 import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
 import org.janusgraph.graphdb.database.idassigner.IDBlockSizer;
-import junit.framework.Assert;
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
 import org.junit.Test;

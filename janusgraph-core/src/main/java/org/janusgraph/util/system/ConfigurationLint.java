@@ -15,11 +15,8 @@
 package org.janusgraph.util.system;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.util.ReflectiveConfigOptionLoader;
-import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
-import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.ConfigurationException;

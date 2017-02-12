@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.internal;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertexQuery;

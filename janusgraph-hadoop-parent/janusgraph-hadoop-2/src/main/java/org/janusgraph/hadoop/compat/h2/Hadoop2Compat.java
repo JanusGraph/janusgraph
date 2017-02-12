@@ -20,8 +20,6 @@ import org.janusgraph.graphdb.configuration.JanusGraphConstants;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
-import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
-
 import org.janusgraph.hadoop.compat.HadoopCompat;
 import org.janusgraph.hadoop.config.job.JobClasspathConfigurer;
 

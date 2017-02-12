@@ -17,7 +17,6 @@ package org.janusgraph.diskstorage.cassandra.embedded;
 import static org.janusgraph.diskstorage.cassandra.CassandraTransaction.getTx;
 
 import java.io.File;
-import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 

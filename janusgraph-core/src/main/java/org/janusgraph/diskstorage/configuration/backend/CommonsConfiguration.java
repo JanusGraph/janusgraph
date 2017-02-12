@@ -32,7 +32,6 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 /**
  * {@link ReadConfiguration} wrapper for Apache Configuration

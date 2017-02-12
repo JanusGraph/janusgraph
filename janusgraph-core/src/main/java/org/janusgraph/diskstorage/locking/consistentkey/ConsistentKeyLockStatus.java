@@ -18,8 +18,6 @@ package org.janusgraph.diskstorage.locking.consistentkey;
 import org.janusgraph.diskstorage.locking.LockStatus;
 
 import java.time.Instant;
-import java.time.temporal.TemporalUnit;
-import java.util.concurrent.TimeUnit;
 
 /**
  * The timestamps of a lock held by a {@link ConsistentKeyLocker}

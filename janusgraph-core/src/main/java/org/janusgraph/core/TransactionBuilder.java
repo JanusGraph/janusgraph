@@ -15,8 +15,6 @@
 package org.janusgraph.core;
 
 import java.time.Instant;
-import java.util.concurrent.TimeUnit;
-
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**

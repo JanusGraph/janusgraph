@@ -16,8 +16,6 @@ package org.janusgraph.diskstorage.util;
 
 import org.janusgraph.diskstorage.ReadBuffer;
 
-import java.nio.ByteBuffer;
-
 /**
  * Implementation of {@link ReadBuffer} against a byte array.
  *

@@ -15,7 +15,6 @@
 package org.janusgraph.core.log;
 
 import java.time.Instant;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Builder for assembling a processor that processes a particular transaction log. A processor can be composed of one or multiple

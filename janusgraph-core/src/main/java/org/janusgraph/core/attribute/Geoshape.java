@@ -23,7 +23,6 @@ import com.spatial4j.core.shape.SpatialRelation;
 import org.janusgraph.diskstorage.ScanBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
-import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
