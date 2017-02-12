@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.database.serialize.attribute;
 
-import org.janusgraph.core.attribute.AttributeSerializer;
 import org.janusgraph.diskstorage.ScanBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
 import org.janusgraph.graphdb.database.serialize.OrderPreservingSerializer;

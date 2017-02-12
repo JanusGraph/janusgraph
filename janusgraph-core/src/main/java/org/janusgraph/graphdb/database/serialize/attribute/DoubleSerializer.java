@@ -14,11 +14,8 @@
 
 package org.janusgraph.graphdb.database.serialize.attribute;
 
-import com.google.common.base.Preconditions;
-import org.janusgraph.core.attribute.AttributeSerializer;
 import org.janusgraph.diskstorage.ScanBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
-import org.janusgraph.graphdb.database.serialize.AttributeUtil;
 import org.janusgraph.graphdb.database.serialize.OrderPreservingSerializer;
 import org.janusgraph.util.encoding.NumericUtils;
 

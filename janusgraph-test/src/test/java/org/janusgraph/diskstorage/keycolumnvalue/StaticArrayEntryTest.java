@@ -17,7 +17,6 @@ package org.janusgraph.diskstorage.keycolumnvalue;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import org.janusgraph.diskstorage.*;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.janusgraph.diskstorage.util.StaticArrayEntryList;

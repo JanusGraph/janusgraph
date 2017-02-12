@@ -22,17 +22,12 @@ import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 
-import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
-
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 /**

@@ -14,7 +14,6 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue;
 
-import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.BaseTransactionConfigurable;
 
 /**

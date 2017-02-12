@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

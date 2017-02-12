@@ -14,14 +14,11 @@
 
 package org.janusgraph.graphdb;
 
-import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.indexing.*;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
-import org.apache.commons.lang.StringUtils;
-
 import java.util.List;
 import java.util.Map;
 

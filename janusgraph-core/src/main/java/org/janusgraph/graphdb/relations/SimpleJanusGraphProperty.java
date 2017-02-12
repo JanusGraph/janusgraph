@@ -19,11 +19,8 @@ import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphProperty;
 import org.janusgraph.graphdb.internal.InternalRelation;
-import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-
 import java.util.NoSuchElementException;
 
 /**

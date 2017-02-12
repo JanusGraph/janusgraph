@@ -19,8 +19,6 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
-
 import com.google.common.base.Predicate;
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;

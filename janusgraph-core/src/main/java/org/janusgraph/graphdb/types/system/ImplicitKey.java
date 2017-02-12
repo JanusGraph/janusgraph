@@ -30,9 +30,7 @@ import org.apache.commons.lang.StringUtils;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.TemporalUnit;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

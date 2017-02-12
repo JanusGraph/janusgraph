@@ -26,8 +26,6 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */

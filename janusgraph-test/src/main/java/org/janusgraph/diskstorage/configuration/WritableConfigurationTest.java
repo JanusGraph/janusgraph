@@ -23,8 +23,6 @@ import org.junit.Test;
 
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 

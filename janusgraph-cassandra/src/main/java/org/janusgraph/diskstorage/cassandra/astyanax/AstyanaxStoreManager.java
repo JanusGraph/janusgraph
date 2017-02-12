@@ -54,7 +54,6 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.apache.cassandra.dht.IPartitioner;
-import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.commons.lang.StringUtils;
@@ -66,8 +65,6 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import static org.janusgraph.diskstorage.cassandra.CassandraTransaction.getTx;
 
 @PreInitializeConfigOptions

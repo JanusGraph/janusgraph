@@ -16,7 +16,6 @@ package org.janusgraph.blueprints;
 
 import org.janusgraph.StorageSetup;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.apache.tinkerpop.gremlin.AbstractGremlinSuite;
 
 /**
  * Created by bryn on 06/05/15.

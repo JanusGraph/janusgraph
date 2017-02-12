@@ -19,9 +19,6 @@ import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 

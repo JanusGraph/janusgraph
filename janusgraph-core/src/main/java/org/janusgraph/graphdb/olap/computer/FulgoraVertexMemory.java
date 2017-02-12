@@ -15,20 +15,15 @@
 package org.janusgraph.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
-import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.graphdb.idmanagement.IDManager;
-import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
-import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
 import java.util.*;

@@ -17,7 +17,6 @@ package org.janusgraph.diskstorage.log;
 import org.janusgraph.diskstorage.StaticBuffer;
 
 import java.time.Instant;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Messages which are added to and received from the {@link Log}.

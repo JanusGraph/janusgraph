@@ -14,14 +14,12 @@
 
 package org.janusgraph.graphdb.database.indexing;
 
-import com.google.common.base.Preconditions;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
 import org.janusgraph.diskstorage.indexing.IndexInformation;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
-import org.apache.commons.lang.StringUtils;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

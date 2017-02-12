@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
-
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.util.*;
 import org.janusgraph.util.stats.NumberUtil;

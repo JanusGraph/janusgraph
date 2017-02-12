@@ -14,11 +14,7 @@
 
 package org.janusgraph.core;
 
-import org.janusgraph.core.schema.*;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
-
-import java.util.Collection;
-import java.util.Iterator;
 
 /**
  * JanusGraphTransaction defines a transactional context for a {@link JanusGraph}. Since JanusGraph is a transactional graph

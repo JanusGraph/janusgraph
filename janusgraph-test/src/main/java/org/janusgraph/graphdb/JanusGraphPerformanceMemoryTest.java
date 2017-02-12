@@ -22,8 +22,6 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.math.stat.descriptive.SummaryStatistics;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.junit.Rule;
@@ -31,7 +29,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TestRule;
 
-import com.google.common.collect.Iterables;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphTransaction;

@@ -14,24 +14,12 @@
 
 package org.janusgraph;
 
-import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.WriteBuffer;
-import org.janusgraph.diskstorage.util.StaticArrayBuffer;
-import org.janusgraph.diskstorage.util.WriteByteBuffer;
-import org.janusgraph.graphdb.database.idhandling.IDHandler;
-import org.janusgraph.graphdb.types.system.BaseKey;
-import org.janusgraph.graphdb.types.system.BaseLabel;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.*;

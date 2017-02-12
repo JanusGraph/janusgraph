@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.internal;
 
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.RelationType;
 import org.janusgraph.core.JanusGraphRelation;
 
 /**
