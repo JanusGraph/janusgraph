@@ -23,6 +23,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
+import org.apache.tinkerpop.gremlin.process.computer.traversal.TraversalVertexProgram;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
@@ -40,12 +41,14 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
     protected final FulgoraVertexMemory<M> vertexMemory;
     private final PreloadedVertex vertex;
     protected final long vertexId;
+    private boolean inExecute;
 
     VertexMemoryHandler(FulgoraVertexMemory<M> vertexMemory, PreloadedVertex vertex) {
         assert vertex!=null && vertexMemory!=null;
         this.vertexMemory = vertexMemory;
         this.vertex = vertex;
         this.vertexId = vertexMemory.getCanonicalId(vertex.longId());
+        this.inExecute = false;
     }
 
     void removeKey(String key) {
@@ -59,13 +62,12 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
 
     @Override
     public <V> Iterator<VertexProperty<V>> properties(String... keys) {
-        if (vertexMemory.elementKeyMap.isEmpty()) return Collections.emptyIterator();
+        final Set<String> memoryKeys = vertexMemory.getMemoryKeys();
+        if (memoryKeys.isEmpty()) return Collections.emptyIterator();
         if (keys==null || keys.length==0) {
-            return Collections.emptyIterator(); //Do NOT return compute keys as part of all the properties...
-            //keys = vertexMemory.elementKeyMap.keySet().toArray(new String[vertexMemory.elementKeyMap.size()]);
+            keys = memoryKeys.stream().filter(k -> !k.equals(TraversalVertexProgram.HALTED_TRAVERSERS)).toArray(String[]::new);
         }
-        //..but only if specifically asked for by key
-        List<VertexProperty<V>> result = new ArrayList<>(Math.min(keys.length,vertexMemory.elementKeyMap.size()));
+        final List<VertexProperty<V>> result = new ArrayList<>(Math.min(keys.length,memoryKeys.size()));
         for (String key : keys) {
             if (!supports(key)) continue;
             V value = vertexMemory.getProperty(vertexId,key);
@@ -76,7 +78,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
 
     @Override
     public boolean supports(String key) {
-        return vertexMemory.elementKeyMap.containsKey(key);
+        return vertexMemory.getMemoryKeys().contains(key);
     }
 
     @Override
@@ -86,6 +88,14 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
         Preconditions.checkArgument(cardinality== VertexProperty.Cardinality.single,"Only single cardinality is supported, provided: %s",cardinality);
         vertexMemory.setProperty(vertexId, key, value);
         return constructProperty(key,value);
+    }
+
+    public boolean isInExecute() {
+        return inExecute;
+    }
+
+    public void setInExecute(boolean inExecute) {
+        this.inExecute = inExecute;
     }
 
     public Stream<M> receiveMessages(MessageScope messageScope) {

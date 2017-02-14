@@ -119,7 +119,7 @@ public abstract class JanusGraphBlueprintsGraph implements JanusGraph {
 
     @Override
     public <I extends Io> I io(final Io.Builder<I> builder) {
-        return (I) builder.graph(this).registry(JanusGraphIoRegistry.getInstance()).create();
+        return (I) builder.graph(this).onMapper(mapper ->  mapper.addRegistry(JanusGraphIoRegistry.getInstance())).create();
     }
 
     // ########## TRANSACTIONAL FORWARDING ###########################

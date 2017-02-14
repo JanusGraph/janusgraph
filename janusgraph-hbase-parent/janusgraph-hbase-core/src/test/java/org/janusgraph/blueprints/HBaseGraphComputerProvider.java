@@ -31,7 +31,9 @@ public class HBaseGraphComputerProvider extends AbstractJanusGraphComputerProvid
 
     @Override
     public ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test, String testMethodName) {
-        return HBaseStorageSetup.getHBaseConfiguration(graphName);
+        ModifiableConfiguration config = super.getJanusGraphConfiguration(graphName, test, testMethodName);
+        config.setAll(HBaseStorageSetup.getHBaseConfiguration(graphName).getAll());
+        return config;
     }
 
     @Override

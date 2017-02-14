@@ -16,7 +16,6 @@ package org.janusgraph.blueprints.thrift;
 
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.blueprints.AbstractJanusGraphComputerProvider;
-import org.janusgraph.blueprints.AbstractJanusGraphProvider;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.apache.tinkerpop.gremlin.GraphProvider;
@@ -30,7 +29,9 @@ public class ThriftGraphComputerProvider extends AbstractJanusGraphComputerProvi
     @Override
     public ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test, String testMethodName) {
         CassandraStorageSetup.startCleanEmbedded();
-        return CassandraStorageSetup.getCassandraThriftConfiguration(graphName);
+        ModifiableConfiguration config = super.getJanusGraphConfiguration(graphName, test, testMethodName);
+        config.setAll(CassandraStorageSetup.getCassandraThriftConfiguration(graphName).getAll());
+        return config;
     }
 
 }

@@ -14,13 +14,14 @@
 
 package org.janusgraph.blueprints;
 
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
 import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.engine.ComputerTraversalEngine;
-import org.apache.tinkerpop.gremlin.process.traversal.engine.StandardTraversalEngine;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer;
 
 import java.util.stream.Stream;
 
@@ -39,6 +40,15 @@ public abstract class AbstractJanusGraphComputerProvider extends AbstractJanusGr
         final GraphTraversalSource.Builder builder = GraphTraversalSource.build().engine(ComputerTraversalEngine.build().computer(FulgoraGraphComputer.class));
         Stream.of(strategies).forEach(builder::with);
         return builder.create(graph);
+    }
+
+    @Override
+    public ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test, String testMethodName) {
+        return GraphDatabaseConfiguration.buildGraphConfiguration()
+                .set(GraphDatabaseConfiguration.IDS_BLOCK_SIZE,1)
+                .set(SimpleBulkPlacementStrategy.CONCURRENT_PARTITIONS,1)
+                .set(GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS, 2)
+                .set(GraphDatabaseConfiguration.IDAUTHORITY_CAV_BITS,0);
     }
 
 }

@@ -41,6 +41,7 @@ import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.janusgraph.graphdb.types.TypeDefinitionDescription;
 
+import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,6 +134,8 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(64,Duration.class, new DurationSerializer());
         registerClassInternal(65,Instant.class, new InstantSerializer());
         registerClassInternal(66,StandardTransactionId.class, new StandardTransactionIdSerializer());
+        registerClassInternal(67,TraverserSet.class, new SerializableSerializer());
+        registerClassInternal(68,HashMap.class, new SerializableSerializer());
 
     }
 

@@ -97,7 +97,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     }
 
     @Override
-    protected Traverser<E> processNextStart() {
+    protected Traverser.Admin<E> processNextStart() {
         if (!initialized) initialize();
         return super.processNextStart();
     }

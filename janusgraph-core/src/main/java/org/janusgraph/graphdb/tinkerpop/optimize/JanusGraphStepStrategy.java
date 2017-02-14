@@ -38,7 +38,7 @@ public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
 
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
-        if (traversal.getEngine().isComputer())
+        if (TraversalHelper.onGraphComputer(traversal))
             return;
 
         TraversalHelper.getStepsOfClass(GraphStep.class, traversal).forEach(originalGraphStep -> {
@@ -46,7 +46,6 @@ public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
                 //Try to optimize for index calls
                 final JanusGraphStep<?, ?> janusGraphStep = new JanusGraphStep<>(originalGraphStep);
                 TraversalHelper.replaceStep(originalGraphStep, (Step) janusGraphStep, traversal);
-
                 HasStepFolder.foldInHasContainer(janusGraphStep, traversal);
                 HasStepFolder.foldInOrder(janusGraphStep, traversal, traversal, janusGraphStep.returnsVertex());
                 HasStepFolder.foldInRange(janusGraphStep, traversal);

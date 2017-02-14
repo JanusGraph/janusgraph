@@ -22,11 +22,13 @@ import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.graphdb.JanusGraphBaseTest;
 import org.janusgraph.graphdb.olap.*;
+import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.janusgraph.graphdb.olap.job.GhostVertexRemover;
 import org.apache.tinkerpop.gremlin.process.computer.*;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.Operator;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -200,7 +202,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
 
     @Test
     public void testBasicComputeJob() throws Exception {
-        GraphTraversalSource g = graph.traversal(GraphTraversalSource.computer());
+        GraphTraversalSource g = graph.traversal().withComputer(FulgoraGraphComputer.class);
         System.out.println(g.V().count().next());
     }
 
@@ -287,7 +289,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
             }
             if (mode== JanusGraphComputer.ResultMode.LOCALTX) {
                 assertTrue(gview instanceof JanusGraphTransaction);
-                ((JanusGraphTransaction)gview).rollback();
+                ((JanusGraphTransaction) gview).rollback();
             }
         }
     }
@@ -384,8 +386,13 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         }
 
         @Override
-        public Set<String> getElementComputeKeys() {
-            return ImmutableSet.of(DEGREE);
+        public Set<VertexComputeKey> getVertexComputeKeys() {
+            return new HashSet<>(Arrays.asList(VertexComputeKey.of(DEGREE, false)));
+        }
+
+        @Override
+        public Set<MemoryComputeKey> getMemoryComputeKeys() {
+            return new HashSet<>(Arrays.asList(MemoryComputeKey.of(DEGREE, Operator.assign, true, false)));
         }
 
         @Override
