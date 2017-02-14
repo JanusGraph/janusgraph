@@ -78,7 +78,7 @@ public class JanusGraphFeatures implements Graph.Features {
 
         @Override
         public boolean supportsMapValues() {
-            return false;
+            return true;
         }
 
         @Override

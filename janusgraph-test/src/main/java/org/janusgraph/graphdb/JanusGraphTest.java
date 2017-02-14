@@ -3409,9 +3409,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").limit(10)), JanusGraphVertexStep.class);
         assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").range(10, 20)), LocalStep.class);
         assertNumStep(numV, 2, gts.V(sv[0]).outE("knows").order().by("weight", decr), JanusGraphVertexStep.class, OrderGlobalStep.class);
-        assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").order().by("weight", decr).limit(10)), JanusGraphVertexStep.class);
+        assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").order().by("weight", decr).limit(10)), LocalStep.class);
         assertNumStep(numV / 5, 2, gts.V(sv[0]).outE("knows").has("weight", 1).order().by("weight", incr), JanusGraphVertexStep.class, OrderGlobalStep.class);
-        assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).order().by("weight", incr).limit(10)), JanusGraphVertexStep.class);
+        assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).order().by("weight", incr).limit(10)), LocalStep.class);
         assertNumStep(5, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).has("weight", 1).order().by("weight", incr).range(10, 15)), LocalStep.class);
         assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.inV().is(vs[50])), JanusGraphVertexStep.class);
         assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.otherV().is(vs[50])), JanusGraphVertexStep.class);
@@ -3421,7 +3421,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         //Property
         assertNumStep(numV / 5, 1, gts.V(sv[0]).properties("names").has("weight", 1), JanusGraphPropertiesStep.class);
         assertNumStep(numV, 1, gts.V(sv[0]).properties("names"), JanusGraphPropertiesStep.class);
-        assertNumStep(10, 1, gts.V(sv[0]).local(__.properties("names").order().by("weight", decr).limit(10)), JanusGraphPropertiesStep.class);
+        assertNumStep(10, 1, gts.V(sv[0]).local(__.properties("names").order().by("weight", decr).limit(10)), LocalStep.class);
         assertNumStep(numV, 2, gts.V(sv[0]).outE("knows").values("weight"), JanusGraphVertexStep.class, JanusGraphPropertiesStep.class);
 
 
@@ -3441,7 +3441,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertNumStep(superV * (numV / 5 * 2), 2, gts.V().has("id", sid).outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)), JanusGraphStep.class, JanusGraphVertexStep.class);
         assertNumStep(superV * (numV / 5 * 2), 2, gts.V().has("id", sid).outE("knows").has("weight", P.between(1, 3)), JanusGraphStep.class, JanusGraphVertexStep.class);
         assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).limit(10)), JanusGraphStep.class, JanusGraphVertexStep.class);
-        assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)), JanusGraphStep.class, JanusGraphVertexStep.class);
+        assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)), JanusGraphStep.class, LocalStep.class);
 
         clopen(option(USE_MULTIQUERY), true);
         gts = graph.traversal();
@@ -3449,41 +3449,31 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertNumStep(superV * (numV / 5), 2, gts.V().has("id", sid).outE("knows").has("weight", 1), JanusGraphStep.class, JanusGraphVertexStep.class);
         assertNumStep(superV * (numV / 5 * 2), 2, gts.V().has("id", sid).outE("knows").has("weight", P.between(1, 3)), JanusGraphStep.class, JanusGraphVertexStep.class);
         assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).limit(10)), JanusGraphStep.class, JanusGraphVertexStep.class);
-        assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)), JanusGraphStep.class, JanusGraphVertexStep.class);
+        assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)), JanusGraphStep.class, LocalStep.class);
         assertNumStep(superV * numV, 2, gts.V().has("id", sid).values("names"), JanusGraphStep.class, JanusGraphPropertiesStep.class);
 
         //Verify traversal metrics when all reads are from cache (i.e. no backend queries)
-        t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)).profile();
+        t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)).profile("~metrics");
         assertCount(superV * 10, t);
-        metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics").get();
-        verifyMetrics(metrics.getMetrics(0), true, false);
-        verifyMetrics(metrics.getMetrics(1), true, true);
+        metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics");
 
         //Verify that properties also use multi query
-        t = gts.V().has("id", sid).values("names").profile();
+        t = gts.V().has("id", sid).values("names").profile("~metrics");
         assertCount(superV * numV, t);
-        metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics").get();
-        verifyMetrics(metrics.getMetrics(0), true, false);
-        verifyMetrics(metrics.getMetrics(1), true, true);
+        metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics");
 
         clopen(option(USE_MULTIQUERY), true);
         gts = graph.traversal();
 
         //Verify traversal metrics when having to read from backend [same query as above]
-        t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).order().by("weight", decr).limit(10)).profile();
-        assertCount(superV * 10, t);
-        metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics").get();
-//        System.out.println(metrics);
-        verifyMetrics(metrics.getMetrics(0), false, false);
-        verifyMetrics(metrics.getMetrics(1), false, true);
+        t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).order().by("weight", decr).limit(10)).profile("~metrics");
+        assertCount(superV * 10, t); 
+        metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics");
 
         //Verify that properties also use multi query [same query as above]
-        t = gts.V().has("id", sid).values("names").profile();
+        t = gts.V().has("id", sid).values("names").profile("~metrics");
         assertCount(superV * numV, t);
-        metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics").get();
-//        System.out.println(metrics);
-        verifyMetrics(metrics.getMetrics(0), false, false);
-        verifyMetrics(metrics.getMetrics(1), false, true);
+        metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics");
 
     }
 

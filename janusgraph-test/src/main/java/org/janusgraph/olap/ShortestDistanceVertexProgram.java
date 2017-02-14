@@ -20,6 +20,7 @@ import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
+import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.util.AbstractVertexProgramBuilder;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -53,7 +54,7 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
     private long seed;
     private String weightProperty;
 
-    private static final Set<String> COMPUTE_KEYS = new HashSet<>(Arrays.asList(DISTANCE));
+    private static final Set<VertexComputeKey> COMPUTE_KEYS = new HashSet<>(Arrays.asList(VertexComputeKey.of(DISTANCE, false)));
 
     private ShortestDistanceVertexProgram() {
 
@@ -75,7 +76,7 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
     }
 
     @Override
-    public Set<String> getElementComputeKeys() {
+    public Set<VertexComputeKey> getVertexComputeKeys() {
         return COMPUTE_KEYS;
     }
 

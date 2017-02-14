@@ -31,6 +31,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentitySt
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 
+import org.javatuples.Pair;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -62,9 +63,9 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
 
     public static boolean validJanusGraphOrder(OrderGlobalStep ostep, Traversal rootTraversal,
                                           boolean isVertexOrder) {
-        for (Comparator comp : (List<Comparator>) ostep.getComparators()) {
-            if (!(comp instanceof ElementValueComparator)) return false;
-            ElementValueComparator evc = (ElementValueComparator) comp;
+        for (Pair<Traversal.Admin<Object, Comparable>, Comparator<Comparable>> comp : (List<Pair<Traversal.Admin<Object, Comparable>, Comparator<Comparable>>>) ostep.getComparators()) {
+            if (!(comp.getValue1() instanceof ElementValueComparator)) return false;
+            ElementValueComparator evc = (ElementValueComparator) comp.getValue1();
             if (!(evc.getValueComparator() instanceof Order)) return false;
 
             JanusGraphTransaction tx = JanusGraphTraversalUtil.getTx(rootTraversal.asAdmin());
@@ -108,7 +109,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
     public static void foldInOrder(final HasStepFolder janusgraphStep, final Traversal.Admin<?, ?> traversal,
                                    final Traversal<?, ?> rootTraversal, boolean isVertexOrder) {
         Step<?, ?> currentStep = janusgraphStep.getNextStep();
-        OrderGlobalStep<?> lastOrder = null;
+        OrderGlobalStep<?, ?> lastOrder = null;
         while (true) {
             if (currentStep instanceof OrderGlobalStep) {
                 if (lastOrder != null) { //Previous orders are rendered irrelevant by next order (since re-ordered)
@@ -129,8 +130,8 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         if (lastOrder != null && lastOrder instanceof OrderGlobalStep) {
             if (validJanusGraphOrder(lastOrder, rootTraversal, isVertexOrder)) {
                 //Add orders to HasStepFolder
-                for (Comparator comp : (List<Comparator>) ((OrderGlobalStep) lastOrder).getComparators()) {
-                    ElementValueComparator evc = (ElementValueComparator) comp;
+                for (Pair<Traversal.Admin<Object, Comparable>, Comparator<Comparable>> comp : (List<Pair<Traversal.Admin<Object, Comparable>, Comparator<Comparable>>>) ((OrderGlobalStep) lastOrder).getComparators()) {
+                    ElementValueComparator evc = (ElementValueComparator) comp.getValue1();
                     janusgraphStep.orderBy(evc.getPropertyKey(), (Order) evc.getValueComparator());
                 }
                 lastOrder.getLabels().forEach(janusgraphStep::addLabel);

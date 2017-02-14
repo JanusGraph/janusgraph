@@ -78,12 +78,16 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
 
     @Override
     public <C extends GraphComputer> C compute(Class<C> graphComputerClass) throws IllegalArgumentException {
-        return getGraph().compute(graphComputerClass);
+        JanusGraphBlueprintsGraph graph = getGraph();
+        if (isOpen()) commit();
+        return graph.compute(graphComputerClass);
     }
 
     @Override
     public FulgoraGraphComputer compute() throws IllegalArgumentException {
-        return getGraph().compute();
+        JanusGraphBlueprintsGraph graph = getGraph();
+        if (isOpen()) commit();
+        return graph.compute();
     }
 
     /**

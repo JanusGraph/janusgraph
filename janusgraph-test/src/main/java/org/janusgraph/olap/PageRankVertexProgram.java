@@ -19,6 +19,7 @@ import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
+import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.util.AbstractVertexProgramBuilder;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -59,7 +60,7 @@ public class PageRankVertexProgram extends StaticVertexProgram<Double> {
     private MessageScope.Local<Double> outE = MessageScope.Local.of(__::outE);
     private MessageScope.Local<Double> inE = MessageScope.Local.of(__::inE);
 
-    private static final Set<String> COMPUTE_KEYS = ImmutableSet.of(PAGE_RANK, OUTGOING_EDGE_COUNT);
+    private static final Set<VertexComputeKey> COMPUTE_KEYS = ImmutableSet.of(VertexComputeKey.of(PAGE_RANK, false), VertexComputeKey.of(OUTGOING_EDGE_COUNT, false));
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
@@ -77,7 +78,7 @@ public class PageRankVertexProgram extends StaticVertexProgram<Double> {
     }
 
     @Override
-    public Set<String> getElementComputeKeys() {
+    public Set<VertexComputeKey> getVertexComputeKeys() {
         return COMPUTE_KEYS;
     }
 

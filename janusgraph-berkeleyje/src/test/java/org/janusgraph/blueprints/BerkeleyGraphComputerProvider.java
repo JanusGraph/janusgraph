@@ -33,7 +33,8 @@ public class BerkeleyGraphComputerProvider extends AbstractJanusGraphComputerPro
 
     @Override
     public ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test, String testMethodName) {
-        ModifiableConfiguration config = BerkeleyStorageSetup.getBerkeleyJEConfiguration(StorageSetup.getHomeDir(graphName));
+        ModifiableConfiguration config = super.getJanusGraphConfiguration(graphName, test, testMethodName);
+        config.setAll(BerkeleyStorageSetup.getBerkeleyJEConfiguration(StorageSetup.getHomeDir(graphName)).getAll());
         config.set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT, Duration.ofMillis(20));
         config.set(GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL,false);
         return config;
