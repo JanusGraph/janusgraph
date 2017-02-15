@@ -100,6 +100,7 @@
         <jna.version>4.0.0</jna.version>
         <kuali.s3.wagon.version>1.1.20</kuali.s3.wagon.version>
         <jasper.version>5.5.23</jasper.version>
+        <gmavenplus.version>1.5</gmavenplus.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <janusgraph.testdir>${project.build.directory}/janusgraph-test</janusgraph.testdir>
@@ -113,7 +114,6 @@
         <top.level.basedir>${basedir}</top.level.basedir>
         <compiler.source>1.8</compiler.source>
         <compiler.target>1.8</compiler.target>
-        <compiler.args />
         <test.excluded.groups>org.janusgraph.testcategory.MemoryTests,org.janusgraph.testcategory.PerformanceTests,org.janusgraph.testcategory.BrittleTests</test.excluded.groups>
     </properties>
     <modules>
@@ -219,10 +219,12 @@
                     <configuration>
                         <source>${compiler.source}</source>
                         <target>${compiler.target}</target>
-                        <compilerArgument>${compiler.args}</compilerArgument>
                         <compilerArguments>
                             <Xmaxerrs>500</Xmaxerrs>
                         </compilerArguments>
+                        <compilerArgs>
+                          <arg>-Xlint:unchecked</arg>
+                        </compilerArgs>
                     </configuration>
                 </plugin>
                 <plugin>
