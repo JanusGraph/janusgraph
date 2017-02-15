@@ -83,6 +83,7 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
 
     private IDManager idManager;
 
+    @Override
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -172,7 +173,7 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
             assertEquals(idManager.getCanonicalVertexId(gId), gId);
             JanusGraphVertex g = getV(tx, gId);
             final int canonicalPartition = getPartitionID(g);
-            assertEquals(g, (Vertex) getOnlyElement(tx.query().has("gid", i).vertices()));
+            assertEquals(g, getOnlyElement(tx.query().has("gid", i).vertices()));
             assertEquals(i, g.<Integer>value("gid").intValue());
             assertCount(names.size(), g.properties("name"));
 
@@ -374,7 +375,8 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
             assertCount(groupDegrees[i],g.query().direction(Direction.OUT).edges());
             assertCount(groupDegrees[i],g.query().direction(Direction.IN).edges());
             assertCount(groupDegrees[i]*2,g.query().edges());
-            for (JanusGraphVertex v : g.query().direction(Direction.IN).labels("member").vertices()) {
+            for (Object o : g.query().direction(Direction.IN).labels("member").vertices()) {
+                JanusGraphVertex v = (JanusGraphVertex) o;
                 int pid = getPartitionID(v);
                 partitionIds.add(pid);
                 assertEquals(g, getOnlyElement(v.query().direction(Direction.OUT).labels("member").vertices()));
@@ -476,7 +478,8 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
         for (int i=0;i<groupDegrees.length;i++) {
             JanusGraphVertex g = getOnlyVertex(tx.query().has("groupid","group"+i));
             int partitionId = -1;
-            for (JanusGraphVertex v : g.query().direction(Direction.IN).labels("member").vertices()) {
+            for (Object o : g.query().direction(Direction.IN).labels("member").vertices()) {
+                JanusGraphVertex v = (JanusGraphVertex) o;
                 if (partitionId<0) partitionId = getPartitionID(v);
                 assertEquals(partitionId,getPartitionID(v));
                 partitionIds.add(partitionId);

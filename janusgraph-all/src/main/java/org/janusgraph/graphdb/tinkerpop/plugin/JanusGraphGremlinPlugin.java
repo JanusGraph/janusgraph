@@ -24,7 +24,7 @@ import org.apache.tinkerpop.gremlin.groovy.plugin.GremlinPlugin;
 import org.apache.tinkerpop.gremlin.groovy.plugin.PluginAcceptor;
 
 import java.time.temporal.ChronoUnit;
-import java.util.HashSet;;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
