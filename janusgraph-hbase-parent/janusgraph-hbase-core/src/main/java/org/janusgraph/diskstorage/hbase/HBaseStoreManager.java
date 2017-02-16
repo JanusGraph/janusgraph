@@ -39,6 +39,7 @@ import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HRegionInfo;
+import org.apache.hadoop.hbase.HRegionLocation;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.MasterNotRunningException;
 import org.apache.hadoop.hbase.ServerName;
@@ -268,6 +269,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private final boolean skipSchemaCheck;
     private final String compatClass;
     private final HBaseCompat compat;
+    // Cached return value of getDeployment() as requesting it can be expensive.
+    private Deployment deployment = null;
 
     private static final ConcurrentHashMap<HBaseStoreManager, Throwable> openManagers =
             new ConcurrentHashMap<HBaseStoreManager, Throwable>();
@@ -349,14 +352,18 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     @Override
     public Deployment getDeployment() {
+        if (null != deployment) {
+            return deployment;
+        }
+
         List<KeyRange> local;
         try {
             local = getLocalKeyPartition();
-            return null != local && !local.isEmpty() ? Deployment.LOCAL : Deployment.REMOTE;
+            deployment = null != local && !local.isEmpty() ? Deployment.LOCAL : Deployment.REMOTE;
         } catch (BackendException e) {
-            // propagating StorageException might be a better approach
             throw new RuntimeException(e);
         }
+        return deployment;
     }
 
     @Override
@@ -555,17 +562,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     @Override
     public List<KeyRange> getLocalKeyPartition() throws BackendException {
-
         List<KeyRange> result = new LinkedList<KeyRange>();
-
-        HTable table = null;
         try {
-            ensureTableExists(tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME), 0);
-
-            table = new HTable(hconf, tableName);
-
-            Map<KeyRange, ServerName> normed =
-                    normalizeKeyBounds(table.getRegionLocations());
+            ensureTableExists(
+                tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME), 0);
+            Map<KeyRange, ServerName> normed = normalizeKeyBounds(cnx.getRegionLocations(tableName));
 
             for (Map.Entry<KeyRange, ServerName> e : normed.entrySet()) {
                 if (NetworkUtil.isLocalConnection(e.getValue().getHostname())) {
@@ -581,8 +582,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             logger.warn("Unexpected ZooKeeperConnectionException", e);
         } catch (IOException e) {
             logger.warn("Unexpected IOException", e);
-        } finally {
-            IOUtils.closeQuietly(table);
         }
         return result;
     }
@@ -632,15 +631,16 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      *            A map of HRegionInfo and ServerName from HBase
      * @return JanusGraph-friendly expression of each region's rowkey boundaries
      */
-    private Map<KeyRange, ServerName> normalizeKeyBounds(NavigableMap<HRegionInfo, ServerName> raw) {
+    private Map<KeyRange, ServerName> normalizeKeyBounds(List<HRegionLocation> locations) {
 
-        Map.Entry<HRegionInfo, ServerName> nullStart = null;
-        Map.Entry<HRegionInfo, ServerName> nullEnd = null;
+        HRegionLocation nullStart = null;
+        HRegionLocation nullEnd = null;
 
         ImmutableMap.Builder<KeyRange, ServerName> b = ImmutableMap.builder();
 
-        for (Map.Entry<HRegionInfo, ServerName> e : raw.entrySet()) {
-            HRegionInfo regionInfo = e.getKey();
+        for (HRegionLocation location : locations) {
+            HRegionInfo regionInfo = location.getRegionInfo();
+            ServerName serverName = location.getServerName();
             byte startKey[] = regionInfo.getStartKey();
             byte endKey[]   = regionInfo.getEndKey();
 
@@ -655,24 +655,24 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             }
 
             if (null == startKey && null == endKey) {
-                Preconditions.checkState(1 == raw.size());
+                Preconditions.checkState(1 == locations.size());
                 logger.debug("HBase table {} has a single region {}", tableName, regionInfo);
                 // Choose arbitrary shared value = startKey = endKey
-                return b.put(new KeyRange(FOUR_ZERO_BYTES, FOUR_ZERO_BYTES), e.getValue()).build();
+                return b.put(new KeyRange(FOUR_ZERO_BYTES, FOUR_ZERO_BYTES), serverName).build();
             } else if (null == startKey) {
-                logger.debug("Found HRegionInfo with null startKey on server {}: {}", e.getValue(), regionInfo);
+                logger.debug("Found HRegionInfo with null startKey on server {}: {}", serverName, regionInfo);
                 Preconditions.checkState(null == nullStart);
-                nullStart = e;
+                nullStart = location;
                 // I thought endBuf would be inclusive from the HBase javadoc, but in practice it is exclusive
                 StaticBuffer endBuf = StaticArrayBuffer.of(zeroExtend(endKey));
                 // Replace null start key with zeroes
-                b.put(new KeyRange(FOUR_ZERO_BYTES, endBuf), e.getValue());
+                b.put(new KeyRange(FOUR_ZERO_BYTES, endBuf), serverName);
             } else if (null == endKey) {
-                logger.debug("Found HRegionInfo with null endKey on server {}: {}", e.getValue(), regionInfo);
+                logger.debug("Found HRegionInfo with null endKey on server {}: {}", serverName, regionInfo);
                 Preconditions.checkState(null == nullEnd);
-                nullEnd = e;
+                nullEnd = location;
                 // Replace null end key with zeroes
-                b.put(new KeyRange(StaticArrayBuffer.of(zeroExtend(startKey)), FOUR_ZERO_BYTES), e.getValue());
+                b.put(new KeyRange(StaticArrayBuffer.of(zeroExtend(startKey)), FOUR_ZERO_BYTES), serverName);
             } else {
                 Preconditions.checkState(null != startKey);
                 Preconditions.checkState(null != endKey);
@@ -682,8 +682,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 StaticBuffer endBuf = StaticArrayBuffer.of(zeroExtend(endKey));
 
                 KeyRange kr = new KeyRange(startBuf, endBuf);
-                b.put(kr, e.getValue());
-                logger.debug("Found HRegionInfo with non-null end and start keys on server {}: {}", e.getValue(), regionInfo);
+                b.put(kr, serverName);
+                logger.debug("Found HRegionInfo with non-null end and start keys on server {}: {}", serverName, regionInfo);
             }
         }
 

@@ -15,9 +15,16 @@
 package org.janusgraph.diskstorage.hbase;
 
 import java.io.IOException;
-
+import java.util.List;
+import java.util.NavigableMap;
+import java.util.stream.Collectors;
+import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.hbase.HRegionInfo;
+import org.apache.hadoop.hbase.HRegionLocation;
+import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HConnection;
+import org.apache.hadoop.hbase.client.HTable;
 
 public class HConnection0_98 implements ConnectionMask
 {
@@ -45,5 +52,19 @@ public class HConnection0_98 implements ConnectionMask
     public void close() throws IOException
     {
         cnx.close();
+    }
+
+    @Override
+    public List<HRegionLocation> getRegionLocations(String tableName) throws IOException
+    {
+        HTable table = null;
+        try {
+            table = new HTable(cnx.getConfiguration(), tableName);
+            return table.getRegionLocations().entrySet().stream()
+                .map(e -> { return new HRegionLocation(e.getKey(), e.getValue()); })
+                .collect(Collectors.toList());
+        } finally {
+            IOUtils.closeQuietly(table);
+        }
     }
 }

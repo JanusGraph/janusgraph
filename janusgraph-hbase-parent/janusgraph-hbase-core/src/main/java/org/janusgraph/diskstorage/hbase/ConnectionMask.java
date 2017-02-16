@@ -21,6 +21,8 @@ package org.janusgraph.diskstorage.hbase;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.List;
+import org.apache.hadoop.hbase.HRegionLocation;
 
 /**
  * This interface hides ABI/API breaking changes that HBase has made to its (H)Connection class over the course
@@ -29,7 +31,24 @@ import java.io.IOException;
 public interface ConnectionMask extends Closeable
 {
 
+    /**
+     * Retrieve the TableMask compatibility layer object for the supplied table name.
+     * @return The TableMask for the specified table.
+     * @throws IOException in the case of backend exceptions.
+     */
     TableMask getTable(String name) throws IOException;
 
+    /**
+     * Retrieve the AdminMask compatibility layer object for this Connection.
+     * @return The AdminMask for this Connection
+     * @throws IOException in the case of backend exceptions.
+     */
     AdminMask getAdmin() throws IOException;
+
+    /**
+     * Retrieve the RegionLocations for the supplied table name.
+     * @return A map of HRegionInfo to ServerName that describes the storage regions for the named table.
+     * @throws IOException in the case of backend exceptions.
+     */
+    List<HRegionLocation> getRegionLocations(String tablename) throws IOException;
 }
