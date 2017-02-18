@@ -15,4 +15,6 @@ include::advanced.txt[]
 
 include::internals.txt[]
 
+include::development.txt[]
+
 include::appendices.txt[]
