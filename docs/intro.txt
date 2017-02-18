@@ -88,6 +88,7 @@ JanusGraph's modular architecture supports third-party adapters.
 ** <<cassandra, Cassandra>>
 ** <<hbase, HBase>>
 ** <<bdb, BerkeleyDB>>
+** <<tupl, Tupl>>
 * Indices, which speed up and enable more complex queries:
 ** <<elasticsearch, Elasticsearch>>
 ** <<solr, Solr>>

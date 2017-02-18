@@ -29,6 +29,14 @@ pipelines:
       value: janusgraph-berkeleyje
     - name: ARGS
       value: "-Dtest.skip.tp=false -DskipTests=true"
+  - name: tupl-tp
+    timeout: 236
+    privilegedMode: false
+    env:
+    - name: MODULE
+      value: janusgraph-tupl
+    - name: ARGS
+      value: "-Dtest.skip.tp=false -DskipTests=true"
   - name: cassandra-tp
     timeout: 262
     env:

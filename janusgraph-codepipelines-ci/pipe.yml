@@ -26,6 +26,11 @@ pipelines:
     env:
     - name: MODULE
       value: janusgraph-berkeleyje
+  - name: tupl
+    timeout: 30
+    env:
+    - name: MODULE
+      value: janusgraph-tupl
   - name: h-l-s
     timeout: 42
     env:

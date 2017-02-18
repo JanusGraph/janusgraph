@@ -1,0 +1,46 @@
+[[tupl]]
+Tupl
+----------
+
+[quote, 'https://github.com/cojen/Tupl[Tupl Homepage]']
+Tupl: The Unnamed Persistence Library is a high-performance, concurrent,
+transactional, scalable, low-level embedded database. Features include
+record-level locking, upgradable locks, deadlock detection, cursors, hot
+backups, striped files, encryption, pluggable replication, nested
+transaction scopes, and direct lock control. Although written in Java,
+Tupl doesn't suffer from garbage collection pauses when configured with
+a large cache.
+
+The https://github.com/cojen/Tupl[Tupl] storage backend runs in the same JVM as JanusGraph and provides local persistence on a single machine. Hence, the Tupl storage backend requires that all of the graph data fits on the local disk and all of the frequently accessed graph elements fit into main memory. This imposes a practical limitation of graphs with 10-100s million vertices on commodity hardware. However, for graphs of that size the Tupl storage backend exhibits high performance because all data can be accessed locally within the same JVM. The Tupl storage backend differs from the BerkeleyDB storage backend with a smaller disk footprint and an Apache 2.0 license.
+
+Tupl Setup
+~~~~~~~~~~~~~~~~
+
+Since Tupl runs in the same JVM as JanusGraph, connecting the two only requires a simple configuration and no additional setup:
+
+[source, java]
+JanusGraph g = JanusGraphFactory.build().
+set("storage.backend", "tupl").
+set("storage.directory", "/tmp/graph").
+open();
+
+In the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
+
+Tupl Specific Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Refer to <<config-ref>> for a complete listing of all Tupl specific configuration options in addition to the general JanusGraph configuration options. Tupl does not require a storage directory and will run in-memory if the corresponding configuration is not set.
+
+Ideal Use Case
+~~~~~~~~~~~~~~
+
+The Tupl storage backend is best suited for small to medium size graphs with up to 100 million vertices on commodity hardware. For graphs of that size, it will likely deliver higher performance than the distributed storage backends. Note, that Tupl is also limited in the number of concurrent requests it can handle efficiently because it runs on a single machine. Hence, it is not well suited for applications with many concurrent users mutating the graph, even if that graph is small to medium size.
+
+Since Tupl runs in the same JVM as JanusGraph, this storage backend is ideally suited for unit testing of application code using JanusGraph.
+
+Global Graph Operations
+~~~~~~~~~~~~~~~~~~~~~~~
+
+JanusGraph backed by Tupl supports global graph operations such as iterating over all vertices or edges. However, note that such operations need to scan the entire database which can require a significant amount of time for larger graphs. 
+
+In order to not run out of memory, it is advised to disable transactions (`storage.transactions=false`) when iterating over large graphs. Having transactions enabled requires Tupl to acquire read locks on the data it is reading. When iterating over the entire graph, these read locks can easily require more memory than is available.

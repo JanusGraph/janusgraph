@@ -19,4 +19,6 @@ include::bigtable.txt[]
 
 include::bdb.txt[]
 
+include::tupl.txt[]
+
 include::inmemorybackend.txt[]
