@@ -35,8 +35,6 @@ import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.traversal.TraversalVertexProgram;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.util.Iterator;
@@ -46,9 +44,6 @@ import java.util.List;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class VertexProgramScanJob<M> implements VertexScanJob {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(VertexProgramScanJob.class);
 
     private final IDManager idManager;
     private final FulgoraMemory memory;

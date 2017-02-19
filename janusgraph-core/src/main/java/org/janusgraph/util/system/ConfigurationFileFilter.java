@@ -151,7 +151,7 @@ public class ConfigurationFileFilter {
                 Matcher m = REPLACEMENT_PATTERN.matcher(line);
                 if (m.matches()) {
                     String cfgKey = m.group(2).trim();
-                    String cfgVal = m.group(3);
+                    m.group(3);
                     try {
                         ConfigElement.PathIdentifier pid = ConfigElement.parse(GraphDatabaseConfiguration.ROOT_NS, cfgKey);
                         ConfigOption<?> opt = (ConfigOption<?>) pid.element;
@@ -197,24 +197,12 @@ public class ConfigurationFileFilter {
                                 mut += WordUtils.wrap(warning, WRAP_COLUMNS, "\n# ", false);
                             }
                         }
-                        String umbrella = null;
-                        // This background info on umbrellas isn't critical when getting started with an JanusGraph config
-//                        if (pid.hasUmbrellaElements() && 1 == pid.umbrellaElements.length) {
-//                            String s = "# " +
-//                                    "This setting is under an umbrella namespace.  " +
-//                                    "The string \"" + pid.umbrellaElements[0] + "\" in this setting groups " +
-//                                    "it with other elements under the same umbrella. " +
-//                                    "See the Configuration Reference in the manual for more info.";
-//                            umbrella = WordUtils.wrap(s, WRAP_COLUMNS, "\n# ", false);
-//                        }
 
                         out.println(descr);
                         out.println("#");
                         out.println(defval);
                         out.println(dt);
                         out.println(mut);
-                        if (null != umbrella)
-                            out.println(umbrella);
                         out.println(kvPair);
                         replacements++;
                     } catch (RuntimeException e) {

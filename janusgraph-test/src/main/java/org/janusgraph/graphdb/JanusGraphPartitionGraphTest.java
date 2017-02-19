@@ -37,8 +37,6 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -51,9 +49,6 @@ import static org.junit.Assert.*;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(JanusGraphPartitionGraphTest.class);
 
     final static Random random = new Random();
     final static int numPartitions = 8;
@@ -107,15 +102,15 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
         Object[] options = {option(GraphDatabaseConfiguration.IDS_FLUSH), false};
         clopen(options);
 
-        PropertyKey gid = makeVertexIndexedUniqueKey("gid", Integer.class);
-        PropertyKey sig = makeKey("sig", Integer.class);
-        PropertyKey name = mgmt.makePropertyKey("name").cardinality(Cardinality.LIST).dataType(String.class).make();
-        EdgeLabel knows = makeLabel("knows");
-        EdgeLabel base = makeLabel("base");
-        EdgeLabel one = mgmt.makeEdgeLabel("one").multiplicity(Multiplicity.ONE2ONE).make();
+        makeVertexIndexedUniqueKey("gid", Integer.class);
+        makeKey("sig", Integer.class);
+        mgmt.makePropertyKey("name").cardinality(Cardinality.LIST).dataType(String.class).make();
+        makeLabel("knows");
+        makeLabel("base");
+        mgmt.makeEdgeLabel("one").multiplicity(Multiplicity.ONE2ONE).make();
 
-        VertexLabel person = mgmt.makeVertexLabel("person").make();
-        VertexLabel group = mgmt.makeVertexLabel("group").partition().make();
+        mgmt.makeVertexLabel("person").make();
+        mgmt.makeVertexLabel("group").partition().make();
 
         finishSchema();
         final Set<String> names = ImmutableSet.of("Marko", "Dan", "Stephen", "Daniel", "Josh", "Thad", "Pavel", "Matthias");

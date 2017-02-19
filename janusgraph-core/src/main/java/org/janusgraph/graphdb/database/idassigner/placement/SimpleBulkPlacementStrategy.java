@@ -121,11 +121,9 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
     @Override
     public void exhaustedPartition(int partitionID) {
         exhaustedPartitions.add(partitionID);
-        boolean found = false;
         for (int i = 0; i < currentPartitions.length; i++) {
             if (currentPartitions[i] == partitionID) {
                 updateElement(i);
-                found = true;
             }
         }
     }

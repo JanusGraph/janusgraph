@@ -30,8 +30,6 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,9 +43,6 @@ import java.util.function.Function;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTransaction {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(JanusGraphBlueprintsTransaction.class);
 
     /**
      * Returns the graph that this transaction is based on

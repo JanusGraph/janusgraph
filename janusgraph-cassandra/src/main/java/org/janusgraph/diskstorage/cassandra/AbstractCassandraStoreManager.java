@@ -36,9 +36,6 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import org.apache.cassandra.dht.IPartitioner;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -181,9 +178,6 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     private volatile StoreFeatures features = null;
     private Partitioner partitioner = null;
-
-    private static final Logger log =
-            LoggerFactory.getLogger(AbstractCassandraStoreManager.class);
 
     public AbstractCassandraStoreManager(Configuration config) {
         super(config, PORT_DEFAULT);

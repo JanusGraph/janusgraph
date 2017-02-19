@@ -27,8 +27,6 @@ import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.InternalElement;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -37,9 +35,6 @@ import java.util.Map;
  */
 @PreInitializeConfigOptions
 public class PropertyPlacementStrategy extends SimpleBulkPlacementStrategy {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(PropertyPlacementStrategy.class);
 
     public static final ConfigOption<String> PARTITION_KEY = new ConfigOption<String>(GraphDatabaseConfiguration.IDS_NS,
             "partition-key","Partitions the graph by properties of this key", ConfigOption.Type.MASKABLE, String.class, key -> StringUtils.isNotBlank(key));

@@ -1571,7 +1571,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         StandardJanusGraph graph2 = (StandardJanusGraph) JanusGraphFactory.open(config);
         JanusGraphTransaction tx2;
 
-        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.makePropertyKey("name").dataType(String.class).make();
         finishSchema();
 
         tx.addVertex("name", "v1");
@@ -1856,13 +1856,13 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     @Test
     public void testStaleVertex() {
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-        PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
+        mgmt.makePropertyKey("age").dataType(Integer.class).make();
         mgmt.buildIndex("byName", Vertex.class).addKey(name).unique().buildCompositeIndex();
         finishSchema();
 
 
         JanusGraphVertex cartman = graph.addVertex("name", "cartman", "age", 10);
-        JanusGraphVertex stan = graph.addVertex("name", "stan", "age", 8);
+        graph.addVertex("name", "stan", "age", 8);
 
         graph.tx().commit();
 
@@ -2425,7 +2425,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         mgmt.setConsistency(nameIndex, ConsistencyModifier.LOCK);
         EdgeLabel married = mgmt.makeEdgeLabel("married").multiplicity(Multiplicity.ONE2ONE).make();
         mgmt.setConsistency(married, ConsistencyModifier.LOCK);
-        EdgeLabel friend = mgmt.makeEdgeLabel("friend").multiplicity(Multiplicity.MULTI).make();
+        mgmt.makeEdgeLabel("friend").multiplicity(Multiplicity.MULTI).make();
         finishSchema();
 
         JanusGraphVertex baseV = tx.addVertex("name", "base");
@@ -2433,7 +2433,6 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         final long baseVid = getId(baseV);
         final String nameA = "a", nameB = "b";
         final int parallelThreads = 4;
-        final AtomicInteger totalExe = new AtomicInteger();
 
         int numSuccess = executeParallelTransactions(new TransactionJob() {
             @Override
@@ -2449,7 +2448,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         numSuccess = executeParallelTransactions(new TransactionJob() {
             @Override
             public void run(JanusGraphTransaction tx) {
-                JanusGraphVertex a = tx.addVertex("name", nameA);
+                tx.addVertex("name", nameA);
                 JanusGraphVertex b = tx.addVertex("name", nameB);
                 b.addEdge("friend", b);
             }
