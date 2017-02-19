@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static org.janusgraph.diskstorage.configuration.ConfigOption.disallowEmpty;
 
@@ -69,6 +70,11 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
             ConfigOption.Type.MASKABLE,  String.class,
             IsolationLevel.REPEATABLE_READ.toString(), disallowEmpty(String.class));
 
+    public static final ConfigOption<Long> LOCK_TIMEOUT =
+        new ConfigOption<Long>(BERKELEY_NS,"lock-timeout",
+            "Lock timeout for all transactional and non-transactional operations",
+            ConfigOption.Type.MASKABLE, 500L, ConfigOption.positiveLong());
+
     private final Map<String, BerkeleyJEKeyValueStore> stores;
 
     protected Environment environment;
@@ -79,7 +85,8 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         stores = new HashMap<String, BerkeleyJEKeyValueStore>();
 
         int cachePercentage = configuration.get(JVM_CACHE);
-        initialize(cachePercentage);
+        long txLockTimeout = configuration.get(LOCK_TIMEOUT);
+        initialize(cachePercentage, txLockTimeout);
 
         features = new StandardStoreFeatures.Builder()
                     .orderedScan(true)
@@ -105,12 +112,13 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 //        features.supportsMultiQuery = false;
     }
 
-    private void initialize(int cachePercent) throws BackendException {
+    private void initialize(int cachePercent, long txLockTimeout) throws BackendException {
         try {
             EnvironmentConfig envConfig = new EnvironmentConfig();
             envConfig.setAllowCreate(true);
             envConfig.setTransactional(transactional);
             envConfig.setCachePercent(cachePercent);
+            envConfig.setLockTimeout(txLockTimeout, TimeUnit.MILLISECONDS);
 
             if (batchLoading) {
                 envConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CHECKPOINTER, "false");

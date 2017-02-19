@@ -36,7 +36,7 @@ When configuring BerkeleyDB it is recommended to consider the following Berkeley
 
 * *transactions*: Enables transactions and detects conflicting database operations. *CAUTION:* While disabling transactions can lead to better performance it can cause to inconsistencies and even corrupt the database if multiple JanusGraph instances interact with the same instance of BerkeleyDB.
 * *cache-percentage*: The percentage of JVM heap space (configured via -Xmx) to be allocated to BerkeleyDB for its cache. Try to give BerkeleyDB as much space as possible without causing memory problems for JanusGraph. For instance, if JanusGraph only runs short transactions, use a value of 80 or higher.
-
+* *lock-timeout*: Lock timeout for all transactional and non-transactional operations. The default value is 500ms.
 Ideal Use Case
 ~~~~~~~~~~~~~~
 
