@@ -17,7 +17,6 @@ package org.janusgraph.graphdb.database.serialize;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.google.common.collect.ImmutableList;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.*;
 import org.janusgraph.core.schema.*;

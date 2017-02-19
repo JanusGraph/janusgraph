@@ -16,7 +16,6 @@ package org.janusgraph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.*;
-import org.janusgraph.graphdb.database.serialize.attribute.IntegerSerializer;
 import org.janusgraph.graphdb.relations.RelationCache;
 import org.janusgraph.util.encoding.StringEncoding;
 

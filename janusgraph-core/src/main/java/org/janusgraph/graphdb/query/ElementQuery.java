@@ -16,7 +16,6 @@ package org.janusgraph.graphdb.query;
 
 import org.janusgraph.core.JanusGraphElement;
 
-import java.util.Collection;
 import java.util.Comparator;
 
 /**

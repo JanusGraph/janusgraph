@@ -15,8 +15,6 @@
 package org.janusgraph.diskstorage.log;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;

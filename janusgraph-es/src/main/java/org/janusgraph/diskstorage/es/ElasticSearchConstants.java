@@ -17,7 +17,6 @@ package org.janusgraph.diskstorage.es;
 import java.io.IOException;
 import java.util.Properties;
 
-import org.elasticsearch.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

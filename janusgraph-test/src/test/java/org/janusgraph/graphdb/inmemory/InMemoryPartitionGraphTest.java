@@ -18,9 +18,6 @@ import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphPartitionGraphTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.Test;
-
-import static org.junit.Assert.assertFalse;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

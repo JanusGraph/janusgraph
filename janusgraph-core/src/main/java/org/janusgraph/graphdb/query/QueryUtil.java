@@ -23,9 +23,6 @@ import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.types.system.SystemTypeManager;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-
 import javax.annotation.Nullable;
 import java.util.*;
 

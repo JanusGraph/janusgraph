@@ -15,8 +15,6 @@
 package org.janusgraph.core;
 
 
-import org.janusgraph.graphdb.internal.InternalElement;
-import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.janusgraph.util.datastructures.Removable;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;

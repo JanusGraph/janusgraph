@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.query.condition;
 
-import com.google.common.base.Function;
 import org.janusgraph.core.JanusGraphElement;
 
 /**

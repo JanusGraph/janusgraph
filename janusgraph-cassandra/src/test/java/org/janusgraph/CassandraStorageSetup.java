@@ -19,8 +19,6 @@ import static org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-
 import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
 
 import org.janusgraph.diskstorage.cassandra.utils.CassandraDaemonWrapper;

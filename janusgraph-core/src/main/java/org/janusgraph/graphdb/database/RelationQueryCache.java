@@ -21,7 +21,6 @@ import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import java.io.Closeable;
 import java.util.EnumMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;

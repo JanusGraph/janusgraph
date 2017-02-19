@@ -19,11 +19,7 @@ import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.JanusGraphIndexTest;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.io.File;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;

@@ -16,7 +16,6 @@ package org.janusgraph.graphdb.thrift;
 
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.JanusGraphOperationCountingTest;
 import org.janusgraph.graphdb.JanusGraphPartitionGraphTest;
 import org.junit.BeforeClass;
 

@@ -16,13 +16,10 @@ package org.janusgraph.blueprints.process;
 
 import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.blueprints.HBaseGraphComputerProvider;
-import org.janusgraph.blueprints.HBaseGraphProvider;
 import org.janusgraph.core.JanusGraph;
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.apache.tinkerpop.gremlin.process.ProcessComputerSuite;
-import org.apache.tinkerpop.gremlin.process.ProcessStandardSuite;
-import org.apache.tinkerpop.gremlin.structure.StructureStandardSuite;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;

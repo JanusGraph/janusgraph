@@ -19,7 +19,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.janusgraph.core.*;
-import org.janusgraph.core.Cardinality;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.relations.EdgeDirection;

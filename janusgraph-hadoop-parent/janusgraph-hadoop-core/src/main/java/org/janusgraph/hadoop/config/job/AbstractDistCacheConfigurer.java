@@ -19,8 +19,6 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.janusgraph.diskstorage.configuration.ConfigOption;
-import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;

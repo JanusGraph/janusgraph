@@ -41,7 +41,6 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
 
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.junit.Assert.*;

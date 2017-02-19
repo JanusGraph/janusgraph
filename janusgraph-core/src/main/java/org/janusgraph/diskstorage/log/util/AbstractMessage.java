@@ -22,7 +22,6 @@ import org.janusgraph.diskstorage.log.Message;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.time.Instant;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Abstract implementation of {@link org.janusgraph.diskstorage.log.Message} which exposes the timestamp, sender, and payload

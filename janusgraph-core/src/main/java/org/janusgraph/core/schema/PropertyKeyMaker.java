@@ -16,7 +16,6 @@ package org.janusgraph.core.schema;
 
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.RelationType;
 
 /**
  * Used to define new {@link org.janusgraph.core.PropertyKey}s.

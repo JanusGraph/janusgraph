@@ -19,8 +19,6 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.StoreMetaData;
-import org.janusgraph.diskstorage.configuration.Configuration;
-
 import java.util.List;
 import java.util.Map;
 

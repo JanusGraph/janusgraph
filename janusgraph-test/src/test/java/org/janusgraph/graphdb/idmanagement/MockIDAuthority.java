@@ -15,18 +15,14 @@
 package org.janusgraph.graphdb.idmanagement;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import org.janusgraph.diskstorage.*;
 
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
-import org.janusgraph.diskstorage.util.BufferUtil;
-import org.janusgraph.diskstorage.util.WriteByteBuffer;
 import org.janusgraph.graphdb.database.idassigner.IDBlockSizer;
 import org.janusgraph.graphdb.database.idassigner.IDPoolExhaustedException;
 import org.janusgraph.graphdb.database.idassigner.StaticIDBlockSizer;
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;

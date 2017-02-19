@@ -14,14 +14,9 @@
 
 package org.janusgraph.graphdb.berkeleyje;
 
-import com.google.common.base.Joiner;
-
 import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.util.JanusGraphCleanup;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
-import org.janusgraph.example.GraphOfTheGodsFactory;
-import org.janusgraph.graphdb.JanusGraphIndexTest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -37,13 +32,8 @@ import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphTest;
 
-import java.io.File;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.io.FileUtils;
-
 import static org.junit.Assert.*;
 
 public class BerkeleyGraphTest extends JanusGraphTest {
