@@ -34,8 +34,6 @@ import org.janusgraph.testutil.RandomGenerator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Random;
@@ -43,8 +41,6 @@ import java.util.Random;
 import static org.junit.Assert.*;
 
 public class IDManagementTest {
-
-    private static final Logger log = LoggerFactory.getLogger(IDManagementTest.class);
 
     private static final Random random = new Random();
 
@@ -258,7 +254,6 @@ public class IDManagementTest {
         IDHandler.DirectionID[] dir = IDManager.VertexIDType.EdgeLabel.is(etid)?
                     new IDHandler.DirectionID[]{IDHandler.DirectionID.EDGE_IN_DIR, IDHandler.DirectionID.EDGE_OUT_DIR}:
                     new IDHandler.DirectionID[]{IDHandler.DirectionID.PROPERTY_DIR};
-        RelationCategory relCat = IDManager.VertexIDType.EdgeLabel.is(etid)?RelationCategory.EDGE:RelationCategory.PROPERTY;
         boolean invisible = IDManager.isSystemRelationTypeId(etid);
         for (IDHandler.DirectionID d : dir) {
             StaticBuffer b = IDHandler.getRelationType(etid, d, invisible);

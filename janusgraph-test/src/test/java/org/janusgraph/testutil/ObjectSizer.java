@@ -194,32 +194,4 @@ public final class ObjectSizer {
     private static int SAMPLE_SIZE = 100;
 
     private static int OBJECT_POINTER_SIZE = 6; //assuming compressed pointers
-
-    private static long SLEEP_INTERVAL = 100;
-
-    private static long getMemoryUse() {
-        putOutTheGarbage();
-        long totalMemory = Runtime.getRuntime().totalMemory();
-
-        putOutTheGarbage();
-        long freeMemory = Runtime.getRuntime().freeMemory();
-
-        return (totalMemory - freeMemory);
-    }
-
-    private static void putOutTheGarbage() {
-        collectGarbage();
-        collectGarbage();
-    }
-
-    private static void collectGarbage() {
-        try {
-            System.gc();
-            Thread.sleep(SLEEP_INTERVAL);
-            System.runFinalization();
-            Thread.sleep(SLEEP_INTERVAL);
-        } catch (InterruptedException ex) {
-            ex.printStackTrace();
-        }
-    }
 }

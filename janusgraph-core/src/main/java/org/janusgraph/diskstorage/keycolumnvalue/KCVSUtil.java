@@ -91,11 +91,14 @@ public class KCVSUtil {
     }
 
     public static boolean containsKey(KeyColumnValueStore store, StaticBuffer key, int maxColumnLength, StoreTransaction txh) throws BackendException {
-        StaticBuffer start = START, end = END;
+        final StaticBuffer start = START;
+        final StaticBuffer end;
         if (maxColumnLength>32) {
             end = BufferUtil.oneBuffer(maxColumnLength);
+        } else {
+            end = END;
         }
-        return !store.getSlice(new KeySliceQuery(key, START, END).setLimit(1),txh).isEmpty();
+        return !store.getSlice(new KeySliceQuery(key, start, end).setLimit(1),txh).isEmpty();
     }
 
     public static boolean matches(SliceQuery query, StaticBuffer column) {

@@ -16,8 +16,6 @@ package org.janusgraph.core.attribute;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 
@@ -63,8 +61,6 @@ public enum Contain implements JanusGraphPredicate {
         }
 
     };
-
-    private static final Logger log = LoggerFactory.getLogger(Contain.class);
 
     @Override
     public boolean isValidValueType(Class<?> clazz) {

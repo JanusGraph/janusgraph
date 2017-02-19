@@ -44,7 +44,6 @@ public class QueryContainer {
 
     private final StandardJanusGraphTx tx;
     private int hardQueryLimit;
-    private final boolean requiresName;
 
     private Set<Query> queries;
     private SetMultimap<SliceQuery, Query> inverseQueries;
@@ -55,7 +54,6 @@ public class QueryContainer {
         queries = new HashSet<>(6);
         inverseQueries = HashMultimap.create();
         hardQueryLimit = DEFAULT_HARD_QUERY_LIMIT;
-        requiresName = true;
     }
 
     public JanusGraphTransaction getTransaction() {

@@ -29,8 +29,6 @@ import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.RelationConstructor;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.util.datastructures.Retriever;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -49,8 +47,6 @@ import java.util.*;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class SimpleVertexQueryProcessor implements Iterable<Entry> {
-
-    private static final Logger log = LoggerFactory.getLogger(SimpleVertexQueryProcessor.class);
 
     private final VertexCentricQuery query;
     private final StandardJanusGraphTx tx;

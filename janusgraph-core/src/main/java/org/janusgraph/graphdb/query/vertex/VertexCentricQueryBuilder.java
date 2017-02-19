@@ -22,8 +22,6 @@ import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.query.BackendQueryHolder;
 import org.janusgraph.graphdb.query.QueryProcessor;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -44,8 +42,6 @@ import java.util.List;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<VertexCentricQueryBuilder> implements JanusGraphVertexQuery<VertexCentricQueryBuilder> {
-
-    private static final Logger log = LoggerFactory.getLogger(VertexCentricQueryBuilder.class);
 
     /**
     The base vertex of this query

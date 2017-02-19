@@ -103,7 +103,6 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         }
         //Remove all system types on the vertex
         for (JanusGraphRelation r : it().query().noPartitionRestriction().system().relations()) {
-            RelationType t = r.getType();
             r.remove();
         }
     }

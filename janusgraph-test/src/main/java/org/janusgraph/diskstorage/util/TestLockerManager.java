@@ -37,11 +37,9 @@ public class TestLockerManager {
     private static class TestLocker implements Locker {
 
         private final boolean errorOnLock;
-        private final String name;
 
         private TestLocker(String name, boolean errorOnLock) {
             this.errorOnLock = errorOnLock;
-            this.name = name;
         }
 
         @Override

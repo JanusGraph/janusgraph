@@ -14,8 +14,6 @@
 
 package org.janusgraph;
 
-import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
-
 import javax.annotation.Nonnull;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Method;
@@ -24,7 +22,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class TestBed {
 
@@ -73,11 +70,6 @@ public class TestBed {
         for (int i=0;i<10000*milliseconds;i++) d+=Math.pow(1.1,r.nextDouble());
 
     }
-
-    private static final ArrayList<Object> mixedList = new ArrayList<Object>() {{
-        add("try1");
-        add(2);
-    }};
 
     public static class TestA {
 
@@ -253,11 +245,6 @@ public class TestBed {
 //        Thread.sleep(2000);
         System.out.println("Terminate: " + exe.awaitTermination(5,TimeUnit.SECONDS));
         System.out.println("DONE");
-        NonBlockingHashMapLong<String> id1 = new NonBlockingHashMapLong<String>(128);
-        ConcurrentHashMap<Long,String> id2 = new ConcurrentHashMap<Long, String>(128,0.75f,2);
-
-
-
     }
 
     public static String toBinary(int b) {

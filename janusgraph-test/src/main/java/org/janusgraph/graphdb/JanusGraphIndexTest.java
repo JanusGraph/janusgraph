@@ -172,7 +172,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     @Test
     public void testSimpleUpdate() {
         PropertyKey name = makeKey("name", String.class);
-        EdgeLabel knows = makeLabel("knows");
+        makeLabel("knows");
         mgmt.buildIndex("namev", Vertex.class).addKey(name).buildMixedIndex(INDEX);
         mgmt.buildIndex("namee", Edge.class).addKey(name).buildMixedIndex(INDEX);
         finishSchema();
@@ -225,8 +225,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         createExternalVertexIndex(group, INDEX);
         createExternalEdgeIndex(group, INDEX);
 
-        PropertyKey id = makeVertexIndexedKey("uid", Integer.class);
-        EdgeLabel knows = ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel("knows")).sortKey(time).signature(location).make();
+        makeVertexIndexedKey("uid", Integer.class);
+        ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel("knows")).sortKey(time).signature(location).make();
         finishSchema();
 
         clopen();
@@ -744,7 +744,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         PropertyKey name = makeKey("name", String.class);
         PropertyKey weight = makeKey("weight", Double.class);
         PropertyKey text = makeKey("text", String.class);
-        PropertyKey flag = makeKey("flag", Boolean.class);
+        makeKey("flag", Boolean.class);
 
         JanusGraphIndex composite = mgmt.buildIndex("composite", Vertex.class).addKey(name).addKey(weight).buildCompositeIndex();
         JanusGraphIndex mixed = mgmt.buildIndex("mixed", Vertex.class).addKey(weight)
@@ -832,9 +832,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         JanusGraphVertex previous = null;
         for (int i = 0; i < numV; i++) {
             JanusGraphVertex v = graph.addVertex("name", strs[i % strs.length], "text", strs[i % strs.length]);
-            Edge e = v.addEdge("knows", previous == null ? v : previous,
+            v.addEdge("knows", previous == null ? v : previous,
                     "name", strs[i % strs.length], "text", strs[i % strs.length]);
-            VertexProperty p = v.property("uid", "v" + i,
+            v.property("uid", "v" + i,
                     "name", strs[i % strs.length], "text", strs[i % strs.length]);
             previous = v;
         }
@@ -1450,7 +1450,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         clopen();
         Object e1Id = e1.id();
-        Object e2Id = e2.id();
+        e2.id();
 
         evaluateQuery(tx.query().has("text", Text.CONTAINS, "help").has(LABEL_NAME, "likes"),
                 ElementCategory.EDGE, 1, new boolean[]{true, true}, "index2");

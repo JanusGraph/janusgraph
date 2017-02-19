@@ -15,15 +15,11 @@
 package org.janusgraph.graphdb.serializer;
 
 import org.janusgraph.StorageSetup;
-import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.graphdb.database.EdgeSerializer;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.internal.InternalRelation;
 import org.junit.Test;
 
 /**
@@ -36,7 +32,7 @@ public class EdgeSerializerTest {
     public void testValueOrdering() {
         StandardJanusGraph graph = (StandardJanusGraph) StorageSetup.getInMemoryGraph();
         JanusGraphManagement mgmt = graph.openManagement();
-        EdgeLabel father = mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
+        mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
         for (int i=1;i<=5;i++) mgmt.makePropertyKey("key" + i).dataType(Integer.class).make();
         mgmt.commit();
 
