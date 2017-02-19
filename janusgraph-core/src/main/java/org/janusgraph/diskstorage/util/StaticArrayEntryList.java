@@ -456,43 +456,6 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             Meta Data Management
      ########################################### */
 
-    /**
-     * The integer metaDataSchema is considered as an array of 4bit blocks. If a block equals 0, that means that there is no further
-     * meta-data attached. Otherwise, the value translates to the specific meta data as {@code EntryMetaData.values()[value-1]}.
-     * </p>
-     * This means that
-     * 1) metaDataSchema=0 => there is no meta data attached to these entries and
-     * 2) We can accommodate at most 15 enum instances in EntryMetaData and at most 8 can be attached to entries.
-     */
-    private static EntryMetaData[] parseMetaDataSchema(int metaDataSchema) {
-        assert EntryMetaData.values().length<15;
-        if (metaDataSchema==0) return StaticArrayEntry.EMPTY_SCHEMA;
-        int size = 8-Integer.numberOfLeadingZeros(metaDataSchema)/4;
-        assert size>0;
-        EntryMetaData[] meta = new EntryMetaData[size];
-        for (int i=0;i<size;i++) {
-            int index = metaDataSchema & 0x0F;
-            assert index>0;
-            EntryMetaData md = EntryMetaData.values()[index-1];
-            assert md!=null;
-            meta[i]=md;
-        }
-        return meta;
-    }
-
-    private static int compressMetaDataSchema(EntryMetaData[] metadata) {
-        assert EntryMetaData.values().length<15;
-        Preconditions.checkArgument(metadata.length<8);
-        if (metadata.length==0) return 0;
-        int metadataSchema = 0;
-        for (int i= metadata.length-1;i>=0;i--) {
-            metadataSchema = metadataSchema<<4;
-            metadataSchema = metadataSchema | (metadata[i].ordinal()+1);
-        }
-        assert metadataSchema!=0;
-        return metadataSchema;
-    }
-
     private int parseMetaData(Map<EntryMetaData,Object> metadata, int baseOffset) {
         assert hasMetaData();
         for (EntryMetaData meta : metaDataSchema) {

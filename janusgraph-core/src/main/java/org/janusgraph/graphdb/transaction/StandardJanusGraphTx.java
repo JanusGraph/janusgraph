@@ -477,14 +477,14 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             InternalVertex vertex = null;
             if (idInspector.isRelationTypeId(vertexid)) {
                 if (idInspector.isPropertyKeyId(vertexid)) {
-                    if (idInspector.isSystemRelationTypeId(vertexid)) {
+                    if (IDManager.isSystemRelationTypeId(vertexid)) {
                         vertex = SystemTypeManager.getSystemType(vertexid);
                     } else {
                         vertex = new PropertyKeyVertex(StandardJanusGraphTx.this, vertexid, lifecycle);
                     }
                 } else {
                     assert idInspector.isEdgeLabelId(vertexid);
-                    if (idInspector.isSystemRelationTypeId(vertexid)) {
+                    if (IDManager.isSystemRelationTypeId(vertexid)) {
                         vertex = SystemTypeManager.getSystemType(vertexid);
                     } else {
                         vertex = new EdgeLabelVertex(StandardJanusGraphTx.this, vertexid, lifecycle);
@@ -915,7 +915,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     @Override
     public RelationType getExistingRelationType(long typeid) {
         assert idInspector.isRelationTypeId(typeid);
-        if (idInspector.isSystemRelationTypeId(typeid)) {
+        if (IDManager.isSystemRelationTypeId(typeid)) {
             return SystemTypeManager.getSystemType(typeid);
         } else {
             InternalVertex v = getInternalVertex(typeid);

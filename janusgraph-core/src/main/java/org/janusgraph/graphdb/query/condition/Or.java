@@ -36,10 +36,6 @@ public class Or<E extends JanusGraphElement> extends MultiCondition<E> {
         super();
     }
 
-    private Or(And<E> clone) {
-        super(clone);
-    }
-
     @Override
     public Or<E> clone() {
         return new Or<E>(this);

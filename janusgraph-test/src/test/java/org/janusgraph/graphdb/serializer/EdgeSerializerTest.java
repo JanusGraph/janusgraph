@@ -51,11 +51,4 @@ public class EdgeSerializerTest {
 
     }
 
-
-    private Entry serialize(StandardJanusGraph graph, JanusGraphEdge e, int pos) {
-        EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
-        InternalRelation r = (InternalRelation)e;
-        return edgeSerializer.writeRelation(r,pos,r.tx());
-    }
-
 }

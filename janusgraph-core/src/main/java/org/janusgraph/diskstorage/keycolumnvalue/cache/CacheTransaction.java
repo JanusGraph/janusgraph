@@ -114,12 +114,6 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         return 0;
     }
 
-    private int mutationSize(Map<StaticBuffer, KCVEntryMutation> mutation) {
-        int size = 0;
-        for (KCVEntryMutation mut : mutation.values()) size+=mut.getTotalMutations();
-        return size;
-    }
-
     private KCVMutation convert(KCVEntryMutation mutation) {
         assert !mutation.isEmpty();
         if (!mutation.hasDeletions())

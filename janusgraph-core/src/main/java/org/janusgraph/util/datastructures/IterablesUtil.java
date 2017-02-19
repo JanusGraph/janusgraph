@@ -88,7 +88,7 @@ public class IterablesUtil {
         Iterator<E> itera = a.iterator(), iterb = b.iterator();
         E heada = itera.hasNext()?itera.next():null;
         E headb = iterb.hasNext()?iterb.next():null;
-        List<E> result = new ArrayList(a.size()+b.size());
+        List<E> result = new ArrayList<>(a.size()+b.size());
         while (heada!=null || headb!=null) {
             E next;
             if (heada==null) {

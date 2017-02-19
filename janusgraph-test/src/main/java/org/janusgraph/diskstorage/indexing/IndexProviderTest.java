@@ -420,12 +420,6 @@ public abstract class IndexProviderTest {
 
     }
 
-    private static String padNumber(long number) {
-        String s = Long.toString(number);
-        while (s.length()<18) s = "0"+s;
-        return s;
-    }
-
     @Test
     public void testCommonSupport() {
         assertTrue(index.supports(of(String.class, Cardinality.SINGLE)));

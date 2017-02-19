@@ -575,7 +575,6 @@ public class ConcurrentLRUCache<V> {
         return stats;
     }
 
-    @SuppressWarnings("unused")
     public static class Stats {
         private final AtomicLong accessCounter = new AtomicLong(0),
                 putCounter = new AtomicLong(0),
