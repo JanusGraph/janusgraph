@@ -79,18 +79,6 @@ public class TestBed {
         add(2);
     }};
 
-    private static void throwOuter() throws Exception {
-        throw throwInner(new IllegalArgumentException("Test"));
-    }
-
-    private static Exception throwInner(Exception e) throws Exception {
-        return e;
-    }
-
-    private static int plusFive(int num) {
-        return num+5;
-    }
-
     public static class TestA {
 
         final Number a;
@@ -135,7 +123,7 @@ public class TestBed {
 
         public void observe(Object o1, Object o2, Observer other) {
             if (!observed && !other.observes()) return;
-            List combined = new ArrayList<>();
+            List<Object> combined = new ArrayList<>();
             combined.add(o1);
             combined.add(o2);
             observe(combined);

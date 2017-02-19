@@ -27,7 +27,6 @@ import org.apache.thrift.transport.TTransport;
  * No other changes necessary to make Astyanax work with Cassandra 2.0.x because Thrift API is completely in-tact.
  */
 
-@SuppressWarnings("unused")
 public class TBinaryProtocol extends org.apache.thrift.protocol.TBinaryProtocol {
     public TBinaryProtocol(TTransport trans) {
         super(trans);

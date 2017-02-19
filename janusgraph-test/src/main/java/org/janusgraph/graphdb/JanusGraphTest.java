@@ -310,7 +310,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         int[] ids = new int[noVertices];
         JanusGraphVertex[] nodes = new JanusGraphVertex[noVertices];
         long[] nodeIds = new long[noVertices];
-        List[] nodeEdges = new List[noVertices];
+        List<Edge>[] nodeEdges = new List[noVertices];
         for (int i = 0; i < noVertices; i++) {
             names[i] = "vertex" + i;
             ids[i] = i;
@@ -322,7 +322,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         int[] knowsOff = {-400, -18, 8, 232, 334};
         for (int i = 0; i < noVertices; i++) {
             JanusGraphVertex n = nodes[i];
-            nodeEdges[i] = new ArrayList(10);
+            nodeEdges[i] = new ArrayList<Edge>(10);
             for (int c : connectOff) {
                 Edge r = n.addEdge("connect", nodes[wrapAround(i + c, noVertices)]);
                 nodeEdges[i].add(r);
@@ -2475,22 +2475,6 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         } finally {
             if (tx.isOpen()) tx.rollback();
         }
-    }
-
-    private int executeSerialTransaction(final TransactionJob job, int number) {
-        final AtomicInteger txSuccess = new AtomicInteger(0);
-        for (int i = 0; i < number; i++) {
-            JanusGraphTransaction tx = graph.newTransaction();
-            try {
-                job.run(tx);
-                tx.commit();
-                txSuccess.incrementAndGet();
-            } catch (Exception ex) {
-                tx.rollback();
-                ex.printStackTrace();
-            }
-        }
-        return txSuccess.get();
     }
 
     private int executeParallelTransactions(final TransactionJob job, int number) {
