@@ -14,15 +14,10 @@
 
 package org.janusgraph.hadoop.compat;
 
-import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import org.janusgraph.graphdb.olap.VertexScanJob;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.janusgraph.hadoop.config.job.JobClasspathConfigurer;
-
-import java.io.IOException;
 
 /**
  * This interface encapsulates both API and bytecode-level

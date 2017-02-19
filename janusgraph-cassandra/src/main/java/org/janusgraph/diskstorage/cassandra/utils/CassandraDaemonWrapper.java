@@ -14,11 +14,6 @@
 
 package org.janusgraph.diskstorage.cassandra.utils;
 
-import java.lang.Thread.UncaughtExceptionHandler;
-
-import org.apache.cassandra.config.Schema;
-import org.apache.cassandra.db.commitlog.CommitLog;
-import org.apache.cassandra.net.MessagingService;
 import org.apache.cassandra.service.CassandraDaemon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

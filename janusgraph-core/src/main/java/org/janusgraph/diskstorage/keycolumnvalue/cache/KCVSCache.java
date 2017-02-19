@@ -14,7 +14,6 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue.cache;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;

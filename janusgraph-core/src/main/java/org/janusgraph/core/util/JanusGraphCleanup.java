@@ -23,7 +23,6 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import java.time.Duration;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Utility class containing methods that simplify JanusGraph clean-up processes.

@@ -23,8 +23,6 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.junit.Test;
 
-import javax.annotation.Nullable;
-
 import static org.junit.Assert.*;
 
 /**

@@ -22,8 +22,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.cassandra.utils.CassandraHelper;

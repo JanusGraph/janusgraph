@@ -17,8 +17,6 @@ package org.janusgraph.graphdb.transaction;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 
 import java.time.Instant;
-import java.util.concurrent.TimeUnit;
-
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.schema.DefaultSchemaMaker;
 import org.janusgraph.core.JanusGraphTransaction;

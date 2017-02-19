@@ -33,7 +33,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 
 import org.javatuples.Pair;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 

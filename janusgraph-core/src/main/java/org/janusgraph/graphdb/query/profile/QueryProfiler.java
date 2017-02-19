@@ -18,7 +18,6 @@ import org.janusgraph.graphdb.query.Query;
 
 import java.util.Collection;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

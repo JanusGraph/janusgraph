@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.olap.computer;
 
 import org.janusgraph.diskstorage.EntryList;
-import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 
 import java.util.Collections;

@@ -17,7 +17,6 @@ package org.janusgraph.util.datastructures;
 import com.carrotsearch.hppc.LongObjectHashMap;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.collect.Iterables;
-import org.janusgraph.graphdb.relations.RelationCache;
 import org.junit.Test;
 
 import java.util.HashMap;

@@ -20,7 +20,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
@@ -28,10 +27,8 @@ import org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScanner;
 import org.janusgraph.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
 import org.janusgraph.diskstorage.util.*;
 
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.testcategory.BrittleTests;
 import org.janusgraph.testutil.TestGraphConfigs;
-import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TestName;

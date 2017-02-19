@@ -19,7 +19,6 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 
 import java.time.Instant;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

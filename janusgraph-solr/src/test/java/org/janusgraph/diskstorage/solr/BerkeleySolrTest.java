@@ -16,11 +16,6 @@ package org.janusgraph.diskstorage.solr;
 
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.JanusGraphIndexTest;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-
 import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 

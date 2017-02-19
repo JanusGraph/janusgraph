@@ -16,7 +16,6 @@ package org.janusgraph.graphdb.hbase;
 
 import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.JanusGraphOperationCountingTest;
 import org.janusgraph.graphdb.JanusGraphPartitionGraphTest;
 
 import org.apache.hadoop.hbase.util.VersionInfo;

@@ -17,7 +17,6 @@ package org.janusgraph.core.schema;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.RelationType;
 
 /**
  * Used to define new {@link org.janusgraph.core.EdgeLabel}s.

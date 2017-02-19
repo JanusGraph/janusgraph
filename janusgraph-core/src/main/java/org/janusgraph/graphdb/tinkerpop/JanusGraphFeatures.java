@@ -14,9 +14,7 @@
 
 package org.janusgraph.graphdb.tinkerpop;
 
-import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.structure.Graph;

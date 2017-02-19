@@ -18,13 +18,8 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.schema.VertexLabelMaker;
 import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
-import org.janusgraph.graphdb.internal.Token;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.SystemTypeManager;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.commons.lang.StringUtils;
-
 import static org.janusgraph.graphdb.types.TypeDefinitionCategory.*;
 
 /**

@@ -14,8 +14,6 @@
 
 package org.janusgraph.diskstorage.hbase;
 
-import java.util.Arrays;
-
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

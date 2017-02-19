@@ -21,7 +21,6 @@ import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.serialize.Serializer;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Map;
 
 /**

@@ -18,7 +18,6 @@ import org.janusgraph.core.schema.SchemaManager;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.util.Collection;
-import java.util.Map;
 
 /**
  * Transaction defines a transactional context for a {@link org.janusgraph.core.JanusGraph}. Since JanusGraph is a transactional graph

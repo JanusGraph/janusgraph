@@ -21,8 +21,6 @@ import org.janusgraph.core.attribute.*;
 import org.janusgraph.diskstorage.ReadBuffer;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
-import org.janusgraph.graphdb.database.serialize.Serializer;
-import org.janusgraph.graphdb.database.serialize.StandardSerializer;
 import org.janusgraph.graphdb.database.serialize.attribute.*;
 import org.janusgraph.graphdb.serializer.attributes.*;
 import org.janusgraph.testutil.RandomGenerator;

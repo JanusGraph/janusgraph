@@ -22,7 +22,6 @@ import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.query.BackendQueryHolder;
 import org.janusgraph.graphdb.query.QueryProcessor;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
-import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
