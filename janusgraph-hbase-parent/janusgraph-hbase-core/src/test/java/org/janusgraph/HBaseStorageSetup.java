@@ -132,7 +132,7 @@ public class HBaseStorageSetup {
 
         log.info("Starting HBase");
         String scriptPath = getScriptDirForHBaseVersion(HBASE_TARGET_VERSION) + "/hbase-daemon.sh";
-        runCommand(scriptPath, "--config", getConfDirForHBaseVersion(HBASE_TARGET_VERSION), "start", "master");
+        DaemonRunner.runCommand(scriptPath, "--config", getConfDirForHBaseVersion(HBASE_TARGET_VERSION), "start", "master");
 
         HBASE = HBaseStatus.write(HBASE_STAT_FILE, HBASE_TARGET_VERSION);
 
@@ -229,7 +229,7 @@ public class HBaseStorageSetup {
         log.info("Shutting down HBase...");
 
         // First try graceful shutdown through the script...
-        runCommand(stat.getScriptDir() + "/hbase-daemon.sh", "--config", stat.getConfDir(), "stop", "master");
+        DaemonRunner.runCommand(stat.getScriptDir() + "/hbase-daemon.sh", "--config", stat.getConfDir(), "stop", "master");
 
         log.info("Shutdown HBase");
 
@@ -238,83 +238,5 @@ public class HBaseStorageSetup {
         log.info("Deleted {}", stat.getFile());
 
         HBASE = null;
-    }
-
-    /**
-     * Run the parameter as an external process. Returns if the command starts
-     * without throwing an exception and returns exit status 0. Throws an
-     * exception if there's any problem invoking the command or if it does not
-     * return zero exit status.
-     *
-     * Blocks indefinitely while waiting for the command to complete.
-     *
-     * @param argv
-     *            passed directly to {@link ProcessBuilder}'s constructor
-     */
-    private static void runCommand(String... argv) {
-
-        final String cmd = Joiner.on(" ").join(argv);
-        log.info("Executing {}", cmd);
-
-        ProcessBuilder pb = new ProcessBuilder(argv);
-        pb.redirectErrorStream(true);
-        Process startup;
-        try {
-            startup = pb.start();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        StreamLogger sl = new StreamLogger(startup.getInputStream());
-        sl.setDaemon(true);
-        sl.start();
-
-        try {
-            int exitcode = startup.waitFor(); // wait for script to return
-            if (0 == exitcode) {
-                log.info("Command \"{}\" exited with status 0", cmd);
-            } else {
-                throw new RuntimeException("Command \"" + cmd + "\" exited with status " + exitcode);
-            }
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
-        try {
-            sl.join(1000L);
-        } catch (InterruptedException e) {
-            log.warn("Failed to cleanup stdin handler thread after running command \"{}\"", cmd, e);
-        }
-    }
-
-    /*
-     * This could be retired in favor of ProcessBuilder.Redirect when we move to
-     * source level 1.7.
-     */
-    private static class StreamLogger extends Thread {
-
-        private final BufferedReader reader;
-        private static final Logger log =
-                LoggerFactory.getLogger(StreamLogger.class);
-
-        private StreamLogger(InputStream is) {
-            this.reader = new BufferedReader(new InputStreamReader(is));
-        }
-
-        @Override
-        public void run() {
-            String line;
-            try {
-                while (null != (line = reader.readLine())) {
-                    log.info("> {}", line);
-                    if (Thread.currentThread().isInterrupted()) {
-                        break;
-                    }
-                }
-
-                log.info("End of stream.");
-            } catch (IOException e) {
-                log.error("Unexpected IOException while reading stream {}", reader, e);
-            }
-        }
     }
 }

@@ -118,6 +118,7 @@
         <dependency.locations.enabled>false</dependency.locations.enabled>
     </properties>
     <modules>
+        <module>janusgraph-codepipelines-ci</module>
         <module>janusgraph-core</module>
         <module>janusgraph-test</module>
         <module>janusgraph-berkeleyje</module>
@@ -308,9 +309,6 @@
                                     <include>**/*StructureTest.java</include>
                                 </includes>
                                 <runOrder>alphabetical</runOrder>
-                                <!-- <excludes>
-                                    <exclude>**/*</exclude>
-                                </excludes> -->
                                 <skipTests>${test.skip.tp}</skipTests>
                                 <systemPropertyVariables>
                                   <build.dir>${project.build.directory}</build.dir>
@@ -318,7 +316,7 @@
                                   <is.testing>true</is.testing>
                                 </systemPropertyVariables>
                             </configuration>
-                       </execution>
+                        </execution>
                     </executions>
                 </plugin>
                 <plugin>

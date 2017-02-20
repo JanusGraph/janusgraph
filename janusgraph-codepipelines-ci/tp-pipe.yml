@@ -1,0 +1,47 @@
+pipelines:
+- name: jtp1
+  parallelBuildActions:
+  - name: e-h-l-s-tp
+    env:
+    - name: MODULE
+      value: janusgraph-es,janusgraph-hadoop-parent/janusgraph-hadoop-2,janusgraph-lucene,janusgraph-solr
+    - name: ARGS
+      value: "-Dtest.skip.tp=false -DskipTests=true"
+  - name: bdb-tp
+    env:
+    - name: MODULE
+      value: janusgraph-berkeleyje
+    - name: ARGS
+      value: "-Dtest.skip.tp=false -DskipTests=true"
+- name: jtp2
+  parallelBuildActions:
+  - name: cassandra-tp
+    env:
+    - name: MODULE
+      value: janusgraph-cassandra
+    - name: ARGS
+      value: "-Dtest.skip.tp=false -DskipTests=true"
+  - name: test-tp
+    env:
+    - name: MODULE
+      value: janusgraph-test
+    - name: ARGS
+      value: "-Dtest.skip.tp=false -DskipTests=true"
+  - name: hbase098-tp
+    env:
+    - name: MODULE
+      value: janusgraph-hbase-parent/janusgraph-hbase-098
+    - name: ARGS
+      value: "-Dtest.skip.tp=false -DskipTests=true"
+  - name: hbase10-tp
+    env:
+    - name: MODULE
+      value: janusgraph-hbase-parent/janusgraph-hbase-10
+    - name: ARGS
+      value: "-Dtest.skip.tp=false -DskipTests=true"
+  - name: cql-tp
+    env:
+    - name: MODULE
+      value: janusgraph-cql
+    - name: ARGS
+      value: "-Dtest.skip.tp=false -DskipTests=true"
