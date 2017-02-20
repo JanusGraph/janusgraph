@@ -132,7 +132,7 @@ public abstract class DaemonRunner<S> {
      * @param argv
      *            passed directly to {@link ProcessBuilder}'s constructor
      */
-    protected static void runCommand(String... argv) {
+    public static void runCommand(String... argv) {
 
         final String cmd = Joiner.on(" ").join(argv);
         log.info("Executing {}", cmd);
@@ -143,12 +143,22 @@ public abstract class DaemonRunner<S> {
         try {
             startup = pb.start();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Unable to start process in " + System.getProperty("user.dir") + ": " + e.getMessage(), e);
         }
         StreamLogger sl = new StreamLogger(startup.getInputStream());
         sl.setDaemon(true);
         sl.start();
 
+        waitForProcessAndCheckStatus(cmd, startup);
+
+        try {
+            sl.join(1000L);
+        } catch (InterruptedException e) {
+            log.warn("Failed to cleanup stdin handler thread after running command \"{}\"", cmd, e);
+        }
+    }
+
+    private static void waitForProcessAndCheckStatus(String cmd, Process startup) {
         try {
             int exitcode = startup.waitFor(); // wait for script to return
             if (0 == exitcode) {
@@ -158,12 +168,6 @@ public abstract class DaemonRunner<S> {
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
-        }
-
-        try {
-            sl.join(1000L);
-        } catch (InterruptedException e) {
-            log.warn("Failed to cleanup stdin handler thread after running command \"{}\"", cmd, e);
         }
     }
 

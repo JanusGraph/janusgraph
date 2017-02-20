@@ -1,0 +1,19 @@
+version: 0.1
+
+phases:
+  build:
+    commands:
+      - echo Build started on `date`
+      - mvn install --update-snapshots --threads 2.0C --batch-mode -DskipTests=true -Dmaven.javadoc.skip=true -Dmaven.compiler.showWarnings=false
+      - chmod -R a+x ./janusgraph-hbase-parent/janusgraph-hbase-098/bin && chmod -R a+x ./janusgraph-hbase-parent/janusgraph-hbase-10/bin
+      - mvn verify --projects $MODULE $ARGS
+      - mvn surefire-report:report --projects $MODULE
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - mkdir -p results/mvn
+      - echo "$MODULE" | tr "," "\n" | while read MOD; do if [ -d "${MOD}/target" ]; then mkdir -p results/mvn/${MOD} && cp -r ${MOD}/target results/mvn/${MOD}; fi; done
+artifacts:
+  base-directory: results
+  files:
+    - mvn/**/*

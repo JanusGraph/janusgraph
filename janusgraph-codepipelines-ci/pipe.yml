@@ -1,0 +1,37 @@
+pipelines:
+- name: j1
+  parallelBuildActions:
+  - name: bdb
+    env:
+    - name: MODULE
+      value: janusgraph-berkeleyje
+  - name: h-l-s
+    env:
+    - name: MODULE
+      value: janusgraph-hadoop-parent/janusgraph-hadoop-2,janusgraph-lucene,janusgraph-solr
+  - name: cassandra
+    env:
+    - name: MODULE
+      value: janusgraph-cassandra
+  - name: test
+    env:
+    - name: MODULE
+      value: janusgraph-test
+- name: j2
+  parallelBuildActions:
+  - name: hbase098
+    env:
+    - name: MODULE
+      value: janusgraph-hbase-parent/janusgraph-hbase-098
+  - name: hbase10
+    env:
+    - name: MODULE
+      value: janusgraph-hbase-parent/janusgraph-hbase-10
+  - name: es
+    env:
+    - name: MODULE
+      value: janusgraph-es
+  - name: cql
+    env:
+    - name: MODULE
+      value: janusgraph-cql
