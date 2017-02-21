@@ -155,6 +155,10 @@ public class GraphDatabaseConfiguration {
             "The version of JanusGraph with which this database was created. Automatically set on first start. Don't manually set this property.",
             ConfigOption.Type.FIXED, String.class).hide();
 
+    public static final ConfigOption<String> TITAN_COMPATIBLE_VERSIONS = new ConfigOption<String>(GRAPH_NS,"titan-version",
+            "Titan version for backwards compatibility which this database was created. Automatically set on first start. Don't manually set this property.",
+            ConfigOption.Type.FIXED, String.class).hide();
+
     public static final ConfigOption<Boolean> ALLOW_STALE_CONFIG = new ConfigOption<Boolean>(GRAPH_NS,"allow-stale-config",
             "Whether to allow the local and storage-backend-hosted copies of the configuration to contain conflicting values for " +
             "options with any of the following types: " + Joiner.on(", ").join(ConfigOption.getManagedTypes()) + ".  " +
@@ -1303,7 +1307,7 @@ public class GraphDatabaseConfiguration {
     public static final String SYSTEM_PROPERTIES_STORE_NAME = "system_properties";
     public static final String SYSTEM_CONFIGURATION_IDENTIFIER = "configuration";
     public static final String USER_CONFIGURATION_IDENTIFIER = "userconfig";
-
+    private static final String INCOMPATIBLE_VERSION_EXCEPTION = "StorageBackend version is incompatible with current JanusGraph version: storage [%1s] vs. runtime [%2s]";
 
     private final Configuration configuration;
     private final ReadConfiguration configurationAtOpen;
@@ -1381,10 +1385,14 @@ public class GraphDatabaseConfiguration {
 
                 globalWrite.freezeConfiguration();
             } else {
-                String version = globalWrite.get(INITIAL_JANUSGRAPH_VERSION);
-                Preconditions.checkArgument(version!=null,"JanusGraph version has not been initialized");
-                if (!JanusGraphConstants.VERSION.equals(version) && !JanusGraphConstants.COMPATIBLE_VERSIONS.contains(version)) {
-                    throw new JanusGraphException("StorageBackend version is incompatible with current JanusGraph version: storage=" + version + " vs. runtime=" + JanusGraphConstants.VERSION);
+                try {
+                    String version = globalWrite.get(INITIAL_JANUSGRAPH_VERSION);
+                    Preconditions.checkArgument(version!=null,"JanusGraph version has not been initialized");
+                    if (!JanusGraphConstants.VERSION.equals(version) && !JanusGraphConstants.COMPATIBLE_VERSIONS.contains(version)) {
+                        throw new JanusGraphException(String.format(INCOMPATIBLE_VERSION_EXCEPTION, version, JanusGraphConstants.VERSION));
+                    }
+                } catch (IllegalStateException ise) {
+                    checkBackwardCompatibilityWithTitan(globalWrite);
                 }
 
                 final boolean managedOverridesAllowed;
@@ -1473,6 +1481,14 @@ public class GraphDatabaseConfiguration {
 
         this.configuration = new MergedConfiguration(overwrite,combinedConfig);
         preLoadConfiguration();
+    }
+
+    private void checkBackwardCompatibilityWithTitan(ModifiableConfiguration globalWrite) {
+        String version = globalWrite.get(TITAN_COMPATIBLE_VERSIONS);
+        Preconditions.checkArgument(version!=null,"JanusGraph version nor Titan compatibility have not been initialized");
+        if (!JanusGraphConstants.TITAN_COMPATIBLE_VERSIONS.contains(version)) {
+            throw new JanusGraphException(String.format(INCOMPATIBLE_VERSION_EXCEPTION, version, JanusGraphConstants.VERSION));
+        }
     }
 
     private static Map<ConfigElement.PathIdentifier, Object> getGlobalSubset(Map<ConfigElement.PathIdentifier, Object> m) {
