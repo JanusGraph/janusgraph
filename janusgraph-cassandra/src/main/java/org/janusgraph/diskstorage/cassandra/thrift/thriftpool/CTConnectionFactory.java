@@ -14,17 +14,25 @@
 
 package org.janusgraph.diskstorage.cassandra.thrift.thriftpool;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.cassandra.auth.IAuthenticator;
-import org.apache.cassandra.thrift.*;
+import org.apache.cassandra.thrift.AuthenticationRequest;
+import org.apache.cassandra.thrift.Cassandra;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.pool.KeyedPoolableObjectFactory;
+import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
-import org.apache.thrift.transport.*;
+import org.apache.thrift.transport.TFramedTransport;
+import org.apache.thrift.transport.TSSLTransportFactory;
+import org.apache.thrift.transport.TSocket;
+import org.apache.thrift.transport.TTransport;
+import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A factory compatible with Apache commons-pool for Cassandra Thrift API
@@ -135,8 +143,15 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
                           c, curCfg, c.getConfig());
             }
         }
+        
+        boolean isOpen = c.isOpen();
+        try {
+            c.getClient().describe_version();
+        } catch (TException e) {
+            isOpen = false;
+        }
 
-        return isSameConfig && c.isOpen();
+        return isSameConfig && isOpen;
     }
 
     public static class Config {
