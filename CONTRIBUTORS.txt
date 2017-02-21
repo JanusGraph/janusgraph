@@ -78,6 +78,7 @@ Peter Beaman <pbeaman@akiban.com>
 Petter Aas <aaspet@gmail.com> <petter.aas@fronter.com>
 Pieter <pieter@pieter-HP-EliteBook-8570w.(none)>
 PommeVerte <dylan.millikin@gmail.com>
+Rafael Fernandes <luizrafael@gmail.com>
 Ranger Tsao <cao.zhifu@gmail.com>
 Richard Doll <rdoll@care-view.com>
 Sebastian Good <sebastian@experoinc.com>

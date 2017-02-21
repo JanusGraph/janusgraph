@@ -14,19 +14,25 @@
 
 package org.janusgraph.graphdb;
 
+import static org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager.CASSANDRA_KEYSPACE;
+import static org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager.CASSANDRA_READ_CONSISTENCY;
+import static org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager.CASSANDRA_WRITE_CONSISTENCY;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.configuration.JanusGraphConstants;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager.*;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)
@@ -100,5 +106,29 @@ public abstract class CassandraGraphTest extends JanusGraphTest {
                 tx.getTxHandle().getBaseTransactionConfig().getCustomOptions()
                         .get(AbstractCassandraStoreManager.CASSANDRA_WRITE_CONSISTENCY));
         tx.rollback();
+    }
+    
+    @Test
+    public void testTitanGraphBackwardCompatibility() {
+        close();
+        WriteConfiguration wc = getConfiguration();
+        wc.set(ConfigElement.getPath(CASSANDRA_KEYSPACE), "titan");
+        wc.set(ConfigElement.getPath(GraphDatabaseConfiguration.TITAN_COMPATIBLE_VERSIONS), "x.x.x");
+        
+        assertNull(wc.get(ConfigElement.getPath(GraphDatabaseConfiguration.INITIAL_JANUSGRAPH_VERSION), 
+                            GraphDatabaseConfiguration.INITIAL_JANUSGRAPH_VERSION.getDatatype()));
+        
+        assertFalse(JanusGraphConstants.TITAN_COMPATIBLE_VERSIONS.contains(
+                            wc.get(ConfigElement.getPath(GraphDatabaseConfiguration.TITAN_COMPATIBLE_VERSIONS), 
+                                        GraphDatabaseConfiguration.TITAN_COMPATIBLE_VERSIONS.getDatatype())
+                ));
+
+        wc.set(ConfigElement.getPath(GraphDatabaseConfiguration.TITAN_COMPATIBLE_VERSIONS), "1.0.0");
+        assertTrue(JanusGraphConstants.TITAN_COMPATIBLE_VERSIONS.contains(
+                            wc.get(ConfigElement.getPath(GraphDatabaseConfiguration.TITAN_COMPATIBLE_VERSIONS), 
+                                        GraphDatabaseConfiguration.TITAN_COMPATIBLE_VERSIONS.getDatatype())
+                ));
+
+        graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
     }
 }
