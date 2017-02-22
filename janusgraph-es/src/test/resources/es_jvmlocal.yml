@@ -2,3 +2,4 @@ node.data: true
 node.client: false
 node.local: true
 path.home: ${project.build.directory}/es
+

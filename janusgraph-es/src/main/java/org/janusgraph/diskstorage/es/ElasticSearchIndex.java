@@ -16,9 +16,11 @@ package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
+
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.attribute.*;
@@ -38,6 +40,7 @@ import org.janusgraph.graphdb.database.serialize.AttributeUtil;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.*;
+import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.Version;
@@ -56,6 +59,10 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.geo.ShapeRelation;
+import org.elasticsearch.common.geo.builders.LineStringBuilder;
+import org.elasticsearch.common.geo.builders.PolygonBuilder;
+import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.DistanceUnit;
@@ -84,8 +91,11 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Instant;
 import java.util.*;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -188,6 +198,18 @@ public class ElasticSearchIndex implements IndexProvider {
             .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.TEXTSTRING, Mapping.STRING).setWildcardField("_all").supportsCardinality(Cardinality.SINGLE).supportsCardinality(Cardinality.LIST).supportsCardinality(Cardinality.SET).supportsNanoseconds().build();
 
     public static final int HOST_PORT_DEFAULT = 9300;
+
+    /**
+     * Default tree_levels used when creating geo_shape mappings.
+     */
+    public static final int DEFAULT_GEO_MAX_LEVELS = 20;
+
+    /**
+     * Default distance_error_pct used when creating geo_shape mappings.
+     */
+    public static final double DEFAULT_GEO_DIST_ERROR_PCT = 0.025;
+
+    private static final Map<Geo, ShapeRelation> SPATIAL_PREDICATES = spatialPredicates();
 
     private final Node node;
     private final Client client;
@@ -394,12 +416,20 @@ public class ElasticSearchIndex implements IndexProvider {
         return key + STRING_MAPPING_SUFFIX;
     }
 
+    private static Map<Geo, ShapeRelation> spatialPredicates() {
+        return ImmutableMap.of(Geo.WITHIN, ShapeRelation.WITHIN,
+            Geo.CONTAINS, ShapeRelation.CONTAINS,
+            Geo.INTERSECT, ShapeRelation.INTERSECTS,
+            Geo.DISJOINT, ShapeRelation.DISJOINT);
+    }
+
     @Override
     public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws BackendException {
         XContentBuilder mapping;
         Class<?> dataType = information.getDataType();
         Mapping map = Mapping.getMapping(information);
-        Preconditions.checkArgument(map==Mapping.DEFAULT || AttributeUtil.isString(dataType),
+        Preconditions.checkArgument(map==Mapping.DEFAULT || AttributeUtil.isString(dataType) ||
+                (map==Mapping.PREFIX_TREE && AttributeUtil.isGeo(dataType)),
                 "Specified illegal mapping [%s] for data type [%s]",map,dataType);
 
         try {
@@ -454,8 +484,20 @@ public class ElasticSearchIndex implements IndexProvider {
                 log.debug("Registering boolean type for {}", key);
                 mapping.field("type", "boolean");
             } else if (dataType == Geoshape.class) {
-                log.debug("Registering geo_point type for {}", key);
-                mapping.field("type", "geo_point");
+                switch (map) {
+                    case PREFIX_TREE:
+                        int maxLevels = (int) ParameterType.INDEX_GEO_MAX_LEVELS.findParameter(information.getParameters(), DEFAULT_GEO_MAX_LEVELS);
+                        double distErrorPct = (double) ParameterType.INDEX_GEO_DIST_ERROR_PCT.findParameter(information.getParameters(), DEFAULT_GEO_DIST_ERROR_PCT);
+                        log.debug("Registering geo_shape type for {} with tree_levels={} and distance_error_pct={}", key, maxLevels, distErrorPct);
+                        mapping.field("type", "geo_shape");
+                        mapping.field("tree", "quadtree");
+                        mapping.field("tree_levels", maxLevels);
+                        mapping.field("distance_error_pct", distErrorPct);
+                        break;
+                    default:
+                        log.debug("Registering geo_point type for {}", key);
+                        mapping.field("type", "geo_point");
+                }
             } else if (dataType == Date.class || dataType == Instant.class) {
                 log.debug("Registering date type for {}", key);
                 mapping.field("type", "date");
@@ -554,12 +596,7 @@ public class ElasticSearchIndex implements IndexProvider {
         } else if (AttributeUtil.isString(value)) {
             return value;
         } else if (value instanceof Geoshape) {
-            Geoshape shape = (Geoshape) value;
-            if (shape.getType() == Geoshape.Type.POINT) {
-                Geoshape.Point p = shape.getPoint();
-                return new double[]{p.getLongitude(), p.getLatitude()};
-            } else throw new UnsupportedOperationException("Geo type is not supported: " + shape.getType());
-
+            return convertgeo((Geoshape) value);
         } else if (value instanceof Date || value instanceof Instant) {
             return value;
         } else if (value instanceof Boolean) {
@@ -567,6 +604,17 @@ public class ElasticSearchIndex implements IndexProvider {
         } else if (value instanceof UUID) {
             return value.toString();
         } else throw new IllegalArgumentException("Unsupported type: " + value.getClass() + " (value: " + value + ")");
+    }
+
+    private static Object convertgeo(Geoshape geoshape) {
+        if (geoshape.getType() == Geoshape.Type.POINT) {
+            Geoshape.Point p = geoshape.getPoint();
+            return new double[]{p.getLongitude(), p.getLatitude()};
+        } else if (geoshape.getType() != Geoshape.Type.BOX && geoshape.getType() != Geoshape.Type.CIRCLE) {
+            return geoshape.toGeoJson().getBytes();
+        } else {
+            throw new IllegalArgumentException("Unsupported or invalid shape type for indexing: " + geoshape.getType());
+        }
     }
 
     @Override
@@ -833,18 +881,67 @@ public class ElasticSearchIndex implements IndexProvider {
                     return QueryBuilders.boolQuery().mustNot(QueryBuilders.termQuery(fieldName, (String) value));
                 } else
                     throw new IllegalArgumentException("Predicate is not supported for string value: " + janusgraphPredicate);
-            } else if (value instanceof Geoshape) {
-                Preconditions.checkArgument(janusgraphPredicate == Geo.WITHIN, "Relation is not supported for geo value: " + janusgraphPredicate);
+            } else if (value instanceof Geoshape && Mapping.getMapping(informations.get(key)) == Mapping.DEFAULT) {
+                // geopoint
                 Geoshape shape = (Geoshape) value;
+                Preconditions.checkArgument(janusgraphPredicate instanceof Geo && janusgraphPredicate != Geo.CONTAINS, "Relation not supported on geopoint types: " + janusgraphPredicate);
+
+                final QueryBuilder queryBuilder;
                 if (shape.getType() == Geoshape.Type.CIRCLE) {
                     Geoshape.Point center = shape.getPoint();
-                    return QueryBuilders.geoDistanceQuery(key).lat(center.getLatitude()).lon(center.getLongitude()).distance(shape.getRadius(), DistanceUnit.KILOMETERS);
+                    queryBuilder = QueryBuilders.geoDistanceQuery(key).lat(center.getLatitude()).lon(center.getLongitude()).distance(shape.getRadius(), DistanceUnit.KILOMETERS);
                 } else if (shape.getType() == Geoshape.Type.BOX) {
                     Geoshape.Point southwest = shape.getPoint(0);
                     Geoshape.Point northeast = shape.getPoint(1);
-                    return QueryBuilders.geoBoundingBoxQuery(key).bottomRight(southwest.getLatitude(), northeast.getLongitude()).topLeft(northeast.getLatitude(), southwest.getLongitude());
-                } else
+                    queryBuilder = QueryBuilders.geoBoundingBoxQuery(key).bottomRight(southwest.getLatitude(), northeast.getLongitude()).topLeft(northeast.getLatitude(), southwest.getLongitude());
+                } else if (shape.getType() == Geoshape.Type.POLYGON) {
+                    queryBuilder = QueryBuilders.geoPolygonQuery(key);
+                    IntStream.range(0, shape.size()).forEach(i -> {
+                        Geoshape.Point point = shape.getPoint(i);
+                        ((GeoPolygonQueryBuilder) queryBuilder).addPoint(point.getLatitude(), point.getLongitude());
+                    });
+                } else {
+                    throw new IllegalArgumentException("Unsupported or invalid search shape type for geopoint: " + shape.getType());
+                }
+
+                return janusgraphPredicate == Geo.DISJOINT ?  QueryBuilders.notQuery(queryBuilder) : queryBuilder;
+            } else if (value instanceof Geoshape) {
+                // geoshape
+                Preconditions.checkArgument(janusgraphPredicate instanceof Geo, "Relation not supported on geoshape types: " + janusgraphPredicate);
+                Geoshape shape = (Geoshape) value;
+                final ShapeBuilder sb;
+                switch (shape.getType()) {
+                case CIRCLE:
+                    Geoshape.Point center = shape.getPoint();
+                    sb = ShapeBuilder.newCircleBuilder().center(center.getLongitude(), center.getLatitude()).radius(shape.getRadius(), DistanceUnit.KILOMETERS);
+                    break;
+                case BOX:
+                    Geoshape.Point southwest = shape.getPoint(0);
+                    Geoshape.Point northeast = shape.getPoint(1);
+                    sb = ShapeBuilder.newEnvelope().bottomRight(northeast.getLongitude(),southwest.getLatitude()).topLeft(southwest.getLongitude(),northeast.getLatitude());
+                    break;
+                case LINE:
+                    sb = ShapeBuilder.newLineString();
+                    IntStream.range(0, shape.size()).forEach(i -> {
+                        Geoshape.Point point = shape.getPoint(i);
+                        ((LineStringBuilder) sb).point(point.getLongitude(), point.getLatitude());
+                    });
+                    break;
+                case POLYGON:
+                    sb = ShapeBuilder.newPolygon();
+                    IntStream.range(0, shape.size()).forEach(i -> {
+                        Geoshape.Point point = shape.getPoint(i);
+                        ((PolygonBuilder) sb).point(point.getLongitude(), point.getLatitude());
+                    });
+                    break;
+                case POINT:
+                    sb = ShapeBuilder.newPoint(shape.getPoint().getLongitude(),shape.getPoint().getLatitude());
+                    break;
+                default:
                     throw new IllegalArgumentException("Unsupported or invalid search shape type: " + shape.getType());
+                }
+
+                return QueryBuilders.geoShapeQuery(key, sb, SPATIAL_PREDICATES.get((Geo) janusgraphPredicate));
             } else if (value instanceof Date || value instanceof Instant) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on date types: " + janusgraphPredicate);
                 Cmp numRel = (Cmp) janusgraphPredicate;
@@ -918,8 +1015,10 @@ public class ElasticSearchIndex implements IndexProvider {
                 if (useDeprecatedIgnoreUnmapped) {
                     fsb.ignoreUnmapped(true);
                 } else {
+                    KeyInformation information = informations.get(query.getStore()).get(orders.get(i).getKey());
+                    Mapping mapping = Mapping.getMapping(information);
                     Class<?> datatype = orderEntry.getDatatype();
-                    fsb.unmappedType(convertToEsDataType(datatype));
+                    fsb.unmappedType(convertToEsDataType(datatype, mapping));
                 }
                 srb.addSort(fsb);
             }
@@ -942,7 +1041,7 @@ public class ElasticSearchIndex implements IndexProvider {
         return result;
     }
 
-    private String convertToEsDataType(Class<?> datatype) {
+    private String convertToEsDataType(Class<?> datatype, Mapping mapping) {
         if(String.class.isAssignableFrom(datatype)) {
             return "string";
         }
@@ -968,7 +1067,7 @@ public class ElasticSearchIndex implements IndexProvider {
             return "date";
         }
         else if (Geoshape.class.isAssignableFrom(datatype)) {
-            return "geo_point";
+            return mapping == Mapping.DEFAULT ? "geo_point" : "geo_shape";
         }
 
         return null;
@@ -1002,12 +1101,18 @@ public class ElasticSearchIndex implements IndexProvider {
     public boolean supports(KeyInformation information, JanusGraphPredicate janusgraphPredicate) {
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
-        if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType)) return false;
+        if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType) &&
+                !(mapping==Mapping.PREFIX_TREE && AttributeUtil.isGeo(dataType))) return false;
 
         if (Number.class.isAssignableFrom(dataType)) {
             if (janusgraphPredicate instanceof Cmp) return true;
         } else if (dataType == Geoshape.class) {
-            return janusgraphPredicate == Geo.WITHIN;
+            switch(mapping) {
+            case DEFAULT:
+                return janusgraphPredicate instanceof Geo && janusgraphPredicate != Geo.CONTAINS;
+            case PREFIX_TREE:
+                return janusgraphPredicate instanceof Geo;
+        }
         } else if (AttributeUtil.isString(dataType)) {
             switch(mapping) {
                 case DEFAULT:
@@ -1033,11 +1138,13 @@ public class ElasticSearchIndex implements IndexProvider {
     public boolean supports(KeyInformation information) {
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
-        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == Date.class || dataType== Instant.class || dataType == Boolean.class || dataType == UUID.class) {
+        if (Number.class.isAssignableFrom(dataType) || dataType == Date.class || dataType== Instant.class || dataType == Boolean.class || dataType == UUID.class) {
             if (mapping==Mapping.DEFAULT) return true;
         } else if (AttributeUtil.isString(dataType)) {
             if (mapping==Mapping.DEFAULT || mapping==Mapping.STRING
                     || mapping==Mapping.TEXT || mapping==Mapping.TEXTSTRING) return true;
+        } else if (AttributeUtil.isGeo(dataType)) {
+            if (mapping==Mapping.DEFAULT || mapping==Mapping.PREFIX_TREE) return true;
         }
         return false;
     }

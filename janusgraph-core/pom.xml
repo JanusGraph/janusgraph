@@ -71,6 +71,11 @@
             <artifactId>spatial4j</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.vividsolutions</groupId>
+            <artifactId>jts</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>commons-collections</groupId>
             <artifactId>commons-collections</artifactId>
         </dependency>
@@ -101,6 +106,12 @@
        <dependency>
            <groupId>com.google.code.findbugs</groupId>
            <artifactId>jsr305</artifactId>
+       </dependency>
+       <!-- The Noggit JSON parsing library is needed for GeoJSON parsing -->
+       <dependency>
+           <groupId>org.noggit</groupId>
+           <artifactId>noggit</artifactId>
+           <version>0.6</version>
        </dependency>
     </dependencies>
     <build>

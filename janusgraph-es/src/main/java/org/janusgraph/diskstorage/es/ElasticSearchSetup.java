@@ -212,9 +212,8 @@ public enum ElasticSearchSetup {
         String inlineScriptsKey = "script.inline";
         String inlineScriptsVal = settings.get(inlineScriptsKey);
         if (null != inlineScriptsVal && !"true".equals(inlineScriptsVal)) {
-            log.warn("JanusGraph requires Elasticsearch inline scripting.  Setting {} to true.  " +
-                    "Inline scripting must be allowed in the Elasticsearch cluster configuration.",
-                    inlineScriptsKey);
+            log.error("JanusGraph requires Elasticsearch inline scripting but found {} set to false", inlineScriptsKey);
+            throw new IOException("JanusGraph requires Elasticsearch inline scripting");
         }
         settings.put(inlineScriptsKey, true);
         log.debug("Set {}: {}", inlineScriptsKey, false);
