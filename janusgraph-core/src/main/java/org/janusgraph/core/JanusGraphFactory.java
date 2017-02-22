@@ -228,7 +228,6 @@ public class JanusGraphFactory {
      * @param file A properties file to load
      * @return A configuration derived from {@code file}
      */
-    @SuppressWarnings("unchecked")
     private static ReadConfiguration getLocalConfiguration(File file) {
         Preconditions.checkArgument(file != null && file.exists() && file.isFile() && file.canRead(),
                 "Need to specify a readable configuration file, but was given: %s", file.toString());

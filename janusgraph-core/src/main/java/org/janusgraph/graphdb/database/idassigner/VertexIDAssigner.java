@@ -102,7 +102,7 @@ public class VertexIDAssigner implements AutoCloseable {
 
         idPools = new ConcurrentHashMap<Integer, PartitionIDPool>(partitionIdBound);
         schemaIdPool = new StandardIDPool(idAuthority, IDManager.SCHEMA_PARTITION, PoolType.SCHEMA.getIDNamespace(),
-                idManager.getSchemaCountBound(), renewTimeoutMS, renewBufferPercentage);
+                IDManager.getSchemaCountBound(), renewTimeoutMS, renewBufferPercentage);
         partitionVertexIdPool = new StandardIDPool(idAuthority, IDManager.PARTITIONED_VERTEX_PARTITION, PoolType.PARTITIONED_VERTEX.getIDNamespace(),
                 PoolType.PARTITIONED_VERTEX.getCountBound(idManager), renewTimeoutMS, renewBufferPercentage);
         setLocalPartitions(partitionBits);
@@ -344,13 +344,13 @@ public class VertexIDAssigner implements AutoCloseable {
         if (element instanceof InternalRelation) {
             elementId = idManager.getRelationID(count, partitionID);
         } else if (element instanceof PropertyKey) {
-            elementId = idManager.getSchemaId(IDManager.VertexIDType.UserPropertyKey,count);
+            elementId = IDManager.getSchemaId(IDManager.VertexIDType.UserPropertyKey,count);
         } else if (element instanceof EdgeLabel) {
-            elementId = idManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel, count);
+            elementId = IDManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel, count);
         } else if (element instanceof VertexLabel) {
-            elementId = idManager.getSchemaId(IDManager.VertexIDType.VertexLabel, count);
+            elementId = IDManager.getSchemaId(IDManager.VertexIDType.VertexLabel, count);
         } else if (element instanceof JanusGraphSchemaVertex) {
-            elementId = idManager.getSchemaId(IDManager.VertexIDType.GenericSchemaType,count);
+            elementId = IDManager.getSchemaId(IDManager.VertexIDType.GenericSchemaType,count);
         } else {
             elementId = idManager.getVertexID(count, partitionID, userVertexIDType);
         }
@@ -422,7 +422,7 @@ public class VertexIDAssigner implements AutoCloseable {
                 case PARTITIONED_VERTEX:
                     return idManager.getVertexCountBound();
                 case RELATION: return idManager.getRelationCountBound();
-                case SCHEMA: return idManager.getSchemaCountBound();
+                case SCHEMA: return IDManager.getSchemaCountBound();
                 default: throw new AssertionError("Unrecognized type: " + this);
             }
         }

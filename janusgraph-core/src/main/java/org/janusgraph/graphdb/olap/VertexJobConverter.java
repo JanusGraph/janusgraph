@@ -34,8 +34,6 @@ import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
 import org.janusgraph.graphdb.types.system.BaseKey;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,9 +44,6 @@ import java.util.function.Predicate;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class VertexJobConverter implements ScanJob {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(VertexJobConverter.class);
 
     protected static final SliceQuery VERTEX_EXISTS_QUERY = new SliceQuery(BufferUtil.zeroBuffer(1),BufferUtil.oneBuffer(4)).setLimit(1);
 

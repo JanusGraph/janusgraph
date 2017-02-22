@@ -1893,22 +1893,6 @@ public class GraphDatabaseConfiguration {
         return getPath(getHomeDirectory());
     }
 
-    private static File getSubDirectory(String base, String sub) {
-        File subdir = new File(base, sub);
-        if (!subdir.exists()) {
-            if (!subdir.mkdir()) {
-                throw new IllegalArgumentException("Cannot create subdirectory: " + sub);
-            }
-        }
-        assert subdir.exists() && subdir.isDirectory();
-        return subdir;
-    }
-
-    private static String getFileName(String dir, String file) {
-        if (!dir.endsWith(File.separator)) dir = dir + File.separator;
-        return dir + file;
-    }
-
     public static String getPath(File dir) {
         return dir.getAbsolutePath() + File.separator;
     }

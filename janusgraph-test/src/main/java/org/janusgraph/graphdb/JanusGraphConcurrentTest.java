@@ -219,7 +219,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
         clopen(option(GraphDatabaseConfiguration.ADJUST_LIMIT),false);
 
         PropertyKey k = mgmt.makePropertyKey("k").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
-        PropertyKey q = mgmt.makePropertyKey("q").dataType(Long.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makePropertyKey("q").dataType(Long.class).cardinality(Cardinality.SINGLE).make();
         mgmt.buildIndex("byK",Vertex.class).addKey(k).buildCompositeIndex();
         finishSchema();
 

@@ -545,8 +545,6 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
             final int midpoint = size / 2 + offset;
             final int upper = offset + size;
             final int step = 1;
-            Preconditions.checkArgument(0 == size % 2);
-            Preconditions.checkArgument(0 == offset % 2);
             Preconditions.checkArgument(4 <= size);
             Preconditions.checkArgument(1 <= offset);
 

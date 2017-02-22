@@ -50,8 +50,6 @@ import static org.junit.Assert.*;
  */
 public abstract class OLAPTest extends JanusGraphBaseTest {
 
-    private static final double EPSILON = 0.00001;
-
     private static final Random random = new Random();
 
     private static final Logger log =
@@ -240,7 +238,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
     public void vertexProgramExceptionPropagatesToCaller() throws InterruptedException
     {
         int numV = 100;
-        int numE = generateRandomGraph(numV);
+        generateRandomGraph(numV);
         clopen();
 
         final JanusGraphComputer computer = graph.compute();
@@ -404,7 +402,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         @Override
         public Set<MessageScope> getMessageScopes(Memory memory) {
             if (memory.getIteration()<length) return ImmutableSet.of((MessageScope)DEG_MSG);
-            else return Collections.EMPTY_SET;
+            else return Collections.emptySet();
         }
 
         // TODO i'm not sure these preferences are correct

@@ -34,8 +34,6 @@ import org.janusgraph.testutil.RandomGenerator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -49,8 +47,6 @@ import static org.junit.Assert.assertFalse;
  */
 
 public abstract class IndexProviderTest {
-
-    private Logger log = LoggerFactory.getLogger(IndexProviderTest.class);
 
     private static final Random random = new Random();
     private static final Parameter[] NO_PARAS = new Parameter[0];
@@ -418,12 +414,6 @@ public abstract class IndexProviderTest {
 
         }
 
-    }
-
-    private static String padNumber(long number) {
-        String s = Long.toString(number);
-        while (s.length()<18) s = "0"+s;
-        return s;
     }
 
     @Test

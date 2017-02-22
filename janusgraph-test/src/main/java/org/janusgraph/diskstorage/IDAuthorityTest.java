@@ -183,12 +183,6 @@ public abstract class IDAuthorityTest {
         }
     }
 
-    private void checkBlock(IDBlock block) {
-        assertTrue(blockSize<10000);
-        LongSet ids = new LongHashSet((int)blockSize);
-        checkBlock(block,ids);
-    }
-
     private void checkBlock(IDBlock block, LongSet ids) {
         assertEquals(blockSize,block.numIds());
         for (int i=0;i<blockSize;i++) {

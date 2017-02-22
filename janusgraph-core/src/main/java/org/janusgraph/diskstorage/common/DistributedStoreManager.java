@@ -22,9 +22,6 @@ import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Random;
@@ -60,7 +57,6 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
     }
 
 
-    private static final Logger log = LoggerFactory.getLogger(DistributedStoreManager.class);
     private static final Random random = new Random();
 
     protected final String[] hostnames;

@@ -103,7 +103,6 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public IPartitioner getCassandraPartitioner()
             throws BackendException {
         try {
@@ -147,12 +146,12 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     public List<KeyRange> getLocalKeyPartition() throws BackendException {
         ensureKeyspaceExists(keySpaceName);
 
-        @SuppressWarnings("rawtypes")
+        
         Collection<Range<Token>> ranges = StorageService.instance.getPrimaryRanges(keySpaceName);
 
         List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());
 
-        for (@SuppressWarnings("rawtypes") Range<Token> range : ranges) {
+        for (Range<Token> range : ranges) {
             keyRanges.add(CassandraHelper.transformRange(range));
         }
 
