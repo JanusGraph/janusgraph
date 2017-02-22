@@ -534,7 +534,7 @@
     <fieldType name="geo"
                class="solr.SpatialRecursivePrefixTreeFieldType"
                spatialContextFactory="com.spatial4j.core.context.jts.JtsSpatialContextFactory"
-               distErrPct="0.000"
+               distErrPct="0.001"
                maxDistErr="0.000009"
                units="degrees"
                prefixTree="geohash"/>
@@ -551,6 +551,7 @@
     <field name="time" type="long" indexed="true" stored="true" multiValued="false" />
     <field name="weight" type="float" indexed="true" stored="true" multiValued="false" />
     <field name="location" type="geo" indexed="true" stored="true" multiValued="false" />
+    <field name="boundary" type="geo" indexed="true" stored="true" multiValued="false" />
     <field name="name" type="string" indexed="true" stored="true"/>
     <field name="blah" type="string" indexed="true" stored="true"/>
     <field name="date" type="date" indexed="true" stored="true" />

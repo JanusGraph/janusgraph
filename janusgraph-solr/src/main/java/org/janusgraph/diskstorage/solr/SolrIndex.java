@@ -63,6 +63,9 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.*;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
@@ -161,6 +164,8 @@ public class SolrIndex implements IndexProvider {
 
     private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL()
             .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.STRING).supportsCardinality(Cardinality.SINGLE).build();
+
+    private static Map<Geo, String> SPATIAL_PREDICATES = spatialPredicates();
 
     private final SolrClient solrClient;
     private final Configuration configuration;
@@ -580,27 +585,27 @@ public class SolrIndex implements IndexProvider {
                     throw new IllegalArgumentException("Relation is not supported for string value: " + janusgraphPredicate);
                 }
             } else if (value instanceof Geoshape) {
+                Mapping map = Mapping.getMapping(informations.get(key));
+                Preconditions.checkArgument(janusgraphPredicate instanceof Geo && janusgraphPredicate != Geo.DISJOINT, "Relation not supported on geo types: " + janusgraphPredicate);
+                Preconditions.checkArgument(map == Mapping.PREFIX_TREE || janusgraphPredicate == Geo.WITHIN || janusgraphPredicate == Geo.INTERSECT, "Relation not supported on geopoint types: " + janusgraphPredicate);
                 Geoshape geo = (Geoshape)value;
-                if (geo.getType() == Geoshape.Type.CIRCLE) {
+                if (geo.getType() == Geoshape.Type.CIRCLE && (janusgraphPredicate == Geo.INTERSECT || map == Mapping.DEFAULT)) {
                     Geoshape.Point center = geo.getPoint();
                     return ("{!geofilt sfield=" + key +
                             " pt=" + center.getLatitude() + "," + center.getLongitude() +
                             " d=" + geo.getRadius() + "} distErrPct=0"); //distance in kilometers
-                } else if (geo.getType() == Geoshape.Type.BOX) {
+                } else if (geo.getType() == Geoshape.Type.BOX && (janusgraphPredicate == Geo.INTERSECT || map == Mapping.DEFAULT)) {
                     Geoshape.Point southwest = geo.getPoint(0);
                     Geoshape.Point northeast = geo.getPoint(1);
                     return (key + ":[" + southwest.getLatitude() + "," + southwest.getLongitude() +
                             " TO " + northeast.getLatitude() + "," + northeast.getLongitude() + "]");
-                } else if (geo.getType() == Geoshape.Type.POLYGON) {
-                    List<Geoshape.Point> coordinates = getPolygonPoints(geo);
-                    StringBuilder poly = new StringBuilder(key + ":\"IsWithin(POLYGON((");
-                    for (Geoshape.Point coordinate : coordinates) {
-                        poly.append(coordinate.getLongitude()).append(" ").append(coordinate.getLatitude()).append(", ");
-                    }
-                    //close the polygon with the first coordinate
-                    poly.append(coordinates.get(0).getLongitude()).append(" ").append(coordinates.get(0).getLatitude());
-                    poly.append(")))\" distErrPct=0");
-                    return (poly.toString());
+                } else if (map == Mapping.PREFIX_TREE) {
+                    StringBuilder builder = new StringBuilder(key + ":\"");
+                    builder.append(SPATIAL_PREDICATES.get((Geo) janusgraphPredicate) + "(");
+                    builder.append(geo + ")\" distErrPct=0");
+                    return builder.toString();
+                } else {
+                    throw new IllegalArgumentException("Unsupported or invalid search shape type: " + geo.getType());
                 }
             } else if (value instanceof Date || value instanceof Instant) {
                 String s = value.toString();
@@ -683,7 +688,6 @@ public class SolrIndex implements IndexProvider {
         } else {
             throw new IllegalArgumentException("Invalid condition: " + condition);
         }
-        return null;
     }
 
     private String toIsoDate(Date value) {
@@ -691,24 +695,6 @@ public class SolrIndex implements IndexProvider {
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         df.setTimeZone(tz);
         return df.format(value);
-    }
-
-    private List<Geoshape.Point> getPolygonPoints(Geoshape polygon) {
-        List<Geoshape.Point> locations = new ArrayList<Geoshape.Point>();
-
-        int index = 0;
-        boolean hasCoordinates = true;
-        while (hasCoordinates) {
-            try {
-                locations.add(polygon.getPoint(index));
-            } catch (ArrayIndexOutOfBoundsException ignore) {
-                //just means we asked for a point past the size of the list
-                //of known coordinates
-                hasCoordinates = false;
-            }
-        }
-
-        return locations;
     }
 
     /**
@@ -766,7 +752,8 @@ public class SolrIndex implements IndexProvider {
     public boolean supports(KeyInformation information, JanusGraphPredicate janusgraphPredicate) {
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
-        if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType)) return false;
+        if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType) &&
+                !(mapping==Mapping.PREFIX_TREE && AttributeUtil.isGeo(dataType))) return false;
 
         if(information.getCardinality() != Cardinality.SINGLE) {
             return false;
@@ -775,7 +762,12 @@ public class SolrIndex implements IndexProvider {
         if (Number.class.isAssignableFrom(dataType)) {
             return janusgraphPredicate instanceof Cmp;
         } else if (dataType == Geoshape.class) {
-            return janusgraphPredicate == Geo.WITHIN;
+            switch(mapping) {
+                case DEFAULT:
+                    return janusgraphPredicate == Geo.WITHIN || janusgraphPredicate == Geo.INTERSECT;
+                case PREFIX_TREE:
+                    return janusgraphPredicate == Geo.INTERSECT || janusgraphPredicate == Geo.WITHIN || janusgraphPredicate == Geo.CONTAINS;
+            }
         } else if (AttributeUtil.isString(dataType)) {
             switch(mapping) {
                 case DEFAULT:
@@ -803,10 +795,12 @@ public class SolrIndex implements IndexProvider {
         }
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
-        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == Date.class || dataType == Instant.class || dataType == Boolean.class || dataType == UUID.class) {
+        if (Number.class.isAssignableFrom(dataType) || dataType == Date.class || dataType == Instant.class || dataType == Boolean.class || dataType == UUID.class) {
             if (mapping==Mapping.DEFAULT) return true;
         } else if (AttributeUtil.isString(dataType)) {
             if (mapping==Mapping.DEFAULT || mapping==Mapping.TEXT || mapping==Mapping.STRING) return true;
+        } else if (AttributeUtil.isGeo(dataType)) {
+            if (mapping==Mapping.DEFAULT || mapping==Mapping.PREFIX_TREE) return true;
         }
         return false;
     }
@@ -857,6 +851,15 @@ public class SolrIndex implements IndexProvider {
         Mapping map = Mapping.getMapping(information);
         if (map==Mapping.DEFAULT) map = Mapping.TEXT;
         return map;
+    }
+
+    private static Map<Geo, String> spatialPredicates() {
+        return Collections.unmodifiableMap(Stream.of(
+                new SimpleEntry<>(Geo.WITHIN, "IsWithin"),
+                new SimpleEntry<>(Geo.CONTAINS, "Contains"),
+                new SimpleEntry<>(Geo.INTERSECT, "Intersects"),
+                new SimpleEntry<>(Geo.DISJOINT, "IsDisjointTo"))
+                .collect(Collectors.toMap((e) -> e.getKey(), (e) -> e.getValue())));
     }
 
     private UpdateRequest newUpdateRequest() {

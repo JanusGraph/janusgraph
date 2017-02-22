@@ -113,7 +113,7 @@ public abstract class LuceneExample {
         BooleanFilter filter = new BooleanFilter();
         //filter.add(new TermsFilter(new Term("name_txt","know")), BooleanClause.Occur.MUST);
 
-        SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,Geoshape.circle(51.666167,6.58905,450).convert2Spatial4j());
+        SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,Geoshape.circle(51.666167,6.58905,450).getShape());
         //filter.add(getSpatialStrategy("location").makeFilter(args), BooleanClause.Occur.MUST);
 
         filter.add(NumericRangeFilter.newLongRange("time",(long)1000342034,(long)1000342034,true,true), BooleanClause.Occur.MUST);
@@ -166,7 +166,7 @@ public abstract class LuceneExample {
                 field = new StringField(key+STR_SUFFIX, str, Field.Store.NO);
                 doc.add(field);
             } else if (value instanceof Geoshape) {
-                Shape shape = ((Geoshape)value).convert2Spatial4j();
+                Shape shape = ((Geoshape)value).getShape();
                 for (IndexableField f : getSpatialStrategy(key).createIndexableFields(shape)) {
                     doc.add(f);
                 }

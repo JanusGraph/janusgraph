@@ -1034,7 +1034,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         PropertyKey birthday = makeKey("birthday", Instant.class);
 
-        PropertyKey geo = makeKey("geo", Geoshape.class);
+        PropertyKey location = makeKey("location", Geoshape.class);
+
+        PropertyKey boundary = makeKey("boundary", Geoshape.class);
 
         PropertyKey precise = makeKey("precise", Double.class);
 
@@ -1061,7 +1063,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         num = tx.getPropertyKey("num");
         barr = tx.getPropertyKey("barr");
         birthday = tx.getPropertyKey("birthday");
-        geo = tx.getPropertyKey("geo");
+        location = tx.getPropertyKey("location");
+        boundary = tx.getPropertyKey("boundary");
         precise = tx.getPropertyKey("precise");
         any = tx.getPropertyKey("any");
 
@@ -1070,6 +1073,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(Object.class, any.dataType());
 
         final Instant c = Instant.ofEpochSecond(1429225756);
+        final Geoshape point = Geoshape.point(10.0, 10.0);
         final Geoshape shape = Geoshape.box(10.0, 10.0, 20.0, 20.0);
 
         JanusGraphVertex v = tx.addVertex();
@@ -1077,7 +1081,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         v.property(VertexProperty.Cardinality.single, n(birthday), c);
         v.property(VertexProperty.Cardinality.single, n(num), new SpecialInt(10));
         v.property(VertexProperty.Cardinality.single, n(barr), new byte[]{1, 2, 3, 4});
-        v.property(VertexProperty.Cardinality.single, n(geo), shape);
+        v.property(VertexProperty.Cardinality.single, n(location), point);
+        v.property(VertexProperty.Cardinality.single, n(boundary), shape);
         v.property(VertexProperty.Cardinality.single, n(precise), 10.12345);
         v.property(n(any), "Hello");
         v.property(n(any), 10l);
@@ -1089,7 +1094,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(10, v.<SpecialInt>value("num").getValue());
         assertEquals(c, v.value("birthday"));
         assertEquals(4, v.<byte[]>value("barr").length);
-        assertEquals(shape, v.<Geoshape>value("geo"));
+        assertEquals(point, v.<Geoshape>value("location"));
+        assertEquals(shape, v.<Geoshape>value("boundary"));
         assertEquals(10.12345, v.<Double>value("precise").doubleValue(), 0.000001);
         assertCount(3, v.properties("any"));
         for (Object prop : v.query().labels("any").properties()) {
@@ -1110,7 +1116,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(10, v.<SpecialInt>value("num").getValue());
         assertEquals(c, v.value("birthday"));
         assertEquals(4, v.<byte[]>value("barr").length);
-        assertEquals(shape, v.<Geoshape>value("geo"));
+        assertEquals(point, v.<Geoshape>value("location"));
+        assertEquals(shape, v.<Geoshape>value("boundary"));
         assertEquals(10.12345, v.<Double>value("precise").doubleValue(), 0.000001);
         assertCount(3, v.properties("any"));
         for (Object prop : v.query().labels("any").properties()) {
