@@ -310,7 +310,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         int[] ids = new int[noVertices];
         JanusGraphVertex[] nodes = new JanusGraphVertex[noVertices];
         long[] nodeIds = new long[noVertices];
-        List[] nodeEdges = new List[noVertices];
+        List<Edge>[] nodeEdges = new List[noVertices];
         for (int i = 0; i < noVertices; i++) {
             names[i] = "vertex" + i;
             ids[i] = i;
@@ -322,7 +322,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         int[] knowsOff = {-400, -18, 8, 232, 334};
         for (int i = 0; i < noVertices; i++) {
             JanusGraphVertex n = nodes[i];
-            nodeEdges[i] = new ArrayList(10);
+            nodeEdges[i] = new ArrayList<Edge>(10);
             for (int c : connectOff) {
                 Edge r = n.addEdge("connect", nodes[wrapAround(i + c, noVertices)]);
                 nodeEdges[i].add(r);
@@ -1571,7 +1571,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         StandardJanusGraph graph2 = (StandardJanusGraph) JanusGraphFactory.open(config);
         JanusGraphTransaction tx2;
 
-        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.makePropertyKey("name").dataType(String.class).make();
         finishSchema();
 
         tx.addVertex("name", "v1");
@@ -1856,13 +1856,13 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     @Test
     public void testStaleVertex() {
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-        PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
+        mgmt.makePropertyKey("age").dataType(Integer.class).make();
         mgmt.buildIndex("byName", Vertex.class).addKey(name).unique().buildCompositeIndex();
         finishSchema();
 
 
         JanusGraphVertex cartman = graph.addVertex("name", "cartman", "age", 10);
-        JanusGraphVertex stan = graph.addVertex("name", "stan", "age", 8);
+        graph.addVertex("name", "stan", "age", 8);
 
         graph.tx().commit();
 
@@ -2425,7 +2425,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         mgmt.setConsistency(nameIndex, ConsistencyModifier.LOCK);
         EdgeLabel married = mgmt.makeEdgeLabel("married").multiplicity(Multiplicity.ONE2ONE).make();
         mgmt.setConsistency(married, ConsistencyModifier.LOCK);
-        EdgeLabel friend = mgmt.makeEdgeLabel("friend").multiplicity(Multiplicity.MULTI).make();
+        mgmt.makeEdgeLabel("friend").multiplicity(Multiplicity.MULTI).make();
         finishSchema();
 
         JanusGraphVertex baseV = tx.addVertex("name", "base");
@@ -2433,7 +2433,6 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         final long baseVid = getId(baseV);
         final String nameA = "a", nameB = "b";
         final int parallelThreads = 4;
-        final AtomicInteger totalExe = new AtomicInteger();
 
         int numSuccess = executeParallelTransactions(new TransactionJob() {
             @Override
@@ -2449,7 +2448,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         numSuccess = executeParallelTransactions(new TransactionJob() {
             @Override
             public void run(JanusGraphTransaction tx) {
-                JanusGraphVertex a = tx.addVertex("name", nameA);
+                tx.addVertex("name", nameA);
                 JanusGraphVertex b = tx.addVertex("name", nameB);
                 b.addEdge("friend", b);
             }
@@ -2475,22 +2474,6 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         } finally {
             if (tx.isOpen()) tx.rollback();
         }
-    }
-
-    private int executeSerialTransaction(final TransactionJob job, int number) {
-        final AtomicInteger txSuccess = new AtomicInteger(0);
-        for (int i = 0; i < number; i++) {
-            JanusGraphTransaction tx = graph.newTransaction();
-            try {
-                job.run(tx);
-                tx.commit();
-                txSuccess.incrementAndGet();
-            } catch (Exception ex) {
-                tx.rollback();
-                ex.printStackTrace();
-            }
-        }
-        return txSuccess.get();
     }
 
     private int executeParallelTransactions(final TransactionJob job, int number) {

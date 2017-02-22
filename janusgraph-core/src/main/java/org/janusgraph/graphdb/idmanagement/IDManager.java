@@ -402,7 +402,6 @@ public class IDManager {
     private static final long SCHEMA_COUNT_BOUND = (1l << (TOTAL_BITS - MAX_PADDING_BITWIDTH - TYPE_LEN_RESERVE));
 
 
-    @SuppressWarnings("unused")
     private final long partitionBits;
     private final long partitionOffset;
     private final long partitionIDBound;

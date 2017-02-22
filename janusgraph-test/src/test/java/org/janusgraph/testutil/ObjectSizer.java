@@ -34,35 +34,35 @@ public final class ObjectSizer {
     public static Factory emptyConcurrentHashMap = new Factory() {
         @Override
         public Object newInstance() {
-            return fill(new ConcurrentHashMap(5, 0.75f, 2), 20);
+            return fill(new ConcurrentHashMap<Integer, Integer>(5, 0.75f, 2), 20);
         }
     };
 
     public static Factory emptyHashMap = new Factory() {
         @Override
         public Object newInstance() {
-            return fill(new HashMap(10, 0.75f), 8);
+            return fill(new HashMap<Integer, Integer>(10, 0.75f), 8);
         }
     };
 
     public static Factory emptyConcurrentSkipListMap = new Factory() {
         @Override
         public Object newInstance() {
-            return fill(new ConcurrentSkipListMap(), 20);
+            return fill(new ConcurrentSkipListMap<Integer, Integer>(), 20);
         }
     };
 
     public static Factory emptyArrayList = new Factory() {
         @Override
         public Object newInstance() {
-            return fill(new ArrayList(5), 8);
+            return fill(new ArrayList<Integer>(5), 8);
         }
     };
 
     public static Factory emptyArrayQueue = new Factory() {
         @Override
         public Object newInstance() {
-            return fill(new ArrayBlockingQueue(10), 20);
+            return fill(new ArrayBlockingQueue<Integer>(10), 20);
         }
     };
 
@@ -81,7 +81,7 @@ public final class ObjectSizer {
     public static Factory emptyCopyArrayList = new Factory() {
         @Override
         public Object newInstance() {
-            return fill(new CopyOnWriteArrayList(), 20);
+            return fill(new CopyOnWriteArrayList<Integer>(), 20);
         }
     };
 
@@ -131,17 +131,17 @@ public final class ObjectSizer {
     private static class Nothing {}
 
 
-    public static Map fill(Map m, int size) {
+    public static Map<Integer, Integer> fill(Map<Integer, Integer> m, int size) {
         for (int i = 0; i < size; i++) m.put(i, i);
         return m;
     }
 
-    public static HashMultimap fill(HashMultimap m, int size) {
+    public static HashMultimap<Integer, Integer> fill(HashMultimap<Integer, Integer> m, int size) {
         for (int i = 0; i < size; i++) m.put(i, i);
         return m;
     }
 
-    public static Collection fill(Collection m, int size) {
+    public static Collection<Integer> fill(Collection<Integer> m, int size) {
         for (int i = 0; i < size; i++) m.add(i);
         return m;
     }
@@ -194,32 +194,4 @@ public final class ObjectSizer {
     private static int SAMPLE_SIZE = 100;
 
     private static int OBJECT_POINTER_SIZE = 6; //assuming compressed pointers
-
-    private static long SLEEP_INTERVAL = 100;
-
-    private static long getMemoryUse() {
-        putOutTheGarbage();
-        long totalMemory = Runtime.getRuntime().totalMemory();
-
-        putOutTheGarbage();
-        long freeMemory = Runtime.getRuntime().freeMemory();
-
-        return (totalMemory - freeMemory);
-    }
-
-    private static void putOutTheGarbage() {
-        collectGarbage();
-        collectGarbage();
-    }
-
-    private static void collectGarbage() {
-        try {
-            System.gc();
-            Thread.currentThread().sleep(SLEEP_INTERVAL);
-            System.runFinalization();
-            Thread.currentThread().sleep(SLEEP_INTERVAL);
-        } catch (InterruptedException ex) {
-            ex.printStackTrace();
-        }
-    }
 }

@@ -23,8 +23,6 @@ import com.google.common.collect.Sets;
 import org.janusgraph.core.QueryException;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -49,7 +47,6 @@ import java.util.*;
  */
 public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphElement, B extends BackendQuery<B>> implements Iterable<R> {
 
-    private static final Logger log = LoggerFactory.getLogger(QueryProcessor.class);
     private static final int MAX_SORT_ITERATION = 1000000;
 
 

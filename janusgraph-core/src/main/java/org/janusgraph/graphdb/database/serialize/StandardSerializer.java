@@ -42,8 +42,6 @@ import org.janusgraph.graphdb.types.TypeDefinitionDescription;
 
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -56,8 +54,6 @@ import java.util.concurrent.TimeUnit;
  */
 
 public class StandardSerializer implements AttributeHandler, Serializer {
-
-    private static final Logger log = LoggerFactory.getLogger(StandardSerializer.class);
 
     /**
      * This offset is used by user registration to make sure they don't collide with internal class

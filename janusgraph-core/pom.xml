@@ -66,12 +66,10 @@
         <dependency>
             <groupId>commons-collections</groupId>
             <artifactId>commons-collections</artifactId>
-            <version>${commons.collections.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-configuration</groupId>
             <artifactId>commons-configuration</artifactId>
-            <version>1.10</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
@@ -80,7 +78,6 @@
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
-            <version>1.7</version>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -93,7 +90,6 @@
         <dependency>
             <groupId>com.github.stephenc.high-scale-lib</groupId>
             <artifactId>high-scale-lib</artifactId>
-            <version>1.1.4</version>
         </dependency>
        <dependency>
            <groupId>com.google.code.findbugs</groupId>
@@ -136,7 +132,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>2.5</version>
                 <configuration>
                     <archive>
                         <manifestEntries>

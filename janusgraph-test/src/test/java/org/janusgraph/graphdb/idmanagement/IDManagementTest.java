@@ -34,8 +34,6 @@ import org.janusgraph.testutil.RandomGenerator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Random;
@@ -43,8 +41,6 @@ import java.util.Random;
 import static org.junit.Assert.*;
 
 public class IDManagementTest {
-
-    private static final Logger log = LoggerFactory.getLogger(IDManagementTest.class);
 
     private static final Random random = new Random();
 
@@ -85,7 +81,7 @@ public class IDManagementTest {
         assertTrue(eid.getPartitionBound()>0);
         assertTrue(eid.getPartitionBound()<=1l+Integer.MAX_VALUE);
         assertTrue(eid.getRelationCountBound()>0);
-        assertTrue(eid.getSchemaCountBound()>0);
+        assertTrue(IDManager.getSchemaCountBound()>0);
         assertTrue(eid.getVertexCountBound()>0);
 
         try {
@@ -108,38 +104,38 @@ public class IDManagementTest {
             long id = eid.getRelationID(count, partition);
             assertTrue(id>=partition);
 
-            id = eid.getSchemaId(IDManager.VertexIDType.UserPropertyKey, count);
+            id = IDManager.getSchemaId(IDManager.VertexIDType.UserPropertyKey, count);
             assertTrue(eid.isPropertyKeyId(id));
             assertTrue(eid.isRelationTypeId(id));
-            assertFalse(eid.isSystemRelationTypeId(id));
+            assertFalse(IDManager.isSystemRelationTypeId(id));
 
             assertEquals(id, eid.getKeyID(eid.getKey(id)));
 
-            id = eid.getSchemaId(IDManager.VertexIDType.SystemPropertyKey, count);
+            id = IDManager.getSchemaId(IDManager.VertexIDType.SystemPropertyKey, count);
             assertTrue(eid.isPropertyKeyId(id));
             assertTrue(eid.isRelationTypeId(id));
-            assertTrue(eid.isSystemRelationTypeId(id));
+            assertTrue(IDManager.isSystemRelationTypeId(id));
 
 
-            id = eid.getSchemaId(IDManager.VertexIDType.UserEdgeLabel,count);
+            id = IDManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel,count);
             assertTrue(eid.isEdgeLabelId(id));
             assertTrue(eid.isRelationTypeId(id));
 
             assertEquals(id, eid.getKeyID(eid.getKey(id)));
 
-            id = eid.getTemporaryVertexID(IDManager.VertexIDType.NormalVertex,count);
-            assertTrue(eid.isTemporary(id));
+            id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.NormalVertex,count);
+            assertTrue(IDManager.isTemporary(id));
             assertTrue(IDManager.VertexIDType.NormalVertex.is(id));
 
-            id = eid.getTemporaryVertexID(IDManager.VertexIDType.UserEdgeLabel,count);
-            assertTrue(eid.isTemporary(id));
+            id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.UserEdgeLabel,count);
+            assertTrue(IDManager.isTemporary(id));
             assertTrue(IDManager.VertexIDType.UserEdgeLabel.is(id));
 
             id = IDManager.getTemporaryRelationID(count);
-            assertTrue(eid.isTemporary(id));
+            assertTrue(IDManager.isTemporary(id));
 
             id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.InvisibleVertex,count);
-            assertTrue(eid.isTemporary(id));
+            assertTrue(IDManager.isTemporary(id));
             assertTrue(IDManager.VertexIDType.Invisible.is(id));
 
         }
@@ -154,14 +150,14 @@ public class IDManagementTest {
 
         Serializer serializer = new StandardSerializer();
         for (int t = 0; t < trails; t++) {
-            long count = RandomGenerator.randomLong(1, eid.getSchemaCountBound());
+            long count = RandomGenerator.randomLong(1, IDManager.getSchemaCountBound());
             long id;
             IDHandler.DirectionID dirID;
             RelationCategory type;
             if (Math.random() < 0.5) {
-                id = eid.getSchemaId(IDManager.VertexIDType.UserEdgeLabel,count);
+                id = IDManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel,count);
                 assertTrue(eid.isEdgeLabelId(id));
-                assertFalse(eid.isSystemRelationTypeId(id));
+                assertFalse(IDManager.isSystemRelationTypeId(id));
                 type = RelationCategory.EDGE;
                 if (Math.random() < 0.5)
                     dirID = IDHandler.DirectionID.EDGE_IN_DIR;
@@ -169,9 +165,9 @@ public class IDManagementTest {
                     dirID = IDHandler.DirectionID.EDGE_OUT_DIR;
             } else {
                 type = RelationCategory.PROPERTY;
-                id = eid.getSchemaId(IDManager.VertexIDType.UserPropertyKey,count);
+                id = IDManager.getSchemaId(IDManager.VertexIDType.UserPropertyKey, count);
                 assertTrue(eid.isPropertyKeyId(id));
-                assertFalse(eid.isSystemRelationTypeId(id));
+                assertFalse(IDManager.isSystemRelationTypeId(id));
                 dirID = IDHandler.DirectionID.PROPERTY_DIR;
             }
             assertTrue(eid.isRelationTypeId(id));
@@ -258,7 +254,6 @@ public class IDManagementTest {
         IDHandler.DirectionID[] dir = IDManager.VertexIDType.EdgeLabel.is(etid)?
                     new IDHandler.DirectionID[]{IDHandler.DirectionID.EDGE_IN_DIR, IDHandler.DirectionID.EDGE_OUT_DIR}:
                     new IDHandler.DirectionID[]{IDHandler.DirectionID.PROPERTY_DIR};
-        RelationCategory relCat = IDManager.VertexIDType.EdgeLabel.is(etid)?RelationCategory.EDGE:RelationCategory.PROPERTY;
         boolean invisible = IDManager.isSystemRelationTypeId(etid);
         for (IDHandler.DirectionID d : dir) {
             StaticBuffer b = IDHandler.getRelationType(etid, d, invisible);

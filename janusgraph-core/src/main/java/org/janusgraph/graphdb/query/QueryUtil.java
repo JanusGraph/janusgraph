@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.query;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import org.janusgraph.core.*;
@@ -23,7 +22,6 @@ import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import javax.annotation.Nullable;
 import java.util.*;
 
 /**
@@ -123,28 +121,6 @@ public class QueryUtil {
         if (condition instanceof PredicateCondition) {
             return ((PredicateCondition) condition).getPredicate().isQNF();
         } else return true;
-    }
-
-    private static final <E extends JanusGraphElement> Condition<E> inlineNegation(Condition<E> condition) {
-        if (ConditionUtil.containsType(condition, Condition.Type.NOT)) {
-            return ConditionUtil.transformation(condition, new Function<Condition<E>, Condition<E>>() {
-                @Nullable
-                @Override
-                public Condition<E> apply(@Nullable Condition<E> cond) {
-                    if (cond instanceof Not) {
-                        Condition<E> child = ((Not) cond).getChild();
-                        Preconditions.checkArgument(child.getType() == Condition.Type.LITERAL); //verify QNF
-                        if (child instanceof PredicateCondition) {
-                            PredicateCondition<?, E> pc = (PredicateCondition) child;
-                            if (pc.getPredicate().hasNegation()) {
-                                return new PredicateCondition(pc.getKey(), pc.getPredicate().negate(), pc.getValue());
-                            }
-                        }
-                    }
-                    return null;
-                }
-            });
-        } else return condition;
     }
 
     public static final <E extends JanusGraphElement> Condition<E> simplifyQNF(Condition<E> condition) {

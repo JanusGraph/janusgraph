@@ -28,9 +28,6 @@ import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -39,9 +36,6 @@ import java.util.concurrent.Callable;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class CacheTransaction implements StoreTransaction, LoggableTransaction {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(CacheTransaction.class);
 
     private final StoreTransaction tx;
     private final KeyColumnValueStoreManager manager;
@@ -112,12 +106,6 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         }, maxWriteTime);
         subMutations.clear();
         return 0;
-    }
-
-    private int mutationSize(Map<StaticBuffer, KCVEntryMutation> mutation) {
-        int size = 0;
-        for (KCVEntryMutation mut : mutation.values()) size+=mut.getTotalMutations();
-        return size;
     }
 
     private KCVMutation convert(KCVEntryMutation mutation) {

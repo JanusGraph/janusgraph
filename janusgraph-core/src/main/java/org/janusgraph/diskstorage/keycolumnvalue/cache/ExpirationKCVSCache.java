@@ -22,8 +22,6 @@ import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.keycolumnvalue.*;
 import org.janusgraph.diskstorage.util.CacheMetricsAction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,9 +38,6 @@ import static org.janusgraph.util.datastructures.ByteSize.*;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class ExpirationKCVSCache extends KCVSCache {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(ExpirationKCVSCache.class);
 
     //Weight estimation
     private static final int STATICARRAYBUFFER_SIZE = STATICARRAYBUFFER_RAW_SIZE + 10; // 10 = last number is average length

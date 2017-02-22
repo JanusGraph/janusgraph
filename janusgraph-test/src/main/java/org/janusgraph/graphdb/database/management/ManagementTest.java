@@ -16,7 +16,6 @@ package org.janusgraph.graphdb.database.management;
 
 import com.google.common.collect.ImmutableSet;
 import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.core.schema.VertexLabelMaker;
 import org.janusgraph.graphdb.JanusGraphBaseTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -77,9 +76,8 @@ public abstract class ManagementTest extends JanusGraphBaseTest {
     public void testReservedNamesRejectedForVertexLabels() {
         for (String s : ILLEGAL_USER_DEFINED_NAMES) {
             JanusGraphManagement tm = graph.openManagement();
-            VertexLabelMaker vlm = null;
             try {
-                vlm = tm.makeVertexLabel(s);
+                tm.makeVertexLabel(s);
                 Assert.fail("Vertex label \"" + s + "\" must be rejected");
             } catch (IllegalArgumentException e) {
                 log.debug("Caught expected exception", e);

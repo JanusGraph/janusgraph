@@ -313,7 +313,6 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public IPartitioner getCassandraPartitioner() throws BackendException {
         Cluster cl = clusterContext.getClient();
         try {

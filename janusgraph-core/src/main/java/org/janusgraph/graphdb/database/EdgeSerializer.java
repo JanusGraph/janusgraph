@@ -91,7 +91,6 @@ public class EdgeSerializer implements RelationReader {
 
         long typeId = typeAndDir.typeId;
         Direction dir = typeAndDir.dirID.getDirection();
-        RelationCategory rtype = typeAndDir.dirID.getRelationCategory();
 
         RelationType relationType = tx.getExistingRelationType(typeId);
         InternalRelationType def = (InternalRelationType) relationType;

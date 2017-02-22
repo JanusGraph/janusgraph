@@ -23,7 +23,6 @@ import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.keycolumnvalue.*;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.RecordIterator;
@@ -68,7 +67,7 @@ public abstract class JanusGraphIterativeBenchmark extends JanusGraphBaseTest {
         KeyIterator iter = store.getKeys(query,txh);
         int numV = 0;
         while(iter.hasNext()) {
-            StaticBuffer key = iter.next();
+            iter.next();
             RecordIterator<Entry> entries = iter.getEntries();
             assertEquals(2, Iterators.size(entries));
             numV++;

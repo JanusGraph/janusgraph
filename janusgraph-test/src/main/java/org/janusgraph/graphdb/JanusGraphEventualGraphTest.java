@@ -35,8 +35,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -53,8 +51,6 @@ import static org.junit.Assert.assertEquals;
 @Category({ SerialTests.class })
 public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
 
-    private Logger log = LoggerFactory.getLogger(JanusGraphEventualGraphTest.class);
-
     @Test
     public void verifyEligibility() {
         Preconditions.checkArgument(!graph.getConfiguration().getBackend().getStoreFeatures().hasTxIsolation(),
@@ -68,7 +64,7 @@ public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
         finishSchema();
 
 
-        JanusGraphVertex v = tx.addVertex("uid", "v");
+        tx.addVertex("uid", "v");
 
         clopen();
 
@@ -254,13 +250,11 @@ public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
 
 
         int numV = 10000;
-        long start = System.currentTimeMillis();
         for (int i=0;i<numV;i++) {
             JanusGraphVertex v = tx.addVertex("uid",i+1);
             v.addEdge("knows",v);
         }
         clopen();
-//        System.out.println("Time: " + (System.currentTimeMillis()-start));
 
         for (int i=0;i<Math.min(numV,300);i++) {
             assertEquals(1, Iterables.size(graph.query().has("uid", i + 1).vertices()));
@@ -274,19 +268,19 @@ public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
      */
     @Test
     public void testConsistencyModifier() throws InterruptedException {
-        PropertyKey sig = makeKey("sig",Integer.class);
-        PropertyKey weight = makeKey("weight",Double.class);
-        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SET).make();
-        PropertyKey value = mgmt.makePropertyKey("value").dataType(Integer.class).cardinality(Cardinality.LIST).make();
+        makeKey("sig",Integer.class);
+        makeKey("weight",Double.class);
+        mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SET).make();
+        mgmt.makePropertyKey("value").dataType(Integer.class).cardinality(Cardinality.LIST).make();
         PropertyKey valuef = mgmt.makePropertyKey("valuef").dataType(Integer.class).cardinality(Cardinality.LIST).make();
         mgmt.setConsistency(valuef,ConsistencyModifier.FORK);
 
-        EdgeLabel em = mgmt.makeEdgeLabel("em").multiplicity(Multiplicity.MULTI).make();
+        mgmt.makeEdgeLabel("em").multiplicity(Multiplicity.MULTI).make();
         EdgeLabel emf = mgmt.makeEdgeLabel("emf").multiplicity(Multiplicity.MULTI).make();
         mgmt.setConsistency(emf,ConsistencyModifier.FORK);
-        EdgeLabel es = mgmt.makeEdgeLabel("es").multiplicity(Multiplicity.SIMPLE).make();
-        EdgeLabel o2o = mgmt.makeEdgeLabel("o2o").multiplicity(Multiplicity.ONE2ONE).make();
-        EdgeLabel o2m = mgmt.makeEdgeLabel("o2m").multiplicity(Multiplicity.ONE2MANY).make();
+        mgmt.makeEdgeLabel("es").multiplicity(Multiplicity.SIMPLE).make();
+        mgmt.makeEdgeLabel("o2o").multiplicity(Multiplicity.ONE2ONE).make();
+        mgmt.makeEdgeLabel("o2m").multiplicity(Multiplicity.ONE2MANY).make();
 
         finishSchema();
 
