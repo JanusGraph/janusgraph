@@ -86,7 +86,7 @@ When configuring HBase it is recommended to consider the following HBase specifi
 
 * *tablename*: Name of the HBase table in which to store the JanusGraph graph. Allows multiple JanusGraph graphs to co-exist in the same HBase cluster.
 
-Please refer to the http://hbase.apache.org/book/config.files.html[HBase configuration documentation] for more HBase configuration options and their description. By prefixing the respective HBase configuration option with `storage.hbase-config` in the JanusGraph configuration it will be passed on to HBase at initialization time. This allows arbitrary HBase configuration options to be configured through JanusGraph.
+Please refer to the http://hbase.apache.org/book/config.files.html[HBase configuration documentation] for more HBase configuration options and their description. By prefixing the respective HBase configuration option with `storage.hbase.ext` in the JanusGraph configuration it will be passed on to HBase at initialization time. For example, to use the znode /hbase-secure for HBase, set the property: `storage.hbase.ext.zookeeper.znode.parent=/hbase-secure`. The prefix allows arbitrary HBase configuration options to be configured through JanusGraph.
 
 Global Graph Operations
 ~~~~~~~~~~~~~~~~~~~~~~~
