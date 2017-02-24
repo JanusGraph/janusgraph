@@ -137,7 +137,7 @@ In addition to common options described in <<es-cfg-common-opts>>, the Node clie
 
 Unlike the Transport client, the Node client can be completely configured through `conf-file` or `ext`.  If you provide a complete Node configuration via `conf-file` or `ext`, then none of the JanusGraph options listed above are required, and it's fine to leave them unset in JanusGraph's configuration.  The JanusGraph options listed above are retained mainly for convenience and continuity with the legacy config track.
 
-However, there is one unique aspect to `index.[X].directory`.  When `index.[X].directory` is set for Elasticsearch, it is taken as the path to a directory which will contain the ES data, work, and logs directories.  These directories are created if they don't already exist.  Furthermore, when the `index.[X].directory` setting appears in a JanusGraph properties file on disk and its value is a relative path, it will be interpreted relative to the directory containing that JanusGraph properties file (similar to how relative `conf-file` paths are handled).  That's the difference between setting JanusGraph's `index.[X].directory` versus setting Elasticsearch's `path.data`, `path.work`, and `path.logs` directories: relative paths for the former are based on the directory containing the JanusGraph properties file, whereas relative paths for the latter are based on the JVM's current working directory.
+However, there is one unique aspect to `index.[X].directory`.  When `index.[X].directory` is set for Elasticsearch, it is taken as the path to a directory which will contain the ES data, work, and logs directories.  These directories are created if they don't already exist.  Furthermore, when the `index.[X].directory` setting appears in a JanusGraph properties file on disk and its value is a relative path, it will be interpreted relative to the directory containing that JanusGraph properties file (similar to how relative `conf-file` paths are handled).  That's the difference between setting JanusGraph's `index.[X].directory` versus setting Elasticsearch's `path.home` directory: relative paths for the former are based on the directory containing the JanusGraph properties file, whereas relative paths for the latter are based on the JVM's current working directory.
 
 Note that `index.[X].hostname` is not in the list above.  The recommended way to set a list of hostnames with the Node client is to use Elasticsearch's own config keys via `ext` or `conf-file`.  See the Elasticsearch documentation on the http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-discovery-zen.html[`discovery` module] and the http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-transport.html[`transport` module] for relevant ES config keys.  Also see <<es-cfg-unicast-zen>> for an example configuration using the Elasticsearch Zen discovery module and unicast addressing.
 
@@ -159,19 +159,17 @@ index.search.conf-file=es_jvmlocal.yml
 node.data: true
 node.client: false
 node.local: true
-# These paths are interpreted relative to the JVM's current working directory
-path.data: es/data
-path.work: es/work
-path.logs: es/logs
+# This path is interpreted relative to the JVM's current working directory
+path.home: es
 ----
 
-The following configuration is similar to the one above, except it uses `ext` and the `index.[X].directory` JanusGraph setting to locate the ES work, data, and log paths.  When the `index.[X].directory` appears in a JanusGraph properties file and is set to a relative path, that path is interpreted relative to the directory containing the JanusGraph properties file.  Compare this to setting `path.data`, `path.work`, and `path.logs` directly, which will be interpreted relative to the current working directory of the Java VM.
+The following configuration is similar to the one above, except it uses `ext` and the `index.[X].directory` JanusGraph setting to locate the ES work, data, and log paths.  When the `index.[X].directory` appears in a JanusGraph properties file and is set to a relative path, that path is interpreted relative to the directory containing the JanusGraph properties file.  Compare this to setting `path.home` directly, which will be interpreted relative to the current working directory of the Java VM.
 
 [source, properties]
 ----
 index.search.backend=elasticsearch
 index.search.elasticsearch.interface=NODE
-# data, work, and logs subdirectories for ES will be created in
+# data, logs, etc. subdirectories for ES will be created in
 # <directory containing this properties file>/../db/es
 index.search.directory=../db/es
 index.search.elasticsearch.ext.node.data=true
@@ -229,9 +227,7 @@ index.search.conf-file=es_clustermember.yml
 node.data: true
 node.client: false
 node.local: false
-path.data: es/data
-path.work: es/work
-path.logs: es/logs
+path.home: es
 discovery.zen.ping.multicast.enabled: false
 discovery.zen.ping.unicast.hosts: [ "host1", "host2:customport" ]
 ----
@@ -245,10 +241,8 @@ index.search.elasticsearch.interface=NODE
 index.search.elasticsearch.ext.node.data=true
 index.search.elasticsearch.ext.node.client=false
 index.search.elasticsearch.ext.node.local=false
-# The next three paths are interpreted relative to the JVM working directory
-index.search.elasticsearch.ext.path.data=es/data
-index.search.elasticsearch.ext.path.work=es/work
-index.search.elasticsearch.ext.path.logs=es/logs
+# The next path is interpreted relative to the JVM working directory
+index.search.elasticsearch.ext.path.home=es
 index.search.elasticsearch.ext.discovery.zen.ping.multicast.enabled=false
 index.search.elasticsearch.ext.discovery.zen.ping.unicast.hosts=host1, host2:customport
 ----
@@ -379,7 +373,7 @@ Check that the Elasticsearch cluster nodes are reachable on the native "transpor
 When you see exception referring to lucene implementation details, make sure you don't have a conflicting version of Lucene on the classpath. Exception may look like this:
 
 [source, text]
-java.lang.NoSuchFieldError: LUCENE_4_10_4
+java.lang.NoSuchFieldError: LUCENE_5_5_2
 
 === Optimizing Elasticsearch
 

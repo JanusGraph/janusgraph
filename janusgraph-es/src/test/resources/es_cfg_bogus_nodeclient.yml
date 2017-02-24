@@ -2,4 +2,3 @@ node.data: false
 node.client: true
 discovery.zen.ping.multicast.enabled: false
 discovery.zen.ping.unicast.hosts: [ "10.11.12.13" ]
-cluster.name: networkNodeUsingYaml

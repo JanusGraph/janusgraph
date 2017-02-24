@@ -54,10 +54,19 @@
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
             <version>${elasticsearch.version}</version>
+        </dependency>
+        <!-- Groovy module is unpacked to local node plugin directory during testing for compatibility with
+             plugin architecture introduced in Elasticsearch 2.2. -->
+        <dependency>
+            <groupId>org.elasticsearch.module</groupId>
+            <artifactId>lang-groovy</artifactId>
+            <version>${elasticsearch.version}</version>
+            <type>zip</type>
+            <scope>test</scope>
             <exclusions>
                 <exclusion>
-                    <groupId>org.antlr</groupId>
-                    <artifactId>antlr-runtime</artifactId>
+                    <groupId>org.codehaus.groovy</groupId>
+                    <artifactId>groovy</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -104,6 +113,21 @@
                         <goals>
                             <goal>test-jar</goal>
                         </goals>
+                    </execution>
+                    <!-- JanusGraph overrides the JarHell class introduced in Elasticsearch 2. This test jar is included on
+                         classpath of test Elasticsearch server process. -->
+                    <execution>
+                        <id>pre-test-jar</id>
+                        <phase>process-test-classes</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>es_jarhell</finalName>
+                            <includes>
+                                <include>**/JarHell.class</include>
+                            </includes>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -187,6 +211,23 @@
                         </goals>
                         <configuration>
                             <outputFile>${project.build.directory}/es_classpath.txt</outputFile>
+                        </configuration>
+                    </execution>
+                    <!-- Unpack Elasticsearch Groovy plugin for use in test Node. -->
+                    <execution>
+                        <id>unpack-plugins</id>
+                        <goals>
+                            <goal>unpack-dependencies</goal>
+                        </goals>
+                        <phase>generate-test-resources</phase>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/db/es/plugins/lang-groovy</outputDirectory>
+                            <includeArtifacIds>lang-groovy</includeArtifacIds>
+                            <includeGroupIds>org.elasticsearch.module</includeGroupIds>
+                            <excludeTransitive>true</excludeTransitive>
+                            <excludeTypes>pom</excludeTypes>
+                            <excludes>groovy*.jar</excludes>excludes>
+                            <scope>test</scope>
                         </configuration>
                     </execution>
                 </executions>

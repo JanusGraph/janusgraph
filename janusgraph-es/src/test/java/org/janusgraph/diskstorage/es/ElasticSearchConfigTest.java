@@ -33,16 +33,19 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.io.FileUtils;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
-import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.Duration;
 
 import static org.janusgraph.diskstorage.es.ElasticSearchIndex.*;
@@ -71,19 +74,23 @@ public class ElasticSearchConfigTest {
         esr.stop();
     }
 
+    @Before
+    public void setup() throws IOException {
+        String baseDir = Joiner.on(File.separator).join("target", "es");
+        FileUtils.deleteDirectory(new File(baseDir + File.separator + "data"));
+    }
+
     @Test
     public void testJanusGraphFactoryBuilder()
     {
-        String baseDir = Joiner.on(File.separator).join("target", "es", "janusgraphfactory_jvmlocal_ext");
+        String baseDir = Joiner.on(File.separator).join("target", "es");
         JanusGraphFactory.Builder builder = JanusGraphFactory.build();
         builder.set("storage.backend", "inmemory");
         builder.set("index." + INDEX_NAME + ".elasticsearch.interface", "NODE");
         builder.set("index." + INDEX_NAME + ".elasticsearch.ext.node.data", "true");
         builder.set("index." + INDEX_NAME + ".elasticsearch.ext.node.client", "false");
         builder.set("index." + INDEX_NAME + ".elasticsearch.ext.node.local", "true");
-        builder.set("index." + INDEX_NAME + ".elasticsearch.ext.path.data", baseDir + File.separator + "data");
-        builder.set("index." + INDEX_NAME + ".elasticsearch.ext.path.work", baseDir + File.separator + "work");
-        builder.set("index." + INDEX_NAME + ".elasticsearch.ext.path.logs", baseDir + File.separator + "logs");
+        builder.set("index." + INDEX_NAME + ".elasticsearch.ext.path.home", baseDir);
         JanusGraph graph = builder.open(); // Must not throw an exception
         assertTrue(graph.isOpen());
         graph.close();
@@ -91,7 +98,7 @@ public class ElasticSearchConfigTest {
 
     @Test
     public void testTransportClient() throws BackendException, InterruptedException {
-        ElasticsearchRunner esr = new ElasticsearchRunner(".", "transportClient.yml");
+        ElasticsearchRunner esr = new ElasticsearchRunner(".");
         esr.start();
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(INTERFACE, ElasticSearchSetup.TRANSPORT_CLIENT.toString(), INDEX_NAME);
@@ -120,17 +127,13 @@ public class ElasticSearchConfigTest {
     @Test
     public void testLocalNodeUsingExt() throws BackendException, InterruptedException {
 
-        String baseDir = Joiner.on(File.separator).join("target", "es", "jvmlocal_ext");
-
-        assertFalse(new File(baseDir + File.separator + "data").exists());
+        String baseDir = Joiner.on(File.separator).join("target", "es");
 
         CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
         cc.set("index." + INDEX_NAME + ".elasticsearch.ext.node.data", "true");
         cc.set("index." + INDEX_NAME + ".elasticsearch.ext.node.client", "false");
         cc.set("index." + INDEX_NAME + ".elasticsearch.ext.node.local", "true");
-        cc.set("index." + INDEX_NAME + ".elasticsearch.ext.path.data", baseDir + File.separator + "data");
-        cc.set("index." + INDEX_NAME + ".elasticsearch.ext.path.work", baseDir + File.separator + "work");
-        cc.set("index." + INDEX_NAME + ".elasticsearch.ext.path.logs", baseDir + File.separator + "logs");
+        cc.set("index." + INDEX_NAME + ".elasticsearch.ext.path.home", baseDir);
         ModifiableConfiguration config =
                 new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
                         cc, BasicConfiguration.Restriction.NONE);
@@ -146,9 +149,7 @@ public class ElasticSearchConfigTest {
     @Test
     public void testLocalNodeUsingExtAndIndexDirectory() throws BackendException, InterruptedException {
 
-        String baseDir = Joiner.on(File.separator).join("target", "es", "jvmlocal_ext2");
-
-        assertFalse(new File(baseDir + File.separator + "data").exists());
+        String baseDir = Joiner.on(File.separator).join("target", "es");
 
         CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
         cc.set("index." + INDEX_NAME + ".elasticsearch.ext.node.data", "true");
@@ -170,9 +171,7 @@ public class ElasticSearchConfigTest {
     @Test
     public void testLocalNodeUsingYaml() throws BackendException, InterruptedException {
 
-        String baseDir = Joiner.on(File.separator).join("target", "es", "jvmlocal_yml");
-
-        assertFalse(new File(baseDir + File.separator + "data").exists());
+        String baseDir = Joiner.on(File.separator).join("target", "es");
 
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(INTERFACE, ElasticSearchSetup.NODE.toString(), INDEX_NAME);
@@ -188,12 +187,11 @@ public class ElasticSearchConfigTest {
 
     @Test
     public void testNetworkNodeUsingExt() throws BackendException, InterruptedException {
-        ElasticsearchRunner esr = new ElasticsearchRunner(".", "networkNodeUsingExt.yml");
+        ElasticsearchRunner esr = new ElasticsearchRunner(".");
         esr.start();
         CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
         cc.set("index." + INDEX_NAME + ".elasticsearch.ext.node.data", "false");
         cc.set("index." + INDEX_NAME + ".elasticsearch.ext.node.client", "true");
-        cc.set("index." + INDEX_NAME + ".elasticsearch.ext.cluster.name", "networkNodeUsingExt");
         cc.set("index." + INDEX_NAME + ".elasticsearch.ext.discovery.zen.ping.multicast.enabled", "false");
         cc.set("index." + INDEX_NAME + ".elasticsearch.ext.discovery.zen.ping.unicast.hosts", "localhost,127.0.0.1:9300");
         ModifiableConfiguration config =
@@ -225,7 +223,7 @@ public class ElasticSearchConfigTest {
 
     @Test
     public void testNetworkNodeUsingYaml() throws BackendException, InterruptedException {
-        ElasticsearchRunner esr = new ElasticsearchRunner(".", "networkNodeUsingYaml.yml");
+        ElasticsearchRunner esr = new ElasticsearchRunner(".");
         esr.start();
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(INTERFACE, ElasticSearchSetup.NODE.toString(), INDEX_NAME);
@@ -256,27 +254,30 @@ public class ElasticSearchConfigTest {
 
     @Test
     public void testIndexCreationOptions() throws InterruptedException, BackendException {
-        final int shards = 77;
 
-        ElasticsearchRunner esr = new ElasticsearchRunner(".", "indexCreationOptions.yml");
+        String baseDir = Joiner.on(File.separator).join("target", "es");
+
+        final int shards = 7;
+
+        ElasticsearchRunner esr = new ElasticsearchRunner(".");
         esr.start();
         CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
         cc.set("index." + INDEX_NAME + ".elasticsearch.create.ext.number_of_shards", String.valueOf(shards));
-        cc.set("index." + INDEX_NAME + ".elasticsearch.ext.cluster.name", "indexCreationOptions");
         ModifiableConfiguration config =
                 new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
                         cc, BasicConfiguration.Restriction.NONE);
         config.set(INTERFACE, ElasticSearchSetup.NODE.toString(), INDEX_NAME);
+        config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, baseDir, INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
         IndexProvider idx = new ElasticSearchIndex(indexConfig);
         simpleWriteAndQuery(idx);
 
 
 
-        ImmutableSettings.Builder settingsBuilder = ImmutableSettings.settingsBuilder();
+        Settings.Builder settingsBuilder = Settings.settingsBuilder();
         settingsBuilder.put("discovery.zen.ping.multicast.enabled", "false");
         settingsBuilder.put("discovery.zen.ping.unicast.hosts", "localhost,127.0.0.1:9300");
-        settingsBuilder.put("cluster.name", "indexCreationOptions");
+        settingsBuilder.put("path.home", baseDir);
         NodeBuilder nodeBuilder = NodeBuilder.nodeBuilder().settings(settingsBuilder.build());
         nodeBuilder.client(true).data(false).local(false);
         Node n = nodeBuilder.build().start();
@@ -285,7 +286,7 @@ public class ElasticSearchConfigTest {
         assertEquals(String.valueOf(shards), response.getSetting("janusgraph", "index.number_of_shards"));
 
         idx.close();
-        n.stop();
+        n.close();
         esr.stop();
     }
 
