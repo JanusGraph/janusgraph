@@ -1,9 +1,5 @@
 #!/bin/sh
 
-# OPTIONS:
-#   -d: daemonize, start in the background
-#   -p <filename>: log the pid to a file (useful to kill it later)
-
 # CONTROLLING STARTUP:
 #
 # This script relies on few environment variables to determine startup
@@ -46,16 +42,16 @@
 # Be aware that you will be entirely responsible for populating the needed
 # environment variables.
 
-
 # Maven will replace the project.name with elasticsearch below. If that
 # hasn't been done, we assume that this is not a packaged version and the
 # user has forgotten to run Maven to create a package.
-IS_PACKAGED_VERSION='elasticsearch'
-if [ "$IS_PACKAGED_VERSION" != "elasticsearch" ]; then
+
+IS_PACKAGED_VERSION='distributions'
+if [ "$IS_PACKAGED_VERSION" != "distributions" ]; then
     cat >&2 << EOF
 Error: You must build the project with Maven or download a pre-built package
 before you can run Elasticsearch. See 'Building from Source' in README.textile
-or visit http://www.elasticsearch.org/download to get a pre-built package.
+or visit https://www.elastic.co/download to get a pre-built package.
 EOF
     exit 1
 fi
@@ -83,7 +79,7 @@ ES_HOME=`cd "$ES_HOME"; pwd`
 
 #### Start JanusGraph-specific edit
 ES_INCLUDE="$ES_HOME/bin/elasticsearch.in.sh"
-ES_CLASSPATH="`cat $ES_HOME/target/es_classpath.txt`"
+ES_CLASSPATH="$ES_HOME/target/es_jarhell.jar:`cat $ES_HOME/target/es_classpath.txt`"
 #### End JanusGraph-specific edit
 
 # If an include wasn't specified in the environment, then search for one...
@@ -93,6 +89,7 @@ if [ "x$ES_INCLUDE" = "x" ]; then
                    /usr/local/share/elasticsearch/elasticsearch.in.sh \
                    /opt/elasticsearch/elasticsearch.in.sh \
                    ~/.elasticsearch.in.sh \
+                   "$ES_HOME/bin/elasticsearch.in.sh" \
                    "`dirname "$0"`"/elasticsearch.in.sh; do
         if [ -r "$include" ]; then
             . "$include"
@@ -120,6 +117,14 @@ if [ -z "$ES_CLASSPATH" ]; then
     exit 1
 fi
 
+# don't let JAVA_TOOL_OPTIONS slip in (e.g. crazy agents in ubuntu)
+# works around https://bugs.launchpad.net/ubuntu/+source/jayatana/+bug/1441487
+if [ "x$JAVA_TOOL_OPTIONS" != "x" ]; then
+    echo "Warning: Ignoring JAVA_TOOL_OPTIONS=$JAVA_TOOL_OPTIONS"
+    echo "Please pass JVM parameters via JAVA_OPTS instead"
+    unset JAVA_TOOL_OPTIONS
+fi
+
 # Special-case path variables.
 case `uname` in
     CYGWIN*)
@@ -128,91 +133,29 @@ case `uname` in
     ;;
 esac
 
-launch_service()
-{
-    pidpath=$1
-    daemonized=$2
-    props=$3
-    es_parms="-Delasticsearch"
+# full hostname passed through cut for portability on systems that do not support hostname -s
+# export on separate line for shells that do not support combining definition and export
+HOSTNAME=`hostname | cut -d. -f1`
+export HOSTNAME
 
-    if [ "x$pidpath" != "x" ]; then
-        es_parms="$es_parms -Des.pidfile=$pidpath"
+# manual parsing to find out, if process should be detached
+daemonized=`echo $* | egrep -- '(^-d |-d$| -d |--daemonize$|--daemonize )'`
+if [ -z "$daemonized" ] ; then
+    exec "$JAVA" $JAVA_OPTS $ES_JAVA_OPTS -Des.path.home="$ES_HOME" -cp "$ES_CLASSPATH" \
+          org.elasticsearch.bootstrap.Elasticsearch start "$@"
+else
+    exec "$JAVA" $JAVA_OPTS $ES_JAVA_OPTS -Des.path.home="$ES_HOME" -cp "$ES_CLASSPATH" \
+          org.elasticsearch.bootstrap.Elasticsearch start "$@" <&- &
+    retval=$?
+    pid=$!
+    [ $retval -eq 0 ] || exit $retval
+    if [ ! -z "$ES_STARTUP_SLEEP_TIME" ]; then
+      sleep $ES_STARTUP_SLEEP_TIME
     fi
-
-    # The es-foreground option will tell Elasticsearch not to close stdout/stderr, but it's up to us not to daemonize.
-    if [ "x$daemonized" = "x" ]; then
-        es_parms="$es_parms -Des.foreground=yes"
-        exec "$JAVA" $JAVA_OPTS $ES_JAVA_OPTS $es_parms -Des.path.home="$ES_HOME" -cp "$ES_CLASSPATH" $props \
-                org.elasticsearch.bootstrap.Elasticsearch
-        # exec without running it in the background, makes it replace this shell, we'll never get here...
-        # no need to return something
-    else
-        # Startup Elasticsearch, background it, and write the pid.
-        exec "$JAVA" $JAVA_OPTS $ES_JAVA_OPTS $es_parms -Des.path.home="$ES_HOME" -cp "$ES_CLASSPATH" $props \
-                    org.elasticsearch.bootstrap.Elasticsearch <&- &
-        return $?
+    if ! ps -p $pid > /dev/null ; then
+      exit 1
     fi
-}
-
-# Parse any long getopt options and put them into properties before calling getopt below
-# Be dash compatible to make sure running under ubuntu works
-ARGV=""
-while [ $# -gt 0 ]
-do
-    case $1 in
-      --*=*) properties="$properties -Des.${1#--}"
-           shift 1
-           ;;
-      --*) properties="$properties -Des.${1#--}=$2"
-           shift 2
-           ;;
-      *) ARGV="$ARGV $1" ; shift
-    esac
-done
-
-# Parse any command line options.
-args=`getopt vdhp:D:X: $ARGV`
-eval set -- "$args"
-
-while true; do
-    case $1 in
-        -v)
-            "$JAVA" $JAVA_OPTS $ES_JAVA_OPTS $es_parms -Des.path.home="$ES_HOME" -cp "$ES_CLASSPATH" $props \
-                    org.elasticsearch.Version
-            exit 0
-        ;;
-        -p)
-            pidfile="$2"
-            shift 2
-        ;;
-        -d)
-            daemonized="yes"
-            shift
-        ;;
-        -h)
-            echo "Usage: $0 [-d] [-h] [-p pidfile]"
-            exit 0
-        ;;
-        -D)
-            properties="$properties -D$2"
-            shift 2
-        ;;
-        -X)
-            properties="$properties -X$2"
-            shift 2
-        ;;
-        --)
-            shift
-            break
-        ;;
-        *)
-            echo "Error parsing argument $1!" >&2
-            exit 1
-        ;;
-    esac
-done
-
-# Start up the service
-launch_service "$pidfile" "$daemonized" "$properties"
+    exit 0
+fi
 
 exit $?

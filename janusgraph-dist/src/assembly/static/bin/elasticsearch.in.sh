@@ -1,6 +1,19 @@
 #!/bin/sh
 
-ES_CLASSPATH=$ES_CLASSPATH:$ES_HOME/lib/elasticsearch-1.1.1.jar:$ES_HOME/lib/*:$ES_HOME/lib/sigar/*
+# check in case a user was using this mechanism
+if [ "x$ES_CLASSPATH" != "x" ]; then
+    cat >&2 << EOF
+Error: Don't modify the classpath with ES_CLASSPATH. Best is to add
+additional elements via the plugin mechanism, or if code must really be
+added to the main classpath, add jars to lib/ (unsupported).
+EOF
+    exit 1
+fi
+
+#### Start JanusGraph-specific edit
+# ensure janusgraph-es is first on classpath for JarHell override
+ES_CLASSPATH="`ls $ES_HOME/lib/janusgraph-es*`:$ES_HOME/lib/*"
+#### End JanusGraph-specific edit
 
 if [ "x$ES_MIN_MEM" = "x" ]; then
     ES_MIN_MEM=256m
@@ -30,9 +43,6 @@ if [ "x$ES_DIRECT_SIZE" != "x" ]; then
     JAVA_OPTS="$JAVA_OPTS -XX:MaxDirectMemorySize=${ES_DIRECT_SIZE}"
 fi
 
-# reduce the per-thread stack size
-JAVA_OPTS="$JAVA_OPTS -Xss256k"
-
 # set to headless, just in case
 JAVA_OPTS="$JAVA_OPTS -Djava.awt.headless=true"
 
@@ -41,20 +51,28 @@ if [ "x$ES_USE_IPV4" != "x" ]; then
   JAVA_OPTS="$JAVA_OPTS -Djava.net.preferIPv4Stack=true"
 fi
 
-JAVA_OPTS="$JAVA_OPTS -XX:+UseParNewGC"
-JAVA_OPTS="$JAVA_OPTS -XX:+UseConcMarkSweepGC"
+# Add gc options. ES_GC_OPTS is unsupported, for internal testing
+if [ "x$ES_GC_OPTS" = "x" ]; then
+  ES_GC_OPTS="$ES_GC_OPTS -XX:+UseParNewGC"
+  ES_GC_OPTS="$ES_GC_OPTS -XX:+UseConcMarkSweepGC"
+  ES_GC_OPTS="$ES_GC_OPTS -XX:CMSInitiatingOccupancyFraction=75"
+  ES_GC_OPTS="$ES_GC_OPTS -XX:+UseCMSInitiatingOccupancyOnly"
+fi
 
-JAVA_OPTS="$JAVA_OPTS -XX:CMSInitiatingOccupancyFraction=75"
-JAVA_OPTS="$JAVA_OPTS -XX:+UseCMSInitiatingOccupancyOnly"
+JAVA_OPTS="$JAVA_OPTS $ES_GC_OPTS"
 
 # GC logging options
-if [ "x$ES_USE_GC_LOGGING" != "x" ]; then
+if [ -n "$ES_GC_LOG_FILE" ]; then
   JAVA_OPTS="$JAVA_OPTS -XX:+PrintGCDetails"
   JAVA_OPTS="$JAVA_OPTS -XX:+PrintGCTimeStamps"
+  JAVA_OPTS="$JAVA_OPTS -XX:+PrintGCDateStamps"
   JAVA_OPTS="$JAVA_OPTS -XX:+PrintClassHistogram"
   JAVA_OPTS="$JAVA_OPTS -XX:+PrintTenuringDistribution"
   JAVA_OPTS="$JAVA_OPTS -XX:+PrintGCApplicationStoppedTime"
-  JAVA_OPTS="$JAVA_OPTS -Xloggc:/var/log/elasticsearch/gc.log"
+  JAVA_OPTS="$JAVA_OPTS -Xloggc:$ES_GC_LOG_FILE"
+
+  # Ensure that the directory for the log file exists: the JVM will not create it.
+  mkdir -p "`dirname \"$ES_GC_LOG_FILE\"`"
 fi
 
 # Causes the JVM to dump its heap on OutOfMemory.
@@ -63,4 +81,11 @@ JAVA_OPTS="$JAVA_OPTS -XX:+HeapDumpOnOutOfMemoryError"
 # space for a full heap dump.
 #JAVA_OPTS="$JAVA_OPTS -XX:HeapDumpPath=$ES_HOME/logs/heapdump.hprof"
 
-cd "`dirname $0`"/..
+# Disables explicit GC
+JAVA_OPTS="$JAVA_OPTS -XX:+DisableExplicitGC"
+
+# Ensure UTF-8 encoding by default (e.g. filenames)
+JAVA_OPTS="$JAVA_OPTS -Dfile.encoding=UTF-8"
+
+# Use our provided JNA always versus the system one
+JAVA_OPTS="$JAVA_OPTS -Djna.nosys=true"

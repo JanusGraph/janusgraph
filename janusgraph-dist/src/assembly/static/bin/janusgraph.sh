@@ -134,9 +134,9 @@ start() {
     }
     echo "Forking Elasticsearch..."
     if [ -n "$VERBOSE" ]; then
-        "$BIN"/elasticsearch -d
+        "$BIN"/elasticsearch -d -Dpath.conf=conf/es
     else
-        "$BIN"/elasticsearch -d >/dev/null 2>&1
+        "$BIN"/elasticsearch -d -Dpath.conf=conf/es >/dev/null 2>&1
     fi
     wait_for_startup Elasticsearch $ELASTICSEARCH_IP $ELASTICSEARCH_PORT $ELASTICSEARCH_STARTUP_TIMEOUT_S || {
         echo "See $BIN/../log/elasticsearch.log for Elasticsearch log output."  >&2

@@ -23,7 +23,7 @@ import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.reflect.Array;
+import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 
@@ -82,7 +83,7 @@ public enum ElasticSearchSetup {
         public Connection connect(Configuration config) throws IOException {
             log.debug("Configuring TransportClient");
 
-            ImmutableSettings.Builder settingsBuilder = settingsBuilder(config);
+            Settings.Builder settingsBuilder = settingsBuilder(config);
 
             if (config.has(ElasticSearchIndex.CLIENT_SNIFF)) {
                 String k = "client.transport.sniff";
@@ -90,7 +91,9 @@ public enum ElasticSearchSetup {
                 log.debug("Set {}: {}", k, config.get(ElasticSearchIndex.CLIENT_SNIFF));
             }
 
-            TransportClient tc = new TransportClient(settingsBuilder.build());
+            settingsBuilder.put("index.max_result_window", Integer.MAX_VALUE);
+
+            TransportClient tc = TransportClient.builder().settings(settingsBuilder.build()).build();
             int defaultPort = config.has(INDEX_PORT) ? config.get(INDEX_PORT) : ElasticSearchIndex.HOST_PORT_DEFAULT;
             for (String host : config.get(INDEX_HOSTS)) {
                 String[] hostparts = host.split(":");
@@ -98,7 +101,7 @@ public enum ElasticSearchSetup {
                 int hostport = defaultPort;
                 if (hostparts.length == 2) hostport = Integer.parseInt(hostparts[1]);
                 log.info("Configured remote host: {} : {}", hostname, hostport);
-                tc.addTransportAddress(new InetSocketTransportAddress(hostname, hostport));
+                tc.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(hostname), hostport));
             }
             return new Connection(null, tc);
         }
@@ -113,7 +116,7 @@ public enum ElasticSearchSetup {
 
             log.debug("Configuring Node Client");
 
-            ImmutableSettings.Builder settingsBuilder = settingsBuilder(config);
+            Settings.Builder settingsBuilder = settingsBuilder(config);
 
             if (config.has(ElasticSearchIndex.TTL_INTERVAL)) {
                 String k = "indices.ttl.interval";
@@ -123,7 +126,7 @@ public enum ElasticSearchSetup {
 
             makeLocalDirsIfNecessary(settingsBuilder, config);
 
-            NodeBuilder nodeBuilder = NodeBuilder.nodeBuilder().settings(settingsBuilder.build());
+            NodeBuilder nodeBuilder = NodeBuilder.nodeBuilder();
 
             // Apply explicit JanusGraph properties file overrides (otherwise conf-file or ES defaults apply)
             if (config.has(ElasticSearchIndex.CLIENT_ONLY)) {
@@ -134,9 +137,14 @@ public enum ElasticSearchSetup {
             if (config.has(ElasticSearchIndex.LOCAL_MODE))
                 nodeBuilder.local(config.get(ElasticSearchIndex.LOCAL_MODE));
 
-            if (config.has(ElasticSearchIndex.LOAD_DEFAULT_NODE_SETTINGS))
-                nodeBuilder.loadConfigSettings(config.get(ElasticSearchIndex.LOAD_DEFAULT_NODE_SETTINGS));
+            if (config.has(ElasticSearchIndex.LOAD_DEFAULT_NODE_SETTINGS)) {
+                // Elasticsearch >2.3 always loads default settings
+                String k = "config.ignore_system_properties";
+                settingsBuilder.put(k, !config.get(ElasticSearchIndex.LOAD_DEFAULT_NODE_SETTINGS));
+            }
 
+            settingsBuilder.put("index.max_result_window", Integer.MAX_VALUE);
+            nodeBuilder.settings(settingsBuilder.build());
             Node node = nodeBuilder.node();
             Client client = node.client();
             return new Connection(node, client);
@@ -159,7 +167,7 @@ public enum ElasticSearchSetup {
      *  <li>If ignore-cluster-name is set, copy that value to client.transport.ignore_cluster_name in the settings builder</li>
      *  <li>If client-sniff is set, copy that value to client.transport.sniff in the settings builder</li>
      *  <li>If ttl-interval is set, copy that volue to indices.ttl.interval in the settings builder</li>
-     *  <li>Unconditionally set script.disable_dynamic to false (i.e. enable dynamic scripting)</li>
+     *  <li>Unconditionally set script.inline to true (i.e. enable inline scripting)</li>
      * </ol>
      *
      * This method then returns the builder.
@@ -168,12 +176,14 @@ public enum ElasticSearchSetup {
      * @return ES settings builder configured according to the {@code config} parameter
      * @throws java.io.IOException if conf-file was set but could not be read
      */
-    private static ImmutableSettings.Builder settingsBuilder(Configuration config) throws IOException {
+    private static Settings.Builder settingsBuilder(Configuration config) throws IOException {
 
-        ImmutableSettings.Builder settings = ImmutableSettings.settingsBuilder();
+        Settings.Builder settings = Settings.settingsBuilder();
 
         // Set JanusGraph defaults
         settings.put("client.transport.ignore_cluster_name", true);
+
+        settings.put("path.home", System.getProperty("java.io.tmpdir"));
 
         // Apply overrides from ES conf file
         applySettingsFromFile(settings, config, INDEX_CONF_FILE);
@@ -198,21 +208,21 @@ public enum ElasticSearchSetup {
             log.debug("Set {}: {}", k, ignoreClusterName);
         }
 
-        // Force-enable dynamic scripting.  This is probably only useful in Node mode.
-        String disableScriptsKey = "script.disable_dynamic";
-        String disableScriptsVal = settings.get(disableScriptsKey);
-        if (null != disableScriptsVal && !"false".equals(disableScriptsVal)) {
-            log.warn("JanusGraph requires Elasticsearch dynamic scripting.  Setting {} to false.  " +
-                    "Dynamic scripting must be allowed in the Elasticsearch cluster configuration.",
-                    disableScriptsKey);
+        // Force-enable inline scripting.  This is probably only useful in Node mode.
+        String inlineScriptsKey = "script.inline";
+        String inlineScriptsVal = settings.get(inlineScriptsKey);
+        if (null != inlineScriptsVal && !"true".equals(inlineScriptsVal)) {
+            log.warn("JanusGraph requires Elasticsearch inline scripting.  Setting {} to true.  " +
+                    "Inline scripting must be allowed in the Elasticsearch cluster configuration.",
+                    inlineScriptsKey);
         }
-        settings.put(disableScriptsKey, false);
-        log.debug("Set {}: {}", disableScriptsKey, false);
+        settings.put(inlineScriptsKey, true);
+        log.debug("Set {}: {}", inlineScriptsKey, false);
 
         return settings;
     }
 
-    static void applySettingsFromFile(ImmutableSettings.Builder settings,
+    static void applySettingsFromFile(Settings.Builder settings,
                                               Configuration config,
                                               ConfigOption<String> confFileOption) throws FileNotFoundException {
         if (config.has(confFileOption)) {
@@ -230,7 +240,7 @@ public enum ElasticSearchSetup {
         }
     }
 
-    static void applySettingsFromJanusGraphConf(ImmutableSettings.Builder settings,
+    static void applySettingsFromJanusGraphConf(Settings.Builder settings,
                                                    Configuration config,
                                                    ConfigNamespace rootNS) {
         int keysLoaded = 0;
@@ -262,7 +272,7 @@ public enum ElasticSearchSetup {
     }
 
 
-    private static void makeLocalDirsIfNecessary(ImmutableSettings.Builder settingsBuilder, Configuration config) {
+    private static void makeLocalDirsIfNecessary(Settings.Builder settingsBuilder, Configuration config) {
         if (config.has(INDEX_DIRECTORY)) {
             String dataDirectory = config.get(INDEX_DIRECTORY);
             File f = new File(dataDirectory);
@@ -270,17 +280,9 @@ public enum ElasticSearchSetup {
                 log.info("Creating ES directory prefix: {}", f);
                 f.mkdirs();
             }
-            for (String sub : ElasticSearchIndex.DATA_SUBDIRS) {
-                String subdir = dataDirectory + File.separator + sub;
-                f = new File(subdir);
-                if (!f.exists()) {
-                    log.info("Creating ES {} directory: {}", sub, f);
-                    f.mkdirs();
-                }
-                settingsBuilder.put("path." + sub, subdir);
-                log.debug("Set ES {} directory: {}", sub, f);
-            }
+            settingsBuilder.put("path.home", dataDirectory);
         }
+
     }
 
     private static final Logger log = LoggerFactory.getLogger(ElasticSearchSetup.class);

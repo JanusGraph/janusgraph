@@ -34,7 +34,6 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
             LoggerFactory.getLogger(ElasticsearchRunner.class);
 
     public static final String ES_PID_FILE = "/tmp/janusgraph-test-es.pid";
-    private String configFile = "elasticsearch.yml";
 
     public ElasticsearchRunner() {
         this.homedir = ".";
@@ -42,11 +41,6 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
 
     public ElasticsearchRunner(String esHome) {
         this.homedir = esHome;
-    }
-
-    public ElasticsearchRunner(String esHome, String configFile) {
-        this(esHome);
-        this.configFile = configFile;
     }
 
 
@@ -91,7 +85,7 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
             FileUtils.deleteDirectory(logs);
         }
 
-        runCommand(homedir + File.separator + "bin/elasticsearch", "-d", "-p", ES_PID_FILE, "-Des.config=" + homedir + File.separator + "config" + File.separator + configFile);
+        runCommand(homedir + File.separator + "bin/elasticsearch", "-d", "-p", ES_PID_FILE);
         try {
             watchLog(" started", 60L, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
