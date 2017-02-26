@@ -111,6 +111,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <janusgraph.testdir>${project.build.directory}/janusgraph-test</janusgraph.testdir>
         <gpg.skip>false</gpg.skip>
+        <maven.gpg.version>1.4</maven.gpg.version>
         <perf.jvm.opts />
         <default.test.jvm.opts>-Xms256m -Xmx768m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
         <mem.jvm.opts>-Xms256m -Xmx256m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
@@ -118,6 +119,7 @@
         <test.skip.default>false</test.skip.default>
         <test.skip.tp>true</test.skip.tp>
         <top.level.basedir>${basedir}</top.level.basedir>
+        <maven.javadoc.version>2.10.4</maven.javadoc.version>
         <compiler.source>1.8</compiler.source>
         <compiler.target>1.8</compiler.target>
         <test.excluded.groups>org.janusgraph.testcategory.MemoryTests,org.janusgraph.testcategory.PerformanceTests,org.janusgraph.testcategory.BrittleTests</test.excluded.groups>
@@ -383,7 +385,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.9.1</version>
+                    <version>${maven.javadoc.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-assembly-plugin</artifactId>
@@ -407,7 +409,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-gpg-plugin</artifactId>
-                    <version>1.4</version>
+                    <version>${maven.gpg.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
@@ -1113,7 +1115,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>2.7</version>
+                        <version>${maven.javadoc.version}</version>
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
@@ -1123,7 +1125,7 @@
                     </plugin>
                     <plugin>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.1</version>
+                        <version>${maven.gpg.version}</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
