@@ -115,6 +115,7 @@
         <compiler.source>1.8</compiler.source>
         <compiler.target>1.8</compiler.target>
         <test.excluded.groups>org.janusgraph.testcategory.MemoryTests,org.janusgraph.testcategory.PerformanceTests,org.janusgraph.testcategory.BrittleTests</test.excluded.groups>
+        <dependency.locations.enabled>false</dependency.locations.enabled>
     </properties>
     <modules>
         <module>janusgraph-core</module>
@@ -140,6 +141,35 @@
             </releases>
             <snapshots>
                 <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <!-- the repositories below are included here for `mvn project-info-reports:dependencies` -->
+        <repository>
+            <!-- for com.github.jeremyh:jBCrypt:jar -->
+            <id>jitpack.io</id>
+            <name>JitPack Package Repository</name>
+            <url>https://jitpack.io</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <!-- for com.sleepycat:je:jar -->
+            <id>oracleReleases</id>
+            <name>Oracle Released Java Packages</name>
+            <url>http://download.oracle.com/maven</url>
+            <layout>default</layout>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <!-- for org.restlet.jee:org.restlet:jar -->
+            <id>spring-releases</id>
+            <name>Spring Release Repository</name>
+            <url>http://repo.spring.io/libs-release-remote/</url>
+            <snapshots>
+                <enabled>false</enabled>
             </snapshots>
         </repository>
     </repositories>
