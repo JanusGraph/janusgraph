@@ -168,7 +168,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     private Logger log = LoggerFactory.getLogger(JanusGraphTest.class);
 
-    protected abstract boolean isLockingOptimistic();
+    final boolean isLockingOptimistic() {
+        return features.hasOptimisticLocking();
+    }
 
   /* ==================================================================================
                             INDEXING

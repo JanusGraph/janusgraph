@@ -30,58 +30,58 @@ public interface StoreFeatures {
      * Equivalent to calling {@link #hasUnorderedScan()} {@code ||}
      * {@link #hasOrderedScan()}.
      */
-    public boolean hasScan();
+    boolean hasScan();
 
     /**
      * Whether this storage backend supports global key scans via
      * {@link KeyColumnValueStore#getKeys(SliceQuery, StoreTransaction)}.
      */
-    public boolean hasUnorderedScan();
+    boolean hasUnorderedScan();
 
     /**
      * Whether this storage backend supports global key scans via
      * {@link KeyColumnValueStore#getKeys(KeyRangeQuery, StoreTransaction)}.
      */
-    public boolean hasOrderedScan();
+    boolean hasOrderedScan();
 
     /**
      * Whether this storage backend supports query operations on multiple keys
      * via
      * {@link KeyColumnValueStore#getSlice(java.util.List, SliceQuery, StoreTransaction)}
      */
-    public boolean hasMultiQuery();
+    boolean hasMultiQuery();
 
     /**
      * Whether this store supports locking via
      * {@link KeyColumnValueStore#acquireLock(org.janusgraph.diskstorage.StaticBuffer, org.janusgraph.diskstorage.StaticBuffer, org.janusgraph.diskstorage.StaticBuffer, StoreTransaction)}
      *
      */
-    public boolean hasLocking();
+    boolean hasLocking();
 
     /**
      * Whether this storage backend supports batch mutations via
      * {@link KeyColumnValueStoreManager#mutateMany(java.util.Map, StoreTransaction)}.
      *
      */
-    public boolean hasBatchMutation();
+    boolean hasBatchMutation();
 
     /**
      * Whether this storage backend preserves key locality. This affects JanusGraph's
      * use of vertex ID partitioning.
      *
      */
-    public boolean isKeyOrdered();
+    boolean isKeyOrdered();
 
     /**
      * Whether this storage backend writes and reads data from more than one
      * machine.
      */
-    public boolean isDistributed();
+    boolean isDistributed();
 
     /**
      * Whether this storage backend's transactions support isolation.
      */
-    public boolean hasTxIsolation();
+    boolean hasTxIsolation();
 
     /**
      * Whether this storage backend has a (possibly improper) subset of the
@@ -92,7 +92,7 @@ public interface StoreFeatures {
      * return a valid list as described in that method.  If this is false, that
      * method will not be invoked.
      */
-    public boolean hasLocalKeyPartition();
+    boolean hasLocalKeyPartition();
 
     /**
      * Whether this storage backend provides strong consistency within each
@@ -103,7 +103,7 @@ public interface StoreFeatures {
      *
      * @return true if the backend supports key-level strong consistency
      */
-    public boolean isKeyConsistent();
+    boolean isKeyConsistent();
 
     /**
      * Returns true if column-value entries in this storage backend are annotated with a timestamp,
@@ -111,7 +111,7 @@ public interface StoreFeatures {
      *
      * @return
      */
-    public boolean hasTimestamps();
+    boolean hasTimestamps();
 
     /**
      * If this storage backend supports one particular type of data
@@ -125,7 +125,7 @@ public interface StoreFeatures {
      *
      * @return null or a Timestamps enum value
      */
-    public TimestampProviders getPreferredTimestamps();
+    TimestampProviders getPreferredTimestamps();
 
     /**
      * Returns true if this storage backend support time-to-live (TTL) settings for column-value entries. If such a value
@@ -136,7 +136,7 @@ public interface StoreFeatures {
      *
      * @return true if the storage backend supports cell-level TTL, else false
      */
-    public boolean hasCellTTL();
+    boolean hasCellTTL();
 
     /**
      * Returns true if this storage backend supports time-to-live (TTL) settings on a per-store basis. That means, that
@@ -146,7 +146,7 @@ public interface StoreFeatures {
      *
      * @return true if the storage backend supports store-level TTL, else false
      */
-    public boolean hasStoreTTL();
+    boolean hasStoreTTL();
 
     /**
      * Returns true if this storage backend supports entry-level visibility by attaching a visibility or authentication
@@ -154,13 +154,13 @@ public interface StoreFeatures {
      *
      * @return
      */
-    public boolean hasVisibility();
+    boolean hasVisibility();
 
     /**
      * Whether the backend supports data persistence. Return false if the backend is in-memory only.
      * @return
      */
-    public boolean supportsPersistence();
+    boolean supportsPersistence();
 
     /**
      * Get a transaction configuration that enforces key consistency. This
@@ -169,7 +169,7 @@ public interface StoreFeatures {
      *
      * @return a key-consistent tx config
      */
-    public Configuration getKeyConsistentTxConfig();
+    Configuration getKeyConsistentTxConfig();
 
     /**
      * Get a transaction configuration that enforces local key consistency.
@@ -185,7 +185,7 @@ public interface StoreFeatures {
      *
      * @return a locally (or globally) key-consistent tx config
      */
-    public Configuration getLocalKeyConsistentTxConfig();
+    Configuration getLocalKeyConsistentTxConfig();
 
 
     /**
@@ -197,12 +197,20 @@ public interface StoreFeatures {
      *
      * @return a transaction configuration suitable for scanjob data reading
      */
-    public Configuration getScanTxConfig();
+    Configuration getScanTxConfig();
 
 
     /**
      * Whether calls to this manager and its stores may be safely interrupted
      * without leaving the underlying system in an inconsistent state.
      */
-    public boolean supportsInterruption();
+    boolean supportsInterruption();
+
+    /**
+     * Whether the store will commit pending mutations optimistically and make other pending changes
+     * to the same cells fail on tx.commit() (true) or will fail pending mutations pessimistically on tx.commit()
+     * if other parallel transactions have already marked the relevant cells dirty.
+     * @return
+     */
+    boolean hasOptimisticLocking();
 }

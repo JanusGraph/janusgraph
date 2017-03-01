@@ -32,11 +32,4 @@ public class ThriftGraphCacheTest extends JanusGraphTest {
     public static void beforeClass() {
         CassandraStorageSetup.startCleanEmbedded();
     }
-
-
-
-    @Override
-    protected boolean isLockingOptimistic() {
-        return true;
-    }
 }
