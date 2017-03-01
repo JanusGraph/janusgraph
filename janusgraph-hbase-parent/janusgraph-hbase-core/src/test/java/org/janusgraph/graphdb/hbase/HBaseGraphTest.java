@@ -42,9 +42,4 @@ public class HBaseGraphTest extends JanusGraphTest {
         return HBaseStorageSetup.getHBaseGraphConfiguration();
     }
 
-    @Override
-    protected boolean isLockingOptimistic() {
-        return true;
-    }
-
 }

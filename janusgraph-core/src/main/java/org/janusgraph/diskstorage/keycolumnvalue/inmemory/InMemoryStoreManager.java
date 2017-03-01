@@ -53,6 +53,7 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
             .unorderedScan(true)
             .keyOrdered(true)
             .persists(false)
+            .optimisticLocking(true)
             .keyConsistent(GraphDatabaseConfiguration.buildGraphConfiguration())
             .build();
 
