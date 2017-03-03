@@ -74,11 +74,6 @@ public class BerkeleyGraphTest extends JanusGraphTest {
     }
 
     @Override
-    protected boolean isLockingOptimistic() {
-        return false;
-    }
-
-    @Override
     public void testConcurrentConsistencyEnforcement() {
         //Do nothing TODO: Figure out why this is failing in BerkeleyDB!!
     }

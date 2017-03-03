@@ -69,7 +69,9 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
 
     public abstract WriteConfiguration getBaseConfiguration();
 
-    public abstract boolean storeUsesConsistentKeyLocker();
+    public final boolean storeUsesConsistentKeyLocker() {
+        return !this.features.hasLocking();
+    }
 
     @Override
     public WriteConfiguration getConfiguration() {

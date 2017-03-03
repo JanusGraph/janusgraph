@@ -347,7 +347,7 @@ public abstract class LogTest {
             StaticBuffer content = message.getContent();
             assertEquals(8,content.length());
             long value = content.getLong(0);
-            log.info("Read log value {} by senderid \"{}\"", value, message.getSenderId());
+            log.debug("Read log value {} by senderid \"{}\"", value, message.getSenderId());
             if (expectIncreasingValues) {
                 assertTrue("Message out of order or duplicated: " + lastMessageValue + " preceded " + value, lastMessageValue<value);
                 lastMessageValue = value;

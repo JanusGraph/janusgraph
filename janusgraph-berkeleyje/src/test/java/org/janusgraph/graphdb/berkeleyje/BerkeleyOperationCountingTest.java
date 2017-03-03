@@ -25,9 +25,4 @@ public class BerkeleyOperationCountingTest extends JanusGraphOperationCountingTe
         return BerkeleyStorageSetup.getBerkeleyJEGraphConfiguration();
     }
 
-    @Override
-    public boolean storeUsesConsistentKeyLocker() {
-        return false;
-    }
-
 }

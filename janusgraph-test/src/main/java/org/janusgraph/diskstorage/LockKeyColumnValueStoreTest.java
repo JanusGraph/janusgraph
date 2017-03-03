@@ -80,7 +80,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
 
     private StaticBuffer k, c1, c2, v1, v2;
 
-    private final String concreteClassName;
+    protected final String concreteClassName;
 
     public LockKeyColumnValueStoreTest() {
         concreteClassName = getClass().getSimpleName();

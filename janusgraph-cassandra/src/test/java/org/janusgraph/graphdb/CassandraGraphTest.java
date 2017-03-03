@@ -38,11 +38,6 @@ public abstract class CassandraGraphTest extends JanusGraphTest {
         CassandraStorageSetup.startCleanEmbedded();
     }
 
-    @Override
-    protected boolean isLockingOptimistic() {
-        return true;
-    }
-
     @Test
     public void testHasTTL() throws Exception {
         assertTrue(features.hasCellTTL());
