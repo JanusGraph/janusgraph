@@ -31,9 +31,4 @@ public class ThriftOperationCountingTest extends JanusGraphOperationCountingTest
         return CassandraStorageSetup.getCassandraThriftGraphConfiguration(getClass().getSimpleName());
     }
 
-    @Override
-    public boolean storeUsesConsistentKeyLocker() {
-        return true;
-    }
-
 }
