@@ -19,6 +19,7 @@ import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.diskstorage.util.Hex;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.types.system.BaseVertexLabel;
@@ -99,7 +100,7 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
     @Override
     public JanusGraphVertex addVertex(Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
-        if (ElementHelper.getIdValue(keyValues).isPresent()) throw Vertex.Exceptions.userSuppliedIdsNotSupported();
+        if (ElementHelper.getIdValue(keyValues).isPresent() && !((StandardJanusGraph) getGraph()).getConfiguration().allowVertexIdSetting()) throw Vertex.Exceptions.userSuppliedIdsNotSupported();
         Object labelValue = null;
         for (int i = 0; i < keyValues.length; i = i + 2) {
             if (keyValues[i].equals(T.label)) {
@@ -114,7 +115,7 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
             label = (labelValue instanceof VertexLabel)?(VertexLabel)labelValue:getOrCreateVertexLabel((String) labelValue);
         }
 
-        final JanusGraphVertex vertex = addVertex(null,label);
+        final JanusGraphVertex vertex = addVertex(ElementHelper.getIdValue(keyValues).orElse(null), label);
 //        for (int i = 0; i < keyValues.length; i = i + 2) {
 //            if (!keyValues[i].equals(T.id) && !keyValues[i].equals(T.label))
 //                ((StandardJanusGraphTx)this).addPropertyInternal(vertex,getOrCreatePropertyKey((String) keyValues[i]),keyValues[i+1]);
