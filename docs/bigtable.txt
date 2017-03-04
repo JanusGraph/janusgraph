@@ -1,0 +1,67 @@
+[[bigtable]]
+== Google Cloud Bigtable
+
+[.tss-center.tss-width-250]
+image:Cloud-Bigtable.svg[link="https://cloud.google.com/bigtable/"]
+
+[quote, 'https://cloud.google.com/bigtable/[Google Cloud Bigtable Homepage]']
+____
+Cloud Bigtable is Google's NoSQL Big Data database service. It's the same database that powers many core Google
+services, including Search, Analytics, Maps, and Gmail.
+
+Bigtable is designed to handle massive workloads at consistent low latency and high throughput, so it's a great choice
+for both operational and analytical applications, including IoT, user analytics, and financial data analysis.
+____
+
+=== Bigtable Setup
+
+Bigtable implements the HBase interface for all data access operations, and requires some extra binary dependencies and
+some specific configuration options to connect.
+
+==== Dependencies
+
+Bigtable connectivity relies on the `cloud-bigtable-client` library. This library is open-source and is
+https://github.com/GoogleCloudPlatform/cloud-bigtable-client[hosted on GitHub]. JanusGraph uses the HBase 1.0 API,
+so we require the lastest version of the
+http://mvnrepository.com/artifact/com.google.cloud.bigtable/bigtable-hbase-1.0/0.9.5.1[bigtable-hbase-1.0 artifact.]
+
+This library also uses the
+https://mvnrepository.com/artifact/io.netty/netty-tcnative-boringssl-static[netty-tcnative-boringssl-static] library
+to make secure connections to Bigtable. Use the version recommended by the cloud-bigtable-client library.
+
+These two dependencies must be on the classpath of the Java binary that connects to Bigtable. Maven dependencies could
+be defined as:
+
+[source,xml]
+....
+<dependency>
+    <groupId>com.google.cloud.bigtable</groupId>
+    <artifactId>bigtable-hbase-1.0</artifactId>
+    <version>0.9.5.1</version>
+</dependency>
+
+<dependency>
+   <groupId>io.netty</groupId>
+   <artifactId>netty-tcnative-boringssl-static</artifactId>
+   <version>1.1.33.Fork19</version>
+</dependency>
+....
+
+It is recommended to check the documentation on the cloud-bigtable-client github homepage for updated documentation on
+dependencies and version numbers.
+
+==== Connecting to Bigtable
+
+Configuring JanusGraph to connect to Bigtable is achieved by using the `hbase` backend, along with a custom connection
+implementation, the project id of the Google Cloud Platform project containing the Bigtable instance, and the Cloud 
+Bigtable instance id you are connecting to.
+
+Example:
+
+[source,changelog]
+....
+storage.backend=hbase
+storage.hbase.ext.hbase.client.connection.impl=com.google.cloud.bigtable.hbase1_0.BigtableConnection
+storage.hbase.ext.google.bigtable.project.id=<Google Cloud Platform project id>
+storage.hbase.ext.google.bigtable.instance.id=<Bigtable instance id>
+....
