@@ -4,7 +4,7 @@
 [[configuration]]
 == Configuration
 
-A JanusGraph graph database cluster consists of one or multiple JanusGraph instances. To open a JanusGraph instance a configuration has to be provided which specifies how JanusGraph should be set up.
+A JanusGraph graph database cluster consists of one or multiple JanusGraph instances. To open a JanusGraph instance, a configuration has to be provided which specifies how JanusGraph should be set up.
 
 A JanusGraph configuration specifies which components JanusGraph should use, controls all operational aspects of a JanusGraph deployment, and provides a number of tuning options to get maximum performance from a JanusGraph cluster.
 
@@ -622,7 +622,7 @@ In the future, the option to have one running instance of JanusGraph Server supp
 [[gremlin-server-with-janusgraph]]
 ==== Using TinkerPop Gremlin Server with JanusGraph
 
-Since JanusGraph Server is, essentially, TinkerPop Gremlin Server packaged with configuration files for JanusGraph, a version compatible 
+Since JanusGraph Server is a TinkerPop Gremlin Server packaged with configuration files for JanusGraph, a version compatible 
 TinkerPop Gremlin Server can be downloaded separately and used with JanusGraph.  Get started by link:http://tinkerpop.apache.org/[downloading] the appropriate version of Gremlin Server, which needs to <<versions.txt#version-compat,match a version>> supported by the JanusGraph version in use.  
 
 IMPORTANT: Any references to file paths in this section refer to paths under a TinkerPop distribution for Gremlin Server and not a JanusGraph distribution with the JanusGraph Server, unless specifically noted.
@@ -939,7 +939,7 @@ mgmt.commit()
 
 Label restrictions similarly apply to mixed indexes. When a composite index with label restriction is defined as unique, the uniqueness constraint only applies to properties on vertices or edges for the specified label.
 
-==== Composite vs Mixed Index
+==== Composite versus Mixed Indexes
 
 . Use a composite index for exact match index retrievals. Composite indexes do not require configuring or operating an external index system and are often significantly faster than mixed indexes.
 .. As an exception, use a mixed index for exact matches when the number of distinct values for query constraint is relatively small or if one value is expected to be associated with many elements in the graph (i.e. in case of low selectivity).
@@ -947,7 +947,7 @@ Label restrictions similarly apply to mixed indexes. When a composite index with
 
 
 [[vertex-indexes]]
-=== Vertex-centric Index
+=== Vertex-centric Indexes
 
 Vertex-centric indexes are local index structures built individually per vertex. In large graphs vertices can have thousands of incident edges. Traversing through those vertices can be very slow because a large subset of the incident edges has to be retrieved and then filtered in memory to match the conditions of the traversal. Vertex-centric indexes can speed up such traversals by using localized index structures to retrieve only those edges that need to be traversed.
 
