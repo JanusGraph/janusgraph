@@ -1,30 +1,25 @@
 [[index-admin]]
-Index Management
-----------------
+== Index Management
 
 [[reindex]]
-Reindexing
-~~~~~~~~~~
+=== Reindexing
 
 <<graph-indexes>> and <<vertex-indexes>> describe how to build graph-global and vertex-centric indexes to improve query performance. These indexes are immediately available if the indexed keys or labels have been newly defined in the same management transaction. In this case, there is no need to reindex the graph and this section can be skipped. If the indexed keys or labels already existed prior to index construction it is necessary to reindex the entire graph in order to ensure that the index contains previously added elements. This section describes the reindexing process.
 
 [WARNING]
 Reindexing is a manual process comprised of multiple steps. These steps must be carefully followed in the right order to avoid index inconsistencies.
 
-Overview
-^^^^^^^^
+==== Overview
 
 JanusGraph can begin writing incremental index updates right after an index is defined.  However, before the index is complete and usable, JanusGraph must also take a one-time read pass over all existing graph elements associated with the newly indexed schema type(s).  Once this reindexing job has completed, the index is fully populated and ready to be used. The index must then be enabled to be used during query processing.
 
-Prior to Reindex
-^^^^^^^^^^^^^^^^
+==== Prior to Reindex
 
 The starting point of the reindexing process is the construction of an index. Refer to <<indexes>> for a complete discussion of global graph and vertex-centric indexes. Note, that a global graph index is uniquely identified by its name. A vertex-centric index is uniquely identified by the combination of its name and the edge label or property key on which the index is defined - the name of the latter is referred to as the *index type* in this section and only applies to vertex-centric indexes.
 
 After building a new index against existing schema elements it is recommended to wait a few minutes for the index to be announced to the cluster. Note the index name (and the index type in case of a vertex-centric index) since this information is needed when reindexing.
 
-Preparing to Reindex
-^^^^^^^^^^^^^^^^^^^^
+==== Preparing to Reindex
 
 There is a choice between two execution frameworks for reindex jobs:
 
@@ -38,8 +33,7 @@ Reindexing requires:
 * The index name (a string -- the user provides this to JanusGraph when building a new index)
 * The index type (a string -- the name of the edge label or property key on which the vertex-centric index is built). This applies only to vertex-centric indexes - leave blank for global graph indexes.
 
-Executing a Reindex Job on MapReduce
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Executing a Reindex Job on MapReduce
 
 The recommended way to generate and run a reindex job on MapReduce is through the `MapReduceIndexManagement` class.  Here is a rough outline of the steps to run a reindex job using this class:
 
@@ -57,8 +51,7 @@ mr = new MapReduceIndexManagement(graph)
 mr.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("battled"), "battlesByTime"), SchemaAction.REINDEX).get()
 mgmt.commit()
 
-Reindex Example on MapReduce
-++++++++++++++++++++++++++++
+===== Reindex Example on MapReduce
 
 The following Gremlin snippet outlines all steps of the MapReduce reindex process in one self-contained example using minimal dummy data against the Cassandra storage backend.
 
@@ -119,8 +112,7 @@ graph = JanusGraphFactory.open("conf/janusgraph-cassandra-es.properties")
 g.V().has("desc", containsText("baz"))
 ----
 
-Executing a Reindex job on JanusGraphManagement
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Executing a Reindex job on JanusGraphManagement
 
 To run a reindex job on JanusGraphManagement, invoke `JanusGraphManagement.updateIndex` with the `SchemaAction.REINDEX` argument.  For example:
 
@@ -130,8 +122,7 @@ i = m.getGraphIndex('indexName')
 m.updateIndex(i, SchemaAction.REINDEX).get()
 m.commit()
 
-Example for JanusGraphManagement
-++++++++++++++++++++++++++++++++
+===== Example for JanusGraphManagement
 
 The following loads some sample data into a BerkeleyDB-backed JanusGraph database, defines an index after the fact, reindexes using JanusGraphManagement, and finally enables and uses the index:
 
@@ -185,14 +176,12 @@ g.V().has('name', 'lop')
 ----
 
 [[mr-index-removal]]
-Index Removal
-~~~~~~~~~~~~~
+=== Index Removal
 
 [WARNING]
 Index removal is a manual process comprised of multiple steps. These steps must be carefully followed in the right order to avoid index inconsistencies.
 
-Overview
-^^^^^^^^
+==== Overview
 
 Index removal is a two-stage process.  In the first stage, one JanusGraph signals to all others via the storage backend that the index is slated for deletion.  This changes the index's state to `DISABLED`.  At that point, JanusGraph stops using the index to answer queries and stops incrementally updating the index.  Index-related data in the storage backend remains present but ignored.
 
@@ -200,8 +189,7 @@ The second stage depends on whether the index is mixed or composite.  A composit
 
 Index removal deletes everything associated with the index except its schema definition and its `DISABLED` state.  This schema stub for the index remains even after deletion, though its storage footprint is negligible and fixed.
 
-Preparing for Index Removal
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Preparing for Index Removal
 
 If the index is currently enabled, it should first be disabled.  This is done through the `ManagementSystem`.
 
@@ -232,8 +220,7 @@ Index removal requires:
 
 As noted in the overview, a mixed index must be manually dropped from the indexing backend.  Neither the MapReduce framework nor the JanusGraphManagement framework will delete a mixed backend from the indexing backend.
 
-Executing an Index Removal Job on MapReduce
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Executing an Index Removal Job on MapReduce
 
 As with reindexing, the recommended way to generate and run an index removal job on MapReduce is through the `MapReduceIndexManagement` class.  Here is a rough outline of the steps to run an index removal job using this class:
 
@@ -244,8 +231,7 @@ As with reindexing, the recommended way to generate and run an index removal job
 
 A commented code example follows in the next subsection.
 
-Example for MapReduce
-+++++++++++++++++++++
+===== Example for MapReduce
 
 [source,java]
 ----
@@ -286,8 +272,7 @@ m.rollback()
 g.V().has('name', 'jupiter')
 ----
 
-Executing an Index Removal job on JanusGraphManagement
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Executing an Index Removal job on JanusGraphManagement
 
 To run an index removal job on JanusGraphManagement, invoke `JanusGraphManagement.updateIndex` with the `SchemaAction.REMOVE_INDEX` argument.  For example:
 
@@ -297,8 +282,7 @@ i = m.getGraphIndex('indexName')
 m.updateIndex(i, SchemaAction.REMOVE_INDEX).get()
 m.commit()
 
-Example for JanusGraphManagement
-++++++++++++++++++++++++++++++++
+===== Example for JanusGraphManagement
 
 The following loads some indexed sample data into a BerkeleyDB-backed JanusGraph database, then disables and removes the index through JanusGraphManagement:
 
@@ -339,11 +323,9 @@ g.V().has('name', 'jupiter')
 ----
 
 
-Common Problems with Index Management
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Common Problems with Index Management
 
-IllegalArgumentException when starting job
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== IllegalArgumentException when starting job
 
 When a reindexing job is started shortly after a the index has been built, the job might fail with an exception like one of the following:
 
@@ -370,13 +352,11 @@ mgmt.commit()
 
 After waiting a few minutes for the acknowledgement to arrive the reindex job should start successfully.
 
-Could not find index
-^^^^^^^^^^^^^^^^^^^^
+==== Could not find index
 
 This exception in the reindexing job indicates that an index with the given name does not exist or that the name has not been specified correctly. When reindexing a global graph index, only the name of the index as defined when building the index should be specified. When reindexing a global graph index, the name of the index must be given in addition to the name of the edge label or property key on which the vertex-centric index is defined.
 
-Cassandra Mappers Fail with "Too many open files"
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Cassandra Mappers Fail with "Too many open files"
 
 The end of the exception stacktrace may look like this:
 

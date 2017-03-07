@@ -1,11 +1,9 @@
 [[failure-recovery]]
-Failure & Recovery
-------------------
+== Failure & Recovery
 
 JanusGraph is a highly available and robust graph database. In large scale JanusGraph deployments failure is inevitable. This page describes some failure situations and how JanusGraph can handle them.
 
-Transaction Failure
-~~~~~~~~~~~~~~~~~~~
+=== Transaction Failure
 
 Transactions can fail for a number of reasons. If the transaction fails before the commit the changes will be discarded and the application can retry the transaction in coherence with the business logic. Likewise, locking or other consistency failures will cause an exception prior to persistence and hence can be retried.
 The persistence stage of a transaction is when JanusGraph starts persisting data to the various backend systems.
@@ -29,8 +27,7 @@ recovery = JanusGraphFactory.startTransactionRecovery(graph, startTime, TimeUnit
 
 Enabling the transaction write-ahead log causes an additional write operation for mutating transactions which increases the latency. Also note, that additional space is required to store the log. The transaction write-ahead log has a configurable time-to-live of 2 days which means that log entries expire after that time to keep the storage overhead small. Refer to <<config-ref>> for a complete list of all log related configuration options to fine tune logging behavior.
 
-JanusGraph Instance Failure
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== JanusGraph Instance Failure
 
 JanusGraph is robust against individual instance failure in that other instances of the JanusGraph cluster are not impacted by such failure and can continue processing transactions without loss of performance while the failed instance is restarted.
 

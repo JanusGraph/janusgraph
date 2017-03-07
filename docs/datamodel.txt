@@ -1,6 +1,5 @@
 [[data-model]]
-JanusGraph Data Model
----------------------
+== JanusGraph Data Model
 
 JanusGraph stores graphs in http://en.wikipedia.org/wiki/Adjacency_list[adjacency list format] which means that a graph is stored as a collection of vertices with their adjacency list. The adjacency list of a vertex contains all of the vertex's incident edges (and properties). 
 
@@ -10,8 +9,7 @@ In addition, JanusGraph maintains the adjacency list of each vertex in sort orde
 
 JanusGraph stores the adjacency list representation of a graph in any <<storage-backends, storage backend>> that supports the BigTable data model.
 
-BigTable Data Model
-~~~~~~~~~~~~~~~~~~~
+=== BigTable Data Model
 
 [.tss-center]
 image:bigtablemodel.png[]
@@ -22,8 +20,7 @@ JanusGraph has an additional requirement for the BigTable data model: The cells 
 
 In addition, a particular BigTable implementation may keep the rows sorted in the order of their key. JanusGraph can exploit such key-order to effectively partition the graph which provides better loading and traversal performance for very large graphs. However, this is not a requirement.
 
-JanusGraph Data Layout
-~~~~~~~~~~~~~~~~~~~~~~
+=== JanusGraph Data Layout
 
 [.tss-center]
 image:storagelayout.png[]
@@ -33,8 +30,7 @@ The maximum number of cells allowed per row in a particular storage backend is t
 
 If the storage backend supports key-order, the adjacency lists will be ordered by vertex id, and JanusGraph can assign vertex ids such that the graph is effectively partitioned. Ids are assigned such that vertices which are frequently co-accessed have ids with small absolute difference.
 
-Individual Edge Layout
-~~~~~~~~~~~~~~~~~~~~~~
+=== Individual Edge Layout
 
 [.tss-center]
 image:relationlayout.png[]

@@ -1,13 +1,11 @@
 [[upgrade]]
 [appendix]
-Upgrade Instructions
---------------------
+== Upgrade Instructions
 
 Please follow these instructions when upgrading from Titan or an older
 JanusGraph release.
 
-Upgrading from Titan
-~~~~~~~~~~~~~~~~~~~~
+=== Upgrading from Titan
 
 JanusGraph is based on the latest commit to the `titan11` branch of
 https://github.com/thinkaurelius/titan[Titan repo].

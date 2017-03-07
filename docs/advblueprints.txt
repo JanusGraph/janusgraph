@@ -4,8 +4,7 @@ Advanced Tinkerpop
 
 http://tinkerpop.apache.org/[Tinkerpop] provides a set of common http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#traversalstrategy[traversal strategies] that add additional functionality to graphs.
 
-Using ElementIdStrategy
-~~~~~~~~~~~~~~~~~~~~~~~
+=== Using ElementIdStrategy
 
 It is possible to use http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#_elementidstrategy[ElementIdStrategy] with JanusGraph. ElementIdStrategy allow an arbitrary property to be used as the element ID instead of JanusGraph's long identifiers.
 

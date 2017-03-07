@@ -1,11 +1,9 @@
 [[search-predicates]]
-Search Predicates and Data Types
---------------------------------
+== Search Predicates and Data Types
 
 This page lists all of the comparison predicates that JanusGraph supports in global graph search and local traversals.
 
-Compare Predicate
-~~~~~~~~~~~~~~~~~
+=== Compare Predicate
 
 The `Compare` enum specifies the following comparison predicates used for index query construction and used in the examples above:
 
@@ -16,8 +14,7 @@ The `Compare` enum specifies the following comparison predicates used for index 
 * `lt` (less than)
 * `lte` (less than or equal)
 
-Text Predicate
-~~~~~~~~~~~~~~
+=== Text Predicate
 
 The `Text` enum specifies the <<text-search, search operator>> used to query for matching text or string values.  We differentiate between two types of predicates:
 
@@ -31,14 +28,12 @@ The `Text` enum specifies the <<text-search, search operator>> used to query for
 
 See <<text-search>> for more information about full-text and string search.
 
-Geo Predicate
-~~~~~~~~~~~~~
+=== Geo Predicate
 
 The `Geo` enum specifies the geo-location predicate `geoWithin` which holds true if one geometric object contains the other.
 
 
-Query Examples
-~~~~~~~~~~~~~~
+=== Query Examples
 
 The following query examples demonstrate some of the predicates on the tutorial graph.
 
@@ -66,8 +61,7 @@ g.V().has("age", gt(1000)).has("name", "saturn")
 
 
 [[mixeddatatypes]]
-Data Type Support
-~~~~~~~~~~~~~~~~~
+=== Data Type Support
 
 While JanusGraph's composite indexes support any data type that can be stored in JanusGraph, the mixed indexes are limited to the following data types.
 
@@ -86,8 +80,7 @@ While JanusGraph's composite indexes support any data type that can be stored in
  
 Additional data types will be supported in the future.
 
-Geoshape Data Type
-~~~~~~~~~~~~~~~~~~
+=== Geoshape Data Type
 The Geoshape data type supports representing a point, circle or box. However all index backends currently only support indexing points.
 Geospatial index lookups are only supported via mixed indexes.
 
@@ -127,8 +120,7 @@ In addition when importing a graph via GraphSON Point may be represented by:
 link:http://geojson.org/[GeoJSON] may be specified as Point, Circle or Polygon. However polygons must form a box.
 Note that unlike the JanusGraph API GeoJSON specifies coordinates as lng lat.
 
-Collections
-~~~~~~~~~~~
+=== Collections
 If you are using <<elasticsearch, Elasticsearch>> then you can index properties with SET and LIST cardinality.
 For instance:
 

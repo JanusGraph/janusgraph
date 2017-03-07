@@ -1,5 +1,4 @@
-JanusGraph Documentation
-========================
+= JanusGraph Documentation
 
 include::adoc_attributes.txt[]
 

@@ -1,6 +1,5 @@
 [[hadoop-tp3]]
-JanusGraph with TinkerPop's Hadoop-Gremlin
-------------------------------------------
+== JanusGraph with TinkerPop's Hadoop-Gremlin
 
 JanusGraph-Hadoop works with TinkerPop 3's new hadoop-gremlin package for
 general-purpose OLAP.
@@ -15,8 +14,7 @@ Here's a three step example showing some basic integrated JanusGraph-TinkerPop f
 [WARNING]
 JanusGraph's integration with TinkerPop 3.0.0 is still under active development.  The APIs and configuration snippets shown below may change as JanusGraph and TinkerPop 3.0.0 move through milestone releases and eventually their respective final releases.  The content of this chapter should be considered a tech preview rather than stable reference.
 
-Defining defining schema and loading data
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Defining defining schema and loading data
 
 [source, gremlin]
 ----
@@ -116,7 +114,6 @@ def defineGratefulDeadSchema(janusGraph) {
 }
 ----
 
-Running PageRank
-~~~~~~~~~~~~~~~~
+=== Running PageRank
 
 A fully functional example of the http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#pagerankvertexprogram[PageRankVertexProgram] can be found in the http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#vertexprogram[VertexProgram] section of the TinkerPop3 docs.

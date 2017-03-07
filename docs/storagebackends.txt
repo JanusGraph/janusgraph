@@ -1,6 +1,5 @@
 [[storage-backends]]
-Storage Backends
-================
+= Storage Backends
 
 JanusGraph's data storage layer is pluggable.  Implementations of the
 pluggable storage layer -- that is, the software component tells JanusGraph
