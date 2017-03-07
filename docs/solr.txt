@@ -1,6 +1,5 @@
 [[solr]]
-Solr
-----
+== Solr
 
 
 [quote, 'http://lucene.apache.org/solr/[Solr Homepage]']
@@ -16,17 +15,14 @@ JanusGraph supports http://lucene.apache.org/solr/[Solr] as an index backend.  H
 
 Please see <<version-compat>> for details on what versions of Solr will work with JanusGraph.
 
-Solr Configuration Overview
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Solr Configuration Overview
 
-Connecting to Solr
-^^^^^^^^^^^^^^^^^^
+==== Connecting to Solr
 
 JanusGraph supports Solr running in either a SolrCloud or HTTP configuration. The desired connection mode is configured via the parameter `mode` which must be set to either `http` or `cloud`, the latter being the default value.  For example, to explicitly specify that Solr is running in a SolrCloud configuration the following property is specified as a JanusGraph configuration property: index.search.solr.mode=cloud where 'search' is the name of the Solr index.
 
 
-Connecting to SolrCloud
-+++++++++++++++++++++++
+===== Connecting to SolrCloud
 
 When connecting to a SolrCloud enabled cluster by setting the `mode` equal to `cloud`, the Zookeeper URL (and optionally port) must be specified so that JanusGraph can discover and interact with the Solr cluster.
 
@@ -40,8 +36,7 @@ index.search.solr.zookeeper-url=localhost:2181
 A number of additional configuration options pertaining to the creation of new collections (which is only supported in SolrCloud operation mode) can be configured to control sharding behavior among other things. Refer to the <<config-ref>> for a complete listing of those options.
 
 
-Connecting via HTTP
-+++++++++++++++++++
+===== Connecting via HTTP
 
 When connecting to Solr via HTTP by setting the `mode` equal to `http` a single or list of URLs for the Solr instances must be provided.
 
@@ -54,22 +49,19 @@ index.search.solr.http-urls=http://localhost:8983/solr
 
 Additional configuration options for controlling the maximum number of connections, connection timeout and transmission compression are available for the HTTP mode. Refer to the <<config-ref>> for a complete listing of those options.
 
-Solr Collections
-^^^^^^^^^^^^^^^^
+==== Solr Collections
 
 .Note:
 [NOTE]
 Solr documentation makes a distinction between the terms *core* and *configuration set*.  For the purposes of configuring JanusGraph to work with Solr, the terms are used interchangeably.  
 
-Collection Initialization
-+++++++++++++++++++++++++
+===== Collection Initialization
 
 SolrCloud leverages Zookeeper to coordinate Solr *configuration sets* and *collection* information between instances of Solr.  Solr HTTP, because it is a single instance, keeps *configuration set* information exclusively on the file system. The use of Zookeeper with SolrCloud provides the opportunity to significantly reduce the amount of manual configuration required to use Solr as a back end index for JanusGraph.
 
 
 
-Using Solr in SolrCloud Configuration
-+++++++++++++++++++++++++++++++++++++
+===== Using Solr in SolrCloud Configuration
 
 When a <<index-mixed>> is defined for a graph, JanusGraph creates a new *collection* in Solr that matches the index name. In order to create a new collection, Solr requires that a *configuration set* be defined that specifies the schema (schema.xml and other files) to be used for the collection. The JanusGraph distribution contains a default configuration set.  The JanusGraph provided configuration set must be manually copied from where JanusGraph is installed to one of the Solr nodes in the SolrCloud.
 
@@ -120,8 +112,7 @@ Use of the configset property provides two significant benefits:
 If the property is not specified, then the manual configuration process must be followed for each new mixed index that is defined in Solr.
 
 
-Using Solr in HTTP Configuration
-++++++++++++++++++++++++++++++++
+===== Using Solr in HTTP Configuration
 
 To create a new core that is compatible with JanusGraph:
 
@@ -139,8 +130,7 @@ The core_name must match the index name used to build the index and you will nee
 mgmt.buildIndex('{core_name}', Vertex.class).addKey(name).buildMixedIndex('search')
 ----
 
-Dynamic Field Definition
-++++++++++++++++++++++++
+===== Dynamic Field Definition
 
 By default, JanusGraph uses Solr's https://cwiki.apache.org/confluence/display/solr/Dynamic+Fields[Dynamic Fields] feature to define the field types for all indexed keys. This requires no extra configuration when adding property keys to a mixed index backed by Solr and provides better performance than schemaless mode.
 
@@ -164,8 +154,7 @@ is additional xml definition of the following fields required in a solr schema.x
 
 In JanusGraph's default configuration, property key names do not have to end with the type-appropriate suffix to take advantage of Solr's dynamic field feature.  JanusGraph generates the Solr field name from the property key name by encoding the property key definition's numeric identifier and the type-appropriate suffix.  This means that JanusGraph uses synthetic field names with type-appropriate suffixes behind the scenes, regardless of the property key names defined and used by application code using JanusGraph.  This field name mapping can be overridden through non-default configuration.  That's described in the next section. 
 
-Manual Field Definition
-+++++++++++++++++++++++
+===== Manual Field Definition
 
 If the user would rather manually define the field types for each of the indexed fields in a collection, the configuration option `dyn-fields` needs to be disabled.  It is important that the field for each indexed property key is defined in the backing Solr schema before the property key is added to the index.
 
@@ -174,32 +163,27 @@ In this scenario, it is advisable to enable explicit property key name to field 
 . Configuring the name of the field by providing a `mapped-name` parameter when adding the property key to the index. See <<index-local-field-mapping>> for more information.
 . By enabling the `map-name` configuration option for the Solr index which will use the property key name as the field name in Solr. See <<index-global-field-mapping>> for more information.
 
-Schemaless Mode
-+++++++++++++++
+===== Schemaless Mode
 
 JanusGraph can also interact with a SolrCloud cluster that is configured for https://cwiki.apache.org/confluence/display/solr/Schemaless+Mode[schemaless mode]. In this scenario, the configuration option `dyn-fields` should be disabled since Solr will infer the field type from the values and not the field name.
 
 Note, however, that schemaless mode is recommended only for prototyping and initial application development and NOT recommended for production use. 
 
-Troubleshooting
-~~~~~~~~~~~~~~~
+=== Troubleshooting
 
-Collection Does Not Exist
-^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Collection Does Not Exist
 
 The collection (and all of the required configuration files) must be initialized before a defined index can use the collection.
 
 When using SolrCloud, the Zookeeper zkCli.sh command line tool can be used to inspect the configurations loaded into Zookeeper.  Also verify that
 the default JanusGraph configuration files are copied to the correct location under solr and that the directory where the files are copied is correct.
 
-Connection Problems
-^^^^^^^^^^^^^^^^^^^
+==== Connection Problems
 
 Irrespective of the operation mode, a Solr instance or a cluster of Solr instances must be running and accessible from the JanusGraph instance(s) in order for JanusGraph to use Solr as an indexing backend. Check that the Solr cluster is running correctly and that it is visible and accessible over the network (or locally) from the JanusGraph instances.
 
 
-JTS ClassNotFoundException with Geo Data
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== JTS ClassNotFoundException with Geo Data
 
 Solr relies on Spatial4j for geo processing.  Spatial4j declares an optional dependency on JTS ("JTS Topology Suite").  JTS is required for some geo field definition and query functionality.  If the JTS jar is not on the Solr daemon's classpath and a field in schema.xml uses a geo type, then Solr may throw a ClassNotFoundException on one of the missing JTS classes.  The exception can appear when starting Solr using a schema.xml file designed to work with JanusGraph, but can also appear when invoking `CREATE` in the https://wiki.apache.org/solr/CoreAdmin[Solr CoreAdmin API].  The exception appears in slightly different formats on the client and server sides, although the root cause is identical.
 
@@ -244,12 +228,10 @@ This is resolved by adding the JTS jar to the classpath of the Solr server. In m
 To determine the ideal JTS version, first check the version of Spatial4j in use by the Solr cluster, then determine the version of JTS against which that Spatial4j version was compiled.  Spatial4j declares its target JTS version in the http://search.maven.org/#search|gav|1|g%3A%22com.spatial4j%22%20AND%20a%3A%22spatial4j%22[pom for the `com.spatial4j:spatial4j` artifact].
 Copy the jts jar to the server/solr-webapp/webapp/WEB-INF/lib directory in your solr installation.
 
-Advanced Solr Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Advanced Solr Configuration
 
 [[dse-search]]
-DSE Search
-^^^^^^^^^^
+==== DSE Search
 
 This section covers installation and configuration of JanusGraph with DataStax Enterprise (DSE) Search.  There are multiple ways to install DSE, but this section focuses on DSE's binary tarball install option on Linux.  Most of the steps in this section can be generalized to the other install options for DSE.
 
@@ -288,8 +270,7 @@ Once DSE with Cassandra and Solr has started normally, check the cluster health 
 ----
 nodetool status
 Note: Ownership information does not include topology; for complete information, specify a keyspace
-Datacenter: Solr
-================
+= Datacenter: Solr
 Status=Up/Down
 |/ State=Normal/Leaving/Joining/Moving
 --  Address    Load       Owns   Host ID                               Token                                    Rack
@@ -381,8 +362,7 @@ more verbose reporting from JanusGraph and the Solr client, run `gremlin.sh
 
 ///////////
 
-Hadoop Search
-^^^^^^^^^^^^^
+==== Hadoop Search
 
 tbw
 

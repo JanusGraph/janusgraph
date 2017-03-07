@@ -1,6 +1,5 @@
 [[internals]]
-JanusGraph Internals
-====================
+= JanusGraph Internals
 
 include::datamodel.txt[]
 

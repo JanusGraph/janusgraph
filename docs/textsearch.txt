@@ -1,21 +1,18 @@
 [[index-parameters]]
-Index Parameters and Full-Text Search
--------------------------------------
+== Index Parameters and Full-Text Search
 
 When defining a mixed index, a list of parameters can be optionally specified for each property key added to the index. These parameters control how the particular key is to be indexed. JanusGraph recognizes the following index parameters. Whether these are supported depends on the configured index backend. A particular index backend might also support custom parameters in addition to the ones listed here.
 
 
 [[text-search]]
-Full-Text Search
-~~~~~~~~~~~~~~~~
+=== Full-Text Search
 
 When indexing string values, that is property keys with `String.class` data type, one has the choice to either index those as text or character strings which is controlled by the `mapping` parameter type.
 
 When the value is indexed as text, the string is tokenized into a bag of words which allows the user to efficiently query for all matches that contain one or multiple words. This is commonly referred to as *full-text search*.
 When the value is indexed as a character string, the string is index "as-is" without any further analysis or tokenization. This facilitates queries looking for an exact character sequence match. This is commonly referred to as *string search*.
 
-Full-Text Search
-^^^^^^^^^^^^^^^^
+==== Full-Text Search
 
 By default, strings are indexed as text. To make this indexing option explicit, one can define a mapping when indexing a property key as text.
 
@@ -43,8 +40,7 @@ g.V().has('booksummary', textContainsRegex('.*corn.*'))
 
 String search predicates (see below) may be used in queries, but those require filtering in memory which can be very costly.
 
-String Search
-^^^^^^^^^^^^^
+==== String Search
 
 To index string properties as character sequences without any analysis or tokenization, specify the mapping as `Mapping.STRING`:
 
@@ -73,8 +69,7 @@ g.V().has('bookname', textRegex('.*corn.*'))
 
 Full-text search predicates may be used in queries, but those require filtering in memory which can be very costly.
 
-Full text and string search
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Full text and string search
 
 If you are using ElasticSearch it is possible to index properties as both text and string allowing you to use all of the predicates for exact and fuzzy matching.
 
@@ -86,12 +81,10 @@ mgmt.commit()
 
 Note that the data will be stored in the index twice, once for exact matching and once for fuzzy matching.
 
-Field Mapping
-~~~~~~~~~~~~~
+=== Field Mapping
 
 [[index-local-field-mapping]]
-Individual Field Mapping
-^^^^^^^^^^^^^^^^^^^^^^^^
+==== Individual Field Mapping
 
 By default, JanusGraph will encode property keys to generate a unique field name for the property key in the mixed index. If one wants to query the mixed index directly in the external index backend can be difficult to deal with and are illegible. For this use case, the field name can be explicitly specified through a parameter.
 
@@ -104,8 +97,7 @@ mgmt.commit()
 With this field mapping defined as a parameter, JanusGraph will use the same name for the field in the `booksBySummary` index created in the external index system as for the property key. Note, that it must be ensured that the given field name is unique in the index.
 
 [[index-global-field-mapping]]
-Global Field Mapping
-^^^^^^^^^^^^^^^^^^^^
+==== Global Field Mapping
 
 Instead of individually adjusting the field mapping for every key added to a mixed index, one can instruct JanusGraph to always set the field name in the external index to be identical to the property key name. This is accomplished by enabling the configuration option `map-name` which is configured per indexing backend. If this option is enabled for a particular indexing backend, then all mixed indexes defined against said backend will use field names identical to the property key names.
 

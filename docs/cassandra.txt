@@ -1,6 +1,5 @@
 [[cassandra]]
-Cassandra
----------
+== Cassandra
 
 [quote, 'http://cassandra.apache.org/[Apache Cassandra Homepage]']
 The Apache Cassandra database is the right choice when you need
@@ -20,8 +19,7 @@ If you are using Cassandra 2.2 or higher you need to explicitly enable thrift so
 Do so by running `./bin/nodetool enablethrift`.
 
 [[cassandra-local-server-mode]]
-Local Server Mode
-~~~~~~~~~~~~~~~~~
+=== Local Server Mode
 
 image:modes-local.png[]
 
@@ -40,8 +38,7 @@ open();
 
 In the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
-Remote Server Mode
-~~~~~~~~~~~~~~~~~~
+=== Remote Server Mode
 
 image:modes-distributed.png[]
 
@@ -57,8 +54,7 @@ open();
 
 In the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
-Remote Server Mode with Gremlin Server
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Remote Server Mode with Gremlin Server
 
 image:modes-rexster.png[]
 
@@ -85,8 +81,7 @@ plugins:
 ----
 For more information about gremlin server see the latest http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#gremlin-server[Tinkerpop documentation]
 
-JanusGraph Embedded Mode
-~~~~~~~~~~~~~~~~~~~~~~~~
+=== JanusGraph Embedded Mode
 
 image:modes-embedded.png[]
 
@@ -98,8 +93,7 @@ When running a cluster with JanusGraph and Cassandra embedded, it is advisable t
 
 Note, that running JanusGraph with Cassandra embedded requires GC tuning. While embedded Cassandra can provide lower latency query answering, its GC behavior under load is less predictable.
 
-Cassandra Specific Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Cassandra Specific Configuration
 
 Refer to <<config-ref>> for a complete listing of all Cassandra specific configuration options in addition to the general JanusGraph configuration options.
 
@@ -113,33 +107,28 @@ When configuring Cassandra it is recommended to consider the following Cassandra
 
 For more information on Cassandra consistency levels and acceptable values, please refer to the http://wiki.apache.org/cassandra/API10[Cassandra Thrift API]. In general, higher levels are more consistent and robust but have higher latency.
 
-Global Graph Operations
-~~~~~~~~~~~~~~~~~~~~~~~
+=== Global Graph Operations
 
 JanusGraph over Cassandra supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use <<hadoop-tp3>> to iterate over all vertices or edges in large graphs effectively.
 
-Deploying on Amazon EC2
-~~~~~~~~~~~~~~~~~~~~~~~
+=== Deploying on Amazon EC2
 
 [quote, 'http://aws.amazon.com/ec2/[Amazon EC2]']
 Amazon Elastic Compute Cloud (Amazon EC2) is a web service that provides resizable compute capacity in the cloud. It is designed to make web-scale computing easier for developers.
 
 Follow these steps to setup a Cassandra cluster on EC2 and deploy JanusGraph over Cassandra. To follow these instructions, you need an Amazon AWS account with established authentication credentials and some basic knowledge of AWS and EC2.
 
-Setup Cassandra Cluster
-^^^^^^^^^^^^^^^^^^^^^^^
+==== Setup Cassandra Cluster
 
 These instructions for configuring and launching the DataStax Cassandra Community Edition AMI are based on the http://docs.datastax.com/en/cassandra/2.1/cassandra/install/installAMILaunch.html[DataStax AMI Docs] and focus on aspects relevant for a JanusGraph deployment.
 
-Setting up Security Group
-^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Setting up Security Group
 
 * Navigate to the EC2 Console Dashboard, then click on "Security Groups" under "Network & Security".
 
 * Create a new security group. Click Inbound.  Set the "Create a new rule" dropdown menu to "Custom TCP rule".  Add a rule for port 22 from source 0.0.0.0/0.  Add a rule for ports 1024-65535 from the security group members.  If you don't want to open all unprivileged ports among security group members, then at least open 7000, 7199, and 9160 among security group members.  Tip: the "Source" dropdown will autocomplete security group identifiers once "sg" is typed in the box, so you needn't have the exact value ready beforehand.
 
-Launch DataStax Cassandra AMI
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Launch DataStax Cassandra AMI
 
 * "Launch the https://aws.amazon.com/amis/datastax-auto-clustering-ami-2-2[DataStax AMI] in your desired zone 
 
@@ -171,8 +160,7 @@ Launch DataStax Cassandra AMI
 
 * Review and launch instances on the final wizard page.
 
-Verify Successful Instance Launch
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Verify Successful Instance Launch
 
 * SSH into any Cassandra instance node: `ssh -i [your-private-key].pem ubuntu@[public-dns-name-of-any-cassandra-instance]`
 
@@ -180,13 +168,11 @@ Verify Successful Instance Launch
 
 Note, that the AMI takes a few minutes to configure each instance. A shell prompt will appear upon successful configuration when you SSH into the instance.
 
-Launch JanusGraph Instances
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Launch JanusGraph Instances
 
 Launch additional EC2 instances to run JanusGraph which are either configured in Remote Server Mode or Remote Server Mode with Gremlin-Server as described above. You only need to note the IP address of one of the Cassandra cluster instances and configure it as the host name. The particular EC2 instance to run and the particular configuration depends on your use case.
 
-Example JanusGraph Instance on Amazon Linux AMI
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Example JanusGraph Instance on Amazon Linux AMI
 
 * Launch the http://aws.amazon.com/amazon-linux-ami[Amazon Linux AMI] in the same zone of the Cassandra cluster. Choose your desired EC2 instance type depending on the amount of resources you need. Use the default configuration options and select the same Key Pair and Security Group as for the Cassandra cluster configured in the previous step.
 
@@ -208,8 +194,7 @@ You may add additional configuration options found on this page or in <<config-r
 
 You have successfully connected this JanusGraph instance to the Cassandra cluster and can start to operate on the graph.
 
-Connect to Cassandra cluster in EC2 from outside EC2
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Connect to Cassandra cluster in EC2 from outside EC2
 
 Opening the usual Cassandra ports (9160, 7000, 7199) in the security group is not enough, because the Cassandra nodes by default broadcast their ec2-internal IPs, and not their public-facing IPs.
 

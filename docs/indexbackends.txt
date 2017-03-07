@@ -1,6 +1,5 @@
 [[index-backends]]
-Index Backends
-==============
+= Index Backends
 
 While JanusGraph's composite graph indexes are natively supported through the primary storage backend, mixed graph indexes require that an indexing backend is configured. Mixed indexes provide support for geo, numeric range, and full-text search.
 

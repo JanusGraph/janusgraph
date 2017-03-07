@@ -1,6 +1,5 @@
 [[direct-index-query]]
-Direct Index Query
-------------------
+== Direct Index Query
 
 JanusGraph's standard global graph querying mechanism supports boolean queries for vertices or edges. In other words, an element either matches the query or it does not. There are no partial matches or result scoring.
 
@@ -28,8 +27,7 @@ for (Result<Vertex> result : graph.indexQuery("vertexByText", "v.text:(farm uncl
    System.out.println(result.getElement() + ": " + result.getScore());
 }
 
-Query String
-~~~~~~~~~~~~
+=== Query String
 
 The query string is handed directly to the indexing backend for processing and hence the query string syntax depends on what is supported by the indexing backend. For vertex queries, JanusGraph will analyze the query string for property key references starting with "v." and replace those by a handle to the indexing field that corresponds to the property key. Likewise, for edge queries, JanusGraph will replace property key references starting with "e.".
 Hence, to refer to a property of a vertex, use "v.[KEY_NAME]" in the query string. Likewise, for edges write "e.[KEY_NAME]".
@@ -43,19 +41,16 @@ This query matches all vertices where the text contains any of the three words (
 
 In addition <<elasticsearch, Elasticsearch>> supports wildcard queries, use "v.\*" or "e.*" in the query string to query if any of the properties on the element match.
 
-Gotchas
-~~~~~~~
+=== Gotchas
 
-Property Key Names
-^^^^^^^^^^^^^^^^^^
+==== Property Key Names
 
 Names of property keys that contain non-alphanumeric characters must be placed in quotation marks to ensure that the query is parsed correctly.
 
 [source, java]
 graph.indexQuery("vertexByText", "v.\"first_name\":john").vertices()
 
-Element Identifier Collision
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Element Identifier Collision
 
 The strings "v.", "e.", and "p." are used to identify a vertex, edge or property element respectively in a query. If the field name or the query value contains the same sequence of characters, this can cause a collision in the query string and parsing errors as in the following example:
 
