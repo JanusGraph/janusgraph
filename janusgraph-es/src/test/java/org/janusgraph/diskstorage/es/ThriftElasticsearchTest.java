@@ -23,7 +23,6 @@ import org.janusgraph.graphdb.JanusGraphIndexTest;
 import org.junit.BeforeClass;
 
 import static org.janusgraph.CassandraStorageSetup.*;
-import static org.janusgraph.diskstorage.es.ElasticSearchIndex.CLIENT_ONLY;
 import static org.janusgraph.diskstorage.es.ElasticSearchIndex.LOCAL_MODE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_DIRECTORY;
@@ -41,7 +40,6 @@ public class ThriftElasticsearchTest extends JanusGraphIndexTest {
         //Add index
         config.set(INDEX_BACKEND,"elasticsearch",INDEX);
         config.set(LOCAL_MODE,true,INDEX);
-        config.set(CLIENT_ONLY,false,INDEX);
         config.set(INDEX_DIRECTORY, StorageSetup.getHomeDir("es"),INDEX);
         return config.getConfiguration();
     }

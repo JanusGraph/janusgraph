@@ -67,7 +67,6 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         final String index = "es";
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(LOCAL_MODE, true, index);
-        config.set(CLIENT_ONLY, false, index);
         config.set(TTL_INTERVAL, "5s", index);
         config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("es"), index);
         return config.restrictTo(index);
@@ -106,7 +105,6 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         final String index = "es";
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(LOCAL_MODE, true, index);
-        config.set(CLIENT_ONLY, true, index);
         config.set(INDEX_HOSTS, new String[] { "10.0.0.1" }, index);
         config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("es"), index);
         Configuration indexConfig = config.restrictTo(index);
@@ -116,7 +114,6 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
 
         config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(LOCAL_MODE, false, index);
-        config.set(CLIENT_ONLY, true, index);
         config.set(INDEX_HOSTS, new String[] { "10.0.0.1" }, index);
         config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("es"), index);
         indexConfig = config.restrictTo(index);
@@ -136,7 +133,6 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         final String index = "es";
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(LOCAL_MODE, true, index);
-        config.set(CLIENT_ONLY, true, index);
         config.set(INDEX_CONF_FILE, Joiner.on(File.separator).join("target", "test-classes", "es_nodename_foo.yml"), index);
         config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("es"), index);
         Configuration indexConfig = config.restrictTo(index);
@@ -148,7 +144,6 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
 
         config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(LOCAL_MODE, true, index);
-        config.set(CLIENT_ONLY, true, index);
         config.set(INDEX_CONF_FILE, Joiner.on(File.separator).join("target", "test-classes", "es_nodename_bar.yml"), index);
         config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("es"), index);
         indexConfig = config.restrictTo(index);

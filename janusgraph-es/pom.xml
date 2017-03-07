@@ -66,7 +66,24 @@
             <artifactId>antlr-runtime</artifactId>
             <version>${antlr.version}</version>
         </dependency>
-
+        <!--Bit of a hack here. Jest relies on a later version of gson. This
+          should be fine though. -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.2.4</version>
+        </dependency>
+        <dependency>
+          <groupId>io.searchbox</groupId>
+          <artifactId>jest</artifactId>
+          <version>2.0.4</version><!-- change this to appropriate jar for ES 1.x -->
+          <exclusions>
+            <exclusion>  <!-- declare the exclusion here -->
+              <groupId>com.google.code.gson</groupId>
+              <artifactId>gson</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
         <!-- Logging backends.
              Enforce a classpath ordering constraint to ensure log4j is used for logging.
              See comment in janusgraph-cassandra POM for more information. -->
