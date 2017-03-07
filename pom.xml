@@ -127,6 +127,7 @@
         <module>janusgraph-core</module>
         <module>janusgraph-test</module>
         <module>janusgraph-berkeleyje</module>
+        <module>janusgraph-cql</module>
         <module>janusgraph-cassandra</module>
         <module>janusgraph-hadoop-parent</module>
         <module>janusgraph-hbase-parent</module>
