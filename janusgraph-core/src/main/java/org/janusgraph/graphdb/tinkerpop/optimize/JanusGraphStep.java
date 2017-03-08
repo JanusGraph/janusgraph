@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
 import com.google.common.collect.Iterables;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.core.JanusGraphQuery;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.graphdb.query.BaseQuery;
@@ -33,7 +34,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -51,6 +54,10 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.isStartStep(), originalStep.getIds());
         originalStep.getLabels().forEach(this::addLabel);
         this.setIteratorSupplier(() -> {
+            if (this.ids != null && this.ids.length > 0) {
+                final Graph graph = (Graph)traversal.asAdmin().getGraph().get();
+                return iteratorList((Iterator)graph.vertices(this.ids));
+            }
             JanusGraphTransaction tx = JanusGraphTraversalUtil.getTx(traversal);
             JanusGraphQuery query = tx.query();
             for (HasContainer condition : hasContainers) {
@@ -65,7 +72,8 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
 
     @Override
     public String toString() {
-        return this.hasContainers.isEmpty() ? super.toString() : StringFactory.stepString(this, this.hasContainers);
+        return this.hasContainers.isEmpty() ?
+                super.toString() : StringFactory.stepString(this, Arrays.toString(this.ids), this.hasContainers);
     }
 
     @Override
@@ -101,6 +109,16 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
     @Override
     public void addHasContainer(final HasContainer hasContainer) {
         this.addAll(Collections.singleton(hasContainer));
+    }
+
+    private <E extends Element> Iterator<E> iteratorList(final Iterator<E> iterator) {
+        final List<E> list = new ArrayList<E>();
+        while (iterator.hasNext()) {
+            final E e = iterator.next();
+            if (HasContainer.testAll(e, this.hasContainers))
+                list.add(e);
+        }
+        return list.iterator();
     }
 }
 
