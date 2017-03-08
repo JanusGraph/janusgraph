@@ -55,7 +55,7 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
      */
 
     /**
-     * Identical to {@link #buildEdgeIndex(org.janusgraph.core.EdgeLabel, String, com.tinkerpop.gremlin.structure.Direction, com.tinkerpop.gremlin.structure.Order, org.janusgraph.core.PropertyKey...)}
+     * Identical to {@link #buildEdgeIndex(org.janusgraph.core.EdgeLabel, String, org.apache.tinkerpop.gremlin.structure.Direction, org.apache.tinkerpop.gremlin.process.traversal.Order, org.janusgraph.core.PropertyKey...)}
      * with default sort order {@link org.apache.tinkerpop.gremlin.process.traversal.Order#incr}.
      *
      * @param label
@@ -83,8 +83,8 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
     public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, Order sortOrder, PropertyKey... sortKeys);
 
     /**
-     * Identical to {@link #buildPropertyIndex(org.janusgraph.core.PropertyKey, String, com.tinkerpop.gremlin.structure.Order, org.janusgraph.core.PropertyKey...)}
-     * with default sort order {@link com.tinkerpop.gremlin.structure.Order#incr}.
+     * Identical to {@link #buildPropertyIndex(org.janusgraph.core.PropertyKey, String, org.apache.tinkerpop.gremlin.process.traversal.Order, org.janusgraph.core.PropertyKey...)}
+     * with default sort order {@link org.apache.tinkerpop.gremlin.process.traversal.Order#incr}.
      *
      * @param key
      * @param name
@@ -298,8 +298,7 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
      * ("lives forever"). Positive {@code ttl} values are interpreted literally.
      *
      * @param type the affected type
-     * @param ttl  time-to-live
-     * @param unit time unit of the specified ttl
+     * @param duration  time-to-live
      */
     public void setTTL(JanusGraphSchemaType type, Duration duration);
 

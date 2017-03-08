@@ -23,8 +23,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 /**
  * BaseVertexQuery constructs and executes a query over incident edges or properties from the perspective of a vertex.
  * <p/>
- * A VertexQuery extends Blueprint's {@link com.tinkerpop.gremlin.structure.Query} by some JanusGraph specific convenience methods
- * for querying for incident edges or properties.
+ * A VertexQuery has some JanusGraph specific convenience methods for querying for incident edges or properties.
  * Using VertexQuery proceeds in two steps:
  * 1) Define the query by specifying what to retrieve and
  * 2) execute the query for the elements to retrieve.
