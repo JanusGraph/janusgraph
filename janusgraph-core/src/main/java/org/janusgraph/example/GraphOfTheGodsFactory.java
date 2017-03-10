@@ -46,9 +46,6 @@ public class GraphOfTheGodsFactory {
         config.set("storage.backend", "berkeleyje");
         config.set("storage.directory", directory);
         config.set("index." + INDEX_NAME + ".backend", "elasticsearch");
-        config.set("index." + INDEX_NAME + ".directory", directory + File.separator + "es");
-        config.set("index." + INDEX_NAME + ".elasticsearch.local-mode", true);
-        config.set("index." + INDEX_NAME + ".elasticsearch.client-only", false);
 
         JanusGraph graph = config.open();
         GraphOfTheGodsFactory.load(graph);

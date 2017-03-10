@@ -88,6 +88,8 @@
              vice-versa. -->
         <lucene.version>5.5.2</lucene.version>
         <elasticsearch.version>2.4.4</elasticsearch.version>
+        <elasticsearch.rest.version>5.2.2</elasticsearch.rest.version>
+        <elasticsearch.dist.version>5.2.2</elasticsearch.dist.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <joda.version>2.8.2</joda.version>

@@ -16,50 +16,49 @@ package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.configuration.ConfigNamespace;
-import org.janusgraph.diskstorage.configuration.ConfigOption;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.elasticsearch.client.Client;
+import org.apache.http.HttpHost;
+import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
+import org.janusgraph.diskstorage.configuration.ConfigNamespace;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.es.rest.RestElasticSearchClient;
+import org.janusgraph.util.system.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_CONF_FILE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_PORT;
 
 /**
  * Create an ES {@link org.elasticsearch.client.transport.TransportClient} or
- * {@link org.elasticsearch.node.Node} from a JanusGraph
+ * {@link org.elasticsearch.client.RestClient} from a JanusGraph
  * {@link org.janusgraph.diskstorage.configuration.Configuration}.
  * <p>
- * TransportClient assumes that an ES cluster is already running.  It does not attempt
- * to start an embedded ES instance.  It just connects to whatever hosts are given in
+ * Assumes that an ES cluster is already running.  It does not attempt to start an
+ * embedded ES instance.  It just connects to whatever hosts are given in
  * {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#INDEX_HOSTS}.
  * <p>
- * Node can be configured to either behave strictly as a client or as both a client
- * and ES data node.  The latter is essentially a fully-fledged ES cluster node embedded in JanusGraph.
- * Node can also be configured to use either network or JVM local transport.
- * In practice, JVM local transport is usually only useful for testing.  Most deployments
- * will use the network transport.
- * <p>
- * Setting arbitrary ES options is supported with both TransportClient and Node
+ * Setting arbitrary ES options is supported with the TransportClient
  * via {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#INDEX_CONF_FILE}.
  * When this is set, it will be opened as an ordinary file and the contents will be
  * parsed as Elasticsearch settings.  These settings override JanusGraph's defaults but
- * options explicitly provided in JanusGraph's config file (e.g. setting an explicit value for
- * {@link org.janusgraph.diskstorage.es.ElasticSearchIndex#CLIENT_ONLY} in
- * JanusGraph's properties will override any value that might be in the ES settings file).
+ * options explicitly provided in JanusGraph's config file in JanusGraph's properties will
+ * override any value that might be in the ES settings file.
  * <p>
  * After loading the index conf file (when provided), any key-value pairs under the
  * {@link org.janusgraph.diskstorage.es.ElasticSearchIndex#ES_EXTRAS_NS} namespace
@@ -103,51 +102,41 @@ public enum ElasticSearchSetup {
                 log.info("Configured remote host: {} : {}", hostname, hostport);
                 tc.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(hostname), hostport));
             }
-            return new Connection(null, tc);
+
+            TransportElasticSearchClient client = new TransportElasticSearchClient(tc);
+            if (config.has(ElasticSearchIndex.BULK_REFRESH)) {
+                client.setBulkRefresh(config.get(ElasticSearchIndex.BULK_REFRESH).equals("true"));
+            }
+            return new Connection(client);
         }
     },
 
     /**
-     * Start an ES {@code Node} and use its attached {@code Client}.
+     * Create an ES RestClient connected to
+     * {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#INDEX_HOSTS}.
      */
-    NODE {
+    REST_CLIENT {
         @Override
         public Connection connect(Configuration config) throws IOException {
+            log.debug("Configuring RestClient");
 
-            log.debug("Configuring Node Client");
-
-            Settings.Builder settingsBuilder = settingsBuilder(config);
-
-            if (config.has(ElasticSearchIndex.TTL_INTERVAL)) {
-                String k = "indices.ttl.interval";
-                settingsBuilder.put(k, config.get(ElasticSearchIndex.TTL_INTERVAL));
-                log.debug("Set {}: {}", k, config.get(ElasticSearchIndex.TTL_INTERVAL));
+            final List<HttpHost> hosts = new ArrayList<>();
+            int defaultPort = config.has(INDEX_PORT) ? config.get(INDEX_PORT) : ElasticSearchIndex.HOST_PORT_DEFAULT;
+            for (String host : config.get(INDEX_HOSTS)) {
+                String[] hostparts = host.split(":");
+                String hostname = hostparts[0];
+                int hostport = defaultPort;
+                if (hostparts.length == 2) hostport = Integer.parseInt(hostparts[1]);
+                log.info("Configured remote host: {} : {}", hostname, hostport);
+                hosts.add(new HttpHost(hostname, hostport, "http"));
             }
+            RestClient rc = RestClient.builder(hosts.toArray(new HttpHost[hosts.size()])).build();
 
-            makeLocalDirsIfNecessary(settingsBuilder, config);
-
-            NodeBuilder nodeBuilder = NodeBuilder.nodeBuilder();
-
-            // Apply explicit JanusGraph properties file overrides (otherwise conf-file or ES defaults apply)
-            if (config.has(ElasticSearchIndex.CLIENT_ONLY)) {
-                boolean clientOnly = config.get(ElasticSearchIndex.CLIENT_ONLY);
-                nodeBuilder.client(clientOnly).data(!clientOnly);
+            RestElasticSearchClient client = new RestElasticSearchClient(rc);
+            if (config.has(ElasticSearchIndex.BULK_REFRESH)) {
+                client.setBulkRefresh(config.get(ElasticSearchIndex.BULK_REFRESH));
             }
-
-            if (config.has(ElasticSearchIndex.LOCAL_MODE))
-                nodeBuilder.local(config.get(ElasticSearchIndex.LOCAL_MODE));
-
-            if (config.has(ElasticSearchIndex.LOAD_DEFAULT_NODE_SETTINGS)) {
-                // Elasticsearch >2.3 always loads default settings
-                String k = "config.ignore_system_properties";
-                settingsBuilder.put(k, !config.get(ElasticSearchIndex.LOAD_DEFAULT_NODE_SETTINGS));
-            }
-
-            settingsBuilder.put("index.max_result_window", Integer.MAX_VALUE);
-            nodeBuilder.settings(settingsBuilder.build());
-            Node node = nodeBuilder.node();
-            Client client = node.client();
-            return new Connection(node, client);
+            return new Connection(client);
         }
     };
 
@@ -240,8 +229,8 @@ public enum ElasticSearchSetup {
     }
 
     static void applySettingsFromJanusGraphConf(Settings.Builder settings,
-                                                   Configuration config,
-                                                   ConfigNamespace rootNS) {
+                                                     Configuration config,
+                                                     ConfigNamespace rootNS) {
         int keysLoaded = 0;
         Map<String,Object> configSub = config.getSubset(rootNS);
         for (Map.Entry<String,Object> entry : configSub.entrySet()) {
@@ -270,41 +259,20 @@ public enum ElasticSearchSetup {
         log.debug("Loaded {} settings from the {} JanusGraph config namespace", keysLoaded, rootNS);
     }
 
-
-    private static void makeLocalDirsIfNecessary(Settings.Builder settingsBuilder, Configuration config) {
-        if (config.has(INDEX_DIRECTORY)) {
-            String dataDirectory = config.get(INDEX_DIRECTORY);
-            File f = new File(dataDirectory);
-            if (!f.exists()) {
-                log.info("Creating ES directory prefix: {}", f);
-                f.mkdirs();
-            }
-            settingsBuilder.put("path.home", dataDirectory);
-        }
-
-    }
-
     private static final Logger log = LoggerFactory.getLogger(ElasticSearchSetup.class);
 
     public abstract Connection connect(Configuration config) throws IOException;
 
     public static class Connection {
 
-        private final Node node;
-        private final Client client;
+        private final ElasticSearchClient client;
 
-        public Connection(Node node, Client client) {
-            this.node = node;
+        public Connection(ElasticSearchClient client) {
             this.client = client;
             Preconditions.checkNotNull(this.client, "Unable to instantiate Elasticsearch Client object");
-            // node may be null
         }
 
-        public Node getNode() {
-            return node;
-        }
-
-        public Client getClient() {
+        public ElasticSearchClient getClient() {
             return client;
         }
     }
