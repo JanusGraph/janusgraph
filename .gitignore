@@ -13,6 +13,7 @@ target/
 /log/
 /output/
 /scripts/
+/elasticsearch/
 # When executing tests in alphabetical order, Maven generates temporary
 # files with names like this:
 #

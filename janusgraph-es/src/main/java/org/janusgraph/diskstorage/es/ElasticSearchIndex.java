@@ -15,87 +15,81 @@
 package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
-
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.attribute.*;
-import org.janusgraph.core.schema.Mapping;
-import org.janusgraph.diskstorage.*;
-import org.janusgraph.diskstorage.configuration.ConfigNamespace;
-import org.janusgraph.diskstorage.configuration.ConfigOption;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.indexing.*;
-import org.janusgraph.diskstorage.util.DefaultTransaction;
-import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
-
-import static org.janusgraph.diskstorage.configuration.ConfigOption.disallowEmpty;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
-
-import org.janusgraph.graphdb.database.serialize.AttributeUtil;
-import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
-import org.janusgraph.graphdb.query.condition.*;
-import org.janusgraph.graphdb.types.ParameterType;
-import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.shaded.jackson.core.type.TypeReference;
+import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.elasticsearch.Version;
-import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest;
-import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
-import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.update.UpdateRequestBuilder;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.geo.ShapeRelation;
 import org.elasticsearch.common.geo.builders.LineStringBuilder;
 import org.elasticsearch.common.geo.builders.PolygonBuilder;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.index.IndexNotFoundException;
-import org.elasticsearch.index.query.*;
-import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
-import org.elasticsearch.rest.RestStatus;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptService;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.GeoPolygonQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.sort.SortOrder;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.attribute.Cmp;
+import org.janusgraph.core.attribute.Geo;
+import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.core.attribute.Text;
+import org.janusgraph.core.schema.Mapping;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BaseTransaction;
+import org.janusgraph.diskstorage.BaseTransactionConfig;
+import org.janusgraph.diskstorage.BaseTransactionConfigurable;
+import org.janusgraph.diskstorage.PermanentBackendException;
+import org.janusgraph.diskstorage.TemporaryBackendException;
+import org.janusgraph.diskstorage.configuration.ConfigNamespace;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.indexing.IndexEntry;
+import org.janusgraph.diskstorage.indexing.IndexFeatures;
+import org.janusgraph.diskstorage.indexing.IndexMutation;
+import org.janusgraph.diskstorage.indexing.IndexProvider;
+import org.janusgraph.diskstorage.indexing.IndexQuery;
+import org.janusgraph.diskstorage.indexing.KeyInformation;
+import org.janusgraph.diskstorage.indexing.RawQuery;
+import org.janusgraph.diskstorage.util.DefaultTransaction;
+import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
+import static org.janusgraph.diskstorage.configuration.ConfigOption.disallowEmpty;
+import org.janusgraph.graphdb.database.serialize.AttributeUtil;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import org.janusgraph.graphdb.query.condition.And;
+import org.janusgraph.graphdb.query.condition.Condition;
+import org.janusgraph.graphdb.query.condition.Not;
+import org.janusgraph.graphdb.query.condition.Or;
+import org.janusgraph.graphdb.query.condition.PredicateCondition;
+import org.janusgraph.graphdb.types.ParameterType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.time.Instant;
-import java.util.*;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
+
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NS;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -106,31 +100,15 @@ public class ElasticSearchIndex implements IndexProvider {
 
     private static final Logger log = LoggerFactory.getLogger(ElasticSearchIndex.class);
 
-    private static final String TTL_FIELD = "_ttl";
     private static final String STRING_MAPPING_SUFFIX = "__STRING";
 
     public static final ConfigNamespace ELASTICSEARCH_NS =
             new ConfigNamespace(INDEX_NS, "elasticsearch", "Elasticsearch index configuration");
 
-    public static final ConfigOption<Boolean> CLIENT_ONLY =
-            new ConfigOption<Boolean>(ELASTICSEARCH_NS, "client-only",
-            "The Elasticsearch node.client option is set to this boolean value, and the Elasticsearch node.data " +
-            "option is set to the negation of this value.  True creates a thin client which holds no data.  False " +
-            "creates a regular Elasticsearch cluster node that may store data.",
-            ConfigOption.Type.GLOBAL_OFFLINE, true);
-
     public static final ConfigOption<String> CLUSTER_NAME =
             new ConfigOption<String>(ELASTICSEARCH_NS, "cluster-name",
             "The name of the Elasticsearch cluster.  This should match the \"cluster.name\" setting " +
             "in the Elasticsearch nodes' configuration.", ConfigOption.Type.GLOBAL_OFFLINE, "elasticsearch");
-
-    public static final ConfigOption<Boolean> LOCAL_MODE =
-            new ConfigOption<Boolean>(ELASTICSEARCH_NS, "local-mode",
-            "On the legacy config track, this option chooses between starting a TransportClient (false) or " +
-            "a Node with JVM-local transport and local data (true).  On the interface config track, this option " +
-            "is considered by (but optional for) the Node client and ignored by the TransportClient.  See the manual " +
-            "for more information about ES config tracks.",
-            ConfigOption.Type.GLOBAL_OFFLINE, false);
 
     public static final ConfigOption<Boolean> CLIENT_SNIFF =
             new ConfigOption<Boolean>(ELASTICSEARCH_NS, "sniff",
@@ -143,7 +121,7 @@ public class ElasticSearchIndex implements IndexProvider {
             "Whether to connect to ES using the Node or Transport client (see the \"Talking to Elasticsearch\" " +
             "section of the ES manual for discussion of the difference).  Setting this option enables the " +
             "interface config track (see manual for more information about ES config tracks).",
-            ConfigOption.Type.MASKABLE, String.class, ElasticSearchSetup.TRANSPORT_CLIENT.toString(),
+            ConfigOption.Type.MASKABLE, String.class, ElasticSearchSetup.REST_CLIENT.toString(),
             disallowEmpty(String.class));
 
     public static final ConfigOption<Boolean> IGNORE_CLUSTER_NAME =
@@ -152,12 +130,6 @@ public class ElasticSearchIndex implements IndexProvider {
             "This option is only used on the interface configuration track (see manual for " +
             "information about ES config tracks).", ConfigOption.Type.MASKABLE, true);
 
-    public static final ConfigOption<String> TTL_INTERVAL =
-            new ConfigOption<String>(ELASTICSEARCH_NS, "ttl-interval",
-            "The period of time between runs of ES's bulit-in expired document deleter.  " +
-            "This string will become the value of ES's indices.ttl.interval setting and should " +
-            "be formatted accordingly, e.g. 5s or 60s.", ConfigOption.Type.MASKABLE, "5s");
-
     public static final ConfigOption<String> HEALTH_REQUEST_TIMEOUT =
             new ConfigOption<String>(ELASTICSEARCH_NS, "health-request-timeout",
             "When JanusGraph initializes its ES backend, JanusGraph waits up to this duration for the " +
@@ -165,18 +137,10 @@ public class ElasticSearchIndex implements IndexProvider {
             "This string should be formatted as a natural number followed by the lowercase letter " +
             "\"s\", e.g. 3s or 60s.", ConfigOption.Type.MASKABLE, "30s");
 
-    public static final ConfigOption<Boolean> LOAD_DEFAULT_NODE_SETTINGS =
-            new ConfigOption<Boolean>(ELASTICSEARCH_NS, "load-default-node-settings",
-            "Whether ES's Node client will internally attempt to load default configuration settings " +
-            "from system properties/process environment variables.  Only meaningful when using the Node " +
-            "client (has no effect with TransportClient).", ConfigOption.Type.MASKABLE, true);
-
-    public static final ConfigOption<Boolean> USE_EDEPRECATED_IGNORE_UNMAPPED_OPTION =
-            new ConfigOption<>(ELASTICSEARCH_NS, "use-deprecated-ignore-unmapped-option",
-            "Elasticsearch versions before 1.4.0 supported the \"ignore_unmapped\" sort option. " +
-            "In 1.4.0, it was deprecated by the new \"unmapped_type\" sort option.  This configuration" +
-            "setting controls which ES option JanusGraph uses: false for the newer \"unmapped_type\"," +
-            "true for the older \"ignore_unmapped\".", ConfigOption.Type.MASKABLE, false);
+    public static final ConfigOption<String> BULK_REFRESH =
+            new ConfigOption<String>(ELASTICSEARCH_NS, "bulk-refresh",
+            "Elasticsearch bulk API refresh setting used to control when changes made by this request are made " +
+                "visible to search", ConfigOption.Type.MASKABLE, "false");
 
     public static final ConfigNamespace ES_EXTRAS_NS =
             new ConfigNamespace(ELASTICSEARCH_NS, "ext", "Overrides for arbitrary elasticsearch.yaml settings", true);
@@ -194,10 +158,10 @@ public class ElasticSearchIndex implements IndexProvider {
     public static final ConfigNamespace ES_CREATE_EXTRAS_NS =
             new ConfigNamespace(ES_CREATE_NS, "ext", "Overrides for arbitrary settings applied at index creation", true);
 
-    private static final IndexFeatures ES_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL()
+    private static final IndexFeatures ES_FEATURES = new IndexFeatures.Builder()
             .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.TEXTSTRING, Mapping.STRING).setWildcardField("_all").supportsCardinality(Cardinality.SINGLE).supportsCardinality(Cardinality.LIST).supportsCardinality(Cardinality.SET).supportsNanoseconds().build();
 
-    public static final int HOST_PORT_DEFAULT = 9300;
+    public static final int HOST_PORT_DEFAULT = 9200;
 
     /**
      * Default tree_levels used when creating geo_shape mappings.
@@ -211,34 +175,28 @@ public class ElasticSearchIndex implements IndexProvider {
 
     private static final Map<Geo, ShapeRelation> SPATIAL_PREDICATES = spatialPredicates();
 
-    private final Node node;
-    private final Client client;
+    private final ElasticSearchClient client;
     private final String indexName;
     private final int maxResultsSize;
-    private final boolean useDeprecatedIgnoreUnmapped;
 
     public ElasticSearchIndex(Configuration config) throws BackendException {
         indexName = config.get(INDEX_NAME);
-        useDeprecatedIgnoreUnmapped = config.get(USE_EDEPRECATED_IGNORE_UNMAPPED_OPTION);
 
         checkExpectedClientVersion();
 
-        final ElasticSearchSetup.Connection c;
-        if (!config.has(INTERFACE)) {
-            c = legacyConfiguration(config);
-        } else {
-            c = interfaceConfiguration(config);
-        }
-        node = c.getNode();
+        final ElasticSearchSetup.Connection c = interfaceConfiguration(config);
         client = c.getClient();
 
         maxResultsSize = config.get(INDEX_MAX_RESULT_SET_SIZE);
         log.debug("Configured ES query result set max size to {}", maxResultsSize);
 
-        client.admin().cluster().prepareHealth().setTimeout(config.get(HEALTH_REQUEST_TIMEOUT))
-                .setWaitForYellowStatus().execute().actionGet();
+        try {
+            client.clusterHealthRequest(config.get(HEALTH_REQUEST_TIMEOUT));
+            checkForOrCreateIndex(config);
+        } catch (IOException e) {
+            throw new PermanentBackendException(e);
+        }
 
-        checkForOrCreateIndex(config);
     }
 
     /**
@@ -250,21 +208,21 @@ public class ElasticSearchIndex implements IndexProvider {
      * of the index to check for existence or create.
      *
      * @param config the config for this ElasticSearchIndex
-     * @throws java.lang.IllegalArgumentException if the index could not be created
+     * @throws IOException if the index status could not be checked or index could not be created
      */
-    private void checkForOrCreateIndex(Configuration config) {
+    private void checkForOrCreateIndex(Configuration config) throws IOException {
         Preconditions.checkState(null != client);
 
         //Create index if it does not already exist
-        IndicesExistsResponse response = client.admin().indices().exists(new IndicesExistsRequest(indexName)).actionGet();
-        if (!response.isExists()) {
+        if (!client.indexExists(indexName)) {
 
-            Settings.Builder settings = Settings.settingsBuilder();
+            Settings.Builder settings = Settings.builder();
 
             ElasticSearchSetup.applySettingsFromJanusGraphConf(settings, config, ES_CREATE_EXTRAS_NS);
+            settings.put("index.max_result_window", Integer.MAX_VALUE);
 
-            CreateIndexResponse create = client.admin().indices().prepareCreate(indexName)
-                    .setSettings(settings.build()).execute().actionGet();
+            client.createIndex(indexName, settings.build());
+
             try {
                 final long sleep = config.get(CREATE_SLEEP);
                 log.debug("Sleeping {} ms after {} index creation returned from actionGet()", sleep, indexName);
@@ -272,23 +230,17 @@ public class ElasticSearchIndex implements IndexProvider {
             } catch (InterruptedException e) {
                 throw new JanusGraphException("Interrupted while waiting for index to settle in", e);
             }
-            if (!create.isAcknowledged()) throw new IllegalArgumentException("Could not create index: " + indexName);
+            if (!client.indexExists(indexName)) throw new IllegalArgumentException("Could not create index: " + indexName);
         }
     }
 
 
     /**
-     * Configure ElasticSearchIndex's ES client according to semantics introduced in
-     * 0.5.1.  Allows greater flexibility than the previous config semantics.  See
-     * {@link org.janusgraph.diskstorage.es.ElasticSearchSetup} for more
+     * Configure ElasticSearchIndex's ES client. See{@link org.janusgraph.diskstorage.es.ElasticSearchSetup} for more
      * information.
-     * <p>
-     * This is activated by setting an explicit value for {@link #INTERFACE} in
-     * the JanusGraph configuration.
      *
-     * @see #legacyConfiguration(org.janusgraph.diskstorage.configuration.Configuration)
      * @param config a config passed to ElasticSearchIndex's constructor
-     * @return a node and client object open and ready for use
+     * @return a client object open and ready for use
      */
     private ElasticSearchSetup.Connection interfaceConfiguration(Configuration config) {
         ElasticSearchSetup clientMode = ConfigOption.getEnumValue(config.get(INTERFACE), ElasticSearchSetup.class);
@@ -298,110 +250,6 @@ public class ElasticSearchIndex implements IndexProvider {
         } catch (IOException e) {
             throw new JanusGraphException(e);
         }
-    }
-
-    /**
-     * Configure ElasticSearchIndex's ES client according to 0.4.x - 0.5.0 semantics.
-     * This checks local-mode first.  If local-mode is true, then it creates a Node that
-     * uses JVM local transport and can't talk over the network.  If local-mode is
-     * false, then it creates a TransportClient that can talk over the network and
-     * uses {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#INDEX_HOSTS}
-     * as the server addresses.  Note that this configuration method
-     * does not allow creating a Node that talks over the network.
-     * <p>
-     * This is activated by <b>not</b> setting an explicit value for {@link #INTERFACE} in the
-     * JanusGraph configuration.
-     *
-     * @see #interfaceConfiguration(org.janusgraph.diskstorage.configuration.Configuration)
-     * @param config a config passed to ElasticSearchIndex's constructor
-     * @return a node and client object open and ready for use
-     */
-    private ElasticSearchSetup.Connection legacyConfiguration(Configuration config) throws BackendException {
-        Node node;
-        Client client;
-
-        if (config.get(LOCAL_MODE)) {
-
-            log.debug("Configuring ES for JVM local transport");
-
-            boolean clientOnly = config.get(CLIENT_ONLY);
-            boolean local = config.get(LOCAL_MODE);
-
-            NodeBuilder builder = NodeBuilder.nodeBuilder();
-            Preconditions.checkArgument(config.has(INDEX_CONF_FILE) || config.has(INDEX_DIRECTORY),
-                    "Must either configure configuration file or base directory");
-            if (config.has(INDEX_CONF_FILE)) {
-                String configFile = config.get(INDEX_CONF_FILE);
-                Settings.Builder sb = Settings.settingsBuilder();
-                log.debug("Configuring ES from YML file [{}]", configFile);
-                FileInputStream fis = null;
-                try {
-                    fis = new FileInputStream(configFile);
-                    sb.loadFromStream(configFile, fis);
-                    builder.settings(sb.build());
-                } catch (FileNotFoundException e) {
-                    throw new JanusGraphException(e);
-                } finally {
-                    IOUtils.closeQuietly(fis);
-                }
-            } else {
-                Settings.Builder b = Settings.settingsBuilder();
-                b.put("script.inline", true);
-                b.put("indices.ttl.interval", "5s");
-
-                builder.settings(b.build());
-
-                String clustername = config.get(CLUSTER_NAME);
-                Preconditions.checkArgument(StringUtils.isNotBlank(clustername), "Invalid cluster name: %s", clustername);
-                builder.clusterName(clustername);
-            }
-
-            String dataDirectory = config.get(INDEX_DIRECTORY);
-            if (StringUtils.isNotBlank(dataDirectory)) {
-                log.debug("Configuring ES with home directory [{}]", dataDirectory);
-                File f = new File(dataDirectory);
-                if (!f.exists()) f.mkdirs();
-                builder.settings().put("path.home", dataDirectory);
-            }
-
-            builder.settings().put("index.max_result_window", Integer.MAX_VALUE);
-
-            node = builder.client(clientOnly).data(!clientOnly).local(local).node();
-            client = node.client();
-
-        } else {
-            log.debug("Configuring ES for network transport");
-            Settings.Builder settings = Settings.settingsBuilder();
-            if (config.has(CLUSTER_NAME)) {
-                String clustername = config.get(CLUSTER_NAME);
-                Preconditions.checkArgument(StringUtils.isNotBlank(clustername), "Invalid cluster name: %s", clustername);
-                settings.put("cluster.name", clustername);
-            } else {
-                settings.put("client.transport.ignore_cluster_name", true);
-            }
-            log.debug("Transport sniffing enabled: {}", config.get(CLIENT_SNIFF));
-            settings.put("client.transport.sniff", config.get(CLIENT_SNIFF));
-            settings.put("script.inline", true);
-            settings.put("index.max_result_window", Integer.MAX_VALUE);
-            TransportClient tc = TransportClient.builder().settings(settings.build()).build();
-            int defaultPort = config.has(INDEX_PORT)?config.get(INDEX_PORT):HOST_PORT_DEFAULT;
-            for (String host : config.get(INDEX_HOSTS)) {
-                String[] hostparts = host.split(":");
-                String hostname = hostparts[0];
-                int hostport = defaultPort;
-                if (hostparts.length == 2) hostport = Integer.parseInt(hostparts[1]);
-                log.info("Configured remote host: {} : {}", hostname, hostport);
-                try {
-                    tc.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(hostname), hostport));
-                } catch (UnknownHostException e) {
-                    throw new TemporaryBackendException(e);
-                }
-            }
-            client = tc;
-            node = null;
-        }
-
-        return new ElasticSearchSetup.Connection(node, client);
     }
 
     private BackendException convert(Exception esException) {
@@ -435,10 +283,6 @@ public class ElasticSearchIndex implements IndexProvider {
         try {
             mapping = XContentFactory.jsonBuilder().
                     startObject().
-                    startObject(store).
-                    field(TTL_FIELD, new HashMap<String, Object>() {{
-                        put("enabled", true);
-                    }}).
                     startObject("properties").
                     startObject(key);
 
@@ -510,15 +354,14 @@ public class ElasticSearchIndex implements IndexProvider {
                 mapping.field("index","not_analyzed");
             }
 
-            mapping.endObject().endObject().endObject().endObject();
+            mapping.endObject().endObject().endObject();
 
         } catch (IOException e) {
             throw new PermanentBackendException("Could not render json for put mapping request", e);
         }
 
         try {
-            PutMappingResponse response = client.admin().indices().preparePutMapping(indexName)
-                    .setType(store).setSource(mapping).execute().actionGet();
+            client.createMapping(indexName, store, mapping);
         } catch (Exception e) {
             throw convert(e);
         }
@@ -535,55 +378,44 @@ public class ElasticSearchIndex implements IndexProvider {
         return AttributeUtil.isString(information.getDataType()) && getStringMapping(information)==Mapping.TEXTSTRING;
     }
 
-    public XContentBuilder getNewDocument(final List<IndexEntry> additions, KeyInformation.StoreRetriever informations) throws BackendException {
-        try {
-            XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
+    public Map<String, Object> getNewDocument(final List<IndexEntry> additions, KeyInformation.StoreRetriever informations) throws BackendException {
+        // JSON writes duplicate fields one after another, which forces us
+        // at this stage to make de-duplication on the IndexEntry list. We don't want to pay the
+        // price map storage on the Mutation level because none of other backends need that.
 
-            // JSON writes duplicate fields one after another, which forces us
-            // at this stage to make de-duplication on the IndexEntry list. We don't want to pay the
-            // price map storage on the Mutation level because non of other backends need that.
+        Multimap<String, IndexEntry> uniq = LinkedListMultimap.create();
+        for (IndexEntry e : additions) {
+            uniq.put(e.field, e);
+        }
 
-            Multimap<String, IndexEntry> uniq = LinkedListMultimap.create();
-            for (IndexEntry e : additions) {
-                uniq.put(e.field, e);
-            }
-
-            for (Map.Entry<String, Collection<IndexEntry>> add : uniq.asMap().entrySet()) {
-                KeyInformation keyInformation = informations.get(add.getKey());
-                Object value = null;
-                switch (keyInformation.getCardinality()) {
-                    case SINGLE:
-                        value = convertToEsType(Iterators.getLast(add.getValue().iterator()).value);
-                        break;
-                    case SET:
-                    case LIST:
-                        value = add.getValue().stream().map(v -> convertToEsType(v.value))
+        final Map<String, Object> doc = new HashMap<>();
+        for (Map.Entry<String, Collection<IndexEntry>> add : uniq.asMap().entrySet()) {
+            KeyInformation keyInformation = informations.get(add.getKey());
+            Object value = null;
+            switch (keyInformation.getCardinality()) {
+                case SINGLE:
+                    value = convertToEsType(Iterators.getLast(add.getValue().iterator()).value);
+                    break;
+                case SET:
+                case LIST:
+                    value = add.getValue().stream().map(v -> convertToEsType(v.value))
                         .filter(v -> {
                             Preconditions.checkArgument(!(v instanceof byte[]), "Collections not supported for " + add.getKey());
                             return true;
                         })
                         .collect(Collectors.toList()).toArray();
-                        break;
-                }
-
-                if (value instanceof byte[]) {
-                    builder.rawField(add.getKey(), new ByteArrayInputStream((byte[]) value));
-                } else {
-                    builder.field(add.getKey(), value);
-                }
-                if (hasDualStringMapping(informations.get(add.getKey())) && keyInformation.getDataType() == String.class) {
-                    builder.field(getDualMappingName(add.getKey()), value);
-                }
-
-
+                    break;
             }
 
-            builder.endObject();
+            doc.put(add.getKey(), value);
+            if (hasDualStringMapping(informations.get(add.getKey())) && keyInformation.getDataType() == String.class) {
+                doc.put(getDualMappingName(add.getKey()), value);
+            }
 
-            return builder;
-        } catch (IOException e) {
-            throw new PermanentBackendException("Could not write json");
+
         }
+
+        return doc;
     }
 
     private static Object convertToEsType(Object value) {
@@ -597,8 +429,10 @@ public class ElasticSearchIndex implements IndexProvider {
             return value;
         } else if (value instanceof Geoshape) {
             return convertgeo((Geoshape) value);
-        } else if (value instanceof Date || value instanceof Instant) {
+        } else if (value instanceof Date) {
             return value;
+        } else if (value instanceof  Instant) {
+            return Date.from((Instant) value);
         } else if (value instanceof Boolean) {
             return value;
         } else if (value instanceof UUID) {
@@ -611,7 +445,11 @@ public class ElasticSearchIndex implements IndexProvider {
             Geoshape.Point p = geoshape.getPoint();
             return new double[]{p.getLongitude(), p.getLatitude()};
         } else if (geoshape.getType() != Geoshape.Type.BOX && geoshape.getType() != Geoshape.Type.CIRCLE) {
-            return geoshape.toGeoJson().getBytes();
+            try {
+                return geoshape.toMap();
+            } catch (IOException e) {
+                throw new IllegalArgumentException("Invalid geoshape: " + geoshape, e);
+            }
         } else {
             throw new IllegalArgumentException("Unsupported or invalid shape type for indexing: " + geoshape.getType());
         }
@@ -619,9 +457,7 @@ public class ElasticSearchIndex implements IndexProvider {
 
     @Override
     public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
-        BulkRequestBuilder brb = client.prepareBulk();
-
-        int bulkrequests = 0;
+        final List<ElasticSearchMutation> requests = new ArrayList<>();
         try {
             for (Map.Entry<String, Map<String, IndexMutation>> stores : mutations.entrySet()) {
                 String storename = stores.getKey();
@@ -637,67 +473,39 @@ public class ElasticSearchIndex implements IndexProvider {
                     if (mutation.hasDeletions()) {
                         if (mutation.isDeleted()) {
                             log.trace("Deleting entire document {}", docid);
-                            brb.add(new DeleteRequest(indexName, storename, docid));
+                            requests.add(ElasticSearchMutation.createDeleteRequest(indexName, storename, docid));
                         } else {
                             String script = getDeletionScript(informations, storename, mutation);
-                            brb.add(client.prepareUpdate(indexName, storename, docid).setScript(new Script(script, ScriptService.ScriptType.INLINE, null, null)));
+                            requests.add(ElasticSearchMutation.createUpdateRequest(indexName, storename, docid, script));
                             log.trace("Adding script {}", script);
                         }
-
-                        bulkrequests++;
                     }
                     if (mutation.hasAdditions()) {
-                        long ttl = mutation.determineTTL() * 1000l;
-
                         if (mutation.isNew()) { //Index
                             log.trace("Adding entire document {}", docid);
-                            Preconditions.checkArgument(ttl >= 0);
-                            IndexRequest request = new IndexRequest(indexName, storename, docid)
-                                    .source(getNewDocument(mutation.getAdditions(), informations.get(storename)));
-                            if (ttl > 0) {
-                                request.ttl(ttl);
-                            }
-                            brb.add(request);
-
+                            Map<String, Object> source = getNewDocument(mutation.getAdditions(), informations.get(storename));
+                            requests.add(ElasticSearchMutation.createIndexRequest(indexName, storename, docid, source));
                         } else {
-                            Preconditions.checkArgument(ttl == 0, "Elasticsearch only supports TTL on new documents [%s]", docid);
-
                             boolean needUpsert = !mutation.hasDeletions();
                             String script = getAdditionScript(informations, storename, mutation);
-                            UpdateRequestBuilder update = client.prepareUpdate(indexName, storename, docid).setScript(new Script(script, ScriptService.ScriptType.INLINE, null, null));
                             if (needUpsert) {
-                                XContentBuilder doc = getNewDocument(mutation.getAdditions(), informations.get(storename));
-
-                                update.setUpsert(doc);
+                                Map doc = getNewDocument(mutation.getAdditions(), informations.get(storename));
+                                requests.add(ElasticSearchMutation.createUpdateRequest(indexName, storename, docid, script, doc));
+                            } else {
+                                requests.add(ElasticSearchMutation.createUpdateRequest(indexName, storename, docid, script));
                             }
 
-                            brb.add(update);
                             log.trace("Adding script {}", script);
                         }
-
-                        bulkrequests++;
                     }
 
                 }
             }
-            if (bulkrequests > 0) {
-                BulkResponse bulkItemResponses = brb.execute().actionGet();
-                if (bulkItemResponses.hasFailures()) {
-                    boolean actualFailure = false;
-                    for(BulkItemResponse response : bulkItemResponses.getItems()) {
-                        //The document may have been deleted, which is OK
-                        if(response.isFailed() && response.getFailure().getStatus() != RestStatus.NOT_FOUND) {
-                            log.error("Failed to execute ES query {}", response.getFailureMessage());
-                            actualFailure = true;
-                        }
-                    }
-                    if(actualFailure) {
-                        throw new Exception(bulkItemResponses.buildFailureMessage());
-                    }
-                }
+            if (!requests.isEmpty()) {
+                client.bulkRequest(requests);
             }
         } catch (Exception e) {
-            log.error("Failed to execute ES query {}", brb.request().timeout(), e);
+            log.error("Failed to execute bulk Elasticsearch query", e);
             throw convert(e);
         }
     }
@@ -766,6 +574,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 builder.field("value", esValue);
             }
 
+            builder.endObject();
             String s = builder.string();
             int prefixLength = "{\"value\":".length();
             int suffixLength = "}".length();
@@ -781,8 +590,7 @@ public class ElasticSearchIndex implements IndexProvider {
 
 
     public void restore(Map<String,Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
-        BulkRequestBuilder bulk = client.prepareBulk();
-        int requests = 0;
+        final List<ElasticSearchMutation> requests = new ArrayList<>();
         try {
             for (Map.Entry<String, Map<String, List<IndexEntry>>> stores : documents.entrySet()) {
                 String store = stores.getKey();
@@ -796,26 +604,19 @@ public class ElasticSearchIndex implements IndexProvider {
                         if (log.isTraceEnabled())
                             log.trace("Deleting entire document {}", docID);
 
-                        bulk.add(new DeleteRequest(indexName, store, docID));
-                        requests++;
+                        requests.add(ElasticSearchMutation.createDeleteRequest(indexName, store, docID));
                     } else {
                         // Add
                         if (log.isTraceEnabled())
                             log.trace("Adding entire document {}", docID);
-                        long ttl = IndexMutation.determineTTL(content) * 1000l;
-                        Preconditions.checkArgument(ttl >= 0);
-                        IndexRequest request = new IndexRequest(indexName, store, docID).source(getNewDocument(content, informations.get(store)));
-                        if (ttl > 0) {
-                            request.ttl(ttl);
-                        }
-                        bulk.add(request);
-                        requests++;
+                        Map<String, Object> source = getNewDocument(content, informations.get(store));
+                        requests.add(ElasticSearchMutation.createIndexRequest(indexName, store, docID, source));
                     }
                 }
             }
 
-            if (requests > 0)
-                bulk.execute().actionGet();
+            if (!requests.isEmpty())
+                client.bulkRequest(requests);
         } catch (Exception e) {
             throw convert(e);
         }
@@ -904,7 +705,7 @@ public class ElasticSearchIndex implements IndexProvider {
                     throw new IllegalArgumentException("Unsupported or invalid search shape type for geopoint: " + shape.getType());
                 }
 
-                return janusgraphPredicate == Geo.DISJOINT ?  QueryBuilders.notQuery(queryBuilder) : queryBuilder;
+                return janusgraphPredicate == Geo.DISJOINT ?  QueryBuilders.boolQuery().mustNot(queryBuilder) : queryBuilder;
             } else if (value instanceof Geoshape) {
                 // geoshape
                 Preconditions.checkArgument(janusgraphPredicate instanceof Geo, "Relation not supported on geoshape types: " + janusgraphPredicate);
@@ -1002,43 +803,36 @@ public class ElasticSearchIndex implements IndexProvider {
 
     @Override
     public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
-        SearchRequestBuilder srb = client.prepareSearch(indexName);
-        srb.setTypes(query.getStore());
-        srb.setQuery(QueryBuilders.matchAllQuery());
-        srb.setPostFilter(getFilter(query.getCondition(),informations.get(query.getStore())));
+        ElasticSearchRequest sr = new ElasticSearchRequest();
+
+        sr.setQuery(QueryBuilders.matchAllQuery());
+        sr.setPostFilter(getFilter(query.getCondition(),informations.get(query.getStore())));
         if (!query.getOrder().isEmpty()) {
             List<IndexQuery.OrderEntry> orders = query.getOrder();
             for (int i = 0; i < orders.size(); i++) {
                 IndexQuery.OrderEntry orderEntry = orders.get(i);
-                FieldSortBuilder fsb = new FieldSortBuilder(orders.get(i).getKey())
-                        .order(orderEntry.getOrder() == Order.ASC ? SortOrder.ASC : SortOrder.DESC);
-                if (useDeprecatedIgnoreUnmapped) {
-                    fsb.ignoreUnmapped(true);
-                } else {
-                    KeyInformation information = informations.get(query.getStore()).get(orders.get(i).getKey());
-                    Mapping mapping = Mapping.getMapping(information);
-                    Class<?> datatype = orderEntry.getDatatype();
-                    fsb.unmappedType(convertToEsDataType(datatype, mapping));
-                }
-                srb.addSort(fsb);
+                String order = (orderEntry.getOrder() == Order.ASC ? SortOrder.ASC : SortOrder.DESC).toString();
+                KeyInformation information = informations.get(query.getStore()).get(orders.get(i).getKey());
+                Mapping mapping = Mapping.getMapping(information);
+                Class<?> datatype = orderEntry.getDatatype();
+                sr.addSort(orders.get(i).getKey(), order, convertToEsDataType(datatype, mapping));
             }
         }
-        srb.setFrom(0);
-        if (query.hasLimit()) srb.setSize(query.getLimit());
-        else srb.setSize(maxResultsSize);
-        srb.setNoFields();
-        //srb.setExplain(true);
+        sr.setFrom(0);
+        if (query.hasLimit()) sr.setSize(query.getLimit());
+        else sr.setSize(maxResultsSize);
 
-        SearchResponse response = srb.execute().actionGet();
-        log.debug("Executed query [{}] in {} ms", query.getCondition(), response.getTookInMillis());
-        SearchHits hits = response.getHits();
-        if (!query.hasLimit() && hits.totalHits() >= maxResultsSize)
-            log.warn("Query result set truncated to first [{}] elements for query: {}", maxResultsSize, query);
-        List<String> result = new ArrayList<String>(hits.hits().length);
-        for (SearchHit hit : hits) {
-            result.add(hit.id());
+        ElasticSearchResponse response;
+        try {
+            response = client.search(indexName, query.getStore(), sr);
+        } catch (IOException e) {
+            throw new PermanentBackendException(e);
         }
-        return result;
+
+        log.debug("Executed query [{}] in {} ms", query.getCondition(), response.getTook());
+        if (!query.hasLimit() && response.getTotal() >= maxResultsSize)
+            log.warn("Query result set truncated to first [{}] elements for query: {}", maxResultsSize, query);
+        return response.getResults().stream().map(result -> result.getResult()).collect(Collectors.toList());
     }
 
     private String convertToEsDataType(Class<?> datatype, Mapping mapping) {
@@ -1075,26 +869,23 @@ public class ElasticSearchIndex implements IndexProvider {
 
     @Override
     public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
-        SearchRequestBuilder srb = client.prepareSearch(indexName);
-        srb.setTypes(query.getStore());
-        srb.setQuery(QueryBuilders.queryStringQuery(query.getQuery()));
+        ElasticSearchRequest sr = new ElasticSearchRequest();
+        sr.setQuery(QueryBuilders.queryStringQuery(query.getQuery()));
 
-        srb.setFrom(query.getOffset());
-        if (query.hasLimit()) srb.setSize(query.getLimit());
-        else srb.setSize(maxResultsSize);
-        srb.setNoFields();
-        //srb.setExplain(true);
+        sr.setFrom(query.getOffset());
+        if (query.hasLimit()) sr.setSize(query.getLimit());
+        else sr.setSize(maxResultsSize);
 
-        SearchResponse response = srb.execute().actionGet();
-        log.debug("Executed query [{}] in {} ms", query.getQuery(), response.getTookInMillis());
-        SearchHits hits = response.getHits();
-        if (!query.hasLimit() && hits.totalHits() >= maxResultsSize)
-            log.warn("Query result set truncated to first [{}] elements for query: {}", maxResultsSize, query);
-        List<RawQuery.Result<String>> result = new ArrayList<RawQuery.Result<String>>(hits.hits().length);
-        for (SearchHit hit : hits) {
-            result.add(new RawQuery.Result<String>(hit.id(),hit.getScore()));
+        ElasticSearchResponse response;
+        try {
+            response = client.search(indexName, query.getStore(), sr);
+        } catch (IOException e) {
+            throw new PermanentBackendException(e);
         }
-        return result;
+        log.debug("Executed query [{}] in {} ms", query.getQuery(), response.getTook());
+        if (!query.hasLimit() && response.getTotal() >= maxResultsSize)
+            log.warn("Query result set truncated to first [{}] elements for query: {}", maxResultsSize, query);
+        return response.getResults();
     }
 
     @Override
@@ -1167,37 +958,23 @@ public class ElasticSearchIndex implements IndexProvider {
 
     @Override
     public void close() throws BackendException {
-
-        if (node != null && !node.isClosed()) {
-            node.close();
+        try {
+            client.close();
+        } catch (IOException e) {
+            throw new PermanentBackendException(e);
         }
-        client.close();
 
     }
 
     @Override
     public void clearStorage() throws BackendException {
         try {
-            try {
-                client.admin().indices()
-                        .delete(new DeleteIndexRequest(indexName)).actionGet();
-                // We wait for one second to let ES delete the river
-                Thread.sleep(1000);
-            } catch (IndexNotFoundException e) {
-                // Index does not exist... Fine
-            }
+            client.deleteIndex(indexName);
         } catch (Exception e) {
             throw new PermanentBackendException("Could not delete index " + indexName, e);
         } finally {
             close();
         }
-    }
-
-    /**
-     * Exposed for testing
-     */
-    Node getNode() {
-        return node;
     }
 
     private void checkExpectedClientVersion() {

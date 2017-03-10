@@ -21,6 +21,8 @@ import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Circle;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
+import org.apache.tinkerpop.shaded.jackson.databind.ObjectReader;
+import org.apache.tinkerpop.shaded.jackson.databind.ObjectWriter;
 import org.janusgraph.diskstorage.ScanBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
@@ -78,6 +80,14 @@ public class Geoshape {
         } catch (ClassNotFoundException e) { }
 
         HELPER = haveJts ? new JtsGeoshapeHelper() : new GeoshapeHelper();
+    }
+
+    private static final ObjectReader mapReader;
+    private static final ObjectWriter mapWriter;
+    static {
+        final ObjectMapper mapper = new ObjectMapper();
+        mapReader = mapper.readerWithView(LinkedHashMap.class).forType(LinkedHashMap.class);
+        mapWriter = mapper.writerWithView(Map.class);
     }
 
     /**
@@ -149,6 +159,10 @@ public class Geoshape {
      */
     public String toGeoJson() {
         return GeoshapeGsonSerializer.toGeoJson(this);
+    }
+
+    public Map<String,Object> toMap() throws IOException {
+        return mapReader.readValue(toGeoJson());
     }
 
     /**
@@ -510,7 +524,7 @@ public class Geoshape {
                 }
             }
 
-            String json = new ObjectMapper().writeValueAsString(geometry);
+            String json = mapWriter.writeValueAsString(geometry);
             return new Geoshape(HELPER.getGeojsonReader().read(new StringReader(json)));
         }
 
@@ -616,7 +630,7 @@ public class Geoshape {
             jgen.writeStartObject();
             if (typeSerializer != null) jgen.writeStringField(GraphSONTokens.CLASS, Geoshape.class.getName());
             String geojson = toGeoJson(geoshape);
-            Map json = new ObjectMapper().readValue(geojson, LinkedHashMap.class);
+            Map json = mapReader.readValue(geojson);
             if (geoshape.getType() == Type.POINT) {
                 double[] coords = ((List<Number>) json.get("coordinates")).stream().map(i -> i.doubleValue()).mapToDouble(i -> i).toArray();
                 GraphSONUtil.writeWithType(FIELD_COORDINATES, coords, jgen, serializerProvider, typeSerializer);
@@ -652,7 +666,7 @@ public class Geoshape {
                 try {
                     HashMap map = jsonParser.readValueAs(LinkedHashMap.class);
                     jsonParser.nextToken();
-                    String json = new ObjectMapper().writeValueAsString(map);
+                    String json = mapWriter.writeValueAsString(map);
                     Geoshape shape = new Geoshape(HELPER.getGeojsonReader().read(new StringReader(json)));
                     return shape;
                 } catch (ParseException e) {

@@ -16,19 +16,32 @@ package org.janusgraph.diskstorage.es;
 
 
 import org.janusgraph.CassandraStorageSetup;
-import org.janusgraph.StorageSetup;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import static org.janusgraph.CassandraStorageSetup.*;
-import static org.janusgraph.diskstorage.es.ElasticSearchIndex.CLIENT_ONLY;
-import static org.janusgraph.diskstorage.es.ElasticSearchIndex.LOCAL_MODE;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_DIRECTORY;
+import static org.janusgraph.diskstorage.es.ElasticSearchIndex.BULK_REFRESH;
+import static org.janusgraph.diskstorage.es.ElasticSearchIndex.INTERFACE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
 
 public class ThriftElasticsearchTest extends JanusGraphIndexTest {
+
+    private static ElasticsearchRunner esr;
+
+    @BeforeClass
+    public static void startElasticsearch() {
+        CassandraStorageSetup.startCleanEmbedded();
+        esr = new ElasticsearchRunner();
+        esr.start();
+    }
+
+    @AfterClass
+    public static void stopElasticsearch() {
+        esr.stop();
+    }
 
     public ThriftElasticsearchTest() {
         super(true, true, true);
@@ -39,10 +52,9 @@ public class ThriftElasticsearchTest extends JanusGraphIndexTest {
         ModifiableConfiguration config =
                 getCassandraThriftConfiguration(ThriftElasticsearchTest.class.getName());
         //Add index
-        config.set(INDEX_BACKEND,"elasticsearch",INDEX);
-        config.set(LOCAL_MODE,true,INDEX);
-        config.set(CLIENT_ONLY,false,INDEX);
-        config.set(INDEX_DIRECTORY, StorageSetup.getHomeDir("es"),INDEX);
+        config.set(INTERFACE, ElasticSearchSetup.REST_CLIENT.toString(), INDEX);
+        config.set(INDEX_HOSTS, new String[]{ "127.0.0.1" }, INDEX);
+        config.set(BULK_REFRESH, "wait_for", INDEX);
         return config.getConfiguration();
     }
 
@@ -60,8 +72,4 @@ public class ThriftElasticsearchTest extends JanusGraphIndexTest {
         return true;
     }
 
-    @BeforeClass
-    public static void beforeClass() {
-        CassandraStorageSetup.startCleanEmbedded();
-    }
 }
