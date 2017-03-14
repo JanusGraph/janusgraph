@@ -24,6 +24,8 @@ import java.util.Map;
 
 public interface ElasticSearchClient extends Closeable {
 
+    ElasticMajorVersion getMajorVersion();
+
     void clusterHealthRequest(String timeout) throws IOException;
 
     boolean indexExists(String indexName) throws IOException;

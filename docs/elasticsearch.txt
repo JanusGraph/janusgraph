@@ -17,7 +17,11 @@ JanusGraph supports https://www.elastic.co/[Elasticsearch] as an index backend. 
 Please see <<version-compat>> for details on what versions of ES will work with JanusGraph.
 
 [IMPORTANT]
-JanusGraph currently requires https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-scripting-security.html#enable-dynamic-scripting[Elasticsearch's dynamic scripting feature].  The `script.engine.groovy.inline.update` setting must be set to `true` on the Elasticsearch cluster.  This configuration requirement may be removed in future JanusGraph versions.
+===============================
+Beginning with Elasticsearch 5.0 JanusGraph uses sandboxed https://www.elastic.co/guide/en/elasticsearch/reference/master/modules-scripting-painless.html[Painless scripts] for inline updates, which are enabled by default in Elasticsearch 5.x.
+
+Using JanusGraph with Elasticsearch 2.x requires enabling Groovy inline scripting by setting `script.engine.groovy.inline.update` to `true` on the Elasticsearch cluster (see https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-scripting-security.html#enable-dynamic-scripting[dynamic scripting documentation] for more information).
+===============================
 
 === Running Elasticsearch
 

@@ -32,7 +32,7 @@
         <fileSet>
             <directory>${assembly.static.dir}/conf/es</directory>
             <outputDirectory>/elasticsearch/config</outputDirectory>
-            <filtered>false</filtered>
+            <filtered>true</filtered>
         </fileSet>
     </fileSets>
 

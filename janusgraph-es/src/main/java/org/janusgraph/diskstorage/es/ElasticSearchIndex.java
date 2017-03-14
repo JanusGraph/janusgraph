@@ -20,8 +20,6 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.shaded.jackson.core.type.TypeReference;
-import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.elasticsearch.Version;
 import org.elasticsearch.common.geo.ShapeRelation;
 import org.elasticsearch.common.geo.builders.LineStringBuilder;
@@ -178,6 +176,7 @@ public class ElasticSearchIndex implements IndexProvider {
     private final ElasticSearchClient client;
     private final String indexName;
     private final int maxResultsSize;
+    private final String scriptLang;
 
     public ElasticSearchIndex(Configuration config) throws BackendException {
         indexName = config.get(INDEX_NAME);
@@ -189,6 +188,9 @@ public class ElasticSearchIndex implements IndexProvider {
 
         maxResultsSize = config.get(INDEX_MAX_RESULT_SET_SIZE);
         log.debug("Configured ES query result set max size to {}", maxResultsSize);
+
+        scriptLang = client.getMajorVersion() == ElasticMajorVersion.TWO ? "groovy" : "painless";
+        log.debug("Using {} script language", scriptLang);
 
         try {
             client.clusterHealthRequest(config.get(HEALTH_REQUEST_TIMEOUT));
@@ -476,7 +478,7 @@ public class ElasticSearchIndex implements IndexProvider {
                             requests.add(ElasticSearchMutation.createDeleteRequest(indexName, storename, docid));
                         } else {
                             String script = getDeletionScript(informations, storename, mutation);
-                            requests.add(ElasticSearchMutation.createUpdateRequest(indexName, storename, docid, script));
+                            requests.add(ElasticSearchMutation.createUpdateRequest(indexName, storename, docid, script, scriptLang));
                             log.trace("Adding script {}", script);
                         }
                     }
@@ -490,9 +492,9 @@ public class ElasticSearchIndex implements IndexProvider {
                             String script = getAdditionScript(informations, storename, mutation);
                             if (needUpsert) {
                                 Map doc = getNewDocument(mutation.getAdditions(), informations.get(storename));
-                                requests.add(ElasticSearchMutation.createUpdateRequest(indexName, storename, docid, script, doc));
+                                requests.add(ElasticSearchMutation.createUpdateRequest(indexName, storename, docid, script, scriptLang, doc));
                             } else {
-                                requests.add(ElasticSearchMutation.createUpdateRequest(indexName, storename, docid, script));
+                                requests.add(ElasticSearchMutation.createUpdateRequest(indexName, storename, docid, script, scriptLang));
                             }
 
                             log.trace("Adding script {}", script);
@@ -524,7 +526,7 @@ public class ElasticSearchIndex implements IndexProvider {
                     break;
                 case SET:
                 case LIST:
-                    String jsValue = convertToJsType(deletion.value);
+                    String jsValue = convertToJsType(deletion.value, scriptLang);
                     script.append("def index = ctx._source[\"" + deletion.field + "\"].indexOf(" + jsValue + "); ctx._source[\"" + deletion.field + "\"].remove(index);");
                     if (hasDualStringMapping(informations.get(storename, deletion.field))) {
                         script.append("def index = ctx._source[\"" + getDualMappingName(deletion.field) + "\"].indexOf(" + jsValue + "); ctx._source[\"" + getDualMappingName(deletion.field) + "\"].remove(index);");
@@ -542,18 +544,16 @@ public class ElasticSearchIndex implements IndexProvider {
             KeyInformation keyInformation = informations.get(storename).get(e.field);
             switch (keyInformation.getCardinality()) {
                 case SINGLE:
-                    script.append("ctx._source[\"" + e.field + "\"] = " + convertToJsType(e.value) + ";");
+                    script.append("ctx._source[\"" + e.field + "\"] = " + convertToJsType(e.value, scriptLang) + ";");
                     if (hasDualStringMapping(keyInformation)) {
-                        script.append("ctx._source[\"" + getDualMappingName(e.field) + "\"] = " + convertToJsType(e.value) + ";");
+                        script.append("ctx._source[\"" + getDualMappingName(e.field) + "\"] = " + convertToJsType(e.value, scriptLang) + ";");
                     }
                     break;
                 case SET:
                 case LIST:
-                    script.append("if(ctx._source[\"" + e.field + "\"] == null) {ctx._source[\"" + e.field + "\"] = []};");
-                    script.append("ctx._source[\"" + e.field + "\"].add(" + convertToJsType(e.value) + ");");
+                    script.append("ctx._source[\"" + e.field + "\"].add(" + convertToJsType(e.value, scriptLang) + ");");
                     if (hasDualStringMapping(keyInformation)) {
-                        script.append("if(ctx._source[\"" + getDualMappingName(e.field) + "\"] == null) {ctx._source[\"" + e.field + "\"] = []};");
-                        script.append("ctx._source[\"" + getDualMappingName(e.field) + "\"].add(" + convertToJsType(e.value) + ");");
+                        script.append("ctx._source[\"" + getDualMappingName(e.field) + "\"].add(" + convertToJsType(e.value, scriptLang) + ");");
                     }
                     break;
 
@@ -563,7 +563,7 @@ public class ElasticSearchIndex implements IndexProvider {
         return script.toString();
     }
 
-    private static String convertToJsType(Object value) throws PermanentBackendException {
+    private static String convertToJsType(Object value, String scriptLang) throws PermanentBackendException {
         try {
             XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
 
@@ -579,7 +579,9 @@ public class ElasticSearchIndex implements IndexProvider {
             int prefixLength = "{\"value\":".length();
             int suffixLength = "}".length();
             String result = s.substring(prefixLength, s.length() - suffixLength);
-            result = result.replace("$", "\\$");
+            if (scriptLang.equals("groovy")) {
+                result = result.replace("$", "\\$");
+            }
             return result;
         } catch (IOException e) {
             throw new PermanentBackendException("Could not write json");

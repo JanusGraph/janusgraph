@@ -17,6 +17,7 @@ package org.janusgraph.diskstorage.es.rest;
 import com.google.common.collect.ImmutableMap;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
+import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
 import org.apache.tinkerpop.shaded.jackson.core.type.TypeReference;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectReader;
@@ -29,6 +30,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.rest.RestStatus;
 import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.diskstorage.es.ElasticMajorVersion;
 import org.janusgraph.diskstorage.es.ElasticSearchClient;
 import org.janusgraph.diskstorage.es.ElasticSearchMutation;
 import org.janusgraph.diskstorage.es.ElasticSearchRequest;
@@ -43,6 +45,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class RestElasticSearchClient implements ElasticSearchClient {
@@ -64,15 +68,44 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     private RestClient delegate;
 
+    private ElasticMajorVersion majorVersion;
+
     private String bulkRefresh;
 
     public RestElasticSearchClient(RestClient delegate) {
         this.delegate = delegate;
+        majorVersion = getMajorVersion();
     }
 
     @Override
     public void close() throws IOException {
         delegate.close();
+    }
+
+    @Override
+    public ElasticMajorVersion getMajorVersion() {
+        if (majorVersion != null) {
+            return majorVersion;
+        }
+
+        final Pattern pattern = Pattern.compile("(\\d+)\\.\\d+\\.\\d+");
+        majorVersion = ElasticMajorVersion.TWO;
+        try {
+            final Response response = delegate.performRequest("GET", "/");
+            try (final InputStream inputStream = response.getEntity().getContent()) {
+                final ClusterInfo info = mapper.readValue(inputStream, ClusterInfo.class);
+                final Matcher m = info.getVersion() != null ? pattern.matcher((String) info.getVersion().get("number")) : null;
+                if (m == null || !m.find() || Integer.valueOf(m.group(1)) < 5) {
+                    majorVersion = ElasticMajorVersion.TWO;
+                } else {
+                    majorVersion = ElasticMajorVersion.FIVE;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Unable to determine Elasticsearch server version. Assuming 2.x.", e);
+        }
+
+        return majorVersion;
     }
 
     @Override
@@ -221,6 +254,21 @@ public class RestElasticSearchClient implements ElasticSearchClient {
             throw new IOException("Error executing request: " + response.getStatusLine().getReasonPhrase());
         }
         return response;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    private static final class ClusterInfo {
+
+        private Map<String,Object> version;
+
+        public Map<String, Object> getVersion() {
+            return version;
+        }
+
+        public void setVersion(Map<String, Object> version) {
+            this.version = version;
+        }
+
     }
 
 }

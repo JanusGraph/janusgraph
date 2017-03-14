@@ -20,8 +20,7 @@ env:
     - MODULE='berkeleyje'
     - MODULE='cassandra'
     - MODULE='es' ARGS='-DthreadCount=1'
-    - MODULE='es' ARGS='-DthreadCount=1 -Delasticsearch.dist.version=2.4.4'
-    - MODULE='es' ARGS='-DthreadCount=1 -Delasticsearch.dist.version=2.4.4 -Dtest=**/Transport*'
+    - MODULE='es' ARGS='-DthreadCount=1 -Pelasticsearch2'
     - MODULE='hadoop-parent/janusgraph-hadoop-2'
     - MODULE='hbase-parent/janusgraph-hbase-098'
     - MODULE='hbase-parent/janusgraph-hbase-10'
@@ -43,8 +42,7 @@ matrix:
     # Currently broken due to too many log statements (exceeds 4MB)
     # https://travis-ci.org/JanusGraph/janusgraph/jobs/197472453
     - env: MODULE='es' ARGS='-DthreadCount=1'
-    - env: MODULE='es' ARGS='-DthreadCount=1 -Delasticsearch.dist.version=2.4.4'
-    - env: MODULE='es' ARGS='-DthreadCount=1 -Delasticsearch.dist.version=2.4.4 -Dtest=**/Transport*'
+    - env: MODULE='es' ARGS='-DthreadCount=1 -Pelasticsearch2'
 
     # Currently broken due to too many log statements (exceeds 4MB)
     # https://travis-ci.org/JanusGraph/janusgraph/jobs/197672947

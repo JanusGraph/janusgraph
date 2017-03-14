@@ -56,12 +56,12 @@ public class ElasticSearchMutation {
         return new ElasticSearchMutation(RequestType.INDEX, index, type, id, source);
     }
 
-    public static ElasticSearchMutation createUpdateRequest(String index, String type, String id, String script) {
-        return new ElasticSearchMutation(RequestType.UPDATE, index, type, id, ImmutableMap.of("script", ImmutableMap.of("inline", script, "lang", "groovy")));
+    public static ElasticSearchMutation createUpdateRequest(String index, String type, String id, String script, String lang) {
+        return new ElasticSearchMutation(RequestType.UPDATE, index, type, id, ImmutableMap.of("script", ImmutableMap.of("inline", script, "lang", lang)));
     }
 
-    public static ElasticSearchMutation createUpdateRequest(String index, String type, String id, String script, Map upsert) {
-        return new ElasticSearchMutation(RequestType.UPDATE, index, type, id, ImmutableMap.of("script", ImmutableMap.of("inline", script, "lang", "groovy"), "upsert", upsert));
+    public static ElasticSearchMutation createUpdateRequest(String index, String type, String id, String script, String lang, Map upsert) {
+        return new ElasticSearchMutation(RequestType.UPDATE, index, type, id, ImmutableMap.of("script", ImmutableMap.of("inline", script, "lang", lang), "upsert", upsert));
     }
 
     public RequestType getRequestType() {
