@@ -7,18 +7,18 @@ By storing a graph in adjacency list format JanusGraph ensures that all of a ver
 
 In addition, JanusGraph maintains the adjacency list of each vertex in sort order with the order being defined by the sort key and sort order the edge labels. The sort order enables efficient retrievals of subsets of the adjacency list using <<vertex-indexes, vertex centric indices>>.
 
-JanusGraph stores the adjacency list representation of a graph in any <<storage-backends, storage backend>> that supports the BigTable data model.
+JanusGraph stores the adjacency list representation of a graph in any <<storage-backends, storage backend>> that supports the Bigtable data model.
 
-=== BigTable Data Model
+=== Bigtable Data Model
 
 [.tss-center]
 image:bigtablemodel.png[]
 
-Under the http://en.wikipedia.org/wiki/Bigtable[BigTable data model] each table is a collection of rows. Each row is uniquely identified by a key. Each row is comprised of an arbitrary (large, but limited) number of cells. A cell is composed of a column and value. A cell is uniquely identified by a column within a given row. Rows in the BigTable model are called "wide rows" because they support a large number of cells and the columns of those cells don't have to be defined up front as is required in relational databases.
+Under the http://en.wikipedia.org/wiki/Bigtable[Bigtable data model] each table is a collection of rows. Each row is uniquely identified by a key. Each row is comprised of an arbitrary (large, but limited) number of cells. A cell is composed of a column and value. A cell is uniquely identified by a column within a given row. Rows in the Bigtable model are called "wide rows" because they support a large number of cells and the columns of those cells don't have to be defined up front as is required in relational databases.
 
-JanusGraph has an additional requirement for the BigTable data model: The cells must be sorted by their columns and a subset of the cells specified by a column range must be efficiently retrievable (e.g. by using index structures, skip lists, or binary search).
+JanusGraph has an additional requirement for the Bigtable data model: The cells must be sorted by their columns and a subset of the cells specified by a column range must be efficiently retrievable (e.g. by using index structures, skip lists, or binary search).
 
-In addition, a particular BigTable implementation may keep the rows sorted in the order of their key. JanusGraph can exploit such key-order to effectively partition the graph which provides better loading and traversal performance for very large graphs. However, this is not a requirement.
+In addition, a particular Bigtable implementation may keep the rows sorted in the order of their key. JanusGraph can exploit such key-order to effectively partition the graph which provides better loading and traversal performance for very large graphs. However, this is not a requirement.
 
 === JanusGraph Data Layout
 
