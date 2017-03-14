@@ -86,6 +86,7 @@ While JanusGraph's composite indexes support any data type that can be stored in
  
 Additional data types will be supported in the future.
 
+[[geoshape]]
 === Geoshape Data Type
 The Geoshape data type supports representing a point, circle, box, line, polygon, multi-point, multi-line and multi-polygon. Index backends currently support indexing points, lines and polygons. Indexing multi-point, multi-line and multi-polygon properties has not been tested.
 Geospatial index lookups are only supported via mixed indexes.

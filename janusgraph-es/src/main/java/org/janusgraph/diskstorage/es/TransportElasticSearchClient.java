@@ -194,6 +194,11 @@ public class TransportElasticSearchClient implements ElasticSearchClient {
         client.close();
     }
 
+    @Override
+    public ElasticMajorVersion getMajorVersion() {
+        return ElasticMajorVersion.TWO;
+    }
+
     public void setBulkRefresh(boolean bulkRefresh) {
         this.bulkRefresh = bulkRefresh;
     }
