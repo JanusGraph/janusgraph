@@ -150,11 +150,11 @@ JanusGraph requires Java 8 (Standard Edition).  Oracle Java 8 is recommended.  J
 
 [source, gremlin]
 ----
-$ unzip janusgraph-$MAVEN{project.version}-hadoop1.zip
-Archive:  janusgraph-$MAVEN{project.version}-hadoop1.zip
-  creating: janusgraph-$MAVEN{project.version}-hadoop1/
+$ unzip janusgraph-$MAVEN{project.version}-hadoop2.zip
+Archive:  janusgraph-$MAVEN{project.version}-hadoop2.zip
+  creating: janusgraph-$MAVEN{project.version}-hadoop2/
 ...
-$ cd janusgraph-$MAVEN{project.version}-hadoop1
+$ cd janusgraph-$MAVEN{project.version}-hadoop2
 $ bin/gremlin.sh
 
          \,,,/
