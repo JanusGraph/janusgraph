@@ -135,67 +135,6 @@
     
     <profiles>
         <profile>
-            <id>hadoop1</id>
-
-            <activation>
-                <property>
-                    <name>hadoop.profile</name>
-                    <value>1.0</value>
-                </property>
-            </activation>
-
-            <properties>
-                <hbase.version>${hbase098.core.version}-hadoop1</hbase.version>
-            </properties>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <additionalClasspathElements>
-                                <additionalClasspathElement>${project.basedir}/conf</additionalClasspathElement>
-                            </additionalClasspathElements>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-
-            <dependencyManagement>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-core</artifactId>
-                        <version>${hadoop.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-client</artifactId>
-                        <version>${hadoop.version}</version>
-                    </dependency>
-                </dependencies>
-            </dependencyManagement>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-core</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-client</artifactId>
-                </dependency>
-                <!-- HBase fails to start during testing with a
-                     Netty ClassNotFoundException unless this
-                     dependency is declared -->
-                <dependency>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty</artifactId>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
             <id>hadoop2</id>
 
             <activation>
