@@ -19,6 +19,7 @@ env:
   matrix:
     - MODULE='berkeleyje'
     - MODULE='cassandra'
+    - MODULE='cql'
     - MODULE='es' ARGS='-DthreadCount=1'
     - MODULE='es' ARGS='-DthreadCount=1 -Pelasticsearch2'
     - MODULE='hadoop-parent/janusgraph-hadoop-2'
@@ -38,6 +39,9 @@ matrix:
     # Currently broken due to too many log statements (exceeds 4MB)
     # https://travis-ci.org/JanusGraph/janusgraph/jobs/197472452
     - env: MODULE='cassandra'
+
+    # Currently broken due to too many log statements (exceeds 4MB)
+    - env: MODULE='cql'
 
     # Currently broken due to too many log statements (exceeds 4MB)
     # https://travis-ci.org/JanusGraph/janusgraph/jobs/197472453
