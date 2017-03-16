@@ -74,6 +74,7 @@ Mike McMahon <mmcm@comcast.net>
 Misha Brukman <mbrukman@google.com>
 MrKeyholder <fractalf@gmail.com>
 Nik Everett <neverett@wikimedia.org>
+Paul Kendall <paul.kendall@orionhealth.com> <pkendall64@gmail.com>
 Pavel Yaskevich <pyaskevich@twitter.com> <xedin@apache.org>
 Peter Beaman <pbeaman@akiban.com>
 Petter Aas <aaspet@gmail.com> <petter.aas@fronter.com>
@@ -82,6 +83,7 @@ PommeVerte <dylan.millikin@gmail.com>
 Rafael Fernandes <luizrafael@gmail.com>
 Ranger Tsao <cao.zhifu@gmail.com>
 Richard Doll <rdoll@care-view.com>
+Samant Maharaj <samant.maharaj@orionhealth.com>
 Sebastian Good <sebastian@experoinc.com>
 Solon Gordon <solon@knewton.com>
 Stephen Mallette <spmallette@gmail.com> <spmva@genoprime.com>
