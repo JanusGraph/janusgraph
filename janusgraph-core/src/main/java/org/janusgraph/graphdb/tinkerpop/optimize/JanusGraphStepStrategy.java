@@ -46,6 +46,7 @@ public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
                 //Try to optimize for index calls
                 final JanusGraphStep<?, ?> janusGraphStep = new JanusGraphStep<>(originalGraphStep);
                 TraversalHelper.replaceStep(originalGraphStep, (Step) janusGraphStep, traversal);
+                HasStepFolder.foldInIds(janusGraphStep, traversal);
                 HasStepFolder.foldInHasContainer(janusGraphStep, traversal);
                 HasStepFolder.foldInOrder(janusGraphStep, traversal, traversal, janusGraphStep.returnsVertex());
                 HasStepFolder.foldInRange(janusGraphStep, traversal);
