@@ -50,6 +50,10 @@ import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_DOC_KEY;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_INLINE_KEY;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_LANG_KEY;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_SCRIPT_KEY;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
 import org.janusgraph.diskstorage.indexing.IndexMutation;
@@ -478,7 +482,8 @@ public class ElasticSearchIndex implements IndexProvider {
                             requests.add(ElasticSearchMutation.createDeleteRequest(indexName, storename, docid));
                         } else {
                             String script = getDeletionScript(informations, storename, mutation);
-                            requests.add(ElasticSearchMutation.createUpdateRequest(indexName, storename, docid, script, scriptLang));
+                            Map<String,Object> doc = ImmutableMap.of(ES_SCRIPT_KEY, ImmutableMap.of(ES_INLINE_KEY, script, ES_LANG_KEY, scriptLang));
+                            requests.add(ElasticSearchMutation.createUpdateRequest(indexName, storename, docid, doc));
                             log.trace("Adding script {}", script);
                         }
                     }
@@ -488,16 +493,27 @@ public class ElasticSearchIndex implements IndexProvider {
                             Map<String, Object> source = getNewDocument(mutation.getAdditions(), informations.get(storename));
                             requests.add(ElasticSearchMutation.createIndexRequest(indexName, storename, docid, source));
                         } else {
-                            boolean needUpsert = !mutation.hasDeletions();
-                            String script = getAdditionScript(informations, storename, mutation);
-                            if (needUpsert) {
-                                Map doc = getNewDocument(mutation.getAdditions(), informations.get(storename));
-                                requests.add(ElasticSearchMutation.createUpdateRequest(indexName, storename, docid, script, scriptLang, doc));
+                            final Map upsert;
+                            if (!mutation.hasDeletions()) {
+                                upsert = getNewDocument(mutation.getAdditions(), informations.get(storename));
                             } else {
-                                requests.add(ElasticSearchMutation.createUpdateRequest(indexName, storename, docid, script, scriptLang));
+                                upsert = null;
                             }
 
-                            log.trace("Adding script {}", script);
+                            String inline = getAdditionScript(informations, storename, mutation);
+                            if (!inline.isEmpty()) {
+                                Map script = ImmutableMap.of(ES_INLINE_KEY, inline, ES_LANG_KEY, scriptLang);
+                                final ImmutableMap.Builder builder = ImmutableMap.builder().put(ES_SCRIPT_KEY, script);
+                                requests.add(ElasticSearchMutation.createUpdateRequest(indexName, storename, docid, builder, upsert));
+                                log.trace("Adding script {}", inline);
+                            }
+
+                            Map<String,Object> doc = getAdditionDoc(informations, storename, mutation);
+                            if (!doc.isEmpty()) {
+                                final ImmutableMap.Builder builder = ImmutableMap.builder().put(ES_DOC_KEY, doc);
+                                requests.add(ElasticSearchMutation.createUpdateRequest(indexName, storename, docid, builder, upsert));
+                                log.trace("Adding update {}", doc);
+                            }
                         }
                     }
 
@@ -543,12 +559,6 @@ public class ElasticSearchIndex implements IndexProvider {
         for (IndexEntry e : mutation.getAdditions()) {
             KeyInformation keyInformation = informations.get(storename).get(e.field);
             switch (keyInformation.getCardinality()) {
-                case SINGLE:
-                    script.append("ctx._source[\"" + e.field + "\"] = " + convertToJsType(e.value, scriptLang) + ";");
-                    if (hasDualStringMapping(keyInformation)) {
-                        script.append("ctx._source[\"" + getDualMappingName(e.field) + "\"] = " + convertToJsType(e.value, scriptLang) + ";");
-                    }
-                    break;
                 case SET:
                 case LIST:
                     script.append("ctx._source[\"" + e.field + "\"].add(" + convertToJsType(e.value, scriptLang) + ");");
@@ -561,6 +571,21 @@ public class ElasticSearchIndex implements IndexProvider {
 
         }
         return script.toString();
+    }
+
+    private Map<String,Object> getAdditionDoc(KeyInformation.IndexRetriever informations, String storename, IndexMutation mutation) throws PermanentBackendException {
+        Map<String,Object> doc = new HashMap<>();
+        for (IndexEntry e : mutation.getAdditions()) {
+            KeyInformation keyInformation = informations.get(storename).get(e.field);
+            if (keyInformation.getCardinality() == Cardinality.SINGLE) {
+                doc.put(e.field, convertToEsType(e.value));
+                if (hasDualStringMapping(keyInformation)) {
+                    doc.put(getDualMappingName(e.field), convertToEsType(e.value));
+                }
+            }
+        }
+
+        return doc;
     }
 
     private static String convertToJsType(Object value, String scriptLang) throws PermanentBackendException {
