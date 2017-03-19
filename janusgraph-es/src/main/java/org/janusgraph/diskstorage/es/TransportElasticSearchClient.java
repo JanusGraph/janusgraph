@@ -40,6 +40,12 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_DOC_KEY;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_INLINE_KEY;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_LANG_KEY;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_SCRIPT_KEY;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_UPSERT_KEY;
+
 import org.janusgraph.diskstorage.indexing.RawQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,11 +125,18 @@ public class TransportElasticSearchClient implements ElasticSearchClient {
                     brb.add(new IndexRequest(indexName, type, id).source(request.getSource()));
                     break;
                 } case UPDATE: {
-                    String inline = ((Map<String, String>) request.getSource().get("script")).get("inline");
-                    Script script = new Script(inline, ScriptService.ScriptType.INLINE, null, null);
-                    UpdateRequestBuilder update = client.prepareUpdate(indexName, type, id).setScript(script);
-                    if (request.getSource().containsKey("upsert")) {
-                        update.setUpsert((Map) request.getSource().get("upsert"));
+                    UpdateRequestBuilder update = client.prepareUpdate(indexName, type, id);
+                    if (request.getSource().containsKey(ES_SCRIPT_KEY)) {
+                        Map<String,String> script = ((Map<String, String>) request.getSource().get(ES_SCRIPT_KEY));
+                        String inline = script.get(ES_INLINE_KEY);
+                        String lang = script.get(ES_LANG_KEY);
+                        update.setScript(new Script(inline, ScriptService.ScriptType.INLINE, lang, null));
+                    }
+                    if (request.getSource().containsKey(ES_DOC_KEY)) {
+                        update.setDoc((Map) request.getSource().get(ES_DOC_KEY));
+                    }
+                    if (request.getSource().containsKey(ES_UPSERT_KEY)) {
+                        update.setUpsert((Map) request.getSource().get(ES_UPSERT_KEY));
                     }
                     brb.add(update);
                     break;

@@ -17,6 +17,7 @@ package org.janusgraph.diskstorage.es;
 import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import org.apache.commons.lang.RandomStringUtils;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.schema.Parameter;
@@ -164,4 +165,30 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         assertEquals("unescaped", tx.query(new IndexQuery("vertex", PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "$123"))).get(0));
         assertEquals("unescaped", tx.query(new IndexQuery("vertex", PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "12345"))).get(0));
     }
+
+    /**
+     * Test adding and overwriting with long string content.
+     *
+     */
+    @Test
+    public void testUpdateAdditionWithLongString() throws Exception {
+        initialize("vertex");
+        Multimap<String, Object> initialDoc = HashMultimap.create();
+        initialDoc.put(TEXT, RandomStringUtils.randomAlphanumeric(500000) + " bob " + RandomStringUtils.randomAlphanumeric(500000));
+
+        add("vertex", "long", initialDoc, true);
+
+        clopen();
+
+        assertEquals(1, tx.query(new IndexQuery("vertex", PredicateCondition.of(TEXT, Text.CONTAINS, "bob"))).size());
+        assertEquals(0, tx.query(new IndexQuery("vertex", PredicateCondition.of(TEXT, Text.CONTAINS, "world"))).size());
+
+        tx.add("vertex", "long", TEXT, RandomStringUtils.randomAlphanumeric(500000) + " world " + RandomStringUtils.randomAlphanumeric(500000), false);
+
+        clopen();
+
+        assertEquals(0, tx.query(new IndexQuery("vertex", PredicateCondition.of(TEXT, Text.CONTAINS, "bob"))).size());
+        assertEquals(1, tx.query(new IndexQuery("vertex", PredicateCondition.of(TEXT, Text.CONTAINS, "world"))).size());
+    }
+
 }
