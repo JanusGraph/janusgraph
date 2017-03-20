@@ -16,11 +16,29 @@ package org.janusgraph.diskstorage.cql;
 
 import static com.datastax.driver.core.querybuilder.QueryBuilder.truncate;
 import static com.datastax.driver.core.schemabuilder.SchemaBuilder.createKeyspace;
-import static javaslang.API.*;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.*;
+import static javaslang.API.$;
+import static javaslang.API.Case;
+import static javaslang.API.Match;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CLUSTER_NAME;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_DATACENTER;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.READ_CONSISTENCY;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_FACTOR;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_OPTIONS;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_STRATEGY;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_ENABLED;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_LOCATION;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_PASSWORD;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.WRITE_CONSISTENCY;
 import static org.janusgraph.diskstorage.cql.CQLKeyColumnValueStore.EXCEPTION_MAPPER;
 import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_PASSWORD;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_USERNAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_PREFIX;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.buildGraphConfiguration;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -73,33 +91,47 @@ import javaslang.collection.Seq;
 import javaslang.concurrent.Future;
 import javaslang.control.Option;
 
+/**
+ * This class creates {@see CQLKeyColumnValueStore}s and handles
+ * Cassandra-backed allocation of vertex IDs for JanusGraph (when so
+ * configured).
+ */
 public class CQLStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager {
+
+    static final String CONSISTENCY_LOCAL_QUORUM = "LOCAL_QUORUM";
+    static final String CONSISTENCY_QUORUM = "QUORUM";
 
     private static final int DEFAULT_PORT = 9042;
 
     private final String keyspace;
+    private final int batchSize;
     private final boolean atomicBatch;
     private final Cluster cluster;
     private final Session session;
     private final StoreFeatures storeFeatures;
     private final Map<String, CQLKeyColumnValueStore> openStores;
 
+    /**
+     * Constructor for the {@link CQLStoreManager} given a JanusGraph
+     * {@link Configuration}.
+     */
     public CQLStoreManager(final Configuration configuration) throws BackendException {
         super(configuration, DEFAULT_PORT);
         this.keyspace = configuration.get(KEYSPACE);
+        this.batchSize = configuration.get(BATCH_STATEMENT_SIZE);
         this.atomicBatch = configuration.get(ATOMIC_BATCH_MUTATE);
 
-        this.cluster = initialiseCluster();
-        this.session = initialiseSession(this.cluster, this.keyspace);
+        this.cluster = initializeCluster();
+        this.session = initializeSession(this.keyspace);
 
         final Configuration global = buildGraphConfiguration()
-                .set(READ_CONSISTENCY, "QUORUM")
-                .set(WRITE_CONSISTENCY, "QUORUM")
+                .set(READ_CONSISTENCY, CONSISTENCY_QUORUM)
+                .set(WRITE_CONSISTENCY, CONSISTENCY_QUORUM)
                 .set(METRICS_PREFIX, METRICS_SYSTEM_PREFIX_DEFAULT);
 
         final Configuration local = buildGraphConfiguration()
-                .set(READ_CONSISTENCY, "LOCAL_QUORUM")
-                .set(WRITE_CONSISTENCY, "LOCAL_QUORUM")
+                .set(READ_CONSISTENCY, CONSISTENCY_LOCAL_QUORUM)
+                .set(WRITE_CONSISTENCY, CONSISTENCY_LOCAL_QUORUM)
                 .set(METRICS_PREFIX, METRICS_SYSTEM_PREFIX_DEFAULT);
 
         final StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder();
@@ -129,8 +161,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         this.openStores = new ConcurrentHashMap<>();
     }
 
-    private Cluster initialiseCluster() throws PermanentBackendException {
-        // XXX: Deal with retry policy and potentially others
+    private Cluster initializeCluster() throws PermanentBackendException {
         final Configuration configuration = getStorageConfig();
 
         final List<InetSocketAddress> contactPoints;
@@ -185,7 +216,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         return builder.build();
     }
 
-    private Session initialiseSession(@SuppressWarnings("hiding") final Cluster cluster, final String keyspaceName) {
+    private Session initializeSession(final String keyspaceName) {
         final Configuration configuration = getStorageConfig();
         final Map<String, Object> replication = Match(configuration.get(REPLICATION_STRATEGY)).of(
                 Case($("SimpleStrategy"), strategy -> HashMap.<String, Object> of("class", strategy, "replication_factor", configuration.get(REPLICATION_FACTOR))),
@@ -195,7 +226,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                                 .toMap(array -> Tuple.of(array.get(0), Integer.parseInt(array.get(1)))))))
                 .toJavaMap();
 
-        final Session s = cluster.connect();
+        final Session s = this.cluster.connect();
         s.execute(createKeyspace(keyspaceName)
                 .ifNotExists()
                 .with()
@@ -257,7 +288,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     public void clearStorage() throws BackendException {
         final Future<Seq<ResultSet>> result = Future.sequence(
                 Iterator.ofAll(this.cluster.getMetadata().getKeyspace(this.keyspace).getTables())
-                .map(table -> Future.fromJavaFuture(this.session.executeAsync(truncate(this.keyspace, table.getName())))));
+                        .map(table -> Future.fromJavaFuture(this.session.executeAsync(truncate(this.keyspace, table.getName())))));
         result.await();
         if (result.isFailure()) {
             throw EXCEPTION_MAPPER.apply(result.getCause().get());
@@ -332,11 +363,11 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                         .flatMap(addTime -> Iterator.ofAll(keyMutations.getAdditions()).map(addition -> columnValueStore.insertColumn(key, addition, addTime)));
 
                 return Iterator.concat(deletions, additions)
-                        .grouped(20) // XXX Pull this out as a configuration option
+                        .grouped(this.batchSize)
                         .map(group -> Future.fromJavaFuture(this.session.executeAsync(
                                 new BatchStatement(Type.UNLOGGED)
-                                .addAll(group)
-                                .setConsistencyLevel(getTransaction(txh).getWriteConsistencyLevel()))));
+                                        .addAll(group)
+                                        .setConsistencyLevel(getTransaction(txh).getWriteConsistencyLevel()))));
             });
         }));
 

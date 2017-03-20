@@ -71,7 +71,7 @@ public class CassandraStorageSetup {
         String s = System.getProperty(prop);
 
         if (null == s) {
-            s = Joiner.on(File.separator).join(System.getProperty("user.dir"), "target", "cassandra", name, "localhost-bop");
+            s = Joiner.on(File.separator).join(System.getProperty("user.dir"), "target", "cassandra", "byteorderedpartitioner", name);
             LOGGER.info("Set default Cassandra {} directory path {}", name, s);
         } else {
             LOGGER.info("Loaded Cassandra {} directory path {} from system property {}", new Object[] { name, s, prop });

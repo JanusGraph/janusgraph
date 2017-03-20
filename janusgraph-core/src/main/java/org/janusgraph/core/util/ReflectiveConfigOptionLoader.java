@@ -121,6 +121,7 @@ public enum ReflectiveConfigOptionLoader {
             "org.janusgraph.diskstorage.cassandra.astyanax.AstyanaxStoreManager",
             "org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager",
             "org.janusgraph.diskstorage.cassandra.thrift.CassandraThriftStoreManager",
+            "org.janusgraph.diskstorage.cql.CQLConfigOptions",
             "org.janusgraph.diskstorage.es.ElasticSearchIndex",
             "org.janusgraph.diskstorage.solr.SolrIndex",
             "org.janusgraph.diskstorage.log.kcvs.KCVSLog",

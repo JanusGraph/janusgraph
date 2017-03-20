@@ -23,6 +23,9 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.google.common.base.Preconditions;
 
+/**
+ * This class manages the translation of read and write consistency configuration values to CQL API {@link ConsistencyLevel} types.
+ */
 public class CQLTransaction extends AbstractStoreTransaction {
 
     private final ConsistencyLevel readConsistencyLevel;
