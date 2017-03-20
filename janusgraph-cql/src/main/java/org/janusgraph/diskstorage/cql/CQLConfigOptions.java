@@ -20,6 +20,9 @@ import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 
+/**
+ * Configuration options for the CQL storage backend. These are managed under the 'cql' namespace in the configuration.
+ */
 @PreInitializeConfigOptions
 public interface CQLConfigOptions {
 
@@ -40,14 +43,22 @@ public interface CQLConfigOptions {
             "read-consistency-level",
             "The consistency level of read operations against Cassandra",
             ConfigOption.Type.MASKABLE,
-            "QUORUM");
+            CQLStoreManager.CONSISTENCY_QUORUM);
 
     public static final ConfigOption<String> WRITE_CONSISTENCY = new ConfigOption<>(
             CQL_NS,
             "write-consistency-level",
             "The consistency level of write operations against Cassandra",
             ConfigOption.Type.MASKABLE,
-            "QUORUM");
+            CQLStoreManager.CONSISTENCY_QUORUM);
+
+    // The number of statements in a batch
+    public static final ConfigOption<Integer> BATCH_STATEMENT_SIZE = new ConfigOption<>(
+            CQL_NS,
+            "batch-statement-size",
+            "The number of statements in each batch",
+            ConfigOption.Type.MASKABLE,
+            20);
 
     // Whether to use unlogged batches
     public static final ConfigOption<Boolean> ATOMIC_BATCH_MUTATE = new ConfigOption<>(
@@ -61,8 +72,7 @@ public interface CQLConfigOptions {
     public static final ConfigOption<Integer> REPLICATION_FACTOR = new ConfigOption<>(
             CQL_NS,
             "replication-factor",
-            "The number of data replicas (including the original copy) that should be kept. " +
-                    "This is only meaningful for storage backends that natively support data replication.",
+            "The number of data replicas (including the original copy) that should be kept",
             ConfigOption.Type.GLOBAL_OFFLINE,
             1);
 
@@ -161,7 +171,7 @@ public interface CQLConfigOptions {
             ConfigOption.Type.MASKABLE,
             "JanusGraph Cluster");
 
-    public static final ConfigOption<String> LOCAL_DATACENTER = new ConfigOption<String>(
+    public static final ConfigOption<String> LOCAL_DATACENTER = new ConfigOption<>(
             CQL_NS,
             "local-datacenter",
             "The name of the local or closest Cassandra datacenter.  When set and not whitespace, " +

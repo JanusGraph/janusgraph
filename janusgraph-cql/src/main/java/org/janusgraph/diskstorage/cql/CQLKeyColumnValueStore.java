@@ -14,14 +14,37 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
-import static com.datastax.driver.core.schemabuilder.SchemaBuilder.*;
-import static javaslang.API.*;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.bindMarker;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.column;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.delete;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.gte;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.insertInto;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.lt;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.lte;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.select;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.timestamp;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.token;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.ttl;
+import static com.datastax.driver.core.schemabuilder.SchemaBuilder.createTable;
+import static com.datastax.driver.core.schemabuilder.SchemaBuilder.dateTieredStrategy;
+import static com.datastax.driver.core.schemabuilder.SchemaBuilder.deflate;
+import static com.datastax.driver.core.schemabuilder.SchemaBuilder.leveledStrategy;
+import static com.datastax.driver.core.schemabuilder.SchemaBuilder.lz4;
+import static com.datastax.driver.core.schemabuilder.SchemaBuilder.noCompression;
+import static com.datastax.driver.core.schemabuilder.SchemaBuilder.sizedTieredStategy;
+import static com.datastax.driver.core.schemabuilder.SchemaBuilder.snappy;
+import static javaslang.API.$;
+import static javaslang.API.Case;
+import static javaslang.API.Match;
 import static javaslang.Predicates.instanceOf;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_BLOCK_SIZE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_TYPE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_OPTIONS;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_STRATEGY;
 import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.*;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -43,9 +66,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.util.RecordIterator;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
-import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.janusgraph.diskstorage.util.StaticArrayEntry.GetColVal;
 import org.janusgraph.diskstorage.util.StaticArrayEntryList;
 
@@ -60,7 +81,6 @@ import com.datastax.driver.core.exceptions.QueryValidationException;
 import com.datastax.driver.core.exceptions.UnsupportedFeatureException;
 import com.datastax.driver.core.schemabuilder.TableOptions.CompactionOptions;
 import com.datastax.driver.core.schemabuilder.TableOptions.CompressionOptions;
-import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Lists;
 
 import javaslang.Lazy;
@@ -71,14 +91,21 @@ import javaslang.collection.Array;
 import javaslang.collection.Iterator;
 import javaslang.concurrent.Future;
 import javaslang.control.Try;
+import javaslang.control.Try.FatalException;
 
+/**
+ * An implementation of {@link KeyColumnValueStore} which stores the data in a CQL connected backend.
+ */
 public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
-    private static final String KEY_COLUMN_NAME = "key";
-    private static final String COLUMN_COLUMN_NAME = "column1";
-    private static final String VALUE_COLUMN_NAME = "value";
-    private static final String WRITETIME_COLUMN_NAME = "writetime";
-    private static final String TTL_COLUMN_NAME = "ttl";
+    private static final String TTL_FUNCTION_NAME = "ttl";
+    private static final String WRITETIME_FUNCTION_NAME = "writetime";
+
+    static final String KEY_COLUMN_NAME = "key";
+    static final String COLUMN_COLUMN_NAME = "column1";
+    static final String VALUE_COLUMN_NAME = "value";
+    static final String WRITETIME_COLUMN_NAME = "writetime";
+    static final String TTL_COLUMN_NAME = "ttl";
 
     private static final String KEY_BINDING = "key";
     private static final String COLUMN_BINDING = "column1";
@@ -99,7 +126,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     private final CQLStoreManager storeManager;
     private final Session session;
     private final String tableName;
-    private final Getter getter;
+    private final CQLColValGetter getter;
     private final Runnable closer;
 
     private final PreparedStatement getSlice;
@@ -109,21 +136,29 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     private final PreparedStatement insertColumn;
     private final PreparedStatement insertColumnWithTTL;
 
+    /**
+     * Creates an instance of the {@link KeyColumnValueStore} that stores the data in a CQL backed table.
+     *
+     * @param storeManager the {@link CQLStoreManager} that maintains the list of {@link CQLKeyColumnValueStore}s
+     * @param tableName the name of the database table for storing the key/column/values
+     * @param configuration data used in creating this store
+     * @param closer callback used to clean up references to this store in the store manager
+     */
     public CQLKeyColumnValueStore(final CQLStoreManager storeManager, final String tableName, final Configuration configuration, final Runnable closer) {
         this.storeManager = storeManager;
+        this.tableName = tableName;
         this.closer = closer;
         this.session = this.storeManager.getSession();
-        this.tableName = tableName;
-        this.getter = new Getter(storeManager.getMetaDataSchema(this.tableName));
+        this.getter = new CQLColValGetter(storeManager.getMetaDataSchema(this.tableName));
 
-        initialiseTable(this.session, this.storeManager.getKeyspaceName(), tableName, configuration);
+        initializeTable(this.session, this.storeManager.getKeyspaceName(), tableName, configuration);
 
         // @formatter:off
         this.getSlice = this.session.prepare(select()
                 .column(COLUMN_COLUMN_NAME)
                 .column(VALUE_COLUMN_NAME)
-                .fcall("writetime", column(VALUE_COLUMN_NAME)).as(WRITETIME_COLUMN_NAME)
-                .fcall("ttl", column(VALUE_COLUMN_NAME)).as(TTL_COLUMN_NAME)
+                .fcall(WRITETIME_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(WRITETIME_COLUMN_NAME)
+                .fcall(TTL_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(TTL_COLUMN_NAME)
                 .from(this.storeManager.getKeyspaceName(), this.tableName)
                 .where(eq(KEY_COLUMN_NAME, bindMarker(KEY_BINDING)))
                 .and(gte(COLUMN_COLUMN_NAME, bindMarker(SLICE_START_BINDING)))
@@ -134,8 +169,8 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                 .column(KEY_COLUMN_NAME)
                 .column(COLUMN_COLUMN_NAME)
                 .column(VALUE_COLUMN_NAME)
-                .fcall("writetime", column(VALUE_COLUMN_NAME)).as(WRITETIME_COLUMN_NAME)
-                .fcall("ttl", column(VALUE_COLUMN_NAME)).as(TTL_COLUMN_NAME)
+                .fcall(WRITETIME_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(WRITETIME_COLUMN_NAME)
+                .fcall(TTL_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(TTL_COLUMN_NAME)
                 .from(this.storeManager.getKeyspaceName(), this.tableName)
                 .allowFiltering()
                 .where(gte(token(KEY_COLUMN_NAME), bindMarker(KEY_START_BINDING)))
@@ -147,8 +182,8 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                 .column(KEY_COLUMN_NAME)
                 .column(COLUMN_COLUMN_NAME)
                 .column(VALUE_COLUMN_NAME)
-                .fcall("writetime", column(VALUE_COLUMN_NAME)).as(WRITETIME_COLUMN_NAME)
-                .fcall("ttl", column(VALUE_COLUMN_NAME)).as(TTL_COLUMN_NAME)
+                .fcall(WRITETIME_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(WRITETIME_COLUMN_NAME)
+                .fcall(TTL_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(TTL_COLUMN_NAME)
                 .from(this.storeManager.getKeyspaceName(), this.tableName)
                 .allowFiltering()
                 .where(gte(COLUMN_COLUMN_NAME, bindMarker(SLICE_START_BINDING)))
@@ -175,7 +210,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         // @formatter:on
     }
 
-    private static void initialiseTable(final Session session, final String keyspaceName, final String tableName, final Configuration configuration) {
+    private static void initializeTable(final Session session, final String keyspaceName, final String tableName, final Configuration configuration) {
         session.execute(createTable(keyspaceName, tableName)
                 .ifNotExists()
                 .addPartitionKey(KEY_COLUMN_NAME, DataType.blob())
@@ -235,7 +270,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                 .setInt(LIMIT_BINDING, query.getLimit())
                 .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel())))
                 .map(resultSet -> fromResultSet(resultSet, this.getter));
-        result.await();
+        awaitInterruptibly(result);
         return result.getValue().get().getOrElseThrow(EXCEPTION_MAPPER);
     }
 
@@ -251,14 +286,36 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                                 .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel())))
                         .map(future -> Tuple.of(key, future))))
                 .map(sequence -> sequence.toJavaMap(pair -> Tuple.of(pair._1, fromResultSet(pair._2, this.getter))));
-        result.await();
+        awaitInterruptibly(result);
         return result.getValue().get().getOrElseThrow(EXCEPTION_MAPPER);
+    }
+
+    /**
+     * Javaslang Future.await will throw InterruptedException wrapped in a FatalException.
+     * If the Thread was in Object.wait, the interrupted flag will be cleared as a side effect and needs
+     * to be reset. This method checks that the underlying cause of the FatalException is InterruptedException
+     * and resets the interrupted flag.
+     * @param result the future to wait on
+     * @throws PermanentBackendException if the thread was interrupted while waiting for the future result 
+     */
+    private void awaitInterruptibly(final Future<?> result) throws PermanentBackendException {
+        try {
+            result.await();
+        } catch (FatalException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new PermanentBackendException(cause);
+        }
     }
 
     private static EntryList fromResultSet(final ResultSet resultSet, final GetColVal<Tuple3<StaticBuffer, StaticBuffer, Row>, StaticBuffer> getter) {
         final Lazy<ArrayList<Row>> lazyList = Lazy.of(() -> Lists.newArrayList(resultSet));
-        // Use the Iterable overload of ofByteBuffer as it's able to allocate the byte array up front.
-        // To ensure that the Iterator instance is recreated, it is created within the closure otherwise
+        // Use the Iterable overload of ofByteBuffer as it's able to allocate
+        // the byte array up front.
+        // To ensure that the Iterator instance is recreated, it is created
+        // within the closure otherwise
         // the same iterator would be reused and would be exhausted.
         return StaticArrayEntryList.ofStaticBuffer(() -> Iterator.ofAll(lazyList.get())
                 .<Tuple3<StaticBuffer, StaticBuffer, Row>> map(row -> Tuple.of(
@@ -268,6 +325,9 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                 getter);
     }
 
+    /*
+     * Used from CQLStoreManager
+     */
     Statement deleteColumn(final StaticBuffer key, final StaticBuffer column, final long timestamp) {
         return this.deleteColumn.bind()
                 .setBytes(KEY_BINDING, key.asByteBuffer())
@@ -275,6 +335,9 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                 .setLong(TIMESTAMP_BINDING, timestamp);
     }
 
+    /*
+     * Used from CQLStoreManager
+     */
     Statement insertColumn(final StaticBuffer key, final Entry entry, final long timestamp) {
         final Integer ttl = (Integer) entry.getMetaData().get(EntryMetaData.TTL);
         if (ttl != null) {
@@ -309,7 +372,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         final Metadata metadata = this.session.getCluster().getMetadata();
-        return Try.of(() -> new ResultSetKeyIterator(
+        return Try.of(() -> new CQLResultSetKeyIterator(
                 query,
                 this.getter,
                 this.session.execute(this.getKeysRanged.bind()
@@ -328,7 +391,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
             throw new PermanentBackendException("This operation is only allowed when a random partitioner (md5 or murmur3) is used.");
         }
 
-        return Try.of(() -> new ResultSetKeyIterator(
+        return Try.of(() -> new CQLResultSetKeyIterator(
                 query,
                 this.getter,
                 this.session.execute(this.getKeysAll.bind()
@@ -337,124 +400,5 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                         .setFetchSize(this.storeManager.getPageSize())
                         .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel()))))
                 .getOrElseThrow(EXCEPTION_MAPPER);
-    }
-
-    // ------------------------------------------------------------------------
-    // Inner classes
-    // ------------------------------------------------------------------------
-
-    static class ResultSetKeyIterator extends AbstractIterator<StaticBuffer> implements KeyIterator {
-
-        private final SliceQuery sliceQuery;
-        private final Getter getter;
-        private final Iterator<Row> iterator;
-
-        private Row currentRow = null;
-        private StaticBuffer currentKey = null;
-        private StaticBuffer lastKey = null;
-
-        ResultSetKeyIterator(final SliceQuery sliceQuery, final Getter getter, final ResultSet resultSet) {
-            this.sliceQuery = sliceQuery;
-            this.getter = getter;
-            this.iterator = Iterator.ofAll(resultSet.iterator())
-                    .peek(row -> {
-                        this.currentRow = row;
-                        this.currentKey = StaticArrayBuffer.of(row.getBytes(KEY_COLUMN_NAME));
-                    });
-        }
-
-        @Override
-        protected StaticBuffer computeNext() {
-            if (this.currentKey != null && !this.currentKey.equals(this.lastKey)) {
-                this.lastKey = this.currentKey;
-                return this.lastKey;
-            }
-
-            while (this.iterator.hasNext()) {
-                this.iterator.next();
-                if (!this.currentKey.equals(this.lastKey)) {
-                    this.lastKey = this.currentKey;
-                    return this.lastKey;
-                }
-            }
-            return endOfData();
-        }
-
-        @Override
-        public RecordIterator<Entry> getEntries() {
-            return new EntryRecordIterator(this.sliceQuery, this.getter, Iterator.of(this.currentRow).concat(this.iterator), this.currentKey);
-        }
-
-        @Override
-        public void close() throws IOException {
-            // NOP
-        }
-
-        static class EntryRecordIterator extends AbstractIterator<Entry> implements RecordIterator<Entry> {
-
-            private final Getter getter;
-            private final Iterator<Tuple3<StaticBuffer, StaticBuffer, Row>> iterator;
-
-            EntryRecordIterator(final SliceQuery sliceQuery, final Getter getter, final Iterator<Row> iterator, final StaticBuffer key) {
-                this.getter = getter;
-                final StaticBuffer sliceEnd = sliceQuery.getSliceEnd();
-                this.iterator = iterator
-                        .<Tuple3<StaticBuffer, StaticBuffer, Row>> map(row -> Tuple.of(
-                                StaticArrayBuffer.of(row.getBytes(COLUMN_COLUMN_NAME)),
-                                StaticArrayBuffer.of(row.getBytes(VALUE_COLUMN_NAME)),
-                                row))
-                        .takeWhile(tuple -> key.equals(StaticArrayBuffer.of(tuple._3.getBytes(KEY_COLUMN_NAME))) && !sliceEnd.equals(tuple._1))
-                        .take(sliceQuery.getLimit());
-            }
-
-            @Override
-            protected Entry computeNext() {
-                if (this.iterator.hasNext()) {
-                    return StaticArrayEntry.ofStaticBuffer(this.iterator.next(), this.getter);
-                }
-                return endOfData();
-            }
-
-            @Override
-            public void close() throws IOException {
-                // NOP
-            }
-        }
-    }
-
-    static class Getter implements GetColVal<Tuple3<StaticBuffer, StaticBuffer, Row>, StaticBuffer> {
-
-        private final EntryMetaData[] schema;
-
-        Getter(final EntryMetaData[] schema) {
-            this.schema = schema;
-        }
-
-        @Override
-        public StaticBuffer getColumn(final Tuple3<StaticBuffer, StaticBuffer, Row> tuple) {
-            return tuple._1;
-        }
-
-        @Override
-        public StaticBuffer getValue(final Tuple3<StaticBuffer, StaticBuffer, Row> tuple) {
-            return tuple._2;
-        }
-
-        @Override
-        public EntryMetaData[] getMetaSchema(final Tuple3<StaticBuffer, StaticBuffer, Row> tuple) {
-            return this.schema;
-        }
-
-        @Override
-        public Object getMetaData(final Tuple3<StaticBuffer, StaticBuffer, Row> tuple, final EntryMetaData metaData) {
-            switch (metaData) {
-                case TIMESTAMP:
-                    return tuple._3.getLong(WRITETIME_COLUMN_NAME);
-                case TTL:
-                    return tuple._3.getInt(TTL_COLUMN_NAME);
-                default:
-                    throw new UnsupportedOperationException("Unsupported meta data: " + metaData);
-            }
-        }
     }
 }
