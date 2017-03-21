@@ -22,14 +22,12 @@ import java.util.Map;
 public interface MetaAnnotated {
 
     /**
-     * Returns true if this entry has associated meta data
-     * @return
+     * @return true if this entry has associated meta data
      */
     public boolean hasMetaData();
 
     /**
-     * Returns all meta data associated with this entry
-     * @return
+     * @return all meta data associated with this entry
      */
     public Map<EntryMetaData,Object> getMetaData();
 
