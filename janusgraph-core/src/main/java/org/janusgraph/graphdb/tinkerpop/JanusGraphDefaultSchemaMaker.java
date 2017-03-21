@@ -14,8 +14,14 @@
 
 package org.janusgraph.graphdb.tinkerpop;
 
-import org.janusgraph.core.*;
+import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.DefaultSchemaMaker;
+import org.janusgraph.core.schema.PropertyKeyMaker;
+
+import java.util.Date;
+import java.util.UUID;
 
 /**
  * {@link org.janusgraph.core.schema.DefaultSchemaMaker} implementation for Blueprints graphs
@@ -34,9 +40,45 @@ public class JanusGraphDefaultSchemaMaker implements DefaultSchemaMaker {
         return Cardinality.SINGLE;
     }
 
+    @Override
+    public PropertyKey makePropertyKey(PropertyKeyMaker factory, Object value) {
+        String name = factory.getName();
+        Class klass = determineClass(value);
+        return factory.cardinality(defaultPropertyCardinality(name)).dataType(klass).make();
+    }
 
     @Override
     public boolean ignoreUndefinedQueryTypes() {
         return true;
+    }
+
+    protected Class determineClass(Object value) {
+        if (value instanceof String) {
+            return String.class;
+        } else if (value instanceof Character) {
+            return Character.class;
+        } else if (value instanceof Boolean) {
+            return Boolean.class;
+        } else if (value instanceof Byte) {
+            return Byte.class;
+        } else if (value instanceof Short) {
+            return Short.class;
+        } else if (value instanceof Integer) {
+            return Integer.class;
+        } else if (value instanceof Long) {
+            return Long.class;
+        } else if (value instanceof Float) {
+            return Float.class;
+        } else if (value instanceof Double) {
+            return Double.class;
+        } else if (value instanceof Date) {
+            return Date.class;
+        } else if (value instanceof Geoshape) {
+            return Geoshape.class;
+        } else if (value instanceof UUID) {
+            return UUID.class;
+        } else {
+            return Object.class;
+        }
     }
 }
