@@ -62,6 +62,18 @@ public interface DefaultSchemaMaker {
     }
 
     /**
+     * Creates a new property key with default settings against the provided {@link PropertyKeyMaker} and value.
+     *
+     * @param factory PropertyKeyMaker through which the property key is created
+     * @param value the value of the property. The default implementation does not use this parameter.
+     * @return A new property key
+     * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
+     */
+    public default PropertyKey makePropertyKey(PropertyKeyMaker factory, Object value) {
+         return makePropertyKey(factory);
+    }
+
+    /**
      * Creates a new vertex label with the default settings against the provided {@link VertexLabelMaker}.
      *
      * @param factory VertexLabelMaker through which the vertex label is created

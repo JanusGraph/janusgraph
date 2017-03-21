@@ -245,9 +245,7 @@ JanusGraph natively supports the following data types.
 |Long			|long value
 |Float			|4 byte floating point number
 |Double			|8 byte floating point number
-|Decimal		|Number with 3 decimal digits
-|Precision		|Number with 6 decimal digits
-|Date           |Date
+|Date                   |Date
 |Geoshape		|Geographic shape like point, circle or box
 |UUID   		|UUID
 |=====
@@ -1007,7 +1005,7 @@ Hence, the `battlesByLocationAndTime` index can speed up the first two but not t
 Multiple vertex-centric indexes can be built for the same edge label in order to support different constraint traversals. JanusGraph's query optimizer attempts to pick the most efficient index for any given traversal. Vertex-centric indexes only support equality and range/interval constraints.
 
 [NOTE]
-The property keys used in a vertex-centric index must have an explicitly defined data type (i.e. _not_ `Object.class`) which supports a native sort order. If the data type are floating point numbers, JanusGraph's custom `Decimal` or `Precision` data types must be used which have a fixed number of decimals.
+The property keys used in a vertex-centric index must have an explicitly defined data type (i.e. _not_ `Object.class`) which supports a native sort order.
 
 If the vertex-centric index is built against an edge label that is defined in the same management transaction, the index will be immediately available for querying. If the edge label has already been in use, building a vertex-centric index against it requires the execution of a <<reindex, reindex procedure>> to ensure that the index contains all previously added edges. Until the reindex procedure has completed, the index will not be available.
 
@@ -1406,9 +1404,6 @@ When defining unique types with <<eventual-consistency, locking enabled>> (i.e. 
 
 Such exceptions are to be expected, since JanusGraph cannot know how to recover from a transactional state where an earlier read value has been modified by another transaction since this may invalidate the state of the transaction. In most cases it is sufficient to simply re-run the transaction. If locking exceptions are very frequent, try to analyze and remove the source of congestion.
 
-=== Floating point numbers in Vertex-centric Indices
-
-JanusGraph does not allow property keys with `Double` or `Float` data type to be part of a vertex centric index because their serialization does not support index creation. Use custom, fixed-digit data types `Decimal` (3 decimal digits) or `Precision (6 decimal digits) instead.
 
 === Ghost Vertices
 
