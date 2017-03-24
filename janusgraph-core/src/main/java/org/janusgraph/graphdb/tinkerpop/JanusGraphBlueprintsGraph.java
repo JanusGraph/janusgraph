@@ -129,11 +129,6 @@ public abstract class JanusGraphBlueprintsGraph implements JanusGraph {
         return getAutoStartTx().addVertex(keyValues);
     }
 
-//    @Override
-//    public com.tinkerpop.gremlin.structure.Graph.Iterators iterators() {
-//        return getAutoStartTx().iterators();
-//    }
-
     @Override
     public Iterator<Vertex> vertices(Object... vertexIds) {
         return getAutoStartTx().vertices(vertexIds);

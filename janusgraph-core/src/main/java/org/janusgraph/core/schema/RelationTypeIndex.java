@@ -21,9 +21,9 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 /**
  * A RelationTypeIndex is an index installed on a {@link RelationType} to speed up vertex-centric indexes for that type.
  * A RelationTypeIndex is created via
- * {@link JanusGraphManagement#buildEdgeIndex(org.janusgraph.core.EdgeLabel, String, com.tinkerpop.gremlin.structure.Direction, org.janusgraph.graphdb.internal.Order, org.janusgraph.core.RelationType...)}
+ * {@link JanusGraphManagement#buildEdgeIndex(org.janusgraph.core.EdgeLabel, String, org.apache.tinkerpop.gremlin.structure.Direction, org.apache.tinkerpop.gremlin.process.traversal.Order, org.janusgraph.core.PropertyKey...)}
  * for edge labels and
- * {@link JanusGraphManagement#buildPropertyIndex(org.janusgraph.core.PropertyKey, String, org.janusgraph.graphdb.internal.Order, org.janusgraph.core.RelationType...)}
+ * {@link JanusGraphManagement#buildPropertyIndex(org.janusgraph.core.PropertyKey, String, org.apache.tinkerpop.gremlin.process.traversal.Order, org.janusgraph.core.PropertyKey...)}
  * for property keys.
  * <p/>
  * This interface allows the inspection of already defined RelationTypeIndex'es. An existing index on a RelationType
