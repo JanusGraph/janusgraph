@@ -12,6 +12,6 @@ JanusGraph.
 .Version Compatibility Matrix
 [options="header"]
 |==========================
-| JanusGraph | Cassandra | HBase | Elasticsearch | Solr | TinkerPop
-| 0.1.0 | 1.2.z, 2.0.z, 2.1.z | 0.94.z, 0.96.z, 0.98.z, 1.0.z | 1.5.z |  5.2.z | 3.0.z
+| JanusGraph | Cassandra | HBase | Bigtable | Elasticsearch | Solr | TinkerPop
+| 0.1.0 | 1.2.z, 2.0.z, 2.1.z | 0.98.z, 1.0.z, 1.1.z, 1.2.z | 0.9.z | 1.5.z |  5.2.z | 3.2.z
 |==========================
