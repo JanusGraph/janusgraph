@@ -18,3 +18,5 @@ include::partitioning.txt[]
 include::serializer.txt[]
 
 include::hadoop.txt[]
+
+include::monitoring.txt[]

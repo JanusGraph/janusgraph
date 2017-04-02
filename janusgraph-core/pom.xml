@@ -9,7 +9,7 @@
     <artifactId>janusgraph-core</artifactId>
     <name>JanusGraph-Core: Core Library for JanusGraph</name>
     <url>http://janusgraph.org</url>
-    
+
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
     </properties>
@@ -50,6 +50,13 @@
         <dependency>
             <groupId>com.codahale.metrics</groupId>
             <artifactId>metrics-ganglia</artifactId>
+            <exclusions>
+                <!-- LGPL licensed - users will need to install this jar manually -->
+                <exclusion>
+                    <groupId>org.acplt</groupId>
+                    <artifactId>oncrpc</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.codahale.metrics</groupId>

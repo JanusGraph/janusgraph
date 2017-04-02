@@ -3,7 +3,7 @@
 
 === Metrics in JanusGraph
 
-Starting in version 0.4.0, JanusGraph supports http://metrics.codahale.com/[Metrics].  JanusGraph can measure the following:
+JanusGraph supports http://metrics.codahale.com/[Metrics].  JanusGraph can measure the following:
 
 * The number of transactions begun, comitted, and rolled back
 * The number of attempts and failures of each storage backend operation type
@@ -48,11 +48,9 @@ JanusGraphTransaction tx = tbuilder.groupName("foobar").start();
 JanusGraph combines the Metrics for its various internal storage backend handles by default.  All Metrics for storage backend interactions follow the pattern "<prefix>.stores.<opname>", regardless of whether they come from the ID store, edge store, etc.  When `metrics.merge-basic-metrics = false` is set in JanusGraph's properties file, the "stores" string in metric names is replaced by "idStore", "edgeStore", "vertexIndexStore", or "edgeIndexStore".
 
 [[metrics-reporters]]
-==== Configuring Metrics Reporting
+=== Configuring Metrics Reporting
 
 JanusGraph supports the following Metrics reporters:
-
-// TODO this bulleted list should be replaced by a TOC
 
 * <<metrics-console, Console>>
 * <<metrics-csv, CSV>>
@@ -65,10 +63,10 @@ JanusGraph supports the following Metrics reporters:
 Each reporter type is independent of and can coexist with the others.  For example, it's possible to configure Ganglia, JMX, and Slf4j Metrics reporters to operate simultaneously.  Just set all their respective configuration keys in janusgraph.properties (and enable metrics as directed above).
 
 [[metrics-console]]
-===== Console Reporter Configuration
+==== Console Reporter
 
 .Metrics Console Reporter Configuration Options
-[cols="2, 1, 5, 1", options="header"]
+[cols="2,1,5,1", options="header"]
 |==========================
 |Config Key |Required? |Value |Default
 |metrics.console.interval |yes |Milliseconds to wait between dumping metrics to the console |null
@@ -82,10 +80,10 @@ metrics.enabled = true
 metrics.console.interval = 60000
 
 [[metrics-csv]]
-===== CSV File Reporter Configuration
+==== CSV File Reporter
 
 .Metrics CSV Reporter Configuration Options
-[cols="2, 1, 5, 1", options="header"]
+[cols="2,1,5,1", options="header"]
 |==========================
 |Config Key |Required? |Value |Default
 |metrics.csv.interval |yes |Milliseconds to wait between writing CSV lines |null
@@ -101,10 +99,12 @@ metrics.csv.interval = 60000
 metrics.csv.dir = foo/bar
 
 [[metrics-ganglia]]
-===== Ganglia Reporter Configuration
+==== Ganglia Reporter
+
+NOTE: Configuration of link:http://ganglia.sourceforge.net/[Ganglia] requires an additional library that is not packaged with JanusGraph due to its LGPL licensing that conflicts with the JanusGraph's Apache 2.0 License.  To run with Ganglia monitoring, download the `org.acplt:oncrpc` jar from link:http://repo1.maven.org/maven2/org/acplt/oncrpc/1.0.7/[here] and copy it to the JanusGraph `/lib` directory before starting the server.
 
 .Metrics Ganglia Reporter Configuration Options
-[cols="2, 1, 5, 1", options="header"]
+[cols="2,1,5,1", options="header"]
 |==========================
 |Config Key |Required? |Value |Default
 |metrics.ganglia.hostname |yes |Unicast host or multicast group to which our Metrics are sent | null
@@ -122,7 +122,7 @@ Example janusgraph.properties snippet that sends unicast UDP datagrams to localh
 [source, properties]
 metrics.enabled = true
 # Required; IP or hostname string
-metrics.ganglia.hostname = 127.0.0.1 
+metrics.ganglia.hostname = 127.0.0.1
 # Required; specify logging interval in milliseconds
 metrics.ganglia.interval = 30000
 
@@ -131,7 +131,7 @@ Example janusgraph.properties snippet that sends unicast UDP datagrams to a non-
 [source, properties]
 metrics.enabled = true
 # Required; IP or hostname string
-metrics.ganglia.hostname = 1.2.3.4 
+metrics.ganglia.hostname = 1.2.3.4
 # Required; specify logging interval in milliseconds
 metrics.ganglia.interval = 60000
 # Optional
@@ -139,10 +139,10 @@ metrics.ganglia.port = 6789
 metrics.ganglia.spoof = 10.0.0.1:zombo.com
 
 [[metrics-graphite]]
-===== Graphite Reporter Configuration
+==== Graphite Reporter
 
 .Metrics Graphite Reporter Configuration Options
-[cols="2, 1, 5, 1", options="header"]
+[cols="2,1,5,1", options="header"]
 |==========================
 |Config Key |Required? |Value |Default
 |metrics.graphite.hostname |yes |IP address or hostname to which https://graphite.readthedocs.org/en/latest/feeding-carbon.html#the-plaintext-protocol[Graphite plaintext protocol] data are sent |null
@@ -161,10 +161,10 @@ metrics.graphite.hostname = 192.168.0.1
 metrics.graphite.interval = 60000
 
 [[metrics-jmx]]
-===== JMX Reporter Configuration
+==== JMX Reporter
 
 .Metrics JMX Reporter Configuration Options
-[cols="2, 1, 5, 1", options="header"]
+[cols="2,1,5,1", options="header"]
 |==========================
 |Config Key |Required? |Value |Default
 |metrics.jmx.enabled |yes |Boolean |false
@@ -183,10 +183,10 @@ metrics.jmx.domain = foo
 metrics.jmx.agentid = baz
 
 [[metrics-slf4j]]
-===== Slf4j Reporter Configuration
+==== Slf4j Reporter
 
 .Metrics Slf4j Reporter Configuration Options
-[cols="2, 1, 5, 1", options="header"]
+[cols="2,1,5,1", options="header"]
 |==========================
 |Config Key |Required? |Value |Default
 |metrics.slf4j.interval |yes |Milliseconds to wait between dumping metrics to the logger |null
@@ -203,7 +203,7 @@ metrics.slf4j.interval = 60000
 metrics.slf4j.logger = foo
 
 [[metrics-custom]]
-===== User-Provided/Custom Reporter Configuration
+==== User-Provided/Custom Reporter
 
 In case the Metrics reporter configuration options listed above are insufficient, JanusGraph provides a utility method to access the single `MetricRegistry` instance which holds all of its measurements.
 
