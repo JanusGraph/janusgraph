@@ -23,7 +23,7 @@ import org.junit.runner.RunWith;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-@RunWith(ProcessStandardSuite.class)
+@RunWith(BerkeleyProcessStandardSuite.class)
 @GraphProviderClass(provider = BerkeleyGraphProvider.class, graph = JanusGraph.class)
 public class BerkeleyJanusGraphProcessTest {
 }
