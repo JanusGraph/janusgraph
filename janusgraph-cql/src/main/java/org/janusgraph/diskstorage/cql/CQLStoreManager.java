@@ -51,6 +51,10 @@ import java.security.cert.CertificateException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -82,6 +86,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import javaslang.Tuple;
 import javaslang.collection.Array;
@@ -92,8 +97,7 @@ import javaslang.concurrent.Future;
 import javaslang.control.Option;
 
 /**
- * This class creates {@see CQLKeyColumnValueStore}s and handles
- * Cassandra-backed allocation of vertex IDs for JanusGraph (when so
+ * This class creates {@see CQLKeyColumnValueStore}s and handles Cassandra-backed allocation of vertex IDs for JanusGraph (when so
  * configured).
  */
 public class CQLStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager {
@@ -106,20 +110,27 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     private final String keyspace;
     private final int batchSize;
     private final boolean atomicBatch;
+
+    private final ExecutorService executorService;
+
     private final Cluster cluster;
     private final Session session;
     private final StoreFeatures storeFeatures;
     private final Map<String, CQLKeyColumnValueStore> openStores;
 
     /**
-     * Constructor for the {@link CQLStoreManager} given a JanusGraph
-     * {@link Configuration}.
+     * Constructor for the {@link CQLStoreManager} given a JanusGraph {@link Configuration}.
      */
     public CQLStoreManager(final Configuration configuration) throws BackendException {
         super(configuration, DEFAULT_PORT);
         this.keyspace = configuration.get(KEYSPACE);
         this.batchSize = configuration.get(BATCH_STATEMENT_SIZE);
         this.atomicBatch = configuration.get(ATOMIC_BATCH_MUTATE);
+
+        this.executorService = new ThreadPoolExecutor(10, 100, 1, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), new ThreadFactoryBuilder()
+                .setDaemon(true)
+                .setNameFormat("CQLStoreManager[%02d]")
+                .build());
 
         this.cluster = initializeCluster();
         this.session = initializeSession(this.keyspace);
@@ -234,6 +245,10 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         return s;
     }
 
+    ExecutorService getExecutorService() {
+        return this.executorService;
+    }
+
     Session getSession() {
         return this.session;
     }
@@ -287,8 +302,9 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     @Override
     public void clearStorage() throws BackendException {
         final Future<Seq<ResultSet>> result = Future.sequence(
+                this.executorService,
                 Iterator.ofAll(this.cluster.getMetadata().getKeyspace(this.keyspace).getTables())
-                        .map(table -> Future.fromJavaFuture(this.session.executeAsync(truncate(this.keyspace, table.getName())))));
+                        .map(table -> Future.fromJavaFuture(this.executorService, this.session.executeAsync(truncate(this.keyspace, table.getName())))));
         result.await();
         if (result.isFailure()) {
             throw EXCEPTION_MAPPER.apply(result.getCause().get());
@@ -334,7 +350,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                 return Iterator.concat(deletions, additions);
             });
         }));
-        final Future<ResultSet> result = Future.fromJavaFuture(this.session.executeAsync(batchStatement));
+        final Future<ResultSet> result = Future.fromJavaFuture(this.executorService, this.session.executeAsync(batchStatement));
 
         result.await();
         if (result.isFailure()) {
@@ -347,7 +363,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     private void mutateManyUnlogged(final Map<String, Map<StaticBuffer, KCVMutation>> mutations, final StoreTransaction txh) throws BackendException {
         final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
 
-        final Future<Seq<ResultSet>> result = Future.sequence(Iterator.ofAll(mutations.entrySet()).flatMap(tableNameAndMutations -> {
+        final Future<Seq<ResultSet>> result = Future.sequence(this.executorService, Iterator.ofAll(mutations.entrySet()).flatMap(tableNameAndMutations -> {
             final String tableName = tableNameAndMutations.getKey();
             final Map<StaticBuffer, KCVMutation> tableMutations = tableNameAndMutations.getValue();
 
@@ -364,7 +380,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
                 return Iterator.concat(deletions, additions)
                         .grouped(this.batchSize)
-                        .map(group -> Future.fromJavaFuture(this.session.executeAsync(
+                        .map(group -> Future.fromJavaFuture(this.executorService, this.session.executeAsync(
                                 new BatchStatement(Type.UNLOGGED)
                                         .addAll(group)
                                         .setConsistencyLevel(getTransaction(txh).getWriteConsistencyLevel()))));
