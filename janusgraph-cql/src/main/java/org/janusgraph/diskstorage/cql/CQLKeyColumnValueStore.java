@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 import org.janusgraph.diskstorage.BackendException;
@@ -124,6 +125,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
             Case($(), t -> new TemporaryBackendException(t)));
 
     private final CQLStoreManager storeManager;
+    private final ExecutorService executorService;
     private final Session session;
     private final String tableName;
     private final CQLColValGetter getter;
@@ -146,6 +148,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
      */
     public CQLKeyColumnValueStore(final CQLStoreManager storeManager, final String tableName, final Configuration configuration, final Runnable closer) {
         this.storeManager = storeManager;
+        this.executorService = this.storeManager.getExecutorService();
         this.tableName = tableName;
         this.closer = closer;
         this.session = this.storeManager.getSession();
@@ -263,12 +266,14 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public EntryList getSlice(final KeySliceQuery query, final StoreTransaction txh) throws BackendException {
-        final Future<EntryList> result = Future.fromJavaFuture(this.session.executeAsync(this.getSlice.bind()
-                .setBytes(KEY_BINDING, query.getKey().asByteBuffer())
-                .setBytes(SLICE_START_BINDING, query.getSliceStart().asByteBuffer())
-                .setBytes(SLICE_END_BINDING, query.getSliceEnd().asByteBuffer())
-                .setInt(LIMIT_BINDING, query.getLimit())
-                .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel())))
+        final Future<EntryList> result = Future.fromJavaFuture(
+                this.executorService,
+                this.session.executeAsync(this.getSlice.bind()
+                        .setBytes(KEY_BINDING, query.getKey().asByteBuffer())
+                        .setBytes(SLICE_START_BINDING, query.getSliceStart().asByteBuffer())
+                        .setBytes(SLICE_END_BINDING, query.getSliceEnd().asByteBuffer())
+                        .setInt(LIMIT_BINDING, query.getLimit())
+                        .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel())))
                 .map(resultSet -> fromResultSet(resultSet, this.getter));
         awaitInterruptibly(result);
         return result.getValue().get().getOrElseThrow(EXCEPTION_MAPPER);
@@ -276,8 +281,10 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public Map<StaticBuffer, EntryList> getSlice(final List<StaticBuffer> keys, final SliceQuery query, final StoreTransaction txh) throws BackendException {
-        final Future<Map<StaticBuffer, EntryList>> result = Future.sequence(Iterator.ofAll(keys)
-                .<Future<Tuple2<StaticBuffer, ResultSet>>> map(key -> Future.fromJavaFuture(
+        final Future<Map<StaticBuffer, EntryList>> result = Future.sequence(
+                this.executorService,
+                Iterator.ofAll(keys).<Future<Tuple2<StaticBuffer, ResultSet>>> map(key -> Future.fromJavaFuture(
+                        this.executorService,
                         this.session.executeAsync(this.getSlice.bind()
                                 .setBytes(KEY_BINDING, key.asByteBuffer())
                                 .setBytes(SLICE_START_BINDING, query.getSliceStart().asByteBuffer())
@@ -291,12 +298,12 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     /**
-     * Javaslang Future.await will throw InterruptedException wrapped in a FatalException.
-     * If the Thread was in Object.wait, the interrupted flag will be cleared as a side effect and needs
-     * to be reset. This method checks that the underlying cause of the FatalException is InterruptedException
-     * and resets the interrupted flag.
+     * Javaslang Future.await will throw InterruptedException wrapped in a FatalException. If the Thread was in Object.wait, the interrupted
+     * flag will be cleared as a side effect and needs to be reset. This method checks that the underlying cause of the FatalException is
+     * InterruptedException and resets the interrupted flag.
+     * 
      * @param result the future to wait on
-     * @throws PermanentBackendException if the thread was interrupted while waiting for the future result 
+     * @throws PermanentBackendException if the thread was interrupted while waiting for the future result
      */
     private void awaitInterruptibly(final Future<?> result) throws PermanentBackendException {
         try {
