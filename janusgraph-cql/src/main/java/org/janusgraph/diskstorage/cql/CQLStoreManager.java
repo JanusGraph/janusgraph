@@ -14,8 +14,8 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import static com.datastax.driver.core.querybuilder.QueryBuilder.truncate;
 import static com.datastax.driver.core.schemabuilder.SchemaBuilder.createKeyspace;
+import static com.datastax.driver.core.schemabuilder.SchemaBuilder.dropKeyspace;
 import static javaslang.API.$;
 import static javaslang.API.Case;
 import static javaslang.API.Match;
@@ -74,6 +74,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
 import org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.util.system.NetworkUtil;
 
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.BatchStatement.Type;
@@ -117,6 +118,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     private final Session session;
     private final StoreFeatures storeFeatures;
     private final Map<String, CQLKeyColumnValueStore> openStores;
+    private final Deployment deployment;
 
     /**
      * Constructor for the {@link CQLStoreManager} given a JanusGraph {@link Configuration}.
@@ -127,10 +129,15 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         this.batchSize = configuration.get(BATCH_STATEMENT_SIZE);
         this.atomicBatch = configuration.get(ATOMIC_BATCH_MUTATE);
 
-        this.executorService = new ThreadPoolExecutor(10, 100, 1, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), new ThreadFactoryBuilder()
-                .setDaemon(true)
-                .setNameFormat("CQLStoreManager[%02d]")
-                .build());
+        this.executorService = new ThreadPoolExecutor(10,
+                100,
+                1,
+                TimeUnit.MINUTES,
+                new LinkedBlockingQueue<>(),
+                new ThreadFactoryBuilder()
+                        .setDaemon(true)
+                        .setNameFormat("CQLStoreManager[%02d]")
+                        .build());
 
         this.cluster = initializeCluster();
         this.session = initializeSession(this.keyspace);
@@ -150,19 +157,24 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         fb.batchMutation(true).distributed(true);
         fb.timestamps(true).cellTTL(true);
         fb.keyConsistent(global, local);
-        fb.multiQuery(true);
+        fb.optimisticLocking(true);
+        fb.multiQuery(false);
 
         final String partitioner = this.cluster.getMetadata().getPartitioner();
-        switch (partitioner) {
-            case "org.apache.cassandra.dht.RandomPartitioner":
-            case "org.apache.cassandra.dht.Murmur3Partitioner": {
+        switch (partitioner.substring(partitioner.lastIndexOf('.') + 1)) {
+            case "RandomPartitioner":
+            case "Murmur3Partitioner": {
                 fb.keyOrdered(false).orderedScan(false).unorderedScan(true);
+                deployment = Deployment.REMOTE;
                 break;
             }
-            case "org.apache.cassandra.dht.ByteOrderedPartitioner": {
+            case "ByteOrderedPartitioner": {
                 fb.keyOrdered(true).orderedScan(true).unorderedScan(false);
+                deployment = (hostnames.length == 1)// mark deployment as local only in case we have byte ordered partitioner and local
+                                                    // connection
+                        ? (NetworkUtil.isLocalConnection(hostnames[0])) ? Deployment.LOCAL : Deployment.REMOTE
+                        : Deployment.REMOTE;
                 break;
-
             }
             default: {
                 throw new IllegalArgumentException("Unrecognized partitioner: " + partitioner);
@@ -231,10 +243,11 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         final Configuration configuration = getStorageConfig();
         final Map<String, Object> replication = Match(configuration.get(REPLICATION_STRATEGY)).of(
                 Case($("SimpleStrategy"), strategy -> HashMap.<String, Object> of("class", strategy, "replication_factor", configuration.get(REPLICATION_FACTOR))),
-                Case($("NetworkTopologyStrategy"), strategy -> HashMap.<String, Object> of("class", strategy)
-                        .merge(Array.of(configuration.get(REPLICATION_OPTIONS))
-                                .grouped(2)
-                                .toMap(array -> Tuple.of(array.get(0), Integer.parseInt(array.get(1)))))))
+                Case($("NetworkTopologyStrategy"),
+                        strategy -> HashMap.<String, Object> of("class", strategy)
+                                .merge(Array.of(configuration.get(REPLICATION_OPTIONS))
+                                        .grouped(2)
+                                        .toMap(array -> Tuple.of(array.get(0), Integer.parseInt(array.get(1)))))))
                 .toJavaMap();
 
         final Session s = this.cluster.connect();
@@ -270,7 +283,11 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         try {
             this.session.close();
         } finally {
-            this.cluster.close();
+            try {
+                this.cluster.close();
+            } finally {
+                this.executorService.shutdownNow();
+            }
         }
     }
 
@@ -281,7 +298,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     @Override
     public Deployment getDeployment() {
-        return Deployment.REMOTE;
+        return this.deployment;
     }
 
     @Override
@@ -301,14 +318,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     @Override
     public void clearStorage() throws BackendException {
-        final Future<Seq<ResultSet>> result = Future.sequence(
-                this.executorService,
-                Iterator.ofAll(this.cluster.getMetadata().getKeyspace(this.keyspace).getTables())
-                        .map(table -> Future.fromJavaFuture(this.executorService, this.session.executeAsync(truncate(this.keyspace, table.getName())))));
-        result.await();
-        if (result.isFailure()) {
-            throw EXCEPTION_MAPPER.apply(result.getCause().get());
-        }
+        this.session.execute(dropKeyspace(this.keyspace));
     }
 
     @Override
@@ -380,10 +390,11 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
                 return Iterator.concat(deletions, additions)
                         .grouped(this.batchSize)
-                        .map(group -> Future.fromJavaFuture(this.executorService, this.session.executeAsync(
-                                new BatchStatement(Type.UNLOGGED)
-                                        .addAll(group)
-                                        .setConsistencyLevel(getTransaction(txh).getWriteConsistencyLevel()))));
+                        .map(group -> Future.fromJavaFuture(this.executorService,
+                                this.session.executeAsync(
+                                        new BatchStatement(Type.UNLOGGED)
+                                                .addAll(group)
+                                                .setConsistencyLevel(getTransaction(txh).getWriteConsistencyLevel()))));
             });
         }));
 
