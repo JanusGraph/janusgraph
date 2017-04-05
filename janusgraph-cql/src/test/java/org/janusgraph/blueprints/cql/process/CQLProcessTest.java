@@ -24,10 +24,6 @@ import org.junit.runner.RunWith;
 @GraphProviderClass(provider = CQLGraphProvider.class, graph = JanusGraph.class)
 public class CQLProcessTest {
 
-//    TP3 ignores @BeforeClass -- the following method is never executed
-//    @BeforeClass
-//    public static void beforeSuite() {
-//        CassandraStorageSetup.startCleanEmbedded();
-//    }
+//    TP3 ignores @BeforeClass
 
 }

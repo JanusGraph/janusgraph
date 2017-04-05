@@ -86,7 +86,6 @@ import com.google.common.collect.Lists;
 
 import javaslang.Lazy;
 import javaslang.Tuple;
-import javaslang.Tuple2;
 import javaslang.Tuple3;
 import javaslang.collection.Array;
 import javaslang.collection.Iterator;
@@ -281,20 +280,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public Map<StaticBuffer, EntryList> getSlice(final List<StaticBuffer> keys, final SliceQuery query, final StoreTransaction txh) throws BackendException {
-        final Future<Map<StaticBuffer, EntryList>> result = Future.sequence(
-                this.executorService,
-                Iterator.ofAll(keys).<Future<Tuple2<StaticBuffer, ResultSet>>> map(key -> Future.fromJavaFuture(
-                        this.executorService,
-                        this.session.executeAsync(this.getSlice.bind()
-                                .setBytes(KEY_BINDING, key.asByteBuffer())
-                                .setBytes(SLICE_START_BINDING, query.getSliceStart().asByteBuffer())
-                                .setBytes(SLICE_END_BINDING, query.getSliceEnd().asByteBuffer())
-                                .setInt(LIMIT_BINDING, query.getLimit())
-                                .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel())))
-                        .map(future -> Tuple.of(key, future))))
-                .map(sequence -> sequence.toJavaMap(pair -> Tuple.of(pair._1, fromResultSet(pair._2, this.getter))));
-        awaitInterruptibly(result);
-        return result.getValue().get().getOrElseThrow(EXCEPTION_MAPPER);
+        throw new UnsupportedOperationException("The CQL backend does not support multi-key queries");
     }
 
     /**
