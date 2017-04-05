@@ -6,7 +6,7 @@ There are a number of configuration options and tools that make ingesting large 
 There are a number of use cases for bulk loading data into JanusGraph, including:
 
 * Introducing JanusGraph into an existing environment with existing data and migrating or duplicating this data into a new JanusGraph cluster.
-* Using JanusGraph as an end point of an (http://en.wikipedia.org/wiki/Extract, _transform, _load)[ETL] process.
+* Using JanusGraph as an end point of an http://en.wikipedia.org/wiki/Extract,_transform,_load[ETL] process.
 * Adding an existing or external graph datasets (e.g. publicly available http://linkeddata.org/[RDF datasets]) to a running JanusGraph cluster.
 * Updating a JanusGraph graph with results from a graph analytics job.
 
