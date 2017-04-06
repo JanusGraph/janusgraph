@@ -91,7 +91,7 @@ public class GraphOfTheGodsFactory {
         mgmt.makeEdgeLabel("pet").make();
         mgmt.makeEdgeLabel("brother").make();
 
-        mgmt.makeVertexLabel("janusgraph").make();
+        mgmt.makeVertexLabel("titan").make();
         mgmt.makeVertexLabel("location").make();
         mgmt.makeVertexLabel("god").make();
         mgmt.makeVertexLabel("demigod").make();
@@ -103,7 +103,7 @@ public class GraphOfTheGodsFactory {
         JanusGraphTransaction tx = graph.newTransaction();
         // vertices
 
-        Vertex saturn = tx.addVertex(T.label, "janusgraph", "name", "saturn", "age", 10000);
+        Vertex saturn = tx.addVertex(T.label, "titan", "name", "saturn", "age", 10000);
         Vertex sky = tx.addVertex(T.label, "location", "name", "sky");
         Vertex sea = tx.addVertex(T.label, "location", "name", "sea");
         Vertex jupiter = tx.addVertex(T.label, "god", "name", "jupiter", "age", 5000);
