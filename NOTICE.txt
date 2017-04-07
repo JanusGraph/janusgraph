@@ -10,30 +10,37 @@ This product includes software developed by Aurelius (http://thinkaurelius.com/)
  * Marko A. Rodriguez
  * Stephen Mallette
  * Pavel Yaskevich
+ * Others as listed in CONTRIBUTORS.txt
 
 It also includes software from other open source projects including, but not limited to (check pom.xml for complete listing):
 
- * TinkerPop [http://tinkerpop.incubator.apache.org/]
- * Apache Commons [http://commons.apache.org/]
- * Google Guava [http://code.google.com/p/guava-libraries/]
- * HPPC [http://labs.carrotsearch.com/hppc.html]
- * Junit Benchmark [http://labs.carrotsearch.com/junit-benchmarks.html]
- * Kryo [http://code.google.com/p/kryo/]
- * SLF4J [http://www.slf4j.org/]
- * Metrics [http://metrics.codahale.com/]
- * Apache log4j [http://logging.apache.org/log4j/]
- * Apache HBase [http://hbase.apache.org/]
- * Apache Hadoop [http://hadoop.apache.org/]
  * Apache Cassandra [http://cassandra.apache.org/]
- * Apache Lucene [http://lucene.apache.org/]
- * Apache MRUnit [http://mrunit.apache.org/]
- * Apache Groovy [http://www.groovy-lang.org/]
- * OpenRDF [http://www.openrdf.org/]
- * Elastic Search [http://www.elasticsearch.org/]
+ * Apache Commons [http://commons.apache.org/]
+ * Apache Groovy [http://groovy-lang.org/]
+ * Apache HBase [https://hbase.apache.org/]
+ * Apache Hadoop [http://hadoop.apache.org/]
+ * Apache Log4j [https://logging.apache.org/log4j]
+ * Apache Lucene [https://lucene.apache.org/]
+ * Apache MRUnit [https://mrunit.apache.org/]
+ * Apache Solr [http://lucene.apache.org/solr/]
+ * Apache TinkerPop [http://tinkerpop.apache.org/]
  * Astyanax [https://github.com/Netflix/astyanax]
+ * EasyMock [http://easymock.org/]
+ * Elasticsearch [https://www.elastic.co/]
+ * Google Guava [https://github.com/google/guava]
+ * H2 [http://h2database.com]
+ * HPPC [https://labs.carrotsearch.com/hppc.html]
  * JUnit [http://www.junit.org/]
- * Mockito [http://code.google.com/p/mockito/]
+ * Jackson [https://github.com/FasterXML/jackson]
+ * Junit Benchmark [https://labs.carrotsearch.com/junit-benchmarks.html]
+ * Kryo [https://github.com/EsotericSoftware/kryo]
+ * Metrics [http://metrics.dropwizard.io]
+ * Mockito [http://site.mockito.org/]
+ * OpenRDF [http://rdf4j.org/]
  * Oracle BerkeleyDB Java Edition [http://www.oracle.com/technetwork/products/berkeleydb/] (see license below)
+ * Reflections [https://github.com/ronmamo/reflections]
+ * SLF4J [https://www.slf4j.org/]
+ * Spatial4j [https://github.com/locationtech/spatial4j]
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Copyright (C) 2002, 2016, Oracle  and/or its affiliates. All rights reserved.
