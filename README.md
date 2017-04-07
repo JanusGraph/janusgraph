@@ -29,6 +29,9 @@ The [project homepage](http://janusgraph.org) contains more information on Janus
 
 * Chat: find us on [Gitter](https://gitter.im/JanusGraph/janusgraph)
 
+* Twitter: follow [@JanusGraph](https://twitter.com/JanusGraph) for news and
+  updates
+
 ## Contributing
 
 Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for more information, including
