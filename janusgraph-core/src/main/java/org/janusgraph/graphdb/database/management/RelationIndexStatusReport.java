@@ -18,32 +18,18 @@ package org.janusgraph.graphdb.database.management;
 import org.janusgraph.core.schema.SchemaStatus;
 
 import java.time.Duration;
+import java.util.List;
 
-public class RelationIndexStatusReport {
+public class RelationIndexStatusReport extends AbstractIndexStatusReport {
 
-    private final boolean succeeded;
-    private final String indexName;
     private final String relationTypeName;
     private final SchemaStatus actualStatus;
-    private final SchemaStatus targetStatus;
-    private final Duration elapsed;
 
-    public RelationIndexStatusReport(boolean succeeded, String indexName, String relationTypeName, SchemaStatus actualStatus,
-                                   SchemaStatus targetStatus, Duration elapsed) {
-        this.succeeded = succeeded;
-        this.indexName = indexName;
+    public RelationIndexStatusReport(boolean success, String indexName, String relationTypeName, SchemaStatus actualStatus,
+                                   List<SchemaStatus>targetStatuses, Duration elapsed) {
+        super(success, indexName, targetStatuses, elapsed);
         this.relationTypeName = relationTypeName;
         this.actualStatus = actualStatus;
-        this.targetStatus = targetStatus;
-        this.elapsed = elapsed;
-    }
-
-    public boolean getSucceeded() {
-        return succeeded;
-    }
-
-    public String getIndexName() {
-        return indexName;
     }
 
     public String getRelationTypeName() {
@@ -54,22 +40,14 @@ public class RelationIndexStatusReport {
         return actualStatus;
     }
 
-    public SchemaStatus getTargetStatus() {
-        return targetStatus;
-    }
-
-    public Duration getElapsed() {
-        return elapsed;
-    }
-
     @Override
     public String toString() {
         return "RelationIndexStatusReport[" +
-                "succeeded=" + succeeded +
+                "succeeded=" + success +
                 ", indexName='" + indexName + '\'' +
                 ", relationTypeName='" + relationTypeName + '\'' +
                 ", actualStatus=" + actualStatus +
-                ", targetStatus=" + targetStatus +
+                ", targetStatus=" + targetStatuses +
                 ", elapsed=" + elapsed +
                 ']';
     }

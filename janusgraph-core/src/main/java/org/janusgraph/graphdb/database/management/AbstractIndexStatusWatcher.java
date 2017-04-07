@@ -22,17 +22,23 @@ import org.janusgraph.core.schema.SchemaStatus;
 import java.time.Duration;
 import java.time.temporal.TemporalUnit;
 import java.util.concurrent.Callable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 
 public abstract class AbstractIndexStatusWatcher<R, S extends AbstractIndexStatusWatcher<R,S>> implements Callable<R> {
 
     protected JanusGraph g;
-    protected SchemaStatus status;
+    protected List<SchemaStatus> statuses;
     protected Duration timeout;
     protected Duration poll;
 
     public AbstractIndexStatusWatcher(JanusGraph g) {
         this.g = g;
-        this.status = SchemaStatus.REGISTERED;
+        this.statuses = new ArrayList<SchemaStatus>();
+        this.statuses.add(SchemaStatus.REGISTERED);
         this.timeout = Duration.ofSeconds(60L);
         this.poll = Duration.ofMillis(500L);
     }
@@ -40,16 +46,17 @@ public abstract class AbstractIndexStatusWatcher<R, S extends AbstractIndexStatu
     protected abstract S self();
 
     /**
-     * Set the target index status.  {@link #call()} will repeatedly
+     * Set the target index statuses.  {@link #call()} will repeatedly
      * poll the graph passed into this instance during construction to
      * see whether the index (also passed in during construction) has
-     * the supplied status.
+     * one of the the supplied statuses.
      *
-     * @param status
+     * @param statuses
      * @return
      */
-    public S status(SchemaStatus status) {
-        this.status = status;
+    public S status(SchemaStatus... statuses) {
+        this.statuses.clear();
+        this.statuses.addAll(Arrays.asList(statuses));
         return self();
     }
 
@@ -85,5 +92,5 @@ public abstract class AbstractIndexStatusWatcher<R, S extends AbstractIndexStatu
         this.poll = Duration.of(poll, pollUnit);
         return self();
     }
-
 }
+

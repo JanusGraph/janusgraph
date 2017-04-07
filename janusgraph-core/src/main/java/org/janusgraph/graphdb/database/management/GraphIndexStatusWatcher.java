@@ -50,7 +50,8 @@ public class GraphIndexStatusWatcher
     public GraphIndexStatusReport call() throws InterruptedException {
         Preconditions.checkNotNull(g, "Graph instance must not be null");
         Preconditions.checkNotNull(graphIndexName, "Index name must not be null");
-        Preconditions.checkNotNull(status, "Target status must not be null");
+        Preconditions.checkNotNull(statuses, "Target statuses must not be null");
+        Preconditions.checkArgument(statuses.size() > 0, "Target statuses must include at least one status");
 
         Map<String, SchemaStatus> notConverged = new HashMap<>();
         Map<String, SchemaStatus> converged = new HashMap<>();
@@ -66,7 +67,7 @@ public class GraphIndexStatusWatcher
                 for (PropertyKey pk : idx.getFieldKeys()) {
                     SchemaStatus s = idx.getIndexStatus(pk);
                     LOGGER.debug("Key {} has status {}", pk, s);
-                    if (!status.equals(s))
+                    if (!statuses.contains(s))
                         notConverged.put(pk.toString(), s);
                     else
                         converged.put(pk.toString(), s);
@@ -78,18 +79,18 @@ public class GraphIndexStatusWatcher
 
             String waitingOn = Joiner.on(",").withKeyValueSeparator("=").join(notConverged);
             if (!notConverged.isEmpty()) {
-                LOGGER.info("Some key(s) on index {} do not currently have status {}: {}", graphIndexName, status, waitingOn);
+                LOGGER.info("Some key(s) on index {} do not currently have status(es) {}: {}", graphIndexName, statuses, waitingOn);
             } else {
-                LOGGER.info("All {} key(s) on index {} have status {}", converged.size(), graphIndexName, status);
-                return new GraphIndexStatusReport(true, graphIndexName, status, notConverged, converged, t.elapsed());
+                LOGGER.info("All {} key(s) on index {} have status(es) {}", converged.size(), graphIndexName, statuses);
+                return new GraphIndexStatusReport(true, graphIndexName, statuses, notConverged, converged, t.elapsed());
             }
 
             timedOut = null != timeout && 0 < t.elapsed().compareTo(timeout);
 
             if (timedOut) {
-                LOGGER.info("Timed out ({}) while waiting for index {} to converge on status {}",
-                        timeout, graphIndexName, status);
-                return new GraphIndexStatusReport(false, graphIndexName, status, notConverged, converged, t.elapsed());
+                LOGGER.info("Timed out ({}) while waiting for index {} to converge on status(es) {}",
+                        timeout, graphIndexName, statuses);
+                return new GraphIndexStatusReport(false, graphIndexName, statuses, notConverged, converged, t.elapsed());
             }
             notConverged.clear();
             converged.clear();
@@ -98,3 +99,4 @@ public class GraphIndexStatusWatcher
         }
     }
 }
+
