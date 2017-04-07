@@ -53,7 +53,8 @@ public class RelationIndexStatusWatcher
     public RelationIndexStatusReport call() throws InterruptedException {
         Preconditions.checkNotNull(g, "Graph instance must not be null");
         Preconditions.checkNotNull(relationIndexName, "Index name must not be null");
-        Preconditions.checkNotNull(status, "Target status must not be null");
+        Preconditions.checkNotNull(statuses, "Target statuses must not be null");
+        Preconditions.checkArgument(statuses.size() > 0, "Target statuses must include at least one status");
 
         RelationTypeIndex idx;
 
@@ -67,8 +68,8 @@ public class RelationIndexStatusWatcher
                 idx = mgmt.getRelationIndex(mgmt.getRelationType(relationTypeName), relationIndexName);
                 actualStatus = idx.getIndexStatus();
                 LOGGER.info("Index {} (relation type {}) has status {}", relationIndexName, relationTypeName, actualStatus);
-                if (status.equals(actualStatus)) {
-                    return new RelationIndexStatusReport(true, relationIndexName, relationTypeName, actualStatus, status, t.elapsed());
+                if (statuses.contains(actualStatus)) {
+                    return new RelationIndexStatusReport(true, relationIndexName, relationTypeName, actualStatus, statuses, t.elapsed());
                 }
             } finally {
                 if (null != mgmt)
@@ -78,9 +79,9 @@ public class RelationIndexStatusWatcher
             timedOut = null != timeout && 0 < t.elapsed().compareTo(timeout);
 
             if (timedOut) {
-                LOGGER.info("Timed out ({}) while waiting for index {} (relation type {}) to reach status {}",
-                        timeout, relationIndexName, relationTypeName, status);
-                return new RelationIndexStatusReport(false, relationIndexName, relationTypeName, actualStatus, status, t.elapsed());
+                LOGGER.info("Timed out ({}) while waiting for index {} (relation type {}) to reach status(es) {}",
+                        timeout, relationIndexName, relationTypeName, statuses);
+                return new RelationIndexStatusReport(false, relationIndexName, relationTypeName, actualStatus, statuses, t.elapsed());
             }
 
             Thread.sleep(poll.toMillis());

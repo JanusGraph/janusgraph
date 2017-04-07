@@ -887,8 +887,9 @@ location = mgmt.makePropertyKey('location').dataType(Geoshape.class).make()
 nameAndAge = mgmt.getGraphIndex('nameAndAge')
 mgmt.addIndexKey(nameAndAge, location)
 mgmt.commit()
-//Wait for the index to become available
-mgmt.awaitGraphIndexStatus(graph, 'nameAndAge').call()
+//Previously created property keys already have the status ENABLED, but
+//our newly created property key "location" needs to REGISTER so we wait for both statuses
+mgmt.awaitGraphIndexStatus(graph, 'nameAndAge').status(REGISTERED, ENABLED).call()
 //Reindex the existing data
 mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("nameAndAge"), SchemaAction.REINDEX).get()

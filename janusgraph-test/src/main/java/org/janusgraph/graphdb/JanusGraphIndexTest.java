@@ -1845,4 +1845,25 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertCount(numV-(i + 1), tx.query().has(geoShapeProperty, Geo.DISJOINT, bufferedPoly).edges());
     }
 
+    @Test
+    public void shouldAwaitMultipleStatuses() throws InterruptedException, ExecutionException {
+        PropertyKey key1 = makeKey("key1", String.class);
+        JanusGraphIndex index = mgmt.buildIndex("randomMixedIndex", Vertex.class).addKey(key1).buildMixedIndex(INDEX);
+        if (index.getIndexStatus(key1) == SchemaStatus.INSTALLED) {
+            mgmt.updateIndex(mgmt.getGraphIndex("randomMixedIndex"), SchemaAction.REGISTER_INDEX).get();
+            mgmt.updateIndex(mgmt.getGraphIndex("randomMixedIndex"), SchemaAction.ENABLE_INDEX).get();
+        } else if (index.getIndexStatus(key1) == SchemaStatus.REGISTERED) {
+            mgmt.updateIndex(mgmt.getGraphIndex("randomMixedIndex"), SchemaAction.ENABLE_INDEX).get();
+        }
+        PropertyKey key2 = makeKey("key2", String.class);
+        mgmt.addIndexKey(index, key2);
+        mgmt.commit();
+        //key1 now has status ENABLED, let's ensure we can watch for REGISTERED and ENABLED
+        try {
+            ManagementSystem.awaitGraphIndexStatus(graph, "randomMixedIndex").status(SchemaStatus.REGISTERED, SchemaStatus.ENABLED).call();
+        } catch (Exception e) {
+            Assert.fail("Failed to awaitGraphIndexStatus on multiple statuses.");
+        }
+    }
 }
+
