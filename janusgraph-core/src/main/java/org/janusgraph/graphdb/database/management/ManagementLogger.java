@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -105,7 +106,7 @@ public class ManagementLogger implements MessageReader {
     }
 
     public void sendCacheEviction(Set<JanusGraphSchemaVertex> updatedTypes,
-                                             Set<Callable<Boolean>> updatedTypeTriggers,
+                                             List<Callable<Boolean>> updatedTypeTriggers,
                                              Set<String> openInstances) {
         Preconditions.checkArgument(!openInstances.isEmpty());
         long evictionId = evictionTriggerCounter.incrementAndGet();
@@ -124,11 +125,11 @@ public class ManagementLogger implements MessageReader {
     private class EvictionTrigger {
 
         final long evictionId;
-        final Set<Callable<Boolean>> updatedTypeTriggers;
+        final List<Callable<Boolean>> updatedTypeTriggers;
         final ImmutableSet<String> openInstances;
         final AtomicInteger ackCounter;
 
-        private EvictionTrigger(long evictionId, Set<Callable<Boolean>> updatedTypeTriggers, Set<String> openInstances) {
+        private EvictionTrigger(long evictionId, List<Callable<Boolean>> updatedTypeTriggers, Set<String> openInstances) {
             this.evictionId = evictionId;
             this.updatedTypeTriggers = updatedTypeTriggers;
             this.openInstances = ImmutableSet.copyOf(openInstances);
