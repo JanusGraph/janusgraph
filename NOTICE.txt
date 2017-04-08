@@ -1,16 +1,19 @@
 ==============================================================
  JanusGraph: Distributed Graph Database
- Copyright 2012 and onwards Aurelius
+ Copyright 2012 and onwards JanusGraph Authors
 ==============================================================
 
-This product includes software developed by Aurelius (http://thinkaurelius.com/) and the following individuals:
+This product includes software developed by JanusGraph contributors listed
+in CONTRIBUTORS.txt; JanusGraph copyright holders are listed in AUTHORS.txt.
+
+This product is based on Titan, originally developed by Aurelius (acquired by
+DataStax) and the following individuals:
 
  * Matthias Broecheler
  * Dan LaRocque
  * Marko A. Rodriguez
  * Stephen Mallette
  * Pavel Yaskevich
- * Others as listed in CONTRIBUTORS.txt
 
 It also includes software from other open source projects including, but not limited to (check pom.xml for complete listing):
 
