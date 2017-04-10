@@ -7,7 +7,6 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-hadoop</artifactId>
-    <packaging>pom</packaging>
     <name>JanusGraph-Hadoop: Universal binary</name>
     <url>http://janusgraph.org</url>
 
