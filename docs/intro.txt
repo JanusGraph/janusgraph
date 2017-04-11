@@ -103,23 +103,6 @@ image::architecture-layer-diagram.svg[]
 [[getting-started]]
 == Getting Started
 
-[quote]
-_______
-
-In the beginning, there existed two deities known as http://en.wikipedia.org/wiki/Uranus_(mythology)[Uranus] and
-http://en.wikipedia.org/wiki/Gaia_(mythology)[Gaia]. They gave birth to the http://en.wikipedia.org/wiki/Titan_(mythology)[Titans] (a race of powerful beings).
-http://en.wikipedia.org/wiki/Saturn_(mythology)[Saturn], JanusGraph of time, set reality in motion. Ultimately, time
-yielded the existence of the sky, the sea, and the end of
-life--death. To rule these notions, Saturn had three sons: http://en.wikipedia.org/wiki/Jupiter_(mythology)[Jupiter]
-(sky), http://en.wikipedia.org/wiki/Neptune_(mythology)[Neptune] (sea), and http://en.wikipedia.org/wiki/Pluto_(mythology)[Pluto] (underworld). The son's of
-Saturn were not Titans, but a race of seemingly less powerful deities
-known the world over as the Gods. Fearful that his sons would
-overthrow him, Saturn devoured them and imprisoned them in his
-stomach. This caused a http://en.wikipedia.org/wiki/Titanomachy[great war] between the Titans and
-Gods. Ultimately, the Gods won and Jupiter took the throne as leader
-of the Gods.
-_______
-
 The examples in this section make extensive use of a toy graph distributed with JanusGraph called _The Graph of the Gods_. This graph is diagrammed below. The abstract data model is known as a http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#intro[Property Graph Model] and this particular instance describes the relationships between the beings and places of the Roman pantheon. Moreover, special text and symbol modifiers in the diagram (e.g. bold, underline, etc.) denote different schematics/typings in the graph.
 
 
@@ -137,11 +120,6 @@ image::graph-of-the-gods-2.png[]
 
 
 === Downloading JanusGraph and Running the Gremlin Shell
-
-[quote]
-_______
-Unbeknownst to the Gods, there still lived one JanusGraph. This JanusGraph can not be seen, has no name, and is only apparent in the fact that reality exists. Upon the shoulders of this lost JanusGraph, all of reality hangs together in an undulating web of relations.
-_______
 
 JanusGraph can be downloaded from the https://github.com/JanusGraph/janusgraph/releases[Releases] section of the project repository.  Once retrieved and unpacked, a Gremlin console can be opened. The Gremlin http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] (i.e.  interactive shell) is distributed with JanusGraph and only differs from the standard Gremlin console insofar that JanusGraph is a pre-installed and pre-loaded package. Alternatively, a user may choose to install and activate JanusGraph in an existing Gremlin console by downloading the JanusGraph package from the central repository. In the example below, `janusgraph.zip` is used, however, be sure to unzip the zip-file that was downloaded.
 
