@@ -78,7 +78,7 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
 
     @Override
     public void addAll(Iterable<HasContainer> has) {
-        Iterables.addAll(hasContainers, has);
+        HasStepFolder.splitAndP(hasContainers, has);
     }
 
     @Override

@@ -14,8 +14,10 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
+import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.JanusGraphTransaction;
@@ -53,7 +55,12 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
     int getLimit();
 
     static boolean validJanusGraphHas(HasContainer has) {
-        return JanusGraphPredicate.Converter.supports(has.getBiPredicate());
+        if (has.getPredicate() instanceof AndP) {
+            final List<? extends P<?>> predicates = ((AndP<?>) has.getPredicate()).getPredicates();
+            return !predicates.stream().filter(p->!validJanusGraphHas(new HasContainer(has.getKey(), p))).findAny().isPresent();
+        } else {
+            return JanusGraphPredicate.Converter.supports(has.getBiPredicate());
+        }
     }
 
     static boolean validJanusGraphHas(Iterable<HasContainer> has) {
@@ -83,12 +90,14 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         Step<?, ?> currentStep = janusgraphStep.getNextStep();
         while (true) {
             if (currentStep instanceof HasContainerHolder) {
+                boolean removeStep = false;
                 for (final HasContainer hasContainer : ((HasContainerHolder) currentStep).getHasContainers()) {
                     if (GraphStep.processHasContainerIds((GraphStep) janusgraphStep, hasContainer)) {
                         currentStep.getLabels().forEach(janusgraphStep::addLabel);
-                        traversal.removeStep(currentStep);
+                        removeStep = true;
                     }
                 }
+                if (removeStep) traversal.removeStep(currentStep);
             }
             else if (currentStep instanceof IdentityStep) {
                 // do nothing, has no impact
@@ -165,6 +174,17 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                 traversal.removeStep(lastOrder);
             }
         }
+    }
+
+    static void splitAndP(final List<HasContainer> hasContainers, final Iterable<HasContainer> has) {
+        has.forEach(hasContainer -> {
+            if (hasContainer.getPredicate() instanceof AndP) {
+                for (final P<?> predicate : ((AndP<?>) hasContainer.getPredicate()).getPredicates()) {
+                    hasContainers.add(new HasContainer(hasContainer.getKey(), predicate));
+                }
+            } else
+                hasContainers.add(hasContainer);
+        });
     }
 
     class OrderEntry {

@@ -137,7 +137,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
 
     @Override
     public void addAll(Iterable<HasContainer> has) {
-        Iterables.addAll(hasContainers, has);
+        HasStepFolder.splitAndP(hasContainers, has);
     }
 
     @Override
