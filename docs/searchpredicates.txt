@@ -30,8 +30,14 @@ See <<text-search>> for more information about full-text and string search.
 
 === Geo Predicate
 
-The `Geo` enum specifies the geo-location predicate `geoWithin` which holds true if one geometric object contains the other.
+The `Geo` enum specifies geo-location predicates.
 
+* `geoIntersect` which holds true if the two geometric objects have at least one point in common (opposite of `geoDisjoint`).
+* `geoWithin` which holds true if one geometric object contains the other.
+* `geoDisjoint` which holds true if the two geometric objects have no points in common (opposite of `geoIntersect`).
+* `geoContains` which holds true if one geometric object is contained by the other.
+
+See <<geo-search>> for more information about geo search.
 
 === Query Examples
 
@@ -80,9 +86,14 @@ While JanusGraph's composite indexes support any data type that can be stored in
  
 Additional data types will be supported in the future.
 
+[[geoshape]]
 === Geoshape Data Type
-The Geoshape data type supports representing a point, circle or box. However all index backends currently only support indexing points.
+The Geoshape data type supports representing a point, circle, box, line, polygon, multi-point, multi-line and multi-polygon. Index backends currently support indexing points, lines and polygons. Indexing multi-point, multi-line and multi-polygon properties has not been tested.
 Geospatial index lookups are only supported via mixed indexes.
+
+.Note:
+[NOTE]
+The Java Topology Suite (JTS) is currently required to use line, polygon, multi-point, multi-line and multi-polygon geometries. JTS is not included in JanusGraph distributions by default due to its LGPL license. Users must download the JTS JAR file separately and include it in the classpath when full geometry support is required.
 
 To construct a Geoshape use the following methods:
 
@@ -93,8 +104,10 @@ Geoshape.point(37.97, 23.72)
 Geoshape.circle(37.97, 23.72, 50)
 //SW lat, SW lng, NE lat, NE lng
 Geoshape.box(37.97, 23.72, 38.97, 24.72)
+//WKT (requires JTS for polygon, linestring and multi-point/line/polygon geometries)
+Geoshape.fromWkt("POLYGON ((35.4 48.9, 35.6 48.9, 35.6 49.1, 35.4 49.1, 35.4 48.9))")
 
-In addition when importing a graph via GraphSON Point may be represented by:
+In addition, when importing a graph via GraphSON the geometry may be represented by GeoJSON:
 [source, java]
  //string
 "37.97, 23.72"
@@ -117,7 +130,7 @@ In addition when importing a graph via GraphSON Point may be represented by:
   "coordinates": [125.6, 10.1]
 }
 
-link:http://geojson.org/[GeoJSON] may be specified as Point, Circle or Polygon. However polygons must form a box.
+link:http://geojson.org/[GeoJSON] may be specified as Point, Circle, LineString or Polygon. Polygons must be closed.
 Note that unlike the JanusGraph API GeoJSON specifies coordinates as lng lat.
 
 === Collections

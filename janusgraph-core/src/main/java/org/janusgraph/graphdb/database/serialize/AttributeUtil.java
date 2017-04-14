@@ -15,6 +15,8 @@
 package org.janusgraph.graphdb.database.serialize;
 
 import org.janusgraph.core.PropertyKey;
+
+import org.janusgraph.core.attribute.Geoshape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +52,10 @@ public class AttributeUtil {
 
     public static final boolean isString(Class<?> clazz) {
         return clazz.equals(String.class);
+    }
+
+    public static final boolean isGeo(Class<?> clazz) {
+        return clazz.equals(Geoshape.class);
     }
 
     /**

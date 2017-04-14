@@ -8,6 +8,7 @@
             <filtered>false</filtered>
             <excludes>
                 <exclude>README.txt</exclude>
+                <exclude>**/es/**</exclude>
             </excludes>
         </fileSet>
         <fileSet>
@@ -19,6 +20,19 @@
             <directory>${assembly.cfilter.out.dir}</directory>
             <outputDirectory>/</outputDirectory>
             <filtered>false</filtered>
+        </fileSet>
+        <fileSet>
+            <directory>${assembly.es.dir}</directory>
+            <outputDirectory>/elasticsearch</outputDirectory>
+            <filtered>false</filtered>
+            <excludes>
+              <exclude>**/elasticsearch.yml</exclude>
+            </excludes>
+        </fileSet>
+        <fileSet>
+            <directory>${assembly.static.dir}/conf/es</directory>
+            <outputDirectory>/elasticsearch/config</outputDirectory>
+            <filtered>true</filtered>
         </fileSet>
     </fileSets>
 

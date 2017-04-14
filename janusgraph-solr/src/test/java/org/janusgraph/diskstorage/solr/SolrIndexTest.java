@@ -89,7 +89,6 @@ public class SolrIndexTest extends IndexProviderTest {
         assertTrue(index.supports(of(Short.class, Cardinality.SINGLE)));
         assertTrue(index.supports(of(Byte.class, Cardinality.SINGLE)));
         assertTrue(index.supports(of(Float.class, Cardinality.SINGLE)));
-        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE)));
         assertFalse(index.supports(of(Object.class, Cardinality.SINGLE)));
         assertFalse(index.supports(of(Exception.class, Cardinality.SINGLE)));
 
@@ -110,11 +109,19 @@ public class SolrIndexTest extends IndexProviderTest {
         assertTrue(index.supports(of(Double.class, Cardinality.SINGLE), Cmp.LESS_THAN));
         assertTrue(index.supports(of(Double.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.DEFAULT)), Cmp.LESS_THAN));
         assertFalse(index.supports(of(Double.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.TEXT)), Cmp.LESS_THAN));
+
+        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE)));
         assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE), Geo.WITHIN));
+        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE), Geo.INTERSECT));
+        assertFalse(index.supports(of(Geoshape.class, Cardinality.SINGLE), Geo.CONTAINS));
+        assertFalse(index.supports(of(Geoshape.class, Cardinality.SINGLE), Geo.DISJOINT));
+        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.PREFIX_TREE)), Geo.CONTAINS));
+        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.PREFIX_TREE)), Geo.WITHIN));
+        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.PREFIX_TREE)), Geo.INTERSECT));
+        assertFalse(index.supports(of(Geoshape.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.PREFIX_TREE)), Geo.DISJOINT));
 
         assertFalse(index.supports(of(Double.class, Cardinality.SINGLE), Geo.INTERSECT));
         assertFalse(index.supports(of(Long.class, Cardinality.SINGLE), Text.CONTAINS));
-        assertFalse(index.supports(of(Geoshape.class, Cardinality.SINGLE), Geo.DISJOINT));
 
         assertTrue(index.supports(of(Date.class, Cardinality.SINGLE), Cmp.EQUAL));
         assertTrue(index.supports(of(Date.class, Cardinality.SINGLE), Cmp.LESS_THAN_EQUAL));

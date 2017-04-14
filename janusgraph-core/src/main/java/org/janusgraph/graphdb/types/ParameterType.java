@@ -23,7 +23,19 @@ import org.apache.commons.lang.StringUtils;
  */
 public enum ParameterType {
 
-    MAPPING("mapping"), INDEX_POSITION("index-pos"), MAPPED_NAME("mapped-name"), STATUS("status");
+    MAPPING("mapping"),
+
+    INDEX_POSITION("index-pos"),
+
+    MAPPED_NAME("mapped-name"),
+
+    STATUS("status"),
+
+    /** Maximum number of levels to be used in the spatial prefix tree where applicable. **/
+    INDEX_GEO_MAX_LEVELS("index-geo-max-levels"),
+
+    /** Distance error percent used to determine precision in spatial prefix tree where applicable. **/
+    INDEX_GEO_DIST_ERROR_PCT("index-geo-dist-error-pct");
 
     private final String name;
 

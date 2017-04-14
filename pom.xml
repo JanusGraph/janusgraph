@@ -81,16 +81,21 @@
         <hbase100.core.version>1.2.4</hbase100.core.version>
         <hbase100.version>${hbase100.core.version}</hbase100.version>
         <jackson1.version>1.9.2</jackson1.version>
-        <jackson2.version>2.4.4</jackson2.version>
+        <jackson2.version>2.6.6</jackson2.version>
         <!-- ES depends on Lucene.  This ES dependency can affect the
              version used by the janusgraph-lucene module.  When updating
              the ES version, also consider the version of Lucene, and
              vice-versa. -->
-        <lucene.version>4.10.4</lucene.version>
-        <elasticsearch.version>1.5.1</elasticsearch.version>
+        <lucene.version>5.5.2</lucene.version>
+        <elasticsearch.version>2.4.4</elasticsearch.version>
+        <elasticsearch.rest.version>5.2.2</elasticsearch.rest.version>
+        <elasticsearch.dist.version>5.2.2</elasticsearch.dist.version>
+        <!-- Groovy dynamic scripting must be manually enabled on ES 2.x servers.
+             From ES 5.0 Painless inline scripts are used which are enabled by default. -->
+        <elasticsearch.groovy.inline>false</elasticsearch.groovy.inline>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
-        <joda.version>1.6.2</joda.version>
+        <joda.version>2.8.2</joda.version>
         <concurrentlinkedhashmap.version>1.3</concurrentlinkedhashmap.version>
         <antlr2.version>2.7.7</antlr2.version>
         <antlr.version>3.2</antlr.version>
@@ -505,6 +510,11 @@
                 <version>${jackson2.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.fasterxml.jackson.module</groupId>
+                <artifactId>jackson-module-scala_2.10</artifactId>
+                <version>${jackson2.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>joda-time</groupId>
                 <artifactId>joda-time</artifactId>
                 <version>${joda.version}</version>
@@ -853,7 +863,7 @@
             <dependency>
                 <groupId>commons-cli</groupId>
                 <artifactId>commons-cli</artifactId>
-                <version>1.2</version>
+                <version>1.3.1</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.netty</groupId>
@@ -863,14 +873,21 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty</artifactId>
-                <version>3.6.6.Final</version>
+                <version>3.10.5.Final</version>
             </dependency>
 
             <!-- Spatial4j -->
             <dependency>
                 <groupId>com.spatial4j</groupId>
                 <artifactId>spatial4j</artifactId>
-                <version>0.4.1</version>
+                <version>0.5</version>
+            </dependency>
+
+            <!-- Java Topology Suite (JTS) -->
+            <dependency>
+                <groupId>com.vividsolutions</groupId>
+                <artifactId>jts</artifactId>
+                <version>1.13</version>
             </dependency>
 
             <!-- Package prefix is org.apache.commons.httpclient -->
