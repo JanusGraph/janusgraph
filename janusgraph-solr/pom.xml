@@ -90,7 +90,6 @@
         <dependency>
             <groupId>com.vividsolutions</groupId>
             <artifactId>jts</artifactId>
-            <version>1.13</version>
         </dependency>
         <!-- Logging backends.
              Enforce a classpath ordering constraint to ensure slf4j-log4j12

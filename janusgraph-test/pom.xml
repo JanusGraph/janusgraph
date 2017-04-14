@@ -56,6 +56,10 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.vividsolutions</groupId>
+            <artifactId>jts</artifactId>
+        </dependency>
         <!-- Test Dependencies -->
         <dependency>
             <groupId>com.carrotsearch</groupId>

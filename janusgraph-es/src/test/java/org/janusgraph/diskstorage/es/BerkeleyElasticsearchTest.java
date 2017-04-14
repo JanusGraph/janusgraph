@@ -14,26 +14,41 @@
 
 package org.janusgraph.diskstorage.es;
 
-import org.janusgraph.StorageSetup;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
 import org.janusgraph.util.system.IOUtils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
 
-import static org.janusgraph.diskstorage.es.ElasticSearchIndex.*;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
+import static org.janusgraph.diskstorage.es.ElasticSearchIndex.BULK_REFRESH;
+import static org.janusgraph.diskstorage.es.ElasticSearchIndex.INTERFACE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class BerkeleyElasticsearchTest extends JanusGraphIndexTest {
+
+    private static ElasticsearchRunner esr;
+
+    @BeforeClass
+    public static void startElasticsearch() {
+        esr = new ElasticsearchRunner();
+        esr.start();
+    }
+
+    @AfterClass
+    public static void stopElasticsearch() {
+        esr.stop();
+    }
 
     public BerkeleyElasticsearchTest() {
         super(true, true, true);
@@ -43,10 +58,9 @@ public class BerkeleyElasticsearchTest extends JanusGraphIndexTest {
     public WriteConfiguration getConfiguration() {
         ModifiableConfiguration config = getBerkeleyJEConfiguration();
         //Add index
-        config.set(INDEX_BACKEND,"elasticsearch",INDEX);
-        config.set(LOCAL_MODE,true,INDEX);
-        config.set(CLIENT_ONLY,false,INDEX);
-        config.set(INDEX_DIRECTORY, StorageSetup.getHomeDir("es"), INDEX);
+        config.set(INTERFACE, ElasticSearchSetup.REST_CLIENT.toString(), INDEX);
+        config.set(INDEX_HOSTS, new String[]{ "127.0.0.1" }, INDEX);
+        config.set(BULK_REFRESH, "wait_for", INDEX);
         return config.getConfiguration();
 
     }

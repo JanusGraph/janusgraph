@@ -83,6 +83,7 @@ giraph.maxMessagesInMemory=100000
 spark.master=local[*]
 spark.executor.memory=1g
 spark.serializer=org.apache.spark.serializer.KryoSerializer
+spark.kryo.registrator=org.janusgraph.hadoop.serialize.JanusGraphKryoRegistrator
 ----
 
 [source, gremlin]

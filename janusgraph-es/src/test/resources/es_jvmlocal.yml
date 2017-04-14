@@ -1,7 +1,0 @@
-node.data: true
-node.client: false
-node.local: true
-path.data: ${project.build.directory}/es/jvmlocal_yml/data
-path.work: ${project.build.directory}/es/jvmlocal_yml/work
-path.logs: ${project.build.directory}/es/jvmlocal_yml/logs
-cluster.name: jvmlocal

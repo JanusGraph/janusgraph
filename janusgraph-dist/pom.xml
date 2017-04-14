@@ -19,6 +19,7 @@
         <assembly.cfilter.in.dir>${project.basedir}/src/assembly/cfilter</assembly.cfilter.in.dir>
         <assembly.cfilter.out.dir>${project.build.directory}/cfilter</assembly.cfilter.out.dir>
         <assembly.descriptor.dir>${project.basedir}/src/assembly/descriptor</assembly.descriptor.dir>
+        <assembly.es.dir>${project.build.directory}/elasticsearch-${elasticsearch.dist.version}</assembly.es.dir>
 
         <!-- Variables for integration testing on release-candidate archive files -->
         <test.expect.dir>${project.build.directory}/test-classes</test.expect.dir>
@@ -121,6 +122,26 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.elasticsearch.distribution.zip</groupId>
+            <artifactId>elasticsearch</artifactId>
+            <version>${elasticsearch.dist.version}</version>
+            <type>zip</type>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.elasticsearch</groupId>
+                    <artifactId>elasticsearch</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>net.java.dev.jna</groupId>
+                    <artifactId>jna</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>janusgraph-solr</artifactId>
             <version>${project.version}</version>
@@ -153,6 +174,29 @@
 
     <build>
         <plugins>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unpack-plugins</id>
+                        <goals>
+                            <goal>unpack-dependencies</goal>
+                        </goals>
+                        <phase>generate-test-resources</phase>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
+                            <includeGroupIds>org.elasticsearch.distribution.zip</includeGroupIds>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <!--
                 Filter the files in src/release during the
                 process-resources phase. Disable default resource goal

@@ -15,18 +15,24 @@
 package org.janusgraph.diskstorage.es;
 
 import org.janusgraph.DaemonRunner;
+import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Start and stop a separate Elasticsearch server process.
  */
 public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
+
+    private static final String DEFAULT_HOME_DIR = ".";
 
     private final String homedir;
 
@@ -34,21 +40,31 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
             LoggerFactory.getLogger(ElasticsearchRunner.class);
 
     public static final String ES_PID_FILE = "/tmp/janusgraph-test-es.pid";
-    private String configFile = "elasticsearch.yml";
-
-    public ElasticsearchRunner() {
-        this.homedir = ".";
-    }
 
     public ElasticsearchRunner(String esHome) {
-        this.homedir = esHome;
+        final Pattern VERSION_PATTERN = Pattern.compile("es.dist.version=(.*)");
+        String version = null;
+        try (InputStream in = ElasticsearchRunner.class.getClassLoader().getResourceAsStream("janusgraph-es.properties")) {
+            if (in != null) {
+                try (Scanner s = new Scanner(in)) {
+                    s.useDelimiter("\\A");
+                    final Matcher m = VERSION_PATTERN.matcher(s.next());
+                    if (m.find()) {
+                        version = m.group(1);
+                    }
+                }
+            }
+        } catch (IOException e) { }
+        if (version == null) {
+            throw new RuntimeException("Unable to find Elasticsearch version");
+        }
+
+        this.homedir = esHome + File.separator + "target" + File.separator + "elasticsearch-" + version;
     }
 
-    public ElasticsearchRunner(String esHome, String configFile) {
-        this(esHome);
-        this.configFile = configFile;
+    public ElasticsearchRunner() {
+        this(DEFAULT_HOME_DIR);
     }
-
 
     @Override
     protected String getDaemonShortName() {
@@ -78,8 +94,8 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
     @Override
     protected ElasticsearchStatus startImpl() throws IOException {
 
-        File data = new File(homedir + File.separator + "target" + File.separator + "es-data");
-        File logs = new File(homedir + File.separator + "target" + File.separator + "es-logs");
+        File data = new File(homedir + File.separator + "data");
+        File logs = new File(homedir + File.separator + "logs");
 
         if (data.exists() && data.isDirectory()) {
             log.info("Deleting {}", data);
@@ -91,7 +107,7 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
             FileUtils.deleteDirectory(logs);
         }
 
-        runCommand(homedir + File.separator + "bin/elasticsearch", "-d", "-p", ES_PID_FILE, "-Des.config=" + homedir + File.separator + "config" + File.separator + configFile);
+        runCommand(homedir + File.separator + "bin" + File.separator + "elasticsearch", "-d", "-p", ES_PID_FILE);
         try {
             watchLog(" started", 60L, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
@@ -111,8 +127,7 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
         long durationMS = TimeUnit.MILLISECONDS.convert(duration, unit);
         long elapsedMS;
 
-        File logFile = new File(homedir + File.separator + "target" + File.separator
-                + "es-logs" + File.separator + "elasticsearch.log");
+        File logFile = new File(homedir + File.separator + "logs" + File.separator + "elasticsearch.log");
 
         log.info("Watching ES logfile {} for {} token", logFile, suffix);
 
@@ -141,6 +156,17 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
         }
 
         log.info("Elasticsearch logfile timeout ({} {})", elapsedMS, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Start Elasticsearch process, load GraphOfTheGods, and stop process. Used for integration testing.
+     * @param args a singleton array containing a path to a JanusGraph config properties file
+     */
+    public static void main(String[] args) {
+        final ElasticsearchRunner runner = new ElasticsearchRunner();
+        runner.start();
+        GraphOfTheGodsFactory.main(args);
+        runner.stop();
     }
 
 }

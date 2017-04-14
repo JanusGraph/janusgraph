@@ -21,7 +21,7 @@ GSRV_CONFIG_TAG=cassandra-es
 : ${ELASTICSEARCH_STARTUP_TIMEOUT_S:=60}
 : ${ELASTICSEARCH_SHUTDOWN_TIMEOUT_S:=60}
 : ${ELASTICSEARCH_IP:=127.0.0.1}
-: ${ELASTICSEARCH_PORT:=9300}
+: ${ELASTICSEARCH_PORT:=9200}
 
 : ${GSRV_STARTUP_TIMEOUT_S:=60}
 : ${GSRV_SHUTDOWN_TIMEOUT_S:=60}
@@ -134,9 +134,9 @@ start() {
     }
     echo "Forking Elasticsearch..."
     if [ -n "$VERBOSE" ]; then
-        "$BIN"/elasticsearch -d
+        "$BIN"/../elasticsearch/bin/elasticsearch -d
     else
-        "$BIN"/elasticsearch -d >/dev/null 2>&1
+        "$BIN"/../elasticsearch/bin/elasticsearch -d >/dev/null 2>&1
     fi
     wait_for_startup Elasticsearch $ELASTICSEARCH_IP $ELASTICSEARCH_PORT $ELASTICSEARCH_STARTUP_TIMEOUT_S || {
         echo "See $BIN/../log/elasticsearch.log for Elasticsearch log output."  >&2
