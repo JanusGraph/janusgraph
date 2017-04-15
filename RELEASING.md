@@ -42,7 +42,6 @@ Documentation pages:
 * changelog.txt
 * versions.txt
 * upgrade.txt
-* acknowledgements.txt
 
 Files in the main repo:
 
