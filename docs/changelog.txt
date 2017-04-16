@@ -1,10 +1,8 @@
 [[changelog]]
 [appendix]
-Release Notes
--------------
+== Release Notes
 
-Version 0.1.0 (Release Date: April 11, 2017) 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Version 0.1.0 (Release Date: April 11, 2017) 
 
 [source, m2]
 <dependency>
