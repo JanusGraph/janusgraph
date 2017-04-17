@@ -223,10 +223,10 @@ org.apache.solr.common.SolrException: com/vividsolutions/jts/geom/Geometry
         ...
 ----
 
-This is resolved by adding the JTS jar to the classpath of the Solr server. In many cases, if using a version of Solr that matches the version of Solr supported by JanusGraph, the JTS jar file, for example: jts-1.13.jar, may be copied from the JanusGraph ./lib directory to the Solr classpath.  If using Solr's built in web server, the JTS jar may be copied to the example/solr-webapp/webapp/WEB-INF/lib directory to include it in the classpath.  Solr can be restarted, and the exception should be gone. Solr must be started once with the correct schema.xml file in place first, for the example/solr-webapp/webapp/WEB-INF/lib directory to exist.
+This is resolved by adding the JTS jar to the classpath of JanusGraph and/or the Solr server.  JTS is not included in JanusGraph distributions by default due to its LGPL license. Users must download the http://search.maven.org/remotecontent?filepath=com/vividsolutions/jts/1.13/jts-1.13.jar[JTS jar file] separately and copy it into the JanusGraph and/or Solr server lib directory.  If using Solr's built in web server, the JTS jar may be copied to the example/solr-webapp/webapp/WEB-INF/lib directory to include it in the classpath.  Solr can be restarted, and the exception should be gone. Solr must be started once with the correct schema.xml file in place first, for the example/solr-webapp/webapp/WEB-INF/lib directory to exist.
 
-To determine the ideal JTS version, first check the version of Spatial4j in use by the Solr cluster, then determine the version of JTS against which that Spatial4j version was compiled.  Spatial4j declares its target JTS version in the http://search.maven.org/#search|gav|1|g%3A%22com.spatial4j%22%20AND%20a%3A%22spatial4j%22[pom for the `com.spatial4j:spatial4j` artifact].
-Copy the jts jar to the server/solr-webapp/webapp/WEB-INF/lib directory in your solr installation.
+To determine the ideal JTS version for Solr server, first check the version of Spatial4j in use by the Solr cluster, then determine the version of JTS against which that Spatial4j version was compiled.  Spatial4j declares its target JTS version in the http://search.maven.org/#search|gav|1|g%3A%22com.spatial4j%22%20AND%20a%3A%22spatial4j%22[pom for the `com.spatial4j:spatial4j` artifact].
+Copy the JTS jar to the server/solr-webapp/webapp/WEB-INF/lib directory in your solr installation.
 
 === Advanced Solr Configuration
 

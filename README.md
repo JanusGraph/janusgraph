@@ -13,21 +13,32 @@ The [project homepage](http://janusgraph.org) contains more information on Janus
 
 * Email:
 
-  * To subscribe to JanusGraph mailing lists, click on the appropriate links
-    below. These mailing lists are moderated; emails with the text "subscribe"
-    and irrelevant content (e.g., spam) will be rejected.
+  * **janusgraph-users (at) googlegroups.com**
+    ([archives](https://groups.google.com/group/janusgraph-users))
+    for questions about using JanusGraph, installation, configuration, integrations
 
-    * janusgraph-users (at) googlegroups.com
-      ([archives](https://groups.google.com/group/janusgraph-users),
-       [subscribe](https://groups.google.com/forum/#!forum/janusgraph-users/join))
-      for questions about using JanusGraph, installation, configuration, integrations
+    To join with a Google account, use the [web
+    UI](https://groups.google.com/forum/#!forum/janusgraph-users/join); to
+    subscribe/unsubscribe with an arbitrary email address, send an email to:
 
-    * janusgraph-dev (at) googlegroups.com
-      ([archives](https://groups.google.com/group/janusgraph-dev),
-       [subscribe](https://groups.google.com/forum/#!forum/janusgraph-dev/join))
-      for internal implementation of JanusGraph itself
+    * janusgraph-users+subscribe (at) googlegroups.com
+    * janusgraph-users+unsubscribe (at) googlegroups.com
+
+  * **janusgraph-dev (at) googlegroups.com**
+    ([archives](https://groups.google.com/group/janusgraph-dev))
+    for internal implementation of JanusGraph itself
+
+    To join with a Google account, use the [web
+    UI](https://groups.google.com/forum/#!forum/janusgraph-dev/join); to
+    subscribe/unsubscribe with an arbitrary email address, send an email to:
+
+    * janusgraph-dev+subscribe (at) googlegroups.com
+    * janusgraph-dev+unsubscribe (at) googlegroups.com
 
 * Chat: find us on [Gitter](https://gitter.im/JanusGraph/janusgraph)
+
+* Twitter: follow [@JanusGraph](https://twitter.com/JanusGraph) for news and
+  updates
 
 ## Contributing
 
