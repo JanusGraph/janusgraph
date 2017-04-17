@@ -77,11 +77,6 @@ addons:
     build_command: "travis_wait mvn clean package -B -DskipTests=true"
     branch_pattern: coverity_scan
 
-branches:
-  only:
-    - master
-    - coverity_scan
-
 script:
   - if [[ "${COVERITY_SCAN_BRANCH}}" == 1 ]]; then
       echo "Skipping build/test on 'coverity_scan' branch.";

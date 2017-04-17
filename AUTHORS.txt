@@ -11,8 +11,10 @@
 
 # Please keep the list sorted.
 
+Aurelius
 DataStax
 Dylan Bethune-Waddell <dylan.bethune.waddell@mail.utoronto.ca>
 Expero
 Google
+IBM
 Rafael Fernandes <luizrafael@gmail.com>
