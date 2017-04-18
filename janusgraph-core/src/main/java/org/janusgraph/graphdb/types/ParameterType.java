@@ -35,8 +35,15 @@ public enum ParameterType {
     INDEX_GEO_MAX_LEVELS("index-geo-max-levels"),
 
     /** Distance error percent used to determine precision in spatial prefix tree where applicable. **/
-    INDEX_GEO_DIST_ERROR_PCT("index-geo-dist-error-pct");
+    INDEX_GEO_DIST_ERROR_PCT("index-geo-dist-error-pct"),
+    
+    /** Analyzer for String Type with mapping STRING**/
+    STRING_ANALYZER("string-analyzer"),
 
+    /** Analyzer for String Type with mapping TEXT**/
+    TEXT_ANALYZER("text-analyzer"),
+    ;
+    
     private final String name;
 
     private ParameterType(String name) {

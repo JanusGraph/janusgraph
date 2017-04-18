@@ -14,6 +14,8 @@
 
 package org.janusgraph.diskstorage.solr;
 
+import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Geo;
@@ -62,6 +64,16 @@ public class SolrIndexTest extends IndexProviderTest {
     @Override
     public boolean supportsLuceneStyleQueries() {
         return true;
+    }
+
+    @Override
+    public String getEnglishAnalyzerName() {
+        return WhitespaceTokenizer.class.getName();
+    }
+    
+    @Override
+    public String getKeywordAnalyzerName() {
+        return KeywordTokenizer.class.getName();
     }
 
     private Configuration getLocalSolrTestConfig() {
