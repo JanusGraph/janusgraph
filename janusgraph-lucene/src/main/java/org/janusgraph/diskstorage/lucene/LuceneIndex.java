@@ -47,6 +47,7 @@ import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanQuery.Builder;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.prefix.PrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
@@ -537,6 +538,15 @@ public class LuceneIndex implements IndexProvider {
                     BooleanFilter q = new BooleanFilter();
                     q.add(new TermsFilter(new Term(key, (String) value)), BooleanClause.Occur.MUST_NOT);
                     params.addFilter(q);
+                } else if(janusgraphPredicate == Text.FUZZY){
+                    params.addQuery(new FuzzyQuery(new Term(key, (String) value)));
+                } else if(janusgraphPredicate == Text.CONTAINS_FUZZY){
+                    value = ((String) value).toLowerCase();
+                    Builder b = new BooleanQuery.Builder();
+                    for (String term : Text.tokenize((String)value)) {
+                        b.add(new FuzzyQuery(new Term(key, term)),BooleanClause.Occur.MUST);
+                    }
+                    params.addQuery(b.build());
                 } else
                     throw new IllegalArgumentException("Relation is not supported for string value: " + janusgraphPredicate);
             } else if (value instanceof Geoshape) {
@@ -652,9 +662,9 @@ public class LuceneIndex implements IndexProvider {
             switch(mapping) {
                 case DEFAULT:
                 case TEXT:
-                    return janusgraphPredicate == Text.CONTAINS || janusgraphPredicate == Text.CONTAINS_PREFIX; // || janusgraphPredicate == Text.CONTAINS_REGEX;
+                    return janusgraphPredicate == Text.CONTAINS || janusgraphPredicate == Text.CONTAINS_PREFIX || janusgraphPredicate == Text.CONTAINS_FUZZY; // || janusgraphPredicate == Text.CONTAINS_REGEX;
                 case STRING:
-                    return janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL || janusgraphPredicate==Text.PREFIX || janusgraphPredicate==Text.REGEX;
+                    return janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL || janusgraphPredicate==Text.PREFIX || janusgraphPredicate==Text.REGEX  || janusgraphPredicate == Text.FUZZY;
             }
         } else if (dataType == Date.class || dataType == Instant.class) {
             if (janusgraphPredicate instanceof Cmp) return true;
