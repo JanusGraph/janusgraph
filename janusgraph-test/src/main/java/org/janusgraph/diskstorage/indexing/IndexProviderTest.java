@@ -29,6 +29,7 @@ import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.*;
+import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.testutil.RandomGenerator;
 
 import org.junit.After;
@@ -57,7 +58,8 @@ public abstract class IndexProviderTest {
     protected Map<String,KeyInformation> allKeys;
     protected KeyInformation.IndexRetriever indexRetriever;
 
-    public static final String TEXT = "text", TIME = "time", WEIGHT = "weight", LOCATION = "location", BOUNDARY = "boundary", NAME = "name", PHONE_LIST = "phone_list", PHONE_SET = "phone_set", DATE = "date";
+    public static final String TEXT = "text", TIME = "time", WEIGHT = "weight", LOCATION = "location", BOUNDARY = "boundary", NAME = "name", PHONE_LIST = "phone_list", PHONE_SET = "phone_set", DATE = "date", STRING="string",
+            ANALYZED="analyzed", FULL_TEXT="full_text", KEYWORD="keyword";
 
     public static StandardKeyInformation of(Class<?> clazz, Cardinality cardinality,  Parameter... paras) {
         return new StandardKeyInformation(clazz, cardinality, paras);
@@ -84,28 +86,38 @@ public abstract class IndexProviderTest {
         };
     }
 
-    public static final Map<String,KeyInformation> getMapping(final IndexFeatures indexFeatures) {
+    public static final Map<String,KeyInformation> getMapping(final IndexFeatures indexFeatures, final String englishAnalyzerName, final String keywordAnalyzerName) {
         Preconditions.checkArgument(indexFeatures.supportsStringMapping(Mapping.TEXTSTRING) ||
                 (indexFeatures.supportsStringMapping(Mapping.TEXT) && indexFeatures.supportsStringMapping(Mapping.STRING)),
                 "Index must support string and text mapping");
+        Parameter<?> textParameter = indexFeatures.supportsStringMapping(Mapping.TEXT) ? Mapping.TEXT.asParameter() : Mapping.TEXTSTRING.asParameter();
+        Parameter<?> stringParameter = indexFeatures.supportsStringMapping(Mapping.STRING) ? Mapping.STRING.asParameter() : Mapping.TEXTSTRING.asParameter();
         return new HashMap<String,KeyInformation>() {{
-            put(TEXT,new StandardKeyInformation(String.class, Cardinality.SINGLE, new Parameter("mapping",
-                    indexFeatures.supportsStringMapping(Mapping.TEXT)?Mapping.TEXT:Mapping.TEXTSTRING)));
+            put(TEXT,new StandardKeyInformation(String.class, Cardinality.SINGLE,textParameter));
             put(TIME,new StandardKeyInformation(Long.class, Cardinality.SINGLE));
-            put(WEIGHT,new StandardKeyInformation(Double.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.DEFAULT)));
+            put(WEIGHT,new StandardKeyInformation(Double.class, Cardinality.SINGLE, Mapping.DEFAULT.asParameter()));
             put(LOCATION,new StandardKeyInformation(Geoshape.class, Cardinality.SINGLE));
-            put(BOUNDARY,new StandardKeyInformation(Geoshape.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.PREFIX_TREE)));
-            put(NAME,new StandardKeyInformation(String.class, Cardinality.SINGLE, new Parameter("mapping",
-                    indexFeatures.supportsStringMapping(Mapping.STRING)?Mapping.STRING:Mapping.TEXTSTRING)));
+            put(BOUNDARY,new StandardKeyInformation(Geoshape.class, Cardinality.SINGLE, Mapping.PREFIX_TREE.asParameter()));
+            put(NAME,new StandardKeyInformation(String.class, Cardinality.SINGLE,stringParameter));
             if(indexFeatures.supportsCardinality(Cardinality.LIST)) {
-                put(PHONE_LIST, new StandardKeyInformation(String.class, Cardinality.LIST, new Parameter("mapping",
-                        indexFeatures.supportsStringMapping(Mapping.STRING) ? Mapping.STRING : Mapping.TEXTSTRING)));
+                put(PHONE_LIST, new StandardKeyInformation(String.class, Cardinality.LIST, stringParameter));
             }
             if(indexFeatures.supportsCardinality(Cardinality.SET)) {
-                put(PHONE_SET, new StandardKeyInformation(String.class, Cardinality.SET, new Parameter("mapping",
-                        indexFeatures.supportsStringMapping(Mapping.STRING) ? Mapping.STRING : Mapping.TEXTSTRING)));
+                put(PHONE_SET, new StandardKeyInformation(String.class, Cardinality.SET, stringParameter));
             }
             put(DATE,new StandardKeyInformation(Instant.class, Cardinality.SINGLE));
+            put(STRING, new StandardKeyInformation(String.class, Cardinality.SINGLE, stringParameter,
+                    new Parameter<String>(ParameterType.STRING_ANALYZER.getName(), englishAnalyzerName)));
+            put(ANALYZED, new StandardKeyInformation(String.class, Cardinality.SINGLE, textParameter,
+                    new Parameter<String>(ParameterType.TEXT_ANALYZER.getName(), englishAnalyzerName)));
+            if(indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)){
+                put(FULL_TEXT, new StandardKeyInformation(String.class, Cardinality.SINGLE,
+                        Mapping.TEXTSTRING.asParameter(),
+                        new Parameter<String>(ParameterType.STRING_ANALYZER.getName(), englishAnalyzerName),
+                        new Parameter<String>(ParameterType.TEXT_ANALYZER.getName(), englishAnalyzerName)));
+            }
+            put(KEYWORD, new StandardKeyInformation(String.class, Cardinality.SINGLE, textParameter,
+                    new Parameter<String>(ParameterType.TEXT_ANALYZER.getName(), keywordAnalyzerName)));
         }};
     }
 
@@ -113,6 +125,10 @@ public abstract class IndexProviderTest {
 
     public abstract boolean supportsLuceneStyleQueries();
 
+    public abstract String getEnglishAnalyzerName();
+    
+    public abstract String getKeywordAnalyzerName();
+    
     @Before
     public void setUp() throws Exception {
         index = openIndex();
@@ -124,7 +140,7 @@ public abstract class IndexProviderTest {
     public void open() throws BackendException {
         index = openIndex();
         indexFeatures = index.getFeatures();
-        allKeys = getMapping(indexFeatures);
+        allKeys = getMapping(indexFeatures, getEnglishAnalyzerName(), getKeywordAnalyzerName());
         indexRetriever = getIndexRetriever(allKeys);
 
         newTx();
@@ -872,6 +888,76 @@ public abstract class IndexProviderTest {
         checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),null);
     }
 
+    /**
+     * Test custom analyzer
+     * @throws Exception
+     */
+    @Test
+    public void testCustomAnalyzer() throws Exception {
+        if(!indexFeatures.supportsCustomAnalyser())
+            return;
+        String store = "vertex";
+        initialize(store);
+        Multimap<String, Object> initialDoc = HashMultimap.create();
+        
+        initialDoc.put(STRING, "Tom and Jerry");
+        initialDoc.put(ANALYZED, "Tom and Jerry");
+        if(indexFeatures.supportsStringMapping(Mapping.TEXTSTRING))
+            initialDoc.put(FULL_TEXT, "Tom and Jerry");
+        initialDoc.put(KEYWORD, "Tom and Jerry");
+        add(store, "docId", initialDoc, true);
+        clopen();
+
+        IndexQuery query = new IndexQuery(store, PredicateCondition.of(STRING, Cmp.EQUAL, "Tom and Jerry"));
+        assertEquals(query.toString(), 1, tx.query(query).size());
+        query = new IndexQuery(store, PredicateCondition.of(STRING, Cmp.EQUAL, "Tom Jerry"));
+        assertEquals(query.toString(), 1, tx.query(query).size());
+        query = new IndexQuery(store, PredicateCondition.of(STRING, Cmp.EQUAL, "Tom or Jerry"));
+        assertEquals(query.toString(), 1, tx.query(query).size());
+        query = new IndexQuery(store, PredicateCondition.of(STRING, Text.PREFIX, "jerr"));
+        assertEquals(query.toString(), 1, tx.query(query).size());
+        query = new IndexQuery(store, PredicateCondition.of(STRING, Text.REGEX, "jer.*"));
+        assertEquals(query.toString(), 1, tx.query(query).size());
+        query = new IndexQuery(store, PredicateCondition.of(ANALYZED, Text.CONTAINS, "Tom and Jerry"));
+        assertEquals(query.toString(), 1, tx.query(query).size());
+        query = new IndexQuery(store, PredicateCondition.of(ANALYZED, Text.CONTAINS, "Tom Jerry"));
+        assertEquals(query.toString(), 1, tx.query(query).size());
+        query = new IndexQuery(store, PredicateCondition.of(ANALYZED, Text.CONTAINS, "Tom or Jerry"));
+        assertEquals(query.toString(), 1, tx.query(query).size());
+        query = new IndexQuery(store, PredicateCondition.of(ANALYZED, Text.CONTAINS_PREFIX, "jerr"));
+        assertEquals(query.toString(), 1, tx.query(query).size());
+        query = new IndexQuery(store, PredicateCondition.of(ANALYZED, Text.CONTAINS_REGEX, "jer.*"));
+        assertEquals(query.toString(), 1, tx.query(query).size());
+        if(indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)){
+            query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.EQUAL, "Tom and Jerry"));
+            assertEquals(query.toString(), 1, tx.query(query).size());
+            query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.EQUAL, "Tom Jerry"));
+            assertEquals(query.toString(), 1, tx.query(query).size());
+            query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.EQUAL, "Tom or Jerry"));
+            assertEquals(query.toString(), 1, tx.query(query).size());
+            query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Text.PREFIX, "jerr"));
+            assertEquals(query.toString(), 1, tx.query(query).size());
+            query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Text.REGEX, "jer.*"));
+            assertEquals(query.toString(), 1, tx.query(query).size());
+            query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Text.CONTAINS, "Tom and Jerry"));
+            assertEquals(query.toString(), 1, tx.query(query).size());
+            query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Text.CONTAINS, "Tom Jerry"));
+            assertEquals(query.toString(), 1, tx.query(query).size());
+            query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Text.CONTAINS, "Tom or Jerry"));
+            assertEquals(query.toString(), 1, tx.query(query).size());
+            query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Text.CONTAINS_PREFIX, "jerr"));
+            assertEquals(query.toString(), 1, tx.query(query).size());
+            query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Text.CONTAINS_REGEX, "jer.*"));
+            assertEquals(query.toString(), 1, tx.query(query).size());
+        }
+
+        query = new IndexQuery(store, PredicateCondition.of(KEYWORD, Text.CONTAINS_PREFIX, "Tom"));
+        assertEquals(query.toString(), 1, tx.query(query).size());
+        query = new IndexQuery(store, PredicateCondition.of(KEYWORD, Text.CONTAINS_REGEX, ".*Jer.*"));
+        assertEquals(query.toString(), 1, tx.query(query).size());
+
+    }
+    
     /* ==================================================================================
                             HELPER METHODS
      ==================================================================================*/

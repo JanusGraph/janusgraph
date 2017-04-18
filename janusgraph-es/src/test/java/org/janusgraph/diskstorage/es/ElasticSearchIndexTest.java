@@ -17,6 +17,7 @@ package org.janusgraph.diskstorage.es;
 import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+
 import org.apache.commons.lang.RandomStringUtils;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphException;
@@ -73,6 +74,16 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
     @Override
     public boolean supportsLuceneStyleQueries() {
         return true;
+    }
+
+    @Override
+    public String getEnglishAnalyzerName() {
+        return "english";
+    }
+    
+    @Override
+    public String getKeywordAnalyzerName() {
+        return "keyword";
     }
 
     public Configuration getESTestConfig() {
@@ -192,5 +203,4 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         assertEquals(0, tx.query(new IndexQuery("vertex", PredicateCondition.of(TEXT, Text.CONTAINS, "bob"))).size());
         assertEquals(1, tx.query(new IndexQuery("vertex", PredicateCondition.of(TEXT, Text.CONTAINS, "world"))).size());
     }
-
 }

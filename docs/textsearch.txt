@@ -129,3 +129,38 @@ Instead of individually adjusting the field mapping for every key added to a mix
 However, this approach has two limitations: 1) The user has to ensure that the property key names are valid field names for the indexing backend and 2) renaming the property key will NOT rename the field name in the index which can lead to naming collisions that the user has to be aware of and avoid.
 
 Note, that individual field mappings as described above can be used to overwrite the default name for a particular key.
+
+
+==== Custom Analyser
+
+By default, JanusGraph will use the default analyzer from the indexing backend for properties with Mapping.TEXT, and no analyzer for properties with Mapping.STRING. If one wants to use another analyzer, it can be explicitly specified through a parameter : ParameterType.TEXT_ANALYZER for Mapping.TEXT and ParameterType.STRING_ANALYZER for Mapping.STRING.
+
+===== For Elasticsearch
+
+The name of the analyzer must be set as parameter value.
+
+[source, gremlin]
+mgmt = graph.openManagement()
+string = mgmt.makePropertyKey('string').dataType(String.class).make()
+text = mgmt.makePropertyKey('text').dataType(String.class).make()
+textString = mgmt.makePropertyKey('textString').dataType(String.class).make()
+mgmt.buildIndex('string', Vertex.class).addKey(string, Mapping.STRING.asParameter(), Parameter.of(ParameterType.STRING_ANALYZER.getName(), 'standard')).buildMixedIndex("search")
+mgmt.buildIndex('text', Vertex.class).addKey(text, Mapping.TEXT.asParameter(), Parameter.of(ParameterType.TEXT_ANALYZER.getName(), 'english')).buildMixedIndex("search")
+mgmt.buildIndex('textString', Vertex.class).addKey(text, Mapping.TEXTSTRING.asParameter(), Parameter.of(ParameterType.STRING_ANALYZER.getName(), 'standard'), Parameter.of(ParameterType.TEXT_ANALYZER.getName(), 'english')).buildMixedIndex("search")
+mgmt.commit()
+
+With these settings, JanusGraph will use the 'standard' analyzer for property key 'string' and the 'english' analyzer for property key 'text'. 
+
+===== For Solr
+
+The class of the tokenizer must be set as parameter value.
+
+[source, gremlin]
+mgmt = graph.openManagement()
+string = mgmt.makePropertyKey('string').dataType(String.class).make()
+text = mgmt.makePropertyKey('text').dataType(String.class).make()
+mgmt.buildIndex('string', Vertex.class).addKey(string, Mapping.STRING.asParameter(), Parameter.of(ParameterType.STRING_ANALYZER.getName(), 'org.apache.lucene.analysis.standard.StandardTokenizer')).buildMixedIndex("search")
+mgmt.buildIndex('text', Vertex.class).addKey(text, Mapping.TEXT.asParameter(), Parameter.of(ParameterType.TEXT_ANALYZER.getName(), 'org.apache.lucene.analysis.core.WhitespaceTokenizer')).buildMixedIndex("search")
+mgmt.commit()
+
+With these settings, JanusGraph will use the 'standard' tokenizer for property key 'string' and the 'whitespace' tokenizer for property key 'text'.
