@@ -105,7 +105,7 @@ Note that some indexing backends (e.g. Solr) may require additional external sch
 == Field Mapping
 
 [[index-local-field-mapping]]
-==== Individual Field Mapping
+=== Individual Field Mapping
 
 By default, JanusGraph will encode property keys to generate a unique field name for the property key in the mixed index. If one wants to query the mixed index directly in the external index backend can be difficult to deal with and are illegible. For this use case, the field name can be explicitly specified through a parameter.
 
@@ -118,7 +118,7 @@ mgmt.commit()
 With this field mapping defined as a parameter, JanusGraph will use the same name for the field in the `booksBySummary` index created in the external index system as for the property key. Note, that it must be ensured that the given field name is unique in the index.
 
 [[index-global-field-mapping]]
-==== Global Field Mapping
+=== Global Field Mapping
 
 Instead of individually adjusting the field mapping for every key added to a mixed index, one can instruct JanusGraph to always set the field name in the external index to be identical to the property key name. This is accomplished by enabling the configuration option `map-name` which is configured per indexing backend. If this option is enabled for a particular indexing backend, then all mixed indexes defined against said backend will use field names identical to the property key names.
 
