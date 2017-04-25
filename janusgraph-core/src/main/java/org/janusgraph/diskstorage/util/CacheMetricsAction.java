@@ -19,7 +19,7 @@ package org.janusgraph.diskstorage.util;
 */
 public enum CacheMetricsAction {
 
-    RETRIEVAL("retrievals"), MISS("misses"), EXPIRE("expire");
+    RETRIEVAL("retrievals"), MISS("misses"), EXPIRE("expire"), HIT("hits");
 
     private final String name;
 
