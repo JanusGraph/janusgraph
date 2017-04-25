@@ -157,6 +157,15 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     }
 
     @Override
+    public Map getMapping(String indexName, String typeName) throws IOException{
+        Response response = performRequest("GET", "/" + indexName.toLowerCase() + "/_mapping/"+typeName, null);
+        try (final InputStream inputStream = response.getEntity().getContent()) {
+            Map<String, RestIndexMappings> settings = mapper.readValue(inputStream, new TypeReference<Map<String, RestIndexMappings>>() {});
+            return settings.get(indexName).getMappings().get(typeName).getProperties();
+        }
+    }
+
+    @Override
     public void deleteIndex(String indexName) throws IOException {
         try {
             performRequest("DELETE", "/" + indexName, null);

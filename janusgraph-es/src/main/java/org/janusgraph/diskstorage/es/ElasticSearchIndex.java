@@ -150,7 +150,7 @@ public class ElasticSearchIndex implements IndexProvider {
     public static final ConfigOption<String> BULK_REFRESH =
             new ConfigOption<String>(ELASTICSEARCH_NS, "bulk-refresh",
             "Elasticsearch bulk API refresh setting used to control when changes made by this request are made " +
-                "visible to search", ConfigOption.Type.MASKABLE, "false");
+            "visible to search", ConfigOption.Type.MASKABLE, "false");
 
     public static final ConfigNamespace ES_EXTRAS_NS =
             new ConfigNamespace(ELASTICSEARCH_NS, "ext", "Overrides for arbitrary elasticsearch.yaml settings", true);
@@ -167,6 +167,10 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public static final ConfigNamespace ES_CREATE_EXTRAS_NS =
             new ConfigNamespace(ES_CREATE_NS, "ext", "Overrides for arbitrary settings applied at index creation", true);
+
+    public static final ConfigOption<Boolean> USE_EXTERNAL_MAPPINGS =
+            new ConfigOption<Boolean>(ES_CREATE_NS, "use-external-mappings",
+            "Whether JanusGraph should make use of an external mapping when registering an index.", ConfigOption.Type.MASKABLE, false);
 
     private static final IndexFeatures ES_FEATURES = new IndexFeatures.Builder()
             .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.TEXTSTRING, Mapping.STRING).setWildcardField("_all").supportsCardinality(Cardinality.SINGLE).supportsCardinality(Cardinality.LIST).supportsCardinality(Cardinality.SET).supportsNanoseconds().supportsCustomAnalyzer().build();
@@ -189,9 +193,11 @@ public class ElasticSearchIndex implements IndexProvider {
     private final String indexName;
     private final int maxResultsSize;
     private final String scriptLang;
+    private final boolean useExternalMappings;
 
     public ElasticSearchIndex(Configuration config) throws BackendException {
         indexName = config.get(INDEX_NAME);
+        useExternalMappings = config.get(USE_EXTERNAL_MAPPINGS);
 
         checkExpectedClientVersion();
 
@@ -227,8 +233,8 @@ public class ElasticSearchIndex implements IndexProvider {
     private void checkForOrCreateIndex(Configuration config) throws IOException {
         Preconditions.checkState(null != client);
 
-        //Create index if it does not already exist
-        if (!client.indexExists(indexName)) {
+        //Create index if it does not useExternalMappings and if it does not already exist
+        if (!useExternalMappings && !client.indexExists(indexName)) {
 
             Settings.Builder settings = Settings.builder();
 
@@ -243,8 +249,8 @@ public class ElasticSearchIndex implements IndexProvider {
             } catch (InterruptedException e) {
                 throw new JanusGraphException("Interrupted while waiting for index to settle in", e);
             }
-            if (!client.indexExists(indexName)) throw new IllegalArgumentException("Could not create index: " + indexName);
         }
+        if (!client.indexExists(indexName)) throw new IllegalArgumentException("Could not create index: " + indexName);
     }
 
 
@@ -286,13 +292,37 @@ public class ElasticSearchIndex implements IndexProvider {
 
     @Override
     public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws BackendException {
-        XContentBuilder mapping;
         Class<?> dataType = information.getDataType();
         Mapping map = Mapping.getMapping(information);
         Preconditions.checkArgument(map==Mapping.DEFAULT || AttributeUtil.isString(dataType) ||
                 (map==Mapping.PREFIX_TREE && AttributeUtil.isGeo(dataType)),
                 "Specified illegal mapping [%s] for data type [%s]",map,dataType);
 
+        if (useExternalMappings) {
+            try {
+                //We check if the externalMapping have the property 'key'
+                Map mappings = client.getMapping(indexName, store);
+                if (!mappings.containsKey(key)) {
+                    throw new PermanentBackendException("The external mapping for index '"+indexName+"' and type '"+store+"' do not have property '"+key+"'");
+                }
+            } catch (IOException e) {
+                throw new PermanentBackendException(e);
+            }
+        } else {
+            this.pushMapping(store, key, information);
+        }
+    }
+
+    /**
+     * Push mapping to ElasticSearch
+     * @param store the type in the index
+     * @param key the name of the property in the index
+     * @param information information of the key
+     */
+    private void pushMapping(String store, String key, KeyInformation information) throws AssertionError, PermanentBackendException, BackendException {
+        Class<?> dataType = information.getDataType();
+        Mapping map = Mapping.getMapping(information);
+        XContentBuilder mapping;
         try {
             mapping = XContentFactory.jsonBuilder().
                     startObject().
@@ -317,7 +347,7 @@ public class ElasticSearchIndex implements IndexProvider {
                         if (textAnalyzer != null) {
                             mapping.field(ANALYZER, textAnalyzer);
                         }
-                    	break;
+                        break;
                     case TEXTSTRING:
                         if (textAnalyzer != null) {
                             mapping.field(ANALYZER, textAnalyzer);

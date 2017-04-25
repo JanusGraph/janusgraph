@@ -36,6 +36,8 @@ public interface ElasticSearchClient extends Closeable {
 
     void createMapping(String indexName, String typeName, XContentBuilder mapping) throws IOException;
 
+    Map getMapping(String indexName, String typeName) throws IOException;
+
     void deleteIndex(String indexName) throws IOException;
 
     void bulkRequest(List<ElasticSearchMutation> requests) throws IOException;
