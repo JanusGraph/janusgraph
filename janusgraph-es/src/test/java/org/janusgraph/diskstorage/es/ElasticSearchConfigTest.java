@@ -31,12 +31,29 @@ import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpHost;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.base.Joiner;
+
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.charset.Charset;
 import java.time.Duration;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
@@ -50,20 +67,37 @@ public class ElasticSearchConfigTest {
 
     private static final String INDEX_NAME = "escfg";
 
+    private static final String ANALYZER_KEYWORD = "keyword";
+
+    private static final String ANALYZER_ENGLISH = "english";
+
+    private static final String ANALYZER_STANDARD = "standard";
+
     private ElasticsearchRunner esr;
 
     private int port;
+
+    private HttpHost host;
+
+    private CloseableHttpClient httpClient;
 
     @Before
     public void setup() throws Exception {
         esr = new ElasticsearchRunner();
         esr.start();
         port = getInterface() == ElasticSearchSetup.REST_CLIENT ? 9200 : 9300;
+        httpClient = HttpClients.createDefault();
+        try {
+            host = new HttpHost(InetAddress.getByName("127.0.0.1"), 9200);
+        } catch (UnknownHostException e) {
+            fail(e.getMessage());
+        }
     }
 
     @After
     public void teardown() throws Exception {
         esr.stop();
+        IOUtils.closeQuietly(httpClient);
     }
 
     public ElasticSearchSetup getInterface() {
@@ -128,11 +162,96 @@ public class ElasticSearchConfigTest {
         client.close();
     }
 
+    @Test
+    public void testExternalMappingsViaMapping() throws BackendException {
+        final Duration maxWrite = Duration.ofMillis(2000L);
+        final String storeName = "test_mapping";
+        CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
+        ModifiableConfiguration config = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, cc,
+                BasicConfiguration.Restriction.NONE);
+        config.set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME);
+        Configuration indexConfig = config.restrictTo(INDEX_NAME);
+        FileInputStream fis = null;
+        try {
+            //Test create index KO mapping is not push
+            try {
+                new ElasticSearchIndex(indexConfig);
+                fail("should failed");
+            } catch (IllegalArgumentException e) {
+            }
+            HttpPut newMapping = new HttpPut("janusgraph");
+            fis = new FileInputStream(new File("src/test/resources/mapping.json"));
+            newMapping.setEntity(new StringEntity(Joiner.on("").join(IOUtils.readLines(fis)), Charset.forName("UTF-8")));
+            executeRequest(newMapping);
+
+            IndexProvider idx = new ElasticSearchIndex(indexConfig);
+            final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest
+                    .getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD));
+            BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
+            IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
+
+            // Test date property OK
+            idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
+            // Test weight property KO
+            try {
+                idx.register(storeName, "weight", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("weight"), itx);
+                fail("should failed");
+            } catch (BackendException e) {
+            }
+        } catch (IOException e) {
+            fail(e.getMessage());
+        } finally {
+            IOUtils.closeQuietly(fis);
+        }
+    }
+
+    @Test
+    public void testExternalMappingsViaTemplate() throws BackendException {
+        FileInputStream fis = null;
+        try {
+            HttpPut newTemplate = new HttpPut("_template/template_1");
+            fis = new FileInputStream(new File("src/test/resources/template.json"));
+            newTemplate.setEntity(new StringEntity(Joiner.on("").join(IOUtils.readLines(fis)), Charset.forName("UTF-8")));
+            executeRequest(newTemplate);
+            HttpPut newMapping = new HttpPut("janusgraph");
+            executeRequest(newMapping);
+            final Duration maxWrite = Duration.ofMillis(2000L);
+            final String storeName = "test_mapping";
+            CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
+            ModifiableConfiguration config = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, cc,
+                    BasicConfiguration.Restriction.NONE);
+            config.set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME);
+            Configuration indexConfig = config.restrictTo(INDEX_NAME);
+            IndexProvider idx = new ElasticSearchIndex(indexConfig);
+            final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest
+                    .getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD));
+            BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
+            IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
+            // Test date property OK
+            idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
+            // Test weight property KO
+            try {
+                idx.register(storeName, "weight", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("weight"), itx);
+                fail("should failed");
+            } catch (BackendException e) {
+            }
+        } catch (IOException e) {
+            fail(e.getMessage());
+        } finally {
+            IOUtils.closeQuietly(fis);
+            try {
+                executeRequest(new HttpDelete("_template/template_1"));
+            } catch (IOException e) {
+                fail(e.getMessage());
+            }
+        }
+    }
+
     private void simpleWriteAndQuery(IndexProvider idx) throws BackendException, InterruptedException {
 
         final Duration maxWrite = Duration.ofMillis(2000L);
         final String storeName = "jvmlocal_test_store";
-        final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest.getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), "standard", "keyword"));
+        final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest.getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_STANDARD, ANALYZER_KEYWORD));
 
         BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
         IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
@@ -144,5 +263,17 @@ public class ElasticSearchConfigTest {
         assertEquals(0, itx.query(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "zed"))).size());
         assertEquals(1, itx.query(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "ali"))).size());
         itx.rollback();
+    }
+
+    private void executeRequest(HttpRequestBase request) throws IOException {
+        CloseableHttpResponse res = null;
+        try {
+            res = httpClient.execute(host, request);
+            assertTrue(res.getStatusLine().getStatusCode() >= 200);
+            assertTrue(res.getStatusLine().getStatusCode() < 300);
+            assertFalse(EntityUtils.toString(res.getEntity()).contains("error"));
+        } finally {
+            IOUtils.closeQuietly(res);
+        }
     }
 }
