@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
  */
 public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
 
-    private static final String DEFAULT_HOME_DIR = ".";
+    private static final String DEFAULT_HOME_DIR = System.getProperty("user.dir");
 
     private final String homedir;
 
