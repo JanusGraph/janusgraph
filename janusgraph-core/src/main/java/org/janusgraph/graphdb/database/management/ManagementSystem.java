@@ -106,6 +106,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -140,7 +142,7 @@ public class ManagementSystem implements JanusGraphManagement {
     private final StandardJanusGraphTx transaction;
 
     private final Set<JanusGraphSchemaVertex> updatedTypes;
-    private final Set<Callable<Boolean>> updatedTypeTriggers;
+    private final List<Callable<Boolean>> updatedTypeTriggers;
 
     private final Instant txStartTime;
     private boolean graphShutdownRequired;
@@ -160,7 +162,7 @@ public class ManagementSystem implements JanusGraphManagement {
         this.userConfig = new UserModifiableConfiguration(modifyConfig, configVerifier);
 
         this.updatedTypes = new HashSet<JanusGraphSchemaVertex>();
-        this.updatedTypeTriggers = new HashSet<Callable<Boolean>>();
+        this.updatedTypeTriggers = new ArrayList<Callable<Boolean>>();
         this.graphShutdownRequired = false;
 
         this.transaction = (StandardJanusGraphTx) graph.buildTransaction().disableBatchLoading().start();
@@ -870,8 +872,6 @@ public class ManagementSystem implements JanusGraphManagement {
     }
 
     private void setUpdateTrigger(Callable<Boolean> trigger) {
-        //Make sure the most current is the one set
-        if (updatedTypeTriggers.contains(trigger)) updatedTypeTriggers.remove(trigger);
         updatedTypeTriggers.add(trigger);
     }
 
