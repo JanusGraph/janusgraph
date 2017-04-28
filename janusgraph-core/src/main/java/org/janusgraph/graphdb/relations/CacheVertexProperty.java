@@ -133,7 +133,7 @@ public class CacheVertexProperty extends AbstractVertexProperty {
 
     @Override
     public void remove() {
-        if (!tx().isRemovedRelation(super.longId())) {
+        if (!tx().isRemovedRelation(super.longId()) && !tx().getConfiguration().isReadOnly()) {
             tx().removeRelation(this);
         }// else throw InvalidElementException.removedException(this);
     }
