@@ -15,6 +15,7 @@
 package org.janusgraph.diskstorage.keycolumnvalue;
 
 import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 
 /**
@@ -181,7 +182,7 @@ public interface StoreFeatures {
      *
      * Backends which don't support the notion of "local" strong consistency may
      * return the same configuration returned by
-     * {@link #getKeyConsistencyTxConfig()}.
+     * {@link #getKeyConsistentTxConfig()}.
      *
      * @return a locally (or globally) key-consistent tx config
      */
@@ -213,4 +214,5 @@ public interface StoreFeatures {
      * @return
      */
     boolean hasOptimisticLocking();
+
 }

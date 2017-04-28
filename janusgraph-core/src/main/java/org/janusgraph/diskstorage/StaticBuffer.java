@@ -27,76 +27,62 @@ import java.util.Arrays;
  */
 public interface StaticBuffer extends Comparable<StaticBuffer> {
 
-    public int length();
+    int length();
 
-    public byte getByte(int position);
+    byte getByte(int position);
 
-    public boolean getBoolean(int position);
+    boolean getBoolean(int position);
 
-    public short getShort(int position);
+    short getShort(int position);
 
-    public int getInt(int position);
+    int getInt(int position);
 
-    public long getLong(int position);
+    long getLong(int position);
 
-    public char getChar(int position);
+    char getChar(int position);
 
-    public float getFloat(int position);
+    float getFloat(int position);
 
-    public double getDouble(int position);
+    double getDouble(int position);
 
-    public byte[] getBytes(int position, int length);
+    byte[] getBytes(int position, int length);
 
-    public short[] getShorts(int position, int length);
+    short[] getShorts(int position, int length);
 
-    public int[] getInts(int position, int length);
+    int[] getInts(int position, int length);
 
-    public long[] getLongs(int position, int length);
+    long[] getLongs(int position, int length);
 
-    public char[] getChars(int position, int length);
+    char[] getChars(int position, int length);
 
-    public float[] getFloats(int position, int length);
+    float[] getFloats(int position, int length);
 
-    public double[] getDoubles(int position, int length);
+    double[] getDoubles(int position, int length);
 
-    public StaticBuffer subrange(int position, int length);
+    StaticBuffer subrange(int position, int length);
 
-    public StaticBuffer subrange(int position, int length, boolean invert);
+    StaticBuffer subrange(int position, int length, boolean invert);
 
-    public ReadBuffer asReadBuffer();
+    ReadBuffer asReadBuffer();
 
-    public<T> T as(Factory<T> factory);
+    <T> T as(Factory<T> factory);
 
     //Convenience method
-    public ByteBuffer asByteBuffer();
+    ByteBuffer asByteBuffer();
 
-    public interface Factory<T> {
+    interface Factory<T> {
 
-        public T get(byte[] array, int offset, int limit);
+        T get(byte[] array, int offset, int limit);
 
     }
 
-    public static final Factory<byte[]> ARRAY_FACTORY = new Factory<byte[]>() {
-        @Override
-        public byte[] get(byte[] array, int offset, int limit) {
-            if (offset==0 && limit==array.length) return array;
-            else return Arrays.copyOfRange(array,offset,limit);
-        }
-
+    Factory<byte[]> ARRAY_FACTORY = (array, offset, limit) -> {
+        if (offset==0 && limit==array.length) return array;
+        else return Arrays.copyOfRange(array,offset,limit);
     };
 
-    public static final Factory<ByteBuffer> BB_FACTORY = new Factory<ByteBuffer>() {
-        @Override
-        public ByteBuffer get(byte[] array, int offset, int limit) {
-            return ByteBuffer.wrap(array, offset, limit - offset);
-        }
-    };
+    Factory<ByteBuffer> BB_FACTORY = (array, offset, limit) -> ByteBuffer.wrap(array, offset, limit - offset);
 
-    public static final Factory<StaticBuffer> STATIC_FACTORY = new Factory<StaticBuffer>() {
-        @Override
-        public StaticBuffer get(byte[] array, int offset, int limit) {
-            return new StaticArrayBuffer(array, offset, limit);
-        }
-    };
+    Factory<StaticBuffer> STATIC_FACTORY = (array, offset, limit) -> new StaticArrayBuffer(array, offset, limit);
 
 }
