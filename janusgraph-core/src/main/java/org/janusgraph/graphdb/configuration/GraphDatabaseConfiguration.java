@@ -709,7 +709,7 @@ public class GraphDatabaseConfiguration {
      * fraction of the id pool occupied and potentially lost. For write heavy applications, larger block sizes should
      * be chosen.
      */
-    public static final ConfigOption<Integer> IDS_BLOCK_SIZE = new ConfigOption<Integer>(IDS_NS,"block-size",
+    public static final ConfigOption<Integer> IDS_BLOCK_SIZE = new ConfigOption<>(IDS_NS,"block-size",
             "Globally reserve graph element IDs in chunks of this size.  Setting this too low will make commits " +
             "frequently block on slow reservation requests.  Setting it too high will result in IDs wasted when a " +
             "graph instance shuts down with reserved but mostly-unused blocks.",
@@ -718,10 +718,20 @@ public class GraphDatabaseConfiguration {
 //    public static final int IDS_BLOCK_SIZE_DEFAULT = 10000;
 
     /**
+     * The name of the ID store. Currently this defaults to janusgraph_ids. You can override the ID store to
+     * facilitate migration from JanusGraph's predecessor, Titan. Previously, this KCVStore was named titan_ids.
+     */
+    public static final ConfigOption<String> IDS_STORE_NAME = new ConfigOption<>(IDS_NS, "store-name",
+        "The name of the ID KCVStore. IDS_STORE_NAME is meant to be used only for backward compatibility with Titan, " +
+            "and should not be used explicitly in normal operations or in new graphs.",
+        ConfigOption.Type.GLOBAL_OFFLINE, "janusgraph_ids");
+
+
+    /**
      * If flush ids is enabled, vertices and edges are assigned ids immediately upon creation. If not, then ids are only
      * assigned when the transaction is committed.
      */
-    public static final ConfigOption<Boolean> IDS_FLUSH = new ConfigOption<Boolean>(IDS_NS,"flush",
+    public static final ConfigOption<Boolean> IDS_FLUSH = new ConfigOption<>(IDS_NS,"flush",
             "When true, vertices and edges are assigned IDs immediately upon creation.  When false, " +
             "IDs are assigned only when the transaction commits. Must be disabled for graph partitioning to work.",
             ConfigOption.Type.MASKABLE, true);
@@ -744,7 +754,7 @@ public class GraphDatabaseConfiguration {
      * of the current block is consumed, a new block will be allocated. Larger values should be used if a lot of ids
      * are allocated in a short amount of time. Value must be in (0,1].
      */
-    public static final ConfigOption<Double> IDS_RENEW_BUFFER_PERCENTAGE = new ConfigOption<Double>(IDS_NS,"renew-percentage",
+    public static final ConfigOption<Double> IDS_RENEW_BUFFER_PERCENTAGE = new ConfigOption<>(IDS_NS,"renew-percentage",
             "When the most-recently-reserved ID block has only this percentage of its total IDs remaining " +
             "(expressed as a value between 0 and 1), JanusGraph asynchronously begins reserving another block. " +
             "This helps avoid transaction commits waiting on ID reservation even if the block size is relatively small.",

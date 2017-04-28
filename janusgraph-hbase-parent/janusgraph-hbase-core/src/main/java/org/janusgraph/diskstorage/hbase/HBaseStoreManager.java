@@ -15,11 +15,11 @@
 package org.janusgraph.diskstorage.hbase;
 
 import static org.janusgraph.diskstorage.Backend.EDGESTORE_NAME;
-import static org.janusgraph.diskstorage.Backend.ID_STORE_NAME;
 import static org.janusgraph.diskstorage.Backend.INDEXSTORE_NAME;
 import static org.janusgraph.diskstorage.Backend.LOCK_STORE_SUFFIX;
 import static org.janusgraph.diskstorage.Backend.SYSTEM_MGMT_LOG_NAME;
 import static org.janusgraph.diskstorage.Backend.SYSTEM_TX_LOG_NAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_STORE_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME;
 
 import java.io.IOException;
@@ -106,21 +106,21 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             new ConfigNamespace(GraphDatabaseConfiguration.STORAGE_NS, "hbase", "HBase storage options");
 
     public static final ConfigOption<Boolean> SHORT_CF_NAMES =
-            new ConfigOption<Boolean>(HBASE_NS, "short-cf-names",
+            new ConfigOption<>(HBASE_NS, "short-cf-names",
             "Whether to shorten the names of JanusGraph's column families to one-character mnemonics " +
             "to conserve storage space", ConfigOption.Type.FIXED, true);
 
     public static final String COMPRESSION_DEFAULT = "-DEFAULT-";
 
     public static final ConfigOption<String> COMPRESSION =
-            new ConfigOption<String>(HBASE_NS, "compression-algorithm",
+            new ConfigOption<>(HBASE_NS, "compression-algorithm",
             "An HBase Compression.Algorithm enum string which will be applied to newly created column families. " +
             "The compression algorithm must be installed and available on the HBase cluster.  JanusGraph cannot install " +
             "and configure new compression algorithms on the HBase cluster by itself.",
             ConfigOption.Type.MASKABLE, "GZ");
 
     public static final ConfigOption<Boolean> SKIP_SCHEMA_CHECK =
-            new ConfigOption<Boolean>(HBASE_NS, "skip-schema-check",
+            new ConfigOption<>(HBASE_NS, "skip-schema-check",
             "Assume that JanusGraph's HBase table and column families already exist. " +
             "When this is true, JanusGraph will not check for the existence of its table/CFs, " +
             "nor will it attempt to create them under any circumstances.  This is useful " +
@@ -128,7 +128,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             ConfigOption.Type.MASKABLE, false);
 
     public static final ConfigOption<String> HBASE_TABLE =
-            new ConfigOption<String>(HBASE_NS, "table",
+            new ConfigOption<>(HBASE_NS, "table",
             "The name of the table JanusGraph will use.  When " + ConfigElement.getPath(SKIP_SCHEMA_CHECK) +
             " is false, JanusGraph will automatically create this table if it does not already exist.",
             ConfigOption.Type.LOCAL, "janusgraph");
@@ -148,13 +148,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     public static final ConfigOption<Integer> REGION_COUNT =
             new ConfigOption<Integer>(HBASE_NS, "region-count",
             "The number of initial regions set when creating JanusGraph's HBase table",
-            ConfigOption.Type.MASKABLE, Integer.class, new Predicate<Integer>() {
-                @Override
-                public boolean apply(Integer input) {
-                    return null != input && MIN_REGION_COUNT <= input;
-                }
-            }
-    );
+            ConfigOption.Type.MASKABLE, Integer.class, input -> null != input && MIN_REGION_COUNT <= input);
 
     /**
      * This setting is used only when {@link #REGION_COUNT} is unset.
@@ -190,7 +184,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      * These considerations may differ for other HBase implementations (e.g. MapR).
      */
     public static final ConfigOption<Integer> REGIONS_PER_SERVER =
-            new ConfigOption<Integer>(HBASE_NS, "regions-per-server",
+            new ConfigOption<>(HBASE_NS, "regions-per-server",
             "The number of regions per regionserver to set when creating JanusGraph's HBase table",
             ConfigOption.Type.MASKABLE, Integer.class);
 
@@ -224,7 +218,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      *
      */
     public static final ConfigOption<String> COMPAT_CLASS =
-            new ConfigOption<String>(HBASE_NS, "compat-class",
+            new ConfigOption<>(HBASE_NS, "compat-class",
             "The package and class name of the HBaseCompat implementation. HBaseCompat masks version-specific HBase API differences. " +
             "When this option is unset, JanusGraph calls HBase's VersionInfo.getVersion() and loads the matching compat class " +
             "at runtime.  Setting this option forces JanusGraph to instead reflectively load and instantiate the specified class.",
@@ -237,30 +231,10 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     public static final ConfigNamespace HBASE_CONFIGURATION_NAMESPACE =
             new ConfigNamespace(HBASE_NS, "ext", "Overrides for hbase-{site,default}.xml options", true);
 
-    private static final BiMap<String, String> SHORT_CF_NAME_MAP =
-            ImmutableBiMap.<String, String>builder()
-                    .put(INDEXSTORE_NAME, "g")
-                    .put(INDEXSTORE_NAME + LOCK_STORE_SUFFIX, "h")
-                    .put(ID_STORE_NAME, "i")
-                    .put(EDGESTORE_NAME, "e")
-                    .put(EDGESTORE_NAME + LOCK_STORE_SUFFIX, "f")
-                    .put(SYSTEM_PROPERTIES_STORE_NAME, "s")
-                    .put(SYSTEM_PROPERTIES_STORE_NAME + LOCK_STORE_SUFFIX, "t")
-                    .put(SYSTEM_MGMT_LOG_NAME, "m")
-                    .put(SYSTEM_TX_LOG_NAME, "l")
-                    .build();
-
     private static final StaticBuffer FOUR_ZERO_BYTES = BufferUtil.zeroBuffer(4);
 
-    static {
-        // Verify that shortCfNameMap is injective
-        // Should be guaranteed by Guava BiMap, but it doesn't hurt to check
-        Preconditions.checkArgument(null != SHORT_CF_NAME_MAP);
-        Collection<String> shorts = SHORT_CF_NAME_MAP.values();
-        Preconditions.checkArgument(Sets.newHashSet(shorts).size() == shorts.size());
-    }
-
     // Immutable instance fields
+    private final BiMap<String, String> shortCfNameMap;
     private final String tableName;
     private final String compression;
     private final int regionCount;
@@ -274,14 +248,19 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     // Cached return value of getDeployment() as requesting it can be expensive.
     private Deployment deployment = null;
 
-    private static final ConcurrentHashMap<HBaseStoreManager, Throwable> openManagers =
-            new ConcurrentHashMap<HBaseStoreManager, Throwable>();
+    private static final ConcurrentHashMap<HBaseStoreManager, Throwable> openManagers = new ConcurrentHashMap<>();
 
     // Mutable instance state
     private final ConcurrentMap<String, HBaseKeyColumnValueStore> openStores;
 
     public HBaseStoreManager(org.janusgraph.diskstorage.configuration.Configuration config) throws BackendException {
         super(config, PORT_DEFAULT);
+
+        shortCfNameMap = createShortCfMap(config);
+
+        Preconditions.checkArgument(null != shortCfNameMap);
+        Collection<String> shorts = shortCfNameMap.values();
+        Preconditions.checkArgument(Sets.newHashSet(shorts).size() == shorts.size());
 
         checkConfigDeprecation(config);
 
@@ -349,7 +328,21 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
         logger.debug("End of HBase config key=value pairs");
 
-        openStores = new ConcurrentHashMap<String, HBaseKeyColumnValueStore>();
+        openStores = new ConcurrentHashMap<>();
+    }
+
+    public static BiMap<String, String> createShortCfMap(Configuration config) {
+        return ImmutableBiMap.<String, String>builder()
+                .put(INDEXSTORE_NAME, "g")
+                .put(INDEXSTORE_NAME + LOCK_STORE_SUFFIX, "h")
+                .put(config.get(IDS_STORE_NAME), "i")
+                .put(EDGESTORE_NAME, "e")
+                .put(EDGESTORE_NAME + LOCK_STORE_SUFFIX, "f")
+                .put(SYSTEM_PROPERTIES_STORE_NAME, "s")
+                .put(SYSTEM_PROPERTIES_STORE_NAME + LOCK_STORE_SUFFIX, "t")
+                .put(SYSTEM_MGMT_LOG_NAME, "m")
+                .put(SYSTEM_TX_LOG_NAME, "l")
+                .build();
     }
 
     @Override
@@ -460,7 +453,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         HBaseKeyColumnValueStore store = openStores.get(longName);
 
         if (store == null) {
-            final String cfName = shortCfNames ? shortenCfName(longName) : longName;
+            final String cfName = getCfNameForStoreName(longName);
 
             HBaseKeyColumnValueStore newStore = new HBaseKeyColumnValueStore(this, cnx, tableName, cfName, longName);
 
@@ -508,7 +501,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     @Override
     public List<KeyRange> getLocalKeyPartition() throws BackendException {
-        List<KeyRange> result = new LinkedList<KeyRange>();
+        List<KeyRange> result = new LinkedList<>();
         try {
             ensureTableExists(
                 tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME), 0);
@@ -573,8 +566,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      * keys null. If any null keys are observed besides these three cases, the
      * method will die with a precondition failure.
      *
-     * @param raw
-     *            A map of HRegionInfo and ServerName from HBase
+     * @param locations A list of HRegionInfo
      * @return JanusGraph-friendly expression of each region's rowkey boundaries
      */
     private Map<KeyRange, ServerName> normalizeKeyBounds(List<HRegionLocation> locations) {
@@ -673,16 +665,16 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return padded;
     }
 
-    public static String shortenCfName(String longName) throws PermanentBackendException {
+    public static String shortenCfName(BiMap<String, String> shortCfNameMap, String longName) throws PermanentBackendException {
         final String s;
-        if (SHORT_CF_NAME_MAP.containsKey(longName)) {
-            s = SHORT_CF_NAME_MAP.get(longName);
+        if (shortCfNameMap.containsKey(longName)) {
+            s = shortCfNameMap.get(longName);
             Preconditions.checkNotNull(s);
             logger.debug("Substituted default CF name \"{}\" with short form \"{}\" to reduce HBase KeyValue size", longName, s);
         } else {
-            if (SHORT_CF_NAME_MAP.containsValue(longName)) {
+            if (shortCfNameMap.containsValue(longName)) {
                 String fmt = "Must use CF long-form name \"%s\" instead of the short-form name \"%s\" when configured with %s=true";
-                String msg = String.format(fmt, SHORT_CF_NAME_MAP.inverse().get(longName), longName, SHORT_CF_NAMES.getName());
+                String msg = String.format(fmt, shortCfNameMap.inverse().get(longName), longName, SHORT_CF_NAMES.getName());
                 throw new PermanentBackendException(msg);
             }
             s = longName;
@@ -706,8 +698,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             if (adm.tableExists(tableName)) {
                 desc = adm.getTableDescriptor(tableName);
                 // Check and warn if long and short cf names are mixedly used for the same table.
-                if (shortCfNames && initialCFName.equals(SHORT_CF_NAME_MAP.get(SYSTEM_PROPERTIES_STORE_NAME))) {
-                    String longCFName = SHORT_CF_NAME_MAP.inverse().get(initialCFName);
+                if (shortCfNames && initialCFName.equals(shortCfNameMap.get(SYSTEM_PROPERTIES_STORE_NAME))) {
+                    String longCFName = shortCfNameMap.inverse().get(initialCFName);
                     if (desc.getFamily(longCFName.getBytes()) != null) {
                         logger.warn("Configuration {}=true, but the table \"{}\" already has column family with long name \"{}\".",
                             SHORT_CF_NAMES.getName(), tableName, longCFName);
@@ -715,7 +707,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                     }
                 }
                 else if (!shortCfNames && initialCFName.equals(SYSTEM_PROPERTIES_STORE_NAME)) {
-                    String shortCFName = SHORT_CF_NAME_MAP.get(initialCFName);
+                    String shortCFName = shortCfNameMap.get(initialCFName);
                     if (desc.getFamily(shortCFName.getBytes()) != null) {
                         logger.warn("Configuration {}=false, but the table \"{}\" already has column family with short name \"{}\".",
                             SHORT_CF_NAMES.getName(), tableName, shortCFName);
@@ -952,7 +944,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     private String getCfNameForStoreName(String storeName) throws PermanentBackendException {
-        return shortCfNames ? shortenCfName(storeName) : storeName;
+        return shortCfNames ? shortenCfName(shortCfNameMap, storeName) : storeName;
     }
 
     private void checkConfigDeprecation(org.janusgraph.diskstorage.configuration.Configuration config) {
@@ -969,14 +961,4 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             throw new JanusGraphException(e);
         }
     }
-
-    /**
-     * Similar to {@link Function}, except that the {@code apply} method is allowed
-     * to throw {@link BackendException}.
-     */
-    private static interface BackendFunction<F, T> {
-
-        T apply(F input) throws BackendException;
-    }
-
 }
