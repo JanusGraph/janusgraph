@@ -81,11 +81,12 @@ public class Backend implements LockerProvider, AutoCloseable {
      * <p/>
      * These names are fixed and should NEVER be changed. Changing these strings can
      * disrupt storage adapters that rely on these names for specific configurations.
+     * In the past, the store name for the ID table, janusgraph_ids, was also marked here,
+     * but to clear the upgrade path from Titan to JanusGraph, we had to pull it into
+     * configuration.
      */
     public static final String EDGESTORE_NAME = "edgestore";
     public static final String INDEXSTORE_NAME = "graphindex";
-
-    public static final String ID_STORE_NAME = "janusgraph_ids";
 
     public static final String METRICS_STOREMANAGER_NAME = "storeManager";
     public static final String METRICS_MERGED_STORE = "stores";
@@ -102,12 +103,6 @@ public class Backend implements LockerProvider, AutoCloseable {
     private static final long ETERNAL_CACHE_EXPIRATION = 1000l*3600*24*365*200; //200 years
 
     public static final int THREAD_POOL_SIZE_SCALE_FACTOR = 2;
-
-    public static final Map<String, Integer> STATIC_KEY_LENGTHS = new HashMap<String, Integer>() {{
-        put(EDGESTORE_NAME, 8);
-        put(EDGESTORE_NAME + LOCK_STORE_SUFFIX, 8);
-        put(ID_STORE_NAME, 8);
-    }};
 
     private final KeyColumnValueStoreManager storeManager;
     private final KeyColumnValueStoreManager storeManagerLocking;
@@ -229,7 +224,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     public void initialize(Configuration config) {
         try {
             //EdgeStore & VertexIndexStore
-            KeyColumnValueStore idStore = storeManager.openDatabase(ID_STORE_NAME);
+            KeyColumnValueStore idStore = storeManager.openDatabase(config.get(IDS_STORE_NAME));
 
             idAuthority = null;
             if (storeFeatures.isKeyConsistent()) {
@@ -414,7 +409,9 @@ public class Backend implements LockerProvider, AutoCloseable {
         StoreManager manager = getImplementationClass(storageConfig, storageConfig.get(STORAGE_BACKEND),
                 StandardStoreManager.getAllManagerClasses());
         if (manager instanceof OrderedKeyValueStoreManager) {
-            manager = new OrderedKeyValueStoreManagerAdapter((OrderedKeyValueStoreManager) manager, STATIC_KEY_LENGTHS);
+            manager = new OrderedKeyValueStoreManagerAdapter((OrderedKeyValueStoreManager) manager,
+                ImmutableMap.of(EDGESTORE_NAME, 8, EDGESTORE_NAME + LOCK_STORE_SUFFIX, 8,
+                    storageConfig.get(IDS_STORE_NAME), 8));
         }
         Preconditions.checkArgument(manager instanceof KeyColumnValueStoreManager,"Invalid storage manager: %s",manager.getClass());
         return (KeyColumnValueStoreManager) manager;

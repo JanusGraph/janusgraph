@@ -37,6 +37,11 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>janusgraph-hbase-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>janusgraph-cassandra</artifactId>
             <version>${project.version}</version>
             <classifier>tests</classifier>
@@ -84,9 +89,6 @@
                             <goal>testCompile</goal>
                             -->
                         </goals>
-                        <configuration>
-                            <providerSelection>1.8</providerSelection>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
