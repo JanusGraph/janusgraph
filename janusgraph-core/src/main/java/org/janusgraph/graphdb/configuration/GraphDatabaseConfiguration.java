@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.configuration;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.janusgraph.core.*;
@@ -271,7 +272,7 @@ public class GraphDatabaseConfiguration {
             if (s==null) return false;
             if (preregisteredAutoType.containsKey(s)) return true;
             try {
-                Class clazz = ClassUtils.getClass(s);
+                Class<?> clazz = ClassUtils.getClass(s);
                 return DefaultSchemaMaker.class.isAssignableFrom(clazz);
             } catch (ClassNotFoundException e) {
                 return false;
@@ -279,11 +280,10 @@ public class GraphDatabaseConfiguration {
         }
     });
 
-    private static final Map<String, DefaultSchemaMaker> preregisteredAutoType = new HashMap<String, DefaultSchemaMaker>() {{
-        put("none", DisableDefaultSchemaMaker.INSTANCE);
-        put("default", JanusGraphDefaultSchemaMaker.INSTANCE);
-        put("tp3", Tp3DefaultSchemaMaker.INSTANCE);
-    }};
+    private static final Map<String, DefaultSchemaMaker> preregisteredAutoType =
+            ImmutableMap.of("none", DisableDefaultSchemaMaker.INSTANCE,
+                    "default", JanusGraphDefaultSchemaMaker.INSTANCE,
+                    "tp3", Tp3DefaultSchemaMaker.INSTANCE);
 
 
     // ################ CACHE #######################
@@ -1797,7 +1797,7 @@ public class GraphDatabaseConfiguration {
             Preconditions.checkArgument(configuration.has(CUSTOM_SERIALIZER_CLASS, attributeId));
             String serializername = configuration.get(CUSTOM_SERIALIZER_CLASS, attributeId);
             try {
-                Class sclass = Class.forName(serializername);
+                Class<?> sclass = Class.forName(serializername);
                 serializer = (AttributeSerializer) sclass.newInstance();
             } catch (ClassNotFoundException e) {
                 throw new IllegalArgumentException("Could not find serializer class" + serializername);
@@ -1807,7 +1807,7 @@ public class GraphDatabaseConfiguration {
                 throw new IllegalArgumentException("Could not instantiate serializer class" + serializername, e);
             }
             Preconditions.checkNotNull(serializer);
-            RegisteredAttributeClass reg = new RegisteredAttributeClass(position,clazz, serializer);
+            RegisteredAttributeClass reg = new RegisteredAttributeClass(position, clazz, serializer);
             for (int i = 0; i < all.size(); i++) {
                 if (all.get(i).equals(reg)) {
                     throw new IllegalArgumentException("Duplicate attribute registration: " + all.get(i) + " and " + reg);
@@ -1885,52 +1885,8 @@ public class GraphDatabaseConfiguration {
      Methods for writing/reading config files
 	-------------------------------------------*/
 
-    /**
-     * Returns the home directory for the graph database initialized in this configuration
-     *
-     * @return Home directory for this graph database configuration
-     */
-    public File getHomeDirectory() {
-        if (!configuration.has(STORAGE_DIRECTORY))
-            throw new UnsupportedOperationException("No home directory specified");
-        File dir = new File(configuration.get(STORAGE_DIRECTORY));
-        Preconditions.checkArgument(dir.isDirectory(), "Not a directory");
-        return dir;
-    }
-
-    //TODO: which of the following methods are really needed
-
-    /**
-     * Returns the home directory path for the graph database initialized in this configuration
-     *
-     * @return Home directory path for this graph database configuration
-     */
-    public String getHomePath() {
-        return getPath(getHomeDirectory());
-    }
-
     public static String getPath(File dir) {
         return dir.getAbsolutePath() + File.separator;
     }
-
-
-    static boolean existsFile(String file) {
-        return (new File(file)).isFile();
-    }
-
-
-//    static PropertiesConfiguration getPropertiesConfig(String file) {
-//        PropertiesConfiguration config = new PropertiesConfiguration();
-//        if (existsFile(file)) {
-//            try {
-//                config.load(file);
-//            } catch (ConfigurationException e) {
-//                throw new IllegalArgumentException("Cannot load existing configuration file", e);
-//            }
-//        }
-//        config.setFileName(file);
-//        config.setAutoSave(true);
-//        return config;
-//    }
 
 }
