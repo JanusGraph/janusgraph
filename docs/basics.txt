@@ -449,14 +449,14 @@ The Gremlin overview presented in this section focused on the Gremlin-Groovy lan
 
 JanusGraph uses the http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-server[Gremlin Server] engine as the server component to process and answer client queries.  When packaged in JanusGraph, Gremlin Server is called JanusGraph Server.
 
-JanusGraph Server must be started manually in order to use it.  JanusGraph Server provides a way to remotely execute Gremlin scripts against one or more JanusGraph instances hosted within it. This section will describe how to use the WebSockets configuration, as well as describe how to configure JanusGraph Server to handle REST-style interactions.
+JanusGraph Server must be started manually in order to use it.  JanusGraph Server provides a way to remotely execute Gremlin scripts against one or more JanusGraph instances hosted within it. This section will describe how to use the WebSocket configuration, as well as describe how to configure JanusGraph Server to handle HTTP endpoint interactions.
 
 [[server-getting-started]]
 === Getting Started
 
 ==== Using the Pre-Packaged Distribution
 
-The JanusGraph https://github.com/JanusGraph/janusgraph/releases[release] comes pre-configured to run JanusGraph Server out of the box leveraging a sample Cassandra and ElasticSearch configuration to allow users to get started quickly with JanusGraph Server.  This configuration defaults to client applications that can connect to JanusGraph Server via WebSockets with a custom subprotocol.  There are a number of clients developed in different languages to help support the subprotocol.  The most familiar client to use the WebSocket interface is the gremlin.sh shell. The quick-start bundle is not intended to be representative of a production installation, but does provide a way to perform development with JanusGraph Server, run tests and see how the components are wired together. To use this default configuration:
+The JanusGraph https://github.com/JanusGraph/janusgraph/releases[release] comes pre-configured to run JanusGraph Server out of the box leveraging a sample Cassandra and ElasticSearch configuration to allow users to get started quickly with JanusGraph Server.  This configuration defaults to client applications that can connect to JanusGraph Server via WebSocket with a custom subprotocol.  There are a number of clients developed in different languages to help support the subprotocol.  The most familiar client to use the WebSocket interface is the gremlin.sh shell. The quick-start bundle is not intended to be representative of a production installation, but does provide a way to perform development with JanusGraph Server, run tests and see how the components are wired together. To use this default configuration:
 
 * Download a copy of the current `janusgraph-$VERSION.zip` file from the https://github.com/JanusGraph/janusgraph/releases[Releases page]
 * Unzip it and enter the `janusgraph-$VERSION` directory
@@ -506,7 +506,7 @@ The `:remote` command tells the console to configure a remote connection to Grem
 
 The default configuration described in <<server-getting-started>> is already a WebSocket configuration.  If you want to alter the default configuration to work with your own Cassandra or HBase environment rather than use the quick start environment, follow these steps:
 
-.To Configure JanusGraph Server For WebSockets
+.To Configure JanusGraph Server For WebSocket
 . Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/janusgraph-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line: 
 +
 ```
@@ -550,9 +550,9 @@ IMPORTANT: Do not use bin/janusgraph.sh.  That starts the default configuration,
 
 
 
-=== JanusGraph Server as a REST-style Endpoint
+=== JanusGraph Server as a HTTP Endpoint
 
-The default configuration described in <<server-getting-started>> is a WebSocket configuration.  If you want to alter the default configuration in order to use JanusGraph Server as a REST endpoint for your JanusGraph database, follow these steps:
+The default configuration described in <<server-getting-started>> is a WebSocket configuration.  If you want to alter the default configuration in order to use JanusGraph Server as a HTTP endpoint for your JanusGraph database, follow these steps:
 
 .To Configure JanusGraph Server For Rest
 . Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/janusgraph-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line: 
@@ -599,7 +599,7 @@ graphs: {
 bin/gremlin-server.sh ./conf/gremlin-server/rest-gremlin-server.yaml
 ```
 +
-. The JanusGraph Server should now be running in REST mode and available for testing.  *curl* can be used to verify the server is working:
+. The JanusGraph Server should now be running in HTTP mode and available for testing.  *curl* can be used to verify the server is working:
 +
 ```
 curl -XPOST -Hcontent-type:application/json -d '{"gremlin":"g.V().count()"}' http://[IP for JanusGraph server host]:8182
@@ -607,11 +607,14 @@ curl -XPOST -Hcontent-type:application/json -d '{"gremlin":"g.V().count()"}' htt
 
 === Advanced JanusGraph Server Configurations
 
-==== WebSocket versus REST
+==== WebSocket versus HTTP
 
-JanusGraph Server must be run with a configuration for either WebSockets (for gremlin shell or other WebSocket programs) or re-configured for REST to work with REST clients.
+JanusGraph Server must be run with a configuration for either WebSocket (for gremlin shell or other WebSocket programs) or re-configured for HTTP to work with HTTP clients.
 
-There is, currently, no way to configure a single running instance of JanusGraph Server to communicate simultaneously with clients talking WebSockets and REST.  However, it is possible to create configuration files (following the steps in this chapter) for both WebSockets and REST and start two instances of the JanusGraph Server by pointing it to the various configurations when it is started.  In this way, the same JanusGraph database instance can be reached through different JanusGraph Servers through both WebSocket and REST calls. Make sure the port parameter in each yaml configuration is different if starting more than one JanusGraph Server on the same machine:
+Currently, there is no way to configure a single running instance of JanusGraph Server to communicate simultaneously with clients talking WebSocket and HTTP.
+However, it is possible to create configuration files (following the steps in this chapter) for both WebSocket and HTTP and start two instances of the JanusGraph Server by pointing it to the various configurations when it is started.
+In this way, the same JanusGraph database instance can be reached through different JanusGraph Servers through both WebSocket and HTTP calls.
+Make sure the port parameter in each yaml configuration is different if starting more than one JanusGraph Server on the same machine:
 
 ```
 port: 8182
