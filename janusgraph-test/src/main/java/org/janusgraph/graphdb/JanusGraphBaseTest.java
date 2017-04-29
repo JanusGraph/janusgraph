@@ -75,7 +75,7 @@ public abstract class JanusGraphBaseTest {
     public abstract WriteConfiguration getConfiguration();
 
     public Configuration getConfig() {
-        return new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS,config.copy(), BasicConfiguration.Restriction.NONE);
+        return new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS, config.copy(), BasicConfiguration.Restriction.NONE);
     }
 
     public static void clearGraph(WriteConfiguration config) throws BackendException {
