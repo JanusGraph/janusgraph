@@ -14,6 +14,8 @@
 
 package org.janusgraph.blueprints;
 
+import com.google.common.collect.Sets;
+
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.PropertyKey;
@@ -61,7 +63,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -73,34 +74,33 @@ public abstract class AbstractJanusGraphProvider extends AbstractGraphProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractJanusGraphProvider.class);
 
-    private static final Set<Class> IMPLEMENTATION = new HashSet<Class>() {{
-        add(StandardJanusGraph.class);
-        add(StandardJanusGraphTx.class);
+    private static final Set<Class> IMPLEMENTATION = Sets.newHashSet(
+        StandardJanusGraph.class,
+        StandardJanusGraphTx.class,
 
-        add(StandardVertex.class);
-        add(CacheVertex.class);
-        add(PreloadedVertex.class);
-        add(EdgeLabelVertex.class);
-        add(PropertyKeyVertex.class);
-        add(VertexLabelVertex.class);
-        add(JanusGraphSchemaVertex.class);
-        add(EmptyVertex.class);
+        StandardVertex.class,
+        CacheVertex.class,
+        PreloadedVertex.class,
+        EdgeLabelVertex.class,
+        PropertyKeyVertex.class,
+        VertexLabelVertex.class,
+        JanusGraphSchemaVertex.class,
+        EmptyVertex.class,
 
-        add(StandardEdge.class);
-        add(CacheEdge.class);
-        add(EdgeLabel.class);
-        add(EdgeLabelVertex.class);
+        StandardEdge.class,
+        CacheEdge.class,
+        EdgeLabel.class,
+        EdgeLabelVertex.class,
 
-        add(StandardVertexProperty.class);
-        add(CacheVertexProperty.class);
-        add(SimpleJanusGraphProperty.class);
-        add(CacheVertexProperty.class);
-        add(FulgoraVertexProperty.class);
+        StandardVertexProperty.class,
+        CacheVertexProperty.class,
+        SimpleJanusGraphProperty.class,
+        CacheVertexProperty.class,
+        FulgoraVertexProperty.class,
 
-        add(JanusGraphVariables.class);
+        JanusGraphVariables.class,
 
-        add(FulgoraElementTraversal.class);
-    }};
+        FulgoraElementTraversal.class);
 
     @Override
     public Set<Class> getImplementations() {
