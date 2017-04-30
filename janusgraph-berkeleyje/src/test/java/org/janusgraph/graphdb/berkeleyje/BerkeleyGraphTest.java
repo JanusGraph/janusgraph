@@ -62,6 +62,11 @@ public class BerkeleyGraphTest extends JanusGraphTest {
         return mcfg.getConfiguration();
     }
 
+    @Test
+    public void testVertexCentricQuerySmall() {
+        testVertexCentricQuery(1450 /*noVertices*/);
+    }
+
     @Override
     public void testConsistencyEnforcement() {
         // Check that getConfiguration() explicitly set serializable isolation
