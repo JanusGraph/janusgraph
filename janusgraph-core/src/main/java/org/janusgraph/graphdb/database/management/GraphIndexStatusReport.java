@@ -14,41 +14,24 @@
 
 package org.janusgraph.graphdb.database.management;
 
-
 import org.janusgraph.core.schema.SchemaStatus;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
-public class GraphIndexStatusReport {
-    private final boolean success;
-    private final String indexName;
-    private final SchemaStatus targetStatus;
+public class GraphIndexStatusReport extends AbstractIndexStatusReport {
     private final Map<String, SchemaStatus> notConverged;
     private final Map<String, SchemaStatus> converged;
-    private final Duration elapsed;
 
-    public GraphIndexStatusReport(boolean success, String indexName, SchemaStatus targetStatus,
+    public GraphIndexStatusReport(boolean success, String indexName, List<SchemaStatus> targetStatuses,
                    Map<String, SchemaStatus> notConverged,
                    Map<String, SchemaStatus> converged, Duration elapsed) {
-        this.success = success;
-        this.indexName = indexName;
-        this.targetStatus = targetStatus;
+        super(success, indexName, targetStatuses, elapsed);
         this.notConverged = notConverged;
         this.converged = converged;
-        this.elapsed = elapsed;
-    }
-
-    public boolean getSucceeded() {
-        return success;
-    }
-
-    public String getIndexName() {
-        return indexName;
-    }
-
-    public SchemaStatus getTargetStatus() {
-        return targetStatus;
     }
 
     public Map<String, SchemaStatus> getNotConvergedKeys() {
@@ -59,19 +42,16 @@ public class GraphIndexStatusReport {
         return converged;
     }
 
-    public Duration getElapsed() {
-        return elapsed;
-    }
-
     @Override
     public String toString() {
         return "GraphIndexStatusReport[" +
                 "success=" + success +
                 ", indexName='" + indexName + '\'' +
-                ", targetStatus=" + targetStatus +
+                ", targetStatus=" + targetStatuses +
                 ", notConverged=" + notConverged +
                 ", converged=" + converged +
                 ", elapsed=" + elapsed +
                 ']';
     }
 }
+
