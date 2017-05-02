@@ -67,6 +67,25 @@ public interface SchemaInspector {
      */
     public PropertyKey getOrCreatePropertyKey(String name);
 
+
+    /**
+     * Returns the property key with the given name. If automatic type making is enabled, it will make the property key
+     * using the configured default type maker if a key with the given name does not exist.
+     *
+     * The default implementation simply calls the {@link #getOrCreatePropertyKey(String name) getOrCreatePropertyKey} method
+     *
+     * @param name name of the property key to return
+     * @param value the value of the property key. This param is not used by the default
+     * implementaion
+     * @return the property key with the given name
+     * @throws IllegalArgumentException if a property key with the given name does not exist or if the
+     *                                  type with the given name is not a property key
+     * @see PropertyKey
+     */
+    public default PropertyKey getOrCreatePropertyKey(String name, Object value) {
+       return getOrCreatePropertyKey(name);
+    }
+
     /**
      * Returns the property key with the given name. If it does not exist, NULL is returned
      *
