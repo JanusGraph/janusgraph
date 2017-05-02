@@ -47,6 +47,7 @@ Dan LaRocque <dalaro@hopcount.org>
 Daniel Kuppitz <daniel_kuppitz@hotmail.com>
 Danny Thomas <dmthomas@gmail.com>
 Dave Brosius <dbrosius@mebigfatguy.com>
+David Pitera <dpitera@.us.ibm.com>
 David Robinson <drobin1437@gmail.com>
 deiflaender <?>
 Dylan Bethune-Waddell <dylan.bethune.waddell@mail.utoronto.ca>
