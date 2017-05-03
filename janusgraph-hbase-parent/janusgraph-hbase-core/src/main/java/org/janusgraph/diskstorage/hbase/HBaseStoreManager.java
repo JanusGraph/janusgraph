@@ -30,12 +30,18 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.janusgraph.diskstorage.StoreMetaData;
-import org.janusgraph.diskstorage.configuration.ConfigElement;
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
+
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HRegionInfo;
@@ -53,25 +59,16 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Row;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.VersionInfo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.StoreMetaData;
 import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.common.DistributedStoreManager;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
@@ -89,6 +86,8 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.janusgraph.util.system.IOUtils;
 import org.janusgraph.util.system.NetworkUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Storage Manager for HBase
@@ -499,65 +498,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         {
             throw new TemporaryBackendException(e);
         }
-//
-//
-//
-//        try { // first of all, check if table exists, if not - we are done
-//            adm = getAdminInterface();
-//            if (!adm.tableExists(tableName)) {
-//                logger.debug("clearStorage() called before table {} was created, skipping.", tableName);
-//                return;
-//            }
-//        } catch (IOException e) {
-//            throw new TemporaryBackendException(e);
-//        } finally {
-//            IOUtils.closeQuietly(adm);
-//        }
-//
-////        long before = System.currentTimeMillis();
-////        try {
-////            adm.disableTable(tableName);
-////            adm.deleteTable(tableName);
-////        } catch (IOException e) {
-////            throw new PermanentBackendException(e);
-////        }
-////        ensureTableExists(tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME), 0);
-////        long after = System.currentTimeMillis();
-////        logger.debug("Dropped and recreated table {} in {} ms", tableName, after - before);
-//
-//        HTable table = null;
-//
-//        try {
-//            table = new HTable(hconf, tableName);
-//
-//            Scan scan = new Scan();
-//            scan.setBatch(100);
-//            scan.setCacheBlocks(false);
-//            scan.setCaching(2000);
-//            scan.setTimeRange(0, Long.MAX_VALUE);
-//            scan.setMaxVersions(1);
-//
-//            ResultScanner scanner = null;
-//
-//            long timestamp = times.getTime(times.getTime());
-//
-//            try {
-//                scanner = table.getScanner(scan);
-//
-//                for (Result res : scanner) {
-//                    Delete d = new Delete(res.getRow());
-//
-//                    d.setTimestamp(timestamp);
-//                    table.delete(d);
-//                }
-//            } finally {
-//                IOUtils.closeQuietly(scanner);
-//            }
-//        } catch (IOException e) {
-//            throw new TemporaryBackendException(e);
-//        } finally {
-//            IOUtils.closeQuietly(table);
-//        }
     }
 
     @Override
@@ -759,6 +699,29 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
              */
             if (adm.tableExists(tableName)) {
                 desc = adm.getTableDescriptor(tableName);
+                String fmt;
+                String msg;
+                // Check and warn if long and short cf names are mixedly used for the same table.
+                if (shortCfNames && initialCFName.equals(SHORT_CF_NAME_MAP.get(SYSTEM_PROPERTIES_STORE_NAME))) {
+                    String longCFName = SHORT_CF_NAME_MAP.inverse().get(initialCFName);
+                    if (desc.getFamily(longCFName.getBytes()) != null) {
+                        fmt = "Configuration {}=true, but the table \"{}\" already has column family with long name \"{}\".";
+                        msg = String.format(fmt, SHORT_CF_NAMES.getName(), tableName, longCFName);
+                        logger.warn("Configuration {}=true, but the table \"{}\" already has column family with long name \"{}\".",
+                            SHORT_CF_NAMES.getName(), tableName, longCFName);
+                        logger.warn("Check {} configuration.", SHORT_CF_NAMES.getName());
+                    }
+                }
+                else if (!shortCfNames && initialCFName.equals(SYSTEM_PROPERTIES_STORE_NAME)) {
+                    String shortCFName = SHORT_CF_NAME_MAP.get(initialCFName);
+                    if (desc.getFamily(shortCFName.getBytes()) != null) {
+                        fmt = "Configuration {}=false, but the table \"{}\" already has column family with short name \"{}\".";
+                        msg = String.format(fmt, SHORT_CF_NAMES.getName(), tableName, shortCFName);
+                        logger.warn("Configuration {}=false, but the table \"{}\" already has column family with short name \"{}\".",
+                            SHORT_CF_NAMES.getName(), tableName, shortCFName);
+                        logger.warn("Check {} configuration.", SHORT_CF_NAMES.getName());
+                    }
+                }
             } else {
                 desc = createTable(tableName, initialCFName, ttlInSeconds, adm);
             }
@@ -978,4 +941,5 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         T apply(F input) throws BackendException;
     }
+
 }
