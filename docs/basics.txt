@@ -142,6 +142,9 @@ Learn more about configuring and using JanusGraph Server in <<server>>.
 
 The JanusGraph zip file contains a quick start server component that helps make it easier to get started with Gremlin Server and JanusGraph. Invoke `bin/janusgraph.sh start` to start Gremlin Server with Cassandra and ElasticSearch.  
 
+[NOTE]
+For security reasons Elasticsearch and therefore `janusgraph.sh` must be run under a non-root account
+
 [[configuration-global]]
 === Global Configuration
 
@@ -458,7 +461,7 @@ The JanusGraph https://github.com/JanusGraph/janusgraph/releases[release] comes 
 
 * Download a copy of the current `janusgraph-$VERSION.zip` file from the https://github.com/JanusGraph/janusgraph/releases[Releases page]
 * Unzip it and enter the `janusgraph-$VERSION` directory
-* Run `bin/janusgraph.sh start`.  This step will start Gremlin Server with Cassandra/ES forked into a separate process.
+* Run `bin/janusgraph.sh start`.  This step will start Gremlin Server with Cassandra/ES forked into a separate process. Note for security reasons Elasticsearch and therefore `janusgraph.sh` must be run under a non-root account.
 
 [source,bourne]
 ----
