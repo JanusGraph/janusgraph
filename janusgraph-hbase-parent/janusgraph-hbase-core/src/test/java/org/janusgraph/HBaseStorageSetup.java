@@ -103,10 +103,7 @@ public class HBaseStorageSetup {
         if (!StringUtils.isEmpty(tableName)) config.set(HBaseStoreManager.HBASE_TABLE,tableName);
         config.set(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER, HBaseStoreManager.PREFERRED_TIMESTAMPS);
         config.set(SimpleBulkPlacementStrategy.CONCURRENT_PARTITIONS, 1);
-//        config.set(GraphDatabaseConfiguration.STORAGE_NS.getName()+"."+HBaseStoreManager.HBASE_CONFIGURATION_NAMESPACE+
-//                    ".hbase.zookeeper.quorum","localhost");
-//        config.set(GraphDatabaseConfiguration.STORAGE_NS.getName()+"."+HBaseStoreManager.HBASE_CONFIGURATION_NAMESPACE+
-//                "hbase.zookeeper.property.clientPort",2181);
+
         return config;
     }
 
