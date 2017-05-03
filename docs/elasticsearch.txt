@@ -32,6 +32,9 @@ JanusGraph supports connections to a running Elasticsearch cluster. JanusGraph p
 $ elasticsearch/bin/elasticsearch
 ----
 
+[NOTE]
+For security reasons Elasticsearch must be run under a non-root account
+
 === Elasticsearch Configuration Overview
 
 JanusGraph supports HTTP and Transport client connections to a running Elasticsearch cluster. Please see <<version-compat>> for details on what versions of ES will work with the different client types in JanusGraph.
