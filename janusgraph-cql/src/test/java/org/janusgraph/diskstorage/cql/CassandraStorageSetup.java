@@ -42,6 +42,8 @@ public class CassandraStorageSetup {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraStorageSetup.class);
 
+    private static final String TEST_STORAGE_HOST = "test.storage.host";
+
     public static final String CONFDIR_SYSPROP = "test.cassandra.confdir";
     public static final String DATADIR_SYSPROP = "test.cassandra.datadir";
 
@@ -54,15 +56,21 @@ public class CassandraStorageSetup {
      * This method is idempotent. Calls after the first have no effect aside from logging statements.
      */
     public static void startCleanEmbedded() {
-        final Paths p = getPaths();
-        if (!CassandraDaemonWrapper.isStarted()) {
-            try {
-                FileUtils.deleteDirectory(new File(p.dataPath));
-            } catch (final IOException e) {
-                throw new RuntimeException(e);
+        startCleanEmbedded(false);
+    }
+
+    public static void startCleanEmbedded(boolean force) {
+        if (force || System.getProperty(TEST_STORAGE_HOST) == null) {
+            final Paths p = getPaths();
+            if (!CassandraDaemonWrapper.isStarted()) {
+                try {
+                    FileUtils.deleteDirectory(new File(p.dataPath));
+                } catch (final IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
+            CassandraDaemonWrapper.start(p.yamlPath);
         }
-        CassandraDaemonWrapper.start(p.yamlPath);
     }
 
     private static synchronized Paths getPaths() {
@@ -103,6 +111,9 @@ public class CassandraStorageSetup {
         config.set(STORAGE_BACKEND, "cql");
         // Set to 3 because we have a 2.1.9 database that only supports version 3, if we let it negotiate then there are spurious errors.
         config.set(PROTOCOL_VERSION, 3);
+        if (System.getProperty(TEST_STORAGE_HOST) != null) {
+            config.set(STORAGE_HOSTS, new String[] { System.getProperty(TEST_STORAGE_HOST) });
+        }
         return config;
     }
 
