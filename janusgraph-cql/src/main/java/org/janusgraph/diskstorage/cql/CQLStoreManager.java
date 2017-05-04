@@ -24,6 +24,7 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SI
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CLUSTER_NAME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_DATACENTER;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.PROTOCOL_VERSION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.READ_CONSISTENCY;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_FACTOR;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_OPTIONS;
@@ -82,6 +83,7 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Cluster.Builder;
 import com.datastax.driver.core.JdkSSLOptions;
 import com.datastax.driver.core.KeyspaceMetadata;
+import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
@@ -202,6 +204,11 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                 .addContactPointsWithPorts(contactPoints)
                 .withClusterName(configuration.get(CLUSTER_NAME));
 
+        if (configuration.get(PROTOCOL_VERSION) == 0) {
+            builder.withProtocolVersion(ProtocolVersion.NEWEST_SUPPORTED);
+        } else {
+            builder.withProtocolVersion(ProtocolVersion.fromInt(configuration.get(PROTOCOL_VERSION)));
+        }
         if (configuration.has(AUTH_USERNAME) && configuration.has(AUTH_PASSWORD)) {
             builder.withCredentials(configuration.get(AUTH_USERNAME), configuration.get(AUTH_PASSWORD));
         }
