@@ -17,6 +17,7 @@ package org.janusgraph.diskstorage.hbase;
 import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.LockKeyColumnValueStoreTest;
+import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 
 import org.apache.hadoop.hbase.util.VersionInfo;
@@ -38,7 +39,7 @@ public class HBaseLockStoreTest extends LockKeyColumnValueStoreTest {
             HBaseStorageSetup.killIfRunning();
     }
 
-    public KeyColumnValueStoreManager openStorageManager(int idx) throws BackendException {
+    public KeyColumnValueStoreManager openStorageManager(int idx, Configuration configuration) throws BackendException {
         return new HBaseStoreManager(HBaseStorageSetup.getHBaseConfiguration());
     }
 }
