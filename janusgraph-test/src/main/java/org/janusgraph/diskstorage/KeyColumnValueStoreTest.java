@@ -47,6 +47,7 @@ import static org.junit.Assert.*;
 
 public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
+    public static final int TRIALS = 5000;
     @Rule
     public TestName name = new TestName();
 
@@ -123,11 +124,6 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         KeyColumnValueStoreUtil.loadValues(store, tx, values, shiftEveryNthRow, shiftSliceLength);
     }
 
-    public void loadValues(KeyColumnValueStore store, String[][] values, int shiftEveryNthRow,
-                           int shiftSliceLength) throws BackendException {
-        KeyColumnValueStoreUtil.loadValues(store, tx, values, shiftEveryNthRow, shiftSliceLength);
-    }
-
     /**
      * Load a bunch of key-column-values in a way that vaguely resembles a lower
      * triangular matrix.
@@ -143,7 +139,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
      *
      * @param dimension size of loaded data (must be positive)
      * @param offset    offset (must be positive)
-     * @throws StorageException unexpected failure
+     * @throws BackendException unexpected failure
      */
     public void loadLowerTriangularValues(int dimension, int offset) throws BackendException {
 
@@ -668,15 +664,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         loadValues(values);
         Set<KeyColumn> deleted = Sets.newHashSet();
         clopen();
-        int trails = 5000;
-        for (int t = 0; t < trails; t++) {
-            int key = RandomGenerator.randomInt(0, numKeys);
-            int start = RandomGenerator.randomInt(0, numColumns);
-            int end = RandomGenerator.randomInt(start, numColumns);
-            int limit = RandomGenerator.randomInt(1, 30);
-            checkSlice(values, deleted, key, start, end, limit);
-            checkSlice(values, deleted, key, start, end, -1);
-        }
+        checkRandomSlices(values, deleted, TRIALS);
     }
 
     @Test
@@ -687,8 +675,11 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         newTx();
         Set<KeyColumn> deleted = deleteValues(7);
         clopen();
-        int trails = 5000;
-        for (int t = 0; t < trails; t++) {
+        checkRandomSlices(values, deleted, TRIALS);
+    }
+
+    protected void checkRandomSlices(String[][] values, Set<KeyColumn> deleted, int trials) throws BackendException {
+        for (int t = 0; t < trials; t++) {
             int key = RandomGenerator.randomInt(0, numKeys);
             int start = RandomGenerator.randomInt(0, numColumns);
             int end = RandomGenerator.randomInt(start, numColumns);
@@ -698,18 +689,17 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         }
     }
 
-
     @Test
     public void testConcurrentGetSlice() throws ExecutionException, InterruptedException, BackendException {
-        testConcurrentStoreOps(false);
+        testConcurrentStoreOps(false, TRIALS);
     }
 
     @Test
     public void testConcurrentGetSliceAndMutate() throws BackendException, ExecutionException, InterruptedException {
-        testConcurrentStoreOps(true);
+        testConcurrentStoreOps(true, TRIALS);
     }
 
-    private void testConcurrentStoreOps(boolean deletionEnabled) throws BackendException, ExecutionException, InterruptedException {
+    protected void testConcurrentStoreOps(boolean deletionEnabled, int trials) throws BackendException, ExecutionException, InterruptedException {
         // Load data fixture
         String[][] values = generateValues();
         loadValues(values);
@@ -733,16 +723,16 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         // Setup executor and runnables
         final int NUM_THREADS = 64;
         ExecutorService es = Executors.newFixedThreadPool(NUM_THREADS);
-        List<Runnable> tasks = new ArrayList<Runnable>(NUM_THREADS);
+        List<Runnable> tasks = new ArrayList<>(NUM_THREADS);
         for (int i = 0; i < NUM_THREADS; i++) {
             Set<KeyColumn> deleted = Sets.newHashSet();
             if (!deletionEnabled) {
-                tasks.add(new ConcurrentRandomSliceReader(values, deleted));
+                tasks.add(new ConcurrentRandomSliceReader(values, deleted, trials));
             } else {
-                tasks.add(new ConcurrentRandomSliceReader(values, deleted, i));
+                tasks.add(new ConcurrentRandomSliceReader(values, deleted, i, trials));
             }
         }
-        List<Future<?>> futures = new ArrayList<Future<?>>(NUM_THREADS);
+        List<Future<?>> futures = new ArrayList<>(NUM_THREADS);
 
         // Execute
         for (Runnable r : tasks) {
@@ -759,33 +749,35 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         assertEquals(NUM_THREADS, collected);
     }
 
-    private class ConcurrentRandomSliceReader implements Runnable {
+    protected class ConcurrentRandomSliceReader implements Runnable {
 
         private final String[][] values;
         private final Set<KeyColumn> d;
         private final int startKey;
         private final int endKey;
         private final boolean deletionEnabled;
+        private final int trials;
 
-        public ConcurrentRandomSliceReader(String[][] values, Set<KeyColumn> deleted) {
+        public ConcurrentRandomSliceReader(String[][] values, Set<KeyColumn> deleted, int trials) {
             this.values = values;
             this.d = deleted;
             this.startKey = 0;
             this.endKey = values.length;
             this.deletionEnabled = false;
+            this.trials = trials;
         }
 
-        public ConcurrentRandomSliceReader(String[][] values, Set<KeyColumn> deleted, int key) {
+        public ConcurrentRandomSliceReader(String[][] values, Set<KeyColumn> deleted, int key, int trials) {
             this.values = values;
             this.d = deleted;
             this.startKey = key % values.length;
             this.endKey = startKey + 1;
             this.deletionEnabled = true;
+            this.trials = trials;
         }
 
         @Override
         public void run() {
-            int trials = 5000;
             for (int t = 0; t < trials; t++) {
                 int key = RandomGenerator.randomInt(startKey, endKey);
                 log.debug("Random key chosen: {} (start={}, end={})", key, startKey, endKey);

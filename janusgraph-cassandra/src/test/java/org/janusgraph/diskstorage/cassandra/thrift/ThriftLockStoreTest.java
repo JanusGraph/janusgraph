@@ -15,6 +15,7 @@
 package org.janusgraph.diskstorage.cassandra.thrift;
 
 import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.configuration.Configuration;
 import org.junit.BeforeClass;
 
 import org.janusgraph.CassandraStorageSetup;
@@ -29,7 +30,7 @@ public class ThriftLockStoreTest extends LockKeyColumnValueStoreTest {
     }
 
     @Override
-    public KeyColumnValueStoreManager openStorageManager(int idx) throws BackendException {
+    public KeyColumnValueStoreManager openStorageManager(int idx, Configuration configuration) throws BackendException {
         return new CassandraThriftStoreManager(CassandraStorageSetup.getCassandraThriftConfiguration(this.getClass().getSimpleName()));
     }
 }

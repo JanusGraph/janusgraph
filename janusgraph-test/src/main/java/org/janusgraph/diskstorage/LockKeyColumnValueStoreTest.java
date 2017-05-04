@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
 
+import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.*;
 import org.janusgraph.diskstorage.util.BufferUtil;
@@ -91,7 +92,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
 
         StoreManager tmp = null;
         try {
-            tmp = openStorageManager(0);
+            tmp = openStorageManager(0, GraphDatabaseConfiguration.buildGraphConfiguration());
             tmp.clearStorage();
         } finally {
             tmp.close();
@@ -109,7 +110,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
         v2 = KeyValueStoreUtil.getBuffer("val2");
     }
 
-    public abstract KeyColumnValueStoreManager openStorageManager(int id) throws BackendException;
+    public abstract KeyColumnValueStoreManager openStorageManager(int id, Configuration configuration) throws BackendException;
 
     public void open() throws BackendException {
         manager = new KeyColumnValueStoreManager[CONCURRENCY];
@@ -117,19 +118,19 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
         store = new KeyColumnValueStore[CONCURRENCY];
 
         for (int i = 0; i < CONCURRENCY; i++) {
-            manager[i] = openStorageManager(i);
+            final ModifiableConfiguration sc = GraphDatabaseConfiguration.buildGraphConfiguration();
+            sc.set(GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP,concreteClassName + i);
+            sc.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID,"inst"+i);
+            sc.set(GraphDatabaseConfiguration.LOCK_RETRY,10);
+            sc.set(GraphDatabaseConfiguration.LOCK_EXPIRE, Duration.ofMillis(EXPIRE_MS));
+
+            manager[i] = openStorageManager(i, sc);
             StoreFeatures storeFeatures = manager[i].getFeatures();
             store[i] = manager[i].openDatabase(DB_NAME);
             for (int j = 0; j < NUM_TX; j++) {
                 tx[i][j] = manager[i].beginTransaction(getTxConfig());
                 log.debug("Began transaction of class {}", tx[i][j].getClass().getCanonicalName());
             }
-
-            ModifiableConfiguration sc = GraphDatabaseConfiguration.buildGraphConfiguration();
-            sc.set(GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP,concreteClassName + i);
-            sc.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID,"inst"+i);
-            sc.set(GraphDatabaseConfiguration.LOCK_RETRY,10);
-            sc.set(GraphDatabaseConfiguration.LOCK_EXPIRE, Duration.ofMillis(EXPIRE_MS));
 
             if (!storeFeatures.hasLocking()) {
                 Preconditions.checkArgument(storeFeatures.isKeyConsistent(),"Store needs to support some form of locking");
