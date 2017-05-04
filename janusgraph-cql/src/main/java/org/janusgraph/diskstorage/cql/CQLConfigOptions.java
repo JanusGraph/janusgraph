@@ -38,6 +38,13 @@ public interface CQLConfigOptions {
             ConfigOption.Type.LOCAL,
             "janusgraph");
 
+    public static final ConfigOption<Integer> PROTOCOL_VERSION = new ConfigOption<>(
+            CQL_NS,
+            "protocol-version",
+            "The protocol version used to connect to the Cassandra database.  If no value is supplied then the driver will negotiate with the server.",
+            ConfigOption.Type.LOCAL,
+            0);
+
     public static final ConfigOption<String> READ_CONSISTENCY = new ConfigOption<>(
             CQL_NS,
             "read-consistency-level",
