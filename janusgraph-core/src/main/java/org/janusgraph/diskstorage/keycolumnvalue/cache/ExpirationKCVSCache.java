@@ -93,13 +93,20 @@ public class ExpirationKCVSCache extends KCVSCache {
         }
 
         try {
-            return cache.get(query,new Callable<EntryList>() {
-                @Override
-                public EntryList call() throws Exception {
-                    incActionBy(1, CacheMetricsAction.MISS,txh);
-                    return store.getSlice(query, unwrapTx(txh));
+            EntryList result = cache.getIfPresent(query);
+
+            if (result != null) {
+                incActionBy(1, CacheMetricsAction.HIT,txh);
+            } else {
+                incActionBy(1, CacheMetricsAction.MISS,txh);
+                result = store.getSlice(query, unwrapTx(txh));
+
+                if (result != null) {
+                    cache.put(query, result);
                 }
-            });
+            }
+
+            return result;
         } catch (Exception e) {
             if (e instanceof JanusGraphException) throw (JanusGraphException)e;
             else if (e.getCause() instanceof JanusGraphException) throw (JanusGraphException)e.getCause();
@@ -123,6 +130,8 @@ public class ExpirationKCVSCache extends KCVSCache {
             if (result!=null) results.put(key,result);
             else remainingKeys.add(key);
         }
+        incActionBy(keys.size() - remainingKeys.size(), CacheMetricsAction.HIT, txh);
+
         //Request remaining ones from backend
         if (!remainingKeys.isEmpty()) {
             incActionBy(remainingKeys.size(), CacheMetricsAction.MISS,txh);
