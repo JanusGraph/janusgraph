@@ -27,6 +27,8 @@
             <filtered>false</filtered>
             <excludes>
               <exclude>**/elasticsearch.yml</exclude>
+              <exclude>**/data/**</exclude>
+              <exclude>**/logs/**</exclude>
             </excludes>
         </fileSet>
         <fileSet>
