@@ -581,6 +581,8 @@ public class SolrIndex implements IndexProvider {
                     return (key + ":\"" + escapeValue(value) + "\"");
                 } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
                     return ("-" + key + ":\"" + escapeValue(value) + "\"");
+                } else if (janusgraphPredicate == Text.FUZZY || janusgraphPredicate == Text.CONTAINS_FUZZY) {
+                    return (key + ":"+escapeValue(value)+"~");
                 } else {
                     throw new IllegalArgumentException("Relation is not supported for string value: " + janusgraphPredicate);
                 }
@@ -772,9 +774,9 @@ public class SolrIndex implements IndexProvider {
             switch(mapping) {
                 case DEFAULT:
                 case TEXT:
-                    return janusgraphPredicate == Text.CONTAINS || janusgraphPredicate == Text.CONTAINS_PREFIX || janusgraphPredicate == Text.CONTAINS_REGEX;
+                    return janusgraphPredicate == Text.CONTAINS || janusgraphPredicate == Text.CONTAINS_PREFIX || janusgraphPredicate == Text.CONTAINS_REGEX || janusgraphPredicate == Text.CONTAINS_FUZZY;
                 case STRING:
-                    return janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL || janusgraphPredicate==Text.REGEX || janusgraphPredicate==Text.PREFIX;
+                    return janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL || janusgraphPredicate==Text.REGEX || janusgraphPredicate==Text.PREFIX  || janusgraphPredicate == Text.FUZZY;
 //                case TEXTSTRING:
 //                    return (janusgraphPredicate instanceof Text) || janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL;
             }

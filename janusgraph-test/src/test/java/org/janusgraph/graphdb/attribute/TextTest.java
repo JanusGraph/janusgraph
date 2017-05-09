@@ -18,6 +18,9 @@ import org.janusgraph.core.attribute.Cmp;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
+
+import org.apache.commons.text.similarity.LevenshteinDistance;
+
 import static org.janusgraph.core.attribute.Text.*;
 
 /**
@@ -89,7 +92,40 @@ public class TextTest {
         assertTrue(REGEX.test(name, "(fu[ln]*y) (fu[ln]*y)"));
         assertFalse(REGEX.test(name, "(fu[l]*y) (fu[l]*y)"));
         assertTrue(REGEX.test(name, "(fu[l]*y) .*"));
+        
+        //FUZZY
+        String shortValue = "ah";
+        assertTrue(FUZZY.test(shortValue,"ah"));
+        assertFalse(FUZZY.test(shortValue,"ai"));
+        String mediumValue = "hop";
+        assertTrue(FUZZY.test(mediumValue,"hop"));
+        assertTrue(FUZZY.test(mediumValue,"hopp"));
+        assertTrue(FUZZY.test(mediumValue,"hap"));
+        assertFalse(FUZZY.test(mediumValue,"ha"));
+        assertFalse(FUZZY.test(mediumValue,"hoopp"));
+        String longValue = "surprises";
+        assertTrue(FUZZY.test(longValue,"surprises"));
+        assertTrue(FUZZY.test(longValue,"surpprises"));
+        assertTrue(FUZZY.test(longValue,"sutprises"));
+        assertTrue(FUZZY.test(longValue,"surprise"));
+        assertFalse(FUZZY.test(longValue,"surppirsses"));
 
+        //CONTAINS_FUZZY
+        //Short
+        assertTrue(CONTAINS_FUZZY.test(text,"is"));
+        assertFalse(CONTAINS_FUZZY.test(text,"si"));
+        //Medium
+        assertTrue(CONTAINS_FUZZY.test(text,"full"));
+        assertTrue(CONTAINS_FUZZY.test(text,"fully"));
+        assertTrue(CONTAINS_FUZZY.test(text,"ful"));
+        assertTrue(CONTAINS_FUZZY.test(text,"fill"));
+        assertFalse(CONTAINS_FUZZY.test(text,"fu"));
+        assertFalse(CONTAINS_FUZZY.test(text,"fullest"));
+        //Long
+        assertTrue(CONTAINS_FUZZY.test(text,"surprises"));
+        assertTrue(CONTAINS_FUZZY.test(text,"Surpprises"));
+        assertTrue(CONTAINS_FUZZY.test(text,"Sutrises"));
+        assertTrue(CONTAINS_FUZZY.test(text,"surprise"));
+        assertFalse(CONTAINS_FUZZY.test(text,"surppirsses"));
     }
-
 }
