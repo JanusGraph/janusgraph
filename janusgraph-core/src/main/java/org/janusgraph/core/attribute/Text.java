@@ -18,6 +18,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -163,7 +164,89 @@ public enum Text implements JanusGraphPredicate {
             return condition != null && condition instanceof String && StringUtils.isNotBlank(condition.toString());
         }
 
+    }, 
+    
+    /**
+     * Whether the text is at X Lenvenstein of a token (case sensitive)
+     * with X=:
+     * - 0 for strings of one or two characters
+     * - 1 for strings of three, four or five characters
+     * - 2 for strings of more than five characters
+     */
+    FUZZY {
+        @Override
+        public boolean test(Object value, Object condition) {
+            this.preevaluate(value, condition);
+            if (value == null)
+                return false;
+            return evaluateRaw(value.toString(), (String) condition);
+        }
+
+        @Override
+        public boolean evaluateRaw(String value, String term) {
+            return isFuzzy(term.trim(),value.trim());
+        }
+
+        @Override
+        public boolean isValidCondition(Object condition) {
+            return condition != null && condition instanceof String && StringUtils.isNotBlank(condition.toString());
+        }
+
+    }, 
+    
+    /**
+     * Whether the text contains a token is at X Lenvenstein of a token (case insensitive)
+     * with X=:
+     * - 0 for strings of one or two characters
+     * - 1 for strings of three, four or five characters
+     * - 2 for strings of more than five characters
+     */
+    CONTAINS_FUZZY {
+        @Override
+        public boolean test(Object value, Object condition) {
+            this.preevaluate(value, condition);
+            if (value == null)
+                return false;
+            return evaluateRaw(value.toString(), (String) condition);
+        }
+
+        @Override
+        public boolean evaluateRaw(String value, String term) {
+            for (String token : tokenize(value.toLowerCase())) {
+                if (isFuzzy(term.toLowerCase(), token)) return true;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean isValidCondition(Object condition) {
+            return condition != null && condition instanceof String && StringUtils.isNotBlank(condition.toString());
+        }
+
     };
+
+    /**
+     * Whether {@code term} is at X Lenvenstein of a {@code value} 
+     * with X=:
+     * - 0 for strings of one or two characters
+     * - 1 for strings of three, four or five characters
+     * - 2 for strings of more than five characters
+     * @param value
+     * @param term
+     * @return true if {@code term} is similar to {@code value} 
+     */
+    private static boolean isFuzzy(String term, String value){
+        int distance;
+        term = term.trim();
+        if (term.length() < 3) {
+            distance = 0;
+        } else if (term.length() < 6) {
+            distance = 1;
+        } else {
+            distance = 2;
+        }
+        return LevenshteinDistance.getDefaultInstance().apply(value, term)<=distance;
+    }
 
     private static final Logger log = LoggerFactory.getLogger(Text.class);
 
@@ -226,5 +309,11 @@ public enum Text implements JanusGraphPredicate {
     }
     public static <V> P<V> textRegex(final V value) {
         return new P(Text.REGEX, value);
+    }
+    public static <V> P<V> textContainsFuzzy(final V value) {
+        return new P(Text.CONTAINS_FUZZY, value);
+    }
+    public static <V> P<V> textFuzzy(final V value) {
+        return new P(Text.FUZZY, value);
     }
 }
