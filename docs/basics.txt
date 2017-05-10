@@ -738,15 +738,14 @@ client.submit("g.V()").all().get();
 
 By adding the `JanusGraphIoRegistry` to the `org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0`, the driver will know how to properly deserialize custom data types returned by JanusGraph.
 
-[[indexes]]
-== Indexing for better Performance
-
-JanusGraph supports two different kinds of indexing to speed up query processing: *graph indexes* and *vertex-centric indexes*. Most graph queries start the traversal from a list of vertices or edges that are identified by their properties. Graph indexes make these global retrieval operations efficient on large graphs. Vertex-centric indexes speed up the actual traversal through the graph, in particular when traversing through vertices with many incident edges.
-
 === Extending JanusGraph Server
 
 It is possible to extend Gremlin Server with other means of communication by implementing the interfaces that it provides and leverage this with JanusGraph.  See more details in the appropriate TinkerPop documentation.
 
+[[indexes]]
+== Indexing for better Performance
+
+JanusGraph supports two different kinds of indexing to speed up query processing: *graph indexes* and *vertex-centric indexes*. Most graph queries start the traversal from a list of vertices or edges that are identified by their properties. Graph indexes make these global retrieval operations efficient on large graphs. Vertex-centric indexes speed up the actual traversal through the graph, in particular when traversing through vertices with many incident edges.
 
 
 [[graph-indexes]]
