@@ -633,10 +633,9 @@
                             <artifactId>docker-maven-plugin</artifactId>
                             <version>${docker.maven.version}</version>
                             <configuration>
-                                <dockerDirectory>janusgraph-dist-hadoop-2</dockerDirectory>
+                                <dockerDirectory>${project.basedir}/janusgraph-dist-hadoop-2</dockerDirectory>
                                 <buildArgs>
                                     <server_zip>target/janusgraph-${project.version}-hadoop2.zip</server_zip>
-                                    <server_base>janusgraph-${project.version}-hadoop2</server_base>
                                 </buildArgs>
                                 <forceTags>true</forceTags>
                                 <imageName>janusgraph/server</imageName>

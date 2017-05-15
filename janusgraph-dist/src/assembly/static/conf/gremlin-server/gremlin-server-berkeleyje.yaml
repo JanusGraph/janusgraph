@@ -36,5 +36,4 @@ maxAccumulationBufferComponents: 1024
 resultIterationBatchSize: 64
 writeBufferLowWaterMark: 32768
 writeBufferHighWaterMark: 65536
-ssl: {
-  enabled: false}
+

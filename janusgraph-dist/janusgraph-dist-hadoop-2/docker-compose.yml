@@ -1,0 +1,24 @@
+version: '2'
+services:
+  janusgraph:
+    image: janusgraph/server:latest
+    container_name: janusgraph
+    ports:
+      - "8182:8182"
+    volumes:
+      - ./es/wait-for-es.sh:/usr/bin/wait-for-es.sh
+    depends_on:
+      - "elasticsearch"
+    command: ["wait-for-es.sh", "elasticsearch", "./bin/gremlin-server.sh", "./conf/gremlin-server/gremlin-server-berkeleyje.yaml"]
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.3.2
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "http.host=0.0.0.0"
+      - "transport.host=127.0.0.1"
+    ports:
+      - "9200"
+    volumes:
+      - ./es/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+

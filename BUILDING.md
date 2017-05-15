@@ -30,15 +30,17 @@ To build with only the TinkerPop tests\*:
 mvn clean install -Dtest.skip.tp=false -DskipTests=true
 ```
 
-To build and run a docker image with JanusGraph and Gremlin Server, configured
-to run the berkeleyje backend with an embedded ElasticSearch instance:
+## Building Docker Image for JanusGraph Gremlin Server
+
+To build and run Docker images with JanusGraph and Gremlin Server, configured 
+to run the BerkeleyJE backend and Elasticsearch (requires [Docker Compose](https://docs.docker.com/compose/)):
 
 ```bash
-mvn clean package -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true
-cd janusgraph-hbase-parent/janusgraph-hbase-core && mvn install -DskipTests=true && cd ../..
-cd janusgraph-dist && mvn install -Pjanusgraph-docker -DskipTests=true docker:build
-docker run -d -p 8182:8182 --name janusgraph janusgraph/server:latest
+mvn clean install -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true && mvn docker:build -Pjanusgraph-docker -pl janusgraph-dist
+docker-compose -f janusgraph-dist/janusgraph-dist-hadoop-2/docker-compose.yml up
 ```
+
+Note the above `docker-compose` call launches containers in the foreground and is convenient for monitoring logs but add "-d" to instead run in the background.
 
 To connect to the server in the same container on the console:
 
