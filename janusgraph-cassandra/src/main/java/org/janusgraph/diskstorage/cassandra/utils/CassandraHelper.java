@@ -136,9 +136,9 @@ public class CassandraHelper {
                 byte b = tokens[j][i];
                 if (carry) {
                     b++;
-                    carry = false;
+                    if (b == 0) carry = true;
+                    else carry = false;
                 }
-                if (b == 0) carry = true;
                 plusOne[j][i] = b;
             }
         }
