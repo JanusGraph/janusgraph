@@ -211,7 +211,7 @@ After a composite index is `DISABLED`, there is a choice between two execution f
 * MapReduce
 * JanusGraphManagement
 
-Index removal on MapReduce supports large, horizontally-distributed databases.  Inedx removal on JanusGraphManagement spawns a single-machine OLAP job.  This is intended for convenience and speed on those databases small enough to be handled by one machine.
+Index removal on MapReduce supports large, horizontally-distributed databases.  Index removal on JanusGraphManagement spawns a single-machine OLAP job.  This is intended for convenience and speed on those databases small enough to be handled by one machine.
 
 Index removal requires:
 
