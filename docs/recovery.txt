@@ -8,9 +8,9 @@ JanusGraph is a highly available and robust graph database. In large scale Janus
 Transactions can fail for a number of reasons. If the transaction fails before the commit the changes will be discarded and the application can retry the transaction in coherence with the business logic. Likewise, locking or other consistency failures will cause an exception prior to persistence and hence can be retried.
 The persistence stage of a transaction is when JanusGraph starts persisting data to the various backend systems.
 
-JanusGraph first persists all graph mutations to the storage backend. This peristence is executed as one batch mutation to ensure that the mutation is committed atomicly for those backends supporting atomicity. If the batch mutation fails due to an exception in the storge backend, the entire transaction is failed.
+JanusGraph first persists all graph mutations to the storage backend. This persistence is executed as one batch mutation to ensure that the mutation is committed atomically for those backends supporting atomicity. If the batch mutation fails due to an exception in the storage backend, the entire transaction is failed.
 
-If the primary persistence into the storage backend succeeds but secondary persistence into the indexing backends or the logging system fail, the transaction is still considered to be successful because the storage backend is the auhoritative source of the graph. 
+If the primary persistence into the storage backend succeeds but secondary persistence into the indexing backends or the logging system fail, the transaction is still considered to be successful because the storage backend is the authoritative source of the graph. 
 
 However, this can create inconsistencies with the indexes and logs. To automatically repair such inconsistencies, JanusGraph can maintain a transaction write-ahead log which is enabled through the configuration.
 
