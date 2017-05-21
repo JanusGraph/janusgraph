@@ -31,12 +31,14 @@ When a string property is indexed as text, only full-text search predicates are 
 * `textContains`: is true if (at least) one word inside the text string matches the query string
 * `textContainsPrefix`: is true if (at least) one word inside the text string begins with the query string
 * `textContainsRegex`: is true if (at least) one word inside the text string matches the given regular expression
+* `textContainsFuzzy`: is true if (at least) one word inside the text string is similar to the query String (based on Levenshtein edit distance)
 
 [source, gremlin]
 import static org.janusgraph.core.attribute.Text.*
 g.V().has('booksummary', textContains('unicorns'))
 g.V().has('booksummary', textContainsPrefix('uni'))
 g.V().has('booksummary', textContainsRegex('.*corn.*'))
+g.V().has('booksummary', textContainsFuzzy('unicorn'))
 
 String search predicates (see below) may be used in queries, but those require filtering in memory which can be very costly.
 
@@ -58,6 +60,7 @@ When a string property is indexed as string, only the following predicates are s
 * `neq`: if the string is different than the query string
 * `textPrefix`: if the string value starts with the given query string
 * `textRegex`: if the string value matches the given regular expression in its entirety
+* `textFuzzy`: if the string value is similar to the given query string (based on Levenshtein edit distance)
 
 [source, gremlin]
 import static org.apache.tinkerpop.gremlin.process.traversal.P.*
@@ -66,6 +69,7 @@ g.V().has('bookname', eq('unicorns'))
 g.V().has('bookname', neq('unicorns'))
 g.V().has('bookname', textPrefix('uni'))
 g.V().has('bookname', textRegex('.*corn.*'))
+g.V().has('bookname', textFuzzy('unicorn'))
 
 Full-text search predicates may be used in queries, but those require filtering in memory which can be very costly.
 

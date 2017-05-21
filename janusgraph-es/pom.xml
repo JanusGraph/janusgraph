@@ -218,7 +218,7 @@
                     <execution>
                         <id>default-test</id>
                         <configuration>
-                            <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
+                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
                             <excludes>
                                 <exclude>**/Transport*.java</exclude>
                             </excludes>
@@ -264,24 +264,6 @@
                 <elasticsearch.dist.version>${elasticsearch.version}</elasticsearch.dist.version>
                 <elasticsearch.groovy.inline>true</elasticsearch.groovy.inline>
             </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>default-test</id>
-                                <configuration combine.self="override">
-                                    <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
-                                    <!-- Transport client tests cannot run in same JVM as REST client tests
-                                         due to required static setup in common base class. -->
-                                    <reuseForks>false</reuseForks>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
 
         <!-- Redeclare gpg-plugin at the bottom to ensure it runs after all the other packaging goals -->

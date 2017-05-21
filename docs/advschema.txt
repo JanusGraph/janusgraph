@@ -62,7 +62,7 @@ Note, that the TTL of a vertex label can be modified but it might take some time
 
 === Multi-Properties
 
-As dicussed in <<schema>>, JanusGraph supports property keys with SET and LIST cardinality. Hence, JanusGraph supports multiple properties with the same key on a single vertex. Furthermore, JanusGraph treats properties similarly to edges in that single-valued property annotations are allowed on properties as shown in the following example.
+As discussed in <<schema>>, JanusGraph supports property keys with SET and LIST cardinality. Hence, JanusGraph supports multiple properties with the same key on a single vertex. Furthermore, JanusGraph treats properties similarly to edges in that single-valued property annotations are allowed on properties as shown in the following example.
 
 [source, gremlin]
 mgmt = graph.openManagement()

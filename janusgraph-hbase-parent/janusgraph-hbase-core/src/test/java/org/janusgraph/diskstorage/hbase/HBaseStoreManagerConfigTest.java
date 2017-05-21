@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 
 import org.apache.log4j.Appender;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.WriterAppender;
@@ -50,6 +51,8 @@ public class HBaseStoreManagerConfigTest {
     @Test
     public void testShortCfNames() throws Exception {
         Logger log = Logger.getLogger(HBaseStoreManager.class);
+        Level savedLevel = log.getLevel();
+        log.setLevel(Level.WARN);
         StringWriter writer = new StringWriter();
         Appender appender = new WriterAppender(new PatternLayout("%p: %m%n"), writer);
         log.addAppender(appender);
@@ -73,6 +76,7 @@ public class HBaseStoreManagerConfigTest {
         // Verify we get WARN.
         assertTrue(writer.toString(), writer.toString().startsWith("WARN: Configuration"));
         log.removeAppender(appender);
+        log.setLevel(savedLevel);
 
         store.close();
         manager.close();
