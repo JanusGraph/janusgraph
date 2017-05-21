@@ -35,6 +35,11 @@
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-cql</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-berkeleyje</artifactId>
             <version>${project.version}</version>
         </dependency>

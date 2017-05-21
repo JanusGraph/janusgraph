@@ -39,6 +39,7 @@ env:
     - MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/graphdb/hbase/*'
     - MODULE='hbase-parent/janusgraph-hbase-098' ARGS='-Dtest=**/diskstorage/hbase/*'
     - MODULE='hbase-parent/janusgraph-hbase-098' ARGS='-Dtest=**/graphdb/hbase/*'
+    - MODULE='cql'
 
 matrix:
   fast_finish: true
@@ -47,6 +48,7 @@ matrix:
     # Can fail due to timeout (runs longer than 50min)
     - env: MODULE='hbase-parent/janusgraph-hbase-098' ARGS='-Dtest=**/diskstorage/hbase/*'
     - env: MODULE='hbase-parent/janusgraph-hbase-098' ARGS='-Dtest=**/graphdb/hbase/*'
+    - env: MODULE='cql'
 
 addons:
   coverity_scan:
