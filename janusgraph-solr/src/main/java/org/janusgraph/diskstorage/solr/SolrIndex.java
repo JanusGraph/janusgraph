@@ -581,6 +581,8 @@ public class SolrIndex implements IndexProvider {
                     return (key + ":\"" + escapeValue(value) + "\"");
                 } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
                     return ("-" + key + ":\"" + escapeValue(value) + "\"");
+                } else if (janusgraphPredicate == Text.FUZZY || janusgraphPredicate == Text.CONTAINS_FUZZY) {
+                    return (key + ":"+escapeValue(value)+"~");
                 } else {
                     throw new IllegalArgumentException("Relation is not supported for string value: " + janusgraphPredicate);
                 }
@@ -772,9 +774,9 @@ public class SolrIndex implements IndexProvider {
             switch(mapping) {
                 case DEFAULT:
                 case TEXT:
-                    return janusgraphPredicate == Text.CONTAINS || janusgraphPredicate == Text.CONTAINS_PREFIX || janusgraphPredicate == Text.CONTAINS_REGEX;
+                    return janusgraphPredicate == Text.CONTAINS || janusgraphPredicate == Text.CONTAINS_PREFIX || janusgraphPredicate == Text.CONTAINS_REGEX || janusgraphPredicate == Text.CONTAINS_FUZZY;
                 case STRING:
-                    return janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL || janusgraphPredicate==Text.REGEX || janusgraphPredicate==Text.PREFIX;
+                    return janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL || janusgraphPredicate==Text.REGEX || janusgraphPredicate==Text.PREFIX  || janusgraphPredicate == Text.FUZZY;
 //                case TEXTSTRING:
 //                    return (janusgraphPredicate instanceof Text) || janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL;
             }
@@ -937,8 +939,8 @@ public class SolrIndex implements IndexProvider {
                for (Map.Entry<String, Slice> entry : slices.entrySet()) {
                     Map<String, Replica> shards = entry.getValue().getReplicasMap();
                     for (Map.Entry<String, Replica> shard : shards.entrySet()) {
-                        String state = shard.getValue().getStr(ZkStateReader.STATE_PROP);
-                        if ((state.equals(Replica.State.RECOVERING) || state.equals(Replica.State.DOWN))
+                        final String state = shard.getValue().getStr(ZkStateReader.STATE_PROP).toUpperCase();
+                        if ((Replica.State.RECOVERING.name().equals(state) || Replica.State.DOWN.name().equals(state))
                                 && clusterState.liveNodesContain(shard.getValue().getStr(
                                 ZkStateReader.NODE_NAME_PROP))) {
                             sawLiveRecovering = true;

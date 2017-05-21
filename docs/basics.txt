@@ -738,15 +738,14 @@ client.submit("g.V()").all().get();
 
 By adding the `JanusGraphIoRegistry` to the `org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0`, the driver will know how to properly deserialize custom data types returned by JanusGraph.
 
-[[indexes]]
-== Indexing for better Performance
-
-JanusGraph supports two different kinds of indexing to speed up query processing: *graph indexes* and *vertex-centric indexes*. Most graph queries start the traversal from a list of vertices or edges that are identified by their properties. Graph indexes make these global retrieval operations efficient on large graphs. Vertex-centric indexes speed up the actual traversal through the graph, in particular when traversing through vertices with many incident edges.
-
 === Extending JanusGraph Server
 
 It is possible to extend Gremlin Server with other means of communication by implementing the interfaces that it provides and leverage this with JanusGraph.  See more details in the appropriate TinkerPop documentation.
 
+[[indexes]]
+== Indexing for better Performance
+
+JanusGraph supports two different kinds of indexing to speed up query processing: *graph indexes* and *vertex-centric indexes*. Most graph queries start the traversal from a list of vertices or edges that are identified by their properties. Graph indexes make these global retrieval operations efficient on large graphs. Vertex-centric indexes speed up the actual traversal through the graph, in particular when traversing through vertices with many incident edges.
 
 
 [[graph-indexes]]
@@ -1007,7 +1006,7 @@ g.V(h).outE('battled').has('rating', gt(3.0)).inV()
 g.V(h).outE('battled').has('rating', 5.0).has('time', inside(10, 50)).inV()
 g.V(h).outE('battled').has('time', inside(10, 50)).inV()
 
-Hence, the `battlesByLocationAndTime` index can speed up the first two but not the third query.
+Hence, the `battlesByRatingAndTime` index can speed up the first two but not the third query.
 
 Multiple vertex-centric indexes can be built for the same edge label in order to support different constraint traversals. JanusGraph's query optimizer attempts to pick the most efficient index for any given traversal. Vertex-centric indexes only support equality and range/interval constraints.
 
@@ -1032,7 +1031,7 @@ g.V(h).local(outE('battled').has('rating', 5.0).order().by('time', decr).limit(1
 
 The first query asks for the names of the 10 most recently battled monsters by Hercules. The second query asks for the places of the 10 most recent battles of Hercules that are rated 5 stars. In both cases, the query is constrained by an order on a property key with a limit on the number of elements to be returned.
 
-Such queries can also be efficiently answered by vertex-centric indexes if the order key matches the key of the index and the requested order (i.e. increasing or decreasing) is the same as the one defined for the index. The `battlesByTime` index would be used to answer the first query and `battlesByLocationAndTime` applies to the second. Note, that the `battlesByLocationAndTime` index cannot be used to answer the first query because an equality constraint on `rating` must be present for the second key in the index to be effective.
+Such queries can also be efficiently answered by vertex-centric indexes if the order key matches the key of the index and the requested order (i.e. increasing or decreasing) is the same as the one defined for the index. The `battlesByTime` index would be used to answer the first query and `battlesByRatingAndTime` applies to the second. Note, that the `battlesByRatingAndTime` index cannot be used to answer the first query because an equality constraint on `rating` must be present for the second key in the index to be effective.
 
 [NOTE]
 Ordered vertex queries are a JanusGraph extension to Gremlin which causes the verbose syntax and requires the `_()` step to convert the JanusGraph result back into a Gremlin pipeline.

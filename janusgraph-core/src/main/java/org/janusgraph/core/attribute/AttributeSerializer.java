@@ -35,7 +35,7 @@ import org.janusgraph.diskstorage.WriteBuffer;
  * @param <V> Type of the attribute associated with the AttributeSerializer
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  * @see org.janusgraph.core.schema.RelationTypeMaker
- * @see <a href="http://s3.thinkaurelius.com/docs/titan/current/serializer.html">
+ * @see <a href="http://docs.janusgraph.org/latest/serializer.html">
  *      "Datatype and Attribute Serializer Configuration" manual chapter</a>
  */
 public interface AttributeSerializer<V> {

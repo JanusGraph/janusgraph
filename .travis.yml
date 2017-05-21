@@ -1,8 +1,9 @@
+dist: trusty
 language: java
 sudo: false
 
 jdk:
-  - oraclejdk8
+  - openjdk8
 
 cache:
   directories:
@@ -17,57 +18,39 @@ env:
     - ES_JAVA_OPTS="-Xms256m -Xmx512m"
 
   matrix:
-    - MODULE='berkeleyje'
-    - MODULE='cassandra'
-    - MODULE='cql'
-    - MODULE='es' ARGS='-DthreadCount=1'
-    - MODULE='es' ARGS='-DthreadCount=1 -Pelasticsearch2'
+    # sort modules by test time with quickest modules first
     - MODULE='hadoop-parent/janusgraph-hadoop-2'
-    - MODULE='hbase-parent/janusgraph-hbase-098'
-    - MODULE='hbase-parent/janusgraph-hbase-10'
-    - MODULE='lucene' ARGS='-DthreadCount=1'
-    - MODULE='solr' ARGS='-DthreadCount=1'
+    - MODULE='lucene'
+    - MODULE='solr'
+    - MODULE='es'
+    - MODULE='es' ARGS='-Pelasticsearch2'
+    - MODULE='es' ARGS='-Pelasticsearch2 -Dtest=**/Transport*'
+    - MODULE='berkeleyje'
     - MODULE='test'
+    - MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.unordered=true'
+    - MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - MODULE='cassandra' ARGS='-Dtest=**/graphdb/thrift/* -Dtest.skip.unordered=true'
+    - MODULE='cassandra' ARGS='-Dtest=**/graphdb/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/astyanax/*'
+    - MODULE='cassandra' ARGS='-Dtest=**/graphdb/astyanax/*'
+    - MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/embedded/*'
+    - MODULE='cassandra' ARGS='-Dtest=***/cassandra/*,*/graphdb/embedded/*'
+    - MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/diskstorage/hbase/*'
+    - MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/graphdb/hbase/*'
+    - MODULE='hbase-parent/janusgraph-hbase-098' ARGS='-Dtest=**/diskstorage/hbase/*'
+    - MODULE='hbase-parent/janusgraph-hbase-098' ARGS='-Dtest=**/graphdb/hbase/*'
+    - MODULE='cql'
 
 matrix:
+  fast_finish: true
   # https://docs.travis-ci.com/user/customizing-the-build#Rows-that-are-Allowed-to-Fail
   allow_failures:
-    # Non-deterministic: can pass or fail, regardless of any relevant changes.
-    # https://travis-ci.org/JanusGraph/janusgraph/jobs/198165185
-    - env: MODULE='berkeleyje'
-
-    # Currently broken due to too many log statements (exceeds 4MB)
-    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197472452
-    - env: MODULE='cassandra'
-
-    # Currently broken due to too many log statements (exceeds 4MB)
+    # Can fail due to timeout (runs longer than 50min)
+    - env: MODULE='hbase-parent/janusgraph-hbase-098' ARGS='-Dtest=**/diskstorage/hbase/*'
+    - env: MODULE='hbase-parent/janusgraph-hbase-098' ARGS='-Dtest=**/graphdb/hbase/*'
     - env: MODULE='cql'
 
-    # Currently broken due to too many log statements (exceeds 4MB)
-    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197472453
-    - env: MODULE='es' ARGS='-DthreadCount=1'
-    - env: MODULE='es' ARGS='-DthreadCount=1 -Pelasticsearch2'
-
-    # Currently broken due to too many log statements (exceeds 4MB)
-    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197672947
-    - env: MODULE='hadoop-parent/janusgraph-hadoop-2'
-
-    # Currently broken due to timeout (runs longer than 50min)
-    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197672951
-    - env: MODULE='hbase-parent/janusgraph-hbase-098'
-
-    # Currently broken due to timeout (runs longer than 50min)
-    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197672952
-    - env: MODULE='hbase-parent/janusgraph-hbase-10'
-
-    # Currently broken due to too many log statements (exceeds 4MB)
-    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197427609
-    - env: MODULE='solr' ARGS='-DthreadCount=1'
-
 addons:
-  apt:
-    packages:
-      - oracle-java8-installer
   coverity_scan:
     # Coverity config parameters described in detail:
     # https://scan.coverity.com/travis_ci
@@ -81,13 +64,17 @@ addons:
     build_command: "travis_wait mvn clean package -B -DskipTests=true"
     branch_pattern: coverity_scan
 
+install:
+  # Build and install current module and dependencies. Handle output timeouts and retry on error.
+  - travis_retry travis_wait mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V -pl janusgraph-${MODULE} -am
+
 script:
   - if [[ "${COVERITY_SCAN_BRANCH}}" == 1 ]]; then
       echo "Skipping build/test on 'coverity_scan' branch.";
       exit 0;
     fi
-  - mvn install -DskipTests=true -B -pl janusgraph-${MODULE} -am
-  - mvn verify -pl janusgraph-${MODULE} ${ARGS}
+  # Build and test module. Handle output timeouts and retry with a clean build on error.
+  - travis_retry travis_wait 50 mvn clean verify -pl janusgraph-${MODULE} ${ARGS}
 
 # Syntax and more info: https://docs.travis-ci.com/user/notifications
 notifications:

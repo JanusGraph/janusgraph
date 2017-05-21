@@ -1055,7 +1055,10 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 2, new boolean[]{true, true}, "mixed");
         evaluateQuery(tx.query().has("name", Text.PREFIX, "Middle"), ElementCategory.VERTEX,
                 1, new boolean[]{true, true}, "mixed");
-
+        evaluateQuery(tx.query().has("name", Text.FUZZY, "Long john Don"), ElementCategory.VERTEX,
+                1, new boolean[]{true, true}, "mixed");
+        evaluateQuery(tx.query().has("name", Text.CONTAINS_FUZZY, "Midle"), ElementCategory.VERTEX,
+                1, new boolean[]{true, true}, "mixed");
         for (Vertex u : tx.getVertices()) {
             String n = u.<String>value("name");
             if (n.endsWith("Don")) {
