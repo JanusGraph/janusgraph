@@ -50,3 +50,4 @@ CLAs and best practices for working with GitHub.
 The following users have deployed JanusGraph in production.
 
 * [FiNC](https://finc.com)
+* [Seeq](https://seeq.com)
