@@ -105,7 +105,7 @@ public enum ElasticSearchSetup {
 
             TransportElasticSearchClient client = new TransportElasticSearchClient(tc);
             if (config.has(ElasticSearchIndex.BULK_REFRESH)) {
-                client.setBulkRefresh(config.get(ElasticSearchIndex.BULK_REFRESH).equals("true"));
+                client.setBulkRefresh(!"false".equals(config.get(ElasticSearchIndex.BULK_REFRESH)));
             }
             return new Connection(client);
         }
