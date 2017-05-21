@@ -44,3 +44,9 @@ The [project homepage](http://janusgraph.org) contains more information on Janus
 
 Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for more information, including
 CLAs and best practices for working with GitHub.
+
+## Users
+
+The following users have deployed JanusGraph in production.
+
+* [FiNC](https://finc.com)
