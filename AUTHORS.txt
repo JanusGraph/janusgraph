@@ -16,5 +16,6 @@ DataStax
 Dylan Bethune-Waddell <dylan.bethune.waddell@mail.utoronto.ca>
 Expero
 Google
+Orion Health
 IBM
 Rafael Fernandes <luizrafael@gmail.com>
