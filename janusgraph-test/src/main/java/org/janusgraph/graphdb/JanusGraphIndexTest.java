@@ -98,6 +98,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     public static final String EINDEX = "e" + INDEX;
     public static final String PINDEX = "p" + INDEX;
 
+    private static final int RETRY_COUNT = 30;
+    private static final long RETRY_INTERVAL = 1000l;
 
     public final boolean supportsGeoPoint;
     public final boolean supportsNumeric;
@@ -205,7 +207,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
 
     @Test
-    public void testIndexing() {
+    public void testIndexing() throws InterruptedException {
 
         PropertyKey text = makeKey("text", String.class);
         createExternalVertexIndex(text, INDEX);
@@ -273,99 +275,21 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             }
         }
 
-        for (int i = 0; i < words.length; i++) {
-            int expectedSize = numV / words.length;
-            assertCount(expectedSize, tx.query().has("text", Text.CONTAINS, words[i]).vertices());
-            assertCount(expectedSize, tx.query().has("text", Text.CONTAINS, words[i]).edges());
-
-            //Test ordering
-            for (String orderKey : new String[]{"time", "category"}) {
-                for (Order order : Order.values()) {
-                    for (JanusGraphQuery traversal : ImmutableList.of(
-                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP()),
-                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP())
-                    )) {
-                        verifyElementOrder(traversal.vertices(), orderKey, order, expectedSize);
-                    }
-                }
-            }
-        }
-
-        assertCount(3, tx.query().has("group", 3).orderBy("time", incr).limit(3).vertices());
-        assertCount(3, tx.query().has("group", 3).orderBy("time", decr).limit(3).edges());
-
-        for (int i = 0; i < numV / 2; i += numV / 10) {
-            assertCount(i, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).vertices());
-            assertCount(i, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).edges());
-        }
-
-        for (int i = 0; i < numV; i += 5) {
-            testGeo(i, originalNumV, numV, "location", "boundary");
-        }
-
-        //Queries combining mixed and composite indexes
-        assertCount(4, tx.query().has("category", 1).interval("time", 10, 28).vertices());
-        assertCount(4, tx.query().has("category", 1).interval("time", 10, 28).edges());
-
-        assertCount(5, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]).vertices());
-        offset = (19 * 50.0 / originalNumV);
-        distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
-        assertCount(5, tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Text.CONTAINS, words[0]).vertices());
-        assertCount(5, tx.query().has("boundary", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Text.CONTAINS, words[0]).vertices());
-
-        assertCount(numV, tx.query().vertices());
-        assertCount(numV, tx.query().edges());
+        checkIndexingCounts(words, numV, originalNumV, true);
 
         //--------------
 
-        clopen();
-
-        //##########################
-        //Copied from above
-        //##########################
-
-        for (int i = 0; i < words.length; i++) {
-            int expectedSize = numV / words.length;
-            assertCount(expectedSize, tx.query().has("text", Text.CONTAINS, words[i]).vertices());
-            assertCount(expectedSize, tx.query().has("text", Text.CONTAINS, words[i]).edges());
-
-            //Test ordering
-            for (String orderKey : new String[]{"time", "category"}) {
-                for (Order order : Order.values()) {
-                    for (JanusGraphQuery traversal : ImmutableList.of(
-                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP()),
-                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP())
-                    )) {
-                        verifyElementOrder(traversal.vertices(), orderKey, order, expectedSize);
-                    }
-                }
+        // some indexing backends may guarantee only eventual consistency
+        for (int retry = 0, status = 1; retry < RETRY_COUNT && status > 0; retry++) {
+            clopen();
+            try {
+                checkIndexingCounts(words, numV, originalNumV, true);
+                status = 0;
+            } catch (AssertionError e) {
+                if (retry >= RETRY_COUNT-1) throw e;
+                Thread.sleep(RETRY_INTERVAL);
             }
         }
-
-        assertCount(3, tx.query().has("group", 3).orderBy("time", incr).limit(3).vertices());
-        assertCount(3, tx.query().has("group", 3).orderBy("time", decr).limit(3).edges());
-
-        for (int i = 0; i < numV / 2; i += numV / 10) {
-            assertCount(i, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).vertices());
-            assertCount(i, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).edges());
-        }
-
-        for (int i = 0; i < numV; i += 5) {
-            testGeo(i, originalNumV, numV, "location", "boundary");
-        }
-
-        //Queries combining mixed and composite indexes
-        assertCount(4, tx.query().has("category", 1).interval("time", 10, 28).vertices());
-        assertCount(4, tx.query().has("category", 1).interval("time", 10, 28).edges());
-
-        assertCount(5, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]).vertices());
-        offset = (19 * 50.0 / originalNumV);
-        distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
-        assertCount(5, tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Text.CONTAINS, words[0]).vertices());
-        assertCount(5, tx.query().has("boundary", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Text.CONTAINS, words[0]).vertices());
-
-        assertCount(numV, tx.query().vertices());
-        assertCount(numV, tx.query().edges());
 
         newTx();
 
@@ -374,13 +298,34 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             getVertex("uid", i).remove();
         }
 
-        numV = numV - numDelete;
+        numV -= numDelete;
 
-        //Copied from above
+        checkIndexingCounts(words, numV, originalNumV, false);
+    }
+
+    private void checkIndexingCounts(String[] words, int numV, int originalNumV, boolean checkOrder) {
         for (int i = 0; i < words.length; i++) {
-            assertCount(numV / words.length, tx.query().has("text", Text.CONTAINS, words[i]).vertices());
-            assertCount(numV / words.length, tx.query().has("text", Text.CONTAINS, words[i]).edges());
+            int expectedSize = numV / words.length;
+            assertCount(expectedSize, tx.query().has("text", Text.CONTAINS, words[i]).vertices());
+            assertCount(expectedSize, tx.query().has("text", Text.CONTAINS, words[i]).edges());
+
+            //Test ordering
+            if (checkOrder) {
+                for (String orderKey : new String[]{"time", "category"}) {
+                    for (Order order : Order.values()) {
+                        for (JanusGraphQuery traversal : ImmutableList.of(
+                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP()),
+                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP())
+                        )) {
+                            verifyElementOrder(traversal.vertices(), orderKey, order, expectedSize);
+                        }
+                    }
+                }
+            }
         }
+
+        assertCount(3, tx.query().has("group", 3).orderBy("time", incr).limit(3).vertices());
+        assertCount(3, tx.query().has("group", 3).orderBy("time", decr).limit(3).edges());
 
         for (int i = 0; i < numV / 2; i += numV / 10) {
             assertCount(i, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).vertices());
@@ -391,18 +336,19 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             testGeo(i, originalNumV, numV, "location", "boundary");
         }
 
+        //Queries combining mixed and composite indexes
+        assertCount(4, tx.query().has("category", 1).interval("time", 10, 28).vertices());
+        assertCount(4, tx.query().has("category", 1).interval("time", 10, 28).edges());
+
         assertCount(5, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]).vertices());
-        offset = (19 * 50.0 / originalNumV);
-        distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
+        double offset = (19 * 50.0 / originalNumV);
+        double distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
         assertCount(5, tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Text.CONTAINS, words[0]).vertices());
         assertCount(5, tx.query().has("boundary", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Text.CONTAINS, words[0]).vertices());
 
         assertCount(numV, tx.query().vertices());
         assertCount(numV, tx.query().edges());
-
-
     }
-
 
     /**
      * Tests indexing boolean
