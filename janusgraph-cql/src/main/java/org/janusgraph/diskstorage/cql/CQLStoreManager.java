@@ -22,6 +22,7 @@ import static io.vavr.API.Match;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CLUSTER_NAME;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ONLY_USE_LOCAL_CONSISTENCY_FOR_SYSTEM_OPERATIONS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_DATACENTER;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.PROTOCOL_VERSION;
@@ -154,11 +155,13 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                 .set(WRITE_CONSISTENCY, CONSISTENCY_LOCAL_QUORUM)
                 .set(METRICS_PREFIX, METRICS_SYSTEM_PREFIX_DEFAULT);
 
+        final Boolean onlyUseLocalConsistency = configuration.get(ONLY_USE_LOCAL_CONSISTENCY_FOR_SYSTEM_OPERATIONS);
+
         final StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder();
 
         fb.batchMutation(true).distributed(true);
         fb.timestamps(true).cellTTL(true);
-        fb.keyConsistent(global, local);
+        fb.keyConsistent((onlyUseLocalConsistency ? local : global), local);
         fb.optimisticLocking(true);
         fb.multiQuery(false);
 
