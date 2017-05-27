@@ -894,7 +894,7 @@ public abstract class IndexProviderTest {
      */
     @Test
     public void testCustomAnalyzer() throws Exception {
-        if(!indexFeatures.supportsCustomAnalyser())
+        if (!indexFeatures.supportsCustomAnalyzer())
             return;
         String store = "vertex";
         initialize(store);

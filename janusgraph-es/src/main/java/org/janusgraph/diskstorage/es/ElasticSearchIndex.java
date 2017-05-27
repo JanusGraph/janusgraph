@@ -169,7 +169,7 @@ public class ElasticSearchIndex implements IndexProvider {
             new ConfigNamespace(ES_CREATE_NS, "ext", "Overrides for arbitrary settings applied at index creation", true);
 
     private static final IndexFeatures ES_FEATURES = new IndexFeatures.Builder()
-            .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.TEXTSTRING, Mapping.STRING).setWildcardField("_all").supportsCardinality(Cardinality.SINGLE).supportsCardinality(Cardinality.LIST).supportsCardinality(Cardinality.SET).supportsNanoseconds().supportsCustomAnalyser().build();
+            .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.TEXTSTRING, Mapping.STRING).setWildcardField("_all").supportsCardinality(Cardinality.SINGLE).supportsCardinality(Cardinality.LIST).supportsCardinality(Cardinality.SET).supportsNanoseconds().supportsCustomAnalyzer().build();
 
     public static final int HOST_PORT_DEFAULT = 9200;
 
@@ -309,18 +309,18 @@ public class ElasticSearchIndex implements IndexProvider {
                     case STRING:
                         if (stringAnalyzer != null) {
                             mapping.field(ANALYZER, stringAnalyzer);
-                        }else{
-                            mapping.field(INDEX,NOT_ANALYZED);
+                        } else {
+                            mapping.field(INDEX, NOT_ANALYZED);
                         }
                         break;
                     case TEXT:
                         if (textAnalyzer != null) {
-                            mapping.field(ANALYZER,textAnalyzer);
+                            mapping.field(ANALYZER, textAnalyzer);
                         }
                     	break;
                     case TEXTSTRING:
                         if (textAnalyzer != null) {
-                            mapping.field(ANALYZER,textAnalyzer);
+                            mapping.field(ANALYZER, textAnalyzer);
                         }
                         mapping.endObject();
                         //add string mapping
@@ -329,7 +329,7 @@ public class ElasticSearchIndex implements IndexProvider {
                         if (stringAnalyzer != null) {
                             mapping.field(ANALYZER, stringAnalyzer);
                         } else {
-                            mapping.field(INDEX,NOT_ANALYZED);
+                            mapping.field(INDEX, NOT_ANALYZED);
                         }
                         break;
                     default: throw new AssertionError("Unexpected mapping: "+map);
@@ -379,7 +379,7 @@ public class ElasticSearchIndex implements IndexProvider {
             } else if (dataType == UUID.class) {
                 log.debug("Registering uuid type for {}", key);
                 mapping.field("type", "string");
-                mapping.field(INDEX,NOT_ANALYZED);
+                mapping.field(INDEX, NOT_ANALYZED);
             }
 
             mapping.endObject().endObject().endObject();
@@ -707,7 +707,7 @@ public class ElasticSearchIndex implements IndexProvider {
                     throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + janusgraphPredicate);
                 if (map==Mapping.TEXTSTRING && !janusgraphPredicate.toString().startsWith("CONTAINS"))
                     fieldName = getDualMappingName(key);
-                if (janusgraphPredicate == Text.CONTAINS ||janusgraphPredicate == Cmp.EQUAL ) {
+                if (janusgraphPredicate == Text.CONTAINS || janusgraphPredicate == Cmp.EQUAL) {
                     return QueryBuilders.matchQuery(fieldName, value).operator(Operator.AND);
                 } else if (janusgraphPredicate == Text.CONTAINS_PREFIX) {
                     value = ParameterType.TEXT_ANALYZER.findParameter(informations.get(key).getParameters(), null)!=null?((String) value):((String) value).toLowerCase();
@@ -720,7 +720,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 } else if (janusgraphPredicate == Text.REGEX) {
                     return QueryBuilders.regexpQuery(fieldName, (String) value);
                 } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
-                      return QueryBuilders.boolQuery().mustNot(QueryBuilders.matchQuery(fieldName, value).operator(Operator.AND));
+                    return QueryBuilders.boolQuery().mustNot(QueryBuilders.matchQuery(fieldName, value).operator(Operator.AND));
                 } else if (janusgraphPredicate == Text.FUZZY || janusgraphPredicate == Text.CONTAINS_FUZZY){
                     return QueryBuilders.matchQuery(fieldName, (String) value).fuzziness(Fuzziness.AUTO).operator(Operator.AND);
                 } else
