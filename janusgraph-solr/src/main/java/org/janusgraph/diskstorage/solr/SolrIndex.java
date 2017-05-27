@@ -42,7 +42,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.impl.*;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -65,7 +64,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.StringReader;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -170,7 +168,7 @@ public class SolrIndex implements IndexProvider {
 
 
     private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL()
-            .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.STRING).supportsCardinality(Cardinality.SINGLE).supportsCustomAnalyser().build();
+            .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.STRING).supportsCardinality(Cardinality.SINGLE).supportsCustomAnalyzer().build();
 
     private static Map<Geo, String> SPATIAL_PREDICATES = spatialPredicates();
 
@@ -267,7 +265,7 @@ public class SolrIndex implements IndexProvider {
         //Since all data types must be defined in the schema.xml, pre-registering a type does not work
         //But we check Analyse feature
         String analyzer = (String) ParameterType.STRING_ANALYZER.findParameter(information.getParameters(), null);
-        if (analyzer !=null) {
+        if (analyzer != null) {
             //If the key have a tokenizer, we try to get it by reflextion
             try {
                 ((Constructor<Tokenizer>) ClassLoader.getSystemClassLoader().loadClass(analyzer)
@@ -277,7 +275,7 @@ public class SolrIndex implements IndexProvider {
             }
         }
         analyzer = (String) ParameterType.TEXT_ANALYZER.findParameter(information.getParameters(), null);
-        if (analyzer !=null) {
+        if (analyzer != null) {
             //If the key have a tokenizer, we try to get it by reflextion
             try {
                 ((Constructor<Tokenizer>) ClassLoader.getSystemClassLoader().loadClass(analyzer)
@@ -584,7 +582,7 @@ public class SolrIndex implements IndexProvider {
                 //Special case
                 if (janusgraphPredicate == Text.CONTAINS) {
                     return tokenize(informations, value, key, janusgraphPredicate,  (String) ParameterType.TEXT_ANALYZER.findParameter(informations.get(key).getParameters(), null));
-                }else if (janusgraphPredicate == Text.PREFIX || janusgraphPredicate == Text.CONTAINS_PREFIX) {
+                } else if (janusgraphPredicate == Text.PREFIX || janusgraphPredicate == Text.CONTAINS_PREFIX) {
                     return (key + ":" + escapeValue(value) + "*");
                 } else if (janusgraphPredicate == Text.REGEX || janusgraphPredicate == Text.CONTAINS_REGEX) {
                     return (key + ":/" + value + "/");
@@ -592,7 +590,7 @@ public class SolrIndex implements IndexProvider {
                     String tokenizer = (String) ParameterType.STRING_ANALYZER.findParameter(informations.get(key).getParameters(), null);
                     if(tokenizer != null){
                         return tokenize(informations, value, key, janusgraphPredicate,tokenizer);
-                    }else{
+                    } else {
                         return (key + ":\"" + escapeValue(value) + "\"");
                     }
                 } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
@@ -713,7 +711,7 @@ public class SolrIndex implements IndexProvider {
         List<String> terms;
         if(tokenizer != null){
             terms = customTokenize(tokenizer, (String) value);
-        }else{
+        } else {
             terms = Text.tokenize((String) value);
         }
         if (terms.isEmpty()) {
@@ -746,7 +744,7 @@ public class SolrIndex implements IndexProvider {
             return terms;
         } catch ( ReflectiveOperationException | IOException e) {
                 throw new IllegalArgumentException(e.getMessage(),e);
-        } finally{
+        } finally {
             IOUtils.closeQuietly(stream);
         }
     }

@@ -35,12 +35,12 @@ public class IndexFeatures {
     private final ImmutableSet<Mapping> supportedStringMappings;
     private final String wildcardField;
     private final boolean supportsNanoseconds;
-    private final boolean supportsCustomAnalyser;
+    private final boolean supportsCustomAnalyzer;
     private ImmutableSet<Cardinality> supportedCardinalities;
 
     public IndexFeatures(boolean supportsDocumentTTL,
                          Mapping defaultMap,
-                         ImmutableSet<Mapping> supportedMap, String wildcardField, ImmutableSet<Cardinality> supportedCardinaities, boolean supportsNanoseconds, boolean supportCustomAnalyser) {
+                         ImmutableSet<Mapping> supportedMap, String wildcardField, ImmutableSet<Cardinality> supportedCardinaities, boolean supportsNanoseconds, boolean supportCustomAnalyzer) {
 
         Preconditions.checkArgument(defaultMap!=null || defaultMap!=Mapping.DEFAULT);
         Preconditions.checkArgument(supportedMap!=null && !supportedMap.isEmpty()
@@ -51,7 +51,7 @@ public class IndexFeatures {
         this.wildcardField = wildcardField;
         this.supportedCardinalities = supportedCardinaities;
         this.supportsNanoseconds = supportsNanoseconds;
-        this.supportsCustomAnalyser = supportCustomAnalyser;
+        this.supportsCustomAnalyzer = supportCustomAnalyzer;
     }
 
     public boolean supportsDocumentTTL() {
@@ -78,8 +78,8 @@ public class IndexFeatures {
         return supportsNanoseconds;
     }
     
-    public boolean supportsCustomAnalyser() {
-        return supportsCustomAnalyser;
+    public boolean supportsCustomAnalyzer() {
+        return supportsCustomAnalyzer;
     }
 
     public static class Builder {
@@ -90,7 +90,7 @@ public class IndexFeatures {
         private Set<Cardinality> supportedCardinalities = Sets.newHashSet();
         private String wildcardField = "*";
         private boolean supportsNanoseconds;
-        private boolean supportsCustomAnalyser;
+        private boolean supportsCustomAnalyzer;
 
         public Builder supportsDocumentTTL() {
             supportsDocumentTTL=true;
@@ -122,14 +122,14 @@ public class IndexFeatures {
             return this;
         }
         
-        public Builder supportsCustomAnalyser() {
-            supportsCustomAnalyser = true;
+        public Builder supportsCustomAnalyzer() {
+            supportsCustomAnalyzer = true;
             return this;
         }
 
         public IndexFeatures build() {
             return new IndexFeatures(supportsDocumentTTL, defaultStringMapping,
-                    ImmutableSet.copyOf(supportedMappings), wildcardField,  ImmutableSet.copyOf(supportedCardinalities), supportsNanoseconds,supportsCustomAnalyser);
+                    ImmutableSet.copyOf(supportedMappings), wildcardField,  ImmutableSet.copyOf(supportedCardinalities), supportsNanoseconds, supportsCustomAnalyzer);
         }
 
 
