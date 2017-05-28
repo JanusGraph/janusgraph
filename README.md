@@ -2,8 +2,19 @@
 
 JanusGraph is a highly scalable [graph database](http://en.wikipedia.org/wiki/Graph_database) optimized for storing and querying large graphs with billions of vertices and edges distributed across a multi-machine cluster. JanusGraph is a transactional database that can support thousands of concurrent users, complex traversals, and analytic graph queries.
 
-[![Build Status](https://travis-ci.org/JanusGraph/janusgraph.svg?branch=master)](https://travis-ci.org/JanusGraph/janusgraph)
-[![Gitter](https://img.shields.io/gitter/room/janusgraph/janusgraph.svg)](https://gitter.im/janusgraph/janusgraph)
+[![Build Status][travis-shield]][travis-link]
+[![Maven][maven-shield]][maven-link]
+[![Gitter][gitter-shield]][gitter-link]
+[![Stack Overflow][stackoverflow-shield]][stackoverflow-link]
+
+[travis-shield]: https://travis-ci.org/JanusGraph/janusgraph.svg?branch=master
+[travis-link]: https://travis-ci.org/JanusGraph/janusgraph
+[maven-shield]: https://maven-badges.herokuapp.com/maven-central/org.janusgraph/janusgraph-core/badge.svg
+[maven-link]: http://search.maven.org/#search%7Cga%7C1%7Corg.janusgraph
+[gitter-shield]: https://img.shields.io/gitter/room/janusgraph/janusgraph.svg
+[gitter-link]: https://gitter.im/janusgraph/janusgraph
+[stackoverflow-shield]: https://img.shields.io/badge/stackoverflow-janusgraph-blue.svg
+[stackoverflow-link]: https://stackoverflow.com/questions/tagged/janusgraph
 
 ## Learn More
 
