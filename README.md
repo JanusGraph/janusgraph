@@ -9,9 +9,17 @@ JanusGraph is a highly scalable [graph database](http://en.wikipedia.org/wiki/Gr
 
 The [project homepage](http://janusgraph.org) contains more information on JanusGraph and provides links to documentation, getting-started guides and release downloads.
 
-## Contact
+## Community
 
-* Email:
+* Chat: join us on [Gitter](https://gitter.im/JanusGraph/janusgraph)
+
+* Stack Overflow: see the
+  [`janusgraph`](https://stackoverflow.com/questions/tagged/janusgraph) tag
+
+* Twitter: follow [@JanusGraph](https://twitter.com/JanusGraph) for news and
+  updates
+
+* Mailing lists:
 
   * **janusgraph-users (at) googlegroups.com**
     ([archives](https://groups.google.com/group/janusgraph-users))
@@ -34,11 +42,6 @@ The [project homepage](http://janusgraph.org) contains more information on Janus
 
     * janusgraph-dev+subscribe (at) googlegroups.com
     * janusgraph-dev+unsubscribe (at) googlegroups.com
-
-* Chat: find us on [Gitter](https://gitter.im/JanusGraph/janusgraph)
-
-* Twitter: follow [@JanusGraph](https://twitter.com/JanusGraph) for news and
-  updates
 
 ## Contributing
 
