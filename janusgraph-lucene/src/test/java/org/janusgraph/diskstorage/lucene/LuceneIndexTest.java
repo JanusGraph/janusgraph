@@ -61,6 +61,16 @@ public class LuceneIndexTest extends IndexProviderTest {
         return false;
     }
 
+    @Override
+    public String getEnglishAnalyzerName() {
+        return null;
+    }
+    
+    @Override
+    public String getKeywordAnalyzerName() {
+        return null;
+    }
+
     public static final Configuration getLocalLuceneTestConfig() {
         final String index = "lucene";
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
