@@ -12,6 +12,7 @@ JanusGraph supports http://lucene.apache.org/solr/[Solr] as an index backend.  H
 * *Numeric Range*: Supports all numeric comparisons in `Compare`.
 * *TTL*: Supports automatically expiring indexed elements.
 * *Temporal*: Millisecond granularity temporal indexing.
+* *Custom Analyzer*: Choose to use a custom analyzer
 
 Please see <<version-compat>> for details on what versions of Solr will work with JanusGraph.
 

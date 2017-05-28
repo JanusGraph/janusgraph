@@ -478,6 +478,13 @@
         <filter class="solr.LowerCaseFilterFactory" />
       </analyzer>
     </fieldType>
+    
+    <!--  the entire field value is keeping it as a single token.  -->
+    <fieldType name="keyword" class="solr.TextField" positionIncrementGap="100">
+      <analyzer>
+        <tokenizer class="solr.KeywordTokenizerFactory"/>
+      </analyzer>
+    </fieldType>
 
     <!-- since fields of this type are by default not stored or indexed,
          any data added to them will be ignored outright.  --> 
@@ -556,6 +563,10 @@
     <field name="blah" type="string" indexed="true" stored="true"/>
     <field name="date" type="date" indexed="true" stored="true" />
     <field name="instant" type="date" indexed="true" stored="true" />
+    <field name="analyzed" type="text_en" indexed="true" stored="true" multiValued="false" />
+    <field name="string" type="text_en" indexed="true" stored="true" multiValued="false" />
+    <field name="full_text" type="text_en" indexed="true" stored="true" multiValued="false" />
+    <field name="keyword" type="text_en" indexed="true" stored="true" multiValued="false" />
     <!-- JanusGraphIndexTest -->
     <field name="xtext" type="text_general" indexed="true" stored="true" multiValued="false" />
     <field name="xstr" type="string" indexed="true" stored="true"/>
