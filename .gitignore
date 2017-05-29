@@ -47,7 +47,10 @@ janusgraph-*/pom.xml.versionsBackup
 /debian/
 /redhat/
 /pkgcommon/
+
 # Emacs file backups
 *~
 # Nano file backups
 *.save
+# Vim file backups
+*.swp
