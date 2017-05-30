@@ -20,7 +20,7 @@ import org.janusgraph.diskstorage.util.StaticArrayEntry.GetColVal;
 
 import com.datastax.driver.core.Row;
 
-import javaslang.Tuple3;
+import io.vavr.Tuple3;
 
 class CQLColValGetter implements GetColVal<Tuple3<StaticBuffer, StaticBuffer, Row>, StaticBuffer> {
 
