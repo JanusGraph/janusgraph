@@ -13,7 +13,7 @@ JanusGraph.
 [options="header"]
 |==========================
 | JanusGraph | Cassandra | HBase | Bigtable | Elasticsearch | Solr | TinkerPop
-| 0.1.0 | 1.2.z, 2.0.z, 2.1.z | 0.98.z, 1.0.z, 1.1.z, 1.2.z | 0.9.z | 2.z,5.z* |  5.2.z | 3.2.z |
+| 0.1.0 | 1.2.z, 2.0.z, 2.1.z | 0.98.z, 1.0.z, 1.1.z, 1.2.z | 0.9.z | 1.z*,2.z,5.z |  5.2.z | 3.2.z |
 |==========================
 
-*The Elasticsearch REST client is compatible with both Elasticsearch 2.z and 5.z. The transport client is only compatibile with Elasticsearch 2.z.
+*Elasticsearch 1.z compatibility is deprecated and no longer tested by default

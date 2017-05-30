@@ -16,8 +16,12 @@ package org.janusgraph.diskstorage.es;
 
 public enum ElasticMajorVersion {
 
+    ONE,
+
     TWO,
 
-    FIVE
+    FIVE,
+
+    ;
 
 }
