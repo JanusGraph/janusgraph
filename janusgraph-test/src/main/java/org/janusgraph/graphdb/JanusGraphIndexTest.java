@@ -1757,8 +1757,10 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertCount(numV-(i + 1), tx.query().has(geoShapeProperty, Geo.DISJOINT, Geoshape.circle(0.0, 0.0, distance)).vertices());
         assertCount(numV-(i + 1), tx.query().has(geoShapeProperty, Geo.DISJOINT, Geoshape.circle(0.0, 0.0, distance)).edges());
 
-        assertCount(i % 2, tx.query().has(geoShapeProperty, Geo.CONTAINS, Geoshape.point(-offset,-offset)).vertices());
-        assertCount(i % 2, tx.query().has(geoShapeProperty, Geo.CONTAINS, Geoshape.point(-offset,-offset)).edges());
+        if (indexFeatures.supportsGeoContains()) {
+            assertCount(i % 2, tx.query().has(geoShapeProperty, Geo.CONTAINS, Geoshape.point(-offset, -offset)).vertices());
+            assertCount(i % 2, tx.query().has(geoShapeProperty, Geo.CONTAINS, Geoshape.point(-offset, -offset)).edges());
+        }
 
         double buffer = bufferKm/111.;
         double min = -Math.abs(offset);

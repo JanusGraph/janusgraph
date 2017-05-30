@@ -32,18 +32,8 @@ public class ElasticSearchConstants {
     public static final String ES_SCRIPT_KEY = "script";
     public static final String ES_INLINE_KEY = "inline";
     public static final String ES_LANG_KEY = "lang";
-    public static final String ES_VERSION_EXPECTED;
-
-    static {
-        Properties props;
-
-        try {
-            props = new Properties();
-            props.load(JanusGraphFactory.class.getClassLoader().getResourceAsStream(ES_PROPERTIES_FILE));
-        } catch (IOException e) {
-            throw new AssertionError(e);
-        }
-
-        ES_VERSION_EXPECTED = props.getProperty("es.version");
-    }
+    public static final String ES_TYPE_KEY = "type";
+    public static final String ES_INDEX_KEY = "index";
+    public static final String ES_ANALYZER = "analyzer";
+    public static final String ES_GEO_COORDS_KEY = "coordinates";
 }

@@ -41,13 +41,17 @@ public class BerkeleyElasticsearchTest extends JanusGraphIndexTest {
 
     @BeforeClass
     public static void startElasticsearch() {
-        esr = new ElasticsearchRunner();
-        esr.start();
+        if (!ElasticsearchRunner.IS_EXTERNAL) {
+            esr = new ElasticsearchRunner();
+            esr.start();
+        }
     }
 
     @AfterClass
     public static void stopElasticsearch() {
-        esr.stop();
+        if (!ElasticsearchRunner.IS_EXTERNAL) {
+            esr.stop();
+        }
     }
 
     public BerkeleyElasticsearchTest() {

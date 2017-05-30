@@ -87,7 +87,12 @@ public class LuceneIndex implements IndexProvider {
 
     private static final Version LUCENE_VERSION = Version.LUCENE_5_5_2;
 
-    private static final IndexFeatures LUCENE_FEATURES = new IndexFeatures.Builder().supportedStringMappings(Mapping.TEXT, Mapping.STRING).supportsCardinality(Cardinality.SINGLE).supportsNanoseconds().build();
+    private static final IndexFeatures LUCENE_FEATURES = new IndexFeatures.Builder()
+        .supportedStringMappings(Mapping.TEXT, Mapping.STRING)
+        .supportsCardinality(Cardinality.SINGLE)
+        .supportsNanoseconds()
+        .supportsGeoContains()
+        .build();
 
     /**
      * Default tree levels used when creating the prefix tree.

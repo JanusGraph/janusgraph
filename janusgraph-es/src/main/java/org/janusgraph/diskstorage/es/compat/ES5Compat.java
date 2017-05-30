@@ -12,12 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.diskstorage.es;
+package org.janusgraph.diskstorage.es.compat;
 
-public class TransportElasticSearchConfigTest extends ElasticSearchConfigTest {
+import org.janusgraph.diskstorage.indexing.IndexFeatures;
 
-    public ElasticSearchSetup getInterface() {
-        return ElasticSearchSetup.TRANSPORT_CLIENT;
+/**
+ * Mapping and query object builder for Elasticsearch 5.x.
+ */
+public class ES5Compat extends AbstractESCompat {
+
+    private static final IndexFeatures FEATURES = coreFeatures().supportsGeoContains().build();
+
+    @Override
+    public IndexFeatures getIndexFeatures() {
+        return FEATURES;
     }
 
 }

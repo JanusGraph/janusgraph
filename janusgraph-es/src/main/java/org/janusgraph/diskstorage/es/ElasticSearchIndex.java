@@ -15,28 +15,17 @@
 package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.spatial4j.core.shape.Rectangle;
 import org.apache.commons.lang.StringUtils;
-import org.elasticsearch.Version;
-import org.elasticsearch.common.geo.ShapeRelation;
-import org.elasticsearch.common.geo.builders.LineStringBuilder;
-import org.elasticsearch.common.geo.builders.PolygonBuilder;
-import org.elasticsearch.common.geo.builders.ShapeBuilder;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.unit.DistanceUnit;
-import org.elasticsearch.common.unit.Fuzziness;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.GeoPolygonQueryBuilder;
-import org.elasticsearch.index.query.MatchQueryBuilder.Operator;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.sort.SortOrder;
+import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
+import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
+import org.apache.tinkerpop.shaded.jackson.databind.ObjectWriter;
+import org.apache.tinkerpop.shaded.jackson.databind.SerializationFeature;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.attribute.Cmp;
@@ -54,9 +43,13 @@ import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_DOC_KEY;
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_INLINE_KEY;
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_LANG_KEY;
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_SCRIPT_KEY;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_GEO_COORDS_KEY;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_TYPE_KEY;
+
+import org.janusgraph.diskstorage.es.compat.AbstractESCompat;
+import org.janusgraph.diskstorage.es.compat.ES1Compat;
+import org.janusgraph.diskstorage.es.compat.ES2Compat;
+import org.janusgraph.diskstorage.es.compat.ES5Compat;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
 import org.janusgraph.diskstorage.indexing.IndexMutation;
@@ -68,7 +61,6 @@ import org.janusgraph.diskstorage.util.DefaultTransaction;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import static org.janusgraph.diskstorage.configuration.ConfigOption.disallowEmpty;
 import org.janusgraph.graphdb.database.serialize.AttributeUtil;
-import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.And;
 import org.janusgraph.graphdb.query.condition.Condition;
@@ -79,7 +71,6 @@ import org.janusgraph.graphdb.types.ParameterType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -91,6 +82,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME;
@@ -106,12 +98,6 @@ public class ElasticSearchIndex implements IndexProvider {
     private static final Logger log = LoggerFactory.getLogger(ElasticSearchIndex.class);
 
     private static final String STRING_MAPPING_SUFFIX = "__STRING";
-
-    private static final String NOT_ANALYZED = "not_analyzed";
-
-    private static final String ANALYZER = "analyzer";
-
-    private static final String INDEX = "index";
 
     public static final ConfigNamespace ELASTICSEARCH_NS =
             new ConfigNamespace(INDEX_NS, "elasticsearch", "Elasticsearch index configuration");
@@ -188,19 +174,22 @@ public class ElasticSearchIndex implements IndexProvider {
      */
     public static final double DEFAULT_GEO_DIST_ERROR_PCT = 0.025;
 
-    private static final Map<Geo, ShapeRelation> SPATIAL_PREDICATES = spatialPredicates();
+    private static final ObjectWriter mapWriter;
+    static {
+        final ObjectMapper mapper = new ObjectMapper();
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        mapWriter = mapper.writerWithView(Map.class);
+    }
 
+    private final AbstractESCompat compat;
     private final ElasticSearchClient client;
     private final String indexName;
     private final int maxResultsSize;
-    private final String scriptLang;
     private final boolean useExternalMappings;
 
     public ElasticSearchIndex(Configuration config) throws BackendException {
         indexName = config.get(INDEX_NAME);
         useExternalMappings = config.get(USE_EXTERNAL_MAPPINGS);
-
-        checkExpectedClientVersion();
 
         final ElasticSearchSetup.Connection c = interfaceConfiguration(config);
         client = c.getClient();
@@ -208,8 +197,19 @@ public class ElasticSearchIndex implements IndexProvider {
         maxResultsSize = config.get(INDEX_MAX_RESULT_SET_SIZE);
         log.debug("Configured ES query result set max size to {}", maxResultsSize);
 
-        scriptLang = client.getMajorVersion() == ElasticMajorVersion.TWO ? "groovy" : "painless";
-        log.debug("Using {} script language", scriptLang);
+        switch (client.getMajorVersion()) {
+            case ONE:
+                compat = new ES1Compat();
+                break;
+            case TWO:
+                compat = new ES2Compat();
+                break;
+            case FIVE:
+                compat = new ES5Compat();
+                break;
+            default:
+                throw new PermanentBackendException("Unsupported Elasticsearch version: " + client.getMajorVersion());
+        }
 
         try {
             client.clusterHealthRequest(config.get(HEALTH_REQUEST_TIMEOUT));
@@ -236,12 +236,11 @@ public class ElasticSearchIndex implements IndexProvider {
 
         //Create index if it does not useExternalMappings and if it does not already exist
         if (!useExternalMappings && !client.indexExists(indexName)) {
-
-            Settings.Builder settings = Settings.builder();
+            final Map<String,Object> settings = new HashMap<>();
 
             ElasticSearchSetup.applySettingsFromJanusGraphConf(settings, config, ES_CREATE_EXTRAS_NS);
             settings.put("index.max_result_window", Integer.MAX_VALUE);
-            client.createIndex(indexName, settings.build());
+            client.createIndex(indexName, settings);
 
             try {
                 final long sleep = config.get(CREATE_SLEEP);
@@ -284,13 +283,6 @@ public class ElasticSearchIndex implements IndexProvider {
         return key + STRING_MAPPING_SUFFIX;
     }
 
-    private static Map<Geo, ShapeRelation> spatialPredicates() {
-        return ImmutableMap.of(Geo.WITHIN, ShapeRelation.WITHIN,
-            Geo.CONTAINS, ShapeRelation.CONTAINS,
-            Geo.INTERSECT, ShapeRelation.INTERSECTS,
-            Geo.DISJOINT, ShapeRelation.DISJOINT);
-    }
-
     @Override
     public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws BackendException {
         Class<?> dataType = information.getDataType();
@@ -323,101 +315,72 @@ public class ElasticSearchIndex implements IndexProvider {
     private void pushMapping(String store, String key, KeyInformation information) throws AssertionError, PermanentBackendException, BackendException {
         Class<?> dataType = information.getDataType();
         Mapping map = Mapping.getMapping(information);
-        XContentBuilder mapping;
-        try {
-            mapping = XContentFactory.jsonBuilder().
-                    startObject().
-                    startObject("properties").
-                    startObject(key);
-
-            if (AttributeUtil.isString(dataType)) {
-                if (map==Mapping.DEFAULT) map=Mapping.TEXT;
-                log.debug("Registering string type for {} with mapping {}", key, map);
-                mapping.field("type", "string");
-                String stringAnalyzer = (String) ParameterType.STRING_ANALYZER.findParameter(information.getParameters(), null);
-                String textAnalyzer = (String) ParameterType.TEXT_ANALYZER.findParameter(information.getParameters(), null);
-                switch (map) {
-                    case STRING:
-                        if (stringAnalyzer != null) {
-                            mapping.field(ANALYZER, stringAnalyzer);
-                        } else {
-                            mapping.field(INDEX, NOT_ANALYZED);
-                        }
-                        break;
-                    case TEXT:
-                        if (textAnalyzer != null) {
-                            mapping.field(ANALYZER, textAnalyzer);
-                        }
-                        break;
-                    case TEXTSTRING:
-                        if (textAnalyzer != null) {
-                            mapping.field(ANALYZER, textAnalyzer);
-                        }
-                        mapping.endObject();
-                        //add string mapping
-                        mapping.startObject(getDualMappingName(key));
-                        mapping.field("type", "string");
-                        if (stringAnalyzer != null) {
-                            mapping.field(ANALYZER, stringAnalyzer);
-                        } else {
-                            mapping.field(INDEX, NOT_ANALYZED);
-                        }
-                        break;
-                    default: throw new AssertionError("Unexpected mapping: "+map);
-                }
-            } else if (dataType == Float.class) {
-                log.debug("Registering float type for {}", key);
-                mapping.field("type", "float");
-            } else if (dataType == Double.class) {
-                log.debug("Registering double type for {}", key);
-                mapping.field("type", "double");
-            } else if (dataType == Byte.class) {
-                log.debug("Registering byte type for {}", key);
-                mapping.field("type", "byte");
-            } else if (dataType == Short.class) {
-                log.debug("Registering short type for {}", key);
-                mapping.field("type", "short");
-            } else if (dataType == Integer.class) {
-                log.debug("Registering integer type for {}", key);
-                mapping.field("type", "integer");
-            } else if (dataType == Long.class) {
-                log.debug("Registering long type for {}", key);
-                mapping.field("type", "long");
-            } else if (dataType == Boolean.class) {
-                log.debug("Registering boolean type for {}", key);
-                mapping.field("type", "boolean");
-            } else if (dataType == Geoshape.class) {
-                switch (map) {
-                    case PREFIX_TREE:
-                        int maxLevels = (int) ParameterType.INDEX_GEO_MAX_LEVELS.findParameter(information.getParameters(), DEFAULT_GEO_MAX_LEVELS);
-                        double distErrorPct = (double) ParameterType.INDEX_GEO_DIST_ERROR_PCT.findParameter(information.getParameters(), DEFAULT_GEO_DIST_ERROR_PCT);
-                        log.debug("Registering geo_shape type for {} with tree_levels={} and distance_error_pct={}", key, maxLevels, distErrorPct);
-                        mapping.field("type", "geo_shape");
-                        mapping.field("tree", "quadtree");
-                        mapping.field("tree_levels", maxLevels);
-                        mapping.field("distance_error_pct", distErrorPct);
-                        break;
-                    default:
-                        log.debug("Registering geo_point type for {}", key);
-                        mapping.field("type", "geo_point");
-                }
-            } else if (dataType == Date.class || dataType == Instant.class) {
-                log.debug("Registering date type for {}", key);
-                mapping.field("type", "date");
-            } else if (dataType == Boolean.class) {
-                log.debug("Registering boolean type for {}", key);
-                mapping.field("type", "boolean");
-            } else if (dataType == UUID.class) {
-                log.debug("Registering uuid type for {}", key);
-                mapping.field("type", "string");
-                mapping.field(INDEX, NOT_ANALYZED);
+        final Map<String,Object> properties = new HashMap<>();
+        if (AttributeUtil.isString(dataType)) {
+            if (map==Mapping.DEFAULT) map=Mapping.TEXT;
+            log.debug("Registering string type for {} with mapping {}", key, map);
+            String stringAnalyzer = (String) ParameterType.STRING_ANALYZER.findParameter(information.getParameters(), null);
+            String textAnalyzer = (String) ParameterType.TEXT_ANALYZER.findParameter(information.getParameters(), null);
+            // use keyword type for string mappings unless custom string analyzer is provided
+            final Map<String,Object> stringMapping = stringAnalyzer == null ? compat.createKeywordMapping() : compat.createTextMapping(stringAnalyzer);
+            switch (map) {
+                case STRING:
+                    properties.put(key, stringMapping);
+                    break;
+                case TEXT:
+                    properties.put(key, compat.createTextMapping(textAnalyzer));
+                    break;
+                case TEXTSTRING:
+                    properties.put(key, compat.createTextMapping(textAnalyzer));
+                    properties.put(getDualMappingName(key), stringMapping);
+                    break;
+                default: throw new AssertionError("Unexpected mapping: "+map);
             }
-
-            mapping.endObject().endObject().endObject();
-
-        } catch (IOException e) {
-            throw new PermanentBackendException("Could not render json for put mapping request", e);
+        } else if (dataType == Float.class) {
+            log.debug("Registering float type for {}", key);
+            properties.put(key, ImmutableMap.of(ES_TYPE_KEY, "float"));
+        } else if (dataType == Double.class) {
+            log.debug("Registering double type for {}", key);
+            properties.put(key, ImmutableMap.of(ES_TYPE_KEY, "double"));
+        } else if (dataType == Byte.class) {
+            log.debug("Registering byte type for {}", key);
+            properties.put(key, ImmutableMap.of(ES_TYPE_KEY, "byte"));
+        } else if (dataType == Short.class) {
+            log.debug("Registering short type for {}", key);
+            properties.put(key, ImmutableMap.of(ES_TYPE_KEY, "short"));
+        } else if (dataType == Integer.class) {
+            log.debug("Registering integer type for {}", key);
+            properties.put(key, ImmutableMap.of(ES_TYPE_KEY, "integer"));
+        } else if (dataType == Long.class) {
+            log.debug("Registering long type for {}", key);
+            properties.put(key, ImmutableMap.of(ES_TYPE_KEY, "long"));
+        } else if (dataType == Boolean.class) {
+            log.debug("Registering boolean type for {}", key);
+            properties.put(key, ImmutableMap.of(ES_TYPE_KEY, "boolean"));
+        } else if (dataType == Geoshape.class) {
+            switch (map) {
+                case PREFIX_TREE:
+                    int maxLevels = (int) ParameterType.INDEX_GEO_MAX_LEVELS.findParameter(information.getParameters(), DEFAULT_GEO_MAX_LEVELS);
+                    double distErrorPct = (double) ParameterType.INDEX_GEO_DIST_ERROR_PCT.findParameter(information.getParameters(), DEFAULT_GEO_DIST_ERROR_PCT);
+                    log.debug("Registering geo_shape type for {} with tree_levels={} and distance_error_pct={}", key, maxLevels, distErrorPct);
+                    properties.put(key, ImmutableMap.of(ES_TYPE_KEY, "geo_shape",
+                        "tree", "quadtree",
+                        "tree_levels", maxLevels,
+                        "distance_error_pct", distErrorPct));
+                    break;
+                default:
+                    log.debug("Registering geo_point type for {}", key);
+                    properties.put(key, ImmutableMap.of(ES_TYPE_KEY, "geo_point"));
+            }
+        } else if (dataType == Date.class || dataType == Instant.class) {
+            log.debug("Registering date type for {}", key);
+            properties.put(key, ImmutableMap.of(ES_TYPE_KEY, "date"));
+        } else if (dataType == UUID.class) {
+            log.debug("Registering uuid type for {}", key);
+            properties.put(key, compat.createKeywordMapping());
         }
+
+        final Map<String,Object> mapping = ImmutableMap.of("properties", properties);
 
         try {
             client.createMapping(indexName, store, mapping);
@@ -548,7 +511,7 @@ public class ElasticSearchIndex implements IndexProvider {
                             requests.add(ElasticSearchMutation.createDeleteRequest(indexName, storename, docid));
                         } else {
                             String script = getDeletionScript(informations, storename, mutation);
-                            Map<String,Object> doc = ImmutableMap.of(ES_SCRIPT_KEY, ImmutableMap.of(ES_INLINE_KEY, script, ES_LANG_KEY, scriptLang));
+                            Map<String,Object> doc = compat.prepareScript(script).build();
                             requests.add(ElasticSearchMutation.createUpdateRequest(indexName, storename, docid, doc));
                             log.trace("Adding script {}", script);
                         }
@@ -568,8 +531,7 @@ public class ElasticSearchIndex implements IndexProvider {
 
                             String inline = getAdditionScript(informations, storename, mutation);
                             if (!inline.isEmpty()) {
-                                Map script = ImmutableMap.of(ES_INLINE_KEY, inline, ES_LANG_KEY, scriptLang);
-                                final ImmutableMap.Builder builder = ImmutableMap.builder().put(ES_SCRIPT_KEY, script);
+                                final ImmutableMap.Builder builder = compat.prepareScript(inline);
                                 requests.add(ElasticSearchMutation.createUpdateRequest(indexName, storename, docid, builder, upsert));
                                 log.trace("Adding script {}", inline);
                             }
@@ -589,7 +551,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 client.bulkRequest(requests);
             }
         } catch (Exception e) {
-            log.error("Failed to execute bulk Elasticsearch query", e);
+            log.error("Failed to execute bulk Elasticsearch mutation", e);
             throw convert(e);
         }
     }
@@ -608,7 +570,7 @@ public class ElasticSearchIndex implements IndexProvider {
                     break;
                 case SET:
                 case LIST:
-                    String jsValue = convertToJsType(deletion.value, scriptLang, Mapping.getMapping(keyInformation));
+                    String jsValue = convertToJsType(deletion.value, compat.scriptLang(), Mapping.getMapping(keyInformation));
                     script.append("def index = ctx._source[\"").append(deletion.field).append("\"].indexOf(").append(jsValue).append("); ctx._source[\"").append(deletion.field).append("\"].remove(index);");
                     if (hasDualStringMapping(informations.get(storename, deletion.field))) {
                         script.append("def index = ctx._source[\"").append(getDualMappingName(deletion.field)).append("\"].indexOf(").append(jsValue).append("); ctx._source[\"").append(getDualMappingName(deletion.field)).append("\"].remove(index);");
@@ -627,9 +589,9 @@ public class ElasticSearchIndex implements IndexProvider {
             switch (keyInformation.getCardinality()) {
                 case SET:
                 case LIST:
-                    script.append("ctx._source[\"").append(e.field).append("\"].add(").append(convertToJsType(e.value, scriptLang, Mapping.getMapping(keyInformation))).append(");");
+                    script.append("ctx._source[\"").append(e.field).append("\"].add(").append(convertToJsType(e.value, compat.scriptLang(), Mapping.getMapping(keyInformation))).append(");");
                     if (hasDualStringMapping(keyInformation)) {
-                        script.append("ctx._source[\"").append(getDualMappingName(e.field)).append("\"].add(").append(convertToJsType(e.value, scriptLang, Mapping.getMapping(keyInformation))).append(");");
+                        script.append("ctx._source[\"").append(getDualMappingName(e.field)).append("\"].add(").append(convertToJsType(e.value, compat.scriptLang(), Mapping.getMapping(keyInformation))).append(");");
                     }
                     break;
                 default:
@@ -657,30 +619,13 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     private static String convertToJsType(Object value, String scriptLang, Mapping mapping) throws PermanentBackendException {
+        final String esValue;
         try {
-            XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
-
-            Object esValue = convertToEsType(value, mapping);
-            if (esValue instanceof byte[]) {
-                builder.rawField("value", new ByteArrayInputStream((byte[]) esValue));
-            } else {
-                builder.field("value", esValue);
-            }
-
-            builder.endObject();
-            String s = builder.string();
-            int prefixLength = "{\"value\":".length();
-            int suffixLength = "}".length();
-            String result = s.substring(prefixLength, s.length() - suffixLength);
-            if (scriptLang.equals("groovy")) {
-                result = result.replace("$", "\\$");
-            }
-            return result;
+            esValue = mapWriter.writeValueAsString(convertToEsType(value, mapping));
         } catch (IOException e) {
             throw new PermanentBackendException("Could not write json");
         }
-
-
+        return scriptLang.equals("groovy") ? esValue.replace("$", "\\$") : esValue;
     }
 
 
@@ -717,7 +662,7 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
-    public QueryBuilder getFilter(Condition<?> condition, KeyInformation.StoreRetriever informations) {
+    public Map<String,Object> getFilter(Condition<?> condition, KeyInformation.StoreRetriever informations) {
         if (condition instanceof PredicateCondition) {
             PredicateCondition<String, ?> atom = (PredicateCondition) condition;
             Object value = atom.getValue();
@@ -730,45 +675,52 @@ public class ElasticSearchIndex implements IndexProvider {
 
                 switch (numRel) {
                     case EQUAL:
-                        return QueryBuilders.termsQuery(key, value);
+                        return compat.term(key, value);
                     case NOT_EQUAL:
-                        return QueryBuilders.boolQuery().mustNot(QueryBuilders.termsQuery(key, value));
+                        return compat.boolMustNot(compat.term(key, value));
                     case LESS_THAN:
-                        return QueryBuilders.rangeQuery(key).lt(value);
+                        return compat.lt(key, value);
                     case LESS_THAN_EQUAL:
-                        return QueryBuilders.rangeQuery(key).lte(value);
+                        return compat.lte(key, value);
                     case GREATER_THAN:
-                        return QueryBuilders.rangeQuery(key).gt(value);
+                        return compat.gt(key, value);
                     case GREATER_THAN_EQUAL:
-                        return QueryBuilders.rangeQuery(key).gte(value);
+                        return compat.gte(key, value);
                     default:
                         throw new IllegalArgumentException("Unexpected relation: " + numRel);
                 }
             } else if (value instanceof String) {
                 Mapping map = getStringMapping(informations.get(key));
-                String fieldName = key;
-                if (map==Mapping.TEXT && !janusgraphPredicate.toString().startsWith("CONTAINS"))
+                if (map==Mapping.TEXT && !janusgraphPredicate.toString().startsWith(Text.CONTAINS.name()))
                     throw new IllegalArgumentException("Text mapped string values only support CONTAINS queries and not: " + janusgraphPredicate);
                 if (map==Mapping.STRING && janusgraphPredicate.toString().startsWith("CONTAINS"))
                     throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + janusgraphPredicate);
-                if (map==Mapping.TEXTSTRING && !janusgraphPredicate.toString().startsWith("CONTAINS"))
+
+                final String fieldName;
+                if (map==Mapping.TEXTSTRING && !janusgraphPredicate.toString().startsWith(Text.CONTAINS.name())) {
                     fieldName = getDualMappingName(key);
+                } else {
+                    fieldName = key;
+                }
+
                 if (janusgraphPredicate == Text.CONTAINS || janusgraphPredicate == Cmp.EQUAL) {
-                    return QueryBuilders.matchQuery(fieldName, value).operator(Operator.AND);
+                    return compat.match(key, value);
                 } else if (janusgraphPredicate == Text.CONTAINS_PREFIX) {
-                    value = ParameterType.TEXT_ANALYZER.findParameter(informations.get(key).getParameters(), null)!=null?((String) value):((String) value).toLowerCase();
-                    return QueryBuilders.prefixQuery(fieldName, (String) value);
+                    if (!ParameterType.TEXT_ANALYZER.hasParameter(informations.get(key).getParameters()))
+                        value = ((String) value).toLowerCase();
+                    return compat.prefix(fieldName, value);
                 } else if (janusgraphPredicate == Text.CONTAINS_REGEX) {
-                    value = ParameterType.TEXT_ANALYZER.findParameter(informations.get(key).getParameters(), null)!=null?((String) value):((String) value).toLowerCase();
-                    return QueryBuilders.regexpQuery(fieldName, (String) value);
+                    if (!ParameterType.TEXT_ANALYZER.hasParameter(informations.get(key).getParameters()))
+                        value = ((String) value).toLowerCase();
+                    return compat.regexp(fieldName, value);
                 } else if (janusgraphPredicate == Text.PREFIX) {
-                    return QueryBuilders.prefixQuery(fieldName, (String) value);
+                    return compat.prefix(fieldName, value);
                 } else if (janusgraphPredicate == Text.REGEX) {
-                    return QueryBuilders.regexpQuery(fieldName, (String) value);
+                    return compat.regexp(fieldName, value);
                 } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
-                    return QueryBuilders.boolQuery().mustNot(QueryBuilders.matchQuery(fieldName, value).operator(Operator.AND));
-                } else if (janusgraphPredicate == Text.FUZZY || janusgraphPredicate == Text.CONTAINS_FUZZY){
-                    return QueryBuilders.matchQuery(fieldName, (String) value).fuzziness(Fuzziness.AUTO).operator(Operator.AND);
+                    return compat.boolMustNot(compat.match(fieldName, value));
+                } else if (janusgraphPredicate == Text.FUZZY || janusgraphPredicate == Text.CONTAINS_FUZZY) {
+                    return compat.fuzzyMatch(fieldName, value);
                 } else
                     throw new IllegalArgumentException("Predicate is not supported for string value: " + janusgraphPredicate);
             } else if (value instanceof Geoshape && Mapping.getMapping(informations.get(key)) == Mapping.DEFAULT) {
@@ -776,79 +728,83 @@ public class ElasticSearchIndex implements IndexProvider {
                 Geoshape shape = (Geoshape) value;
                 Preconditions.checkArgument(janusgraphPredicate instanceof Geo && janusgraphPredicate != Geo.CONTAINS, "Relation not supported on geopoint types: " + janusgraphPredicate);
 
-                final QueryBuilder queryBuilder;
+                final Map<String,Object> query;
                 if (shape.getType() == Geoshape.Type.CIRCLE) {
                     Geoshape.Point center = shape.getPoint();
-                    queryBuilder = QueryBuilders.geoDistanceQuery(key).lat(center.getLatitude()).lon(center.getLongitude()).distance(shape.getRadius(), DistanceUnit.KILOMETERS);
+                    query = compat.geoDistance(key, center.getLatitude(), center.getLongitude(), shape.getRadius());
                 } else if (shape.getType() == Geoshape.Type.BOX) {
                     Geoshape.Point southwest = shape.getPoint(0);
                     Geoshape.Point northeast = shape.getPoint(1);
-                    queryBuilder = QueryBuilders.geoBoundingBoxQuery(key).bottomRight(southwest.getLatitude(), northeast.getLongitude()).topLeft(northeast.getLatitude(), southwest.getLongitude());
+                    query = compat.geoBoundingBox(key, southwest.getLatitude(), southwest.getLongitude(), northeast.getLatitude(), northeast.getLongitude());
                 } else if (shape.getType() == Geoshape.Type.POLYGON) {
-                    queryBuilder = QueryBuilders.geoPolygonQuery(key);
-                    IntStream.range(0, shape.size()).forEach(i -> {
-                        Geoshape.Point point = shape.getPoint(i);
-                        ((GeoPolygonQueryBuilder) queryBuilder).addPoint(point.getLatitude(), point.getLongitude());
-                    });
+                    final List<List<Double>> points = IntStream.range(0, shape.size())
+                        .mapToObj(i -> ImmutableList.of(shape.getPoint(i).getLongitude(), shape.getPoint(i).getLatitude()))
+                        .collect(Collectors.toList());
+                    query = compat.geoPolygon(key, points);
                 } else {
                     throw new IllegalArgumentException("Unsupported or invalid search shape type for geopoint: " + shape.getType());
                 }
 
-                return janusgraphPredicate == Geo.DISJOINT ?  QueryBuilders.boolQuery().mustNot(queryBuilder) : queryBuilder;
+                return janusgraphPredicate == Geo.DISJOINT ?  compat.boolMustNot(query) : query;
             } else if (value instanceof Geoshape) {
-                // geoshape
                 Preconditions.checkArgument(janusgraphPredicate instanceof Geo, "Relation not supported on geoshape types: " + janusgraphPredicate);
                 Geoshape shape = (Geoshape) value;
-                final ShapeBuilder sb;
+                final Map<String,Object> geo;
                 switch (shape.getType()) {
                     case CIRCLE:
                         Geoshape.Point center = shape.getPoint();
-                        sb = ShapeBuilder.newCircleBuilder().center(center.getLongitude(), center.getLatitude()).radius(shape.getRadius(), DistanceUnit.KILOMETERS);
+                        geo = ImmutableMap.of(ES_TYPE_KEY, "circle",
+                            ES_GEO_COORDS_KEY, ImmutableList.of(center.getLongitude(), center.getLatitude()),
+                            "radius", shape.getRadius() + "km");
                         break;
                     case BOX:
                         Geoshape.Point southwest = shape.getPoint(0);
                         Geoshape.Point northeast = shape.getPoint(1);
-                        sb = ShapeBuilder.newEnvelope().bottomRight(northeast.getLongitude(),southwest.getLatitude()).topLeft(southwest.getLongitude(),northeast.getLatitude());
+                        geo = ImmutableMap.of(ES_TYPE_KEY, "envelope",
+                            ES_GEO_COORDS_KEY, ImmutableList.of(ImmutableList.of(southwest.getLongitude(),northeast.getLatitude()),
+                                ImmutableList.of(northeast.getLongitude(),southwest.getLatitude())));
                         break;
                     case LINE:
-                        sb = ShapeBuilder.newLineString();
-                        IntStream.range(0, shape.size()).forEach(i -> {
-                            Geoshape.Point point = shape.getPoint(i);
-                            ((LineStringBuilder) sb).point(point.getLongitude(), point.getLatitude());
-                        });
+                        final List lineCoords = IntStream.range(0, shape.size())
+                            .mapToObj(i -> ImmutableList.of(shape.getPoint(i).getLongitude(), shape.getPoint(i).getLatitude()))
+                            .collect(Collectors.toList());
+                        geo = ImmutableMap.of(ES_TYPE_KEY, "linestring", ES_GEO_COORDS_KEY, lineCoords);
                         break;
                     case POLYGON:
-                        sb = ShapeBuilder.newPolygon();
-                        IntStream.range(0, shape.size()).forEach(i -> {
-                            Geoshape.Point point = shape.getPoint(i);
-                            ((PolygonBuilder) sb).point(point.getLongitude(), point.getLatitude());
-                        });
+                        final List polyCoords = IntStream.range(0, shape.size())
+                            .mapToObj(i -> ImmutableList.of(shape.getPoint(i).getLongitude(), shape.getPoint(i).getLatitude()))
+                            .collect(Collectors.toList());
+                        geo = ImmutableMap.of(ES_TYPE_KEY, "polygon", ES_GEO_COORDS_KEY, ImmutableList.of(polyCoords));
                         break;
                     case POINT:
-                        sb = ShapeBuilder.newPoint(shape.getPoint().getLongitude(),shape.getPoint().getLatitude());
+                        geo = ImmutableMap.of(ES_TYPE_KEY, "point",
+                            ES_GEO_COORDS_KEY, ImmutableList.of(shape.getPoint().getLongitude(),shape.getPoint().getLatitude()));
                         break;
                     default:
                         throw new IllegalArgumentException("Unsupported or invalid search shape type: " + shape.getType());
                 }
 
-                return QueryBuilders.geoShapeQuery(key, sb, SPATIAL_PREDICATES.get((Geo) janusgraphPredicate));
+                return compat.geoShape(key, geo, (Geo) janusgraphPredicate);
             } else if (value instanceof Date || value instanceof Instant) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on date types: " + janusgraphPredicate);
                 Cmp numRel = (Cmp) janusgraphPredicate;
 
+                if (value instanceof Instant) {
+                    value = Date.from((Instant) value);
+                }
                 switch (numRel) {
                     case EQUAL:
-                        return QueryBuilders.termsQuery(key, value);
+                        return compat.term(key, value);
                     case NOT_EQUAL:
-                        return QueryBuilders.boolQuery().mustNot(QueryBuilders.termsQuery(key, value));
+                        return compat.boolMustNot(compat.term(key, value));
                     case LESS_THAN:
-                        return QueryBuilders.rangeQuery(key).lt(value);
+                        return compat.lt(key, value);
                     case LESS_THAN_EQUAL:
-                        return QueryBuilders.rangeQuery(key).lte(value);
+                        return compat.lte(key, value);
                     case GREATER_THAN:
-                        return QueryBuilders.rangeQuery(key).gt(value);
+                        return compat.gt(key, value);
                     case GREATER_THAN_EQUAL:
-                        return QueryBuilders.rangeQuery(key).gte(value);
+                        return compat.gte(key, value);
                     default:
                         throw new IllegalArgumentException("Unexpected relation: " + numRel);
                 }
@@ -856,53 +812,48 @@ public class ElasticSearchIndex implements IndexProvider {
                 Cmp numRel = (Cmp) janusgraphPredicate;
                 switch (numRel) {
                     case EQUAL:
-                        return QueryBuilders.termsQuery(key, value);
+                        return compat.term(key, value);
                     case NOT_EQUAL:
-                        return QueryBuilders.boolQuery().mustNot(QueryBuilders.termsQuery(key, value));
+                        return compat.boolMustNot(compat.term(key, value));
                     default:
                         throw new IllegalArgumentException("Boolean types only support EQUAL or NOT_EQUAL");
                 }
-
             } else if (value instanceof UUID) {
                 if (janusgraphPredicate == Cmp.EQUAL) {
-                    return QueryBuilders.termQuery(key, value);
+                    return compat.term(key, value);
                 } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
-                    return QueryBuilders.boolQuery().mustNot(QueryBuilders.termQuery(key, value));
+                    return compat.boolMustNot(compat.term(key, value));
                 } else {
                     throw new IllegalArgumentException("Only equal or not equal is supported for UUIDs: " + janusgraphPredicate);
                 }
             } else throw new IllegalArgumentException("Unsupported type: " + value);
         } else if (condition instanceof Not) {
-            return QueryBuilders.boolQuery().mustNot(getFilter(((Not) condition).getChild(),informations));
+            return compat.boolMustNot(getFilter(((Not) condition).getChild(),informations));
         } else if (condition instanceof And) {
-            BoolQueryBuilder b = QueryBuilders.boolQuery();
-            for (Condition c : condition.getChildren()) {
-                b.must(getFilter(c,informations));
-            }
-            return b;
+            final List queries = StreamSupport.stream(condition.getChildren().spliterator(), false)
+                .map(c -> getFilter(c,informations)).collect(Collectors.toList());
+            return compat.boolMust(queries);
         } else if (condition instanceof Or) {
-            BoolQueryBuilder b = QueryBuilders.boolQuery();
-            b.minimumNumberShouldMatch(1);
-            for (Condition c : condition.getChildren()) {
-                b.should(getFilter(c,informations));
-            }
-            return b;
+            final List queries = StreamSupport.stream(condition.getChildren().spliterator(), false)
+                .map(c -> getFilter(c,informations)).collect(Collectors.toList());
+            return compat.boolShould(queries);
         } else throw new IllegalArgumentException("Invalid condition: " + condition);
     }
 
     @Override
     public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         ElasticSearchRequest sr = new ElasticSearchRequest();
-        sr.setQuery(getFilter(query.getCondition(),informations.get(query.getStore())));
+        final Map<String,Object> esQuery = getFilter(query.getCondition(), informations.get(query.getStore()));
+        sr.setQuery(compat.prepareQuery(esQuery));
         if (!query.getOrder().isEmpty()) {
             List<IndexQuery.OrderEntry> orders = query.getOrder();
             for (int i = 0; i < orders.size(); i++) {
                 IndexQuery.OrderEntry orderEntry = orders.get(i);
-                String order = (orderEntry.getOrder() == Order.ASC ? SortOrder.ASC : SortOrder.DESC).toString();
+                String order = orderEntry.getOrder().name();
                 KeyInformation information = informations.get(query.getStore()).get(orders.get(i).getKey());
                 Mapping mapping = Mapping.getMapping(information);
                 Class<?> datatype = orderEntry.getDatatype();
-                sr.addSort(orders.get(i).getKey(), order, convertToEsDataType(datatype, mapping));
+                sr.addSort(orders.get(i).getKey(), order.toLowerCase(), convertToEsDataType(datatype, mapping));
             }
         }
         sr.setFrom(0);
@@ -911,7 +862,7 @@ public class ElasticSearchIndex implements IndexProvider {
 
         ElasticSearchResponse response;
         try {
-            response = client.search(indexName, query.getStore(), sr);
+            response = client.search(indexName, query.getStore(), compat.createRequestBody(sr));
         } catch (IOException e) {
             throw new PermanentBackendException(e);
         }
@@ -957,7 +908,7 @@ public class ElasticSearchIndex implements IndexProvider {
     @Override
     public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         ElasticSearchRequest sr = new ElasticSearchRequest();
-        sr.setQuery(QueryBuilders.queryStringQuery(query.getQuery()));
+        sr.setQuery(compat.queryString(query.getQuery()));
 
         sr.setFrom(query.getOffset());
         if (query.hasLimit()) sr.setSize(query.getLimit());
@@ -965,7 +916,7 @@ public class ElasticSearchIndex implements IndexProvider {
 
         ElasticSearchResponse response;
         try {
-            response = client.search(indexName, query.getStore(), sr);
+            response = client.search(indexName, query.getStore(), compat.createRequestBody(sr));
         } catch (IOException e) {
             throw new PermanentBackendException(e);
         }
@@ -1035,7 +986,7 @@ public class ElasticSearchIndex implements IndexProvider {
 
     @Override
     public IndexFeatures getFeatures() {
-        return ES_FEATURES;
+        return compat.getIndexFeatures();
     }
 
     @Override
@@ -1064,22 +1015,4 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
-    private void checkExpectedClientVersion() {
-        /*
-         * This is enclosed in a catch block to prevent an unchecked exception
-         * from killing the startup thread.  This check is just advisory -- the
-         * most it does is log a warning -- so there's no reason to allow it to
-         * emit a exception and potentially block graph startup.
-         */
-        try {
-            if (!Version.CURRENT.toString().equals(ElasticSearchConstants.ES_VERSION_EXPECTED)) {
-                log.warn("ES client version ({}) does not match the version with which JanusGraph was compiled ({}).  This might cause problems.",
-                        Version.CURRENT, ElasticSearchConstants.ES_VERSION_EXPECTED);
-            } else {
-                log.debug("Found ES client version matching JanusGraph's compile-time version: {} (OK)", Version.CURRENT);
-            }
-        } catch (RuntimeException e) {
-            log.warn("Unable to check expected ES client version", e);
-        }
-    }
 }

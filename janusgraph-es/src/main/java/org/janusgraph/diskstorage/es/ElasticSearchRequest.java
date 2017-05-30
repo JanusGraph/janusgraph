@@ -16,7 +16,6 @@ package org.janusgraph.diskstorage.es;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.shaded.jackson.annotation.JsonProperty;
-import org.elasticsearch.index.query.QueryBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,9 +23,7 @@ import java.util.Map;
 
 public class ElasticSearchRequest {
 
-    private QueryBuilder query;
-
-    private QueryBuilder postFilter;
+    private Map<String,Object> query;
 
     private Integer size;
 
@@ -38,20 +35,12 @@ public class ElasticSearchRequest {
         this.sorts = new ArrayList<>();
     }
 
-    public QueryBuilder getQuery() {
+    public Map<String,Object> getQuery() {
         return query;
     }
 
-    public void setQuery(QueryBuilder query) {
+    public void setQuery(Map<String,Object> query) {
         this.query = query;
-    }
-
-    public QueryBuilder getPostFilter() {
-        return postFilter;
-    }
-
-    public void setPostFilter(QueryBuilder postFilter) {
-        this.postFilter = postFilter;
     }
 
     public Integer getSize() {
