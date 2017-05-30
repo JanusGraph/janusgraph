@@ -34,10 +34,10 @@ import static com.datastax.driver.core.schemabuilder.SchemaBuilder.lz4;
 import static com.datastax.driver.core.schemabuilder.SchemaBuilder.noCompression;
 import static com.datastax.driver.core.schemabuilder.SchemaBuilder.sizedTieredStategy;
 import static com.datastax.driver.core.schemabuilder.SchemaBuilder.snappy;
-import static javaslang.API.$;
-import static javaslang.API.Case;
-import static javaslang.API.Match;
-import static javaslang.Predicates.instanceOf;
+import static io.vavr.API.$;
+import static io.vavr.API.Case;
+import static io.vavr.API.Match;
+import static io.vavr.Predicates.instanceOf;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_BLOCK_SIZE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_TYPE;
@@ -84,14 +84,13 @@ import com.datastax.driver.core.schemabuilder.TableOptions.CompactionOptions;
 import com.datastax.driver.core.schemabuilder.TableOptions.CompressionOptions;
 import com.google.common.collect.Lists;
 
-import javaslang.Lazy;
-import javaslang.Tuple;
-import javaslang.Tuple3;
-import javaslang.collection.Array;
-import javaslang.collection.Iterator;
-import javaslang.concurrent.Future;
-import javaslang.control.Try;
-import javaslang.control.Try.FatalException;
+import io.vavr.Lazy;
+import io.vavr.Tuple;
+import io.vavr.Tuple3;
+import io.vavr.collection.Array;
+import io.vavr.collection.Iterator;
+import io.vavr.concurrent.Future;
+import io.vavr.control.Try;
 
 /**
  * An implementation of {@link KeyColumnValueStore} which stores the data in a CQL connected backend.
@@ -119,8 +118,8 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     private static final String LIMIT_BINDING = "maxRows";
 
     static final Function<? super Throwable, BackendException> EXCEPTION_MAPPER = cause -> Match(cause).of(
-            Case(instanceOf(QueryValidationException.class), qve -> new PermanentBackendException(qve)),
-            Case(instanceOf(UnsupportedFeatureException.class), ufe -> new PermanentBackendException(ufe)),
+            Case($(instanceOf(QueryValidationException.class)), qve -> new PermanentBackendException(qve)),
+            Case($(instanceOf(UnsupportedFeatureException.class)), ufe -> new PermanentBackendException(ufe)),
             Case($(), t -> new TemporaryBackendException(t)));
 
     private final CQLStoreManager storeManager;
@@ -231,9 +230,9 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         return Match(configuration.get(CF_COMPRESSION_TYPE)).of(
-                Case("LZ4Compressor", lz4()),
-                Case("SnappyCompressor", snappy()),
-                Case("DeflateCompressor", deflate()))
+                Case($("LZ4Compressor"), lz4()),
+                Case($("SnappyCompressor"), snappy()),
+                Case($("DeflateCompressor"), deflate()))
                 .withChunkLengthInKb(configuration.get(CF_COMPRESSION_BLOCK_SIZE));
     }
 
@@ -244,9 +243,9 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
         final CompactionOptions<?> compactionOptions = Match(configuration.get(COMPACTION_STRATEGY))
                 .of(
-                        Case("SizeTieredCompactionStrategy", sizedTieredStategy()),
-                        Case("DateTieredCompactionStrategy", dateTieredStrategy()),
-                        Case("LeveledCompactionStrategy", leveledStrategy()));
+                        Case($("SizeTieredCompactionStrategy"), sizedTieredStategy()),
+                        Case($("DateTieredCompactionStrategy"), dateTieredStrategy()),
+                        Case($("LeveledCompactionStrategy"), leveledStrategy()));
         Array.of(configuration.get(COMPACTION_OPTIONS))
                 .grouped(2)
                 .forEach(keyValue -> compactionOptions.freeformOption(keyValue.get(0), keyValue.get(1)));
@@ -294,12 +293,11 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     private void awaitInterruptibly(final Future<?> result) throws PermanentBackendException {
         try {
             result.await();
-        } catch (FatalException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof InterruptedException) {
+        } catch (Exception e) {
+            if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
-            throw new PermanentBackendException(cause);
+            throw new PermanentBackendException(e);
         }
     }
 

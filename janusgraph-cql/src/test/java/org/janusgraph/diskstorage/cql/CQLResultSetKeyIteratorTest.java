@@ -34,12 +34,12 @@ import org.junit.Test;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 
-import javaslang.Function1;
-import javaslang.Tuple;
-import javaslang.Tuple2;
-import javaslang.collection.Array;
-import javaslang.collection.Iterator;
-import javaslang.collection.Seq;
+import io.vavr.Function1;
+import io.vavr.Tuple;
+import io.vavr.Tuple2;
+import io.vavr.collection.Array;
+import io.vavr.collection.Iterator;
+import io.vavr.collection.Seq;
 
 public class CQLResultSetKeyIteratorTest {
 

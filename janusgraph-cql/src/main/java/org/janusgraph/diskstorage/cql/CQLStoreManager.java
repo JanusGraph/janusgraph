@@ -16,9 +16,9 @@ package org.janusgraph.diskstorage.cql;
 
 import static com.datastax.driver.core.schemabuilder.SchemaBuilder.createKeyspace;
 import static com.datastax.driver.core.schemabuilder.SchemaBuilder.dropKeyspace;
-import static javaslang.API.$;
-import static javaslang.API.Case;
-import static javaslang.API.Match;
+import static io.vavr.API.$;
+import static io.vavr.API.Case;
+import static io.vavr.API.Match;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CLUSTER_NAME;
@@ -91,13 +91,13 @@ import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
-import javaslang.Tuple;
-import javaslang.collection.Array;
-import javaslang.collection.HashMap;
-import javaslang.collection.Iterator;
-import javaslang.collection.Seq;
-import javaslang.concurrent.Future;
-import javaslang.control.Option;
+import io.vavr.Tuple;
+import io.vavr.collection.Array;
+import io.vavr.collection.HashMap;
+import io.vavr.collection.Iterator;
+import io.vavr.collection.Seq;
+import io.vavr.concurrent.Future;
+import io.vavr.control.Option;
 
 /**
  * This class creates {@see CQLKeyColumnValueStore}s and handles Cassandra-backed allocation of vertex IDs for JanusGraph (when so

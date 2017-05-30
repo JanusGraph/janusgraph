@@ -28,9 +28,9 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.google.common.collect.AbstractIterator;
 
-import javaslang.Tuple;
-import javaslang.Tuple3;
-import javaslang.collection.Iterator;
+import io.vavr.Tuple;
+import io.vavr.Tuple3;
+import io.vavr.collection.Iterator;
 
 /**
  * {@link SliceQuery} iterator that handles CQL result sets that may have more
