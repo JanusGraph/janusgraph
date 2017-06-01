@@ -62,6 +62,7 @@ Joe Ferner <joe@fernsroth.com>
 Joshua Shinavier <josh@fortytwo.net>
 Justin Corpron <justin.corpron@justinc-677.glassdoor.local>
 Karthik Ramachandran <kramachandran@iqt.com>
+Kedar Mhaswade <kedar.mhaswade@gmail.com>
 ksenji <ksenji@ebay.com>
 Leifur Halldor Asgeirsson <leifurhauks@gmail.com>
 Mark McCraw <mark.mccraw@sas.com>

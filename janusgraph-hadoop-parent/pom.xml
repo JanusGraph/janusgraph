@@ -156,6 +156,12 @@
             <artifactId>sesame-rio-turtle</artifactId>
         </dependency>
 
+        <!-- Required for Cassandra-3 connectivity, see issue 172 -->
+        <dependency>
+            <groupId>com.datastax.cassandra</groupId>
+            <artifactId>cassandra-driver-core</artifactId>
+            <version>${cassandra-driver.version}</version>
+        </dependency>
         <!-- Logging backends.
              Enforce a classpath ordering constraint to ensure slf4j-log4j12
              binding appears on the classpath before logback-classic.

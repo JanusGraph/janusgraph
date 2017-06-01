@@ -14,14 +14,6 @@
 
 package org.janusgraph.hadoop.formats.cassandra;
 
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
-import org.janusgraph.hadoop.formats.util.AbstractBinaryInputFormat;
-import org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon;
 import org.apache.cassandra.hadoop.ColumnFamilyInputFormat;
 import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;
 import org.apache.cassandra.hadoop.ConfigHelper;
@@ -32,6 +24,14 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
+import org.janusgraph.hadoop.formats.util.AbstractBinaryInputFormat;
+import org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,9 +41,9 @@ import java.util.List;
 /**
  * Wraps a ColumnFamilyInputFormat and converts CFIF's binary types to JanusGraph's binary types.
  */
-public class CassandraBinaryInputFormat extends AbstractBinaryInputFormat {
+public class Cassandra3BinaryInputFormat extends AbstractBinaryInputFormat {
 
-    private static final Logger log = LoggerFactory.getLogger(CassandraBinaryInputFormat.class);
+    private static final Logger log = LoggerFactory.getLogger(Cassandra3BinaryInputFormat.class);
 
     // Copied these private constants from Cassandra's ConfigHelper circa 2.0.9
     private static final String INPUT_WIDEROWS_CONFIG = "cassandra.input.widerows";
@@ -65,11 +65,7 @@ public class CassandraBinaryInputFormat extends AbstractBinaryInputFormat {
     @Override
     public RecordReader<StaticBuffer, Iterable<Entry>> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext)
             throws IOException, InterruptedException {
-        // the default case, Cassandra 2.1.9
-        columnFamilyRecordReader =
-            (ColumnFamilyRecordReader) columnFamilyInputFormat.createRecordReader(inputSplit, taskAttemptContext);
-        janusgraphRecordReader =
-            new CassandraBinaryRecordReader(columnFamilyRecordReader);
+        janusgraphRecordReader = new CqlBridgeRecordReader(); // See issue 172
         return janusgraphRecordReader;
     }
 
