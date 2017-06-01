@@ -1304,6 +1304,17 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testGotGLoadWithoutIndexBackendException() {
+        try {
+            GraphOfTheGodsFactory.load(graph);
+            fail("Expected an exception to be thrown indicating improper index backend configuration");
+        } catch (IllegalStateException ex) {
+            assertTrue("An exception asking the user to use loadWithoutMixedIndex was expected",
+                    ex.getMessage().contains("loadWithoutMixedIndex"));
+        }
+    }
+
+    @Test
     public void testGotGIndexRemoval() throws InterruptedException, ExecutionException {
         clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ZERO,
                 option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
