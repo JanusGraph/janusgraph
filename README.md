@@ -63,5 +63,6 @@ CLAs and best practices for working with GitHub.
 
 The following users have deployed JanusGraph in production.
 
+* [CELUM](https://www.celum.com/) - [use case and system architecture](https://www.celum.com/en/graph-driven-and-reactive-architecture)
 * [FiNC](https://finc.com)
 * [Seeq](https://seeq.com)
