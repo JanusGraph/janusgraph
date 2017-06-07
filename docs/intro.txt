@@ -190,6 +190,16 @@ gremlin> GraphOfTheGodsFactory.load(graph)
 gremlin> g = graph.traversal()
 ==>graphtraversalsource[standardjanusgraph[cassandrathrift:[127.0.0.1]], standard]
 
+You may also use the `conf/janusgraph-cassandra.properties`, `conf/janusgraph-berkeleyje.properties`, or `conf/janusgraph-hbase.properties` configuration files to open a graph without an indexing backend configured. In such cases, you will need to use the `GraphOfTheGodsFactory.loadWithoutMixedIndex()` method to load the _Graph of the Gods_ so that it doesn't attempt to make use of an indexing backend.
+
+[source, gremlin]
+gremlin> graph = JanusGraphFactory.open('conf/janusgraph-cassandra.properties')
+==>standardjanusgraph[cassandrathrift:[127.0.0.1]]
+gremlin> GraphOfTheGodsFactory.loadWithoutMixedIndex(graph, true)
+==>null
+gremlin> g = graph.traversal()
+==>graphtraversalsource[standardjanusgraph[cassandrathrift:[127.0.0.1]], standard]
+
 === Global Graph Indices
 
 The typical pattern for accessing data in a graph database is to first locate the entry point into the graph using a graph index. That entry point is an element (or set of elements) -- i.e. a vertex or edge. From the entry elements, a Gremlin path description describes how to traverse to other elements in the graph via the explicit graph structure.
