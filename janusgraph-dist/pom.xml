@@ -39,6 +39,7 @@
         <pkgtools.dir>${project.basedir}/..</pkgtools.dir>
 
         <skipDefaultDistroIT>${it.skip}</skipDefaultDistroIT>
+        <docker.maven.version>0.4.13</docker.maven.version>
     </properties>
 
     <modules>
@@ -619,6 +620,32 @@
                         </executions>
                     </plugin>
                 </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>janusgraph-docker</id>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>com.spotify</groupId>
+                            <artifactId>docker-maven-plugin</artifactId>
+                            <version>${docker.maven.version}</version>
+                            <configuration>
+                                <dockerDirectory>${project.basedir}/janusgraph-dist-hadoop-2</dockerDirectory>
+                                <buildArgs>
+                                    <server_zip>target/janusgraph-${project.version}-hadoop2.zip</server_zip>
+                                </buildArgs>
+                                <forceTags>true</forceTags>
+                                <imageName>janusgraph/server</imageName>
+                                <imageTags>
+                                    <imageTag>${project.version}</imageTag>
+                                </imageTags>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
             </build>
         </profile>
 
