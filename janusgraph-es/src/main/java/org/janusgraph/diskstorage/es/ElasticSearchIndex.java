@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
+import com.spatial4j.core.shape.Rectangle;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.Version;
 import org.elasticsearch.common.geo.ShapeRelation;
@@ -317,7 +318,7 @@ public class ElasticSearchIndex implements IndexProvider {
                         if (textAnalyzer != null) {
                             mapping.field(ANALYZER, textAnalyzer);
                         }
-                    	break;
+                        break;
                     case TEXTSTRING:
                         if (textAnalyzer != null) {
                             mapping.field(ANALYZER, textAnalyzer);
@@ -422,11 +423,11 @@ public class ElasticSearchIndex implements IndexProvider {
             Object value = null;
             switch (keyInformation.getCardinality()) {
                 case SINGLE:
-                    value = convertToEsType(Iterators.getLast(add.getValue().iterator()).value);
+                    value = convertToEsType(Iterators.getLast(add.getValue().iterator()).value, Mapping.getMapping(keyInformation));
                     break;
                 case SET:
                 case LIST:
-                    value = add.getValue().stream().map(v -> convertToEsType(v.value))
+                    value = add.getValue().stream().map(v -> convertToEsType(v.value, Mapping.getMapping(keyInformation)))
                         .filter(v -> {
                             Preconditions.checkArgument(!(v instanceof byte[]), "Collections not supported for " + add.getKey());
                             return true;
@@ -446,7 +447,7 @@ public class ElasticSearchIndex implements IndexProvider {
         return doc;
     }
 
-    private static Object convertToEsType(Object value) {
+    private static Object convertToEsType(Object value, Mapping mapping) {
         if (value instanceof Number) {
             if (AttributeUtil.isWholeNumber((Number) value)) {
                 return ((Number) value).longValue();
@@ -456,7 +457,7 @@ public class ElasticSearchIndex implements IndexProvider {
         } else if (AttributeUtil.isString(value)) {
             return value;
         } else if (value instanceof Geoshape) {
-            return convertgeo((Geoshape) value);
+            return convertgeo((Geoshape) value, mapping);
         } else if (value instanceof Date) {
             return value;
         } else if (value instanceof  Instant) {
@@ -468,18 +469,31 @@ public class ElasticSearchIndex implements IndexProvider {
         } else throw new IllegalArgumentException("Unsupported type: " + value.getClass() + " (value: " + value + ")");
     }
 
-    private static Object convertgeo(Geoshape geoshape) {
-        if (geoshape.getType() == Geoshape.Type.POINT) {
+    @SuppressWarnings("unchecked")
+    private static Object convertgeo(Geoshape geoshape, Mapping mapping) {
+        if (geoshape.getType() == Geoshape.Type.POINT && Mapping.PREFIX_TREE != mapping) {
             Geoshape.Point p = geoshape.getPoint();
             return new double[]{p.getLongitude(), p.getLatitude()};
-        } else if (geoshape.getType() != Geoshape.Type.BOX && geoshape.getType() != Geoshape.Type.CIRCLE) {
+        } else if (geoshape.getType() == Geoshape.Type.BOX) {
+            Rectangle box = geoshape.getShape().getBoundingBox();
+            Map<String,Object> map = new HashMap<>();
+            map.put("type", "envelope");
+            map.put("coordinates", new double[][] {{box.getMinX(),box.getMaxY()},{box.getMaxX(),box.getMinY()}});
+            return map;
+        } else if (geoshape.getType() == Geoshape.Type.CIRCLE) {
+            try {
+                Map<String,Object> map = geoshape.toMap();
+                map.put("radius", map.get("radius") + ((Map<String, String>) map.remove("properties")).get("radius_units"));
+                return map;
+            } catch (IOException e) {
+                throw new IllegalArgumentException("Invalid geoshape: " + geoshape, e);
+            }
+        } else {
             try {
                 return geoshape.toMap();
             } catch (IOException e) {
                 throw new IllegalArgumentException("Invalid geoshape: " + geoshape, e);
             }
-        } else {
-            throw new IllegalArgumentException("Unsupported or invalid shape type for indexing: " + geoshape.getType());
         }
     }
 
@@ -557,17 +571,17 @@ public class ElasticSearchIndex implements IndexProvider {
 
             switch (keyInformation.getCardinality()) {
                 case SINGLE:
-                    script.append("ctx._source.remove(\"" + deletion.field + "\");");
+                    script.append("ctx._source.remove(\"").append(deletion.field).append("\");");
                     if (hasDualStringMapping(informations.get(storename, deletion.field))) {
-                        script.append("ctx._source.remove(\"" + getDualMappingName(deletion.field) + "\");");
+                        script.append("ctx._source.remove(\"").append(getDualMappingName(deletion.field)).append("\");");
                     }
                     break;
                 case SET:
                 case LIST:
-                    String jsValue = convertToJsType(deletion.value, scriptLang);
-                    script.append("def index = ctx._source[\"" + deletion.field + "\"].indexOf(" + jsValue + "); ctx._source[\"" + deletion.field + "\"].remove(index);");
+                    String jsValue = convertToJsType(deletion.value, scriptLang, Mapping.getMapping(keyInformation));
+                    script.append("def index = ctx._source[\"").append(deletion.field).append("\"].indexOf(").append(jsValue).append("); ctx._source[\"").append(deletion.field).append("\"].remove(index);");
                     if (hasDualStringMapping(informations.get(storename, deletion.field))) {
-                        script.append("def index = ctx._source[\"" + getDualMappingName(deletion.field) + "\"].indexOf(" + jsValue + "); ctx._source[\"" + getDualMappingName(deletion.field) + "\"].remove(index);");
+                        script.append("def index = ctx._source[\"").append(getDualMappingName(deletion.field)).append("\"].indexOf(").append(jsValue).append("); ctx._source[\"").append(getDualMappingName(deletion.field)).append("\"].remove(index);");
                     }
                     break;
 
@@ -583,10 +597,12 @@ public class ElasticSearchIndex implements IndexProvider {
             switch (keyInformation.getCardinality()) {
                 case SET:
                 case LIST:
-                    script.append("ctx._source[\"" + e.field + "\"].add(" + convertToJsType(e.value, scriptLang) + ");");
+                    script.append("ctx._source[\"").append(e.field).append("\"].add(").append(convertToJsType(e.value, scriptLang, Mapping.getMapping(keyInformation))).append(");");
                     if (hasDualStringMapping(keyInformation)) {
-                        script.append("ctx._source[\"" + getDualMappingName(e.field) + "\"].add(" + convertToJsType(e.value, scriptLang) + ");");
+                        script.append("ctx._source[\"").append(getDualMappingName(e.field)).append("\"].add(").append(convertToJsType(e.value, scriptLang, Mapping.getMapping(keyInformation))).append(");");
                     }
+                    break;
+                default:
                     break;
 
             }
@@ -600,9 +616,9 @@ public class ElasticSearchIndex implements IndexProvider {
         for (IndexEntry e : mutation.getAdditions()) {
             KeyInformation keyInformation = informations.get(storename).get(e.field);
             if (keyInformation.getCardinality() == Cardinality.SINGLE) {
-                doc.put(e.field, convertToEsType(e.value));
+                doc.put(e.field, convertToEsType(e.value, Mapping.getMapping(keyInformation)));
                 if (hasDualStringMapping(keyInformation)) {
-                    doc.put(getDualMappingName(e.field), convertToEsType(e.value));
+                    doc.put(getDualMappingName(e.field), convertToEsType(e.value, Mapping.getMapping(keyInformation)));
                 }
             }
         }
@@ -610,11 +626,11 @@ public class ElasticSearchIndex implements IndexProvider {
         return doc;
     }
 
-    private static String convertToJsType(Object value, String scriptLang) throws PermanentBackendException {
+    private static String convertToJsType(Object value, String scriptLang, Mapping mapping) throws PermanentBackendException {
         try {
             XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
 
-            Object esValue = convertToEsType(value);
+            Object esValue = convertToEsType(value, mapping);
             if (esValue instanceof byte[]) {
                 builder.rawField("value", new ByteArrayInputStream((byte[]) esValue));
             } else {
@@ -755,34 +771,34 @@ public class ElasticSearchIndex implements IndexProvider {
                 Geoshape shape = (Geoshape) value;
                 final ShapeBuilder sb;
                 switch (shape.getType()) {
-                case CIRCLE:
-                    Geoshape.Point center = shape.getPoint();
-                    sb = ShapeBuilder.newCircleBuilder().center(center.getLongitude(), center.getLatitude()).radius(shape.getRadius(), DistanceUnit.KILOMETERS);
-                    break;
-                case BOX:
-                    Geoshape.Point southwest = shape.getPoint(0);
-                    Geoshape.Point northeast = shape.getPoint(1);
-                    sb = ShapeBuilder.newEnvelope().bottomRight(northeast.getLongitude(),southwest.getLatitude()).topLeft(southwest.getLongitude(),northeast.getLatitude());
-                    break;
-                case LINE:
-                    sb = ShapeBuilder.newLineString();
-                    IntStream.range(0, shape.size()).forEach(i -> {
-                        Geoshape.Point point = shape.getPoint(i);
-                        ((LineStringBuilder) sb).point(point.getLongitude(), point.getLatitude());
-                    });
-                    break;
-                case POLYGON:
-                    sb = ShapeBuilder.newPolygon();
-                    IntStream.range(0, shape.size()).forEach(i -> {
-                        Geoshape.Point point = shape.getPoint(i);
-                        ((PolygonBuilder) sb).point(point.getLongitude(), point.getLatitude());
-                    });
-                    break;
-                case POINT:
-                    sb = ShapeBuilder.newPoint(shape.getPoint().getLongitude(),shape.getPoint().getLatitude());
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unsupported or invalid search shape type: " + shape.getType());
+                    case CIRCLE:
+                        Geoshape.Point center = shape.getPoint();
+                        sb = ShapeBuilder.newCircleBuilder().center(center.getLongitude(), center.getLatitude()).radius(shape.getRadius(), DistanceUnit.KILOMETERS);
+                        break;
+                    case BOX:
+                        Geoshape.Point southwest = shape.getPoint(0);
+                        Geoshape.Point northeast = shape.getPoint(1);
+                        sb = ShapeBuilder.newEnvelope().bottomRight(northeast.getLongitude(),southwest.getLatitude()).topLeft(southwest.getLongitude(),northeast.getLatitude());
+                        break;
+                    case LINE:
+                        sb = ShapeBuilder.newLineString();
+                        IntStream.range(0, shape.size()).forEach(i -> {
+                            Geoshape.Point point = shape.getPoint(i);
+                            ((LineStringBuilder) sb).point(point.getLongitude(), point.getLatitude());
+                        });
+                        break;
+                    case POLYGON:
+                        sb = ShapeBuilder.newPolygon();
+                        IntStream.range(0, shape.size()).forEach(i -> {
+                            Geoshape.Point point = shape.getPoint(i);
+                            ((PolygonBuilder) sb).point(point.getLongitude(), point.getLatitude());
+                        });
+                        break;
+                    case POINT:
+                        sb = ShapeBuilder.newPoint(shape.getPoint().getLongitude(),shape.getPoint().getLatitude());
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unsupported or invalid search shape type: " + shape.getType());
                 }
 
                 return QueryBuilders.geoShapeQuery(key, sb, SPATIAL_PREDICATES.get((Geo) janusgraphPredicate));
@@ -940,11 +956,11 @@ public class ElasticSearchIndex implements IndexProvider {
             if (janusgraphPredicate instanceof Cmp) return true;
         } else if (dataType == Geoshape.class) {
             switch(mapping) {
-            case DEFAULT:
-                return janusgraphPredicate instanceof Geo && janusgraphPredicate != Geo.CONTAINS;
-            case PREFIX_TREE:
-                return janusgraphPredicate instanceof Geo;
-        }
+                case DEFAULT:
+                    return janusgraphPredicate instanceof Geo && janusgraphPredicate != Geo.CONTAINS;
+                case PREFIX_TREE:
+                    return janusgraphPredicate instanceof Geo;
+            }
         } else if (AttributeUtil.isString(dataType)) {
             switch(mapping) {
                 case DEFAULT:
