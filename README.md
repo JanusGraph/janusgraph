@@ -4,13 +4,16 @@ JanusGraph is a highly scalable [graph database](http://en.wikipedia.org/wiki/Gr
 
 [![Build Status][travis-shield]][travis-link]
 [![Maven][maven-shield]][maven-link]
+[![Javadoc][javadoc-shield]][javadoc-link]
 [![Gitter][gitter-shield]][gitter-link]
 [![Stack Overflow][stackoverflow-shield]][stackoverflow-link]
 
 [travis-shield]: https://travis-ci.org/JanusGraph/janusgraph.svg?branch=master
 [travis-link]: https://travis-ci.org/JanusGraph/janusgraph
-[maven-shield]: https://maven-badges.herokuapp.com/maven-central/org.janusgraph/janusgraph-core/badge.svg
-[maven-link]: http://search.maven.org/#search%7Cga%7C1%7Corg.janusgraph
+[maven-shield]: https://img.shields.io/maven-central/v/org.janusgraph/janusgraph-core.svg
+[maven-link]: https://search.maven.org/#search%7Cga%7C1%7Corg.janusgraph
+[javadoc-shield]: https://javadoc.io/badge/org.janusgraph/janusgraph-core.svg?color=blue
+[javadoc-link]: https://javadoc.io/doc/org.janusgraph/janusgraph-core
 [gitter-shield]: https://img.shields.io/gitter/room/janusgraph/janusgraph.svg
 [gitter-link]: https://gitter.im/janusgraph/janusgraph
 [stackoverflow-shield]: https://img.shields.io/badge/stackoverflow-janusgraph-blue.svg
