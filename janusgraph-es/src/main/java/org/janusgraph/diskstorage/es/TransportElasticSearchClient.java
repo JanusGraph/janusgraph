@@ -18,6 +18,8 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
+import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsRequest;
+import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.bulk.BulkItemResponse;
@@ -94,7 +96,13 @@ public class TransportElasticSearchClient implements ElasticSearchClient {
 
     @Override
     public void createMapping(String indexName, String typeName, XContentBuilder mapping) throws IOException {
-            client.admin().indices().preparePutMapping(indexName).setType(typeName).setSource(mapping).execute().actionGet();
+        client.admin().indices().preparePutMapping(indexName).setType(typeName).setSource(mapping).execute().actionGet();
+    }
+
+    @Override
+    public Map getMapping(String indexName, String typeName) throws IOException {
+        GetMappingsResponse response = client.admin().indices().getMappings(new GetMappingsRequest().indices(indexName.toLowerCase()).types(typeName)).actionGet();
+        return (Map)response.getMappings().get(indexName.toLowerCase()).get(typeName).getSourceAsMap().get("properties");
     }
 
     @Override
