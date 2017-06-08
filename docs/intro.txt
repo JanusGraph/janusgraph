@@ -108,7 +108,7 @@ The examples in this section make extensive use of a toy graph distributed with 
 
 .Graph of the Gods
 image::graph-of-the-gods-2.png[]
-[cols="1, 4", options="header"]
+[options="header"]
 |=====
 |visual symbol      | meaning
 |bold key           |a graph indexed key
