@@ -15,6 +15,7 @@
 package org.janusgraph.diskstorage.es.rest;
 
 import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
+import org.apache.tinkerpop.shaded.jackson.annotation.JsonRawValue;
 
 import java.util.List;
 import java.util.Map;
@@ -49,7 +50,7 @@ public class RestBulkResponse {
 
         private int status;
 
-        private Map<String,Object> error;
+        private Object error;
 
         public String getResult() {
             return result;
@@ -67,11 +68,11 @@ public class RestBulkResponse {
             this.status = status;
         }
 
-        public Map<String, Object> getError() {
+        public Object getError() {
             return error;
         }
 
-        public void setError(Map<String, Object> error) {
+        public void setError(Object error) {
             this.error = error;
         }
     }

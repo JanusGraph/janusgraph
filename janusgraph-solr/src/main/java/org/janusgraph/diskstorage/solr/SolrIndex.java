@@ -167,8 +167,14 @@ public class SolrIndex implements IndexProvider {
             ConfigOption.Type.LOCAL, false);
 
 
-    private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL()
-            .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.STRING).supportsCardinality(Cardinality.SINGLE).supportsCustomAnalyzer().build();
+    private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder()
+        .supportsDocumentTTL()
+        .setDefaultStringMapping(Mapping.TEXT)
+        .supportedStringMappings(Mapping.TEXT, Mapping.STRING)
+        .supportsCardinality(Cardinality.SINGLE)
+        .supportsCustomAnalyzer()
+        .supportsGeoContains()
+        .build();
 
     private static Map<Geo, String> SPATIAL_PREDICATES = spatialPredicates();
 

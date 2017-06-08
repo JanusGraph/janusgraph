@@ -26,14 +26,10 @@ import org.apache.tinkerpop.shaded.jackson.databind.SerializationFeature;
 import org.apache.tinkerpop.shaded.jackson.databind.module.SimpleModule;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.rest.RestStatus;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.diskstorage.es.ElasticMajorVersion;
 import org.janusgraph.diskstorage.es.ElasticSearchClient;
 import org.janusgraph.diskstorage.es.ElasticSearchMutation;
-import org.janusgraph.diskstorage.es.ElasticSearchRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +62,8 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         mapWriter = mapper.writerWithView(Map.class);
     }
 
+    private static final ElasticMajorVersion DEFAULT_VERSION = ElasticMajorVersion.FIVE;
+
     private RestClient delegate;
 
     private ElasticMajorVersion majorVersion;
@@ -89,20 +87,29 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         }
 
         final Pattern pattern = Pattern.compile("(\\d+)\\.\\d+\\.\\d+");
-        majorVersion = ElasticMajorVersion.TWO;
+        majorVersion = DEFAULT_VERSION;
         try {
             final Response response = delegate.performRequest("GET", "/");
             try (final InputStream inputStream = response.getEntity().getContent()) {
                 final ClusterInfo info = mapper.readValue(inputStream, ClusterInfo.class);
-                final Matcher m = info.getVersion() != null ? pattern.matcher((String) info.getVersion().get("number")) : null;
-                if (m == null || !m.find() || Integer.valueOf(m.group(1)) < 5) {
-                    majorVersion = ElasticMajorVersion.TWO;
-                } else {
-                    majorVersion = ElasticMajorVersion.FIVE;
+                final String version = info.getVersion() != null ? (String) info.getVersion().get("number") : null;
+                final Matcher m = version != null ? pattern.matcher(version) : null;
+                switch (m != null && m.find() ? Integer.valueOf(m.group(1)) : -1) {
+                    case 1:
+                        majorVersion = ElasticMajorVersion.ONE;
+                        break;
+                    case 2:
+                        majorVersion = ElasticMajorVersion.TWO;
+                        break;
+                    case 5:
+                        majorVersion = ElasticMajorVersion.FIVE;
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unsupported Elasticsearch server version: " + version);
                 }
             }
         } catch (Exception e) {
-            log.warn("Unable to determine Elasticsearch server version. Assuming 2.x.", e);
+            log.warn("Unable to determine Elasticsearch server version. Default to {}.", majorVersion, e);
         }
 
         return majorVersion;
@@ -137,8 +144,8 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     }
 
     @Override
-    public void createIndex(String indexName, Settings settings) throws IOException {
-        performRequest("PUT", "/" + indexName, mapWriter.writeValueAsBytes(settings.getAsMap()));
+    public void createIndex(String indexName, Map<String,Object> settings) throws IOException {
+        performRequest("PUT", "/" + indexName, mapWriter.writeValueAsBytes(settings));
     }
 
     @Override
@@ -151,9 +158,8 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     }
 
     @Override
-    public void createMapping(String indexName, String typeName, XContentBuilder mapping) throws IOException {
-        byte[] bytes = mapping.bytes().toBytes();
-        performRequest("PUT", "/" + indexName + "/_mapping/" + typeName, bytes);
+    public void createMapping(String indexName, String typeName, Map<String,Object> mapping) throws IOException {
+        performRequest("PUT", "/" + indexName + "/_mapping/" + typeName, mapWriter.writeValueAsBytes(mapping));
     }
 
     @Override
@@ -198,49 +204,26 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         final Response response = performRequest("POST", builder.toString(), outputStream.toByteArray());
         try (final InputStream inputStream = response.getEntity().getContent()) {
             final RestBulkResponse bulkResponse = mapper.readValue(inputStream, RestBulkResponse.class);
-            List<Map<String, Object>> errors = bulkResponse.getItems().stream()
+            final List<Object> errors = bulkResponse.getItems().stream()
                 .flatMap(item -> item.values().stream())
-                .filter(item -> item.getError() != null && item.getStatus() != RestStatus.NOT_FOUND.getStatus())
+                .filter(item -> item.getError() != null && item.getStatus() != 404)
                 .map(item -> item.getError()).collect(Collectors.toList());
             if (!errors.isEmpty()) {
-                errors.forEach(error -> log.error("Failed to execute ES query {}", error.get("reason")));
-                throw new IOException("Failure(s) in Elasicsearch bulk request: " + mapper.writeValueAsString(errors));
+                errors.forEach(error -> log.error("Failed to execute ES query: {}", error));
+                throw new IOException("Failure(s) in Elasicsearch bulk request: " + errors);
             }
         }
     }
 
     @Override
-    public RestSearchResponse search(String indexName, String type, ElasticSearchRequest request) throws IOException {
+    public RestSearchResponse search(String indexName, String type, Map<String,Object> request) throws IOException {
         final String path = "/" + indexName + "/" + type + "/_search";
 
-        final Map<String,Object> requestBody = new HashMap<>();
-
-        if (request.getSize() != null) {
-            requestBody.put("size",  request.getSize());
-        }
-
-        if (request.getFrom() != null) {
-            requestBody.put("from", request.getFrom());
-        }
-
-        if (!request.getSorts().isEmpty()) {
-            requestBody.put("sort", request.getSorts());
-        }
-
-        if (request.getQuery() != null) {
-            final Map<String,Object> query = mapReader.readValue(request.getQuery().buildAsBytes().array());
-            requestBody.put("query", query);
-        }
-
-        if (request.getPostFilter() != null) {
-            final Map<String,Object> query = mapReader.readValue(request.getPostFilter().buildAsBytes().array());
-            requestBody.put("post_filter", query);
-        }
-
-        final byte[] requestData = mapper.writeValueAsBytes(requestBody);
+        final byte[] requestData = mapper.writeValueAsBytes(request);
         if (log.isDebugEnabled()) {
-            log.debug("Elasticsearch request: " + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(requestBody));
+            log.debug("Elasticsearch request: " + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(request));
         }
+
         Response response = performRequest("POST", path, requestData);
         try (final InputStream inputStream = response.getEntity().getContent()) {
             return mapper.readValue(inputStream, RestSearchResponse.class);

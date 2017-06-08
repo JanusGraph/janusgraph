@@ -34,13 +34,17 @@ public class ThriftElasticsearchTest extends JanusGraphIndexTest {
     @BeforeClass
     public static void startElasticsearch() {
         CassandraStorageSetup.startCleanEmbedded();
-        esr = new ElasticsearchRunner();
-        esr.start();
+        if (!ElasticsearchRunner.IS_EXTERNAL) {
+            esr = new ElasticsearchRunner();
+            esr.start();
+        }
     }
 
     @AfterClass
     public static void stopElasticsearch() {
-        esr.stop();
+        if (!ElasticsearchRunner.IS_EXTERNAL) {
+            esr.stop();
+        }
     }
 
     public ThriftElasticsearchTest() {

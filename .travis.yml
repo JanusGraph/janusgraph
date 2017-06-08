@@ -24,7 +24,6 @@ env:
     - MODULE='solr'
     - MODULE='es'
     - MODULE='es' ARGS='-Pelasticsearch2'
-    - MODULE='es' ARGS='-Pelasticsearch2 -Dtest=**/Transport*'
     - MODULE='berkeleyje'
     - MODULE='test'
     - MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'

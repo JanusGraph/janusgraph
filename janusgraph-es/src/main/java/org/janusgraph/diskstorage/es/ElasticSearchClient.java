@@ -14,9 +14,6 @@
 
 package org.janusgraph.diskstorage.es;
 
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
@@ -30,11 +27,11 @@ public interface ElasticSearchClient extends Closeable {
 
     boolean indexExists(String indexName) throws IOException;
 
-    void createIndex(String indexName, Settings settings) throws IOException;
+    void createIndex(String indexName, Map<String,Object> settings) throws IOException;
 
     Map getIndexSettings(String indexName) throws IOException;
 
-    void createMapping(String indexName, String typeName, XContentBuilder mapping) throws IOException;
+    void createMapping(String indexName, String typeName, Map<String,Object> mapping) throws IOException;
 
     Map getMapping(String indexName, String typeName) throws IOException;
 
@@ -42,6 +39,6 @@ public interface ElasticSearchClient extends Closeable {
 
     void bulkRequest(List<ElasticSearchMutation> requests) throws IOException;
 
-    ElasticSearchResponse search(String indexName, String type, ElasticSearchRequest request) throws IOException;
+    ElasticSearchResponse search(String indexName, String type, Map<String,Object> request) throws IOException;
 
 }
