@@ -70,7 +70,7 @@ public interface Transaction extends Graph, SchemaManager {
      * <p/>
      * Note, that using indexQuery will may ignore modifications in the current transaction.
      *
-     * @param indexName Name of the indexing backend to query as configured
+     * @param indexName Name of the index to query as configured
      * @param query Query string
      * @return JanusGraphIndexQuery object to query the index directly
      */
