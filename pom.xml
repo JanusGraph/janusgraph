@@ -87,9 +87,8 @@
              the ES version, also consider the version of Lucene, and
              vice-versa. -->
         <lucene.version>5.5.2</lucene.version>
-        <elasticsearch.version>2.4.4</elasticsearch.version>
         <elasticsearch.rest.version>5.2.2</elasticsearch.rest.version>
-        <elasticsearch.dist.version>5.2.2</elasticsearch.dist.version>
+        <elasticsearch.dist.version>${elasticsearch.rest.version}</elasticsearch.dist.version>
         <!-- Groovy dynamic scripting must be manually enabled on ES 2.x servers.
              From ES 5.0 Painless inline scripts are used which are enabled by default. -->
         <elasticsearch.groovy.inline>false</elasticsearch.groovy.inline>

@@ -51,11 +51,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.elasticsearch</groupId>
-            <artifactId>elasticsearch</artifactId>
-            <version>${elasticsearch.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>rest</artifactId>
             <version>${elasticsearch.rest.version}</version>
@@ -219,9 +214,6 @@
                         <id>default-test</id>
                         <configuration>
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
-                            <excludes>
-                                <exclude>**/Transport*.java</exclude>
-                            </excludes>
                         </configuration>
                     </execution>
 
@@ -261,7 +253,7 @@
         <profile>
             <id>elasticsearch2</id>
             <properties>
-                <elasticsearch.dist.version>${elasticsearch.version}</elasticsearch.dist.version>
+                <elasticsearch.dist.version>2.4.4</elasticsearch.dist.version>
                 <elasticsearch.groovy.inline>true</elasticsearch.groovy.inline>
             </properties>
         </profile>

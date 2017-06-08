@@ -9,7 +9,7 @@ JanusGraph supports https://www.elastic.co/[Elasticsearch] as an index backend. 
 * *Full-Text*: Supports all `Text` predicates to search for text properties that matches a given word, prefix or regular expression.
 * *Geo*: Supports all `Geo` predicates to search for geo properties that are intersecting, within, disjoint to or contained in a given query geometry. Supports points, circles, boxes, lines and polygons for indexing. Supports circles, boxes and polygons for querying point properties and all shapes for querying non-point properties. Note that JTS is required when using line and polygon shapes (see <<search-predicates#geoshape,Geoshape documentation>> for more information).
 * *Numeric Range*: Supports all numeric comparisons in `Compare`.
-* *Flexible Configuration*: Supports embedded or remote operation, custom transport and discovery, and open-ended settings customization.
+* *Flexible Configuration*: Supports remote operation and open-ended settings customization.
 * *TTL*: Supports automatically expiring indexed elements.
 * *Collections*: Supports indexing SET and LIST cardinality properties.
 * *Temporal*: Nanosecond granularity temporal indexing.
@@ -38,7 +38,7 @@ For security reasons Elasticsearch must be run under a non-root account
 
 === Elasticsearch Configuration Overview
 
-JanusGraph supports HTTP and Transport client connections to a running Elasticsearch cluster. Please see <<version-compat>> for details on what versions of ES will work with the different client types in JanusGraph.
+JanusGraph supports HTTP client connections to a running Elasticsearch cluster. Please see <<version-compat>> for details on what versions of ES will work with the different client types in JanusGraph.
 
 [NOTE]
 JanusGraph's index options start with the string "`index.[X].`" where "`[X]`" is a user-defined name for the backend.  This user-defined name must be passed to JanusGraph's ManagementSystem interface when building a mixed index, as described in <<index-mixed>>, so that JanusGraph knows which of potentially multiple configured index backends to use.  Configuration snippets in this chapter use the name `search`, whereas prose discussion of options typically write `[X]` in the same position.  The exact index name is not significant as long as it is used consistently in JanusGraph's configuration and when administering indices.
@@ -52,27 +52,16 @@ The Elasticsearch client is specified as follows:
 
 [source, properties]
 ----
-# ES REST client
-index.search.elasticsearch.interface=REST_CLIENT
 index.search.backend=elasticsearch
 ----
 
-[source, properties]
-----
-# ES TransportClient
-index.search.elasticsearch.interface=TRANSPORT_CLIENT
-index.search.backend=elasticsearch
-----
-
-The `REST_CLIENT` and `TRANSPORT_CLIENT` values tell JanusGraph to use either the REST or Transport client, respectively.  One or the other must be specified.  Do not specify both in the same configuration.
 
 When connecting to Elasticsearch a single or list of hostnames for the Elasticsearch instances must be provided.  These are supplied via JanusGraph's `index.[X].hostname` key.
 
 [source, properties]
 ----
 index.search.backend=elasticsearch
-index.search.elasticsearch.interface=TRANSPORT_CLIENT
-index.search.hostname=10.0.0.10:9300
+index.search.hostname=10.0.0.10:9200
 ----
 
 Each host or host:port pair specified here will be added to the HTTP client's round-robin list of request targets.  Here's a minimal configuration that will round-robin over 10.0.0.10 on the default Elasticsearch HTTP port (9200) and 10.0.0.20 on port 7777:
@@ -80,7 +69,6 @@ Each host or host:port pair specified here will be added to the HTTP client's ro
 [source, properties]
 ----
 index.search.backend=elasticsearch
-index.search.elasticsearch.interface=REST_CLIENT
 index.search.hostname=10.0.0.10, 10.0.0.20:7777
 ----
 
@@ -111,10 +99,6 @@ After processing `ext`, JanusGraph checks for the following common options.  Jan
 
 The REST client accepts the `index.[X].bulk-refresh` option.  This option controls when changes are made visible to search. See https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-refresh.html[?refresh documentation] for more information.  This this can also be set through the `ext` mechanism.
 
-[[es-cfg-transport-opts]]
-==== Transport Client Options
-
-The Transport client accepts the `index.[X].client-sniff` option.  This can be set just as effectively through the `ext` mechanism.  However, it can also be controlled through this JanusGraph config option.  This option exists for continuity with the legacy config.
 
 === Secure Elasticsearch
 
@@ -125,8 +109,8 @@ Elasticsearch does not perform authentication or authorization.  A client that c
 
 A client uses either one protocol/port or the other, but not both simultaneously.  Securing the HTTP protocol port is generally done with a combination of firewalling and a reverse proxy with SSL encryption and HTTP authentication. There are a couple of ways to approach security on the native "transport" protocol port:
 
-Tunnel ES's native "transport" protocol::  This approach can be implemented with SSL/TLS tunneling (for instance via https://www.stunnel.org/index.html[stunnel]), a VPN, or SSH port forwarding.  SSL/TLS tunnels require non-trivial setup and monitoring: one or both ends of the tunnel need a certificate, and the stunnel processes need to be configured and running continuously in order for JanusGraph and Elasticsearch to communicate.  The setup for most secure VPNs is likewise non-trivial.  Some Elasticsearch service providers handle server-side tunnel management and provide a custom Elasticsearch `transport.type` to simplify the client setup.  JanusGraph is compatible with these custom transports.  See <<es-cfg-common-opts>> for information on how to override the `transport.type` and provide arbitrary `transport.*` config keys to JanusGraph's ES client.
-Add a firewall rule that allows only trusted clients to connect on Elasticsearch's native protocol port:: This is typically done at the host firewall level.  This doesn't require any configuration changes in JanusGraph or Elasticsearch, nor does it require helper processes like stunnel.  Easy to configure, but very weak security by itself.
+Tunnel ES's native "transport" protocol::  This approach can be implemented with SSL/TLS tunneling (for instance via https://www.stunnel.org/index.html[stunnel]), a VPN, or SSH port forwarding.  SSL/TLS tunnels require non-trivial setup and monitoring: one or both ends of the tunnel need a certificate, and the stunnel processes need to be configured and running continuously.  The setup for most secure VPNs is likewise non-trivial.  Some Elasticsearch service providers handle server-side tunnel management and provide a custom Elasticsearch `transport.type` to simplify the client setup.
+Add a firewall rule that allows only trusted clients to connect on Elasticsearch's native protocol port:: This is typically done at the host firewall level.  Easy to configure, but very weak security by itself.
 
 [[es-cfg-index-create]]
 === Index Creation Options
@@ -171,14 +155,7 @@ The `create.ext` mechanism for specifying index creation settings is compatible 
 
 ==== Connection Issues to remote Elasticsearch cluster
 
-Check that the Elasticsearch cluster nodes are reachable on the HTTP and native "transport" protocol ports from the JanusGraph nodes.  Check the node listen port by examining the Elasticsearch node configuration logs or using a general diagnostic utility like `netstat`.  Check the JanusGraph configuration.  Disable sniffing to restrict the Transport client to just the configured host list.  Check that the client and server have the same major version: 1.x and 2.x are not compatible.
-
-==== Classpath or Field errors
-
-When you see exception referring to lucene implementation details, make sure you don't have a conflicting version of Lucene on the classpath. Exception may look like this:
-
-[source, text]
-java.lang.NoSuchFieldError: LUCENE_5_5_2
+Check that the Elasticsearch cluster nodes are reachable on the HTTP protocol port from the JanusGraph nodes.  Check the node listen port by examining the Elasticsearch node configuration logs or using a general diagnostic utility like `netstat`.  Check the JanusGraph configuration.
 
 === Optimizing Elasticsearch
 

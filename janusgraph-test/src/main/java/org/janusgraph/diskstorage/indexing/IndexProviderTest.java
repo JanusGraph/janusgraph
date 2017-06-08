@@ -354,9 +354,11 @@ public abstract class IndexProviderTest {
                 assertEquals(ImmutableSet.of("doc3"), ImmutableSet.copyOf(result));
             }
 
-            result = tx.query(new IndexQuery(store, PredicateCondition.of(BOUNDARY, Geo.CONTAINS, Geoshape.point(47,10))));
-            assertEquals(1, result.size());
-            assertEquals(ImmutableSet.of("doc3"), ImmutableSet.copyOf(result));
+            if (indexFeatures.supportsGeoContains()) {
+                result = tx.query(new IndexQuery(store, PredicateCondition.of(BOUNDARY, Geo.CONTAINS, Geoshape.point(47, 10))));
+                assertEquals(1, result.size());
+                assertEquals(ImmutableSet.of("doc3"), ImmutableSet.copyOf(result));
+            }
 
             result = tx.query(new IndexQuery(store, PredicateCondition.of(BOUNDARY, Geo.INTERSECT, Geoshape.box(48,-1,49,2))));
             assertEquals(2,result.size());

@@ -19,9 +19,6 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
@@ -31,14 +28,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Array;
-import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_CONF_FILE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
@@ -74,44 +71,6 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IN
 public enum ElasticSearchSetup {
 
     /**
-     * Start an ES TransportClient connected to
-     * {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#INDEX_HOSTS}.
-     */
-    TRANSPORT_CLIENT {
-        @Override
-        public Connection connect(Configuration config) throws IOException {
-            log.debug("Configuring TransportClient");
-
-            Settings.Builder settingsBuilder = settingsBuilder(config);
-
-            if (config.has(ElasticSearchIndex.CLIENT_SNIFF)) {
-                String k = "client.transport.sniff";
-                settingsBuilder.put(k, config.get(ElasticSearchIndex.CLIENT_SNIFF));
-                log.debug("Set {}: {}", k, config.get(ElasticSearchIndex.CLIENT_SNIFF));
-            }
-
-            settingsBuilder.put("index.max_result_window", Integer.MAX_VALUE);
-
-            TransportClient tc = TransportClient.builder().settings(settingsBuilder.build()).build();
-            int defaultPort = config.has(INDEX_PORT) ? config.get(INDEX_PORT) : ElasticSearchIndex.HOST_PORT_DEFAULT;
-            for (String host : config.get(INDEX_HOSTS)) {
-                String[] hostparts = host.split(":");
-                String hostname = hostparts[0];
-                int hostport = defaultPort;
-                if (hostparts.length == 2) hostport = Integer.parseInt(hostparts[1]);
-                log.info("Configured remote host: {} : {}", hostname, hostport);
-                tc.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(hostname), hostport));
-            }
-
-            TransportElasticSearchClient client = new TransportElasticSearchClient(tc);
-            if (config.has(ElasticSearchIndex.BULK_REFRESH)) {
-                client.setBulkRefresh(!"false".equals(config.get(ElasticSearchIndex.BULK_REFRESH)));
-            }
-            return new Connection(client);
-        }
-    },
-
-    /**
      * Create an ES RestClient connected to
      * {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#INDEX_HOSTS}.
      */
@@ -127,7 +86,7 @@ public enum ElasticSearchSetup {
                 String hostname = hostparts[0];
                 int hostport = defaultPort;
                 if (hostparts.length == 2) hostport = Integer.parseInt(hostparts[1]);
-                log.info("Configured remote host: {} : {}", hostname, hostport);
+                log.debug("Configured remote host: {} : {}", hostname, hostport);
                 hosts.add(new HttpHost(hostname, hostport, "http"));
             }
             RestClient rc = RestClient.builder(hosts.toArray(new HttpHost[hosts.size()])).build();
@@ -165,9 +124,9 @@ public enum ElasticSearchSetup {
      * @return ES settings builder configured according to the {@code config} parameter
      * @throws java.io.IOException if conf-file was set but could not be read
      */
-    private static Settings.Builder settingsBuilder(Configuration config) throws IOException {
+    private static Map<String,Object> settingsBuilder(Configuration config) throws IOException {
 
-        Settings.Builder settings = Settings.settingsBuilder();
+        Map<String,Object> settings = new HashMap<>();
 
         // Set JanusGraph defaults
         settings.put("client.transport.ignore_cluster_name", true);
@@ -199,7 +158,7 @@ public enum ElasticSearchSetup {
 
         // Force-enable inline scripting.  This is probably only useful in Node mode.
         String inlineScriptsKey = "script.inline";
-        String inlineScriptsVal = settings.get(inlineScriptsKey);
+        String inlineScriptsVal = (String) settings.get(inlineScriptsKey);
         if (null != inlineScriptsVal && !"true".equals(inlineScriptsVal)) {
             log.error("JanusGraph requires Elasticsearch inline scripting but found {} set to false", inlineScriptsKey);
             throw new IOException("JanusGraph requires Elasticsearch inline scripting");
@@ -210,16 +169,18 @@ public enum ElasticSearchSetup {
         return settings;
     }
 
-    static void applySettingsFromFile(Settings.Builder settings,
+    static void applySettingsFromFile(Map<String,Object> settings,
                                               Configuration config,
-                                              ConfigOption<String> confFileOption) throws FileNotFoundException {
+                                              ConfigOption<String> confFileOption) throws IOException {
         if (config.has(confFileOption)) {
             String confFile = config.get(confFileOption);
             log.debug("Loading Elasticsearch settings from file {}", confFile);
             InputStream confStream = null;
             try {
                 confStream = new FileInputStream(confFile);
-                settings.loadFromStream(confFile, confStream);
+                final Properties properties = new Properties();
+                properties.load(confStream);
+                properties.stringPropertyNames().stream().forEach(key -> settings.put(key, properties.get(key)));
             } finally {
                 IOUtils.closeQuietly(confStream);
             }
@@ -228,7 +189,7 @@ public enum ElasticSearchSetup {
         }
     }
 
-    static void applySettingsFromJanusGraphConf(Settings.Builder settings,
+    static void applySettingsFromJanusGraphConf(Map<String,Object> settings,
                                                      Configuration config,
                                                      ConfigNamespace rootNS) {
         int keysLoaded = 0;

@@ -41,6 +41,8 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
 
     public static final String ES_PID_FILE = "/tmp/janusgraph-test-es.pid";
 
+    public static final boolean IS_EXTERNAL = Boolean.valueOf(System.getProperty("is.external.es", "false"));
+
     public ElasticsearchRunner(String esHome) {
         final Pattern VERSION_PATTERN = Pattern.compile("es.dist.version=(.*)");
         String version = null;

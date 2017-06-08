@@ -73,9 +73,9 @@ public class ElasticSearchConfigTest {
 
     private static final String ANALYZER_STANDARD = "standard";
 
-    private ElasticsearchRunner esr;
+    private static final int PORT = 9200;
 
-    private int port;
+    private ElasticsearchRunner esr;
 
     private HttpHost host;
 
@@ -83,9 +83,12 @@ public class ElasticSearchConfigTest {
 
     @Before
     public void setup() throws Exception {
-        esr = new ElasticsearchRunner();
-        esr.start();
-        port = getInterface() == ElasticSearchSetup.REST_CLIENT ? 9200 : 9300;
+        if (!ElasticsearchRunner.IS_EXTERNAL) {
+            esr = new ElasticsearchRunner();
+            esr.start();
+            Thread.sleep(5000);
+        }
+
         httpClient = HttpClients.createDefault();
         try {
             host = new HttpHost(InetAddress.getByName("127.0.0.1"), 9200);
@@ -96,19 +99,17 @@ public class ElasticSearchConfigTest {
 
     @After
     public void teardown() throws Exception {
-        esr.stop();
+        if (!ElasticsearchRunner.IS_EXTERNAL) {
+            esr.stop();
+        }
         IOUtils.closeQuietly(httpClient);
-    }
-
-    public ElasticSearchSetup getInterface() {
-        return ElasticSearchSetup.REST_CLIENT;
     }
 
     @Test
     public void testJanusGraphFactoryBuilder() {
         JanusGraphFactory.Builder builder = JanusGraphFactory.build();
         builder.set("storage.backend", "inmemory");
-        builder.set("index." + INDEX_NAME + ".elasticsearch.hostname", "127.0.0.1:" + port);
+        builder.set("index." + INDEX_NAME + ".elasticsearch.hostname", "127.0.0.1:" + PORT);
         JanusGraph graph = builder.open(); // Must not throw an exception
         assertTrue(graph.isOpen());
         graph.close();
@@ -117,16 +118,16 @@ public class ElasticSearchConfigTest {
     @Test
     public void testClient() throws BackendException, InterruptedException {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
-        config.set(INTERFACE, getInterface().toString(), INDEX_NAME);
-        config.set(INDEX_HOSTS, new String[]{ "127.0.0.1:" + port }, INDEX_NAME);
+        config.set(INTERFACE, ElasticSearchSetup.REST_CLIENT.toString(), INDEX_NAME);
+        config.set(INDEX_HOSTS, new String[]{ "127.0.0.1:" + PORT }, INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
-        IndexProvider idx = new ElasticSearchIndex(indexConfig);
+        IndexProvider idx = open(indexConfig);
         simpleWriteAndQuery(idx);
         idx.close();
 
         config = GraphDatabaseConfiguration.buildGraphConfiguration();
-        config.set(INTERFACE, getInterface().toString(), INDEX_NAME);
-        config.set(INDEX_HOSTS, new String[]{ "10.11.12.13:" + port }, INDEX_NAME);
+        config.set(INTERFACE, ElasticSearchSetup.REST_CLIENT.toString(), INDEX_NAME);
+        config.set(INDEX_HOSTS, new String[]{ "10.11.12.13:" + PORT }, INDEX_NAME);
         indexConfig = config.restrictTo(INDEX_NAME);
         Throwable failure = null;
         try {
@@ -147,14 +148,14 @@ public class ElasticSearchConfigTest {
         ModifiableConfiguration config =
             new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
                 cc, BasicConfiguration.Restriction.NONE);
-        config.set(INTERFACE, getInterface().toString(), INDEX_NAME);
-        config.set(INDEX_HOSTS, new String[]{ "127.0.0.1:" + port }, INDEX_NAME);
+        config.set(INTERFACE, ElasticSearchSetup.REST_CLIENT.toString(), INDEX_NAME);
+        config.set(INDEX_HOSTS, new String[]{ "127.0.0.1:" + PORT }, INDEX_NAME);
         config.set(GraphDatabaseConfiguration.INDEX_NAME, "janusgraph_creation_opts", INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
-        IndexProvider idx = new ElasticSearchIndex(indexConfig);
+        IndexProvider idx = open(indexConfig);
         simpleWriteAndQuery(idx);
 
-        ElasticSearchClient client = getInterface().connect(indexConfig).getClient();
+        ElasticSearchClient client = ElasticSearchSetup.REST_CLIENT.connect(indexConfig).getClient();
 
         assertEquals(String.valueOf(shards), client.getIndexSettings("janusgraph_creation_opts").get("number_of_shards"));
 
@@ -276,4 +277,12 @@ public class ElasticSearchConfigTest {
             IOUtils.closeQuietly(res);
         }
     }
+
+    private IndexProvider open(Configuration indexConfig) throws BackendException {
+        final ElasticSearchIndex idx = new ElasticSearchIndex(indexConfig);
+        idx.clearStorage();
+        idx.close();
+        return new ElasticSearchIndex(indexConfig);
+    }
+
 }
