@@ -21,6 +21,8 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.servlet.SolrDispatchFilter;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class SolrRunner {
 
@@ -53,8 +55,8 @@ public class SolrRunner {
         temp.mkdirs();
         temp.deleteOnExit();
 
-        File solrXml = new File(solrHome, "solr.xml");
-        miniSolrCloudCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, temp, solrXml, null, null);
+        final String solrXml = new String(Files.readAllBytes(new File(solrHome, "solr.xml").toPath()));
+        miniSolrCloudCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, temp.toPath(), solrXml, null, null);
 
         for (String core : COLLECTIONS) {
             File coreDirectory = new File(temp.getAbsolutePath() + File.separator + core);
@@ -76,7 +78,7 @@ public class SolrRunner {
 
     private static ZkController getZkController() {
         SolrDispatchFilter dispatchFilter =
-                (SolrDispatchFilter) miniSolrCloudCluster.getJettySolrRunners().get(0).getDispatchFilter().getFilter();
+                (SolrDispatchFilter) miniSolrCloudCluster.getJettySolrRunners().get(0).getSolrDispatchFilter();
         return dispatchFilter.getCores().getZkController();
     }
 
