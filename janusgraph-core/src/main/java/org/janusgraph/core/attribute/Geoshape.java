@@ -16,11 +16,12 @@ package org.janusgraph.core.attribute;
 
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.shape.Circle;
-import com.spatial4j.core.shape.Shape;
-import com.spatial4j.core.shape.SpatialRelation;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.locationtech.spatial4j.shape.Circle;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.ShapeFactory;
+import org.locationtech.spatial4j.shape.SpatialRelation;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectReader;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectWriter;
 import org.janusgraph.diskstorage.ScanBuffer;
@@ -312,7 +313,7 @@ public class Geoshape {
      */
     public static final Geoshape line(List<double[]> coordinates) {
         Preconditions.checkArgument(coordinates.size() >= 2, "Too few coordinate pairs provided");
-        List<com.spatial4j.core.shape.Point> points = new ArrayList<>();
+        List<org.locationtech.spatial4j.shape.Point> points = new ArrayList<>();
         for (double[] coordinate : coordinates) {
             Preconditions.checkArgument(isValidCoordinate(coordinate[1],coordinate[0]),"Invalid coordinate provided");
             points.add(HELPER.getContext().makePoint(coordinate[0],  coordinate[1]));
@@ -397,7 +398,7 @@ public class Geoshape {
             return latitude;
         }
 
-        private com.spatial4j.core.shape.Point getSpatial4jPoint() {
+        private org.locationtech.spatial4j.shape.Point getSpatial4jPoint() {
             return HELPER.getContext().makePoint(longitude,latitude);
         }
 
@@ -677,7 +678,7 @@ public class Geoshape {
     }
 
     /**
-     * Geoshape binary serializer using spatial4j's {@link com.spatial4j.core.io.BinaryCodec}.
+     * Geoshape binary serializer using spatial4j's {@link org.locationtech.spatial4j.io.BinaryCodec}.
      *
      */
     public static class GeoshapeBinarySerializer {

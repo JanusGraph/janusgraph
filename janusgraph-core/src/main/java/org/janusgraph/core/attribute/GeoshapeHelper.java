@@ -14,16 +14,17 @@
 
 package org.janusgraph.core.attribute;
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.SpatialContextFactory;
-import com.spatial4j.core.io.BinaryCodec;
-import com.spatial4j.core.io.GeoJSONReader;
-import com.spatial4j.core.io.GeoJSONWriter;
-import com.spatial4j.core.io.WKTReader;
-import com.spatial4j.core.io.WKTWriter;
-import com.spatial4j.core.shape.Circle;
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.context.SpatialContextFactory;
+import org.locationtech.spatial4j.io.BinaryCodec;
+import org.locationtech.spatial4j.io.GeoJSONReader;
+import org.locationtech.spatial4j.io.GeoJSONWriter;
+import org.locationtech.spatial4j.io.WKTReader;
+import org.locationtech.spatial4j.io.WKTWriter;
+import org.locationtech.spatial4j.shape.Circle;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Rectangle;
+import org.locationtech.spatial4j.shape.Shape;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -73,7 +74,7 @@ public class GeoshapeHelper {
 
     public Geoshape.Type getType(Shape shape) {
         final Geoshape.Type type;
-        if (com.spatial4j.core.shape.Point.class.isAssignableFrom(shape.getClass())) {
+        if (Point.class.isAssignableFrom(shape.getClass())) {
             type = Geoshape.Type.POINT;
         } else if (Circle.class.isAssignableFrom(shape.getClass())) {
             type = Geoshape.Type.CIRCLE;

@@ -11,8 +11,6 @@
     <url>http://janusgraph.org</url>
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
-        <solr.version>5.2.1</solr.version>
-        <zookeeper.version>3.4.6</zookeeper.version>
     </properties>
     <dependencies>
         <dependency>
@@ -55,28 +53,46 @@
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
-            <version>${solr.version}</version>
+            <version>${lucene-solr.version}</version>
+            <exclusions>
+                <!-- Use jcl-over-slf4j from gremlin-core -->
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>jcl-over-slf4j</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
-            <version>${solr.version}</version>
+            <version>${lucene-solr.version}</version>
             <exclusions>
+                <!-- Use gmetric4j from metrics-ganglia in janusgraph-core -->
                 <exclusion>
-                    <groupId>org.apache.zookeeper</groupId>
-                    <artifactId>zookeeper</artifactId>
+                    <groupId>info.ganglia.gmetric4j</groupId>
+                    <artifactId>gmetric4j</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>com.spatial4j</groupId>
-                    <artifactId>spatial4j</artifactId>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>jcl-over-slf4j</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-test-framework</artifactId>
-            <version>${solr.version}</version>
+            <version>${lucene-solr.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>info.ganglia.gmetric4j</groupId>
+                    <artifactId>gmetric4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>jcl-over-slf4j</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
@@ -84,7 +100,7 @@
             <version>2.5</version>
         </dependency>
         <dependency>
-            <groupId>com.spatial4j</groupId>
+            <groupId>org.locationtech.spatial4j</groupId>
             <artifactId>spatial4j</artifactId>
         </dependency>
         <dependency>
