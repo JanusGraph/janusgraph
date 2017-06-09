@@ -49,7 +49,7 @@ cassandra_storagedir="$CASSANDRA_HOME/data"
 # The java classpath (required)
 CLASSPATH="$CASSANDRA_CONF:$cassandra_bin"
 
-CLASSPATH="$CLASSPATH":"$CASSANDRA_HOME"/lib/slf4j-log4j12-1.7.5.jar
+CLASSPATH="$CLASSPATH":$(ls "$CASSANDRA_HOME"/lib/slf4j-log4j12-*.jar)
 
 for jar in "$CASSANDRA_HOME"/lib/*.jar; do
     if [ $jar != slf4j-log4j12* ] ; then
