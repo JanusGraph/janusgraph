@@ -1,0 +1,31 @@
+version: '2'
+services:
+  zookeeper:
+    image: jplock/zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+      - "2888:2888"
+      - "3888:3888"
+
+  solr:
+    image: solr:5.5.4
+    container_name: solr
+    ports:
+      - "8983:8983"
+    volumes:
+      - $HOME/.m2/repository/com/vividsolutions/jts/1.13/jts-1.13.jar:/opt/solr/server/lib/jts-1.13.jar
+    links:
+      - "zookeeper:ZK"
+    command: "bash -c '/opt/solr/bin/solr start -f -z zookeeper:2181'"
+
+  janusgraph_solr_test_setup:
+    image: solr
+    volumes:
+      - ./solr/core-template:/opt/solr/mydata
+      - ./collections.txt:/tmp/collections.txt
+      - ./import-collections.sh:/usr/bin/import-collections
+    links:
+      - "zookeeper:ZK"
+      - "solr"
+    command: "bash -c 'import-collections'"

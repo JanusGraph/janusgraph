@@ -17,29 +17,35 @@ package org.janusgraph.diskstorage.solr;
 import com.google.common.base.Joiner;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.servlet.SolrDispatchFilter;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class SolrRunner {
 
+    public static final String ZOOKEEPER_URLS = System.getProperty("index.search.solr.zookeeper-url");
+
     protected static final int NUM_SERVERS = 1;
-    protected static final String[] COLLECTIONS = new String[] { "store1", "store2", "vertex", "edge", "namev", "namee",
-            "composite", "psearch", "esearch", "vsearch", "mi", "mixed", "index1", "index2", "index3",
-            "ecategory", "vcategory", "pcategory", "theIndex", "vertices", "edges", "booleanIndex", "dateIndex", "instantIndex", "uuidIndex",
-            "randomMixedIndex" };
+    protected static final String[] COLLECTIONS = readCollections();
 
     protected static final String[] KEY_FIELDS = new String[0];
 
     private static final String TMP_DIRECTORY = System.getProperty("java.io.tmpdir");
     private static final String TEMPLATE_DIRECTORY = "core-template";
+    private static final String COLLECTIONS_FILE = "/collections.txt";
 
     private static MiniSolrCloudCluster miniSolrCloudCluster;
 
     public static void start() throws Exception {
+        if (ZOOKEEPER_URLS != null) {
+            return;
+        }
         String userDir = System.getProperty("user.dir");
         String solrHome = userDir.contains("janusgraph-solr")
                 ? Joiner.on(File.separator).join(userDir, "target", "test-classes", "solr")
@@ -66,21 +72,31 @@ public class SolrRunner {
         }
     }
 
-    public static MiniSolrCloudCluster getMiniCluster() {
-        return miniSolrCloudCluster;
+    public static String getZookeeperUrls() {
+        final String zookeeperUrls;
+        if (ZOOKEEPER_URLS == null) {
+            zookeeperUrls = miniSolrCloudCluster.getZkServer().getZkAddress();
+        } else {
+            zookeeperUrls = ZOOKEEPER_URLS;
+        }
+        return zookeeperUrls;
     }
 
     public static void stop() throws Exception {
+        if (ZOOKEEPER_URLS != null) {
+            return;
+        }
         System.clearProperty("solr.solrxml.location");
         System.clearProperty("zkHost");
         miniSolrCloudCluster.shutdown();
     }
 
-    private static ZkController getZkController() {
-        SolrDispatchFilter dispatchFilter =
-                (SolrDispatchFilter) miniSolrCloudCluster.getJettySolrRunners().get(0).getSolrDispatchFilter();
-        return dispatchFilter.getCores().getZkController();
+    private static String[] readCollections() {
+        try (InputStream inputStream = SolrRunner.class.getResourceAsStream(COLLECTIONS_FILE);
+             BufferedReader buffer = new BufferedReader(new InputStreamReader(inputStream))) {
+            return Pattern.compile("\\s+").split(buffer.lines().collect(Collectors.joining("\n")));
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to read collections file", e);
+        }
     }
-
-
 }

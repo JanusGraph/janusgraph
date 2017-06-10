@@ -55,3 +55,18 @@ mvn test -Dtest=BerkeleyJEGraphPerformanceMemoryTest
 # Executes the specified test
 mvn test -Dtest=BerkeleyJEGraphPerformanceMemoryTest -Dtest.skip.mem=false
 ```
+
+### Running Solr Tests with External Server
+
+Solr tests can be run using an external Solr server using Docker with [Compose](https://docs.docker.com/compose/).
+
+```bash
+# optionally update the solr image version in the compose file prior to starting
+docker-compose -f janusgraph-solr/src/test/resources/docker-compose.yml up
+```
+
+Monitor container logs and wait until the setup container exits (message will be `resources_janusgraph_solr_test_setup_1 exited with code 0`). Once setup is complete run janusgraph-solr tests with the `index.search.solr.zookeeper-url` property.
+
+```bash
+mvn clean install -pl janusgraph-solr -Dindex.search.solr.zookeeper-url=localhost:2181
+```
