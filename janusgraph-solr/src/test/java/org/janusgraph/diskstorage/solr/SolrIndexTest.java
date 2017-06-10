@@ -80,7 +80,7 @@ public class SolrIndexTest extends IndexProviderTest {
         final String index = "solr";
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
 
-        config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getMiniCluster().getZkServer().getZkAddress(), index);
+        config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getZookeeperUrls(), index);
         config.set(SolrIndex.WAIT_SEARCHER, true, index);
         return config.restrictTo(index);
     }
