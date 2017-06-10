@@ -41,6 +41,7 @@ env:
     - MODULE='hbase-parent/janusgraph-hbase-098' ARGS='-Dtest=**/diskstorage/hbase/*'
     - MODULE='hbase-parent/janusgraph-hbase-098' ARGS='-Dtest=**/graphdb/hbase/*'
     - MODULE='cql'
+    - COVERITY_ONLY=true
 
 matrix:
   fast_finish: true
@@ -63,25 +64,33 @@ addons:
     # https://scan.coverity.com/travis_ci
     project:
       name: "JanusGraph/janusgraph"
-      version: "0.2.0-SNAPSHOT"
-      description: "Scalable, distributed graph database"
     notification_email: janusgraph-ci@googlegroups.com
-    # For more info on `travis_wait`, see the docs:
-    # https://docs.travis-ci.com/user/common-build-problems/#Build-times-out-because-no-output-was-received
-    build_command: "mvn clean package -B -DskipTests=true"
+    build_command_prepend:
+      - if ! [ -v COVERITY_ONLY ]; then
+          echo "Skipping Coverity for non-Coverity job";
+          exit 0;
+        fi
+    build_command: mvn clean package -DskipTests=true --batch-mode
     branch_pattern: coverity_scan
 
 install:
   # Build and install current module and dependencies. Handle output timeouts and retry on error.
-  - travis_retry travis_wait mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V -pl janusgraph-${MODULE} -am
+  - if [ "${COVERITY_SCAN_BRANCH}" == 1 ] || [ -v COVERITY_ONLY ]; then
+      echo "Skipping install build step in Coverity branch/job";
+    else
+      travis_retry travis_wait \
+          mvn install --projects janusgraph-${MODULE} --also-make \
+          -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
+    fi
 
 script:
-  - if [[ "${COVERITY_SCAN_BRANCH}}" == 1 ]]; then
-      echo "Skipping build/test on 'coverity_scan' branch.";
-      exit 0;
-    fi
   # Build and test module. Handle output timeouts and retry with a clean build on error.
-  - travis_retry travis_wait 50 mvn clean verify -pl janusgraph-${MODULE} ${ARGS}
+  - if [ "${COVERITY_SCAN_BRANCH}" == 1 ] || [ -v COVERITY_ONLY ]; then
+      echo "Skipping script build step in Coverity branch/job";
+    else
+      travis_retry travis_wait 50 \
+          mvn clean verify --projects janusgraph-${MODULE} ${ARGS};
+    fi
 
 # Syntax and more info: https://docs.travis-ci.com/user/notifications
 notifications:
