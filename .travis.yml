@@ -64,6 +64,8 @@ addons:
     # https://scan.coverity.com/travis_ci
     project:
       name: "JanusGraph/janusgraph"
+      version: "0.2.0-SNAPSHOT"
+      description: "Scalable, distributed graph database"
     notification_email: janusgraph-ci@googlegroups.com
     build_command_prepend:
       - if ! [ -v COVERITY_ONLY ]; then
