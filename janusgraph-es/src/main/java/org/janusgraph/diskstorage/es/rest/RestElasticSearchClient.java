@@ -14,6 +14,8 @@
 
 package org.janusgraph.diskstorage.es.rest;
 
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
@@ -48,11 +50,19 @@ import java.util.stream.Collectors;
 
 public class RestElasticSearchClient implements ElasticSearchClient {
 
+
     private static final Logger log = LoggerFactory.getLogger(RestElasticSearchClient.class);
+
+    private static final String REQUEST_TYPE_DELETE = "DELETE";
+    private static final String REQUEST_TYPE_GET = "GET";
+    private static final String REQUEST_TYPE_POST = "POST";
+    private static final String REQUEST_TYPE_PUT = "PUT";
+    private static final String REQUEST_SEPARATOR = "/";
 
     private static final ObjectMapper mapper;
     private static final ObjectReader mapReader;
     private static final ObjectWriter mapWriter;
+
     static {
         final SimpleModule module = new SimpleModule();
         module.addSerializer(new Geoshape.GeoshapeGsonSerializerV1d0());
@@ -90,7 +100,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         final Pattern pattern = Pattern.compile("(\\d+)\\.\\d+\\.\\d+");
         majorVersion = DEFAULT_VERSION;
         try {
-            final Response response = delegate.performRequest("GET", "/");
+            final Response response = delegate.performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR);
             try (final InputStream inputStream = response.getEntity().getContent()) {
                 final ClusterInfo info = mapper.readValue(inputStream, ClusterInfo.class);
                 final String version = info.getVersion() != null ? (String) info.getVersion().get("number") : null;
@@ -119,7 +129,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     @Override
     public void clusterHealthRequest(String timeout) throws IOException {
         Map<String,String> params = ImmutableMap.of("wait_for_status","yellow","timeout",timeout);
-        final Response response = delegate.performRequest("GET", "/_cluster/health", params);
+        final Response response = delegate.performRequest(REQUEST_TYPE_GET, "/_cluster/health", params);
         try (final InputStream inputStream = response.getEntity().getContent()) {
             final Map<String,Object> values = mapReader.readValue(inputStream);
             if (!values.containsKey("timed_out")) {
@@ -134,7 +144,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     public boolean indexExists(String indexName) throws IOException {
         boolean exists = false;
         try {
-            delegate.performRequest("GET", "/" + indexName);
+            delegate.performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName);
             exists = true;
         } catch (IOException e) {
             if (!e.getMessage().contains("404 Not Found")) {
@@ -145,13 +155,43 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     }
 
     @Override
+    public boolean isIndex(String indexName) {
+        boolean exists = false;
+        try {
+            Response response = delegate.performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName);
+            try (final InputStream inputStream = response.getEntity().getContent()) {
+                exists = mapper.readValue(inputStream, Map.class).containsKey(indexName);
+            }
+        } catch (IOException e) {
+        }
+        return exists;
+    }
+
+    @Override
+    public boolean isAlias(String aliasName)  {
+        boolean exists = false;
+        try {
+            delegate.performRequest(REQUEST_TYPE_GET, "/_alias/" + aliasName);
+            exists = true;
+        } catch (IOException e) {
+        }
+        return exists;
+    }
+
+    @Override
     public void createIndex(String indexName, Map<String,Object> settings) throws IOException {
-        performRequest("PUT", "/" + indexName, mapWriter.writeValueAsBytes(settings));
+        performRequest(REQUEST_TYPE_PUT, REQUEST_SEPARATOR + indexName, mapWriter.writeValueAsBytes(settings));
+    }
+
+    @Override
+    public void addAlias(String alias, String index) throws IOException {
+        Map actionAlias = ImmutableMap.of("actions", ImmutableList.of(ImmutableMap.of("add", ImmutableMap.of("index", index, "alias", alias))));
+        performRequest(REQUEST_TYPE_POST, "/_aliases", mapWriter.writeValueAsBytes(actionAlias));
     }
 
     @Override
     public Map getIndexSettings(String indexName) throws IOException {
-        Response response = performRequest("GET", "/" + indexName + "/_settings", null);
+        Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + "/_settings", null);
         try (final InputStream inputStream = response.getEntity().getContent()) {
             Map<String,RestIndexSettings> settings = mapper.readValue(inputStream, new TypeReference<Map<String, RestIndexSettings>>() {});
             return settings.get(indexName).getSettings().getMap();
@@ -160,12 +200,12 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     @Override
     public void createMapping(String indexName, String typeName, Map<String,Object> mapping) throws IOException {
-        performRequest("PUT", "/" + indexName + "/_mapping/" + typeName, mapWriter.writeValueAsBytes(mapping));
+        performRequest(REQUEST_TYPE_PUT, REQUEST_SEPARATOR + indexName + "/_mapping/" + typeName, mapWriter.writeValueAsBytes(mapping));
     }
 
     @Override
     public Map getMapping(String indexName, String typeName) throws IOException{
-        Response response = performRequest("GET", "/" + indexName.toLowerCase() + "/_mapping/"+typeName, null);
+        Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + "/_mapping/" + typeName, null);
         try (final InputStream inputStream = response.getEntity().getContent()) {
             Map<String, RestIndexMappings> settings = mapper.readValue(inputStream, new TypeReference<Map<String, RestIndexMappings>>() {});
             return settings.get(indexName).getMappings().get(typeName).getProperties();
@@ -175,9 +215,9 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     @Override
     public void deleteIndex(String indexName) throws IOException {
         try {
-            performRequest("DELETE", "/" + indexName, null);
+            performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + indexName, null);
         } catch (IOException e) {
-            if (!e.getMessage().contains("no such index")) {
+            if (majorVersion == ElasticMajorVersion.ONE && !e.getMessage().contains("IndexMissingException") || majorVersion != ElasticMajorVersion.ONE && !e.getMessage().contains("no such index")) {
                 throw e;
             }
         }
@@ -188,8 +228,8 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         for (final ElasticSearchMutation request : requests) {
             Map actionData = ImmutableMap.of(request.getRequestType().name().toLowerCase(),
-                ImmutableMap.of("_index", request.getIndex(), "_type", request.getType(), "_id", request.getId()));
-            outputStream.write(mapWriter.writeValueAsBytes(actionData));
+                    ImmutableMap.of("_index", request.getIndex(), "_type", request.getType(), "_id", request.getId()));
+                outputStream.write(mapWriter.writeValueAsBytes(actionData));
             outputStream.write("\n".getBytes());
             if (request.getSource() != null) {
                 outputStream.write(mapWriter.writeValueAsBytes(request.getSource()));
@@ -202,7 +242,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
             builder.append("?refresh=" + bulkRefresh);
         }
 
-        final Response response = performRequest("POST", builder.toString(), outputStream.toByteArray());
+        final Response response = performRequest(REQUEST_TYPE_POST, builder.toString(), outputStream.toByteArray());
         try (final InputStream inputStream = response.getEntity().getContent()) {
             final RestBulkResponse bulkResponse = mapper.readValue(inputStream, RestBulkResponse.class);
             final List<Object> errors = bulkResponse.getItems().stream()
@@ -218,14 +258,17 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     @Override
     public RestSearchResponse search(String indexName, String type, Map<String,Object> request) throws IOException {
-        final String path = "/" + indexName + "/" + type + "/_search";
-
+        final StringBuilder path = new StringBuilder(REQUEST_SEPARATOR).append(indexName);
+        if (!Strings.isNullOrEmpty(type)) {
+            path.append(REQUEST_SEPARATOR).append(type);
+        }
+        path.append("/_search");
         final byte[] requestData = mapper.writeValueAsBytes(request);
         if (log.isDebugEnabled()) {
             log.debug("Elasticsearch request: " + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(request));
         }
 
-        Response response = performRequest("POST", path, requestData);
+        final Response response = performRequest(REQUEST_TYPE_POST, path.toString(), requestData);
         try (final InputStream inputStream = response.getEntity().getContent()) {
             return mapper.readValue(inputStream, RestSearchResponse.class);
         }

@@ -1,5 +1,5 @@
 {
-  "template": "janusgraph*",
+  "template": "janusgraph_test_mapping*",
   "mappings": {
     "test_mapping": {
       "properties": {
