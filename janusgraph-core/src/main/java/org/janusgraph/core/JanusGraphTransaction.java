@@ -49,9 +49,13 @@ public interface JanusGraphTransaction extends Transaction {
      * Note, that an exception is thrown if the vertex id is not a valid JanusGraph vertex id or if a vertex with the given
      * id already exists.
      * <p/>
-     * Custom id setting must be enabled via the configuration option {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}.
-     * <p/>
-     * Use {@link org.janusgraph.core.util.JanusGraphId#toVertexId(long)} to construct a valid JanusGraph vertex id from a user id.
+     * Custom id setting must be enabled via the configuration option {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}
+     * and valid JanusGraph vertex ids must be provided. Use {@link org.janusgraph.graphdb.idmanagement.IDManager#toVertexId(long)}
+     * to construct a valid JanusGraph vertex id from a user id, where <code>idManager</code> can be obtained through
+     * {@link org.janusgraph.graphdb.database.StandardJanusGraph#getIDManager()}.
+     * <pre>
+     * <code>long vertexId = ((StandardJanusGraph) graph).getIDManager().toVertexId(userVertexId);</code>
+     * </pre>
      *
      * @param id vertex id of the vertex to be created
      * @param vertexLabel vertex label for this vertex - can be null if no vertex label should be set.
