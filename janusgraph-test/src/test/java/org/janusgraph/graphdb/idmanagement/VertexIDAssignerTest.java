@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.idmanagement;
 
 import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.LongSet;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphVertex;
@@ -68,6 +69,12 @@ public class VertexIDAssignerTest {
 
     private final long maxIDAssignments;
 
+    private final long numPartitionsBits;
+
+    private enum CustomIdStrategy {
+        LOW,
+        HIGH
+    }
 
     /**
      *
@@ -97,13 +104,17 @@ public class VertexIDAssignerTest {
         } else {
             this.maxIDAssignments = (1<<numPartitionsBits)*((long)partitionMax);
         }
+
+        this.numPartitionsBits = numPartitionsBits;
     }
 
-    private static JanusGraph getInMemoryGraph() {
+    private JanusGraph getInMemoryGraph(boolean allowSettingVertexId, boolean idsFlush) {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, InMemoryStoreManager.class.getCanonicalName());
-        config.set(GraphDatabaseConfiguration.IDS_FLUSH, false);
+        config.set(GraphDatabaseConfiguration.IDS_FLUSH, idsFlush);
         config.set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT, Duration.ofMillis(1L));
+        config.set(GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS, 1<<numPartitionsBits);
+        config.set(GraphDatabaseConfiguration.ALLOW_SETTING_VERTEX_ID, allowSettingVertexId);
         return JanusGraphFactory.open(config);
     }
 
@@ -115,7 +126,7 @@ public class VertexIDAssignerTest {
         int totalVertices = 0;
         for (int trial = 0; trial < 10; trial++) {
             for (boolean flush : new boolean[]{true, false}) {
-                JanusGraph graph = getInMemoryGraph();
+                JanusGraph graph = getInMemoryGraph(false, false);
                 int numVertices = 1000;
                 List<JanusGraphVertex> vertices = new ArrayList<JanusGraphVertex>(numVertices);
                 List<InternalRelation> relations = new ArrayList<InternalRelation>();
@@ -171,5 +182,70 @@ public class VertexIDAssignerTest {
         }
     }
 
+    @Test
+    public void testCustomIdAssignment() {
+        testCustomIdAssignment(CustomIdStrategy.LOW);
+        testCustomIdAssignment(CustomIdStrategy.HIGH);
+
+        final IDManager idManager = idAssigner.getIDManager();
+        for (final long id : new long[] {0, idManager.getVertexCountBound()}) {
+            try {
+                idManager.toVertexId(id);
+                fail("Should fail to convert out of range user id to graph vertex id");
+            } catch (IllegalArgumentException e) {
+                // should throw this exception
+            }
+        }
+
+        for (final long vertexId : new long[] {idManager.toVertexId(1)-1, idManager.toVertexId(idManager.getVertexCountBound()-1)+1}) {
+            try {
+                idManager.fromVertexId(vertexId);
+                fail("Should fail to convert out of range vertex id to user id");
+            } catch (IllegalArgumentException e) {
+                // should throw this exception
+            }
+        }
+    }
+
+    private void testCustomIdAssignment(CustomIdStrategy idStrategy) {
+        LongSet vertexIds = new LongHashSet();
+        final long maxCount = idAssigner.getIDManager().getVertexCountBound();
+        long count = 1;
+        for (int trial = 0; trial < 10; trial++) {
+            JanusGraph graph = getInMemoryGraph(true, true);
+            int numVertices = 1000;
+            List<JanusGraphVertex> vertices = new ArrayList<JanusGraphVertex>(numVertices);
+            try {
+                for (int i = 0; i < numVertices; i++, count++) {
+                    final long userVertexId;
+                    switch (idStrategy) {
+                        case LOW:
+                            userVertexId = count;
+                            break;
+                        case HIGH:
+                            userVertexId = maxCount-count;
+                            break;
+                        default:
+                            throw new RuntimeException("Unsupported custom id strategy: " + idStrategy);
+                    }
+                    final long id = idAssigner.getIDManager().toVertexId(userVertexId);
+                    JanusGraphVertex next = graph.addVertex(T.id, id, "user_id", userVertexId);
+                    vertices.add(next);
+                }
+
+                //Verify that ids are set, unique and consistent with user id basis
+                for (JanusGraphVertex v : vertices) {
+                    assertTrue(v.hasId());
+                    long id = v.longId();
+                    assertTrue(id>0 && id<Long.MAX_VALUE);
+                    assertTrue(vertexIds.add(id));
+                    assertEquals((long) v.value("user_id"), idAssigner.getIDManager().fromVertexId(id));
+                }
+            } finally {
+                graph.tx().rollback();
+                graph.close();
+            }
+        }
+    }
 
 }

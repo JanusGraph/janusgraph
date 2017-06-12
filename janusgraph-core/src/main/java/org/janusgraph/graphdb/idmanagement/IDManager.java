@@ -567,6 +567,33 @@ public class IDManager {
         return ids;
     }
 
+    /**
+     * Converts a user provided long id into a JanusGraph vertex id. The id must be positive and less than {@link #getVertexCountBound()}.
+     * This method is useful when providing ids during vertex creation via {@link org.apache.tinkerpop.gremlin.structure.Graph#addVertex(Object...)}.
+     *
+     * @param id long id
+     * @return a corresponding JanusGraph vertex id
+     * @see #fromVertexId(long)
+     */
+    public long toVertexId(long id) {
+        Preconditions.checkArgument(id > 0, "Vertex id must be positive: %s", id);
+        Preconditions.checkArgument(vertexCountBound > id, "Vertex id is too large: %s", id);
+        return id<<(partitionBits+USERVERTEX_PADDING_BITWIDTH);
+    }
+
+    /**
+     * Converts a JanusGraph vertex id to the user provided id as the inverse mapping of {@link #toVertexId(long)}.
+     *
+     * @param id JanusGraph vertex id (must be positive)
+     * @return original user provided id
+     * @see #toVertexId(long)
+     */
+    public long fromVertexId(long id) {
+        Preconditions.checkArgument(id >>> USERVERTEX_PADDING_BITWIDTH+partitionBits > 0
+            && id <= (vertexCountBound-1)<<USERVERTEX_PADDING_BITWIDTH+partitionBits, "Invalid vertex id provided: %s", id);
+        return id>>USERVERTEX_PADDING_BITWIDTH+partitionBits;
+    }
+
     public boolean isPartitionedVertex(long id) {
         return isUserVertexId(id) && VertexIDType.PartitionedVertex.is(id);
     }
