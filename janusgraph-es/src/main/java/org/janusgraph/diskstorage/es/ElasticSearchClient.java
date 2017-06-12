@@ -27,6 +27,10 @@ public interface ElasticSearchClient extends Closeable {
 
     boolean indexExists(String indexName) throws IOException;
 
+    boolean isIndex(String indexName);
+
+    boolean isAlias(String aliasName);
+
     void createIndex(String indexName, Map<String,Object> settings) throws IOException;
 
     Map getIndexSettings(String indexName) throws IOException;
@@ -40,5 +44,7 @@ public interface ElasticSearchClient extends Closeable {
     void bulkRequest(List<ElasticSearchMutation> requests) throws IOException;
 
     ElasticSearchResponse search(String indexName, String type, Map<String,Object> request) throws IOException;
+
+    void addAlias(String alias, String index) throws IOException;
 
 }
