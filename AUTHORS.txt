@@ -20,3 +20,4 @@ Google
 Orion Health
 IBM
 Rafael Fernandes <luizrafael@gmail.com>
+Robert Dale <robdale@gmail.com>
