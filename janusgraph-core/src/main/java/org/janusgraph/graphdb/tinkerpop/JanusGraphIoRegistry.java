@@ -17,6 +17,7 @@ package org.janusgraph.graphdb.tinkerpop;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.tinkerpop.io.graphson.JanusGraphSONModule;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.io.AbstractIoRegistry;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
@@ -35,6 +36,7 @@ public class JanusGraphIoRegistry extends AbstractIoRegistry {
         register(GraphSONIo.class, null, JanusGraphSONModule.getInstance());
         register(GryoIo.class, RelationIdentifier.class, null);
         register(GryoIo.class, Geoshape.class, new Geoshape.GeoShapeGryoSerializer());
+        register(GryoIo.class, P.class, new JanusGraphPSerializer());
     }
 
     public static JanusGraphIoRegistry getInstance() {
