@@ -81,6 +81,7 @@ PommeVerte <dylan.millikin@gmail.com>
 Rafael Fernandes <luizrafael@gmail.com>
 Ranger Tsao <cao.zhifu@gmail.com>
 Richard Doll <rdoll@care-view.com>
+Robert Dale <robdale@gmail.com>
 Sebastian Good <sebastian@experoinc.com>
 Solon Gordon <solon@knewton.com>
 Stephen Mallette <spmallette@gmail.com> <spmva@genoprime.com>
