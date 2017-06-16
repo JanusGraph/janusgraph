@@ -14,17 +14,20 @@
 
 package org.janusgraph.core.attribute;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 
 /**
  * Comparison relations for text objects. These comparisons are based on a tokenized representation
@@ -66,6 +69,12 @@ public enum Text implements JanusGraphPredicate {
             else if (condition instanceof String && StringUtils.isNotBlank((String) condition)) return true;
             else return false;
         }
+
+        @Override
+        public String toString() {
+            return "textContains";
+        }
+
     },
 
     /**
@@ -90,6 +99,11 @@ public enum Text implements JanusGraphPredicate {
         @Override
         public boolean isValidCondition(Object condition) {
             return condition != null && condition instanceof String;
+        }
+
+        @Override
+        public String toString() {
+            return "textContainsPrefix";
         }
 
     },
@@ -118,6 +132,11 @@ public enum Text implements JanusGraphPredicate {
             return condition != null && condition instanceof String && StringUtils.isNotBlank(condition.toString());
         }
 
+        @Override
+        public String toString() {
+            return "textContainsRegex";
+        }
+
     },
 
     /**
@@ -141,6 +160,11 @@ public enum Text implements JanusGraphPredicate {
             return condition != null && condition instanceof String;
         }
 
+        @Override
+        public String toString() {
+            return "textPrefix";
+        }
+
     },
 
     /**
@@ -161,6 +185,11 @@ public enum Text implements JanusGraphPredicate {
         @Override
         public boolean isValidCondition(Object condition) {
             return condition != null && condition instanceof String && StringUtils.isNotBlank(condition.toString());
+        }
+
+        @Override
+        public String toString() {
+            return "textRegex";
         }
 
     };
@@ -211,6 +240,9 @@ public enum Text implements JanusGraphPredicate {
     }
 
     //////////////// statics
+
+    public final static Set<Text> HAS_CONTAINS = Collections
+            .unmodifiableSet(EnumSet.of(CONTAINS, CONTAINS_PREFIX, CONTAINS_REGEX));
 
     public static <V> P<V> textContains(final V value) {
         return new P(Text.CONTAINS, value);
