@@ -22,7 +22,17 @@ import org.janusgraph.graphdb.idmanagement.IDManager;
  * Utility methods for handling JanusGraph ids and converting them between indexing and storage backend representations.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
+ * @deprecated This class does not produce valid JanusGraph vertex ids as it does not take into account partitioning
+ * bits used in vertex id assignment. Use {@link org.janusgraph.graphdb.idmanagement.IDManager}, which can be obtained
+ * through {@link org.janusgraph.graphdb.database.StandardJanusGraph#getIDManager()} and includes methods for converting
+ * a user id to ({@link org.janusgraph.graphdb.idmanagement.IDManager#toVertexId(long)}) and from
+ * ({@link org.janusgraph.graphdb.idmanagement.IDManager#fromVertexId(long)}) JanusGraph vertex id.
+ * <p/>
+ * <pre>
+ * <code>IDManager idManager = ((StandardJanusGraph) graph).getIDManager();</code>
+ * </pre>
  */
+@Deprecated
 public class JanusGraphId {
 
     /**
@@ -31,6 +41,7 @@ public class JanusGraphId {
      *
      * @param id long id
      * @return a corresponding JanusGraph vertex id
+     * @deprecated Use {@link org.janusgraph.graphdb.idmanagement.IDManager#toVertexId(long)}.
      */
     public static final long toVertexId(long id) {
         Preconditions.checkArgument(id > 0, "Vertex id must be positive: %s", id);
@@ -43,6 +54,7 @@ public class JanusGraphId {
      *
      * @param id JanusGraph vertex id (must be positive)
      * @return original user provided id
+     * @deprecated Use {@link org.janusgraph.graphdb.idmanagement.IDManager#fromVertexId(long)}
      */
     public static final long fromVertexId(long id) {
         Preconditions.checkArgument(id > 0, "Invalid vertex id provided: %s", id);
@@ -54,6 +66,7 @@ public class JanusGraphId {
      *
      * @param v Vertex
      * @return original user provided id
+     * @deprecated Use {@link org.janusgraph.graphdb.idmanagement.IDManager#fromVertexId(long)}
      */
     public static final long fromVertexID(JanusGraphVertex v) {
         Preconditions.checkArgument(v.hasId(), "Invalid vertex provided: %s", v);

@@ -19,6 +19,7 @@ import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.diskstorage.util.Hex;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.types.system.BaseVertexLabel;
@@ -89,9 +90,13 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
      * Note, that an exception is thrown if the vertex id is not a valid JanusGraph vertex id or if a vertex with the given
      * id already exists. Only accepts long ids - all others are ignored.
      * <p/>
-     * Custom id setting must be enabled via the configuration option {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}.
-     * <p/>
-     * Use {@link org.janusgraph.core.util.JanusGraphId#toVertexId(long)} to construct a valid JanusGraph vertex id from a user id.
+     * Custom id setting must be enabled via the configuration option {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}
+     * and valid JanusGraph vertex ids must be provided. Use {@link org.janusgraph.graphdb.idmanagement.IDManager#toVertexId(long)}
+     * to construct a valid JanusGraph vertex id from a user id, where <code>idManager</code> can be obtained through
+     * {@link org.janusgraph.graphdb.database.StandardJanusGraph#getIDManager()}.
+     * <pre>
+     * <code>long vertexId = ((StandardJanusGraph) graph).getIDManager().toVertexId(userVertexId);</code>
+     * </pre>
      *
      * @param keyValues key-value pairs of properties to characterize or attach to the vertex
      * @return New vertex
@@ -99,7 +104,7 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
     @Override
     public JanusGraphVertex addVertex(Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
-        if (ElementHelper.getIdValue(keyValues).isPresent()) throw Vertex.Exceptions.userSuppliedIdsNotSupported();
+        if (ElementHelper.getIdValue(keyValues).isPresent() && !((StandardJanusGraph) getGraph()).getConfiguration().allowVertexIdSetting()) throw Vertex.Exceptions.userSuppliedIdsNotSupported();
         Object labelValue = null;
         for (int i = 0; i < keyValues.length; i = i + 2) {
             if (keyValues[i].equals(T.label)) {
@@ -114,11 +119,8 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
             label = (labelValue instanceof VertexLabel)?(VertexLabel)labelValue:getOrCreateVertexLabel((String) labelValue);
         }
 
-        final JanusGraphVertex vertex = addVertex(null,label);
-//        for (int i = 0; i < keyValues.length; i = i + 2) {
-//            if (!keyValues[i].equals(T.id) && !keyValues[i].equals(T.label))
-//                ((StandardJanusGraphTx)this).addPropertyInternal(vertex,getOrCreatePropertyKey((String) keyValues[i]),keyValues[i+1]);
-//        }
+        final Long id = ElementHelper.getIdValue(keyValues).map(Number.class::cast).map(Number::longValue).orElse(null);
+        final JanusGraphVertex vertex = addVertex(id, label);
         org.janusgraph.graphdb.util.ElementHelper.attachProperties(vertex, keyValues);
         return vertex;
     }
