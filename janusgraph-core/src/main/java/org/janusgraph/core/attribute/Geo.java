@@ -40,7 +40,7 @@ public enum Geo implements JanusGraphPredicate {
 
         @Override
         public String toString() {
-            return "intersect";
+            return "geoIntersect";
         }
 
         @Override
@@ -68,7 +68,7 @@ public enum Geo implements JanusGraphPredicate {
 
         @Override
         public String toString() {
-            return "disjoint";
+            return "geoDisjoint";
         }
 
         @Override
@@ -96,7 +96,7 @@ public enum Geo implements JanusGraphPredicate {
 
         @Override
         public String toString() {
-            return "within";
+            return "geoWithin";
         }
 
         @Override
@@ -124,7 +124,7 @@ public enum Geo implements JanusGraphPredicate {
 
         @Override
         public String toString() {
-            return "contains";
+            return "geoContains";
         }
 
         @Override
