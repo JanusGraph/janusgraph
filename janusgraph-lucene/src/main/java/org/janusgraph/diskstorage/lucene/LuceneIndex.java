@@ -511,9 +511,9 @@ public class LuceneIndex implements IndexProvider {
                 params.addFilter(numericFilter(key, (Cmp) janusgraphPredicate, (Number) value));
             } else if (value instanceof String) {
                 Mapping map = Mapping.getMapping(informations.get(key));
-                if ((map==Mapping.DEFAULT || map==Mapping.TEXT) && !janusgraphPredicate.toString().startsWith("CONTAINS"))
+                if ((map==Mapping.DEFAULT || map==Mapping.TEXT) && !Text.HAS_CONTAINS.contains(janusgraphPredicate))
                     throw new IllegalArgumentException("Text mapped string values only support CONTAINS queries and not: " + janusgraphPredicate);
-                if (map==Mapping.STRING && janusgraphPredicate.toString().startsWith("CONTAINS"))
+                if (map==Mapping.STRING && Text.HAS_CONTAINS.contains(janusgraphPredicate))
                     throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + janusgraphPredicate);
 
 
