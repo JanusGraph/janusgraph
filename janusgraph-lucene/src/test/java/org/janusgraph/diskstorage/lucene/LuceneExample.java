@@ -16,15 +16,14 @@ package org.janusgraph.diskstorage.lucene;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.shape.Shape;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.util.system.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
-import org.apache.lucene.queries.BooleanFilter;
 import org.apache.lucene.search.*;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
@@ -110,21 +109,24 @@ public abstract class LuceneExample {
         analyzer = new StandardAnalyzer();
 
         //Auesee
-        BooleanFilter filter = new BooleanFilter();
+        BooleanQuery.Builder filter = new BooleanQuery.Builder();
         //filter.add(new TermsFilter(new Term("name_txt","know")), BooleanClause.Occur.MUST);
 
         SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,Geoshape.circle(51.666167,6.58905,450).getShape());
         //filter.add(getSpatialStrategy("location").makeFilter(args), BooleanClause.Occur.MUST);
 
-        filter.add(NumericRangeFilter.newLongRange("time",(long)1000342034,(long)1000342034,true,true), BooleanClause.Occur.MUST);
+        filter.add(LegacyNumericRangeQuery.newLongRange("time",(long)1000342034,(long)1000342034,true,true), BooleanClause.Occur.MUST);
 //        filter.add(NumericRangeFilter.newLongRange("time",(long)1000342034-100,Long.MAX_VALUE,true,true), BooleanClause.Occur.MUST);
 //        filter.add(NumericRangeFilter.newLongRange("time",Long.MIN_VALUE,(long)1000342034+300,true,true), BooleanClause.Occur.MUST);
 
 
-        filter.add(new PrefixFilter(new Term("city_str","B")), BooleanClause.Occur.MUST);
+        filter.add(new PrefixQuery(new Term("city_str","B")), BooleanClause.Occur.MUST);
 
 
-        TopDocs docs = searcher.search(new MatchAllDocsQuery(), filter, MAX_RESULT);
+        BooleanQuery.Builder qb = new BooleanQuery.Builder();
+        qb.add(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD);
+        qb.add(filter.build(), BooleanClause.Occur.FILTER);
+        TopDocs docs = searcher.search(qb.build(), MAX_RESULT);
         if (docs.totalHits>=MAX_RESULT) throw new RuntimeException("Max results exceeded: " + MAX_RESULT);
 
         Set<String> result = getResults(searcher,docs);
@@ -153,9 +155,9 @@ public abstract class LuceneExample {
             if (value instanceof Number) {
                 Field field = null;
                 if (value instanceof Integer || value instanceof Long) {
-                    field = new LongField(key, ((Number)value).longValue(), Field.Store.NO);
+                    field = new LegacyLongField(key, ((Number)value).longValue(), Field.Store.NO);
                 } else { //double or float
-                    field = new DoubleField(key, ((Number)value).doubleValue(), Field.Store.NO);
+                    field = new LegacyDoubleField(key, ((Number)value).doubleValue(), Field.Store.NO);
                 }
                 doc.add(field);
             } else if (value instanceof String) {

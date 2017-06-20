@@ -82,11 +82,7 @@
         <hbase100.version>${hbase100.core.version}</hbase100.version>
         <jackson1.version>1.9.2</jackson1.version>
         <jackson2.version>2.6.6</jackson2.version>
-        <!-- ES depends on Lucene.  This ES dependency can affect the
-             version used by the janusgraph-lucene module.  When updating
-             the ES version, also consider the version of Lucene, and
-             vice-versa. -->
-        <lucene.version>5.5.2</lucene.version>
+        <lucene-solr.version>6.6.0</lucene-solr.version>
         <elasticsearch.rest.version>5.2.2</elasticsearch.rest.version>
         <elasticsearch.dist.version>${elasticsearch.rest.version}</elasticsearch.dist.version>
         <!-- Groovy dynamic scripting must be manually enabled on ES 2.x servers.
@@ -881,9 +877,9 @@
 
             <!-- Spatial4j -->
             <dependency>
-                <groupId>com.spatial4j</groupId>
+                <groupId>org.locationtech.spatial4j</groupId>
                 <artifactId>spatial4j</artifactId>
-                <version>0.5</version>
+                <version>0.6</version>
             </dependency>
 
             <!-- Java Topology Suite (JTS) -->

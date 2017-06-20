@@ -543,7 +543,7 @@
                spatialContextFactory="com.spatial4j.core.context.jts.JtsSpatialContextFactory"
                distErrPct="0.001"
                maxDistErr="0.000009"
-               units="degrees"
+               distanceUnits="kilometers"
                prefixTree="geohash"/>
 
     <dynamicField name="*_g"    type="geo"      indexed="true"  stored="true"/>

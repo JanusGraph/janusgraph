@@ -15,16 +15,17 @@
 package org.janusgraph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import com.spatial4j.core.context.jts.DatelineRule;
-import com.spatial4j.core.context.jts.JtsSpatialContext;
-import com.spatial4j.core.context.jts.JtsSpatialContextFactory;
-import com.spatial4j.core.io.jts.JtsBinaryCodec;
-import com.spatial4j.core.io.jts.JtsGeoJSONReader;
-import com.spatial4j.core.io.jts.JtsGeoJSONWriter;
-import com.spatial4j.core.io.jts.JtsWKTReader;
-import com.spatial4j.core.io.jts.JtsWKTWriter;
-import com.spatial4j.core.shape.Shape;
-import com.spatial4j.core.shape.jts.JtsGeometry;
+import org.locationtech.spatial4j.context.jts.DatelineRule;
+import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
+import org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory;
+import org.locationtech.spatial4j.io.GeoJSONReader;
+import org.locationtech.spatial4j.io.WKTReader;
+import org.locationtech.spatial4j.io.jts.JtsBinaryCodec;
+import org.locationtech.spatial4j.io.jts.JtsGeoJSONWriter;
+import org.locationtech.spatial4j.io.jts.JtsWKTWriter;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.jts.JtsGeometry;
+
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 
@@ -49,9 +50,9 @@ public class JtsGeoshapeHelper extends GeoshapeHelper {
         JtsSpatialContext context = new JtsSpatialContext(factory);
 
         super.context = context;
-        wktReader = new JtsWKTReader(context, factory);
+        wktReader = new WKTReader(context, factory);
         wktWriter = new JtsWKTWriter(context, factory);
-        geojsonReader = new JtsGeoJSONReader(context, factory);
+        geojsonReader = new GeoJSONReader(context, factory);
         geojsonWriter = new JtsGeoJSONWriter(context, factory);
         binaryCodec = new JtsBinaryCodec(context, factory);
     }
