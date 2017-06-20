@@ -14,7 +14,7 @@
 
 package org.janusgraph.graphdb.attribute;
 
-import com.spatial4j.core.context.jts.JtsSpatialContext;
+import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.janusgraph.core.attribute.Geoshape;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -60,7 +60,7 @@ public class GeoshapeTest {
             Geoshape point = Geoshape.point(i,i);
             Geoshape line = Geoshape.line(Arrays.asList(new double[][] {{i-1,i-1},{i,i},{i+1,i+1}}));
             Geoshape polygon = Geoshape.polygon(Arrays.asList(new double[][] {{i-1,i-1},{i,i-1},{i+1,i-i},{i+1,i+1},{i-1,i+1},{i-1,i-1}}));
-            Geoshape circle = Geoshape.circle(0.0,0.0,point.getPoint().distance(Geoshape.point(0,0).getPoint())+10);
+            Geoshape circle = Geoshape.circle(i,i,point.getPoint().distance(Geoshape.point(i,i).getPoint())+10);
             assertTrue(circle.intersect(point));
             assertTrue(point.intersect(circle));
             assertTrue(circle.intersect(circle));

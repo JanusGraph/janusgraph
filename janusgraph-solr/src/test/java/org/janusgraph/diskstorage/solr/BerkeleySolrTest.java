@@ -30,7 +30,7 @@ public class BerkeleySolrTest extends SolrJanusGraphIndexTest {
         ModifiableConfiguration config = getBerkeleyJEConfiguration();
         //Add index
         config.set(INDEX_BACKEND,"solr",INDEX);
-        config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getMiniCluster().getZkServer().getZkAddress(), INDEX);
+        config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getZookeeperUrls(), INDEX);
         config.set(SolrIndex.WAIT_SEARCHER, true, INDEX);
         //TODO: set SOLR specific config options
         return config.getConfiguration();

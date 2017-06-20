@@ -18,9 +18,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Shape;
+import org.apache.lucene.queries.TermsQuery;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.shape.Shape;
+
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.graphdb.internal.Order;
@@ -42,8 +43,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
-import org.apache.lucene.queries.BooleanFilter;
-import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
@@ -85,7 +84,7 @@ public class LuceneIndex implements IndexProvider {
     private static final String GEOID = "_____geo";
     private static final int MAX_STRING_FIELD_LEN = 256;
 
-    private static final Version LUCENE_VERSION = Version.LUCENE_5_5_2;
+    private static final Version LUCENE_VERSION = Version.LUCENE_6_4_1;
 
     private static final IndexFeatures LUCENE_FEATURES = new IndexFeatures.Builder()
         .supportedStringMappings(Mapping.TEXT, Mapping.STRING)
@@ -168,7 +167,7 @@ public class LuceneIndex implements IndexProvider {
 //                    SpatialPrefixTree grid = new GeohashPrefixTree(ctx, GEO_MAX_LEVELS);
 //                    strategy = new RecursivePrefixTreeStrategy(grid, key);
                     if (mapping == Mapping.DEFAULT) {
-                        strategy = new PointVectorStrategy(ctx, key);
+                        strategy = PointVectorStrategy.newLegacyInstance(ctx, key);
                     } else {
                         SpatialPrefixTree grid = new QuadPrefixTree(ctx, maxLevels);
                         strategy = new RecursivePrefixTreeStrategy(grid, key);
@@ -220,7 +219,7 @@ public class LuceneIndex implements IndexProvider {
         try {
             String storename = stores.getKey();
             IndexWriter writer = getWriter(storename);
-            reader = DirectoryReader.open(writer, true);
+            reader = DirectoryReader.open(writer, true, true);
             IndexSearcher searcher = new IndexSearcher(reader);
             for (Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
                 String docid = entry.getKey();
@@ -269,7 +268,7 @@ public class LuceneIndex implements IndexProvider {
             for (Map.Entry<String, Map<String, List<IndexEntry>>> stores : documents.entrySet()) {
                 String store = stores.getKey();
                 IndexWriter writer = getWriter(store);
-                IndexReader reader = DirectoryReader.open(writer, true);
+                IndexReader reader = DirectoryReader.open(writer, true, true);
                 IndexSearcher searcher = new IndexSearcher(reader);
 
                 for (Map.Entry<String, List<IndexEntry>> entry : stores.getValue().entrySet()) {
@@ -354,10 +353,10 @@ public class LuceneIndex implements IndexProvider {
                 Field field;
                 Field sortField;
                 if (AttributeUtil.isWholeNumber((Number) e.value)) {
-                    field = new LongField(e.field, ((Number) e.value).longValue(), Field.Store.YES);
+                    field = new LegacyLongField(e.field, ((Number) e.value).longValue(), Field.Store.YES);
                     sortField = new NumericDocValuesField(e.field, ((Number) e.value).longValue());
                 } else { //double or float
-                    field = new DoubleField(e.field, ((Number) e.value).doubleValue(), Field.Store.YES);
+                    field = new LegacyDoubleField(e.field, ((Number) e.value).doubleValue(), Field.Store.YES);
                     sortField = new DoubleDocValuesField(e.field, ((Number) e.value).doubleValue());
                 }
                 doc.add(field);
@@ -382,11 +381,11 @@ public class LuceneIndex implements IndexProvider {
                 geofields.put(e.field, shape);
                 doc.add(new StoredField(e.field, GEOID +  e.value.toString()));
             } else if (e.value instanceof Date) {
-                doc.add(new LongField(e.field, (((Date) e.value).getTime()), Field.Store.YES));
+                doc.add(new LegacyLongField(e.field, (((Date) e.value).getTime()), Field.Store.YES));
             } else if (e.value instanceof Instant) {
-                doc.add(new LongField(e.field, (((Instant) e.value).toEpochMilli()), Field.Store.YES));
+                doc.add(new LegacyLongField(e.field, (((Instant) e.value).toEpochMilli()), Field.Store.YES));
             } else if (e.value instanceof Boolean) {
-                doc.add(new IntField(e.field, ((Boolean)e.value)? 1 : 0, Field.Store.YES));
+                doc.add(new LegacyIntField(e.field, ((Boolean)e.value)? 1 : 0, Field.Store.YES));
             } else if (e.value instanceof UUID) {
                 //Solr stores UUIDs as strings, we we do the same.
                 Field field = new StringField(e.field, e.value.toString(), Field.Store.YES);
@@ -446,11 +445,9 @@ public class LuceneIndex implements IndexProvider {
             if (null == q)
                 q = new MatchAllDocsQuery();
 
-            final Filter f = searchParams.getFilter();
-
             long time = System.currentTimeMillis();
-            TopDocs docs = searcher.search(q, f, query.hasLimit() ? query.getLimit() : Integer.MAX_VALUE - 1, getSortOrder(query));
-            log.debug("Executed query [{}] and filter [{}] in {} ms", q, f, System.currentTimeMillis() - time);
+            final TopDocs docs = searcher.search(q, query.hasLimit() ? query.getLimit() : Integer.MAX_VALUE - 1, getSortOrder(query));
+            log.debug("Executed query [{}] in {} ms", q, System.currentTimeMillis() - time);
             List<String> result = new ArrayList<String>(docs.scoreDocs.length);
             for (int i = 0; i < docs.scoreDocs.length; i++) {
                 result.add(searcher.doc(docs.scoreDocs[i].doc).getField(DOCID).stringValue());
@@ -461,38 +458,38 @@ public class LuceneIndex implements IndexProvider {
         }
     }
 
-    private static final Filter numericFilter(String key, Cmp relation, Number value) {
+    private static final Query numericQuery(String key, Cmp relation, Number value) {
         switch (relation) {
             case EQUAL:
                 return AttributeUtil.isWholeNumber(value) ?
-                        NumericRangeFilter.newLongRange(key, value.longValue(), value.longValue(), true, true) :
-                        NumericRangeFilter.newDoubleRange(key, value.doubleValue(), value.doubleValue(), true, true);
+                        LegacyNumericRangeQuery.newLongRange(key, value.longValue(), value.longValue(), true, true) :
+                    LegacyNumericRangeQuery.newDoubleRange(key, value.doubleValue(), value.doubleValue(), true, true);
             case NOT_EQUAL:
-                BooleanFilter q = new BooleanFilter();
+                BooleanQuery.Builder q = new BooleanQuery.Builder();
                 if (AttributeUtil.isWholeNumber(value)) {
-                    q.add(NumericRangeFilter.newLongRange(key, Long.MIN_VALUE, value.longValue(), true, false), BooleanClause.Occur.SHOULD);
-                    q.add(NumericRangeFilter.newLongRange(key, value.longValue(), Long.MAX_VALUE, false, true), BooleanClause.Occur.SHOULD);
+                    q.add(LegacyNumericRangeQuery.newLongRange(key, Long.MIN_VALUE, value.longValue(), true, false), BooleanClause.Occur.SHOULD);
+                    q.add(LegacyNumericRangeQuery.newLongRange(key, value.longValue(), Long.MAX_VALUE, false, true), BooleanClause.Occur.SHOULD);
                 } else {
-                    q.add(NumericRangeFilter.newDoubleRange(key, Double.MIN_VALUE, value.doubleValue(), true, false), BooleanClause.Occur.SHOULD);
-                    q.add(NumericRangeFilter.newDoubleRange(key, value.doubleValue(), Double.MAX_VALUE, false, true), BooleanClause.Occur.SHOULD);
+                    q.add(LegacyNumericRangeQuery.newDoubleRange(key, Double.MIN_VALUE, value.doubleValue(), true, false), BooleanClause.Occur.SHOULD);
+                    q.add(LegacyNumericRangeQuery.newDoubleRange(key, value.doubleValue(), Double.MAX_VALUE, false, true), BooleanClause.Occur.SHOULD);
                 }
-                return q;
+                return q.build();
             case LESS_THAN:
                 return (AttributeUtil.isWholeNumber(value)) ?
-                        NumericRangeFilter.newLongRange(key, Long.MIN_VALUE, value.longValue(), true, false) :
-                        NumericRangeFilter.newDoubleRange(key, Double.MIN_VALUE, value.doubleValue(), true, false);
+                    LegacyNumericRangeQuery.newLongRange(key, Long.MIN_VALUE, value.longValue(), true, false) :
+                    LegacyNumericRangeQuery.newDoubleRange(key, Double.MIN_VALUE, value.doubleValue(), true, false);
             case LESS_THAN_EQUAL:
                 return (AttributeUtil.isWholeNumber(value)) ?
-                        NumericRangeFilter.newLongRange(key, Long.MIN_VALUE, value.longValue(), true, true) :
-                        NumericRangeFilter.newDoubleRange(key, Double.MIN_VALUE, value.doubleValue(), true, true);
+                    LegacyNumericRangeQuery.newLongRange(key, Long.MIN_VALUE, value.longValue(), true, true) :
+                    LegacyNumericRangeQuery.newDoubleRange(key, Double.MIN_VALUE, value.doubleValue(), true, true);
             case GREATER_THAN:
                 return (AttributeUtil.isWholeNumber(value)) ?
-                        NumericRangeFilter.newLongRange(key, value.longValue(), Long.MAX_VALUE, false, true) :
-                        NumericRangeFilter.newDoubleRange(key, value.doubleValue(), Double.MAX_VALUE, false, true);
+                    LegacyNumericRangeQuery.newLongRange(key, value.longValue(), Long.MAX_VALUE, false, true) :
+                    LegacyNumericRangeQuery.newDoubleRange(key, value.doubleValue(), Double.MAX_VALUE, false, true);
             case GREATER_THAN_EQUAL:
                 return (AttributeUtil.isWholeNumber(value)) ?
-                        NumericRangeFilter.newLongRange(key, value.longValue(), Long.MAX_VALUE, true, true) :
-                        NumericRangeFilter.newDoubleRange(key, value.doubleValue(), Double.MAX_VALUE, true, true);
+                    LegacyNumericRangeQuery.newLongRange(key, value.longValue(), Long.MAX_VALUE, true, true) :
+                    LegacyNumericRangeQuery.newDoubleRange(key, value.doubleValue(), Double.MAX_VALUE, true, true);
             default:
                 throw new IllegalArgumentException("Unexpected relation: " + relation);
         }
@@ -508,7 +505,7 @@ public class LuceneIndex implements IndexProvider {
             if (value instanceof Number) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on numeric types: " + janusgraphPredicate);
                 Preconditions.checkArgument(value instanceof Number);
-                params.addFilter(numericFilter(key, (Cmp) janusgraphPredicate, (Number) value));
+                params.addQuery(numericQuery(key, (Cmp) janusgraphPredicate, (Number) value));
             } else if (value instanceof String) {
                 Mapping map = Mapping.getMapping(informations.get(key));
                 if ((map==Mapping.DEFAULT || map==Mapping.TEXT) && !Text.HAS_CONTAINS.contains(janusgraphPredicate))
@@ -520,16 +517,16 @@ public class LuceneIndex implements IndexProvider {
 
                 if (janusgraphPredicate == Text.CONTAINS) {
                     value = ((String) value).toLowerCase();
-                    BooleanFilter b = new BooleanFilter();
+                    BooleanQuery.Builder b = new BooleanQuery.Builder();
                     for (String term : Text.tokenize((String)value)) {
-                        b.add(new TermsFilter(new Term(key, term)), BooleanClause.Occur.MUST);
+                        b.add(new TermsQuery(new Term(key, term)), BooleanClause.Occur.MUST);
                     }
-                    params.addFilter(b);
+                    params.addQuery(b.build());
                 } else if (janusgraphPredicate == Text.CONTAINS_PREFIX) {
                     value = ((String) value).toLowerCase();
-                    params.addFilter(new PrefixFilter(new Term(key, (String) value)));
+                    params.addQuery(new PrefixQuery(new Term(key, (String) value)));
                 } else if (janusgraphPredicate == Text.PREFIX) {
-                    params.addFilter(new PrefixFilter(new Term(key, (String) value)));
+                    params.addQuery(new PrefixQuery(new Term(key, (String) value)));
                 } else if (janusgraphPredicate == Text.REGEX) {
                     RegexpQuery rq = new RegexpQuery(new Term(key, (String) value));
                     params.addQuery(rq);
@@ -538,11 +535,12 @@ public class LuceneIndex implements IndexProvider {
                     RegexpQuery rq = new RegexpQuery(new Term(key, ".*" + (value) + ".*"));
                     params.addQuery(rq);
                 } else if (janusgraphPredicate == Cmp.EQUAL) {
-                    params.addFilter(new TermsFilter(new Term(key,(String)value)));
+                    params.addQuery(new TermsQuery(new Term(key,(String)value)));
                 } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
-                    BooleanFilter q = new BooleanFilter();
-                    q.add(new TermsFilter(new Term(key, (String) value)), BooleanClause.Occur.MUST_NOT);
-                    params.addFilter(q);
+                    BooleanQuery.Builder q = new BooleanQuery.Builder();
+                    q.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
+                    q.add(new TermsQuery(new Term(key, (String) value)), BooleanClause.Occur.MUST_NOT);
+                    params.addQuery(q.build());
                 } else if(janusgraphPredicate == Text.FUZZY){
                     params.addQuery(new FuzzyQuery(new Term(key, (String) value)));
                 } else if(janusgraphPredicate == Text.CONTAINS_FUZZY){
@@ -562,21 +560,21 @@ public class LuceneIndex implements IndexProvider {
                 params.addQuery(getSpatialStrategy(key, informations.get(key)).makeQuery(args));
             } else if (value instanceof Date) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on date types: " + janusgraphPredicate);
-                params.addFilter(numericFilter(key, (Cmp) janusgraphPredicate, ((Date) value).getTime()));
+                params.addQuery(numericQuery(key, (Cmp) janusgraphPredicate, ((Date) value).getTime()));
             } else if (value instanceof Instant) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on instant types: " + janusgraphPredicate);
-                params.addFilter(numericFilter(key, (Cmp) janusgraphPredicate, ((Instant) value).toEpochMilli()));
+                params.addQuery(numericQuery(key, (Cmp) janusgraphPredicate, ((Instant) value).toEpochMilli()));
             }else if (value instanceof Boolean) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on boolean types: " + janusgraphPredicate);
                 int intValue;
                 switch ((Cmp)janusgraphPredicate) {
                     case EQUAL:
                         intValue = ((Boolean) value) ? 1 : 0;
-                        params.addFilter(NumericRangeFilter.newIntRange(key, intValue, intValue, true, true));
+                        params.addQuery(LegacyNumericRangeQuery.newIntRange(key, intValue, intValue, true, true));
                         break;
                     case NOT_EQUAL:
                         intValue = ((Boolean) value) ? 0 : 1;
-                        params.addFilter(NumericRangeFilter.newIntRange(key, intValue, intValue, true, true));
+                        params.addQuery(LegacyNumericRangeQuery.newIntRange(key, intValue, intValue, true, true));
                         break;
                     default:
                         throw new IllegalArgumentException("Boolean types only support EQUAL or NOT_EQUAL");
@@ -585,11 +583,12 @@ public class LuceneIndex implements IndexProvider {
             } else if (value instanceof UUID) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on UUID types: " + janusgraphPredicate);
                 if (janusgraphPredicate == Cmp.EQUAL) {
-                    params.addFilter(new TermsFilter(new Term(key, value.toString())));
+                    params.addQuery(new TermsQuery(new Term(key, value.toString())));
                 } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
-                    BooleanFilter q = new BooleanFilter();
-                    q.add(new TermsFilter(new Term(key, value.toString())), BooleanClause.Occur.MUST_NOT);
-                    params.addFilter(q);
+                    BooleanQuery.Builder q = new BooleanQuery.Builder();
+                    q.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
+                    q.add(new TermsQuery(new Term(key, value.toString())), BooleanClause.Occur.MUST_NOT);
+                    params.addQuery(q.build());
                 } else {
                     throw new IllegalArgumentException("Relation is not supported for UUID type: " + janusgraphPredicate);
                 }
@@ -599,6 +598,7 @@ public class LuceneIndex implements IndexProvider {
             }
         } else if (condition instanceof Not) {
             SearchParams childParams = convertQuery(((Not) condition).getChild(), informations);
+            params.addQuery(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
             params.addParams(childParams, BooleanClause.Occur.MUST_NOT);
         } else if (condition instanceof And) {
             for (Condition c : condition.getChildren()) {
@@ -785,54 +785,32 @@ public class LuceneIndex implements IndexProvider {
     }
 
     /**
-     * Encapsulates a Lucene Query and Filter object pair that jointly express a JanusGraph
-     * {@link org.janusgraph.graphdb.query.Query} using Lucene's abstractions.
-     * This object's state is mutable.
+     * Encapsulates a Lucene Query that express a JanusGraph {@link org.janusgraph.graphdb.query.Query} using Lucene's
+     * abstractions. This object's state is mutable.
      */
     private static class SearchParams {
-        private BooleanQuery q = new BooleanQuery();
-        private BooleanFilter f = new BooleanFilter();
-
-        private void addFilter(Filter newFilter) {
-            addFilter(newFilter, BooleanClause.Occur.MUST);
-        }
-
-        private void addFilter(Filter newFilter, BooleanClause.Occur occur) {
-            f.add(newFilter, occur);
-        }
+        private BooleanQuery.Builder qb = new BooleanQuery.Builder();
 
         private void addQuery(Query newQuery) {
             addQuery(newQuery, BooleanClause.Occur.MUST);
         }
 
         private void addQuery(Query newQuery, BooleanClause.Occur occur) {
-            q.add(newQuery, occur);
+            qb.add(newQuery, occur);
         }
 
         private void addParams(SearchParams other, BooleanClause.Occur occur) {
             Query otherQuery = other.getQuery();
             if (null != otherQuery)
                 addQuery(otherQuery, occur);
-
-            Filter otherFilter = other.getFilter();
-            if (null != otherFilter)
-                addFilter(otherFilter, occur);
         }
 
         private Query getQuery() {
+            final BooleanQuery q = qb.build();
             if (0 == q.clauses().size()) {
                 return null;
-            } else {
-                return q;
             }
-        }
-
-        private Filter getFilter() {
-            if (0 == f.clauses().size()) {
-                return null;
-            } else {
-                return f;
-            }
+            return q;
         }
     }
 }

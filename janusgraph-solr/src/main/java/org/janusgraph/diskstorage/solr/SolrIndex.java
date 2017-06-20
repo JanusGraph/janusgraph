@@ -792,7 +792,7 @@ public class SolrIndex implements IndexProvider {
             if (mode!=Mode.CLOUD) throw new UnsupportedOperationException("Operation only supported for SolrCloud");
             logger.debug("Clearing storage from Solr: {}", solrClient);
             ZkStateReader zkStateReader = ((CloudSolrClient) solrClient).getZkStateReader();
-            zkStateReader.updateClusterState(true);
+            zkStateReader.updateClusterState();
             ClusterState clusterState = zkStateReader.getClusterState();
             for (String collection : clusterState.getCollections()) {
                 logger.debug("Clearing collection [{}] in Solr",collection);
@@ -977,7 +977,7 @@ public class SolrIndex implements IndexProvider {
      */
     private static boolean checkIfCollectionExists(CloudSolrClient server, String collection) throws KeeperException, InterruptedException {
         ZkStateReader zkStateReader = server.getZkStateReader();
-        zkStateReader.updateClusterState(true);
+        zkStateReader.updateClusterState();
         ClusterState clusterState = zkStateReader.getClusterState();
         return clusterState.getCollectionOrNull(collection) != null;
     }
@@ -992,7 +992,7 @@ public class SolrIndex implements IndexProvider {
 
             while (cont) {
                 boolean sawLiveRecovering = false;
-                zkStateReader.updateClusterState(true);
+                zkStateReader.updateClusterState();
                 ClusterState clusterState = zkStateReader.getClusterState();
                 Map<String, Slice> slices = clusterState.getSlicesMap(collection);
                 Preconditions.checkNotNull("Could not find collection:" + collection, slices);
