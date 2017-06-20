@@ -612,9 +612,11 @@ public class IndexSerializer {
 //        }
 //    }
 
-    public Iterable<RawQuery.Result> executeQuery(IndexQueryBuilder query, final ElementCategory resultType,
-                                                  final BackendTransaction backendTx, final StandardJanusGraphTx transaction) {
-        MixedIndexType index = getMixedIndex(query.getIndex(), transaction);
+    /* ################################################
+    	Common code used by executeQuery and executeTotals
+	################################################### */
+    private String createQueryString(IndexQueryBuilder query, final ElementCategory resultType,
+            final StandardJanusGraphTx transaction, MixedIndexType index) {
         Preconditions.checkArgument(index.getElement()==resultType,"Index is not configured for the desired result type: %s",resultType);
         String backingIndexName = index.getBackingIndexName();
         IndexProvider indexInformation = (IndexProvider) mixedIndexes.get(backingIndexName);
@@ -666,11 +668,17 @@ public class IndexSerializer {
             pos = startPos+replacement.length();
             replacements++;
         }
-
         String queryStr = qB.toString();
         if (replacements<=0) log.warn("Could not convert given {} index query: [{}]",resultType, query.getQuery());
         log.info("Converted query string with {} replacements: [{}] => [{}]",replacements,query.getQuery(),queryStr);
-        RawQuery rawQuery=new RawQuery(index.getStoreName(),queryStr,query.getParameters());
+        return queryStr;
+    }
+    
+    public Iterable<RawQuery.Result> executeQuery(IndexQueryBuilder query, final ElementCategory resultType,
+                                                  final BackendTransaction backendTx, final StandardJanusGraphTx transaction) {
+        final MixedIndexType index = getMixedIndex(query.getIndex(), transaction);
+        final String queryStr = createQueryString(query, resultType, transaction, index);
+        final RawQuery rawQuery = new RawQuery(index.getStoreName(),queryStr,query.getParameters());
         if (query.hasLimit()) rawQuery.setLimit(query.getLimit());
         rawQuery.setOffset(query.getOffset());
         return Iterables.transform(backendTx.rawQuery(index.getBackingIndexName(), rawQuery), new Function<RawQuery.Result<String>, RawQuery.Result>() {
@@ -682,6 +690,15 @@ public class IndexSerializer {
         });
     }
 
+    public Long executeTotals(IndexQueryBuilder query, final ElementCategory resultType,
+            final BackendTransaction backendTx, final StandardJanusGraphTx transaction) {
+        final MixedIndexType index = getMixedIndex(query.getIndex(), transaction);
+        final String queryStr = createQueryString(query, resultType, transaction, index);
+        final RawQuery rawQuery = new RawQuery(index.getStoreName(),queryStr,query.getParameters());
+        if (query.hasLimit()) rawQuery.setLimit(query.getLimit());
+        rawQuery.setOffset(query.getOffset());
+        return backendTx.totals(index.getBackingIndexName(), rawQuery);
+    }
 
     /* ################################################
                 Utility Functions

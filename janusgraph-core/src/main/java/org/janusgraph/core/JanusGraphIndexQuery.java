@@ -101,6 +101,27 @@ public interface JanusGraphIndexQuery {
     public Iterable<Result<JanusGraphVertexProperty>> properties();
 
     /**
+     * Returns total vertices that match the query in the indexing backend ignoring limit and offset.
+     *
+     * @return
+     */
+    public Long vertexTotals();
+
+    /**
+     * Returns total edges that match the query in the indexing backend ignoring limit and offset.
+     *
+     * @return
+     */
+    public Long edgeTotals();
+
+    /**
+     * Returns total properties that match the query in the indexing backend ignoring limit and offset.
+     *
+     * @return
+     */
+    public Long propertyTotals();
+    
+    /**
      * Container of a query result with its score.
      * @param <V>
      */
