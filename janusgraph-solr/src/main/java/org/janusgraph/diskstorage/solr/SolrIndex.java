@@ -509,32 +509,14 @@ public class SolrIndex implements IndexProvider {
         return result;
     }
 
-    @Override
-    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
-        List<RawQuery.Result<String>> result;
-        String collection = query.getStore();
-        String keyIdField = getKeyFieldId(collection);
+    private QueryResponse runCommonQuery(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx, String collection, String keyIdField) throws BackendException {
         SolrQuery solrQuery = new SolrQuery(query.getQuery())
                                 .addField(keyIdField)
                                 .setIncludeScore(true)
                                 .setStart(query.getOffset())
                                 .setRows(query.hasLimit() ? query.getLimit() : maxResults);
-
         try {
-            QueryResponse response = solrClient.query(collection, solrQuery);
-            if (logger.isDebugEnabled())
-                logger.debug("Executed query [{}] in {} ms", query.getQuery(), response.getElapsedTime());
-
-            int totalHits = response.getResults().size();
-            if (!query.hasLimit() && totalHits >= maxResults) {
-                logger.warn("Query result set truncated to first [{}] elements for query: {}", maxResults, query);
-            }
-            result = new ArrayList<RawQuery.Result<String>>(totalHits);
-
-            for (SolrDocument hit : response.getResults()) {
-                double score = Double.parseDouble(hit.getFieldValue("score").toString());
-                result.add(new RawQuery.Result<String>(hit.getFieldValue(keyIdField).toString(), score));
-            }
+            return solrClient.query(collection, solrQuery);
         } catch (IOException e) {
             logger.error("Query did not complete : ", e);
             throw new PermanentBackendException(e);
@@ -542,9 +524,34 @@ public class SolrIndex implements IndexProvider {
             logger.error("Unable to query Solr index.", e);
             throw new PermanentBackendException(e);
         }
-        return result;
+    }
+    
+    @Override
+    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
+        final String collection = query.getStore();
+        final String keyIdField = getKeyFieldId(collection);
+        final QueryResponse response = runCommonQuery(query, informations, tx, collection, keyIdField);
+        logger.debug("Executed query [{}] in {} ms", query.getQuery(), response.getElapsedTime());
+
+        final int totalHits = response.getResults().size();
+        if (!query.hasLimit() && totalHits >= maxResults) {
+            logger.warn("Query result set truncated to first [{}] elements for query: {}", maxResults, query);
+        }
+        return response.getResults().stream().map( r -> {
+            final double score = Double.parseDouble(r.getFieldValue("score").toString());
+            return new RawQuery.Result<String>(r.getFieldValue(keyIdField).toString(), score);
+        }).collect(Collectors.toList());
     }
 
+    @Override
+    public Long totals(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
+        final String collection = query.getStore();
+        final String keyIdField = getKeyFieldId(collection);
+        final QueryResponse response = runCommonQuery(query, informations, tx, collection, keyIdField);
+        logger.debug("Executed query [{}] in {} ms", query.getQuery(), response.getElapsedTime());
+        return response.getResults().getNumFound();
+    }
+    
     private static String escapeValue(Object value) {
         return ClientUtils.escapeQueryChars(value.toString());
     }

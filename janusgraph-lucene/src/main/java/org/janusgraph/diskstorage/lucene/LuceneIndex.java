@@ -80,7 +80,6 @@ import java.util.stream.Stream;
 public class LuceneIndex implements IndexProvider {
     private static final Logger log = LoggerFactory.getLogger(LuceneIndex.class);
 
-
     private static final String DOCID = "_____elementid";
     private static final String GEOID = "_____geo";
     private static final int MAX_STRING_FIELD_LEN = 256;
@@ -634,7 +633,7 @@ public class LuceneIndex implements IndexProvider {
             int adjustedLimit = query.hasLimit() ? query.getLimit() : Integer.MAX_VALUE - 1;
             if (adjustedLimit < Integer.MAX_VALUE-1-offset) adjustedLimit+=offset;
             else adjustedLimit = Integer.MAX_VALUE-1;
-            TopDocs docs = searcher.search(q, adjustedLimit);
+            final TopDocs docs = searcher.search(q, adjustedLimit);
             log.debug("Executed query [{}] in {} ms",q, System.currentTimeMillis() - time);
             List<RawQuery.Result<String>> result = new ArrayList<RawQuery.Result<String>>(docs.scoreDocs.length);
             for (int i = offset; i < docs.scoreDocs.length; i++) {
@@ -646,6 +645,31 @@ public class LuceneIndex implements IndexProvider {
         }
     }
 
+    @Override
+    public Long totals(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
+        final Query q;
+        try {
+            q = new QueryParser("_all",analyzer).parse(query.getQuery());
+        } catch (ParseException e) {
+            throw new PermanentBackendException("Could not parse raw query: "+query.getQuery(),e);
+        }
+
+        try {
+            final IndexSearcher searcher = ((Transaction) tx).getSearcher(query.getStore());
+            if (searcher == null) return 0L; //Index does not yet exist
+
+            final long time = System.currentTimeMillis();
+            // Lucene doesn't like limits of 0.  Also, it doesn't efficiently build a total list.
+            query.setLimit(1);
+            // We ignore offset and limit for totals
+            final TopDocs docs = searcher.search(q, 1);
+            log.debug("Executed query [{}] in {} ms",q, System.currentTimeMillis() - time);
+            return new Long(docs.totalHits);
+        } catch (IOException e) {
+            throw new TemporaryBackendException("Could not execute Lucene query", e);
+        }
+    }
+    
     @Override
     public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws BackendException {
         return new Transaction(config);

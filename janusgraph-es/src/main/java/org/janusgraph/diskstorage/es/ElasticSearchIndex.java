@@ -904,8 +904,7 @@ public class ElasticSearchIndex implements IndexProvider {
         return null;
     }
 
-    @Override
-    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
+    private ElasticSearchResponse runCommonQuery(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException{
         ElasticSearchRequest sr = new ElasticSearchRequest();
         sr.setQuery(compat.queryString(query.getQuery()));
 
@@ -919,12 +918,25 @@ public class ElasticSearchIndex implements IndexProvider {
         } catch (IOException e) {
             throw new PermanentBackendException(e);
         }
+        return response;
+    }
+    
+    @Override
+    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
+        final ElasticSearchResponse response = runCommonQuery(query, informations, tx);
         log.debug("Executed query [{}] in {} ms", query.getQuery(), response.getTook());
         if (!query.hasLimit() && response.getTotal() >= maxResultsSize)
             log.warn("Query result set truncated to first [{}] elements for query: {}", maxResultsSize, query);
         return response.getResults();
     }
 
+    @Override
+    public Long totals(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
+        final ElasticSearchResponse response = runCommonQuery(query, informations, tx);
+        log.debug("Executed query [{}] in {} ms", query.getQuery(), response.getTook());
+        return response.getTotal();
+    }
+    
     @Override
     public boolean supports(KeyInformation information, JanusGraphPredicate janusgraphPredicate) {
         Class<?> dataType = information.getDataType();
