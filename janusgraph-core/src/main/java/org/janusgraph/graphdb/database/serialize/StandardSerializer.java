@@ -138,6 +138,16 @@ public class StandardSerializer implements AttributeHandler, Serializer {
     public synchronized <V> void registerClass(int registrationNo, Class<V> datatype, AttributeSerializer<V> serializer) {
         Preconditions.checkArgument(registrationNo >= 0 && registrationNo < MAX_REGISTRATION_NO, "Registration number" +
                 " out of range [0,%s]: %s", MAX_REGISTRATION_NO, registrationNo);
+
+        if (datatype == HashMap.class) {
+            final Integer hashMapRegNo = registrations.inverse().get(normalizeDataType(HashMap.class));
+            if (hashMapRegNo != null) {
+            	// Remove the default HashMap serializer so we can replace it with the custom one
+            	registrations.remove(hashMapRegNo);
+            	handlers.remove(datatype);
+            }
+        }
+
         registerClassInternal(CLASS_REGISTRATION_OFFSET + registrationNo, datatype, serializer);
     }
 

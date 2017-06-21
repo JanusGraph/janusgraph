@@ -234,6 +234,27 @@ public class SerializerTest extends SerializerTestCommon {
         assertFalse(b.hasRemaining());
 
     }
+    
+    @Test
+    public void customHashMapSerializeTest() {
+        serialize.registerClass(1,HashMap.class, new THashMapSerializer());
+        DataOutput out = serialize.getDataOutput(128);
+
+        final String property1 = "property1";
+        final String value1 = "value1";
+        HashMap<String, Object> hashMapIn = new HashMap<String, Object>();
+        hashMapIn.put(property1, value1);
+        out.writeObjectNotNull(hashMapIn);
+
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
+        if (printStats) log.debug(bufferStats(b));
+        
+        HashMap<String, Object> hashMapOut = serialize.readObjectNotNull(b, HashMap.class);
+        assertNotNull(hashMapOut);
+        assertEquals(2, hashMapOut.size());
+        assertEquals(value1, hashMapOut.get(property1));
+        assertTrue(hashMapOut.containsKey(THashMapSerializer.class.getName())); // THashMapSerializer adds this
+    }
 
     private StaticBuffer getStringBuffer(String value) {
         DataOutput o = serialize.getDataOutput(value.length()+10);
