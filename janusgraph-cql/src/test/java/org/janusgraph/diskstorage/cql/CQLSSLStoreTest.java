@@ -28,7 +28,7 @@ public class CQLSSLStoreTest extends CQLStoreTest {
 
     @BeforeClass
     public static void startCassandra() {
-        startCleanEmbedded(true);
+        startCleanEmbedded();
     }
 
     @Override

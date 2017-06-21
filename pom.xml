@@ -80,6 +80,7 @@
         <hbase098.version>${hbase098.core.version}-hadoop2</hbase098.version>
         <hbase100.core.version>1.2.4</hbase100.core.version>
         <hbase100.version>${hbase100.core.version}</hbase100.version>
+        <scylladb.version>1.7.1</scylladb.version>
         <jackson1.version>1.9.2</jackson1.version>
         <jackson2.version>2.6.6</jackson2.version>
         <lucene-solr.version>6.6.0</lucene-solr.version>

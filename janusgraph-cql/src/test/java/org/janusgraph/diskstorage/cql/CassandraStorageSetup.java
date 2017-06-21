@@ -31,6 +31,7 @@ import java.time.Duration;
 
 import org.apache.commons.io.FileUtils;
 import org.janusgraph.diskstorage.cassandra.utils.CassandraDaemonWrapper;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,10 +43,9 @@ public class CassandraStorageSetup {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraStorageSetup.class);
 
-    private static final String TEST_STORAGE_HOST = "test.storage.host";
-
     public static final String CONFDIR_SYSPROP = "test.cassandra.confdir";
     public static final String DATADIR_SYSPROP = "test.cassandra.datadir";
+    public static final String HOSTNAME = System.getProperty(ConfigElement.getPath(STORAGE_HOSTS));
 
     private static volatile Paths paths;
 
@@ -56,11 +56,7 @@ public class CassandraStorageSetup {
      * This method is idempotent. Calls after the first have no effect aside from logging statements.
      */
     public static void startCleanEmbedded() {
-        startCleanEmbedded(false);
-    }
-
-    public static void startCleanEmbedded(boolean force) {
-        if (force || System.getProperty(TEST_STORAGE_HOST) == null) {
+        if (HOSTNAME == null) {
             final Paths p = getPaths();
             if (!CassandraDaemonWrapper.isStarted()) {
                 try {
@@ -111,15 +107,13 @@ public class CassandraStorageSetup {
         config.set(STORAGE_BACKEND, "cql");
         // Set to 3 because we have a 2.1.9 database that only supports version 3, if we let it negotiate then there are spurious errors.
         config.set(PROTOCOL_VERSION, 3);
-        if (System.getProperty(TEST_STORAGE_HOST) != null) {
-            config.set(STORAGE_HOSTS, new String[] { System.getProperty(TEST_STORAGE_HOST) });
-        }
+        if (HOSTNAME != null) config.set(STORAGE_HOSTS, new String[]{HOSTNAME});
         return config;
     }
 
     public static ModifiableConfiguration enableSSL(final ModifiableConfiguration mc) {
         mc.set(SSL_ENABLED, true);
-        mc.set(STORAGE_HOSTS, new String[] { "localhost" });
+        mc.set(STORAGE_HOSTS, new String[]{HOSTNAME != null ? HOSTNAME : "127.0.0.1"});
         mc.set(SSL_TRUSTSTORE_LOCATION,
                 Joiner.on(File.separator).join("target", "cassandra", "murmur-ssl", "conf", "test.truststore"));
         mc.set(SSL_TRUSTSTORE_PASSWORD, "cassandra");
