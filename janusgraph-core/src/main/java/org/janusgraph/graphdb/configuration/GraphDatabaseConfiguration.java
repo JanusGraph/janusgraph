@@ -245,7 +245,7 @@ public class GraphDatabaseConfiguration {
             "Whether to pre-fetch all properties on first singular vertex property access. This can eliminate backend calls on subsequent" +
                     "property access for the same vertex at the expense of retrieving all properties at once. This can be " +
                     "expensive for vertices with many properties",
-            ConfigOption.Type.MASKABLE, false);
+            ConfigOption.Type.MASKABLE, true);
 
     public static final ConfigOption<Boolean> ADJUST_LIMIT = new ConfigOption<Boolean>(QUERY_NS,"smart-limit",
             "Whether the query optimizer should try to guess a smart limit for the query to ensure responsiveness in " +
