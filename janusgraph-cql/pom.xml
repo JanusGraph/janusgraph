@@ -311,4 +311,96 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <!-- Run Thrift tests with ScyllaDB (requires Docker) -->
+            <id>scylladb-test</id>
+            <properties>
+                <!-- Tests are run under failsafe so skip them under surefire -->
+                <test.skip.byteorderedpartitioner>true</test.skip.byteorderedpartitioner>
+                <test.skip.murmur>true</test.skip.murmur>
+                <test.skip.murmur-serial>true</test.skip.murmur-serial>
+                <test.skip.murmur-ssl>true</test.skip.murmur-ssl>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <skipITs>false</skipITs>
+                            <includes>
+                                <include>**/org/janusgraph/diskstorage/cql/*.java</include>
+                                <include>**/org/janusgraph/graphdb/cql/*.java</include>
+                            </includes>
+                            <!-- Exclude default (performance/memory) tests. Also exclude SSL tests (fail under Scylla) -->
+                            <excludedGroups>${test.excluded.groups},org.janusgraph.testcategory.CassandraSSLTests</excludedGroups>
+                            <systemProperties>
+                                <!-- Run tests against the containerized Scylla test server -->
+                                <property>
+                                    <name>storage.hostname</name>
+                                    <value>0.0.0.0</value>
+                                </property>
+                            </systemProperties>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <version>0.18.1</version>
+                        <configuration>
+                            <images>
+                                <image>
+                                    <alias>scylladb</alias>
+                                    <name>scylladb/scylla:${scylladb.version}</name>
+                                    <run>
+                                        <!-- Limit to two CPUs -->
+                                        <cmd>--smp 2</cmd>
+                                        <!-- Expose Thrift and CQL ports -->
+                                        <ports>
+                                            <port>9160:9160</port>
+                                            <port>9042:9042</port>
+                                        </ports>
+                                        <wait>
+                                            <tcp>
+                                                <ports>
+                                                    <port>9160</port>
+                                                    <port>9042</port>
+                                                </ports>
+                                            </tcp>
+                                            <time>60000</time>
+                                        </wait>
+                                    </run>
+                                </image>
+                            </images>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>docker-start</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>start</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>docker-stop</id>
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>stop</goal>
+                                    <goal>remove</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

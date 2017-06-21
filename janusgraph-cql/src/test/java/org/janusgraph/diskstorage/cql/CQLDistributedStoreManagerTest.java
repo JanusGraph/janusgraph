@@ -16,9 +16,15 @@ package org.janusgraph.diskstorage.cql;
 
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.DistributedStoreManagerTest;
+import org.janusgraph.diskstorage.common.DistributedStoreManager.Deployment;
+import org.janusgraph.testcategory.OrderedKeyStoreTests;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import static org.junit.Assert.assertEquals;
 
 public class CQLDistributedStoreManagerTest extends DistributedStoreManagerTest<CQLStoreManager> {
 
@@ -37,5 +43,13 @@ public class CQLDistributedStoreManagerTest extends DistributedStoreManagerTest<
     public void tearDown() throws BackendException {
         if (null != manager)
             manager.close();
+    }
+
+    @Override
+    @Test
+    @Category({ OrderedKeyStoreTests.class })
+    public void testGetDeployment() {
+        final Deployment deployment = CassandraStorageSetup.HOSTNAME == null ? Deployment.LOCAL : Deployment.REMOTE;
+        assertEquals(deployment, manager.getDeployment());
     }
 }
