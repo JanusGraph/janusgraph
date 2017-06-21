@@ -14,13 +14,18 @@
 
 package org.janusgraph.diskstorage.cassandra.thrift;
 
+import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.DistributedStoreManagerTest;
+import org.janusgraph.diskstorage.common.DistributedStoreManager.Deployment;
+import org.janusgraph.testcategory.OrderedKeyStoreTests;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
-import org.janusgraph.CassandraStorageSetup;
-import org.janusgraph.diskstorage.DistributedStoreManagerTest;
+import static org.junit.Assert.assertEquals;
 
 public class ThriftDistributedStoreManagerTest extends DistributedStoreManagerTest<CassandraThriftStoreManager> {
 
@@ -40,5 +45,13 @@ public class ThriftDistributedStoreManagerTest extends DistributedStoreManagerTe
     public void tearDown() throws BackendException {
         if (null != manager)
             manager.close();
+    }
+
+    @Override
+    @Test
+    @Category({ OrderedKeyStoreTests.class })
+    public void testGetDeployment() {
+        final Deployment deployment = CassandraStorageSetup.HOSTNAME == null ? Deployment.LOCAL : Deployment.REMOTE;
+        assertEquals(deployment, manager.getDeployment());
     }
 }

@@ -384,16 +384,105 @@
     </build>
 
     <profiles>
-      <profile>
-	<id>coverage</id>
-	<activation>
-	  <activeByDefault>false</activeByDefault>
-	</activation>
-
-	<properties>
-	  <test.extra.jvm.opts>${jacoco.opts} -javaagent:${basedir}/target/jamm-${jamm.version}.jar</test.extra.jvm.opts>
-	</properties>
-      </profile>
+        <profile>
+	          <id>coverage</id>
+	          <activation>
+	              <activeByDefault>false</activeByDefault>
+	          </activation>
+	          <properties>
+	              <test.extra.jvm.opts>${jacoco.opts} -javaagent:${basedir}/target/jamm-${jamm.version}.jar</test.extra.jvm.opts>
+	          </properties>
+        </profile>
+        <profile>
+            <!-- Run Thrift tests with ScyllaDB (requires Docker) -->
+            <id>scylladb-test</id>
+            <properties>
+                <!-- Tests are run under failsafe so skip them under surefire -->
+                <test.skip.ordered>true</test.skip.ordered>
+                <test.skip.unordered>true</test.skip.unordered>
+                <test.skip.ssl>true</test.skip.ssl>
+                <test.skip.serial>true</test.skip.serial>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <skipITs>false</skipITs>
+                            <includes>
+                                <include>**/org/janusgraph/diskstorage/cassandra/thrift/*.java</include>
+                                <include>**/org/janusgraph/graphdb/thrift/*.java</include>
+                            </includes>
+                            <!-- Exclude default (performance/memory) tests. Also exclude SSL tests (fail under Scylla) -->
+                            <excludedGroups>${test.excluded.groups},org.janusgraph.testcategory.CassandraSSLTests</excludedGroups>
+                            <systemProperties>
+                                <!-- Run tests against the containerized Scylla test server -->
+                                <property>
+                                    <name>storage.hostname</name>
+                                    <value>0.0.0.0</value>
+                                </property>
+                            </systemProperties>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <version>0.18.1</version>
+                        <configuration>
+                            <images>
+                                <image>
+                                    <alias>scylladb</alias>
+                                    <name>scylladb/scylla:${scylladb.version}</name>
+                                    <run>
+                                        <!-- Limit to two CPUs -->
+                                        <cmd>--smp 2</cmd>
+                                        <!-- Expose Thrift and CQL ports -->
+                                        <ports>
+                                            <port>9160:9160</port>
+                                            <port>9042:9042</port>
+                                        </ports>
+                                        <wait>
+                                            <tcp>
+                                                <ports>
+                                                    <port>9160</port>
+                                                    <port>9042</port>
+                                                </ports>
+                                            </tcp>
+                                            <time>60000</time>
+                                        </wait>
+                                    </run>
+                                </image>
+                            </images>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>docker-start</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>start</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>docker-stop</id>
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>stop</goal>
+                                    <goal>remove</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>
 

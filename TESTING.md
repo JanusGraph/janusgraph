@@ -70,3 +70,11 @@ Monitor container logs and wait until the setup container exits (message will be
 ```bash
 mvn clean install -pl janusgraph-solr -Dindex.search.solr.zookeeper-url=localhost:2181
 ```
+
+### Running Thrift/CQL tests with ScyllaDB (requires Docker)
+
+To run Thrift or CQL tests with the [ScyllaDB](http://www.scylladb.com/) backend, ensure Docker is running and run tests under the `scylladb-test` Maven profile.
+
+```bash
+mvn clean install -pl janusgraph-cql -Pscylladb-test
+```
