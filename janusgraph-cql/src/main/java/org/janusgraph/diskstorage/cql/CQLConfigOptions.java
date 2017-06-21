@@ -59,6 +59,12 @@ public interface CQLConfigOptions {
             ConfigOption.Type.MASKABLE,
             CQLStoreManager.CONSISTENCY_QUORUM);
 
+    public static final ConfigOption<Boolean> ONLY_USE_LOCAL_CONSISTENCY_FOR_SYSTEM_OPERATIONS =
+        new ConfigOption<Boolean>(CQL_NS, "only-use-local-consistency-for-system-operations",
+            "True to prevent any system queries from using QUORUM consistency " +
+                "and always use LOCAL_QUORUM instead",
+            ConfigOption.Type.MASKABLE, false);
+
     // The number of statements in a batch
     public static final ConfigOption<Integer> BATCH_STATEMENT_SIZE = new ConfigOption<>(
             CQL_NS,
