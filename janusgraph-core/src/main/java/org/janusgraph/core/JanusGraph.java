@@ -56,6 +56,10 @@ import org.apache.tinkerpop.gremlin.util.Gremlin;
         method = "shouldReadGraphMLWithNoEdgeLabels",
         reason = "JanusGraph does not support default edge label (edge) used when GraphML is missing edge labels.")
 @Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.structure.io.IoTest$GraphMLTest",
+        method = "shouldReadGraphMLWithoutEdgeIds",
+        reason = "JanusGraph does not support default edge label (edge) used when GraphML is missing edge ids.")
+@Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.computer.GraphComputerTest",
         method = "shouldSupportGraphFilter",
         reason = "JanusGraph test graph computer (FulgoraGraphComputer) " +
