@@ -44,6 +44,7 @@ import java.util.Collections;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.eq;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.gt;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.lt;
+import static org.apache.tinkerpop.gremlin.process.traversal.P.within;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.filter;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.not;
@@ -113,7 +114,7 @@ public class JanusGraphStepStrategyTest {
                 {__.V().has("name", eq("marko").and(eq("bob").and(eq("stephen")))).out("knows"),
                         g_V("name", eq("marko"), "name", eq("bob"), "name", eq("stephen")).out("knows"), Collections.emptyList()},
                 {__.V().hasId(1), g_V(T.id, 1), Collections.emptyList()},
-                {__.V().hasId(1).hasId(2), g_V(T.id, 1, T.id, 2), Collections.emptyList()},
+                {__.V().hasId(within(1, 2)), g_V(T.id, 1, T.id, 2), Collections.emptyList()},
                 {__.V().hasId(1).has("name", "marko"), g_V(T.id, 1, "name", eq("marko")), Collections.emptyList()}
         });
     }

@@ -39,7 +39,10 @@ import org.javatuples.Pair;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -90,14 +93,25 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         Step<?, ?> currentStep = janusgraphStep.getNextStep();
         while (true) {
             if (currentStep instanceof HasContainerHolder) {
-                boolean removeStep = false;
+                Set<Object> ids = new HashSet<>();
+                final GraphStep graphStep = (GraphStep) janusgraphStep;
                 for (final HasContainer hasContainer : ((HasContainerHolder) currentStep).getHasContainers()) {
-                    if (GraphStep.processHasContainerIds((GraphStep) janusgraphStep, hasContainer)) {
+                    if (GraphStep.processHasContainerIds(graphStep, hasContainer)) {
                         currentStep.getLabels().forEach(janusgraphStep::addLabel);
-                        removeStep = true;
+                        if (!ids.isEmpty()) {
+                            // intersect ids (shouldn't this be handled in TP GraphStep.processHasContainerIds?)
+                            ids.stream().filter(id -> Arrays.stream(graphStep.getIds()).noneMatch(id::equals))
+                                .collect(Collectors.toSet()).forEach(ids::remove);
+                            if (ids.isEmpty()) break;
+                        } else {
+                            Arrays.stream(graphStep.getIds()).forEach(ids::add);
+                        }
                     }
+                    // clear ids to allow folding in ids from next HasContainer if relevant
+                    graphStep.clearIds();
                 }
-                if (removeStep) traversal.removeStep(currentStep);
+                graphStep.addIds(ids);
+                if (!ids.isEmpty()) traversal.removeStep(currentStep);
             }
             else if (currentStep instanceof IdentityStep) {
                 // do nothing, has no impact

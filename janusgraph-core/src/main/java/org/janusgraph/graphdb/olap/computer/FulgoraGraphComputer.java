@@ -331,7 +331,12 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
                     for (Map.Entry<Long, Map<String, Object>> vprop : mutatedProperties.entrySet()) {
                         Vertex v = resultgraph.vertices(vprop.getKey()).next();
                         for (Map.Entry<String, Object> prop : vprop.getValue().entrySet()) {
-                            v.property(VertexProperty.Cardinality.single, prop.getKey(), prop.getValue());
+                            if (prop.getValue() instanceof List) {
+                                ((List) prop.getValue())
+                                    .forEach(value -> v.property(VertexProperty.Cardinality.list, prop.getKey(), value));
+                            } else {
+                                v.property(VertexProperty.Cardinality.single, prop.getKey(), prop.getValue());
+                            }
                         }
                     }
                 }
