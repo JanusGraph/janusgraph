@@ -85,8 +85,20 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
     public <V> JanusGraphVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value) {
         if (!supports(key)) throw GraphComputer.Exceptions.providedKeyIsNotAnElementComputeKey(key);
         Preconditions.checkArgument(value != null);
-        Preconditions.checkArgument(cardinality== VertexProperty.Cardinality.single,"Only single cardinality is supported, provided: %s",cardinality);
-        vertexMemory.setProperty(vertexId, key, value);
+        if (cardinality == VertexProperty.Cardinality.single) {
+            vertexMemory.setProperty(vertexId, key, value);
+        } else {
+            final V previousValue = vertexMemory.getProperty(vertexId, key);
+            assert previousValue instanceof List;
+            final List<V> values;
+            if (previousValue != null) {
+                values = new ArrayList<>(((List) previousValue));
+            } else {
+                values = new ArrayList<>();
+            }
+            values.add(value);
+            vertexMemory.setProperty(vertexId, key, values);
+        }
         return constructProperty(key,value);
     }
 
