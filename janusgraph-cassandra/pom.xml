@@ -92,6 +92,13 @@
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
             <!-- The version is controlled in <dependencyManagement> in the parent pom -->
+            <exclusions>
+                <!-- Use more recent version of jbcrypt from gremlin-groovy -->
+                <exclusion>
+                    <groupId>org.mindrot</groupId>
+                    <artifactId>jbcrypt</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>commons-pool</groupId>
