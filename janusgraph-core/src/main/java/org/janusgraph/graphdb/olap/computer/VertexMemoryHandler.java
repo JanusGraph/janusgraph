@@ -89,9 +89,9 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
             vertexMemory.setProperty(vertexId, key, value);
         } else {
             final V previousValue = vertexMemory.getProperty(vertexId, key);
-            assert previousValue instanceof List;
             final List<V> values;
             if (previousValue != null) {
+                assert previousValue instanceof List;
                 values = new ArrayList<>(((List) previousValue));
             } else {
                 values = new ArrayList<>();
