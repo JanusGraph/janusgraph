@@ -1,1 +1,1 @@
-script.engine.groovy.inline.update: ${elasticsearch.groovy.inline}
+script.engine.groovy.inline.update: ${elasticsearch.test.groovy.inline}
