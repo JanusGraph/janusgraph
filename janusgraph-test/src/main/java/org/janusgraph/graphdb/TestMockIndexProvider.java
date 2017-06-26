@@ -75,6 +75,11 @@ public class TestMockIndexProvider implements IndexProvider {
     }
 
     @Override
+    public Long totals(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
+        return index.totals(query,informations,tx);
+    }
+    
+    @Override
     public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws BackendException {
         return index.beginTransaction(config);
     }

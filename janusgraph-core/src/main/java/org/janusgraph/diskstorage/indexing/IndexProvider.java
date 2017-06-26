@@ -99,6 +99,19 @@ public interface IndexProvider extends IndexInformation {
     public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
 
     /**
+     * Executes the given raw query against the index and returns the total hits. e.g. limit=0
+     *
+     * @param query Query to execute
+     * @param informations Information on the keys used in the query accessible through {@link KeyInformation.IndexRetriever}.
+     * @param tx Enclosing transaction
+     * @return Long total hits for query
+     * @throws org.janusgraph.diskstorage.BackendException
+     * @see RawQuery
+     */
+    public Long totals(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
+
+    
+    /**
      * Returns a transaction handle for a new index transaction.
      *
      * @return New Transaction Handle

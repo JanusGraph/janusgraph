@@ -106,6 +106,10 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
         return index.query(query,keyInformations,indexTx);
     }
 
+    public Long totals(RawQuery query) throws BackendException {
+        return index.totals(query,keyInformations,indexTx);
+    }
+
     public void restore(Map<String, Map<String,List<IndexEntry>>> documents) throws BackendException {
         index.restore(documents,keyInformations,indexTx);
     }
