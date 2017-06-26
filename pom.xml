@@ -84,11 +84,7 @@
         <jackson1.version>1.9.2</jackson1.version>
         <jackson2.version>2.6.6</jackson2.version>
         <lucene-solr.version>6.6.0</lucene-solr.version>
-        <elasticsearch.rest.version>5.2.2</elasticsearch.rest.version>
-        <elasticsearch.dist.version>${elasticsearch.rest.version}</elasticsearch.dist.version>
-        <!-- Groovy dynamic scripting must be manually enabled on ES 2.x servers.
-             From ES 5.0 Painless inline scripts are used which are enabled by default. -->
-        <elasticsearch.groovy.inline>false</elasticsearch.groovy.inline>
+        <elasticsearch.version>5.4.2</elasticsearch.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <joda.version>2.8.2</joda.version>
