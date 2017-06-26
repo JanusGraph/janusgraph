@@ -54,7 +54,6 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
 
     private static final Logger log = LoggerFactory.getLogger(IndexQueryBuilder.class);
 
-
     private static final String VERTEX_PREFIX = "v.";
     private static final String EDGE_PREFIX = "e.";
     private static final String PROPERTY_PREFIX = "p.";
@@ -206,6 +205,15 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
         });
     }
 
+    private Long executeTotals(ElementCategory resultType) {
+        Preconditions.checkNotNull(indexName);
+        Preconditions.checkNotNull(query);
+        this.setLimit(0);
+        if (tx.hasModifications())
+            log.warn("Modifications in this transaction might not be accurately reflected in this index query: {}",query);
+        return serializer.executeTotals(this,resultType,tx.getTxHandle(),tx);
+    }
+    
     @Override
     public Iterable<Result<JanusGraphVertex>> vertices() {
         setPrefixInternal(VERTEX_PREFIX);
@@ -222,6 +230,24 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     public Iterable<Result<JanusGraphVertexProperty>> properties() {
         setPrefixInternal(PROPERTY_PREFIX);
         return (Iterable)execute(ElementCategory.PROPERTY);
+    }
+    
+    @Override
+    public Long vertexTotals() {
+        setPrefixInternal(VERTEX_PREFIX);
+        return executeTotals(ElementCategory.VERTEX);
+    }
+
+    @Override
+    public Long edgeTotals() {
+        setPrefixInternal(EDGE_PREFIX);
+        return executeTotals(ElementCategory.EDGE);
+    }
+
+    @Override
+    public Long propertyTotals() {
+        setPrefixInternal(PROPERTY_PREFIX);
+        return executeTotals(ElementCategory.PROPERTY);
     }
 
     private void setPrefixInternal(String prefix) {
