@@ -19,7 +19,7 @@
         <assembly.cfilter.in.dir>${project.basedir}/src/assembly/cfilter</assembly.cfilter.in.dir>
         <assembly.cfilter.out.dir>${project.build.directory}/cfilter</assembly.cfilter.out.dir>
         <assembly.descriptor.dir>${project.basedir}/src/assembly/descriptor</assembly.descriptor.dir>
-        <assembly.es.dir>${project.build.directory}/elasticsearch-${elasticsearch.dist.version}</assembly.es.dir>
+        <assembly.es.dir>${project.build.directory}/elasticsearch-${elasticsearch.version}</assembly.es.dir>
 
         <!-- Variables for integration testing on release-candidate archive files -->
         <test.expect.dir>${project.build.directory}/test-classes</test.expect.dir>
@@ -125,7 +125,7 @@
         <dependency>
             <groupId>org.elasticsearch.distribution.zip</groupId>
             <artifactId>elasticsearch</artifactId>
-            <version>${elasticsearch.dist.version}</version>
+            <version>${elasticsearch.version}</version>
             <type>zip</type>
             <exclusions>
                 <exclusion>

@@ -44,7 +44,7 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
     public static final boolean IS_EXTERNAL = Boolean.valueOf(System.getProperty("is.external.es", "false"));
 
     public ElasticsearchRunner(String esHome) {
-        final Pattern VERSION_PATTERN = Pattern.compile("es.dist.version=(.*)");
+        final Pattern VERSION_PATTERN = Pattern.compile("elasticsearch.version=(.*)");
         String version = null;
         try (InputStream in = ElasticsearchRunner.class.getClassLoader().getResourceAsStream("janusgraph-es.properties")) {
             if (in != null) {
