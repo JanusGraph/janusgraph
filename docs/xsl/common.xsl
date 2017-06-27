@@ -1,4 +1,4 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:d="http://docbook.org/ns/docbook"
                 version="1.0">
 
@@ -34,7 +34,7 @@
   <xsl:param name="table.cell.border.color" select="'#747474'"/>
   <xsl:param name="table.cell.border.style" select="'solid'"/>
   <xsl:param name="table.cell.border.thickness" select="'1px'"/>
-  <xsl:param name="table.frame.border.color" select="'#FF8080'"/>
+  <xsl:param name="table.frame.border.color" select="'#1b8669'"/>
   <xsl:param name="table.frame.border.style" select="'solid'"/>
   <xsl:param name="table.frame.border.thickness" select="'1px'"/>
   <xsl:param name="tablecolumns.extension" select="'1'"/>
@@ -54,19 +54,8 @@
     <script type='text/javascript' src='js/jquery/jquery-1.11.0.js'></script>
     <script type='text/javascript' src='js/jquery/jquery-migrate-1.2.1.min.js'></script>
 
-    <!--[if lte IE 8]>
-    <link rel="stylesheet" href="avada-stub/css/ie8.css" />
-    <![endif]-->
-
-    <!--[if IE]>
-    <link rel="stylesheet" href="avada-stub/css/ie.css" />
-    <![endif]-->
-
-    <link rel='stylesheet' id='style-css-css'  href='avada-stub/style.css' type='text/css' media='all' />
-    <link rel='stylesheet' id='media-css-css'  href='avada-stub/css/media.css' type='text/css' media='all' />
-    <link rel='stylesheet' id='animate-css-css'  href='avada-stub/css/animate-custom.css' type='text/css' media='all' />
-    <link rel='stylesheet' id='inline-blob-from-avada-prototype' href='avada-stub/css/inlineblob.css' type='text/css' media='all' />
-    <link rel='stylesheet' id='inline-blob-from-avada-prototype-janusgraph-docs-specific' href='css/docs.css' type='text/css' media='all' />
+    <link rel='stylesheet' id='inline-blob-janusgraph-docs-specific' href='css/docs.css' type='text/css' media='all' />
+    <link rel='apple-touch-icon' type='image/png' href='images/janusgraph-logomark.png' />
 
     <script type="text/javascript">
       WebFontConfig = {
@@ -76,10 +65,6 @@
             "Open+Sans:400,400italic,700,700italic:latin,greek-ext,cyrillic,latin-ext,greek,cyrillic-ext,vietnamese",
             "Antic+Slab:400,400italic,700,700italic:latin,greek-ext,cyrillic,latin-ext,greek,cyrillic-ext,vietnamese"
           ]
-        },
-        custom: {
-           families: ['FontAwesome'],
-           urls: ['font-awesome-4.0.3/css/font-awesome.css']
         }
       };
       (function() {
@@ -99,46 +84,15 @@
     <xsl:param name="next" select="/d:foo"/>
     <xsl:param name="nav.context"/>
     <div class="header-wrapper">
-      <div class="header-v1">
-        <header id="header">
-          <div class="avada-row" style="margin-top:0px;margin-bottom:0px;">
-            <div class="logo" style="margin-right:0px;margin-top:31px;margin-left:0px;margin-bottom:31px;">
-              <a href="http://janusgraph.org">
-                <img src="avada-stub/images/janusgraph-logo.png" alt="JanusGraph" class="normal_logo" />
-              </a>
-            </div>
-            <nav id="nav" class="nav-holder">
-              <ul class="navigation menu fusion-navbar-nav">
-                <li id="menu-item-4711" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4711"><a href="index.html">Documentation ($MAVEN{project.version})</a></li>
-                <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a href="https://github.com/JanusGraph/janusgraph/releases">Other Versions</a></li>
-                <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a href="https://github.com/JanusGraph/janusgraph/releases">Download JanusGraph</a></li>
-              </ul>
-            </nav>
-            <div class="mobile-nav-holder main-menu"></div>
-          </div>
-        </header>
-      </div>
-    <div class="init-sticky-header"></div>
+      <header id="header">
+        <ul class="header-list">
+          <li class="header-item"><a href="http://janusgraph.org"><img src="images/janusgraph-logo.png" alt="JanusGraph" class="normal_logo" /></a></li>
+          <li class="header-item-right"><a href="https://github.com/JanusGraph/janusgraph/releases">Download JanusGraph</a></li>
+          <li class="header-item-right"><a href="https://github.com/JanusGraph/janusgraph/releases">Other Versions</a></li>
+          <li class="header-item-right"><a href="index.html">Documentation ($MAVEN{project.version})</a></li>
+        </ul>
+      </header>
     </div>
-    <header id="header-sticky" class="sticky-header">
-      <div class="sticky-shadow">
-        <div class="avada-row">
-          <div class="logo">
-            <a href="http://janusgraph.org">
-              <img src="avada-stub/images/janusgraph-logo.png" alt="JanusGraph" data-max-width="" class="normal_logo" />
-            </a>
-          </div>
-          <nav id="sticky-nav" class="nav-holder">
-            <ul class="navigation menu fusion-navbar-nav">
-              <li id="menu-item-4711" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4711"><a href="index.html">Documentation ($MAVEN{project.version})</a></li>
-              <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a href="https://github.com/JanusGraph/janusgraph/releases">Other Versions</a></li>
-              <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a href="https://github.com/JanusGraph/janusgraph/releases">Download JanusGraph</a></li>
-            </ul>
-          </nav>
-          <div class="mobile-nav-holder"></div>
-        </div>
-      </div>
-    </header>
   </xsl:template>
 
   <xsl:template name="janusgraph.body">
@@ -161,22 +115,19 @@
 
 	<xsl:copy-of select="$footercontent"/>
 
-	<footer id="footer">
-	  <div class="avada-row">
-	    <ul class="copyright">
-	      <li>
+        <div class="footer-wrapper">
+          <footer id="footer">
+            <div class="copyright">
               Copyright © 2017 JanusGraph Authors. All rights reserved.<br />
               The Linux Foundation has registered trademarks and uses trademarks. For a list of<br />
               trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage</a> page.<br />
-              Cassandra, HBase, and Hadoop are trademarks of the Apache Software Foundation.<br />
+              Cassandra, Groovy, HBase, Hadoop, Lucene, Solr, and TinkerPop are trademarks of the Apache Software Foundation.<br />
               Berkeley DB and Berkeley DB Java Edition are trademarks of Oracle.<br />
               Documentation generated with <a href="http://www.methods.co.nz/asciidoc/">AsciiDoc</a>, <a href="http://asciidoctor.org/">AsciiDoctor</a>, <a href="http://docbook.sourceforge.net/">DocBook</a>, and <a href="http://saxon.sourceforge.net/">Saxon</a>.
-              </li>
-	    </ul>
-	  </div>
-	</footer>
+        	  </div>
+        	</footer>
+        </div>
       </div>
-      <script type='text/javascript' src='avada-stub/js/main.js'></script>
     </body>
   </xsl:template>
 
