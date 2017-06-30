@@ -18,59 +18,51 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import org.janusgraph.util.encoding.StringEncoding;
 
-import java.util.ArrayList;
 import java.util.EnumMap;
-import java.util.List;
+import java.util.function.Function;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
+ * @author Alexander Patrikalakis (amcp@mit.edu)
  */
 public enum EntryMetaData {
 
-    TTL, VISIBILITY, TIMESTAMP;
+    TTL(Integer.class, false, data -> data instanceof Integer && ((Integer) data) >= 0L),
+    VISIBILITY(String.class, true, data -> data instanceof String && StringEncoding.isAsciiString((String) data)),
+    TIMESTAMP(Long.class, false, data -> data instanceof Long);
 
-
+    EntryMetaData(final Class<?> dataType, final boolean identifying, final Function<Object, Boolean> validator) {
+        this.dataType = dataType;
+        this.identifying = identifying;
+        this.validator = validator;
+    }
     public static final java.util.Map<EntryMetaData,Object> EMPTY_METADATA = ImmutableMap.of();
 
-    public Class getDataType() {
-        switch(this) {
-            case VISIBILITY: return String.class;
-            case TTL:
-                return Integer.class;
-            case TIMESTAMP: return Long.class;
-            default: throw new AssertionError("Unexpected meta data: " + this);
-        }
-    }
+    private final Class<?> dataType;
+    private final boolean identifying;
+    private final Function<Object, Boolean> validator;
 
-    public boolean isValidData(Object data) {
-        Preconditions.checkNotNull(data);
-        switch(this) {
-            case VISIBILITY:
-                if (!(data instanceof String)) return false;
-                return StringEncoding.isAsciiString((String)data);
-            case TTL:
-                return data instanceof Integer && ((Integer) data) >= 0L;
-            case TIMESTAMP:
-                return data instanceof Long;
-            default: throw new AssertionError("Unexpected meta data: " + this);
-        }
+    public Class<?> getDataType() {
+        return dataType;
     }
 
     public boolean isIdentifying() {
-        switch(this) {
-            case VISIBILITY:
-                return true;
-            case TTL:
-            case TIMESTAMP:
-                return false;
-            default: throw new AssertionError("Unexpected meta data: " + this);
-        }
+        return identifying;
     }
 
-    public static final List<EntryMetaData> IDENTIFYING_METADATA = new ArrayList<EntryMetaData>(3) {{
-        for (EntryMetaData meta : values()) if (meta.isIdentifying()) add(meta);
-    }};
+    /**
+     * Validates a datum according to the metadata type.
+     * @param datum object to validate
+     * @return true if datum is a valid instance of this type and false otherwise.
+     */
+    public boolean isValidData(Object datum) {
+        Preconditions.checkNotNull(datum);
+        return validator.apply(datum);
+    }
 
+    /**
+     * EntryMetaData.Map extends EnumMap to add validation prior to invoking the superclass EnumMap::put(k,v) method.
+     */
     public static class Map extends EnumMap<EntryMetaData,Object> {
 
         public Map() {
