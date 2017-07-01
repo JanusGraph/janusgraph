@@ -39,6 +39,11 @@
             <version>${aws.sdk.version}</version>
         </dependency>
         <dependency>
+            <artifactId>aws-http-client-apache</artifactId>
+            <groupId>software.amazon.awssdk</groupId>
+            <version>${aws.sdk.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>
@@ -120,6 +125,13 @@
                 <groupId>org.reactivestreams</groupId>
                 <artifactId>reactive-streams</artifactId>
                 <version>1.0.0.final</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>${aws.sdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

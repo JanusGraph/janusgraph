@@ -21,8 +21,8 @@ and a default [output format](http://docs.aws.amazon.com/cli/latest/userguide/co
 of your choice (`json`, `text`, and `table` are available).
 4. Create an IAM policy for CodeBuild and associate it to a new service role as described
 [here](http://docs.aws.amazon.com/codebuild/latest/userguide/setting-up.html#setting-up-service-role). Select the
-__Amazon EC2__ role type as CodeBuild is not yet available on this page. Edit the new role's trust relationship
-and replace it with the text in step 16 of the CodeBuild user guide.
+__AWS CodeBuild__ role type. The documentation linked here says the CodeBuild service role type is not available, but
+it actually is.
 5. Create an IAM policy for CodePipelines and associate it to a new service role as described
 [here](http://docs.aws.amazon.com/codepipeline/latest/userguide/iam-identity-based-access-control.html#view-default-service-role-policy).
 Select the __Amazon EC2__ role type as CodePipeline is not yet available on this page. Edit the new role's trust
@@ -72,44 +72,54 @@ per region per account. If you need more, you can
 Here is an example of a file that defines two pipelines with parallel build actions.
 
 ```yaml
+defaultComputeImage: maven:3-jdk-8
+defaultComputeType: BUILD_GENERAL1_LARGE
+defaultPrivilegedMode: true
 pipelines:
 - name: j1
   parallelBuildActions:
   - name: bdb
+    timeout: 30
     env:
     - name: MODULE
       value: janusgraph-berkeleyje
   - name: h-l-s
+    timeout: 42
     env:
     - name: MODULE
       value: janusgraph-hadoop-parent/janusgraph-hadoop-2,janusgraph-lucene,janusgraph-solr
   - name: cassandra
+    timeout: 220
     env:
     - name: MODULE
       value: janusgraph-cassandra
   - name: test
+    timeout: 43
     env:
     - name: MODULE
       value: janusgraph-test
 - name: j2
   parallelBuildActions:
   - name: hbase098
+    timeout: 130
     env:
     - name: MODULE
       value: janusgraph-hbase-parent/janusgraph-hbase-098
   - name: hbase10
+    timeout: 79
     env:
     - name: MODULE
       value: janusgraph-hbase-parent/janusgraph-hbase-10
   - name: es
+    timeout: 100
     env:
     - name: MODULE
       value: janusgraph-es
   - name: cql
+    timeout: 134
     env:
     - name: MODULE
       value: janusgraph-cql
-
 ```
 The first pipeline is called `j1` and the second pipeline is called `j2`. Each of these pipelines have four
 parallel build actions defined. Each build action is keyed at the action name and includes the environment
