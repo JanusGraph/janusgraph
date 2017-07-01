@@ -669,7 +669,7 @@ scriptEngines: {
   gremlin-groovy: {
     scripts: [scripts/janusgraph.groovy]}}
 serializers:
-  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { useMapperFromGraph: graph }}
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
   - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { serializeResultToString: true }}
 metrics: {
   slf4jReporter: {enabled: true, interval: 180000}}
