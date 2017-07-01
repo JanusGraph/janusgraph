@@ -1,18 +1,38 @@
 #!/bin/bash
+#
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
 
 set -e
 set -u
 
-# Store working directory
-ORIGWD=$(pwd)
+USER_DIR=`pwd`
 
-# ${BASH_SOURCE[0]} is the path to this file
-SOURCE="${BASH_SOURCE[0]}"
-# Set $BIN to the absolute, symlinkless path to $SOURCE's parent
-while [ -h "$SOURCE" ]; do
-    BIN="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-    SOURCE="$(readlink "$SOURCE")"
-    [[ $SOURCE != /* ]] && SOURCE="$BIN/$SOURCE"
+cd $(dirname $0)
+DIR=`pwd`
+
+SCRIPT_NAME=`basename $0`
+SOURCE="${SCRIPT_NAME}"
+while [ -h "${SCRIPT_NAME}" ]; do
+  SOURCE="$(readlink "${SCRIPT_NAME}")"
+  DIR="$( cd -P "$( dirname "${SOURCE}" )" && pwd )"
+  cd ${DIR}
 done
 BIN="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 # Set $CFG to $BIN/../conf
@@ -37,13 +57,29 @@ CP="$CP":$(find -L $LIB -name '*.jar' \
 # Add the jars in $BIN/../ext (at any subdirectory depth)
 CP="$CP":$(find -L $EXT -name '*.jar' | sort | tr '\n' ':')
 
-# (Cygwin only) Use ; classpath separator and reformat paths for Windows ("C:\foo")
-[[ $(uname) = CYGWIN* ]] && CP="$(cygpath -p -w "$CP")"
+cd ..
+SYSTEM_EXT_DIR="`pwd`/ext"
+
+JAVA_OPTIONS=${JAVA_OPTIONS:-}
+
+if [ ! -z "${JAVA_OPTIONS}" ]; then
+  USER_EXT_DIR=$(grep -o '\-Dtinkerpop.ext=\(\([^"][^ ]*\)\|\("[^"]*"\)\)' <<< "${JAVA_OPTIONS}" | cut -f2 -d '=' | xargs -0 echo)
+  if [ ! -z "${USER_EXT_DIR}" -a ! -d "${USER_EXT_DIR}" ]; then
+    mkdir -p "${USER_EXT_DIR}"
+    cp -R ${SYSTEM_EXT_DIR}/* ${USER_EXT_DIR}/
+  fi
+fi
+
+case `uname` in
+  CYGWIN*)
+    CP="$(cygpath -p -w "$CP")"
+    ;;
+esac
+
+CP=$CP:$( find -L "${SYSTEM_EXT_DIR}" "${USER_EXT_DIR:-${SYSTEM_EXT_DIR}}" -mindepth 1 -maxdepth 1 -type d | \
+          sort -u | sed 's/$/\/plugin\/*/' | tr '\n' ':' )
 
 export CLASSPATH="${CLASSPATH:-}:$CP"
-
-# Restore initial working directory of this script
-cd "$ORIGWD"
 
 # Find Java
 if [ -z "${JAVA_HOME:-}" ]; then
@@ -64,19 +100,10 @@ if [ -z "${SCRIPT_DEBUG:-}" ]; then
     SCRIPT_DEBUG=
 fi
 
-# Initialize the profiling switch
-PROFILING_ENABLED=false
-
 # Process options
 MAIN_CLASS=org.apache.tinkerpop.gremlin.console.Console
-while getopts "elpv" opt; do
+while getopts ":lv" opt; do
     case "$opt" in
-    e) MAIN_CLASS=org.apache.tinkerpop.gremlin.groovy.jsr223.ScriptExecutor
-       # Stop processing gremlin.sh arguments as soon as the -e switch 
-       # is seen; everything following -e becomes arguments to the 
-       # ScriptExecutor main class. This maintains compatibility with
-       # older deployments.
-       break;;
     l) eval GREMLIN_LOG_LEVEL=\$$OPTIND
        OPTIND="$(( $OPTIND + 1 ))"
        if [ "$GREMLIN_LOG_LEVEL" = "TRACE" -o \
@@ -84,28 +111,20 @@ while getopts "elpv" opt; do
 	   SCRIPT_DEBUG=y
        fi
        ;;
-    p) PROFILING_ENABLED=true
-       ;;
     v) MAIN_CLASS=org.janusgraph.core.JanusGraph
     esac
 done
-
-# Remove processed options from $@. Anything after -e is preserved by the break;; in the case
-shift $(( $OPTIND - 1 ))
 
 if [ -z "${HADOOP_GREMLIN_LIBS:-}" ]; then
     export HADOOP_GREMLIN_LIBS="$LIB"
 fi
 
-if [ -z "${JAVA_OPTIONS:-}" ]; then
-    JAVA_OPTIONS="-Dtinkerpop.ext=$EXT -Dlog4j.configuration=conf/log4j-console.properties -Dgremlin.log4j.level=$GREMLIN_LOG_LEVEL -javaagent:$LIB/jamm-0.3.0.jar"
-fi
-
-if [ "$PROFILING_ENABLED" = true ]; then
-    JAVA_OPTIONS="$JAVA_OPTIONS -Dtinkerpop.profiling=true"
-fi
+JAVA_OPTIONS="${JAVA_OPTIONS} -Duser.working_dir=${USER_DIR} -Dtinkerpop.ext=${USER_EXT_DIR:-${SYSTEM_EXT_DIR}} -Dlog4j.configuration=conf/log4j-console.properties -Dgremlin.log4j.level=$GREMLIN_LOG_LEVEL -javaagent:$LIB/jamm-0.3.0.jar"
+JAVA_OPTIONS=$(awk -v RS=' ' '!/^$/ {if (!x[$0]++) print}' <<< "${JAVA_OPTIONS}" | grep -v '^$' | paste -sd ' ' -)
 
 if [ -n "$SCRIPT_DEBUG" ]; then
+    # in debug mode enable debugging of :install command
+    JAVA_OPTIONS="${JAVA_OPTIONS} -Divy.message.logger.level=4 -Dgroovy.grape.report.downloads=true"
     echo "CLASSPATH: $CLASSPATH"
     set -x
 fi
