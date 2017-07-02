@@ -1081,8 +1081,10 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     @Test
     public void testStoreTTL() throws Exception {
         KeyColumnValueStoreManager storeManager = manager;
-        if (storeManager.getFeatures().hasCellTTL()) {
-            //storeManager = new TTLKCVSManager(storeManager,101);
+        // TTLKCVSManager is only used when a store has cell-level TTL support but does not have store-
+        // level TTL.
+        // @see TTLKCVSManager
+        if (storeManager.getFeatures().hasCellTTL() && !storeManager.getFeatures().hasStoreTTL()) {
             storeManager = new TTLKCVSManager(storeManager);
         } else if (!storeManager.getFeatures().hasStoreTTL()) {
             return;
