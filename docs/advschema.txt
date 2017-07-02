@@ -19,14 +19,14 @@ Static vertex labels are a method of controlling the data lifecycle and useful w
 
 Edge and vertex labels can be configured with a *time-to-live (TTL)*. Edges and vertices with such labels will automatically be removed from the graph when the configured TTL has passed after their initial creation. TTL configuration is useful when loading a large amount of data into the graph that is only of temporary use. Defining a TTL removes the need for manual clean up and handles the removal very efficiently. For example, it would make sense to TTL event edges such as user-page visits when those are summarized after a certain period of time or simply no longer needed for analytics or operational query processing.
 
-The following storage backends support vertex and edge label TTL.
+The following storage backends support edge and vertex TTL.
 
-. Vertex and Edge Label Time-to-Live support
 * Cassandra
+* HBase
 
 ==== Edge TTL
 
-Edge TTL is defined on a per-edge label basis, meaning that all edges of that label have the same time-to-live. Note that the backend must support cell level TTL. Currently only Cassandra supports this.
+Edge TTL is defined on a per-edge label basis, meaning that all edges of that label have the same time-to-live. Note that the backend must support cell level TTL. Currently only Cassandra and HBase support this.
 
 [source, gremlin]
 mgmt = graph.openManagement()
@@ -38,7 +38,7 @@ Note, that modifying an edge resets the TTL for that edge. Also note, that the T
 
 ==== Property TTL
 
-Property TTL is very similar to edge TTL and defined on a per-property key basis, meaning that all properties of that key have the same time-to-live. Note that the backend must support cell level TTL. Currently only Cassandra supports this.
+Property TTL is very similar to edge TTL and defined on a per-property key basis, meaning that all properties of that key have the same time-to-live. Note that the backend must support cell level TTL. Currently only Cassandra and HBase support this.
 
 [source, gremlin]
 mgmt = graph.openManagement()
