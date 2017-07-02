@@ -20,6 +20,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -37,7 +38,7 @@ public class AllEdgesIterator implements Iterator<Edge> {
     private final Set<? extends Vertex> vertices;
     private final Iterator<? extends Vertex> vertexIter;
 
-    private Iterator<Edge> currentEdges = Iterators.emptyIterator();
+    private Iterator<Edge> currentEdges = Collections.emptyIterator();
 
     private Edge next;
 
