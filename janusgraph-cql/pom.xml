@@ -191,10 +191,9 @@
                     <argLine>${test.jvm.opts}</argLine>
                     <forkCount>1</forkCount>
                     <reuseForks>false</reuseForks>
-                    <parallel>classes</parallel>
-                    <perCoreThreadCount>true</perCoreThreadCount>
-                    <threadCount>2</threadCount>
-                    <runOrder>random</runOrder>
+                    <parallel>none</parallel>
+                    <perCoreThreadCount>false</perCoreThreadCount>
+                    <threadCount>1</threadCount>
                     <systemPropertyVariables>
                         <log4j.configuration>file:${project.build.testOutputDirectory}/log4j.properties</log4j.configuration>
                     </systemPropertyVariables>
