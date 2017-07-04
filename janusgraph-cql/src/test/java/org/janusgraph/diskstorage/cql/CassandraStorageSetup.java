@@ -27,9 +27,14 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.bu
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.time.Duration;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
+import org.janusgraph.diskstorage.StandardStoreManager;
 import org.janusgraph.diskstorage.cassandra.utils.CassandraDaemonWrapper;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
@@ -47,6 +52,10 @@ public class CassandraStorageSetup {
     public static final String DATADIR_SYSPROP = "test.cassandra.datadir";
     public static final String HOSTNAME = System.getProperty(ConfigElement.getPath(STORAGE_HOSTS));
 
+    static {
+        setWrapperStoreManager();
+    }
+
     private static volatile Paths paths;
 
     /**
@@ -61,6 +70,7 @@ public class CassandraStorageSetup {
             if (!CassandraDaemonWrapper.isStarted()) {
                 try {
                     FileUtils.deleteDirectory(new File(p.dataPath));
+                    FileUtils.deleteQuietly(new File((new File(p.dataPath)).getParent() + File.separator + "commitlog"));
                 } catch (final IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -131,6 +141,29 @@ public class CassandraStorageSetup {
             return "strhash" + String.valueOf(Math.abs(raw.hashCode()));
         } else {
             return raw;
+        }
+    }
+
+    private static void setWrapperStoreManager() {
+        try {
+            final Field modifiersField = Field.class.getDeclaredField("modifiers");
+            modifiersField.setAccessible(true);
+
+            Field field = StandardStoreManager.class.getDeclaredField("managerClass");
+            field.setAccessible(true);
+            field.set(StandardStoreManager.CQL, CachingCQLStoreManager.class.getCanonicalName());
+
+            field = StandardStoreManager.class.getDeclaredField("ALL_SHORTHANDS");
+            field.setAccessible(true);
+            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+            field.set(null, ImmutableList.copyOf(StandardStoreManager.CQL.getShorthands()));
+
+            field = StandardStoreManager.class.getDeclaredField("ALL_MANAGER_CLASSES");
+            field.setAccessible(true);
+            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+            field.set(null, ImmutableMap.of(StandardStoreManager.CQL.getShorthands().get(0), StandardStoreManager.CQL.getManagerClass()));
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Unable to set wrapper CQL store manager", e);
         }
     }
 
