@@ -88,7 +88,8 @@ IF NOT DEFINED JAVA_OPTIONS (
  -Dlog4j.configuration=file:/%JANUSGRAPH_HOME%\conf\log4j-console.properties ^
  -Dgremlin.log4j.level=%GREMLIN_LOG_LEVEL% ^
  -Djline.terminal=none ^
- -javaagent:%JAMM_JAR%
+ -javaagent:%JAMM_JAR% ^
+ -Dgremlin.io.kryoShimService=org.janusgraph.hadoop.serialize.JanusGraphKryoShimService
 )
 
 :: Launch the application
