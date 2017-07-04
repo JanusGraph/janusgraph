@@ -14,7 +14,6 @@
 
 package org.janusgraph.core.attribute;
 
-import com.google.common.base.Preconditions;
 import org.locationtech.spatial4j.context.jts.DatelineRule;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory;
@@ -24,10 +23,11 @@ import org.locationtech.spatial4j.io.jts.JtsBinaryCodec;
 import org.locationtech.spatial4j.io.jts.JtsGeoJSONWriter;
 import org.locationtech.spatial4j.io.jts.JtsWKTWriter;
 import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsGeometry;
 
+import com.google.common.base.Preconditions;
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -36,29 +36,30 @@ import java.util.List;
 
 /**
  * Extension of default spatial context and associated I/O operations to use the Java Topology Suite (JTS), which adds
- * support for line and polygon shapes.
+ * support for polygon, multi-polygon and geometry collection with polygons.
  */
 public class JtsGeoshapeHelper extends GeoshapeHelper {
 
     public JtsGeoshapeHelper() {
-        JtsSpatialContextFactory factory = new JtsSpatialContextFactory();
-        factory.geo = true;
-        factory.useJtsPoint = false;
-        factory.useJtsLineString = true;
+        JtsSpatialContextFactory jtsFactory = new JtsSpatialContextFactory();
+        jtsFactory.geo = true;
+        jtsFactory.useJtsPoint = false;
+        jtsFactory.useJtsLineString = true;
         // TODO: Use default dateline rule and update to support multiline/polygon to resolve wrapping issues
-        factory.datelineRule = DatelineRule.none;
-        JtsSpatialContext context = new JtsSpatialContext(factory);
+        jtsFactory.datelineRule = DatelineRule.none;
+        JtsSpatialContext context = new JtsSpatialContext(jtsFactory);
 
         super.context = context;
+        super.factory = jtsFactory;
         wktReader = new WKTReader(context, factory);
-        wktWriter = new JtsWKTWriter(context, factory);
+        wktWriter = new JtsWKTWriter(context, jtsFactory);
         geojsonReader = new GeoJSONReader(context, factory);
-        geojsonWriter = new JtsGeoJSONWriter(context, factory);
-        binaryCodec = new JtsBinaryCodec(context, factory);
+        geojsonWriter = new JtsGeoJSONWriter(context, jtsFactory);
+        binaryCodec = new JtsBinaryCodec(context, jtsFactory);
     }
 
     public Geoshape geoshape(com.vividsolutions.jts.geom.Geometry geometry) {
-        return new Geoshape(((JtsSpatialContext) context).makeShape(geometry));
+        return new Geoshape(((JtsSpatialContext) context).getShapeFactory().makeShapeFromGeometry(geometry));
     }
 
     @Override
@@ -78,17 +79,17 @@ public class JtsGeoshapeHelper extends GeoshapeHelper {
     @Override
     public Geoshape polygon(List<double[]> coordinates) {
         Preconditions.checkArgument(coordinates.size() >= 4, "Too few coordinate pairs provided");
-        Coordinate[] points = new Coordinate[coordinates.size()];
-        for (int i=0; i<coordinates.size(); i++) {
-            double[] coordinate = coordinates.get(i);
-            Preconditions.checkArgument(coordinate.length==2 && Geoshape.isValidCoordinate(coordinate[1],coordinate[0]),"Invalid coordinate provided");
-            points[i] = new Coordinate(coordinate[0],  coordinate[1]);
+        Preconditions.checkArgument(coordinates.get(0) != coordinates.get(coordinates.size()-1), "Polygon is not closed");
+        final PolygonBuilder builder = this.getContext().getShapeFactory().polygon();
+        for (double[] coordinate : coordinates) {
+            Preconditions.checkArgument(coordinate.length==2 && Geoshape.isValidCoordinate(coordinate[1], coordinate[0]), "Invalid coordinate provided");
+            builder.pointXY(coordinate[0], coordinate[1]);
         }
-        GeometryFactory factory = new GeometryFactory();
-        return new Geoshape(((JtsSpatialContext) context).makeShape(factory.createPolygon(points)));
+        return new Geoshape(builder.build());
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Geoshape.Type getType(Shape shape) {
         final Geoshape.Type type;
         if (JtsGeometry.class.isAssignableFrom(shape.getClass()) && "LineString".equals(((JtsGeometry) shape).getGeom().getGeometryType())) {
@@ -110,6 +111,9 @@ public class JtsGeoshapeHelper extends GeoshapeHelper {
         switch(getType(shape)) {
             case LINE:
             case POLYGON:
+            case MULTIPOINT:
+            case MULTILINESTRING:
+            case MULTIPOLYGON:
                 return ((JtsGeometry) shape).getGeom().getCoordinates().length;
             default:
                 return super.size(shape);
@@ -119,10 +123,13 @@ public class JtsGeoshapeHelper extends GeoshapeHelper {
     @Override
     public Geoshape.Point getPoint(Geoshape geoshape, int position) {
         Shape shape = geoshape.getShape();
-        if (position<0 || position>=size(shape)) throw new ArrayIndexOutOfBoundsException("Invalid position: " + position);
+        if (position < 0 || position >= size(shape)) throw new ArrayIndexOutOfBoundsException("Invalid position: " + position);
         switch(getType(shape)) {
             case LINE:
             case POLYGON:
+            case MULTIPOINT:
+            case MULTILINESTRING:
+            case MULTIPOLYGON:
                 Coordinate coordinate = ((JtsGeometry) shape).getGeom().getCoordinates()[position];
                 return new Geoshape.Point(coordinate.y, coordinate.x);
             default:
