@@ -106,5 +106,19 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
         assertEquals(2, edges.size());
     }
 
+    @Test
+    public void testGeoshapeGetValues() throws Exception {
+        GraphOfTheGodsFactory.load(graph, null, true);
+
+        // Read geoshape using the inputformat
+        Graph g = getGraph();
+        GraphTraversalSource t = g.traversal(GraphTraversalSource.computer(SparkGraphComputer.class));
+        Iterator<Object> geoIter = t.E().values("place");
+        assertNotNull(geoIter);
+        assertTrue(geoIter.hasNext());
+        Set<Object> geos = Sets.newHashSet(geoIter);
+        assertEquals(3, geos.size());
+    }
+
     abstract protected Graph getGraph() throws IOException, ConfigurationException;
 }
