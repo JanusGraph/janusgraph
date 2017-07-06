@@ -27,6 +27,7 @@ import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.util.datastructures.Retriever;
 import org.apache.tinkerpop.gremlin.structure.*;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -112,12 +113,12 @@ public class EmptyVertex implements InternalVertex {
 
     @Override
     public Iterator<Edge> edges(Direction direction, String... edgeLabels) {
-        return Iterators.emptyIterator();
+        return Collections.emptyIterator();
     }
 
     @Override
     public Iterator<Vertex> vertices(Direction direction, String... edgeLabels) {
-        return Iterators.emptyIterator();
+        return Collections.emptyIterator();
     }
 
     @Override
@@ -162,7 +163,7 @@ public class EmptyVertex implements InternalVertex {
 
     @Override
     public <V> Iterator<VertexProperty<V>> properties(String... propertyKeys) {
-        return Iterators.emptyIterator();
+        return Collections.emptyIterator();
     }
 
     @Override

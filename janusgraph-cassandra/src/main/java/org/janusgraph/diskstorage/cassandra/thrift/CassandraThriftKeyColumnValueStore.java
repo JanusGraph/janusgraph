@@ -406,7 +406,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
             this.seenEnd = false;
             this.isClosed = false;
-            this.ksIter = Iterators.emptyIterator();
+            this.ksIter = Collections.emptyIterator();
             this.mostRecentRow = null;
             this.omitEndToken = omitEndToken;
         }
