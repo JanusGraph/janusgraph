@@ -659,11 +659,11 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.GLOBAL, false);
 
     public static final ConfigOption<Boolean> STORE_META_TTL = new ConfigOption<>(STORE_META_NS,"ttl",
-            "Whether to include ttl in retrieved entries for storage backends that automatically annotated entries with timestamps",
+            "Whether to include ttl in retrieved entries for storage backends that support storage and retrieval of cell level TTL",
             ConfigOption.Type.GLOBAL, false);
 
     public static final ConfigOption<Boolean> STORE_META_VISIBILITY = new ConfigOption<>(STORE_META_NS,"visibility",
-            "Whether to include visibility in retrieved entries for storage backends that automatically annotated entries with timestamps",
+            "Whether to include visibility in retrieved entries for storage backends that support cell level visibility",
             ConfigOption.Type.GLOBAL, true);
 
 
