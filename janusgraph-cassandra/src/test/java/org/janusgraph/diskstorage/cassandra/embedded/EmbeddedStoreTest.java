@@ -38,7 +38,11 @@ public class EmbeddedStoreTest extends AbstractCassandraStoreTest {
 
     @Override
     public ModifiableConfiguration getBaseStorageConfiguration() {
-        return CassandraStorageSetup.getEmbeddedConfiguration(getClass().getSimpleName());
+        return getBaseStorageConfiguration(getClass().getSimpleName());
+    }
+
+    public ModifiableConfiguration getBaseStorageConfiguration(String keyspace) {
+        return CassandraStorageSetup.getEmbeddedConfiguration(keyspace);
     }
 
     @Override

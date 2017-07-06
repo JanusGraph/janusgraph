@@ -43,6 +43,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DR
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_PREFIX;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.buildGraphConfiguration;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -130,7 +131,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
      */
     public CQLStoreManager(final Configuration configuration) throws BackendException {
         super(configuration, DEFAULT_PORT);
-        this.keyspace = configuration.get(KEYSPACE);
+        this.keyspace = determineKeyspaceName(configuration);
         this.batchSize = configuration.get(BATCH_STATEMENT_SIZE);
         this.atomicBatch = configuration.get(ATOMIC_BATCH_MUTATE);
 
@@ -426,5 +427,10 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             throw EXCEPTION_MAPPER.apply(result.getCause().get());
         }
         sleepAfterWrite(txh, commitTime);
+    }
+
+    private String determineKeyspaceName(Configuration config) {
+        if ((!config.has(KEYSPACE) && (config.has(GRAPH_NAME)))) return config.get(GRAPH_NAME);
+        return config.get(KEYSPACE);
     }
 }

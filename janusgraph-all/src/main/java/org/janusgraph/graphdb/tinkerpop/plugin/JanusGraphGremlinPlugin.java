@@ -20,6 +20,7 @@ import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Text;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
+import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
 import org.apache.tinkerpop.gremlin.groovy.plugin.GremlinPlugin;
 import org.apache.tinkerpop.gremlin.groovy.plugin.PluginAcceptor;
 
@@ -44,6 +45,7 @@ public class JanusGraphGremlinPlugin implements GremlinPlugin {
         add(IMPORT + "org.janusgraph.hadoop.MapReduceIndexManagement");
         add(IMPORT + "java.time" + DOT_STAR);
         add(IMPORT + JanusGraphIoRegistry.class.getName());
+        add(IMPORT + ConfigurationManagementGraph.class.getName());
 
         // Static imports on enum values used in query constraint expressions
         add(IMPORT_STATIC + Geo.class.getName() + DOT_STAR);

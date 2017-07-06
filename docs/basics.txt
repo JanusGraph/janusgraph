@@ -742,6 +742,8 @@ By adding the `JanusGraphIoRegistry` to the `org.apache.tinkerpop.gremlin.driver
 
 It is possible to extend Gremlin Server with other means of communication by implementing the interfaces that it provides and leverage this with JanusGraph.  See more details in the appropriate TinkerPop documentation.
 
+include::configuredgraphfactory.txt[]
+
 [[indexes]]
 == Indexing for better Performance
 

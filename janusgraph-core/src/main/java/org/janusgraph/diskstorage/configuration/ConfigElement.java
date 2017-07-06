@@ -78,6 +78,10 @@ public abstract class ConfigElement {
         return (namespace !=null? namespace.toString()+SEPARATOR:"") + name;
     }
 
+    public String toStringWithoutRoot() {
+        return toString().substring(getRoot().toString().length() + 1);
+    }
+
     @Override
     public int hashCode() {
         return new HashCodeBuilder().append(name).append(namespace).toHashCode();

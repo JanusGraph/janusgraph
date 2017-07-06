@@ -32,7 +32,12 @@ public class AstyanaxStoreTest extends AbstractCassandraStoreTest {
 
     @Override
     public ModifiableConfiguration getBaseStorageConfiguration() {
-        return CassandraStorageSetup.getAstyanaxConfiguration(getClass().getSimpleName());
+        return getBaseStorageConfiguration(getClass().getSimpleName());
+    }
+
+    @Override
+    public ModifiableConfiguration getBaseStorageConfiguration(String keyspace) {
+        return CassandraStorageSetup.getAstyanaxConfiguration(keyspace);
     }
 
     @Override

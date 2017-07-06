@@ -44,6 +44,7 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
     private static final String DEFAULT_COMPRESSOR_PACKAGE = "org.apache.cassandra.io.compress";
 
     public abstract ModifiableConfiguration getBaseStorageConfiguration();
+    public abstract ModifiableConfiguration getBaseStorageConfiguration(String keyspace);
 
     public abstract AbstractCassandraStoreManager openStorageManager(Configuration c) throws BackendException;
 
@@ -142,6 +143,21 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
     public void testTTLSupported() throws Exception {
         StoreFeatures features = manager.getFeatures();
         assertTrue(features.hasCellTTL());
+    }
+
+    @Test
+    public void keyspaceShouldBeEquivalentToProvidedOne() throws BackendException {
+        final ModifiableConfiguration config = getBaseStorageConfiguration("randomNewKeyspace");
+        final AbstractCassandraStoreManager mgr = openStorageManager(config);
+        assertEquals("randomNewKeyspace", mgr.keySpaceName);
+    }
+
+    @Test
+    public void keyspaceShouldBeEquivalentToGraphName() throws BackendException {
+        final ModifiableConfiguration config = getBaseStorageConfiguration(null);
+        config.set(GraphDatabaseConfiguration.GRAPH_NAME, "randomNewGraphName");
+        final AbstractCassandraStoreManager mgr = openStorageManager(config);
+        assertEquals("randomNewGraphName", mgr.keySpaceName);
     }
 
     @Override

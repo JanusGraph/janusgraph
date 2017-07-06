@@ -128,10 +128,14 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     private Set<StandardJanusGraphTx> openTransactions;
 
+    private String name = null;
+
     public StandardJanusGraph(GraphDatabaseConfiguration configuration) {
 
         this.config = configuration;
         this.backend = configuration.getBackend();
+
+        this.name = configuration.getGraphName();
 
         this.idAssigner = config.getIDAssigner(backend);
         this.idManager = idAssigner.getIDManager();
@@ -167,6 +171,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         log.debug("Installed shutdown hook {}", shutdownHook, new Throwable("Hook creation trace"));
     }
 
+    public String getGraphName() {
+        return this.name;
+    }
 
     @Override
     public boolean isOpen() {

@@ -30,6 +30,11 @@ public class AstyanaxSSLStoreTest extends AstyanaxStoreTest {
 
     @Override
     public ModifiableConfiguration getBaseStorageConfiguration() {
-        return CassandraStorageSetup.getAstyanaxSSLConfiguration(getClass().getSimpleName());
+        return getBaseStorageConfiguration(getClass().getSimpleName());
+    }
+
+    @Override
+    public ModifiableConfiguration getBaseStorageConfiguration(String keyspace) {
+        return CassandraStorageSetup.getAstyanaxSSLConfiguration(keyspace);
     }
 }

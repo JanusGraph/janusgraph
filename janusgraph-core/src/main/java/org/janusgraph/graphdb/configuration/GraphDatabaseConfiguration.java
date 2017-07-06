@@ -112,6 +112,12 @@ public class GraphDatabaseConfiguration {
             "of JanusGraph's advanced features which can lead to inconsistent data. EXPERT FEATURE - USE WITH GREAT CARE.",
             ConfigOption.Type.FIXED, false);
 
+    public static final ConfigOption<String> GRAPH_NAME = new ConfigOption<String>(GRAPH_NS, "graphname",
+            "This config option is an optional configuration setting that you may supply when opening a graph. " +
+            "The String value you provide will be the name of your graph. If you use the ConfigurationManagament APIs, " +
+            "then you will be able to access your graph by this String representation using the ConfiguredGraphFactory APIs.",
+            ConfigOption.Type.LOCAL, String.class);
+
     public static final ConfigOption<TimestampProviders> TIMESTAMP_PROVIDER = new ConfigOption<TimestampProviders>(GRAPH_NS, "timestamps",
             "The timestamp resolution to use when writing to storage and indices. Sets the time granularity for the " +
             "entire graph cluster. To avoid potential inaccuracies, the configured time resolution should match " +
@@ -394,10 +400,19 @@ public class GraphDatabaseConfiguration {
     public static final ConfigNamespace STORAGE_NS = new ConfigNamespace(ROOT_NS,"storage","Configuration options for the storage backend.  Some options are applicable only for certain backends.");
 
     /**
+     * Storage root directory for those storage backends that require local storage
+     */
+    public static final ConfigOption<String> STORAGE_ROOT = new ConfigOption<String>(STORAGE_NS,"root",
+            "Storage root directory for those storage backends that require local storage. " +
+            "If you do not supply storage.directory and you do supply graph.graphname, then your data " +
+            "will be stored in the directory equivalent to <STORAGE_ROOT>/<GRAPH_NAME>.",
+            ConfigOption.Type.LOCAL, String.class);
+
+    /**
      * Storage directory for those storage backends that require local storage
      */
     public static final ConfigOption<String> STORAGE_DIRECTORY = new ConfigOption<String>(STORAGE_NS,"directory",
-            "Storage directory for those storage backends that require local storage",
+            "Storage directory for those storage backends that require local storage.",
             ConfigOption.Type.LOCAL, String.class);
 //    public static final String STORAGE_DIRECTORY_KEY = "directory";
 
@@ -1259,6 +1274,7 @@ public class GraphDatabaseConfiguration {
 //    public static final String GANGLIA_SPOOF_KEY = "spoof";
 //    public static final String GANGLIA_SPOOF_DEFAULT = null;
 
+
     /**
      * The configuration namespace within {@link #METRICS_NS} for
      * Graphite.
@@ -1882,6 +1898,10 @@ public class GraphDatabaseConfiguration {
         backend.initialize(configuration);
         storeFeatures = backend.getStoreFeatures();
         return backend;
+    }
+
+    public String getGraphName() {
+        return getConfigurationAtOpen().getString(GRAPH_NAME.toString());
     }
 
     public StoreFeatures getStoreFeatures() {

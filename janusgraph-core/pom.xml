@@ -37,6 +37,12 @@
             <artifactId>tinkergraph-gremlin</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.tinkerpop</groupId>
+            <artifactId>gremlin-server</artifactId>
+            <version>${tinkerpop.version}</version>
+            <optional>true</optional>
+        </dependency>
         <!-- Utility -->
         <dependency>
             <groupId>org.glassfish</groupId>
