@@ -21,6 +21,8 @@ import org.janusgraph.graphdb.JanusGraphTest;
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.io.IOException;
 
@@ -41,5 +43,11 @@ public class HBaseGraphTest extends JanusGraphTest {
     public WriteConfiguration getConfiguration() {
         return HBaseStorageSetup.getHBaseGraphConfiguration();
     }
+
+    @Override @Test @Ignore("HBase does not support retrieving cell TTL by client")
+    public void testVertexTTLImplicitKey() { }
+
+    @Override @Test @Ignore("HBase does not support retrieving cell TTL by client")
+    public void testEdgeTTLImplicitKey() { }
 
 }
