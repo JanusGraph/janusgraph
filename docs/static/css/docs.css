@@ -1,4 +1,4 @@
-/* This file collects customizations made to the Avada-based demo theme
+/* This file collects customizations made to the theme
    during the development of the AsciiDoc/DocBook-based manual pages. */
 
 #header-sticky .logo a, #header .logo a { height: auto; }
@@ -7,6 +7,35 @@
 .font16  + .informaltable td:nth-child(4) {
     word-break: break-all;
     min-width: 25%;
+}
+
+.header-wrapper {
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background-color: #FFFFFF;
+  border-bottom: 1px dotted #1b8669;
+}
+.header-list {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+.header-item {
+    float: left;
+}
+.header-item-right {
+    float: right;
+    line-height: 67px;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+.header-item-right a:hover {
+    color: #1b8669;
+    text-decoration: none;
+    border-bottom: 3px solid #1b8669;
 }
 
 /* Static anchor offset to compensate for the height of the floating header */
@@ -20,7 +49,7 @@ a[name] {
     background-color: #F0F0F0;
     padding: 6px 30px;
     border-top: 1px solid black;
-    border-bottom: 1px dotted #FF8080;
+    border-bottom: 1px dotted #1b8669;
 }
 
 .font16 {
@@ -30,8 +59,10 @@ a[name] {
 div#main {
    /* padding-left: 30px;
     padding-right: 30px; */
+    margin-top: 67px;
     margin-left: auto;
     margin-right: auto;
+    padding-top: 10px;
     max-width: 940px;
 }
 
@@ -137,7 +168,7 @@ div.informaltable thead {
 
 .programlisting {
     padding: 5px 8px;
-    border: 1px dashed #E10707;
+    border: 1px dashed #1b8669;
     color: #000000;
     background-color: #F8F8F8;
     overflow-x: auto;
@@ -158,7 +189,7 @@ div#main {
 .navfooter {
     background-color: #F0F0F0;
     padding: 6px 30px;
-    border-top: 1px dotted #FF8080;
+    border-top: 1px dotted #1b8669;
 }
 
 .navfooter table {
@@ -177,6 +208,12 @@ div#main {
 
 .title {
     overflow: auto;
+}
+h1.title {
+    line-height: normal;
+}
+h2.title {
+    font-size: 18px;
 }
 
 .line-through {
@@ -201,10 +238,6 @@ html {
     margin-left: auto;
     margin-right: auto;
     display: block;
-}
-
-#toTop {
-    font-family: "FontAwesome";
 }
 
 /* Change header font */
@@ -241,12 +274,38 @@ table.blockquote {
 font-family:"Open Sans", Arial, Helvetica, sans-serif !important;
 }
 
+.footer-wrapper {
+    background-color: #282a2b;
+    overflow: hidden;
+}
+#footer {
+    max-width: 940px;
+    margin-left: auto;
+    margin-right: auto;
+    height: auto;
+}
+.copyright {
+    padding-top: 10px;
+    padding-bottom: 12px;
+    float:left;
+    color:#8C8989;
+    line-height: 20px;
+    font-size:12px;
+    text-shadow:1px 2px 1px #000;
+}
+.copyright a {color:#bfbfbf;}
+
 /* Change title size and font */
+
+#main h1 {
+    margin: 0 0 31px;
+}
 
 #main h2 {
     font-size: 28px/30px;
     font-weight: bold;
     font-family:"Open Sans", Arial, Helvetica, sans-serif !important;
+    margin: 0 0 20px;
 }
 
 /*Make text black */
@@ -257,10 +316,22 @@ color:#000000 !important;
 
 /* Change text size and line height */
 body, #sidebar .slide-excerpt h2, .footer-area .slide-excerpt h2, #slidingbar-area .slide-excerpt h2 {
+font-family: "Lato", Arial, Helvetica, sans-serif;
 font-size: 15px;
 line-height: 22px;
 }
 
+body {
+    margin: 0;
+}
+body a {
+    color: #333333;
+    text-decoration: none;
+}
+body a:hover {
+    color:#3030FF;
+    text-decoration: underline;
+}
 
 /* Make note font color grey */
 /* .note p, .note th {
@@ -276,9 +347,9 @@ background-color: #EEE;
 
 /* Change link color */
 a.link,a.xref {
-    color:#e10707 !important;
+    color:#3030FF !important;
 }
 a.link:hover {
-    color:#e10707 !important;
+    color:#3030FF !important;
     text-decoration: underline;
 }
