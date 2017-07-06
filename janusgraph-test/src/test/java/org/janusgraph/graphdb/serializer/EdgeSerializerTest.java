@@ -27,7 +27,6 @@ import org.junit.Test;
  */
 public class EdgeSerializerTest {
 
-
     @Test
     public void testValueOrdering() {
         StandardJanusGraph graph = (StandardJanusGraph) StorageSetup.getInMemoryGraph();

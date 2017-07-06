@@ -31,6 +31,11 @@ public class ThriftSSLStoreTest extends ThriftStoreTest {
 
     @Override
     public ModifiableConfiguration getBaseStorageConfiguration() {
-        return CassandraStorageSetup.getCassandraThriftSSLConfiguration(this.getClass().getSimpleName());
+        return getBaseStorageConfiguration(getClass().getSimpleName());
+    }
+
+    @Override
+    public ModifiableConfiguration getBaseStorageConfiguration(String keyspace) {
+        return CassandraStorageSetup.getCassandraThriftSSLConfiguration(keyspace);
     }
 }
