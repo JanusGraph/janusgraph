@@ -34,7 +34,7 @@ public class IterablesUtil {
 
             @Override
             public Iterator<O> iterator() {
-                return Iterators.emptyIterator();
+                return Collections.emptyIterator();
             }
 
         };

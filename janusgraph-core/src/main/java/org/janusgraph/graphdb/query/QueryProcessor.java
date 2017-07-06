@@ -63,7 +63,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
     @Override
     public Iterator<R> iterator() {
         if (query.isEmpty())
-            return Iterators.emptyIterator();
+            return Collections.emptyIterator();
 
         return new ResultSetIterator(getUnfoldedIterator(),(query.hasLimit()) ? query.getLimit() : Query.NO_LIMIT);
     }
