@@ -540,7 +540,7 @@
 
     <fieldType name="geo"
                class="solr.SpatialRecursivePrefixTreeFieldType"
-               spatialContextFactory="com.spatial4j.core.context.jts.JtsSpatialContextFactory"
+               spatialContextFactory="org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory"
                distErrPct="0.001"
                maxDistErr="0.000009"
                distanceUnits="kilometers"
