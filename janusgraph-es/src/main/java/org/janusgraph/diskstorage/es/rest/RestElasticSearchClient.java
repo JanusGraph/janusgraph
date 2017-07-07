@@ -17,6 +17,7 @@ package org.janusgraph.diskstorage.es.rest;
 import com.google.common.collect.ImmutableMap;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.entity.ContentType;
 import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
 import org.apache.tinkerpop.shaded.jackson.core.type.TypeReference;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
@@ -235,7 +236,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     }
 
     private Response performRequest(String method, String path, byte[] requestData) throws IOException {
-        final HttpEntity entity = requestData != null ? new ByteArrayEntity(requestData) : null;
+        final HttpEntity entity = requestData != null ? new ByteArrayEntity(requestData, ContentType.APPLICATION_JSON) : null;
         final Response response = delegate.performRequest(
             method,
             path,
