@@ -70,10 +70,12 @@ public enum Text implements JanusGraphPredicate {
             else if (condition instanceof String && StringUtils.isNotBlank((String) condition)) return true;
             else return false;
         }
+
         @Override
         public String toString() {
             return "textContains";
         }
+
     },
 
     /**
@@ -191,7 +193,7 @@ public enum Text implements JanusGraphPredicate {
             return "textRegex";
         }
 
-    }, 
+    },
     
     /**
      * Whether the text is at X Lenvenstein of a token (case sensitive)

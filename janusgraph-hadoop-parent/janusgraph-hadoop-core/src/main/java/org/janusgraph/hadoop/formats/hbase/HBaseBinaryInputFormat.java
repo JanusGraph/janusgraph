@@ -42,13 +42,15 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
 
+import com.google.common.collect.BiMap;
+
 public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
 
     private static final Logger log = LoggerFactory.getLogger(HBaseBinaryInputFormat.class);
 
     private final TableInputFormat tableInputFormat = new TableInputFormat();
     private RecordReader<ImmutableBytesWritable, Result> tableReader;
-    private byte[] inputCFBytes;
+    private byte[] edgeStoreFamily;
     private RecordReader<StaticBuffer, Iterable<Entry>> janusgraphRecordReader;
 
     @Override
@@ -60,7 +62,7 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
     public RecordReader<StaticBuffer, Iterable<Entry>> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
         tableReader = tableInputFormat.createRecordReader(inputSplit, taskAttemptContext);
         janusgraphRecordReader =
-                new HBaseBinaryRecordReader(tableReader, inputCFBytes);
+                new HBaseBinaryRecordReader(tableReader, edgeStoreFamily);
         return janusgraphRecordReader;
     }
 
@@ -82,13 +84,14 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
         // TODO the space-saving short name mapping leaks from HBaseStoreManager here
         if (janusgraphConf.get(HBaseStoreManager.SHORT_CF_NAMES)) {
             try {
-                cfName = HBaseStoreManager.shortenCfName(cfName);
+                final BiMap<String,String> shortCfMap = HBaseStoreManager.createShortCfMap(janusgraphConf);
+                cfName = HBaseStoreManager.shortenCfName(shortCfMap, cfName);
             } catch (PermanentBackendException e) {
                 throw new RuntimeException(e);
             }
         }
         scanner.addFamily(cfName.getBytes());
-        inputCFBytes = Bytes.toBytes(cfName);
+        edgeStoreFamily = Bytes.toBytes(cfName);
 
         //scanner.setFilter(getColumnFilter(janusgraphSetup.inputSlice(this.vertexQuery))); // TODO
         //TODO (minor): should we set other options in http://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Scan.html for optimization?
@@ -109,7 +112,7 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
     }
 
     public byte[] getEdgeStoreFamily() {
-        return inputCFBytes;
+        return edgeStoreFamily;
     }
 
     private Filter getColumnFilter(SliceQuery query) {
