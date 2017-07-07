@@ -15,7 +15,7 @@
 package org.janusgraph.diskstorage.cql;
 
 import static com.datastax.driver.core.schemabuilder.SchemaBuilder.createKeyspace;
-import static com.datastax.driver.core.schemabuilder.SchemaBuilder.dropKeyspace;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.truncate;
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
@@ -115,7 +115,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     private final int batchSize;
     private final boolean atomicBatch;
 
-    private final ExecutorService executorService;
+    final ExecutorService executorService;
 
     private final Cluster cluster;
     private final Session session;
@@ -189,7 +189,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         this.openStores = new ConcurrentHashMap<>();
     }
 
-    private Cluster initializeCluster() throws PermanentBackendException {
+    Cluster initializeCluster() throws PermanentBackendException {
         final Configuration configuration = getStorageConfig();
 
         final List<InetSocketAddress> contactPoints;
@@ -249,7 +249,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         return builder.build();
     }
 
-    private Session initializeSession(final String keyspaceName) {
+    Session initializeSession(final String keyspaceName) {
         final Configuration configuration = getStorageConfig();
         final Map<String, Object> replication = Match(configuration.get(REPLICATION_STRATEGY)).of(
                 Case($("SimpleStrategy"), strategy -> HashMap.<String, Object> of("class", strategy, "replication_factor", configuration.get(REPLICATION_FACTOR))),
@@ -328,7 +328,10 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     @Override
     public void clearStorage() throws BackendException {
-        this.session.execute(dropKeyspace(this.keyspace));
+        final Future<Seq<ResultSet>> result = Future.sequence(
+            Iterator.ofAll(this.cluster.getMetadata().getKeyspace(this.keyspace).getTables())
+                .map(table -> Future.fromJavaFuture(this.session.executeAsync(truncate(this.keyspace, table.getName())))));
+        result.await();
     }
 
     @Override
