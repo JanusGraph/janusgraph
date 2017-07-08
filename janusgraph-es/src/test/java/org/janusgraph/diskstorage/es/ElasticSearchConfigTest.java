@@ -173,6 +173,7 @@ public class ElasticSearchConfigTest {
         config.set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
         FileInputStream fis = null;
+        try (CloseableHttpResponse res = httpClient.execute(host, new HttpDelete("janusgraph"))) {} catch (Exception e) {}
         try {
             //Test create index KO mapping is not push
             try {
@@ -208,6 +209,7 @@ public class ElasticSearchConfigTest {
 
     @Test
     public void testExternalMappingsViaTemplate() throws BackendException {
+        try (CloseableHttpResponse res = httpClient.execute(host, new HttpDelete("janusgraph"))) {} catch (Exception e) {}
         FileInputStream fis = null;
         try {
             HttpPut newTemplate = new HttpPut("_template/template_1");
