@@ -207,11 +207,10 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                 .addContactPointsWithPorts(contactPoints)
                 .withClusterName(configuration.get(CLUSTER_NAME));
 
-        if (configuration.get(PROTOCOL_VERSION) == 0) {
-            builder.withProtocolVersion(ProtocolVersion.NEWEST_SUPPORTED);
-        } else {
+        if (configuration.get(PROTOCOL_VERSION) != 0) {
             builder.withProtocolVersion(ProtocolVersion.fromInt(configuration.get(PROTOCOL_VERSION)));
         }
+
         if (configuration.has(AUTH_USERNAME) && configuration.has(AUTH_PASSWORD)) {
             builder.withCredentials(configuration.get(AUTH_USERNAME), configuration.get(AUTH_PASSWORD));
         }

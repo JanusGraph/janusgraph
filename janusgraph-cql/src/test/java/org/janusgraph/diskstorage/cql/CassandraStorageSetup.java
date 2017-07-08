@@ -115,8 +115,6 @@ public class CassandraStorageSetup {
         config.set(PAGE_SIZE, 500);
         config.set(CONNECTION_TIMEOUT, Duration.ofSeconds(60L));
         config.set(STORAGE_BACKEND, "cql");
-        // Set to 3 because we have a 2.1.9 database that only supports version 3, if we let it negotiate then there are spurious errors.
-        config.set(PROTOCOL_VERSION, 3);
         if (HOSTNAME != null) config.set(STORAGE_HOSTS, new String[]{HOSTNAME});
         return config;
     }
