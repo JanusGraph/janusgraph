@@ -533,10 +533,10 @@
 
     <fieldType name="geo"
                class="solr.SpatialRecursivePrefixTreeFieldType"
-               spatialContextFactory="com.spatial4j.core.context.jts.JtsSpatialContextFactory"
+               spatialContextFactory="org.locationtech.spatial4j.context.SpatialContextFactory"
                distErrPct="0.000"
                maxDistErr="0.000009"
-               units="degrees"
+               distanceUnits="kilometers"
                prefixTree="geohash"/>
 
     <dynamicField name="*_g"    type="geo"      indexed="true"  stored="true"/>
