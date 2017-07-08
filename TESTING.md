@@ -78,3 +78,11 @@ To run Thrift or CQL tests with the [ScyllaDB](http://www.scylladb.com/) backend
 ```bash
 mvn clean install -pl janusgraph-cql -Pscylladb-test
 ```
+
+### Running Elasticsearch tests against managed Docker container
+
+To run Elasicsearch tests using an embedded Elasticsearch Docker container, use the `es-docker` profile
+
+```bash
+mvn clean install -pl janusgraph-es -Pes-docker
+```
