@@ -81,12 +81,11 @@ While JanusGraph's composite indexes support any data type that can be stored in
  * Long
  * Float
  * Double
- * Decimal
- * Precision
  * String
  * Geoshape
  * Date
  * Instant
+ * UUID
  
 Additional data types will be supported in the future.
 
