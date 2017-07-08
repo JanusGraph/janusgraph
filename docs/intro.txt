@@ -90,6 +90,7 @@ JanusGraph's modular architecture supports third-party adapters.
 ** <<bdb, BerkeleyDB>>
 * Indices, which speed up and enable more complex queries:
 ** <<elasticsearch, Elasticsearch>>
+** <<solr, Solr>>
 ** <<lucene, Lucene>>
 
 Broadly speaking, applications can interact with JanusGraph in two ways:
