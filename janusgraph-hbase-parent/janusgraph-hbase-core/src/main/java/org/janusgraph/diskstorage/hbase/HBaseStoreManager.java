@@ -37,7 +37,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
@@ -858,6 +857,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      Map<StaticBuffer, Pair<List<Put>, Delete>> convertToCommands(Map<String, Map<StaticBuffer, KCVMutation>> mutations,
                                                                    final long putTimestamp,
                                                                    final long delTimestamp) throws PermanentBackendException {
+
         // A map of rowkey to commands (list of Puts, Delete)
         final Map<StaticBuffer, Pair<List<Put>, Delete>> commandsPerKey = new HashMap<>();
 
