@@ -126,6 +126,15 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             ConfigOption.Type.MASKABLE, 3);
 
     /**
+     * The page size for Cassandra read operations.
+     * <p/>
+     */
+    public static final ConfigOption<Integer> READ_PAGE_SIZE =
+            new ConfigOption<Integer>(ASTYANAX_NS, "read-page-size",
+            "The page size for Cassandra read operations",
+            ConfigOption.Type.MASKABLE, Integer.class, 4096);
+
+    /**
      * How Astyanax discovers Cassandra cluster nodes. This must be one of the
      * values of the Astyanax NodeDiscoveryType enum.
      * <p/>
@@ -270,6 +279,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     private final RetryPolicy retryPolicy;
 
+    final int readPageSize;
     private final int retryDelaySlice;
     private final int retryMaxDelaySlice;
     private final int retrySuspendWindow;
@@ -284,6 +294,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
         this.clusterName = config.get(CLUSTER_NAME);
 
+        readPageSize = config.get(READ_PAGE_SIZE);
         retryDelaySlice = config.get(RETRY_DELAY_SLICE);
         retryMaxDelaySlice = config.get(RETRY_MAX_DELAY_SLICE);
         retrySuspendWindow = config.get(RETRY_SUSPEND_WINDOW);
