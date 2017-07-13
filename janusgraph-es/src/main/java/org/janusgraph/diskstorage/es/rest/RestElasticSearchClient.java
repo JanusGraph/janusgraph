@@ -55,7 +55,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     private static final ObjectWriter mapWriter;
     static {
         final SimpleModule module = new SimpleModule();
-        module.addSerializer(new Geoshape.GeoshapeGsonSerializer());
+        module.addSerializer(new Geoshape.GeoshapeGsonSerializerV1d0());
         mapper = new ObjectMapper();
         mapper.registerModule(module);
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);

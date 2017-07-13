@@ -7,6 +7,8 @@ import static org.apache.tinkerpop.gremlin.process.traversal.P.without;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
 import static org.junit.Assert.assertEquals;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Modifier;
 import java.util.stream.Stream;
 
@@ -23,6 +25,9 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoMapper;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoMapper.Builder;
 import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
+import org.apache.tinkerpop.shaded.kryo.Kryo;
+import org.apache.tinkerpop.shaded.kryo.io.Input;
+import org.apache.tinkerpop.shaded.kryo.io.Output;
 import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.attribute.Text;
@@ -124,4 +129,22 @@ public class JanusGraphIoRegistryTest {
             assertEquals(expectedBytecode, result);
         }
     }
+
+    @Test
+    public void testLegacyGeoshapAsGryo() throws SerializationException {
+        final Geoshape point = Geoshape.point(1.0d, 4.0d);
+
+        Kryo kryo = new Kryo();
+        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		Output output = new Output(outStream, 4096);
+		output.writeLong(1);
+		output.writeFloat((float) point.getPoint().getLatitude());
+        output.writeFloat((float) point.getPoint().getLongitude());
+        output.flush();
+
+        Geoshape.GeoShapeGryoSerializer serializer = new Geoshape.GeoShapeGryoSerializer();
+        Input input = new Input(new ByteArrayInputStream(outStream.toByteArray()), 4096);
+        assertEquals(point, serializer.read(kryo, input, Geoshape.class));
+    }
+
 }

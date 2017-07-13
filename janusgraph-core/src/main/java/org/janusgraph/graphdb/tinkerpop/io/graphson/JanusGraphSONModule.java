@@ -50,10 +50,10 @@ public class JanusGraphSONModule extends TinkerPopJacksonModule {
     private JanusGraphSONModule() {
         super("janusgraph");
         addSerializer(RelationIdentifier.class, new RelationIdentifierSerializer());
-        addSerializer(Geoshape.class, new Geoshape.GeoshapeGsonSerializer());
+        addSerializer(Geoshape.class, new Geoshape.GeoshapeGsonSerializerV1d0());
 
         addDeserializer(RelationIdentifier.class, new RelationIdentifierDeserializer());
-        addDeserializer(Geoshape.class, new Geoshape.GeoshapeGsonDeserializer());
+        addDeserializer(Geoshape.class, new Geoshape.GeoshapeGsonDeserializerV1d0());
     }
 
     private static final JanusGraphSONModule INSTANCE = new JanusGraphSONModule();
