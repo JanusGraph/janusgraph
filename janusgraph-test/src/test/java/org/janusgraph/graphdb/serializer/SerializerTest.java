@@ -20,6 +20,7 @@ import com.google.common.collect.Lists;
 import org.janusgraph.core.attribute.*;
 import org.janusgraph.diskstorage.ReadBuffer;
 import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.serialize.attribute.*;
 import org.janusgraph.graphdb.serializer.attributes.*;
@@ -373,6 +374,24 @@ public class SerializerTest extends SerializerTestCommon {
         }
 
 
+    }
+
+    @Test
+    public void testLegacyPointSerialization() {
+        Geoshape geo = Geoshape.point(0.5, 2.5);
+        DataOutput out = serialize.getDataOutput(128);
+
+        int length = geo.size();
+        VariableLong.writePositive(out,length);
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < length; j++) {
+                Geoshape.Point point = geo.getPoint(j);
+                out.putFloat((float) (i==0 ? geo.getPoint(j).getLatitude() : geo.getPoint(j).getLongitude()));
+            }
+        }
+
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
+        assertEquals(geo, serialize.readObjectNotNull(b, Geoshape.class));
     }
 
     private static class SerialEntry {

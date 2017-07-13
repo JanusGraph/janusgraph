@@ -334,7 +334,7 @@ public class GeoshapeTest {
     @Test
     public void testGeoJsonSerialization() throws IOException {
         SimpleModule module = new SimpleModule();
-        module.addSerializer(new Geoshape.GeoshapeGsonSerializer());
+        module.addSerializer(new Geoshape.GeoshapeGsonSerializerV1d0());
         final ObjectMapper om = new ObjectMapper();
         om.registerModule(module);
         JtsSpatialContext context = (JtsSpatialContext) Geoshape.getSpatialContext();

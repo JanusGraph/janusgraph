@@ -16,11 +16,13 @@ package org.janusgraph.core.attribute;
 
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
+import org.apache.tinkerpop.shaded.kryo.KryoException;
+import org.janusgraph.diskstorage.util.ReadArrayBuffer;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Circle;
 import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.ShapeFactory;
 import org.locationtech.spatial4j.shape.SpatialRelation;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectReader;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectWriter;
@@ -159,7 +161,7 @@ public class Geoshape {
      * @return
      */
     public String toGeoJson() {
-        return GeoshapeGsonSerializer.toGeoJson(this);
+        return GeoshapeGsonSerializerV1d0.toGeoJson(this);
     }
 
     public Map<String,Object> toMap() throws IOException {
@@ -427,7 +429,6 @@ public class Geoshape {
 
         @Override
         public Geoshape convert(Object value) {
-
             if(value instanceof Map) {
                 return convertGeoJson(value);
             }
@@ -497,7 +498,7 @@ public class Geoshape {
 
         private Geoshape convertGeometry(Map<String, Object> geometry) throws IOException, ParseException {
             String type = (String) geometry.get("type");
-            List<Object> coordinates = (List) geometry.get("coordinates");
+            List<Object> coordinates = (List) geometry.get(FIELD_COORDINATES);
 
             if ("Point".equals(type)) {
                 double[] parsedCoordinates = convertCollection(coordinates);
@@ -547,7 +548,16 @@ public class Geoshape {
             try {
                 return GeoshapeBinarySerializer.read(inputStream);
             } catch (IOException e) {
-                throw new RuntimeException("I/O exception reading geoshape");
+                // retry using legacy point deserialization
+                try {
+                    ((ReadArrayBuffer) buffer).movePositionTo(0);
+                    VariableLong.readPositive(buffer);
+                    final float lat = buffer.getFloat();
+                    final float lon = buffer.getFloat();
+                    return point(lat, lon);
+                } catch (Exception e2) { }
+                // throw original exception
+                throw new RuntimeException("I/O exception reading geoshape", e);
             }
         }
 
@@ -560,7 +570,7 @@ public class Geoshape {
                 VariableLong.writePositive(buffer,bytes.length);
                 buffer.putBytes(bytes);
             } catch (IOException e) {
-                throw new RuntimeException("I/O exception writing geoshape");
+                throw new RuntimeException("I/O exception writing geoshape", e);
             }
         }
     }
@@ -575,32 +585,42 @@ public class Geoshape {
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 GeoshapeBinarySerializer.write(outputStream, geoshape);
                 byte[] bytes = outputStream.toByteArray();
-                output.write(bytes.length);
+                output.writeLong(bytes.length);
                 output.write(bytes);
             } catch (IOException e) {
-                throw new RuntimeException("I/O exception writing geoshape");
+                throw new RuntimeException("I/O exception writing geoshape", e);
             }
         }
 
         @Override
         public Geoshape read(Kryo kryo, Input input, Class<Geoshape> aClass) {
-            int length = input.read();
-            assert length>0;
-            InputStream inputStream = new ByteArrayInputStream(input.readBytes(length));
+            final long l = input.readLong();
+            assert l>0 && l<Integer.MAX_VALUE;
+            final int length = (int) l;
             try {
+                final InputStream inputStream = new ByteArrayInputStream(input.readBytes(length));
                 return GeoshapeBinarySerializer.read(inputStream);
-            } catch (IOException e) {
-                throw new RuntimeException("I/O exception reding geoshape");
+            } catch (IOException | KryoException e) {
+                // retry using legacy point deserialization
+                try {
+                    input.setPosition(0);
+                    input.readLong();
+                    final float lat = input.readFloat();
+                    final float lon = input.readFloat();
+                    return point(lat, lon);
+                } catch (KryoException e2) { }
+                // throw original exception
+                throw new RuntimeException("I/O exception reading geoshape", e);
             }
         }
     }
 
     /**
-     * Geoshape serializer supports writing GeoJSON (http://geojson.org/).
+     * Geoshape serializer for GraphSON 1.0 supporting writing GeoJSON (http://geojson.org/).
      */
-    public static class GeoshapeGsonSerializer extends StdSerializer<Geoshape> {
+    public static class GeoshapeGsonSerializerV1d0 extends StdSerializer<Geoshape> {
 
-        public GeoshapeGsonSerializer() {
+        public GeoshapeGsonSerializerV1d0() {
             super(Geoshape.class);
         }
 
@@ -633,7 +653,7 @@ public class Geoshape {
             String geojson = toGeoJson(geoshape);
             Map json = mapReader.readValue(geojson);
             if (geoshape.getType() == Type.POINT) {
-                double[] coords = ((List<Number>) json.get("coordinates")).stream().map(i -> i.doubleValue()).mapToDouble(i -> i).toArray();
+                double[] coords = ((List<Number>) json.get(FIELD_COORDINATES)).stream().map(i -> i.doubleValue()).mapToDouble(i -> i).toArray();
                 GraphSONUtil.writeWithType(FIELD_COORDINATES, coords, jgen, serializerProvider, typeSerializer);
             } else {
                 GraphSONUtil.writeWithType(FIELD_LABEL, json, jgen, serializerProvider, typeSerializer);
@@ -648,18 +668,18 @@ public class Geoshape {
     }
 
     /**
-     * Geoshape JSON deserializer supporting reading from GeoJSON (http://geojson.org/).
+     * Geoshape deserializer for GraphSON 1.0 supporting reading from GeoJSON (http://geojson.org/).
      */
-    public static class GeoshapeGsonDeserializer extends StdDeserializer<Geoshape> {
+    public static class GeoshapeGsonDeserializerV1d0 extends StdDeserializer<Geoshape> {
 
-        public GeoshapeGsonDeserializer() {
+        public GeoshapeGsonDeserializerV1d0() {
             super(Geoshape.class);
         }
 
         @Override
         public Geoshape deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
             jsonParser.nextToken();
-            if (jsonParser.getCurrentName().equals("coordinates")) {
+            if (jsonParser.getCurrentName().equals(FIELD_COORDINATES)) {
                 double[] f = jsonParser.readValueAs(double[].class);
                 jsonParser.nextToken();
                 return Geoshape.point(f[1], f[0]);
@@ -674,6 +694,63 @@ public class Geoshape {
                     throw new IOException("Unable to read and parse geojson", e);
                 }
             }
+        }
+    }
+
+    /**
+     * Geoshape serializer for GraphSON 2.0 supporting writing GeoJSON (http://geojson.org/).
+     */
+    public static class GeoshapeGsonSerializerV2d0 extends GeoshapeGsonSerializerV1d0 {
+
+        public void serializeWithType(Geoshape geoshape, JsonGenerator jgen, SerializerProvider serializerProvider,
+                                      TypeSerializer typeSerializer) throws IOException {
+
+            jgen.writeStartObject();
+            if (typeSerializer != null) jgen.writeStringField(GraphSONTokens.VALUETYPE, "janusgraph:Geoshape");
+            jgen.writeFieldName(GraphSONTokens.VALUEPROP);
+            GraphSONUtil.writeStartObject(geoshape, jgen, typeSerializer);
+            final Map json = mapReader.readValue(toGeoJson(geoshape));
+            if (geoshape.getType() == Type.POINT) {
+                final double[] coords = ((List<Number>) json.get(FIELD_COORDINATES)).stream().mapToDouble(i -> i.doubleValue()).toArray();
+                GraphSONUtil.writeWithType(FIELD_COORDINATES, coords, jgen, serializerProvider, typeSerializer);
+            } else {
+                GraphSONUtil.writeWithType(FIELD_LABEL, json, jgen, serializerProvider, typeSerializer);
+            }
+            GraphSONUtil.writeEndObject(geoshape, jgen, typeSerializer);
+            jgen.writeEndObject();
+        }
+
+        public static String toGeoJson(Geoshape geoshape) {
+            return HELPER.getGeojsonWriter().toString(geoshape.shape);
+        }
+
+    }
+
+    /**
+     * Geoshape deserializer for GraphSON 2.0 supporting reading from GeoJSON (http://geojson.org/).
+     */
+    public static class GeoshapeGsonDeserializerV2d0 extends AbstractObjectDeserializer<Geoshape> {
+
+        public GeoshapeGsonDeserializerV2d0() {
+            super(Geoshape.class);
+        }
+
+        @Override
+        public Geoshape createObject(Map<String, Object> data) {
+            final Geoshape shape;
+            if (data.containsKey(FIELD_COORDINATES) && data.get(FIELD_COORDINATES) instanceof List) {
+                final List<Number> coordinates = (List<Number>) data.get(FIELD_COORDINATES);
+                if (coordinates.size() < 2) throw new RuntimeException("Expecting two coordinates when reading point");
+                shape = Geoshape.point(coordinates.get(1).doubleValue(), coordinates.get(0).doubleValue());
+            } else {
+                try {
+                    final String json = mapWriter.writeValueAsString(data.get("geometry"));
+                    shape = new Geoshape(HELPER.getGeojsonReader().read(new StringReader(json)));
+                } catch (IOException | ParseException e) {
+                    throw new RuntimeException("I/O exception reading geoshape", e);
+                }
+            }
+            return shape;
         }
     }
 
