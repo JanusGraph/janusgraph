@@ -15,14 +15,22 @@
 package org.janusgraph.diskstorage.hbase;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
+import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.Table;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.TableNotDisabledException;
 import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.client.Admin;
 
@@ -37,6 +45,13 @@ public class HBaseAdmin1_0 implements AdminMask
     {
         this.adm = adm;
     }
+
+    /**
+     * Delete all rows from the given table. This method is intended only for development and testing use.
+     * @param tableString
+     * @param timestamp
+     * @throws IOException
+     */
     @Override
     public void clearTable(String tableString, long timestamp) throws IOException
     {
@@ -47,21 +62,26 @@ public class HBaseAdmin1_0 implements AdminMask
             return;
         }
 
-        if (!adm.isTableDisabled(tableName))
-            adm.disableTable(tableName);
+        // Unfortunately, linear scanning and deleting rows is faster in HBase when running integration tests than
+        // disabling and deleting/truncating tables.
+        final Scan scan = new Scan();
+        scan.setCacheBlocks(false);
+        scan.setCaching(2000);
+        scan.setTimeRange(0, Long.MAX_VALUE);
+        scan.setMaxVersions(1);
 
-        if (!adm.isTableDisabled(tableName))
-            throw new RuntimeException("Unable to disable table " + tableName);
-
-        // This API call appears to both truncate and reenable the table.
-        log.info("Truncating table {}", tableName);
-        adm.truncateTable(tableName, true /* preserve splits */);
-
-        try {
-            adm.enableTable(tableName);
-        } catch (TableNotDisabledException e) {
-            // This triggers seemingly every time in testing with 1.0.2.
-            log.debug("Table automatically reenabled by truncation: {}", tableName, e);
+        try (final Table table = adm.getConnection().getTable(tableName);
+             final ResultScanner scanner = table.getScanner(scan)) {
+            final Iterator<Result> iterator = scanner.iterator();
+            final int batchSize = 1000;
+            final List<Delete> deleteList = new ArrayList<>();
+            while (iterator.hasNext()) {
+                deleteList.add(new Delete(iterator.next().getRow(), timestamp));
+                if (!iterator.hasNext() || deleteList.size() == batchSize) {
+                    table.delete(deleteList);
+                    deleteList.clear();
+                }
+            }
         }
     }
 

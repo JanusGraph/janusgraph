@@ -15,6 +15,9 @@
 package org.janusgraph.diskstorage.hbase;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +45,12 @@ public class HBaseAdmin0_98 implements AdminMask
         this.adm = adm;
     }
 
+    /**
+     * Delete all rows from the given table. This method is intended only for development and testing use.
+     * @param tableName
+     * @param timestamp
+     * @throws IOException
+     */
     @Override
     public void clearTable(String tableName, long timestamp) throws IOException
     {
@@ -50,48 +59,26 @@ public class HBaseAdmin0_98 implements AdminMask
             return;
         }
 
-//        long before = System.currentTimeMillis();
-//        try {
-//            adm.disableTable(tableName);
-//            adm.deleteTable(tableName);
-//        } catch (IOException e) {
-//            throw new PermanentBackendException(e);
-//        }
-//        ensureTableExists(tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME), 0);
-//        long after = System.currentTimeMillis();
-//        logger.debug("Dropped and recreated table {} in {} ms", tableName, after - before);
+        // Unfortunately, linear scanning and deleting rows is faster in HBase when running integration tests than
+        // disabling and deleting/truncating tables.
+        final Scan scan = new Scan();
+        scan.setCacheBlocks(false);
+        scan.setCaching(2000);
+        scan.setTimeRange(0, Long.MAX_VALUE);
+        scan.setMaxVersions(1);
 
-
-        // Unfortunately, linear scanning and deleting tables is faster in HBase < 1 when running integration tests than
-        // disabling and deleting tables.
-        HTable table = null;
-
-        try {
-            table = new HTable(adm.getConfiguration(), tableName);
-
-            Scan scan = new Scan();
-            scan.setBatch(100);
-            scan.setCacheBlocks(false);
-            scan.setCaching(2000);
-            scan.setTimeRange(0, Long.MAX_VALUE);
-            scan.setMaxVersions(1);
-
-            ResultScanner scanner = null;
-
-            try {
-                scanner = table.getScanner(scan);
-
-                for (Result res : scanner) {
-                    Delete d = new Delete(res.getRow());
-
-                    d.setTimestamp(timestamp);
-                    table.delete(d);
+        try (final HTable table = new HTable(adm.getConfiguration(), tableName);
+             final ResultScanner scanner = table.getScanner(scan)) {
+            final Iterator<Result> iterator = scanner.iterator();
+            final int batchSize = 1000;
+            final List<Delete> deleteList = new ArrayList<>();
+            while (iterator.hasNext())  {
+                deleteList.add(new Delete(iterator.next().getRow(), timestamp));
+                if (!iterator.hasNext() || deleteList.size() == batchSize) {
+                    table.delete(deleteList);
+                    deleteList.clear();
                 }
-            } finally {
-                IOUtils.closeQuietly(scanner);
             }
-        } finally {
-            IOUtils.closeQuietly(table);
         }
     }
 
