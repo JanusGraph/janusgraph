@@ -78,3 +78,7 @@ The following users have deployed JanusGraph in production.
 * [G DATA](https://gdatasoftware.com)
 * [Seeq](https://seeq.com)
 * [Uber](https://uber.com)
+
+The following companies offer JanusGraph hosted as-a-service:
+
+* [IBM](https://www.compose.com/databases/janusgraph)
