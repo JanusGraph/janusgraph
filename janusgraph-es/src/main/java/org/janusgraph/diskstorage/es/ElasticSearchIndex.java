@@ -32,6 +32,7 @@ import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.attribute.Text;
 import org.janusgraph.core.schema.Mapping;
+import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransaction;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
@@ -181,6 +182,8 @@ public class ElasticSearchIndex implements IndexProvider {
         mapWriter = mapper.writerWithView(Map.class);
     }
 
+    private static Parameter[] NULL_PARAMETERS = null;
+    
     private final AbstractESCompat compat;
     private final ElasticSearchClient client;
     private final String indexName;
@@ -877,7 +880,7 @@ public class ElasticSearchIndex implements IndexProvider {
 
         ElasticSearchResponse response;
         try {
-            response = client.search(getIndexStoreName(query.getStore()), useMultitypeIndex ? query.getStore() : null, compat.createRequestBody(sr));
+            response = client.search(getIndexStoreName(query.getStore()), useMultitypeIndex ? query.getStore() : null, compat.createRequestBody(sr, NULL_PARAMETERS));
         } catch (IOException e) {
             throw new PermanentBackendException(e);
         }
@@ -930,7 +933,7 @@ public class ElasticSearchIndex implements IndexProvider {
 
         ElasticSearchResponse response;
         try {
-            response = client.search(getIndexStoreName(query.getStore()), useMultitypeIndex ? query.getStore() : null, compat.createRequestBody(sr));
+            response = client.search(getIndexStoreName(query.getStore()), useMultitypeIndex ? query.getStore() : null, compat.createRequestBody(sr, query.getParameters()));
         } catch (IOException e) {
             throw new PermanentBackendException(e);
         }
