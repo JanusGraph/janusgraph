@@ -1402,7 +1402,7 @@ public class GraphDatabaseConfiguration {
                         throw new JanusGraphException(String.format(INCOMPATIBLE_VERSION_EXCEPTION, version, JanusGraphConstants.VERSION));
                     }
                 } catch (IllegalStateException ise) {
-                    checkBackwardCompatibilityWithTitan(globalWrite);
+                    checkBackwardCompatibilityWithTitan(globalWrite, localbc, kcvsConfig, overwrite);
                 }
 
                 final boolean managedOverridesAllowed;
@@ -1425,6 +1425,12 @@ public class GraphDatabaseConfiguration {
 
                     // Get the storage backend's setting and compare with localValue
                     Object storeValue = globalWrite.get(opt, pid.umbrellaElements);
+
+                    // Check if the value is to be overwritten
+                    if (overwrite.has(opt, pid.umbrellaElements))
+                    {
+                    	storeValue = overwrite.get(opt, pid.umbrellaElements);
+                    }
 
                     // Most validation predicate impls disallow null, but we can't assume that here
                     final boolean match;
@@ -1493,11 +1499,26 @@ public class GraphDatabaseConfiguration {
         preLoadConfiguration();
     }
 
-    private void checkBackwardCompatibilityWithTitan(ModifiableConfiguration globalWrite) {
+    private void checkBackwardCompatibilityWithTitan(ModifiableConfiguration globalWrite, BasicConfiguration localbc, KCVSConfiguration kcvsConfig, ModifiableConfiguration overwrite) {
         String version = globalWrite.get(TITAN_COMPATIBLE_VERSIONS);
         Preconditions.checkArgument(version!=null,"JanusGraph version nor Titan compatibility have not been initialized");
         if (!JanusGraphConstants.TITAN_COMPATIBLE_VERSIONS.contains(version)) {
             throw new JanusGraphException(String.format(INCOMPATIBLE_VERSION_EXCEPTION, version, JanusGraphConstants.VERSION));
+        }
+
+        // When connection to a store created by Titan the ID store name will not be in the
+        // global configuration. To ensure compatibility override the default to titan_ids.
+        boolean localTitanConfigured = localbc.get(TITAN_COMPATIBLE_VERSIONS) != null;
+
+        if (localTitanConfigured == true) {
+            boolean usingTitanIdStore = JanusGraphConstants.TITAN_ID_STORE_NAME.equals(localbc.get(IDS_STORE_NAME));
+            boolean existingKeyStore = kcvsConfig.get(IDS_STORE_NAME.getName(), IDS_STORE_NAME.getDatatype()) != null;
+
+        	Preconditions.checkArgument(usingTitanIdStore,"ID store for Titan compatibility has not been initialized to: " + JanusGraphConstants.TITAN_ID_STORE_NAME);
+            if (existingKeyStore == false) {
+                log.info("Setting {} to {} for Titan compatibility", IDS_STORE_NAME.getName(), JanusGraphConstants.TITAN_ID_STORE_NAME);
+                overwrite.set(IDS_STORE_NAME, JanusGraphConstants.TITAN_ID_STORE_NAME);
+            }
         }
     }
 
