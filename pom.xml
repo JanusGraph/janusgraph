@@ -147,15 +147,6 @@
         </repository>
         <!-- the repositories below are included here for `mvn project-info-reports:dependencies` -->
         <repository>
-            <!-- for com.github.jeremyh:jBCrypt:jar -->
-            <id>jitpack.io</id>
-            <name>JitPack Package Repository</name>
-            <url>https://jitpack.io</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
             <!-- for com.sleepycat:je:jar -->
             <id>oracleReleases</id>
             <name>Oracle Released Java Packages</name>
