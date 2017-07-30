@@ -63,12 +63,11 @@ public class JanusGraphConstants {
         String packageName = p.getName();
         Preconditions.checkNotNull(packageName, "Unable to get name of package containing " + JanusGraphConstants.class);
         String resourceName = packageName.replace('.', '/') + "/" + JANUSGRAPH_PROPERTIES_FILE;
-        InputStream is = JanusGraphFactory.class.getClassLoader().getResourceAsStream(resourceName);
-        Preconditions.checkNotNull(is, "Unable to locate classpath resource " + resourceName + " containing JanusGraph version");
 
         Properties props = new Properties();
 
-        try {
+        try (InputStream is = JanusGraphFactory.class.getClassLoader().getResourceAsStream(resourceName)) {
+            Preconditions.checkNotNull(is, "Unable to locate classpath resource " + resourceName + " containing JanusGraph version");
             props.load(is);
         } catch (IOException e) {
             throw new RuntimeException("Failed to load properties from " + resourceName, e);

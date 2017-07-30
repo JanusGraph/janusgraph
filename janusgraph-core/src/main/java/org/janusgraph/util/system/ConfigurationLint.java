@@ -52,9 +52,9 @@ public class ConfigurationLint {
 
     public static Status validate(String filename) throws IOException {
         Properties p = new Properties();
-        FileInputStream fis = new FileInputStream(filename);
-        p.load(fis);
-        fis.close();
+        try(FileInputStream fis = new FileInputStream(filename)) {
+            p.load(fis);
+        }
 
         final PropertiesConfiguration apc;
         try {
