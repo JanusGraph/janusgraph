@@ -327,7 +327,7 @@ public class ManagementSystem implements JanusGraphManagement {
         for (RelationType key : sortKeys) Preconditions.checkArgument(key != null, "Keys cannot be null");
         Preconditions.checkArgument(!(type instanceof EdgeLabel) || !((EdgeLabel) type).isUnidirected() || direction == Direction.OUT,
                 "Can only index uni-directed labels in the out-direction: %s", type);
-        Preconditions.checkArgument(!((InternalRelationType) type).multiplicity().isConstrained(direction),
+        Preconditions.checkArgument(!((InternalRelationType) type).multiplicity().isUnique(direction),
                 "The relation type [%s] has a multiplicity or cardinality constraint in direction [%s] and can therefore not be indexed", type, direction);
 
         String composedName = composeRelationTypeIndexName(type, name);
