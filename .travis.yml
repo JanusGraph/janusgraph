@@ -102,6 +102,21 @@ script:
           mvn clean verify --projects janusgraph-${MODULE} ${ARGS};
     fi
 
+before_deploy:
+  - mvn package -DskipTests -Dgpg.skip=true -Pjanusgraph-release
+  - export JANUSGRAPH_DIST_ZIP="$(ls janusgraph-dist/janusgraph-dist-hadoop-2/target/janusgraph-*-hadoop2.zip)"
+  - echo "Deploying $JANUSGRAPH_DIST_ZIP to GitHub releases"
+
+deploy:
+  provider: releases
+  api_key:
+    secure: NpXWvr1kuKs+nv5xsQWQsEC1ulhLE5Cf2siO4NXHgOwRiPqKePx5WPH1EloBtf+dopq7sogMuQQf+5t3/KGhRUFvbEm8oEMylzfuz7L615i53GoQcaDhDUDd5maF+bYDKh7y9dyfSgRHxuVMItFQAhJpUtBFGBwO9lsqJQaIk4ar8RUW0vSlYriigZJdewapH3GoawfXXrbbo+nFjwadLTpBBaD4EMBcvPEPhpX8wMnjySAI/GXK3YlWEK4b8+Uh4cEcwByrzKxPIJaz4gcQTzfvA/9n6sh/39i/X+w4+ouG/ZeteSmFmVfxh1yY5CiNKpdC/b5c96iRHg81Umo7craT9D4ve6i1AF7KbWZOnRjvKg36lIIu1tPOwPstgymzbivU5NUFc/EkW0h3sHCHWHdl8mASNfagh723/qWgMM0KvMPxjg2uf2LtdYUoQ3hmTpZyVqYaCiLJxp5pehYEWfg3ax1GewXTPFTzqHWuohFO60fGf7Cfy9oygN3sF0dC+N0aCk9TOHlPEhmKFylZ3f2W7QkuGMNeFSdme9g5BUgBpPlWpCTKX9rfror8VEAr143RlOGCneR43flMUYpjLWbUAKEY+I5jQnuSiSOlmXLnlMR7DSqVZudjzvV+64lMiHtUKhR2PwofNQ2/B/GvbSYQKi1NVn/n0pa3yRgPZQ4=
+  file_glob: true
+  skip_cleanup: true
+  file: "$JANUSGRAPH_DIST_ZIP"
+  on:
+    tags: true
+
 # Syntax and more info: https://docs.travis-ci.com/user/notifications
 notifications:
   email:
