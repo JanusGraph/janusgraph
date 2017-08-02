@@ -14,25 +14,30 @@
 
 package org.janusgraph.diskstorage.es.compat;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.attribute.Geo;
-import org.janusgraph.core.schema.Mapping;
-import org.janusgraph.diskstorage.es.ElasticSearchRequest;
-import org.janusgraph.diskstorage.indexing.IndexFeatures;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_ANALYZER;
 import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_INLINE_KEY;
 import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_LANG_KEY;
 import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_SCRIPT_KEY;
 import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_TYPE_KEY;
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_ANALYZER;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.attribute.Geo;
+import org.janusgraph.core.schema.Mapping;
+import org.janusgraph.core.schema.Parameter;
+import org.janusgraph.diskstorage.es.ElasticSearchRequest;
+import org.janusgraph.diskstorage.indexing.IndexFeatures;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Base class for building Elasticsearch mapping and query objects.
@@ -167,25 +172,18 @@ public abstract class AbstractESCompat {
         return boolFilter(query);
     }
 
-    public Map<String,Object> createRequestBody(ElasticSearchRequest request) {
+    public Map<String,Object> createRequestBody(ElasticSearchRequest request, Parameter[] parameters) {
         final Map<String,Object> requestBody = new HashMap<>();
 
-        if (request.getSize() != null) {
-            requestBody.put("size",  request.getSize());
-        }
-
-        if (request.getFrom() != null) {
-            requestBody.put("from", request.getFrom());
-        }
+        Optional.ofNullable(request.getSize()).ifPresent(parm -> requestBody.put("size", parm));
+        Optional.ofNullable(request.getFrom()).ifPresent(parm -> requestBody.put("from", parm));
 
         if (!request.getSorts().isEmpty()) {
             requestBody.put("sort", request.getSorts());
         }
-
-        if (request.getQuery() != null) {
-            requestBody.put("query", request.getQuery());
-        }
-
+        
+        Optional.ofNullable(request.getQuery()).ifPresent(parm -> requestBody.put("query", parm));
+        Optional.ofNullable(parameters).ifPresent(parms -> Arrays.stream(parms).forEachOrdered(parm -> requestBody.put(parm.key(), parm.value())));
         return requestBody;
     }
 

@@ -43,6 +43,7 @@ import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.util.ManagementUtil;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
 import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
@@ -72,8 +73,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -986,6 +991,61 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertEquals(total, (long) graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).offset(numV).propertyTotals());
         //Test name mapping
         assertCount(numV / strs.length * 2, graph.indexQuery(PINDEX, "text:ducks").properties());
+    }
+
+    /**
+     * Tests query parameters with raw indexQuery
+     */
+    @Test
+    public void testRawQueriesWithParameters() throws Exception {
+        if (!supportsLuceneStyleQueries()) return;
+        Parameter asc_sort_p = null;
+        Parameter desc_sort_p = null;
+
+        // ElasticSearch and Solr have different formats for sort parameters
+        String backend = readConfig.get(INDEX_BACKEND, INDEX);
+        if ("elasticsearch".equals(backend)) {
+            Map<String,String> sortAsc = new HashMap<String,String>();
+            sortAsc.put("_score", "asc");
+            asc_sort_p = new Parameter("sort",Arrays.asList(sortAsc));
+            Map<String,String> sortDesc = new HashMap<String,String>();
+            sortDesc.put("_score", "desc");
+            desc_sort_p = new Parameter("sort",Arrays.asList(sortDesc));
+        } else if ("solr".equals(backend)) {
+            asc_sort_p = new Parameter("sort",new String[]{"score asc"});
+            desc_sort_p = new Parameter("sort",new String[]{"score desc"});
+        } else if ("lucene".equals(backend)) {
+            return; // Ignore for lucene
+        } else {
+            Assert.fail("Unknown index backend:" + backend);
+        }
+        
+        final PropertyKey field1Key = mgmt.makePropertyKey("field1").dataType(String.class).make();
+        mgmt.buildIndex("store1", Vertex.class).addKey(field1Key).buildMixedIndex(INDEX);
+        mgmt.commit();
+
+        JanusGraphVertex v1 = tx.addVertex();
+        JanusGraphVertex v2 = tx.addVertex();
+        JanusGraphVertex v3 = tx.addVertex();
+
+        v1.property("field1", "Hello Hello Hello Hello Hello Hello Hello Hello");
+        v2.property("field1", "Hello blue and yellow meet green");
+        v3.property("field1", "Hello");
+
+        tx.commit();
+
+        Thread.sleep(5000);
+
+        List<JanusGraphVertex> vertices = new ArrayList<JanusGraphVertex>();
+        for (JanusGraphIndexQuery.Result<JanusGraphVertex> r : graph.indexQuery("store1", "v.field1:(Hello)").addParameter(asc_sort_p).vertices()) {
+            vertices.add(r.getElement());
+        }
+        assertNotEmpty(vertices);
+        int idx=vertices.size()-1;
+        // Verify this query returns the items in reverse order.
+        for (JanusGraphIndexQuery.Result<JanusGraphVertex> r : graph.indexQuery("store1", "v.field1:(Hello)").addParameter(desc_sort_p).vertices()) {
+            assertEquals(vertices.get(idx--), r.getElement());
+        }
     }
 
     @Test
