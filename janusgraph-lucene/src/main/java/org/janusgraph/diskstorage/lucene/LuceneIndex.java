@@ -619,6 +619,7 @@ public class LuceneIndex implements IndexProvider {
         Query q;
         try {
             q = new QueryParser("_all",analyzer).parse(query.getQuery());
+            // Lucene query parser does not take additional parameters so any parameters on the RawQuery are ignored. 
         } catch (ParseException e) {
             throw new PermanentBackendException("Could not parse raw query: "+query.getQuery(),e);
         }
