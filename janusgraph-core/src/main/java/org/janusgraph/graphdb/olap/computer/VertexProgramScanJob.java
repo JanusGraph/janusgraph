@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.olap.computer;
 
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.ReadOnlyTransactionException;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
@@ -103,7 +104,12 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
             }
         } else {
             v.setPropertyMixing(vh);
-            vertexProgram.execute(v, vh, memory);
+            try {
+                vertexProgram.execute(v, vh, memory);
+            } catch (ReadOnlyTransactionException e) {
+                // Ignore read-only transaction errors in FulgoraGraphComputer. In testing these errors are associated
+                // with cleanup of TraversalVertexProgram.HALTED_TRAVERSALS properties which can safely remain in graph.
+            }
         }
         vh.setInExecute(false);
     }
