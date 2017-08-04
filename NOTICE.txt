@@ -28,6 +28,7 @@ It also includes software from other open source projects including, but not lim
  * Apache Solr [http://lucene.apache.org/solr/]
  * Apache TinkerPop [http://tinkerpop.apache.org/]
  * Astyanax [https://github.com/Netflix/astyanax]
+ * DataStax Driver for Apache Cassandra  [https://github.com/datastax/java-driver]
  * EasyMock [http://easymock.org/]
  * Elasticsearch [https://www.elastic.co/]
  * Google Guava [https://github.com/google/guava]
