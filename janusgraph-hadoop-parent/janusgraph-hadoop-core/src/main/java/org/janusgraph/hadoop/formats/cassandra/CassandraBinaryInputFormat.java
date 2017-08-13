@@ -51,7 +51,7 @@ public class CassandraBinaryInputFormat extends AbstractBinaryInputFormat {
 
     private final ColumnFamilyInputFormat columnFamilyInputFormat = new ColumnFamilyInputFormat();
     private ColumnFamilyRecordReader columnFamilyRecordReader;
-    private RecordReader<StaticBuffer, Iterable<Entry>> janusgraphRecordReader;
+    RecordReader<StaticBuffer, Iterable<Entry>> janusgraphRecordReader;
 
     public RecordReader<StaticBuffer, Iterable<Entry>> getRecordReader() {
         return janusgraphRecordReader;
@@ -66,9 +66,9 @@ public class CassandraBinaryInputFormat extends AbstractBinaryInputFormat {
     public RecordReader<StaticBuffer, Iterable<Entry>> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext)
             throws IOException, InterruptedException {
         columnFamilyRecordReader =
-                (ColumnFamilyRecordReader)columnFamilyInputFormat.createRecordReader(inputSplit, taskAttemptContext);
+            (ColumnFamilyRecordReader) columnFamilyInputFormat.createRecordReader(inputSplit, taskAttemptContext);
         janusgraphRecordReader =
-                new CassandraBinaryRecordReader(columnFamilyRecordReader);
+            new CassandraBinaryRecordReader(columnFamilyRecordReader);
         return janusgraphRecordReader;
     }
 
