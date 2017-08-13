@@ -577,7 +577,9 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     private String getDeletionScript(KeyInformation.IndexRetriever informations, String storename, IndexMutation mutation) throws PermanentBackendException {
-        StringBuilder script = new StringBuilder();
+        final StringBuilder script = new StringBuilder();
+        final String INDEX_NAME = "index";
+        int i = 0;
         for (IndexEntry deletion : mutation.getDeletions()) {
             KeyInformation keyInformation = informations.get(storename).get(deletion.field);
 
@@ -591,12 +593,13 @@ public class ElasticSearchIndex implements IndexProvider {
                 case SET:
                 case LIST:
                     String jsValue = convertToJsType(deletion.value, compat.scriptLang(), Mapping.getMapping(keyInformation));
-                    script.append("def index = ctx._source[\"").append(deletion.field).append("\"].indexOf(").append(jsValue).append("); ctx._source[\"").append(deletion.field).append("\"].remove(index);");
+                    String index = INDEX_NAME + i++;
+                    script.append("def ").append(index).append(" = ctx._source[\"").append(deletion.field).append("\"].indexOf(").append(jsValue).append("); ctx._source[\"").append(deletion.field).append("\"].remove(").append(index).append(");");
                     if (hasDualStringMapping(informations.get(storename, deletion.field))) {
-                        script.append("def index = ctx._source[\"").append(getDualMappingName(deletion.field)).append("\"].indexOf(").append(jsValue).append("); ctx._source[\"").append(getDualMappingName(deletion.field)).append("\"].remove(index);");
+                        index = INDEX_NAME + i++;
+                        script.append("def ").append(index).append(" = ctx._source[\"").append(getDualMappingName(deletion.field)).append("\"].indexOf(").append(jsValue).append("); ctx._source[\"").append(getDualMappingName(deletion.field)).append("\"].remove(").append(index).append(");");
                     }
                     break;
-
             }
         }
         return script.toString();
