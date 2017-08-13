@@ -57,6 +57,7 @@ import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.testcategory.BrittleTests;
 import org.janusgraph.testutil.TestGraphConfigs;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -1810,7 +1811,22 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             assertEquals(v1, getOnlyElement(graph.query().has(property, Geo.WITHIN, Geoshape.circle(2.0, 2.0, 0.1)).vertices()));
         }
 
-
+        
+        // Test traversal property drop Issue #408
+        GraphTraversalSource g = graph.traversal();
+        g.V().drop().iterate();
+        clopen(); // Flush the index
+        g = graph.traversal();
+        v1 = g.addV().property(property, value1).property(property, value2).next();
+        Vertex v2 = g.addV().property(property, value1).property(property, value2).next();
+        clopen(); // Flush the index
+        g = graph.traversal();
+        assertEquals(2, g.V().has(property, value1).toList().size());
+        g.V().properties().drop().iterate();
+        clopen(); // Flush the index
+        g = graph.traversal();
+        assertFalse(g.V().has(property, value1).hasNext());
+        assertFalse(g.V().has(property, value2).hasNext());
     }
 
     private void testGeo(int i, int origNumV, int numV, String geoPointProperty, String geoShapeProperty) {
