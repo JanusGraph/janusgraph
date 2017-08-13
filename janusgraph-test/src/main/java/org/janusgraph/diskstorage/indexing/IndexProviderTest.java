@@ -35,6 +35,10 @@ import org.janusgraph.testutil.RandomGenerator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.ShapeCollection;
+import org.locationtech.spatial4j.shape.ShapeFactory;
+import org.locationtech.spatial4j.shape.impl.PointImpl;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -432,8 +436,18 @@ public abstract class IndexProviderTest {
             add(store, "doc3", ImmutableMultimap.of(TIME, 2000, TEXT, "Bob owns the world"), false);
             remove(store, "doc1", ImmutableMultimap.of(TIME, (Object) 1001), false);
             add(store, "doc1", ImmutableMultimap.of(TIME, 1005, WEIGHT, 11.1, LOCATION, Geoshape.point(-48.0, 0.0), BOUNDARY, Geoshape.circle(-48.0, 0.0, 1.0)), false);
-
-
+            Geoshape multiPoint = Geoshape.geoshape(Geoshape.getShapeFactory().multiPoint().pointXY(60.0, 60.0).pointXY(120.0, 60.0).build());
+            add(store, "doc5", getDocument("A Full Yes", -100, -11.2, Geoshape.point(48.0, 8.0), multiPoint, Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11"), Instant.ofEpochSecond(400)), true);
+            Geoshape multiLine = Geoshape.geoshape(Geoshape.getShapeFactory().multiLineString().add(Geoshape.getShapeFactory().lineString().pointXY(59.0, 60.0).pointXY(61.0, 60.0))
+                    .add(Geoshape.getShapeFactory().lineString().pointXY(119.0, 60.0).pointXY(121.0, 60.0)).build());
+            add(store, "doc6", getDocument("A Full Yes", -100, -11.2, Geoshape.point(48.0, 8.0), multiLine, Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11"), Instant.ofEpochSecond(400)), true);
+            Geoshape multiPolygon =  Geoshape.geoshape(Geoshape.getShapeFactory().multiPolygon()
+                    .add(Geoshape.getShapeFactory().polygon().pointXY(59.0, 59.0).pointXY(61.0, 59.0).pointXY(61.0, 61.0).pointXY(59.0, 61.0).pointXY(59.0, 59.0))
+                    .add(Geoshape.getShapeFactory().polygon().pointXY(119.0, 59.0).pointXY(121.0, 59.0).pointXY(121.0, 61.0).pointXY(119.0, 61.0).pointXY(119.0, 59.0)).build());
+            add(store, "doc7", getDocument("A Full Yes", -100, -11.2, Geoshape.point(48.0, 8.0), multiPolygon, Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11"), Instant.ofEpochSecond(400)), true);
+            Geoshape geometryCollection =  Geoshape.geoshape(Geoshape.getGeometryCollectionBuilder().add(Geoshape.getShapeFactory().pointXY(60.0, 60.0))
+                    .add(Geoshape.getShapeFactory().lineString().pointXY(119.0, 60.0).pointXY(121.0, 60.0).build()).build());
+            add(store, "doc8", getDocument("A Full Yes", -100, -11.2, Geoshape.point(48.0, 8.0), geometryCollection, Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11"), Instant.ofEpochSecond(400)), true);
         }
 
         clopen();
@@ -483,7 +497,11 @@ public abstract class IndexProviderTest {
             assertTrue(tx.query(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.EQUAL, Instant.ofEpochSecond(2)))).isEmpty());
             assertEquals("doc4", tx.query(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.EQUAL, Instant.ofEpochSecond(4)))).get(0));
 
+            result = tx.query(new IndexQuery(store, PredicateCondition.of(BOUNDARY, Geo.INTERSECT, Geoshape.circle(59, 59, 200.00))));
+            assertEquals(ImmutableSet.of("doc5", "doc6","doc7", "doc8"), ImmutableSet.copyOf(result));
 
+            result = tx.query(new IndexQuery(store, PredicateCondition.of(BOUNDARY, Geo.INTERSECT, Geoshape.circle(59, 119, 200.00))));
+            assertEquals(ImmutableSet.of("doc5", "doc6", "doc7", "doc8"), ImmutableSet.copyOf(result));
         }
 
     }

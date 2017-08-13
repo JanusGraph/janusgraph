@@ -91,12 +91,12 @@ Additional data types will be supported in the future.
 
 [[geoshape]]
 === Geoshape Data Type
-The Geoshape data type supports representing a point, circle, box, line, polygon, multi-point, multi-line and multi-polygon. Index backends currently support indexing points, circles, boxes, lines and polygons. Indexing multi-point, multi-line and multi-polygon properties has not been tested.
+The Geoshape data type supports representing a point, circle, box, line, polygon, multi-point, multi-line and multi-polygon. Index backends currently support indexing points, circles, boxes, lines, polygons, multi-point, multi-line, multi-polygon and geometry collection.
 Geospatial index lookups are only supported via mixed indexes.
 
 .Note:
 [NOTE]
-The Java Topology Suite (JTS) is currently required to use line, polygon, multi-point, multi-line and multi-polygon geometries. JTS is not included in JanusGraph distributions by default due to its LGPL license. Users must download the JTS JAR file separately and include it in the classpath when full geometry support is required.
+The Java Topology Suite (JTS) is currently required to use polygon, multi-polygon and geometry collection with polygons. JTS is not included in JanusGraph distributions by default due to its LGPL license. Users must download the JTS JAR file separately and include it in the classpath when full geometry support is required.
 
 To construct a Geoshape use the following methods:
 
@@ -107,8 +107,27 @@ Geoshape.point(37.97, 23.72)
 Geoshape.circle(37.97, 23.72, 50)
 //SW lat, SW lng, NE lat, NE lng
 Geoshape.box(37.97, 23.72, 38.97, 24.72)
-//WKT (requires JTS for polygon, linestring and multi-point/line/polygon geometries)
+//WKT (requires JTS for polygon geometries)
 Geoshape.fromWkt("POLYGON ((35.4 48.9, 35.6 48.9, 35.6 49.1, 35.4 49.1, 35.4 48.9))")
+//MultiPoint
+Geoshape.geoshape(Geoshape.getShapeFactory().multiPoint().pointXY(60.0, 60.0).pointXY(120.0, 60.0)
+  .build())
+//MultiLine
+Geoshape.geoshape(Geoshape.getShapeFactory().multiLineString()
+  .add(Geoshape.getShapeFactory().lineString().pointXY(59.0, 60.0).pointXY(61.0, 60.0))
+  .add(Geoshape.getShapeFactory().lineString().pointXY(119.0, 60.0).pointXY(121.0, 60.0)).build())
+//MultiPolygon (requires JTS)
+Geoshape.geoshape(Geoshape.getShapeFactory().multiPolygon()
+  .add(Geoshape.getShapeFactory().polygon().pointXY(59.0, 59.0).pointXY(61.0, 59.0)
+    .pointXY(61.0, 61.0).pointXY(59.0, 61.0).pointXY(59.0, 59.0))
+  .add(Geoshape.getShapeFactory().polygon().pointXY(119.0, 59.0).pointXY(121.0, 59.0)
+    .pointXY(121.0, 61.0).pointXY(119.0, 61.0).pointXY(119.0, 59.0)).build())
+//GeometryCollection (may requires JTS)
+Geoshape.geoshape(Geoshape.getGeometryCollectionBuilder()
+  .add(Geoshape.getShapeFactory().pointXY(60.0, 60.0))
+  .add(Geoshape.getShapeFactory().lineString().pointXY(119.0, 60.0).pointXY(121.0, 60.0).build())
+  .add(Geoshape.getShapeFactory().polygon().pointXY(119.0, 59.0).pointXY(121.0, 59.0)
+    .pointXY(121.0, 61.0).pointXY(119.0, 61.0).pointXY(119.0, 59.0)).build())
 
 In addition, when importing a graph via GraphSON the geometry may be represented by GeoJSON:
 [source, java]

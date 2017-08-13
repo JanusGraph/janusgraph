@@ -23,6 +23,9 @@ import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Circle;
 import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.ShapeFactory;
+import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
+import org.locationtech.spatial4j.shape.ShapeFactory.MultiShapeBuilder;
 import org.locationtech.spatial4j.shape.SpatialRelation;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectReader;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectWriter;
@@ -73,7 +76,6 @@ public class Geoshape {
     private static String FIELD_LABEL = "geometry";
     private static String FIELD_TYPE = "type";
     private static String FIELD_COORDINATES = "coordinates";
-    private static String FIELD_RADIUS = "radius";
 
     public static final GeoshapeHelper HELPER;
     static {
@@ -104,7 +106,8 @@ public class Geoshape {
         POLYGON("Polygon"),
         MULTIPOINT("MultiPoint"),
         MULTILINESTRING("MultiLineString"),
-        MULTIPOLYGON("MultiPolygon");
+        MULTIPOLYGON("MultiPolygon"),
+        GEOMETRYCOLLECTION("GeometryCollection");
 
         private final String gsonName;
 
@@ -275,8 +278,8 @@ public class Geoshape {
      * @return
      */
     public static final Geoshape point(final double latitude, final double longitude) {
-        Preconditions.checkArgument(isValidCoordinate(latitude,longitude),"Invalid coordinate provided");
-        return new Geoshape(HELPER.getContext().makePoint(longitude,  latitude));
+        Preconditions.checkArgument(isValidCoordinate(latitude, longitude), "Invalid coordinate provided");
+        return new Geoshape(getShapeFactory().pointXY(longitude, latitude));
     }
 
     /**
@@ -287,10 +290,9 @@ public class Geoshape {
      * @return
      */
     public static final Geoshape circle(final double latitude, final double longitude, final double radiusInKM) {
-        Preconditions.checkArgument(isValidCoordinate(latitude,longitude),"Invalid coordinate provided");
-        Preconditions.checkArgument(radiusInKM>0,"Invalid radius provided [%s]",radiusInKM);
-        double radius = DistanceUtils.dist2Degrees(radiusInKM, DistanceUtils.EARTH_MEAN_RADIUS_KM);
-        return new Geoshape(HELPER.getContext().makeCircle(longitude, latitude, radius));
+        Preconditions.checkArgument(isValidCoordinate(latitude, longitude), "Invalid coordinate provided");
+        Preconditions.checkArgument(radiusInKM > 0, "Invalid radius provided [%s]", radiusInKM);
+        return new Geoshape(getShapeFactory().circle(longitude, latitude, DistanceUtils.dist2Degrees(radiusInKM, DistanceUtils.EARTH_MEAN_RADIUS_KM)));
     }
 
     /**
@@ -303,9 +305,9 @@ public class Geoshape {
      */
     public static final Geoshape box(final double southWestLatitude, final double southWestLongitude,
                                      final double northEastLatitude, final double northEastLongitude) {
-        Preconditions.checkArgument(isValidCoordinate(southWestLatitude,southWestLongitude),"Invalid south-west coordinate provided");
-        Preconditions.checkArgument(isValidCoordinate(northEastLatitude,northEastLongitude),"Invalid north-east coordinate provided");
-        return new Geoshape(HELPER.getContext().makeRectangle(southWestLongitude, northEastLongitude, southWestLatitude, northEastLatitude));
+        Preconditions.checkArgument(isValidCoordinate(southWestLatitude, southWestLongitude), "Invalid south-west coordinate provided");
+        Preconditions.checkArgument(isValidCoordinate(northEastLatitude, northEastLongitude), "Invalid north-east coordinate provided");
+        return new Geoshape(getShapeFactory().rect(southWestLongitude, northEastLongitude, southWestLatitude, northEastLatitude));
     }
 
     /**
@@ -315,12 +317,12 @@ public class Geoshape {
      */
     public static final Geoshape line(List<double[]> coordinates) {
         Preconditions.checkArgument(coordinates.size() >= 2, "Too few coordinate pairs provided");
-        List<org.locationtech.spatial4j.shape.Point> points = new ArrayList<>();
+        final LineStringBuilder builder = getShapeFactory().lineString();
         for (double[] coordinate : coordinates) {
-            Preconditions.checkArgument(isValidCoordinate(coordinate[1],coordinate[0]),"Invalid coordinate provided");
-            points.add(HELPER.getContext().makePoint(coordinate[0],  coordinate[1]));
+            Preconditions.checkArgument(isValidCoordinate(coordinate[1], coordinate[0]), "Invalid coordinate provided");
+            builder.pointXY(coordinate[0], coordinate[1]);
         }
-        return new Geoshape(HELPER.getContext().makeLineString(points));
+        return new Geoshape(builder.build());
     }
 
     /**
@@ -365,6 +367,14 @@ public class Geoshape {
         return HELPER.getContext();
     }
 
+    public static final ShapeFactory getShapeFactory() {
+        return getSpatialContext().getShapeFactory();
+    }
+
+    public static final MultiShapeBuilder<Shape> getGeometryCollectionBuilder() {
+        return getShapeFactory().multiShape(Shape.class);
+    }
+
     /**
      * A single point representation. A point is identified by its coordinate on the earth sphere using the spherical
      * system of latitudes and longitudes.
@@ -401,7 +411,7 @@ public class Geoshape {
         }
 
         private org.locationtech.spatial4j.shape.Point getSpatial4jPoint() {
-            return HELPER.getContext().makePoint(longitude,latitude);
+            return getShapeFactory().pointXY(longitude, latitude);
         }
 
         /**
