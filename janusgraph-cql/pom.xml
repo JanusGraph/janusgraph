@@ -12,9 +12,7 @@
     <url>http://janusgraph.org</url>
 
     <properties>
-        <cassandra-driver.version>3.1.4</cassandra-driver.version>
         <vavr.version>0.9.0</vavr.version>
-
         <test.byteorderedpartitioner>byteorderedpartitioner</test.byteorderedpartitioner>
         <test.murmur>murmur</test.murmur>
         <test.murmur-ssl>murmur-ssl</test.murmur-ssl>

@@ -19,33 +19,21 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
-public class CassandraInputFormatIT extends AbstractInputFormatIT {
+public class Cassandra3InputFormatIT extends CassandraInputFormatIT {
 
     protected PropertiesConfiguration getGraphConfiguration() throws ConfigurationException, IOException {
-        final PropertiesConfiguration config = new PropertiesConfiguration("target/test-classes/cassandra-read.properties");
-        Path baseOutDir = Paths.get((String) config.getProperty("gremlin.hadoop.outputLocation"));
-        baseOutDir.toFile().mkdirs();
-        String outDir = Files.createTempDirectory(baseOutDir, null).toAbsolutePath().toString();
-        config.setProperty("gremlin.hadoop.outputLocation", outDir);
+        final PropertiesConfiguration config = super.getGraphConfiguration();
+        config.setProperty("gremlin.hadoop.graphInputFormat", "org.janusgraph.hadoop.formats.cassandra.Cassandra3InputFormat");
         return config;
-    }
-
-    protected Graph getGraph() throws ConfigurationException, IOException {
-        return GraphFactory.open(getGraphConfiguration());
     }
 
     @Override
     public WriteConfiguration getConfiguration() {
-        String className = getClass().getSimpleName();
-        ModifiableConfiguration mc = CassandraStorageSetup.getEmbeddedConfiguration(className);
+        String className = CassandraInputFormatIT.class.getSimpleName();
+        ModifiableConfiguration mc = CassandraStorageSetup.getCassandraThriftConfiguration(className);
         return mc.getConfiguration();
     }
 }
