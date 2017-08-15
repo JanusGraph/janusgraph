@@ -379,6 +379,7 @@ public class SerializerTest extends SerializerTestCommon {
     @Test
     public void testLegacyPointSerialization() {
         Geoshape geo = Geoshape.point(0.5, 2.5);
+        Geoshape geo2 = Geoshape.point(1.5, 3.5);
         DataOutput out = serialize.getDataOutput(128);
 
         int length = geo.size();
@@ -389,9 +390,22 @@ public class SerializerTest extends SerializerTestCommon {
                 out.putFloat((float) (i==0 ? geo.getPoint(j).getLatitude() : geo.getPoint(j).getLongitude()));
             }
         }
+        
+        // Add a second point to the same buffer
+        
+        length = geo2.size();
+        VariableLong.writePositive(out,length);
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < length; j++) {
+                Geoshape.Point point = geo2.getPoint(j);
+                out.putFloat((float) (i==0 ? geo2.getPoint(j).getLatitude() : geo2.getPoint(j).getLongitude()));
+            }
+        }
 
         ReadBuffer b = out.getStaticBuffer().asReadBuffer();
+        
         assertEquals(geo, serialize.readObjectNotNull(b, Geoshape.class));
+        assertEquals(geo2, serialize.readObjectNotNull(b, Geoshape.class));
     }
 
     private static class SerialEntry {
