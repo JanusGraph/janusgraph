@@ -20,3 +20,5 @@ include::serializer.txt[]
 include::hadoop.txt[]
 
 include::monitoring.txt[]
+
+include::migrating.txt[]

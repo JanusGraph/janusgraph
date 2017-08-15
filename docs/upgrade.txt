@@ -19,15 +19,7 @@ your code and configuration accordingly:
   duplicate a word, e.g., `TitanGraph` is simply `JanusGraph` rather than
   `JanusGraphGraph`
 
-*IMPORTANT* If you are pointing JanusGraph at an existing Titan database you will need to
-set the `ids.store-name` property to `titan_ids` in your JanusGraph properties file.
-Failure to do this could result in id allocation issues.
-See https://github.com/JanusGraph/janusgraph/issues/228[228] for more details.
-
-The BerkeleyDB version has been updated, and it contains changes to the file
-format stored on disk. This file format change is forward compatible with
-previous versions of BerkeleyDB, so existing graph data stored with Titan
-can be read in. However, once the data has been read in with the newer version
-of BerkeleyDB, those files can no longer be read by the older version. Users
-are encouraged to backup the BerkeleyDB storage directory before attempting to
-use it with the JanusGraph release.
+*IMPORTANT* If you are pointing JanusGraph at an existing Titan database you will
+need to set the `graph.titan-version` property. For more information on how to
+configure JanusGraph to read data which had previously been written by Titan
+refer to <<migrating-titan>>.
