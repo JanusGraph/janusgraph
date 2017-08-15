@@ -724,7 +724,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> IDS_STORE_NAME = new ConfigOption<>(IDS_NS, "store-name",
         "The name of the ID KCVStore. IDS_STORE_NAME is meant to be used only for backward compatibility with Titan, " +
             "and should not be used explicitly in normal operations or in new graphs.",
-        ConfigOption.Type.GLOBAL_OFFLINE, "janusgraph_ids");
+        ConfigOption.Type.GLOBAL_OFFLINE, JanusGraphConstants.JANUSGRAPH_ID_STORE_NAME);
 
 
     /**
@@ -1506,12 +1506,13 @@ public class GraphDatabaseConfiguration {
             throw new JanusGraphException(String.format(INCOMPATIBLE_VERSION_EXCEPTION, version, JanusGraphConstants.VERSION));
         }
 
-        // When connection to a store created by Titan the ID store name will not be in the
+        // When connecting to a store created by Titan the ID store name will not be in the
         // global configuration. To ensure compatibility override the default to titan_ids.
         boolean localTitanConfigured = localbc.get(TITAN_COMPATIBLE_VERSIONS) != null;
+        boolean localIdStoreIsDefault = JanusGraphConstants.JANUSGRAPH_ID_STORE_NAME.equals(localbc.get(IDS_STORE_NAME));
 
         if (localTitanConfigured == true) {
-            boolean usingTitanIdStore = JanusGraphConstants.TITAN_ID_STORE_NAME.equals(localbc.get(IDS_STORE_NAME));
+            boolean usingTitanIdStore = localIdStoreIsDefault == true || JanusGraphConstants.TITAN_ID_STORE_NAME.equals(localbc.get(IDS_STORE_NAME));
             boolean existingKeyStore = kcvsConfig.get(IDS_STORE_NAME.getName(), IDS_STORE_NAME.getDatatype()) != null;
 
         	Preconditions.checkArgument(usingTitanIdStore,"ID store for Titan compatibility has not been initialized to: " + JanusGraphConstants.TITAN_ID_STORE_NAME);
