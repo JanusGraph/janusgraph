@@ -23,10 +23,10 @@ some specific configuration options to connect.
 Bigtable connectivity relies on the `cloud-bigtable-client` library. This library is open-source and is
 https://github.com/GoogleCloudPlatform/cloud-bigtable-client[hosted on GitHub]. JanusGraph uses the HBase 1.0 API,
 so we require the lastest version of the
-http://mvnrepository.com/artifact/com.google.cloud.bigtable/bigtable-hbase-1.0/0.9.5.1[bigtable-hbase-1.0 artifact.]
+https://mvnrepository.com/artifact/com.google.cloud.bigtable/bigtable-hbase-1.x-hadoop/1.0.0-pre2[bigtable-hbase-1.x-hadoop artifact.]
 
 This library also uses the
-https://mvnrepository.com/artifact/io.netty/netty-tcnative-boringssl-static[netty-tcnative-boringssl-static] library
+https://mvnrepository.com/artifact/io.netty/netty-tcnative-boringssl-static/1.1.33.Fork26[netty-tcnative-boringssl-static] library
 to make secure connections to Bigtable. Use the version recommended by the cloud-bigtable-client library.
 
 These two dependencies must be on the classpath of the Java binary that connects to Bigtable. Maven dependencies could
@@ -36,14 +36,14 @@ be defined as:
 ....
 <dependency>
     <groupId>com.google.cloud.bigtable</groupId>
-    <artifactId>bigtable-hbase-1.0</artifactId>
-    <version>0.9.5.1</version>
+    <artifactId>bigtable-hbase-1.x-hadoop</artifactId>
+    <version>1.0.0-pre2</version>
 </dependency>
 
 <dependency>
    <groupId>io.netty</groupId>
    <artifactId>netty-tcnative-boringssl-static</artifactId>
-   <version>1.1.33.Fork19</version>
+   <version>1.1.33.Fork26</version>
 </dependency>
 ....
 
@@ -61,7 +61,7 @@ Example:
 [source,changelog]
 ....
 storage.backend=hbase
-storage.hbase.ext.hbase.client.connection.impl=com.google.cloud.bigtable.hbase1_0.BigtableConnection
+storage.hbase.ext.hbase.client.connection.impl=com.google.cloud.bigtable.hbase1_x.BigtableConnection
 storage.hbase.ext.google.bigtable.project.id=<Google Cloud Platform project id>
 storage.hbase.ext.google.bigtable.instance.id=<Bigtable instance id>
 ....
