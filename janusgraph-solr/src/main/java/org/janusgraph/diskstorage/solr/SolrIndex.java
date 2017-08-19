@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -104,7 +105,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 
 /**
  * @author Jared Holmberg (jholmberg@bericotechnoLogies.com), Pavel Yaskevich (pavel@thinkaurelius.com)
@@ -204,6 +204,8 @@ public class SolrIndex implements IndexProvider {
         .setDefaultStringMapping(Mapping.TEXT)
         .supportedStringMappings(Mapping.TEXT, Mapping.STRING)
         .supportsCardinality(Cardinality.SINGLE)
+        .supportsCardinality(Cardinality.LIST)
+        .supportsCardinality(Cardinality.SET)
         .supportsCustomAnalyzer()
         .supportsGeoContains()
         .build();
@@ -348,13 +350,13 @@ public class SolrIndex implements IndexProvider {
                             logger.trace("Deleting entire document {}", docId);
                             deleteIds.add(docId);
                         } else {
-                            HashSet<IndexEntry> fieldDeletions = Sets.newHashSet(mutation.getDeletions());
+                            List<IndexEntry> fieldDeletions = new ArrayList<IndexEntry>(mutation.getDeletions());
                             if (mutation.hasAdditions()) {
                                 for (IndexEntry indexEntry : mutation.getAdditions()) {
                                     fieldDeletions.remove(indexEntry);
                                 }
                             }
-                            deleteIndividualFieldsFromIndex(collectionName, keyIdField, docId, fieldDeletions);
+                            handleRemovalsFromIndex(collectionName, keyIdField, docId, fieldDeletions, informations);
                         }
                     }
 
@@ -368,14 +370,16 @@ public class SolrIndex implements IndexProvider {
 
                         if (isNewDoc)
                             logger.trace("Adding new document {}", docId);
-
-                        for (IndexEntry e : mutation.getAdditions()) {
-                            final Object fieldValue = convertValue(e.value);
-                            doc.setField(e.field, isNewDoc
-                                    ? fieldValue : new HashMap<String, Object>(1) {{
-                                put("set", fieldValue);
-                            }});
-                        }
+                        final Map<String, Object> adds = collectFieldValues(mutation.getAdditions(), collectionName, informations);
+                        // If cardinality is not single then we should use the "add" operation to update
+                        // the index so we don't overwrite existing values.
+                        adds.keySet().stream().forEach(v-> {
+                            final KeyInformation keyInformation = informations.get(collectionName, v);
+                            final String solrOp = keyInformation.getCardinality() == Cardinality.SINGLE ? "set" : "add";
+                            doc.setField(v, isNewDoc ? adds.get(v) : 
+                                new HashMap<String, Object>(1) {{put(solrOp, adds.get(v));}}
+                            );
+                        });
                         if (ttl>0) {
                             Preconditions.checkArgument(isNewDoc,"Solr only supports TTL on new documents [%s]",docId);
                             doc.setField(ttlField, String.format("+%dSECONDS", ttl));
@@ -394,6 +398,29 @@ public class SolrIndex implements IndexProvider {
         }
     }
 
+    private void handleRemovalsFromIndex(String collectionName, String keyIdField, String docId, List<IndexEntry> fieldDeletions, KeyInformation.IndexRetriever informations) throws SolrServerException, IOException, BackendException {
+        final Map<String, String> fieldDeletes = new HashMap<String, String>(1) {{ put("set", null); }};
+        final SolrInputDocument doc = new SolrInputDocument();
+        doc.addField(keyIdField, docId);
+        for(IndexEntry v: fieldDeletions) {
+            final KeyInformation keyInformation = informations.get(collectionName, v.field);
+            // If the cardinality is a Set or List, we just need to remove the individual value
+            // received in the mutation and not set the field to null, but we still consolidate the values
+            // in the event of multiple removals in one mutation.
+            final Map<String, Object> deletes = collectFieldValues(fieldDeletions, collectionName, informations);
+            deletes.keySet().stream().forEach(vertex-> {
+                doc.setField(vertex, keyInformation.getCardinality() == Cardinality.SINGLE?
+                        fieldDeletes:new HashMap<String, Object>(1) {{ put("remove", deletes.get(vertex));}}
+                        );
+            }); 
+        }
+
+        final UpdateRequest singleDocument = newUpdateRequest();
+        singleDocument.add(doc);
+        solrClient.request(singleDocument, collectionName);
+
+    }
+    
     private Object convertValue(Object value) throws BackendException {
         if (value instanceof Geoshape) {
             return GeoToWktConverter.convertToWktString((Geoshape) value);
@@ -430,17 +457,12 @@ public class SolrIndex implements IndexProvider {
                         deleteIds.add(docID);
                         continue;
                     }
-
-                    newDocuments.add(new SolrInputDocument() {{
-                        setField(getKeyFieldId(collectionName), docID);
-
-                        for (IndexEntry addition : content) {
-                            Object fieldValue = addition.value;
-                            setField(addition.field, convertValue(fieldValue));
-                        }
-                    }});
+                    final SolrInputDocument doc = new SolrInputDocument();
+                    doc.setField(getKeyFieldId(collectionName), docID);
+                    final Map<String, Object> adds = collectFieldValues(content, collectionName, informations);
+                    adds.entrySet().stream().forEach(e -> doc.setField(e.getKey(), e.getValue()));
+                    newDocuments.add(doc);
                 }
-
                 commitDeletes(collectionName, deleteIds);
                 commitDocumentChanges(collectionName, newDocuments);
             }
@@ -449,25 +471,31 @@ public class SolrIndex implements IndexProvider {
         }
     }
 
-    private void deleteIndividualFieldsFromIndex(String collectionName, String keyIdField, String docId, HashSet<IndexEntry> fieldDeletions) throws SolrServerException, IOException {
-        if (fieldDeletions.isEmpty()) return;
-
-        Map<String, String> fieldDeletes = new HashMap<String, String>(1) {{ put("set", null); }};
-
-        SolrInputDocument doc = new SolrInputDocument();
-        doc.addField(keyIdField, docId);
-        StringBuilder sb = new StringBuilder();
-        for (IndexEntry fieldToDelete : fieldDeletions) {
-            doc.addField(fieldToDelete.field, fieldDeletes);
-            sb.append(fieldToDelete).append(",");
+    // This method will create a map of field ids to values.  In the case of multiValued fields,
+    // it will consolidate all the values into one List or Set so it can be updated with a single Solr operation
+    private Map<String, Object> collectFieldValues(List<IndexEntry> content, String collectionName, KeyInformation.IndexRetriever informations) throws BackendException {
+        final Map<String, Object> docs = new HashMap<>();
+        for (IndexEntry addition: content) {
+            final KeyInformation keyInformation = informations.get(collectionName, addition.field);
+            switch (keyInformation.getCardinality()) {
+                case SINGLE:
+                    docs.put(addition.field, convertValue(addition.value));
+                    break;
+                case SET:
+                    if (!docs.containsKey(addition.field)) {
+                        docs.put(addition.field, new HashSet<Object>());
+                    }
+                    ((Set<Object>) docs.get(addition.field)).add(convertValue(addition.value));
+                    break;
+                case LIST:
+                    if (!docs.containsKey(addition.field)) {
+                        docs.put(addition.field,  new ArrayList<Object>());
+                    }
+                    ((List<Object>) docs.get(addition.field)).add(convertValue(addition.value));
+                    break;
+            }
         }
-
-        if (logger.isTraceEnabled())
-            logger.trace("Deleting individual fields [{}] for document {}", sb.toString(), docId);
-
-        UpdateRequest singleDocument = newUpdateRequest();
-        singleDocument.add(doc);
-        solrClient.request(singleDocument, collectionName);
+        return docs;
     }
 
     private void commitDocumentChanges(String collectionName, Collection<SolrInputDocument> documents) throws SolrServerException, IOException {
@@ -564,7 +592,7 @@ public class SolrIndex implements IndexProvider {
             throw new PermanentBackendException(e);
         }
     }
-    
+
     @Override
     public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         final String collection = query.getStore();
@@ -590,7 +618,7 @@ public class SolrIndex implements IndexProvider {
         logger.debug("Executed query [{}] in {} ms", query.getQuery(), response.getElapsedTime());
         return response.getResults().getNumFound();
     }
-    
+
     private static String escapeValue(Object value) {
         return ClientUtils.escapeQueryChars(value.toString());
     }
@@ -800,7 +828,7 @@ public class SolrIndex implements IndexProvider {
             IOUtils.closeQuietly(stream);
         }
     }
-    
+
     private String toIsoDate(Date value) {
         TimeZone tz = TimeZone.getTimeZone("UTC");
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -866,10 +894,6 @@ public class SolrIndex implements IndexProvider {
         if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType) &&
                 !(mapping==Mapping.PREFIX_TREE && AttributeUtil.isGeo(dataType))) return false;
 
-        if(information.getCardinality() != Cardinality.SINGLE) {
-            return false;
-        }
-
         if (Number.class.isAssignableFrom(dataType)) {
             return janusgraphPredicate instanceof Cmp;
         } else if (dataType == Geoshape.class) {
@@ -901,9 +925,6 @@ public class SolrIndex implements IndexProvider {
 
     @Override
     public boolean supports(KeyInformation information) {
-        if(information.getCardinality() != Cardinality.SINGLE) {
-            return false;
-        }
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
         if (Number.class.isAssignableFrom(dataType) || dataType == Date.class || dataType == Instant.class || dataType == Boolean.class || dataType == UUID.class) {
@@ -945,6 +966,9 @@ public class SolrIndex implements IndexProvider {
         } else if (datatype.equals(UUID.class)) {
             postfix = "_uuid";
         } else throw new IllegalArgumentException("Unsupported data type ["+datatype+"] for field: " + key);
+        if (keyInfo.getCardinality() == Cardinality.SET || keyInfo.getCardinality() == Cardinality.LIST) {
+                postfix += "s";
+        }
         return key+postfix;
     }
 
@@ -996,7 +1020,7 @@ public class SolrIndex implements IndexProvider {
             // Ideally this property used so a new configset is not uploaded for every single
             // index (collection) created in solr.
             // if a generic configSet is not set, make the configset name the same as the collection.
-            // This was the default behavior before a default configSet could be specified 
+            // This was the default behavior before a default configSet could be specified
             String  genericConfigSet = config.has(SOLR_DEFAULT_CONFIG) ? config.get(SOLR_DEFAULT_CONFIG):collection;
 
             CollectionAdminRequest.Create createRequest = new CollectionAdminRequest.Create();

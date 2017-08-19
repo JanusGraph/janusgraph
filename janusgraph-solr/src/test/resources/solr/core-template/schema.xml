@@ -16,10 +16,10 @@
  limitations under the License.
 -->
 
-<!--  
+<!--
  This is the Solr schema file. This file should be named "schema.xml" and
  should be in the conf directory under the solr home
- (i.e. ./solr/conf/schema.xml by default) 
+ (i.e. ./solr/conf/schema.xml by default)
  or located where the classloader for the Solr webapp can find it.
 
  This example schema is the recommended starting point for users.
@@ -31,26 +31,26 @@
 
 <schema name="example-janusgraph" version="1.5">
   <!-- attribute "name" is the name of this schema and is only used for display purposes.
-       version="x.y" is Solr's version number for the schema syntax and 
+       version="x.y" is Solr's version number for the schema syntax and
        semantics.  It should not normally be changed by applications.
 
-       1.0: multiValued attribute did not exist, all fields are multiValued 
+       1.0: multiValued attribute did not exist, all fields are multiValued
             by nature
-       1.1: multiValued attribute introduced, false by default 
-       1.2: omitTermFreqAndPositions attribute introduced, true by default 
+       1.1: multiValued attribute introduced, false by default
+       1.2: omitTermFreqAndPositions attribute introduced, true by default
             except for text fields.
        1.3: removed optional field compress feature
        1.4: autoGeneratePhraseQueries attribute introduced to drive QueryParser
-            behavior when a single string produces multiple tokens.  Defaults 
+            behavior when a single string produces multiple tokens.  Defaults
             to off for version >= 1.4
-       1.5: omitNorms defaults to true for primitive field types 
+       1.5: omitNorms defaults to true for primitive field types
             (int, float, boolean, string...)
      -->
 
 
    <!-- Valid attributes for fields:
      name: mandatory - the name for the field
-     type: mandatory - the name of a field type from the 
+     type: mandatory - the name of a field type from the
        <types> fieldType section
      indexed: true if this field should be indexed (searchable or sortable)
      stored: true if this field should be retrievable
@@ -73,9 +73,9 @@
        given field.
        When using MoreLikeThis, fields used for similarity should be
        stored for best performance.
-     termPositions: Store position information with the term vector.  
+     termPositions: Store position information with the term vector.
        This will increase storage costs.
-     termOffsets: Store offset information with the term vector. This 
+     termOffsets: Store offset information with the term vector. This
        will increase storage costs.
      required: The field is required.  It will throw an error if the
        value does not exist
@@ -92,22 +92,22 @@
 
    <!-- If you remove this field, you must _also_ disable the update log in solrconfig.xml
       or Solr won't start. _version_ and update log are required for SolrCloud
-   --> 
+   -->
    <field name="_version_" type="long" indexed="true" stored="true"/>
-   
+
    <!-- points to the root document of a block of nested documents. Required for nested
       document support, may be removed otherwise
    -->
    <field name="_root_" type="string" indexed="true" stored="false"/>
 
    <!-- Only remove the "id" field if you have a very good reason to. While not strictly
-     required, it is highly recommended. A <uniqueKey> is present in almost all Solr 
+     required, it is highly recommended. A <uniqueKey> is present in almost all Solr
      installations. See the <uniqueKey> declaration below where <uniqueKey> is set to "id".
-   -->   
-   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" /> 
+   -->
+   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
 
    <!-- Dynamic field definitions allow using convention over configuration
-       for fields via the specification of patterns to match field names. 
+       for fields via the specification of patterns to match field names.
        EXAMPLE:  name="*_i" will match any field ending in _i (like myid_i, z_i)
        RESTRICTION: the glob-like pattern in the name attribute must have
        a "*" only at the start or the end.  -->
@@ -149,13 +149,13 @@
 
    <dynamicField name="random_*" type="random" />
 
-   <!-- uncomment the following to ignore any fields that don't already match an existing 
-        field name or dynamic field, rather than reporting them as an error. 
-        alternately, change the type="ignored" to some other type e.g. "text" if you want 
-        unknown fields indexed and/or stored by default --> 
+   <!-- uncomment the following to ignore any fields that don't already match an existing
+        field name or dynamic field, rather than reporting them as an error.
+        alternately, change the type="ignored" to some other type e.g. "text" if you want
+        unknown fields indexed and/or stored by default -->
    <!--dynamicField name="*" type="ignored" multiValued="true" /-->
 
- <!-- Field to use to determine and enforce document uniqueness. 
+ <!-- Field to use to determine and enforce document uniqueness.
       Unless this field is marked with required="false", it will be a required field
    -->
  <uniqueKey>id</uniqueKey>
@@ -168,7 +168,7 @@
    <copyField source="title" dest="text"/>
    <copyField source="body" dest="text"/>
   -->
-  
+
     <!-- field type definitions. The "name" attribute is
        just a label to be used by field definitions.  The "class"
        attribute and any other attributes determine the real
@@ -200,7 +200,7 @@
        - If sortMissingLast="false" and sortMissingFirst="false" (the default),
          then default lucene sorting will be used which places docs without the
          field first in an ascending sort and last in a descending sort.
-    -->    
+    -->
 
     <!--
       Default numeric field types. For faster range queries, consider the tint/tfloat/tlong/tdouble types.
@@ -230,7 +230,7 @@
 
     <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and
          is a more restricted form of the canonical representation of dateTime
-         http://www.w3.org/TR/xmlschema-2/#dateTime    
+         http://www.w3.org/TR/xmlschema-2/#dateTime
          The trailing "Z" designates UTC time and is mandatory.
          Optional fractional seconds are allowed: 1995-12-31T23:59:59.999Z
          All other components are mandatory.
@@ -245,7 +245,7 @@
                NOW/DAY+6MONTHS+3DAYS
                   ... 6 months and 3 days in the future from the start of
                       the current day
-                      
+
          Consult the TrieDateField javadocs for more information.
 
          Note: For faster range queries, consider the tdate type
@@ -261,11 +261,11 @@
 
     <!-- The "RandomSortField" is not used to store or search any
          data.  You can declare fields of this type it in your schema
-         to generate pseudo-random orderings of your docs for sorting 
+         to generate pseudo-random orderings of your docs for sorting
          or function purposes.  The ordering is generated based on the field
          name and the version of the index. As long as the index version
          remains unchanged, and the same field name is reused,
-         the ordering of the docs will be consistent.  
+         the ordering of the docs will be consistent.
          If you want different psuedo-random orderings of documents,
          for the same version of the index, use a dynamicField and
          change the field name in the request.
@@ -456,13 +456,13 @@
         <filter class="solr.TrimFilterFactory" />
         <!-- The PatternReplaceFilter gives you the flexibility to use
              Java Regular expression to replace any sequence of characters
-             matching a pattern with an arbitrary replacement string, 
+             matching a pattern with an arbitrary replacement string,
              which may include back references to portions of the original
              string matched by the pattern.
-             
+
              See the Java Regular Expression documentation for more
              information on pattern and replacement string syntax.
-             
+
              http://docs.oracle.com/javase/7/docs/api/java/util/regex/package-summary.html
           -->
         <filter class="solr.PatternReplaceFilterFactory"
@@ -478,7 +478,7 @@
         <filter class="solr.LowerCaseFilterFactory" />
       </analyzer>
     </fieldType>
-    
+
     <!--  the entire field value is keeping it as a single token.  -->
     <fieldType name="keyword" class="solr.TextField" positionIncrementGap="100">
       <analyzer>
@@ -487,12 +487,12 @@
     </fieldType>
 
     <!-- since fields of this type are by default not stored or indexed,
-         any data added to them will be ignored outright.  --> 
+         any data added to them will be ignored outright.  -->
     <fieldType name="ignored" stored="false" indexed="false" multiValued="true" class="solr.StrField" />
 
     <!-- This point type indexes the coordinates as separate fields (subFields)
       If subFieldType is defined, it references a type, and a dynamic field
-      definition is created matching *___<typename>.  Alternately, if 
+      definition is created matching *___<typename>.  Alternately, if
       subFieldSuffix is defined, that is used to create the subFields.
       Example: if subFieldType="double", then the coordinates would be
         indexed in fields myloc_0___double,myloc_1___double.
@@ -540,13 +540,14 @@
 
     <fieldType name="geo"
                class="solr.SpatialRecursivePrefixTreeFieldType"
-               spatialContextFactory="org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory"
+               spatialContextFactory="com.spatial4j.core.context.jts.JtsSpatialContextFactory"
                distErrPct="0.001"
                maxDistErr="0.000009"
                distanceUnits="kilometers"
                prefixTree="geohash"/>
 
     <dynamicField name="*_g"    type="geo"      indexed="true"  stored="true"/>
+    <dynamicField name="*_gs"    type="geo"      indexed="true"  stored="true" multiValued="true"/>
     <dynamicField name="*_uuid" type="uuid"     indexed="true"  stored="true"/>
 
     <!-- TTL -->
@@ -560,6 +561,8 @@
     <field name="location" type="geo" indexed="true" stored="true" multiValued="false" />
     <field name="boundary" type="geo" indexed="true" stored="true" multiValued="false" />
     <field name="name" type="string" indexed="true" stored="true"/>
+    <field name="phone_list" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="phone_set" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="blah" type="string" indexed="true" stored="true"/>
     <field name="date" type="date" indexed="true" stored="true" />
     <field name="instant" type="date" indexed="true" stored="true" />
