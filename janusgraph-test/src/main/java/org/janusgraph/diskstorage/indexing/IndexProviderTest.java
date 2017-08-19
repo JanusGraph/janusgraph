@@ -486,10 +486,12 @@ public abstract class IndexProviderTest {
             assertEquals(0, result.size());
 
             if (index.supports(new StandardKeyInformation(String.class, Cardinality.LIST, new Parameter("mapping", Mapping.STRING)), Cmp.EQUAL)) {
-                assertEquals("doc4", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "10"))).get(0));
-                assertEquals("doc4", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "11"))).get(0));
-                assertEquals("doc4", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "10"))).get(0));
-                assertEquals("doc4", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "11"))).get(0));
+                for (int sufx=4; sufx<=8; sufx++) {
+                    assertTrue(tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "10"))).contains("doc"+sufx));
+                    assertTrue(tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "11"))).contains("doc"+sufx));
+                    assertTrue(tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "10"))).contains("doc"+sufx));
+                    assertTrue(tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "11"))).contains("doc"+sufx));
+                }
                 assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "4"))).size());
                 assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "5"))).size());
             }

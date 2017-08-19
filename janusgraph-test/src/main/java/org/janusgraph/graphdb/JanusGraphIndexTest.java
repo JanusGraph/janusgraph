@@ -1020,7 +1020,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         } else {
             Assert.fail("Unknown index backend:" + backend);
         }
-        
+
         final PropertyKey field1Key = mgmt.makePropertyKey("field1").dataType(String.class).make();
         mgmt.buildIndex("store1", Vertex.class).addKey(field1Key).buildMixedIndex(INDEX);
         mgmt.commit();
@@ -1727,8 +1727,13 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             testCollection(cardinality, "name", "Totoro", "Hiro");
             testCollection(cardinality, "age", 1, 2);
             testCollection(cardinality, "long", 1L, 2L);
-            testCollection(cardinality, "uuid", UUID.randomUUID(), UUID.randomUUID());
             testCollection(cardinality, "geopoint", Geoshape.point(1.0, 1.0), Geoshape.point(2.0, 2.0));
+            String backend = readConfig.get(INDEX_BACKEND, INDEX);
+            // Solr 6 has issues processing UUIDs with Multivalues 
+            // https://issues.apache.org/jira/browse/SOLR-11264
+            if (!"solr".equals(backend)) {
+                testCollection(cardinality, "uuid", UUID.randomUUID(), UUID.randomUUID());
+            }
         } else {
             try {
                 PropertyKey stringProperty = mgmt.makePropertyKey("name").dataType(String.class).cardinality(cardinality).make();
@@ -1811,7 +1816,6 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             assertEquals(v1, getOnlyElement(graph.query().has(property, Geo.WITHIN, Geoshape.circle(2.0, 2.0, 0.1)).vertices()));
         }
 
-        
         // Test traversal property drop Issue #408
         GraphTraversalSource g = graph.traversal();
         g.V().drop().iterate();
@@ -1909,4 +1913,3 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         }
     }
 }
-
