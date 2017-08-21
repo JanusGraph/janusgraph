@@ -55,3 +55,9 @@ janusgraph-*/pom.xml.versionsBackup
 *.save
 # Vim file backups
 *.swp
+
+# Coverity tools and analysis outputs
+coverity_tool.tar.gz
+cov-analysis-linux64/
+cov-int.tar.gz
+cov-int/
