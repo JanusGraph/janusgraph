@@ -93,7 +93,7 @@ public class VertexState<M> {
 
     public M getMessage(MessageScope scope, Map<MessageScope,Integer> scopeMap) {
         assert scope!=null && isValidIdMap(scopeMap) && scopeMap.containsKey(scope);
-        if (scopeMap.size()==1) return (M)previousMessages;
+        if (scopeMap.size()==1 || previousMessages == null) return (M)previousMessages;
         else return (M)((Object[])previousMessages)[scopeMap.get(scope)];
     }
 
