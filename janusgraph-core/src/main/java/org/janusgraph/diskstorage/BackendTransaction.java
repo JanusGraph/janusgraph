@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
 import org.janusgraph.diskstorage.log.kcvs.ExternalCachePersistor;
@@ -408,12 +409,12 @@ public class BackendTransaction implements LoggableTransaction {
     }
 
 
-    public List<String> indexQuery(final String index, final IndexQuery query) {
+    public Stream<String> indexQuery(final String index, final IndexQuery query) {
         final IndexTransaction indexTx = getIndexTransaction(index);
-        return executeRead(new Callable<List<String>>() {
+        return executeRead(new Callable<Stream<String>>() {
             @Override
-            public List<String> call() throws Exception {
-                return indexTx.query(query);
+            public Stream<String> call() throws Exception {
+                return indexTx.queryStream(query);
             }
 
             @Override
@@ -423,12 +424,12 @@ public class BackendTransaction implements LoggableTransaction {
         });
     }
 
-    public Iterable<RawQuery.Result<String>> rawQuery(final String index, final RawQuery query) {
+    public Stream<RawQuery.Result<String>> rawQuery(final String index, final RawQuery query) {
         final IndexTransaction indexTx = getIndexTransaction(index);
-        return executeRead(new Callable<Iterable<RawQuery.Result<String>>>() {
+        return executeRead(new Callable<Stream<RawQuery.Result<String>>>() {
             @Override
-            public Iterable<RawQuery.Result<String>> call() throws Exception {
-                return indexTx.query(query);
+            public Stream<RawQuery.Result<String>> call() throws Exception {
+                return indexTx.queryStream(query);
             }
 
             @Override
