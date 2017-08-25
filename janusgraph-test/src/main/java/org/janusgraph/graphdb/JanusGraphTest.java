@@ -1611,7 +1611,6 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         tx.addVertex("name", "v3");
         tx.commit();
 
-        Thread.sleep(2000); //Wait for the index to register in graph2
         finishSchema();
         try {
             mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
@@ -1638,7 +1637,6 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         evaluateQuery(tx.query().has("name", "v3"), ElementCategory.VERTEX, 1, new boolean[]{true, true}, "theIndex");
         evaluateQuery(tx.query().has("name", "v4"), ElementCategory.VERTEX, 1, new boolean[]{true, true}, "theIndex");
 
-        Thread.sleep(2000);
         tx2 = graph2.newTransaction();
         evaluateQuery(tx2.query().has("name", "v1"), ElementCategory.VERTEX, 0, new boolean[]{true, true}, "theIndex");
         evaluateQuery(tx2.query().has("name", "v2"), ElementCategory.VERTEX, 1, new boolean[]{true, true}, "theIndex");
