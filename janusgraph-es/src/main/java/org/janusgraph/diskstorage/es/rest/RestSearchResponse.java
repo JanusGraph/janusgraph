@@ -21,6 +21,7 @@ import org.janusgraph.diskstorage.indexing.RawQuery;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class RestSearchResponse extends ElasticSearchResponse {
@@ -30,11 +31,15 @@ public class RestSearchResponse extends ElasticSearchResponse {
     @JsonProperty("hits")
     private RestSearchResults hits;
 
+    @JsonProperty("_scroll_id")
+    private String scrollId;
+
     @Override
     public long getTook() {
         return took;
     }
 
+    @Override
     public void setTook(long took) {
         this.took = took;
     }
@@ -61,10 +66,23 @@ public class RestSearchResponse extends ElasticSearchResponse {
     }
 
     @Override
-    public List<RawQuery.Result<String>> getResults() {
+    public Stream<RawQuery.Result<String>> getResults() {
         return hits.getHits().stream()
-            .map(hit -> new RawQuery.Result<String>(hit.getId(),hit.getScore() != null ? hit.getScore() : 0f))
-            .collect(Collectors.toList());
+            .map(hit -> new RawQuery.Result<String>(hit.getId(),hit.getScore() != null ? hit.getScore() : 0f));
     }
 
+    @Override
+    public int numResults() {
+        return hits.getHits().size();
+    }
+
+    @Override
+    public String getScrollId() {
+        return scrollId;
+    }
+
+    @Override
+    public void setScrollId(String scrollId) {
+        this.scrollId = scrollId;
+    }
 }

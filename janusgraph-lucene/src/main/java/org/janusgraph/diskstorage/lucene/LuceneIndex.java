@@ -432,13 +432,13 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
+    public Stream<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         //Construct query
         SearchParams searchParams = convertQuery(query.getCondition(),informations.get(query.getStore()));
 
         try {
             IndexSearcher searcher = ((Transaction) tx).getSearcher(query.getStore());
-            if (searcher == null) return ImmutableList.of(); //Index does not yet exist
+            if (searcher == null) return Collections.unmodifiableList(new ArrayList<String>()).stream(); //Index does not yet exist
 
             Query q = searchParams.getQuery();
             if (null == q)
@@ -451,7 +451,7 @@ public class LuceneIndex implements IndexProvider {
             for (int i = 0; i < docs.scoreDocs.length; i++) {
                 result.add(searcher.doc(docs.scoreDocs[i].doc).getField(DOCID).stringValue());
             }
-            return result;
+            return result.stream();
         } catch (IOException e) {
             throw new TemporaryBackendException("Could not execute Lucene query", e);
         }
@@ -615,7 +615,7 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
+    public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         Query q;
         try {
             q = new QueryParser("_all",analyzer).parse(query.getQuery());
@@ -626,7 +626,7 @@ public class LuceneIndex implements IndexProvider {
 
         try {
             IndexSearcher searcher = ((Transaction) tx).getSearcher(query.getStore());
-            if (searcher == null) return ImmutableList.of(); //Index does not yet exist
+            if (searcher == null) return Collections.unmodifiableList(new ArrayList<RawQuery.Result<String>>()).stream(); //Index does not yet exist
 
             long time = System.currentTimeMillis();
             //TODO: can we make offset more efficient in Lucene?
@@ -640,7 +640,7 @@ public class LuceneIndex implements IndexProvider {
             for (int i = offset; i < docs.scoreDocs.length; i++) {
                 result.add(new RawQuery.Result<String>(searcher.doc(docs.scoreDocs[i].doc).getField(DOCID).stringValue(),docs.scoreDocs[i].score));
             }
-            return result;
+            return result.stream();
         } catch (IOException e) {
             throw new TemporaryBackendException("Could not execute Lucene query", e);
         }

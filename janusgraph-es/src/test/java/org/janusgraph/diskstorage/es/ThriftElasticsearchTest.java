@@ -19,6 +19,7 @@ import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -59,6 +60,7 @@ public class ThriftElasticsearchTest extends JanusGraphIndexTest {
         config.set(INTERFACE, ElasticSearchSetup.REST_CLIENT.toString(), INDEX);
         config.set(INDEX_HOSTS, new String[]{ "127.0.0.1" }, INDEX);
         config.set(BULK_REFRESH, "wait_for", INDEX);
+        config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, INDEX);
         return config.getConfiguration();
     }
 

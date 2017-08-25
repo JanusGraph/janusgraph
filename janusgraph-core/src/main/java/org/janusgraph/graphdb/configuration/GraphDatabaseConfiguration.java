@@ -892,8 +892,9 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.MASKABLE, String.class);
 
     public static final ConfigOption<Integer> INDEX_MAX_RESULT_SET_SIZE = new ConfigOption<Integer>(INDEX_NS, "max-result-set-size",
-            "Maxium number of results to return if no limit is specified",
-            ConfigOption.Type.MASKABLE, 100000);
+            "Maxium number of results to return if no limit is specified. For index backends that support scrolling, it represents " +
+                    "the number of results in each batch",
+            ConfigOption.Type.MASKABLE, 50);
 
     public static final ConfigOption<Boolean> INDEX_NAME_MAPPING = new ConfigOption<Boolean>(INDEX_NS,"map-name",
             "Whether to use the name of the property key as the field name in the index. It must be ensured, that the" +
