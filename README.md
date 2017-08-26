@@ -77,6 +77,7 @@ The following users have deployed JanusGraph in production.
 * [FiNC](https://finc.com)
 * [G DATA](https://gdatasoftware.com)
 * [Seeq](https://seeq.com)
+* [Sift Security](https://siftsecurity.com)
 * [Uber](https://uber.com)
 
 The following companies offer JanusGraph hosted as-a-service:
