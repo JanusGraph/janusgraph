@@ -509,7 +509,13 @@
                                         <directory>${top.level.basedir}/log/</directory>
                                     </fileset>
                                     <fileset>
-                                        <directory>${top.level.basedir}/rexhome/</directory>
+                                        <directory>${top.level.basedir}/data/</directory>
+                                    </fileset>
+                                    <fileset>
+                                        <directory>${top.level.basedir}/elasticsearch/</directory>
+                                    </fileset>
+                                    <fileset>
+                                        <directory>${top.level.basedir}/scripts/</directory>
                                     </fileset>
                                 </filesets>
                             </configuration>
