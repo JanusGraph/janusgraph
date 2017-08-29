@@ -45,16 +45,15 @@
 #
 declare -r GITHUB_ROOT="${GITHUB_ROOT:-${HOME}/github}"
 declare -r SOURCE_REPO_DIR="${SOURCE_REPO_DIR:-${GITHUB_ROOT}/janusgraph/janusgraph}"
+declare -r VERSION="$(xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' "${SOURCE_REPO_DIR}/pom.xml")"
 declare -r DOCS_REPO_DIR="${DOCS_REPO_DIR:-${GITHUB_ROOT}/janusgraph/docs.janusgraph.org}"
-declare -r VERSION="${VERSION:-latest}"
 declare -r DOCS_REPO_VERSION_DIR="${DOCS_REPO_DIR}/${VERSION}"
 
 if ! [ -d "${SOURCE_REPO_DIR}" ]; then
   echo "Source repo dir: ${SOURCE_REPO_DIR} does not exist; exiting." >&2
   exit 1
 elif ! [ -d "${DOCS_REPO_VERSION_DIR}" ]; then
-  echo "Docs repo version dir: ${DOCS_REPO_VERSION_DIR} does not exist; exiting." >&2
-  exit 1
+  mkdir -p "${DOCS_REPO_VERSION_DIR}"
 fi
 
 pushd "${SOURCE_REPO_DIR}" >& /dev/null 2>&1
