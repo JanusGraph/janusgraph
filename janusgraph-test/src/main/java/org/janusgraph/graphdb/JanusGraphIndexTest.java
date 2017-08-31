@@ -1035,8 +1035,6 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         tx.commit();
 
-        Thread.sleep(5000);
-
         List<JanusGraphVertex> vertices = new ArrayList<JanusGraphVertex>();
         for (JanusGraphIndexQuery.Result<JanusGraphVertex> r : graph.indexQuery("store1", "v.field1:(Hello)").addParameter(asc_sort_p).vertices()) {
             vertices.add(r.getElement());
@@ -1583,8 +1581,6 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         tx.commit();
 
-        Thread.sleep(5000);
-
         Set<Double> scores = new HashSet<Double>();
         for (JanusGraphIndexQuery.Result<JanusGraphVertex> r : graph.indexQuery("store1", "v.text:(Hello)").vertices()) {
             scores.add(r.getScore());
@@ -1607,8 +1603,6 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         v1.property("name", "hercules was here");
 
         tx.commit();
-
-        Thread.sleep(2000);
 
         JanusGraphVertex r = Iterables.<JanusGraphVertex>get(graph.query().has("name", Text.CONTAINS, "hercules here").vertices(), 0);
         Assert.assertEquals(r.property("name").value(), "hercules was here");
