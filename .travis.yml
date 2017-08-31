@@ -1,7 +1,8 @@
 dist: trusty
 language: java
-sudo: false
-
+sudo: true
+services:
+  - docker
 jdk:
   - openjdk8
 
@@ -14,6 +15,8 @@ env:
     # This is the encrypted COVERITY_SCAN_TOKEN, created via the
     # `travis encrypt` command using the project repo's public key.
     - secure: "v5ixqTeb74y0vRuPcDbe3C28GDDYvqyEXA2dt+9UVU6GG7WpnmpkBf05gI1dIhp51lBhwx9WSlFBtzho+KdCBmNY/CzBRhVHe/lCQYK9Hb6uGPvuwBvC0WjJgJXsVrLFjppeRhcf+OAweVQ3uw2RPMDRvKIVMUcO1BTFjjJl6REJXNUdzGS57MtH2mmRyOEz250EwgqUELZvcOytG7fNrjMJKVK2nSsoxi0BqZIpItTWPWWeQ1wi1FplJ18A2qtD+MPfAGNSB+/a+r0Av+VCT2eGl06ZyZAzP3q/vG5IYjQ3AJsSPqcZUt4ms+2us1+kwuzXIILjzZmcfImu29+y/thndU5E5b2v+nZ4H69CUCc5OmKW2RwozLNmBIUhO0n+35va/J7FiPIqm3pwxCz5vWA3YTHDADxnIYe7+9uY/+dOK/AvP5fyu7u07vuF3liKNBdrX7ylP3kYc7FXGmYl8wCZv31iy1yTtndQ9qKef7bo8lM9Cdh39KyowrygH+Um7pr9gqf2S9jn99nQ3bib32fBWgBkLpJRwhZYHPUupZjZfgu/9woby0DuriuHZKMqZd7QUawYz6wXGlhzu78x5Tohlj1pGBwHYdcJ/Tm3PiEpyH4aYQLffkjGHJAcCW5tO8QbB0qrLYWC8xVMWuFz1TpSBRXOqVYdBfIa2UZDtOU="
+    - COVERITY_BRANCH_NAME="coverity_scan"
+    - COVERITY_EMAIL="sjudeng@gmail.com"
     # Default Elasticsearch heap size can be too large for Travis
     - ES_JAVA_OPTS="-Xms256m -Xmx512m"
 
@@ -66,38 +69,35 @@ matrix:
     - env: MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.murmur=true'
     - env: MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
 
-addons:
-  coverity_scan:
-    # Coverity config parameters described in detail:
-    # https://scan.coverity.com/travis_ci
-    project:
-      name: "JanusGraph/janusgraph"
-      version: "0.2.0-SNAPSHOT"
-      description: "Scalable, distributed graph database"
-    notification_email: janusgraph-ci@googlegroups.com
-    build_command_prepend:
-      - if ! [ -v COVERITY_ONLY ]; then
-          echo "Skipping Coverity for non-Coverity job";
-          exit 0;
-        fi
-    build_command: mvn clean package -DskipTests=true --batch-mode
-    branch_pattern: coverity_scan
-
 install:
-  # Build and install current module and dependencies. Handle output timeouts and retry on error.
-  - if [ "${COVERITY_SCAN_BRANCH}" == 1 ] || [ -v COVERITY_ONLY ]; then
-      echo "Skipping install build step in Coverity branch/job";
+  - if [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] && ! [ -z "${COVERITY_ONLY:-}" ]; then
+      echo "Building all modules for Coverity analysis";
+      travis_retry travis_wait \
+          mvn install -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
+    elif [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] || ! [ -z "${COVERITY_ONLY:-}" ]; then
+      echo "Skipping module build on Coverity branch/job";
     else
+      echo "Building janusgraph-${MODULE} and dependencies";
       travis_retry travis_wait \
           mvn install --projects janusgraph-${MODULE} --also-make \
           -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
     fi
 
 script:
-  # Build and test module. Handle output timeouts and retry with a clean build on error.
-  - if [ "${COVERITY_SCAN_BRANCH}" == 1 ] || [ -v COVERITY_ONLY ]; then
-      echo "Skipping script build step in Coverity branch/job";
+  - if [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] && ! [ -z "${COVERITY_ONLY:-}" ]; then
+      echo "Building Docker image for Coverity analysis";
+      docker build -t janusgraph/analysis analysis;
+      echo "Running Coverity scan";
+      travis_wait 50 \
+        docker run --rm \
+            -v ${HOME}/.m2:/root/.m2 -v ${PWD}:/opt/janusgraph \
+            -e COVERITY_SCAN_TOKEN="${COVERITY_SCAN_TOKEN}" \
+            -e COVERITY_EMAIL="${COVERITY_EMAIL}" \
+            -i janusgraph/analysis;
+    elif [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] || ! [ -z "${COVERITY_ONLY:-}" ]; then
+      echo "Skipping module tests on Coverity branch/job";
     else
+      echo "Testing janusgraph-${MODULE}";
       travis_retry travis_wait 50 \
           mvn clean verify --projects janusgraph-${MODULE} ${ARGS};
     fi
