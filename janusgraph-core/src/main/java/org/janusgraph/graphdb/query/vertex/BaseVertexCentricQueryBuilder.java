@@ -205,7 +205,6 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
         Preconditions.checkArgument(key != null && order != null, "Need to specify and key and an order");
         Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.dataType()),
                 "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.name(), key.dataType());
-        Preconditions.checkArgument(key.cardinality() == Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.name());
         Preconditions.checkArgument(!(key instanceof SystemRelationType), "Cannot use system types in ordering: %s", key);
         Preconditions.checkArgument(!orders.containsKey(key));
         Preconditions.checkArgument(orders.isEmpty(), "Only a single sort order is supported on vertex queries");
