@@ -17,7 +17,7 @@
         <assembly.static.dir>${project.parent.basedir}/src/assembly/static</assembly.static.dir>
         <assembly.resources.dir>${project.parent.basedir}/src/assembly/resources</assembly.resources.dir>
         <assembly.cfilter.out.dir>${project.parent.build.directory}/cfilter</assembly.cfilter.out.dir>
-        <top.level.basedir>${project.parent.parent.basedir}</top.level.basedir>
+        <top.level.basedir>${basedir}/../..</top.level.basedir>
     </properties>
 
     <dependencies>
