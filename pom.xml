@@ -468,7 +468,7 @@
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>0.6.3.201306030806</version>
+                    <version>0.7.9</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -947,7 +947,7 @@
             <dependency>
                 <groupId>org.jacoco</groupId>
                 <artifactId>org.jacoco.ant</artifactId>
-                <version>0.6.2.201302030002</version>
+                <version>0.7.9</version>
             </dependency>
             <dependency>
                 <groupId>com.yammer.metrics</groupId>
@@ -1189,7 +1189,7 @@
         <profile>
             <id>sonar-upload</id>
             <properties>
-                <sonar.jacoco.reportPath>../target/jacoco-combined.exec</sonar.jacoco.reportPath>
+                <sonar.jacoco.reportPath>${top.level.basedir}/target/jacoco-combined.exec</sonar.jacoco.reportPath>
                 <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
             </properties>
         </profile>
@@ -1291,19 +1291,11 @@
 	
         <profile>
             <id>coverage</id>
+            <properties>
+                <test.extra.jvm.opts>${jacoco.opts}</test.extra.jvm.opts>
+            </properties>
             <build>
                 <plugins>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>default-test</id>
-                                <configuration>
-                                    <argLine>${default.test.jvm.opts} ${jacoco.opts}</argLine>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
                     <plugin>
                         <artifactId>maven-resources-plugin</artifactId>
                         <executions>
@@ -1385,7 +1377,7 @@
                                     <goal>prepare-agent</goal>
                                 </goals>
                                 <configuration>
-                                    <destFile>../target/jacoco-combined.exec</destFile>
+                                    <destFile>${top.level.basedir}/target/jacoco-combined.exec</destFile>
                                     <append>true</append>
                                     <propertyName>jacoco.opts</propertyName>
                                 </configuration>
@@ -1411,18 +1403,18 @@
                                         <taskdef name="report" classname="org.jacoco.ant.ReportTask" classpathref="maven.plugin.classpath" />
                                         <report>
                                             <executiondata>
-                                                <file file="../target/jacoco-combined.exec" />
+                                                <file file="${top.level.basedir}/target/jacoco-combined.exec" />
                                             </executiondata>
                                             <structure name="Integration test coverage">
                                                 <classfiles>
                                                     <fileset dir="${project.build.directory}/jacoco-classes" />
-                                                    u
                                                 </classfiles>
                                                 <sourcefiles encoding="UTF-8">
                                                     <fileset dir="${project.build.directory}/jacoco-sources" />
                                                 </sourcefiles>
                                             </structure>
                                             <html destdir="${project.build.directory}/jacoco-report" />
+                                            <xml destfile="${project.build.directory}/jacoco-report/report.xml" />
                                         </report>
                                     </target>
                                 </configuration>
@@ -1432,7 +1424,7 @@
                             <dependency>
                                 <groupId>org.jacoco</groupId>
                                 <artifactId>org.jacoco.ant</artifactId>
-                                <version>0.6.2.201302030002</version>
+                                <version>0.7.9</version>
                             </dependency>
                         </dependencies>
                     </plugin>

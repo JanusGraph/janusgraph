@@ -13,7 +13,7 @@
     <properties>
         <hadoop.profile>2.0</hadoop.profile>
         <jruby.version>1.6.8</jruby.version>
-        <top.level.basedir>${project.parent.parent.basedir}</top.level.basedir>
+        <top.level.basedir>${basedir}/../..</top.level.basedir>
     </properties>
     
     <dependencies>

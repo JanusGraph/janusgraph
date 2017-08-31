@@ -16,8 +16,11 @@
         <test.byteorderedpartitioner>byteorderedpartitioner</test.byteorderedpartitioner>
         <test.murmur>murmur</test.murmur>
         <test.murmur-ssl>murmur-ssl</test.murmur-ssl>
-        <test.jvm.opts>-Xms256m -Xmx1280m -ea -XX:+HeapDumpOnOutOfMemoryError -javaagent:${com.github.jbellis:jamm:jar}</test.jvm.opts>
+        <test.javaagent.opts>-javaagent:${com.github.jbellis:jamm:jar}</test.javaagent.opts>
+        <test.extra.jvm.opts>${test.javaagent.opts}</test.extra.jvm.opts>
+        <test.jvm.opts>-Xms256m -Xmx1280m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</test.jvm.opts>
         <test.excluded.groups>org.janusgraph.testcategory.MemoryTests,org.janusgraph.testcategory.PerformanceTests,org.janusgraph.testcategory.BrittleTests</test.excluded.groups>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
     </properties>
 
     <dependencies>
@@ -316,6 +319,16 @@
         </plugins>
     </build>
     <profiles>
+        <profile>
+	          <id>coverage</id>
+	          <activation>
+	              <activeByDefault>false</activeByDefault>
+	          </activation>
+	          <properties>
+	              <test.extra.jvm.opts>${jacoco.opts} ${test.javaagent.opts}</test.extra.jvm.opts>
+	          </properties>
+        </profile>
+
         <profile>
             <!-- Run Thrift tests with ScyllaDB (requires Docker) -->
             <id>scylladb-test</id>

@@ -60,7 +60,7 @@ public class JanusGraphIoRegistryTest {
         assertEquals(15,
                 Stream.of(P.class.getDeclaredMethods()).filter(m -> Modifier.isStatic(m.getModifiers())).filter(p -> {
                     log.debug("Predicate: {}", p);
-                    return true;
+                    return !p.isSynthetic();
                 }).count());
 
         Graph graph = EmptyGraph.instance();

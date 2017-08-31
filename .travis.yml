@@ -99,7 +99,15 @@ script:
       echo "Skipping script build step in Coverity branch/job";
     else
       travis_retry travis_wait 50 \
-          mvn clean verify --projects janusgraph-${MODULE} ${ARGS};
+          mvn clean verify --projects janusgraph-${MODULE} -Pcoverage ${ARGS};
+    fi
+
+after_success:
+  # Upload test coverage reports to Codecov
+  - if [ "${COVERITY_SCAN_BRANCH}" == 1 ] || [ -v COVERITY_ONLY ]; then
+      echo "Skipping test coverage report upload in Coverity branch/job";
+    else
+      bash <(curl -s https://codecov.io/bash);
     fi
 
 # Syntax and more info: https://docs.travis-ci.com/user/notifications
