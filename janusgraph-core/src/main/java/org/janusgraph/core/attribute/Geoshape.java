@@ -554,14 +554,14 @@ public class Geoshape {
             long l = VariableLong.readPositive(buffer);
             assert l>0 && l<Integer.MAX_VALUE;
             int length = (int)l;
+            int position = ((ReadArrayBuffer) buffer).getPosition();
             InputStream inputStream = new ByteArrayInputStream(buffer.getBytes(length));
             try {
                 return GeoshapeBinarySerializer.read(inputStream);
             } catch (IOException e) {
                 // retry using legacy point deserialization
                 try {
-                    ((ReadArrayBuffer) buffer).movePositionTo(0);
-                    VariableLong.readPositive(buffer);
+                    ((ReadArrayBuffer) buffer).movePositionTo(position);
                     final float lat = buffer.getFloat();
                     final float lon = buffer.getFloat();
                     return point(lat, lon);
