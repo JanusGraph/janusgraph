@@ -181,7 +181,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     /**
      * Whether or not this transaction is open
      */
-    private boolean isOpen;
+    private volatile boolean isOpen;
 
     private final VertexConstructor existingVertexRetriever;
     private final VertexConstructor externalVertexRetriever;
