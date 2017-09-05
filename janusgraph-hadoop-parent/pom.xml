@@ -331,7 +331,7 @@
                                 <skipTests>${skipCassandra}</skipTests>
                                 <reuseForks>false</reuseForks>
                                 <summaryFile>target/failsafe-reports/failsafe-janusgraph-cassandra.xml</summaryFile>
-                                <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
+                                <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
                             </configuration>
                         </execution>
                         <!-- Cassandra-3 testing requires an external Cassandra instance. 
@@ -356,7 +356,7 @@
                                 <goal>integration-test</goal>
                             </goals>
                             <configuration>
-                                <argLine>-Dtest.hbase.parentdir=${top.level.basedir}/janusgraph-hbase-parent/</argLine>
+                                <argLine>${default.test.jvm.opts} -Dtest.hbase.parentdir=${top.level.basedir}/janusgraph-hbase-parent/</argLine>
                                 <includes>
                                     <include>**/*HBase*IT.java</include>
                                 </includes>
