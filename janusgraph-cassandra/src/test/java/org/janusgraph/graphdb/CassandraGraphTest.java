@@ -128,7 +128,12 @@ public abstract class CassandraGraphTest extends JanusGraphTest {
                             wc.get(ConfigElement.getPath(GraphDatabaseConfiguration.TITAN_COMPATIBLE_VERSIONS), 
                                         GraphDatabaseConfiguration.TITAN_COMPATIBLE_VERSIONS.getDatatype())
                 ));
-
+        
+        wc.set(ConfigElement.getPath(GraphDatabaseConfiguration.IDS_STORE_NAME), JanusGraphConstants.TITAN_ID_STORE_NAME);
+        assertTrue(JanusGraphConstants.TITAN_ID_STORE_NAME.equals(
+                            wc.get(ConfigElement.getPath(GraphDatabaseConfiguration.IDS_STORE_NAME), 
+                                        GraphDatabaseConfiguration.IDS_STORE_NAME.getDatatype())
+                ));
         graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
     }
 }

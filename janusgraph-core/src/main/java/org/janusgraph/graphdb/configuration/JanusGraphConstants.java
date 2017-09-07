@@ -50,6 +50,16 @@ public class JanusGraphConstants {
      */
     public static final List<String> TITAN_COMPATIBLE_VERSIONS;
 
+    /**
+     * Name of the ids.store-name used by JanusGraph which is configurable
+     */
+    public static final String JANUSGRAPH_ID_STORE_NAME = "janusgraph_ids";
+
+    /**
+     * Past name of the ids.store-name used by Titan Graph but which was not configurable
+     */
+    public static final String TITAN_ID_STORE_NAME = "titan_ids";
+
     static {
 
         /*
