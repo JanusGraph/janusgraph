@@ -24,7 +24,7 @@ JANUSGRAPH_CONF="/etc/janusgraph"
 JANUSGRAPH_CFG="$JANUSGRAPH_CONF/config.properties"
 
 # JAVA_HOME can optionally be set here
-#JAVA_HOME=/usr/local/jdk6
+#JAVA_HOME=/usr/local/jdk8
 
 # The java classpath (required)
 CLASSPATH="$JANUSGRAPH_CONF"

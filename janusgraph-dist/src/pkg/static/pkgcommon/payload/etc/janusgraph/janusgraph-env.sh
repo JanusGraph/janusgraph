@@ -158,8 +158,8 @@ JMX_PORT="8189" # N.B. 7199 is Cassandra's default JMX port
 JVM_OPTS="$JVM_OPTS -ea"
 
 # add the jamm javaagent if it is available
-if [ "$JVM_VENDOR" != "OpenJDK" -o "$JVM_VERSION" \> "1.6.0" ] \
-      || [ "$JVM_VERSION" = "1.6.0" -a "$JVM_PATCH_VERSION" -ge 23 ] \
+if [ "$JVM_VENDOR" != "OpenJDK" -o "$JVM_VERSION" \> "1.8.0" ] \
+      || [ "$JVM_VERSION" = "1.8.0" -a "$JVM_PATCH_VERSION" -ge 40 ] \
       && [ -e "$JANUSGRAPH_HOME/lib/jamm-0.2.5.jar" ]
 then
     JVM_OPTS="$JVM_OPTS -javaagent:$JANUSGRAPH_HOME/lib/jamm-0.2.5.jar"
@@ -207,8 +207,7 @@ JVM_OPTS="$JVM_OPTS -XX:MaxTenuringThreshold=1"
 JVM_OPTS="$JVM_OPTS -XX:CMSInitiatingOccupancyFraction=75"
 JVM_OPTS="$JVM_OPTS -XX:+UseCMSInitiatingOccupancyOnly"
 JVM_OPTS="$JVM_OPTS -XX:+UseTLAB"
-# note: bash evals '1.7.x' as > '1.7' so this is really a >= 1.7 jvm check
-if [ "$JVM_VERSION" \> "1.7" ] && [ "$JVM_ARCH" = "64-Bit" ] ; then
+if [ "$JVM_ARCH" = "64-Bit" ] ; then
     JVM_OPTS="$JVM_OPTS -XX:+UseCondCardMark"
 fi
 
@@ -221,8 +220,8 @@ fi
 # JVM_OPTS="$JVM_OPTS -XX:+PrintPromotionFailure"
 # JVM_OPTS="$JVM_OPTS -XX:PrintFLSStatistics=1"
 # JVM_OPTS="$JVM_OPTS -Xloggc:/var/log/janusgraph/gc-`date +%s`.log"
-# If you are using JDK 6u34 7u2 or later you can enable GC log rotation
-# don't stick the date in the log name if rotation is on.
+# Enable GC log rotation
+# Don't stick the date in the log name if rotation is on.
 # JVM_OPTS="$JVM_OPTS -Xloggc:/var/log/janusgraph/gc.log"
 # JVM_OPTS="$JVM_OPTS -XX:+UseGCLogFileRotation"
 # JVM_OPTS="$JVM_OPTS -XX:NumberOfGCLogFiles=10"
