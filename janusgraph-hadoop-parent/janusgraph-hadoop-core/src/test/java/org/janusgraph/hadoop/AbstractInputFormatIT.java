@@ -70,12 +70,18 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
         Map<String, Object> propertiesOnVertex = graph.traversal().V().valueMap().next();
         List<?> valuesOnP = (List)propertiesOnVertex.values().iterator().next();
         assertEquals(numProps, valuesOnP.size());
+        for (int i = 0; i < numProps; i++) {
+            assertEquals(Integer.toString(i), valuesOnP.get(i).toString());
+        }
         Graph g = getGraph();
         GraphTraversalSource t = g.traversal(GraphTraversalSource.computer(SparkGraphComputer.class));
         assertEquals(numV, (long) t.V().count().next());
         propertiesOnVertex = t.V().valueMap().next();
         valuesOnP = (List)propertiesOnVertex.values().iterator().next();
         assertEquals(numProps, valuesOnP.size());
+        for (int i = 0; i < numProps; i++) {
+            assertEquals(Integer.toString(i), valuesOnP.get(i).toString());
+        }
     }
 
     @Test
