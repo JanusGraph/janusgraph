@@ -47,6 +47,12 @@ public interface StoreManager {
      */
     public void clearStorage() throws BackendException;
 
+    /**
+     * Check whether database exists in this storage manager.
+     * @return Flag indicating whether database exists
+     * @throws BackendException
+     */
+    public boolean exists() throws BackendException;
 
     /**
      * Returns the features supported by this storage manager

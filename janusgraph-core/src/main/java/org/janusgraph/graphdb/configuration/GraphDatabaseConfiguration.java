@@ -576,6 +576,11 @@ public class GraphDatabaseConfiguration {
 //    public static final int PAGE_SIZE_DEFAULT = 100;
 //    public static final String PAGE_SIZE_KEY = "page-size";
 
+    public static final ConfigOption<Boolean> DROP_ON_CLEAR = new ConfigOption<>(STORAGE_NS, "drop-on-clear",
+        "Whether to drop the graph database (true) or delete rows (false) when clearing storage. " +
+            "Note that some backends always drop the graph database when clearing storage. Also note that indices are " +
+            "always dropped when clearing storage.",
+        ConfigOption.Type.MASKABLE, true);
 
     public static final ConfigNamespace LOCK_NS =
             new ConfigNamespace(STORAGE_NS, "lock", "Options for locking on eventually-consistent stores");

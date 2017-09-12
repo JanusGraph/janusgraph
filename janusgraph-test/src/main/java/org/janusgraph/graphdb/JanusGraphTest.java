@@ -58,8 +58,9 @@ import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.JanusGraphSchemaType;
-import org.janusgraph.core.util.ManagementUtil;
 import org.janusgraph.core.util.JanusGraphCleanup;
+import org.janusgraph.core.util.ManagementUtil;
+import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
@@ -181,6 +182,20 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
      */
     @Test
     public void testOpenClose() {
+    }
+
+    /**
+     * Ensure clearing storage actually removes underlying database.
+     * @throws Exception
+     */
+    @Test
+    public void testClearStorage() throws Exception {
+        tearDown();
+        config.set(ConfigElement.getPath(GraphDatabaseConfiguration.DROP_ON_CLEAR), true);
+        final Backend backend = getBackend(config, false);
+        assertTrue("graph should exist before clearing storage", backend.getStoreManager().exists());
+        clearGraph(config);
+        assertFalse("graph should not exist after clearing storage", backend.getStoreManager().exists());
     }
 
     /**

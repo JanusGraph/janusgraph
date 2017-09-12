@@ -413,23 +413,28 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 return;
             }
 
-            List<CfDef> cfDefs = ksDef.getCf_defs();
+            if (this.storageConfig.get(GraphDatabaseConfiguration.DROP_ON_CLEAR)) {
+                client.system_drop_keyspace(keySpaceName);
+                pool.clear();
+            } else {
+                final List<CfDef> cfDefs = ksDef.getCf_defs();
 
-            if (null == cfDefs) {
-                log.debug(lp + "Received empty CfDef list for keyspace {}; not truncating CFs", keySpaceName);
-                return;
+                if (null == cfDefs) {
+                    log.debug(lp + "Received empty CfDef list for keyspace {}; not truncating CFs", keySpaceName);
+                    return;
+                }
+
+                for (final CfDef cfDef : ksDef.getCf_defs()) {
+                    client.truncate(cfDef.name);
+                    log.info(lp + "Truncated CF {} in keyspace {}", cfDef.name, keySpaceName);
+                }
+
+                /*
+                 * Clearing the CTConnectionPool is unnecessary. This method
+                 * removes no keyspaces. All open Cassandra connections will
+                 * remain valid.
+                 */
             }
-
-            for (CfDef cfDef : ksDef.getCf_defs()) {
-                client.truncate(cfDef.name);
-                log.info(lp + "Truncated CF {} in keyspace {}", cfDef.name, keySpaceName);
-            }
-
-            /*
-             * Clearing the CTConnectionPool is unnecessary. This method
-             * removes no keyspaces. All open Cassandra connections will
-             * remain valid.
-             */
         } catch (Exception e) {
             throw new TemporaryBackendException(e);
         } finally {
@@ -443,6 +448,29 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 }
             }
             pool.returnObjectUnsafe(SYSTEM_KS, conn);
+        }
+    }
+
+    @Override
+    public boolean exists() throws BackendException {
+        CTConnection connection = null;
+
+        try {
+            connection = pool.borrowObject(SYSTEM_KS);
+            final Cassandra.Client client = connection.getClient();
+
+            try {
+                // Side effect: throws Exception if keyspaceName doesn't exist
+                client.set_keyspace(keySpaceName); // Don't remove
+                client.set_keyspace(SYSTEM_KS);
+                return true;
+            } catch (InvalidRequestException e) {
+                return false;
+            }
+        } catch (Exception e) {
+            throw new TemporaryBackendException(e);
+        } finally {
+            pool.returnObjectUnsafe(SYSTEM_KS, connection);
         }
     }
 

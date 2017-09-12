@@ -38,7 +38,9 @@ public class JanusGraphCleanup {
      * @param graph
      * @throws IllegalArgumentException if the graph has not been shut down
      * @throws org.janusgraph.core.JanusGraphException if clearing the storage is unsuccessful
+     * @deprecated Use {@link org.janusgraph.core.JanusGraphFactory#drop(JanusGraph)}
      */
+    @Deprecated
     public static final void clear(JanusGraph graph) {
         Preconditions.checkNotNull(graph);
         Preconditions.checkArgument(graph instanceof StandardJanusGraph,"Invalid graph instance detected: %s",graph.getClass());

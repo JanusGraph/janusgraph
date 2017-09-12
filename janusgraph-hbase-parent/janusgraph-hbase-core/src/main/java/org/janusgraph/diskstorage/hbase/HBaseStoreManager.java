@@ -19,6 +19,7 @@ import static org.janusgraph.diskstorage.Backend.INDEXSTORE_NAME;
 import static org.janusgraph.diskstorage.Backend.LOCK_STORE_SUFFIX;
 import static org.janusgraph.diskstorage.Backend.SYSTEM_MGMT_LOG_NAME;
 import static org.janusgraph.diskstorage.Backend.SYSTEM_TX_LOG_NAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_STORE_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME;
 
@@ -492,9 +493,22 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     @Override
     public void clearStorage() throws BackendException {
         try (AdminMask adm = getAdminInterface()) {
-            adm.clearTable(tableName, times.getTime(times.getTime()));
+            if (this.storageConfig.get(DROP_ON_CLEAR)) {
+                adm.dropTable(tableName);
+            } else {
+                adm.clearTable(tableName, times.getTime(times.getTime()));
+            }
         } catch (IOException e)
         {
+            throw new TemporaryBackendException(e);
+        }
+    }
+
+    @Override
+    public boolean exists() throws BackendException {
+        try (final AdminMask adm = getAdminInterface()) {
+            return adm.tableExists(tableName);
+        } catch (IOException e) {
             throw new TemporaryBackendException(e);
         }
     }
