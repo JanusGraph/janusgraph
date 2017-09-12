@@ -64,6 +64,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -860,9 +861,8 @@ public class SolrIndex implements IndexProvider {
             final ClusterState clusterState = zkStateReader.getClusterState();
             for (final String collection : clusterState.getCollections()) {
                 logger.debug("Clearing collection [{}] in Solr",collection);
-                final UpdateRequest deleteAll = newUpdateRequest();
-                deleteAll.deleteByQuery("*:*");
-                solrClient.request(deleteAll, collection);
+                final CollectionAdminRequest.Delete request = CollectionAdminRequest.deleteCollection(collection);
+                solrClient.request(request, collection);
             }
 
         } catch (final SolrServerException e) {
@@ -965,6 +965,21 @@ public class SolrIndex implements IndexProvider {
     @Override
     public IndexFeatures getFeatures() {
         return SOLR_FEATURES;
+    }
+
+    @Override
+    public boolean exists() throws BackendException {
+        if (mode!=Mode.CLOUD) throw new UnsupportedOperationException("Operation only supported for SolrCloud");
+        final CloudSolrClient server = (CloudSolrClient) solrClient;
+        try {
+            final ZkStateReader zkStateReader = server.getZkStateReader();
+            zkStateReader.updateClusterState();
+            final ClusterState clusterState = zkStateReader.getClusterState();
+            final Map<String, DocCollection> collections = clusterState.getCollectionsMap();
+            return collections != null && !collections.isEmpty();
+        } catch (KeeperException | InterruptedException e) {
+            throw new PermanentBackendException("Unable to check if index exists", e);
+        }
     }
 
     /*

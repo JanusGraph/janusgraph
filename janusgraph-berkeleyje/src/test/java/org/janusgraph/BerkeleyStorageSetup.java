@@ -24,7 +24,8 @@ public class BerkeleyStorageSetup extends StorageSetup {
     public static ModifiableConfiguration getBerkeleyJEConfiguration(String dir) {
         return buildGraphConfiguration()
                 .set(STORAGE_BACKEND,"berkeleyje")
-                .set(STORAGE_DIRECTORY, dir);
+                .set(STORAGE_DIRECTORY, dir)
+                .set(DROP_ON_CLEAR, false);
     }
 
     public static ModifiableConfiguration getBerkeleyJEConfiguration() {

@@ -9,9 +9,12 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
+
 public class CachingCQLStoreManager extends CQLStoreManager {
 
     private static Cluster cluster;
+
     private static Map<String,Session> sessions = new HashMap<>();
 
     public CachingCQLStoreManager(final Configuration configuration) throws BackendException {
@@ -36,6 +39,10 @@ public class CachingCQLStoreManager extends CQLStoreManager {
 
     @Override
     public void close() {
+        if (this.storageConfig.get(DROP_ON_CLEAR)) {
+            sessions.values().forEach(Session::close);
+            sessions.clear();
+        }
         this.executorService.shutdownNow();
     }
 

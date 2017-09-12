@@ -96,6 +96,11 @@ public class TestMockIndexProvider implements IndexProvider {
     }
 
     @Override
+    public boolean exists() throws BackendException {
+        return index.exists();
+    }
+
+    @Override
     public boolean supports(KeyInformation information, JanusGraphPredicate janusgraphPredicate) {
         return index.supports(information,janusgraphPredicate);
     }
@@ -114,4 +119,5 @@ public class TestMockIndexProvider implements IndexProvider {
     public IndexFeatures getFeatures() {
         return index.getFeatures();
     }
+
 }

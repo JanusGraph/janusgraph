@@ -21,6 +21,7 @@ import com.google.common.collect.Iterators;
 import org.janusgraph.core.log.LogProcessorFramework;
 import org.janusgraph.core.log.TransactionRecovery;
 import org.janusgraph.diskstorage.Backend;
+import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.StandardStoreManager;
 import org.janusgraph.diskstorage.configuration.*;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
@@ -105,6 +106,25 @@ public class JanusGraphFactory {
      */
     public static JanusGraph open(ReadConfiguration configuration) {
         return new StandardJanusGraph(new GraphDatabaseConfiguration(configuration));
+    }
+
+    /**
+     * Drop graph database, deleting all data in storage and indexing backends. Graph can be open or closed (will be
+     * closed as part of the drop operation).
+     *
+     * <p><b>WARNING: This is an irreversible operation that will delete all graph and index data.</b></p>
+     * @param graph JanusGraph graph database. Can be open or closed.
+     * @throws BackendException If an error occurs during deletion
+     */
+    public static void drop(JanusGraph graph) throws BackendException {
+        Preconditions.checkNotNull(graph);
+        Preconditions.checkArgument(graph instanceof StandardJanusGraph,"Invalid graph instance detected: %s",graph.getClass());
+        final StandardJanusGraph g = (StandardJanusGraph) graph;
+        if (graph.isOpen()) {
+            graph.close();
+        }
+        final GraphDatabaseConfiguration config = g.getConfiguration();
+        config.getBackend().clearStorage();
     }
 
     /**

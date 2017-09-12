@@ -50,6 +50,11 @@ public class KCVSManagerProxy implements KeyColumnValueStoreManager {
     }
 
     @Override
+    public boolean exists() throws BackendException {
+        return manager.exists();
+    }
+
+    @Override
     public StoreFeatures getFeatures() {
         return manager.getFeatures();
     }

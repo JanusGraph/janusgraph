@@ -26,6 +26,7 @@ import org.janusgraph.diskstorage.KeyColumnValueStoreTest;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.testcategory.OrderedKeyStoreTests;
 import org.janusgraph.testcategory.UnorderedKeyStoreTests;
 import org.junit.BeforeClass;
@@ -151,4 +152,10 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
         final StoreFeatures features = this.manager.getFeatures();
         assertTrue(features.hasCellTTL());
     }
+
+    @Override
+    public CQLStoreManager openStorageManagerForClearStorageTest() throws Exception {
+        return openStorageManager(getBaseStorageConfiguration().set(GraphDatabaseConfiguration.DROP_ON_CLEAR, true));
+    }
+
 }

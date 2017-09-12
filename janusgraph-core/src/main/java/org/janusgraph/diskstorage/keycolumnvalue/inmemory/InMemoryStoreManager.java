@@ -88,6 +88,12 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
         for (InMemoryKeyColumnValueStore store : stores.values()) {
             store.clear();
         }
+        stores.clear();
+    }
+
+    @Override
+    public boolean exists() throws BackendException {
+        return !stores.isEmpty();
     }
 
     @Override

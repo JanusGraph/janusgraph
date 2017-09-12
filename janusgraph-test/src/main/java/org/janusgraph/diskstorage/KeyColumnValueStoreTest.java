@@ -1206,4 +1206,27 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         return jobBuilder.execute().get();
     }
 
+    @Test
+    public void testClearStorage() throws Exception {
+        final String[][] values = generateValues();
+        loadValues(values);
+        close();
+
+        manager = openStorageManagerForClearStorageTest();
+        assertTrue("storage should exist before clearing", manager.exists());
+        manager.clearStorage();
+        try {
+            assertFalse("storage should not exist after clearing", manager.exists());
+        } catch (Exception e) {
+            // Retry to accommodate backends (e.g. BerkeleyDB) which may require a clean manager after clearing storage
+            manager.close();
+            manager = openStorageManager();
+            assertFalse("storage should not exist after clearing", manager.exists());
+        }
+    }
+
+    protected KeyColumnValueStoreManager openStorageManagerForClearStorageTest() throws Exception {
+        return openStorageManager();
+    }
+
 }

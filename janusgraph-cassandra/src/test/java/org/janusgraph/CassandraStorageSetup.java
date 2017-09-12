@@ -62,6 +62,7 @@ public class CassandraStorageSetup {
         config.set(CONNECTION_TIMEOUT, Duration.ofSeconds(60L));
         config.set(STORAGE_BACKEND, backend);
         if (HOSTNAME != null) config.set(STORAGE_HOSTS, new String[]{HOSTNAME});
+        config.set(DROP_ON_CLEAR, false);
         return config;
     }
 

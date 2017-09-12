@@ -130,4 +130,11 @@ public interface IndexProvider extends IndexInformation {
      */
     public void clearStorage() throws BackendException;
 
+    /**
+     * Checks whether the index exists.
+     * @return Flag indicating whether index exists
+     * @throws org.janusgraph.diskstorage.BackendException
+     */
+    public boolean exists() throws BackendException;
+
 }
