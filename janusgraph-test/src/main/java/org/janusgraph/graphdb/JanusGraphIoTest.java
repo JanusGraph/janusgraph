@@ -14,38 +14,39 @@
 
 package org.janusgraph.graphdb;
 
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONIo;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONVersion;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.TypeInfo;
-import org.apache.tinkerpop.shaded.jackson.databind.module.SimpleModule;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.attribute.Geoshape;
-import org.janusgraph.core.attribute.JtsGeoshapeHelper;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.example.GraphOfTheGodsFactory;
-
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.Polygon;
-
-import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
-import org.apache.tinkerpop.gremlin.structure.io.GraphWriter;
-import org.apache.tinkerpop.gremlin.structure.io.IoCore;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
-import org.janusgraph.graphdb.tinkerpop.io.graphson.JanusGraphSONModule;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.function.Function;
+
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
+import org.apache.tinkerpop.gremlin.structure.io.GraphWriter;
+import org.apache.tinkerpop.gremlin.structure.io.IoCore;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONReader;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONVersion;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONWriter;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.TypeInfo;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.core.attribute.JtsGeoshapeHelper;
+import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.example.GraphOfTheGodsFactory;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistryV1d0;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Polygon;
 
 /**
  * Tests JanusGraph specific serialization classes not covered by the TinkerPop suite.
@@ -61,25 +62,17 @@ public abstract class JanusGraphIoTest extends JanusGraphBaseTest {
 
     @Parameterized.Parameters(name = "{0}")
     public static Iterable<Object[]> data() {
-        // clear geoshape serializers from default registry for testing
-        JanusGraphSONModule.getInstance().addSerializer(Geoshape.class, null);
-        JanusGraphSONModule.getInstance().addDeserializer(Geoshape.class, null);
-
-        final SimpleModule moduleV1d0 = new SimpleModule();
-        moduleV1d0.addSerializer(Geoshape.class, new Geoshape.GeoshapeGsonSerializerV1d0());
-        moduleV1d0.addDeserializer(Geoshape.class, new Geoshape.GeoshapeGsonDeserializerV1d0());
-
-        final SimpleModule moduleV2d0 = new SimpleModule();
-        moduleV2d0.addSerializer(Geoshape.class, new Geoshape.GeoshapeGsonSerializerV2d0());
-        moduleV2d0.addDeserializer(Geoshape.class, new Geoshape.GeoshapeGsonDeserializerV2d0());
+        
+        final GraphSONMapper v1mapper = GraphSONMapper.build().version(GraphSONVersion.V1_0).typeInfo(TypeInfo.PARTIAL_TYPES).addRegistry(JanusGraphIoRegistryV1d0.getInstance()).create();
+        final GraphSONMapper v2mapper = GraphSONMapper.build().version(GraphSONVersion.V2_0).typeInfo(TypeInfo.PARTIAL_TYPES).addRegistry(JanusGraphIoRegistry.getInstance()).create();
 
         return Arrays.asList(new Object[][]{
             {"graphson-v1-embedded",
-                (Function<Graph, GraphReader>) g -> g.io(IoCore.graphson()).reader().mapper(g.io(GraphSONIo.build(GraphSONVersion.V1_0)).mapper().addCustomModule(moduleV1d0).typeInfo(TypeInfo.PARTIAL_TYPES).create()).create(),
-                (Function<Graph, GraphWriter>) g -> g.io(IoCore.graphson()).writer().mapper(g.io(GraphSONIo.build(GraphSONVersion.V1_0)).mapper().addCustomModule(moduleV1d0).typeInfo(TypeInfo.PARTIAL_TYPES).create()).create()},
+                (Function<Graph, GraphReader>) g -> GraphSONReader.build().mapper(v1mapper).create(),
+                (Function<Graph, GraphWriter>) g -> GraphSONWriter.build().mapper(v1mapper).create()},
             {"graphson-v2-embedded",
-                (Function<Graph, GraphReader>) g -> g.io(IoCore.graphson()).reader().mapper(g.io(GraphSONIo.build(GraphSONVersion.V2_0)).mapper().addCustomModule(moduleV2d0).typeInfo(TypeInfo.PARTIAL_TYPES).create()).create(),
-                (Function<Graph, GraphWriter>) g -> g.io(IoCore.graphson()).writer().mapper(g.io(GraphSONIo.build(GraphSONVersion.V2_0)).mapper().addCustomModule(moduleV2d0).typeInfo(TypeInfo.PARTIAL_TYPES).create()).create()},
+                (Function<Graph, GraphReader>) g -> GraphSONReader.build().mapper(v2mapper).create(),
+                (Function<Graph, GraphWriter>) g -> GraphSONWriter.build().mapper(v2mapper).create()},
             {"gryo",
                 (Function<Graph, GraphReader>) g -> g.io(IoCore.gryo()).reader().mapper(g.io(IoCore.gryo()).mapper().create()).create(),
                 (Function<Graph, GraphWriter>) g -> g.io(IoCore.gryo()).writer().mapper(g.io(IoCore.gryo()).mapper().create()).create()}
