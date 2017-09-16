@@ -14,6 +14,9 @@
 
 package org.janusgraph.diskstorage.es;
 
+import com.google.common.collect.ImmutableMap;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.attribute.Text;
@@ -24,6 +27,7 @@ import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.es.rest.RestIndexMappings;
 import org.janusgraph.diskstorage.indexing.*;
 import static org.janusgraph.diskstorage.es.ElasticSearchIndex.*;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
@@ -47,16 +51,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.base.Joiner;
-
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
@@ -76,43 +76,38 @@ public class ElasticSearchConfigTest {
 
     private static final String ANALYZER_STANDARD = "standard";
 
-    private static final int PORT = 9200;
-
     private ElasticsearchRunner esr;
 
     private HttpHost host;
 
     private CloseableHttpClient httpClient;
 
+    private ObjectMapper objectMapper;
+
     @Before
     public void setup() throws Exception {
-        if (!ElasticsearchRunner.IS_EXTERNAL) {
-            esr = new ElasticsearchRunner();
-            esr.start();
-            Thread.sleep(5000);
-        }
+        esr = new ElasticsearchRunner();
+        esr.start();
 
         httpClient = HttpClients.createDefault();
-        try {
-            host = new HttpHost(InetAddress.getByName("127.0.0.1"), 9200);
-        } catch (UnknownHostException e) {
-            fail(e.getMessage());
-        }
+        host = new HttpHost(InetAddress.getByName(esr.getHostname()), ElasticsearchRunner.PORT);
+
+        objectMapper = new ObjectMapper();
+        IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("_template/template_1")));
     }
 
     @After
     public void teardown() throws Exception {
-        if (!ElasticsearchRunner.IS_EXTERNAL) {
-            esr.stop();
-        }
+        IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("janusgraph*")));
         IOUtils.closeQuietly(httpClient);
+        esr.stop();
     }
 
     @Test
     public void testJanusGraphFactoryBuilder() {
         JanusGraphFactory.Builder builder = JanusGraphFactory.build();
         builder.set("storage.backend", "inmemory");
-        builder.set("index." + INDEX_NAME + ".elasticsearch.hostname", "127.0.0.1:" + PORT);
+        builder.set("index." + INDEX_NAME + ".elasticsearch.hostname", esr.getHostname() + ":" + ElasticsearchRunner.PORT);
         JanusGraph graph = builder.open(); // Must not throw an exception
         assertTrue(graph.isOpen());
         graph.close();
@@ -120,17 +115,13 @@ public class ElasticSearchConfigTest {
 
     @Test
     public void testClient() throws BackendException, InterruptedException {
-        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
-        config.set(INTERFACE, ElasticSearchSetup.REST_CLIENT.toString(), INDEX_NAME);
-        config.set(INDEX_HOSTS, new String[]{ "127.0.0.1:" + PORT }, INDEX_NAME);
+        ModifiableConfiguration config = esr.setElasticsearchConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
         IndexProvider idx = open(indexConfig);
         simpleWriteAndQuery(idx);
         idx.close();
 
-        config = GraphDatabaseConfiguration.buildGraphConfiguration();
-        config.set(INTERFACE, ElasticSearchSetup.REST_CLIENT.toString(), INDEX_NAME);
-        config.set(INDEX_HOSTS, new String[]{ "10.11.12.13:" + PORT }, INDEX_NAME);
+        config.set(INDEX_HOSTS, new String[]{ "10.11.12.13:" + ElasticsearchRunner.PORT }, INDEX_NAME);
         indexConfig = config.restrictTo(INDEX_NAME);
         Throwable failure = null;
         try {
@@ -138,7 +129,6 @@ public class ElasticSearchConfigTest {
         } catch (Throwable t) {
             failure = t;
         }
-        // idx.close();
         Assert.assertNotNull("ES client failed to throw exception on connection failure", failure);
     }
 
@@ -151,124 +141,114 @@ public class ElasticSearchConfigTest {
         ModifiableConfiguration config =
             new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
                 cc, BasicConfiguration.Restriction.NONE);
-        config.set(INTERFACE, ElasticSearchSetup.REST_CLIENT.toString(), INDEX_NAME);
-        config.set(INDEX_HOSTS, new String[]{ "127.0.0.1:" + PORT }, INDEX_NAME);
-        config.set(GraphDatabaseConfiguration.INDEX_NAME, "janusgraph_creation_opts", INDEX_NAME);
+        esr.setElasticsearchConfiguration(config, INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
         IndexProvider idx = open(indexConfig);
         simpleWriteAndQuery(idx);
+        idx.close();
 
         ElasticSearchClient client = ElasticSearchSetup.REST_CLIENT.connect(indexConfig).getClient();
 
-        assertEquals(String.valueOf(shards), client.getIndexSettings("janusgraph_creation_opts_jvmlocal_test_store").get("number_of_shards"));
+        assertEquals(String.valueOf(shards), client.getIndexSettings("janusgraph_jvmlocal_test_store").get("number_of_shards"));
 
-        idx.close();
         client.close();
     }
 
     @Test
-    public void testExternalMappingsViaMapping() throws BackendException {
+    public void testExternalMappingsViaMapping() throws Exception {
         final Duration maxWrite = Duration.ofMillis(2000L);
         final String storeName = "test_mapping";
-        final CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
-        final ModifiableConfiguration config = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, cc,
-                BasicConfiguration.Restriction.NONE);
-        config.set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME);
-        final Configuration indexConfig = config.restrictTo(INDEX_NAME);
-        InputStream fis = null;
-        try (CloseableHttpResponse res = httpClient.execute(host, new HttpDelete("janusgraph"))) {} catch (Exception e) {}
+        final Configuration indexConfig = GraphDatabaseConfiguration.buildGraphConfiguration().set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME).restrictTo(INDEX_NAME);
+        IndexProvider idx = open(indexConfig);
+        final ElasticMajorVersion version = ((ElasticSearchIndex) idx).getVersion();
+
+        //Test create index KO mapping is not push
+        final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest
+            .getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD));
+        final BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
+        final IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
         try {
-            //Test create index KO mapping is not push
-            try {
-                final IndexProvider idx = new  ElasticSearchIndex(indexConfig);
-                final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest
-                        .getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD));
-                final BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
-                final IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
-                idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
-                fail("should fail");
-            } catch (PermanentBackendException e) {
-            }
-            final HttpPut newMapping = new HttpPut("janusgraph_"+storeName);
-            fis = getClass().getResourceAsStream("/mapping.json");
-            newMapping.setEntity(new StringEntity(Joiner.on("").join(IOUtils.readLines(fis)), Charset.forName("UTF-8")));
-            executeRequest(newMapping);
-
-            final IndexProvider idx = new ElasticSearchIndex(indexConfig);
-            final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest
-                    .getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD));
-            final BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
-            final IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
-
-            // Test date property OK
             idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
-            // Test weight property KO
-            try {
-                idx.register(storeName, "weight", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("weight"), itx);
-                fail("should fail");
-            } catch (BackendException e) {
+            fail("should fail");
+        } catch (PermanentBackendException e) {
+        }
+
+        final HttpPut newMapping = new HttpPut("janusgraph_"+storeName);
+        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(readMapping(version)), Charset.forName("UTF-8")));
+        executeRequest(newMapping);
+
+        // Test date property OK
+        idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
+        // Test weight property KO
+        try {
+            idx.register(storeName, "weight", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("weight"), itx);
+            fail("should fail");
+        } catch (BackendException e) {
+        }
+        itx.rollback();
+        idx.close();
+    }
+
+    private RestIndexMappings readMapping(ElasticMajorVersion version) throws IOException {
+        try (final InputStream inputStream = getClass().getResourceAsStream("/mapping.json")){
+            final RestIndexMappings mappings = objectMapper.readValue(inputStream, new TypeReference<RestIndexMappings>() {});
+            if (version.getValue() < 5) {
+                // downgrade from text to string and keyword to string/not-analyzed
+                mappings.getMappings().values().stream()
+                    .flatMap(mapping -> mapping.getProperties().entrySet().stream())
+                    .map(entry -> (Map<String, Object>) entry.getValue())
+                    .forEach(properties -> {
+                        if (properties.get("type").equals("keyword")) {
+                            properties.put("type", "string");
+                            properties.put("index", "not_analyzed");
+                        } else if (properties.get("type").equals("text")) {
+                            properties.put("type", "string");
+                        }
+                    });
             }
-        } catch (IOException e) {
-            fail(e.getMessage());
-        } finally {
-            IOUtils.closeQuietly(fis);
-            try (CloseableHttpResponse res = httpClient.execute(host, new HttpDelete("janusgraph_"+storeName))) {} catch (Exception e) {}
+            return mappings;
         }
     }
 
     @Test
-    public void testExternalMappingsViaTemplate() throws BackendException {
-        try (CloseableHttpResponse res = httpClient.execute(host, new HttpDelete("janusgraph*"))) {} catch (Exception e) {}
-        FileInputStream fis = null;
+    public void testExternalMappingsViaTemplate() throws Exception {
+        final Duration maxWrite = Duration.ofMillis(2000L);
+        final String storeName = "test_mapping";
+        final Configuration indexConfig = GraphDatabaseConfiguration.buildGraphConfiguration().set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME).restrictTo(INDEX_NAME);
+        IndexProvider idx = open(indexConfig);
+        final ElasticMajorVersion version = ((ElasticSearchIndex) idx).getVersion();
+
+        final HttpPut newTemplate = new HttpPut("_template/template_1");
+        final Map<String, Object> content = ImmutableMap.of("template", "janusgraph_test_mapping*", "mappings", readMapping(version).getMappings());
+        newTemplate.setEntity(new StringEntity(objectMapper.writeValueAsString(content), Charset.forName("UTF-8")));
+        executeRequest(newTemplate);
+        final HttpPut newMapping = new HttpPut("janusgraph_" + storeName);
+        executeRequest(newMapping);
+
+        final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest
+            .getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD));
+        final BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
+        final IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
+
+        // Test date property OK
+        idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
+        // Test weight property KO
         try {
-            HttpPut newTemplate = new HttpPut("_template/template_1");
-            fis = new FileInputStream(new File("src/test/resources/template.json"));
-            newTemplate.setEntity(new StringEntity(Joiner.on("").join(IOUtils.readLines(fis)), Charset.forName("UTF-8")));
-            executeRequest(newTemplate);
-            final String storeName = "test_mapping";
-            final HttpPut newMapping = new HttpPut("janusgraph_"+storeName);
-            executeRequest(newMapping);
-            final Duration maxWrite = Duration.ofMillis(2000L);
-            final CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
-            final ModifiableConfiguration config = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, cc,
-                    BasicConfiguration.Restriction.NONE);
-            config.set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME);
-            final Configuration indexConfig = config.restrictTo(INDEX_NAME);
-            final IndexProvider idx = new ElasticSearchIndex(indexConfig);
-            final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest
-                    .getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD));
-            final BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
-            final IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
-            // Test date property OK
-            idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
-            // Test weight property KO
-            try {
-                idx.register(storeName, "weight", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("weight"), itx);
-                fail("should fail");
-            } catch (BackendException e) {
-            }
-        } catch (IOException e) {
-            fail(e.getMessage());
-        } finally {
-            IOUtils.closeQuietly(fis);
-            try (CloseableHttpResponse res = httpClient.execute(host, new HttpDelete("_template/template_1"))) {} catch (Exception e) {}
+            idx.register(storeName, "weight", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("weight"), itx);
+            fail("should fail");
+        } catch (BackendException e) {
         }
+        itx.rollback();
+        idx.close();
     }
 
     @Test
     public void testSplitIndexToMultiType() throws InterruptedException, BackendException, IOException {
-        CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
-        ModifiableConfiguration config =
-            new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
-                cc, BasicConfiguration.Restriction.NONE);
-        config.set(INTERFACE, ElasticSearchSetup.REST_CLIENT.toString(), INDEX_NAME);
-        config.set(INDEX_HOSTS, new String[]{ "127.0.0.1:" + PORT }, INDEX_NAME);
-        config.set(GraphDatabaseConfiguration.INDEX_NAME, "janusgraph_split", INDEX_NAME);
+        ModifiableConfiguration config = esr.setElasticsearchConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME);
         config.set(USE_DEPRECATED_MULTITYPE_INDEX, false, INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
         IndexProvider idx = open(indexConfig);
         simpleWriteAndQuery(idx);
-        idx.close();
 
         try {
             config.set(USE_DEPRECATED_MULTITYPE_INDEX, true, INDEX_NAME);
@@ -277,22 +257,16 @@ public class ElasticSearchConfigTest {
             fail("should fail");
         } catch (IllegalArgumentException e) {
         }
+        idx.close();
     }
 
     @Test
     public void testMultiTypeToSplitIndex() throws InterruptedException, BackendException, IOException {
-        CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
-        ModifiableConfiguration config =
-            new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
-                cc, BasicConfiguration.Restriction.NONE);
-        config.set(INTERFACE, ElasticSearchSetup.REST_CLIENT.toString(), INDEX_NAME);
-        config.set(INDEX_HOSTS, new String[]{ "127.0.0.1:" + PORT }, INDEX_NAME);
-        config.set(GraphDatabaseConfiguration.INDEX_NAME, "janusgraph_multitype", INDEX_NAME);
+        ModifiableConfiguration config = esr.setElasticsearchConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME);
         config.set(USE_DEPRECATED_MULTITYPE_INDEX, true, INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
         IndexProvider idx = open(indexConfig);
         simpleWriteAndQuery(idx);
-        idx.close();
 
         try {
             config.set(USE_DEPRECATED_MULTITYPE_INDEX, false, INDEX_NAME);
@@ -301,10 +275,10 @@ public class ElasticSearchConfigTest {
             fail("should fail");
         } catch (IllegalArgumentException e) {
         }
+        idx.close();
     }
 
     private void simpleWriteAndQuery(IndexProvider idx) throws BackendException, InterruptedException {
-
         final Duration maxWrite = Duration.ofMillis(2000L);
         final String storeName = "jvmlocal_test_store";
         final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest.getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_STANDARD, ANALYZER_KEYWORD));
@@ -325,14 +299,11 @@ public class ElasticSearchConfigTest {
     }
 
     private void executeRequest(HttpRequestBase request) throws IOException {
-        CloseableHttpResponse res = null;
-        try {
-            res = httpClient.execute(host, request);
-            assertTrue(res.getStatusLine().getStatusCode() >= 200);
-            assertTrue(res.getStatusLine().getStatusCode() < 300);
+        request.setHeader("Content-Type", "application/json");
+        try (final CloseableHttpResponse res = httpClient.execute(host, request)) {
+            final int statusCode = res.getStatusLine().getStatusCode();
+            assertTrue("request failed", statusCode >= 200 && statusCode < 300);
             assertFalse(EntityUtils.toString(res.getEntity()).contains("error"));
-        } finally {
-            IOUtils.closeQuietly(res);
         }
     }
 

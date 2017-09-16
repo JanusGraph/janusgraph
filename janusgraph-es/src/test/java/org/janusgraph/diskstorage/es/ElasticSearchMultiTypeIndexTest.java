@@ -14,27 +14,51 @@
 
 package org.janusgraph.diskstorage.es;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpHost;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import static org.janusgraph.diskstorage.es.ElasticSearchIndex.BULK_REFRESH;
-import static org.janusgraph.diskstorage.es.ElasticSearchIndex.INTERFACE;
+import org.junit.After;
+import org.junit.Before;
+
+import java.net.InetAddress;
+
 import static org.janusgraph.diskstorage.es.ElasticSearchIndex.USE_DEPRECATED_MULTITYPE_INDEX;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
 
 /**
  * @author David Clement (david.clement90@laposte.net)
  */
-public class ElasticSearchMutliTypeIndexTest extends ElasticSearchIndexTest {
+public class ElasticSearchMultiTypeIndexTest extends ElasticSearchIndexTest {
+
+    @Before @Override
+    public void setUp() throws Exception {
+        clear();
+        super.setUp();
+    }
+
+    @After @Override
+    public void tearDown() throws Exception {
+        super.tearDown();
+        clear();
+    }
+
+    private void clear() throws Exception {
+        try (final CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            final HttpHost host = new HttpHost(InetAddress.getByName(esr.getHostname()), ElasticsearchRunner.PORT);
+            IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("janusgraph*")));
+        }
+    }
 
     public Configuration getESTestConfig() {
         final String index = "es";
-        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
-        config.set(INTERFACE, ElasticSearchSetup.REST_CLIENT.toString(), index);
-        config.set(INDEX_HOSTS, new String[]{ "127.0.0.1" }, index);
-        config.set(BULK_REFRESH, "wait_for", index);
-        config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index);
+        final ModifiableConfiguration config = esr.setElasticsearchConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), index);
         config.set(USE_DEPRECATED_MULTITYPE_INDEX, true, index);
+        config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index);
         return config.restrictTo(index);
     }
+
 }
