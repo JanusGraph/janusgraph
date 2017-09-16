@@ -19,6 +19,7 @@ import org.janusgraph.diskstorage.indexing.IndexFeatures;
 
 import java.util.Map;
 
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.CUSTOM_ALL_FIELD;
 import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_INDEX_KEY;
 import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_TYPE_KEY;
 import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_ANALYZER;

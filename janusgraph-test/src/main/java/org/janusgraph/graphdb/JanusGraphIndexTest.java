@@ -1056,9 +1056,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         JanusGraphVertex v2 = tx.addVertex();
         JanusGraphVertex v3 = tx.addVertex();
 
-        v1.property("field1", "Hello Hello Hello Hello Hello Hello Hello Hello");
+        v1.property("field1", "Hello Hello Hello Hello Hello Hello Hello Hello world");
         v2.property("field1", "Hello blue and yellow meet green");
-        v3.property("field1", "Hello");
+        v3.property("field1", "Hello Hello world world");
 
         tx.commit();
 
@@ -1602,9 +1602,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         JanusGraphVertex v2 = tx.addVertex();
         JanusGraphVertex v3 = tx.addVertex();
 
-        v1.property("text", "Hello Hello Hello Hello Hello Hello Hello Hello");
+        v1.property("text", "Hello Hello Hello Hello Hello Hello Hello Hello world");
         v2.property("text", "Hello abab abab fsdfsd sfdfsd sdffs fsdsdf fdf fsdfsd aera fsad abab abab fsdfsd sfdf");
-        v3.property("text", "Hello");
+        v3.property("text", "Hello Hello world world");
 
         tx.commit();
 

@@ -25,7 +25,6 @@ import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.attribute.*;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexProviderTest;
 import org.janusgraph.core.schema.Mapping;
@@ -39,9 +38,6 @@ import org.junit.Test;
 import java.util.Date;
 import java.util.UUID;
 
-import static org.janusgraph.diskstorage.es.ElasticSearchIndex.BULK_REFRESH;
-import static org.janusgraph.diskstorage.es.ElasticSearchIndex.INTERFACE;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -53,21 +49,17 @@ import static org.junit.Assert.fail;
 
 public class ElasticSearchIndexTest extends IndexProviderTest {
 
-    private static ElasticsearchRunner esr;
+    static ElasticsearchRunner esr;
 
     @BeforeClass
     public static void startElasticsearch() {
-        if (!ElasticsearchRunner.IS_EXTERNAL) {
-            esr = new ElasticsearchRunner();
-            esr.start();
-        }
+        esr = new ElasticsearchRunner();
+        esr.start();
     }
 
     @AfterClass
     public static void stopElasticsearch() {
-        if (!ElasticsearchRunner.IS_EXTERNAL) {
-            esr.stop();
-        }
+        esr.stop();
     }
 
     @Override
@@ -92,12 +84,9 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
 
     public Configuration getESTestConfig() {
         final String index = "es";
-        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
-        config.set(INTERFACE, ElasticSearchSetup.REST_CLIENT.toString(), index);
-        config.set(INDEX_HOSTS, new String[]{ "127.0.0.1" }, index);
-        config.set(BULK_REFRESH, "wait_for", index);
-        config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index);
-        return config.restrictTo(index);
+        return esr.setElasticsearchConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), index)
+            .set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index)
+            .restrictTo(index);
     }
 
     @Test
