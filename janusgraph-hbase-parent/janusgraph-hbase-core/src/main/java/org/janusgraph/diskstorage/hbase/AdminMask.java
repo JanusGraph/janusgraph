@@ -37,6 +37,13 @@ public interface AdminMask extends Closeable
 
     void clearTable(String tableName, long timestamp) throws IOException;
 
+    /**
+     * Drop given table. Table can be either enabled or disabled.
+     * @param tableName Name of the table to delete
+     * @throws IOException
+     */
+    void dropTable(String tableName) throws IOException;
+
     HTableDescriptor getTableDescriptor(String tableName) throws TableNotFoundException, IOException;
 
     boolean tableExists(String tableName) throws IOException;

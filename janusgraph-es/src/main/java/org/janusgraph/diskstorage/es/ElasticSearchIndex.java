@@ -1058,4 +1058,13 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
+    @Override
+    public boolean exists() throws BackendException {
+        try {
+            return client.indexExists(indexName);
+        } catch (IOException e) {
+            throw new PermanentBackendException("Could not check if index " + indexName + " exists", e);
+        }
+    }
+
 }

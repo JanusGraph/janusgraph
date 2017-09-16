@@ -35,4 +35,7 @@ public class InMemoryKeyColumnValueStoreTest extends KeyColumnValueStoreTest {
         //Do nothing
     }
 
+    @Override
+    public void testClearStorage() {}
+
 }

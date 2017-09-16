@@ -64,6 +64,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
@@ -747,6 +751,19 @@ public class LuceneIndex implements IndexProvider {
             FileUtils.deleteDirectory(new File(basePath));
         } catch (IOException e) {
             throw new PermanentBackendException("Could not delete lucene directory: " + basePath, e);
+        }
+    }
+
+    @Override
+    public boolean exists() throws BackendException {
+        if (Files.exists(Paths.get(basePath))) {
+            try (final DirectoryStream<Path> dirStream = Files.newDirectoryStream(Paths.get(basePath))) {
+                return dirStream.iterator().hasNext();
+            } catch (IOException e) {
+                throw new PermanentBackendException("Could not read lucene directory: " + basePath, e);
+            }
+        } else {
+            return false;
         }
     }
 

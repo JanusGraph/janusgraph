@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.hadoop.hbase.TableName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,6 +81,21 @@ public class HBaseAdmin0_98 implements AdminMask
                 }
             }
         }
+    }
+
+    @Override
+    public void dropTable(String tableString) throws IOException {
+        final TableName tableName = TableName.valueOf(tableString);
+
+        if (!adm.tableExists(tableName)) {
+            log.debug("Attempted to drop table {} before it exists (noop)", tableString);
+            return;
+        }
+
+        if (adm.isTableEnabled(tableName)) {
+            adm.disableTable(tableName);
+        }
+        adm.deleteTable(tableName);
     }
 
     @Override
