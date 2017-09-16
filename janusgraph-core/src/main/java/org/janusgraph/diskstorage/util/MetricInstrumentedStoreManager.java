@@ -104,6 +104,11 @@ public class MetricInstrumentedStoreManager implements KeyColumnValueStoreManage
     }
 
     @Override
+    public boolean exists() throws BackendException {
+        return backend.exists();
+    }
+
+    @Override
     public StoreFeatures getFeatures() {
         return backend.getFeatures();
     }

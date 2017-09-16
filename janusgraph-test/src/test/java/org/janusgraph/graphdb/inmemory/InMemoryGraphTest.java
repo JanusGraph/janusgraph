@@ -99,4 +99,7 @@ public class InMemoryGraphTest extends JanusGraphTest {
     @Override
     public void testIndexUpdateSyncWithMultipleInstances() {}
 
+    @Override
+    public void testClearStorage() {}
+
 }

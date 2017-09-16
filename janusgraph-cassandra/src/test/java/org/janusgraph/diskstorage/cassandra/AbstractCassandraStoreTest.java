@@ -24,6 +24,7 @@ import java.util.Map;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
@@ -147,4 +148,10 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
     public AbstractCassandraStoreManager openStorageManager() throws BackendException {
         return openStorageManager(getBaseStorageConfiguration());
     }
+
+    @Override
+    public AbstractCassandraStoreManager openStorageManagerForClearStorageTest() throws Exception {
+        return openStorageManager(getBaseStorageConfiguration().set(GraphDatabaseConfiguration.DROP_ON_CLEAR, true));
+    }
+
 }

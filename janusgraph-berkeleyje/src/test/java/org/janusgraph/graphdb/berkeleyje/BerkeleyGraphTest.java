@@ -16,7 +16,9 @@ package org.janusgraph.graphdb.berkeleyje;
 
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.util.JanusGraphCleanup;
+import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -60,6 +62,19 @@ public class BerkeleyGraphTest extends JanusGraphTest {
             log.debug("Using isolation level {} (null means adapter default) for test method {}", iso, methodName);
         }
         return mcfg.getConfiguration();
+    }
+
+    @Override
+    public void testClearStorage() throws Exception {
+        tearDown();
+        config.set(ConfigElement.getPath(GraphDatabaseConfiguration.DROP_ON_CLEAR), true);
+        Backend backend = getBackend(config, false);
+        assertTrue("graph should exist before clearing storage", backend.getStoreManager().exists());
+        clearGraph(config);
+        backend.close();
+        backend = getBackend(config, false);
+        assertFalse("graph should not exist after clearing storage", backend.getStoreManager().exists());
+        backend.close();
     }
 
     @Test

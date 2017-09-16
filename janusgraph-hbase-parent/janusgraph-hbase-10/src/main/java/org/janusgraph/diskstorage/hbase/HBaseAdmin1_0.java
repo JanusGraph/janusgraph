@@ -24,7 +24,6 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,6 +82,21 @@ public class HBaseAdmin1_0 implements AdminMask
                 }
             }
         }
+    }
+
+    @Override
+    public void dropTable(String tableString) throws IOException {
+        final TableName tableName = TableName.valueOf(tableString);
+
+        if (!adm.tableExists(tableName)) {
+            log.debug("Attempted to drop table {} before it exists (noop)", tableString);
+            return;
+        }
+
+        if (adm.isTableEnabled(tableName)) {
+            adm.disableTable(tableName);
+        }
+        adm.deleteTable(tableName);
     }
 
     @Override

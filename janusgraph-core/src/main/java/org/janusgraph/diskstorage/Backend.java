@@ -550,11 +550,11 @@ public class Backend implements LockerProvider, AutoCloseable {
             userLogManager.close();
 
             scanner.close();
-            edgeStore.close();
-            indexStore.close();
-            idAuthority.close();
-            systemConfig.close();
-            userConfig.close();
+            if (edgeStore != null) edgeStore.close();
+            if (indexStore != null) indexStore.close();
+            if (idAuthority != null) idAuthority.close();
+            if (systemConfig != null) systemConfig.close();
+            if (userConfig != null) userConfig.close();
             storeManager.close();
             if(threadPool != null) {
             	threadPool.shutdown();
