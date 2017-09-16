@@ -80,7 +80,7 @@ public enum ElasticSearchSetup {
             log.debug("Configuring RestClient");
 
             final List<HttpHost> hosts = new ArrayList<>();
-            int defaultPort = config.has(INDEX_PORT) ? config.get(INDEX_PORT) : ElasticSearchIndex.HOST_PORT_DEFAULT;
+            final int defaultPort = config.has(INDEX_PORT) ? config.get(INDEX_PORT) : ElasticSearchIndex.HOST_PORT_DEFAULT;
             for (String host : config.get(INDEX_HOSTS)) {
                 String[] hostparts = host.split(":");
                 String hostname = hostparts[0];
@@ -91,7 +91,9 @@ public enum ElasticSearchSetup {
             }
             RestClient rc = RestClient.builder(hosts.toArray(new HttpHost[hosts.size()])).build();
 
-            RestElasticSearchClient client = new RestElasticSearchClient(rc);
+            final int scrollKeepAlive = config.get(ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE);
+            Preconditions.checkArgument(scrollKeepAlive >= 1, "Scroll Keep alive should be greater or equals than 1");
+            final RestElasticSearchClient client = new RestElasticSearchClient(rc, scrollKeepAlive);
             if (config.has(ElasticSearchIndex.BULK_REFRESH)) {
                 client.setBulkRefresh(config.get(ElasticSearchIndex.BULK_REFRESH));
             }

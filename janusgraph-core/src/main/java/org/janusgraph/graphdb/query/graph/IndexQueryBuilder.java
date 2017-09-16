@@ -14,25 +14,23 @@
 
 package org.janusgraph.graphdb.query.graph;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.Parameter;
-import org.janusgraph.diskstorage.indexing.RawQuery;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.query.BaseQuery;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.janusgraph.graphdb.util.StreamIterable;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Implementation of {@link JanusGraphIndexQuery} for string based queries that are issued directly against the specified
@@ -184,25 +182,12 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
         return this;
     }
 
-    private Iterable<Result<JanusGraphElement>> execute(ElementCategory resultType) {
+    private <E extends JanusGraphElement> Stream<Result<E>> execute(ElementCategory resultType, Class<E> resultClass) {
         Preconditions.checkNotNull(indexName);
         Preconditions.checkNotNull(query);
         if (tx.hasModifications())
             log.warn("Modifications in this transaction might not be accurately reflected in this index query: {}",query);
-        Iterable<RawQuery.Result> result = serializer.executeQuery(this,resultType,tx.getTxHandle(),tx);
-        final Function<Object, ? extends JanusGraphElement> conversionFct = tx.getConversionFunction(resultType);
-        return Iterables.filter(Iterables.transform(result, new Function<RawQuery.Result, Result<JanusGraphElement>>() {
-            @Nullable
-            @Override
-            public Result<JanusGraphElement> apply(@Nullable RawQuery.Result result) {
-                return new ResultImpl<JanusGraphElement>(conversionFct.apply(result.getResult()),result.getScore());
-            }
-        }),new Predicate<Result<JanusGraphElement>>() {
-            @Override
-            public boolean apply(@Nullable Result<JanusGraphElement> r) {
-                return !r.getElement().isRemoved();
-            }
-        });
+        return serializer.executeQuery(this, resultType, tx.getTxHandle(),tx).map(r -> (Result<E>) new ResultImpl<>(tx.getConversionFunction(resultType).apply(r.getResult()), r.getScore())).filter(r -> !r.getElement().isRemoved());
     }
 
     private Long executeTotals(ElementCategory resultType) {
@@ -216,20 +201,35 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     
     @Override
     public Iterable<Result<JanusGraphVertex>> vertices() {
+        return new StreamIterable<>(vertexStream());
+    }
+
+    @Override
+    public Stream<Result<JanusGraphVertex>> vertexStream() {
         setPrefixInternal(VERTEX_PREFIX);
-        return (Iterable)execute(ElementCategory.VERTEX);
+        return execute(ElementCategory.VERTEX, JanusGraphVertex.class);
     }
 
     @Override
     public Iterable<Result<JanusGraphEdge>> edges() {
+        return new StreamIterable<>(edgeStream());
+    }
+
+    @Override
+    public Stream<Result<JanusGraphEdge>> edgeStream() {
         setPrefixInternal(EDGE_PREFIX);
-        return (Iterable)execute(ElementCategory.EDGE);
+        return execute(ElementCategory.EDGE, JanusGraphEdge.class);
     }
 
     @Override
     public Iterable<Result<JanusGraphVertexProperty>> properties() {
+        return new StreamIterable<>(propertyStream());
+    }
+
+    @Override
+    public Stream<Result<JanusGraphVertexProperty>> propertyStream() {
         setPrefixInternal(PROPERTY_PREFIX);
-        return (Iterable)execute(ElementCategory.PROPERTY);
+        return execute(ElementCategory.PROPERTY, JanusGraphVertexProperty.class);
     }
     
     @Override
