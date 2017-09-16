@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.transaction;
 
 import com.carrotsearch.hppc.LongArrayList;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.cache.Cache;
@@ -69,6 +68,7 @@ import org.janusgraph.graphdb.types.vertices.EdgeLabelVertex;
 import org.janusgraph.graphdb.types.vertices.PropertyKeyVertex;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.graphdb.util.IndexHelper;
+import org.janusgraph.graphdb.util.SubqueryIterator;
 import org.janusgraph.graphdb.util.VertexCentricEdgeIterable;
 import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
@@ -89,6 +89,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -1201,7 +1203,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     }
                     vertices = vertexSet.iterator();
                 } else {
-                    vertices = com.google.common.collect.Iterators.transform(newVertexIndexEntries.get(standardIndexKey.getValue(), standardIndexKey.getKey()).iterator(), new Function<JanusGraphVertexProperty, JanusGraphVertex>() {
+                    vertices = com.google.common.collect.Iterators.transform(newVertexIndexEntries.get(standardIndexKey.getValue(), standardIndexKey.getKey()).iterator(), new com.google.common.base.Function<JanusGraphVertexProperty, JanusGraphVertex>() {
                         @Nullable
                         @Override
                         public JanusGraphVertex apply(@Nullable JanusGraphVertexProperty o) {
@@ -1256,7 +1258,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             Iterator<JanusGraphElement> iter;
             if (!indexQuery.isEmpty()) {
                 List<QueryUtil.IndexCall<Object>> retrievals = new ArrayList<QueryUtil.IndexCall<Object>>();
-                for (int i = 0; i < indexQuery.size(); i++) {
+                for (int i = 1; i < indexQuery.size(); i++) {
                     final JointIndexQuery.Subquery subquery = indexQuery.getQuery(i);
                     retrievals.add(new QueryUtil.IndexCall<Object>() {
                         @Override
@@ -1266,7 +1268,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                                 return indexCache.get(adjustedQuery, new Callable<List<Object>>() {
                                     @Override
                                     public List<Object> call() throws Exception {
-                                        return QueryProfiler.profile(subquery.getProfiler(), adjustedQuery, q -> indexSerializer.query(q, txHandle));
+                                        return QueryProfiler.profile(subquery.getProfiler(), adjustedQuery, q -> indexSerializer.query(q, txHandle).collect(Collectors.toList()));
                                     }
                                 });
                             } catch (Exception e) {
@@ -1275,10 +1277,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                         }
                     });
                 }
-
-
-                List<Object> resultSet = QueryUtil.processIntersectingRetrievals(retrievals, indexQuery.getLimit());
-                iter = com.google.common.collect.Iterators.transform(resultSet.iterator(), getConversionFunction(query.getResultType()));
+                iter = new SubqueryIterator(indexQuery.getQuery(0), indexSerializer, txHandle, indexCache, indexQuery.getLimit(), getConversionFunction(query.getResultType()),
+                        retrievals.isEmpty() ? null: QueryUtil.processIntersectingRetrievals(retrievals, indexQuery.getLimit()));
             } else {
                 if (config.hasForceIndexUsage()) throw new JanusGraphException("Could not find a suitable index to answer graph query and graph scans are disabled: " + query);
                 log.warn("Query requires iterating over all vertices [{}]. For better performance, use indexes", query.getCondition());

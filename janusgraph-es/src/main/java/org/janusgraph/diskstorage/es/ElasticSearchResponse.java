@@ -17,12 +17,15 @@ package org.janusgraph.diskstorage.es;
 import org.janusgraph.diskstorage.indexing.RawQuery;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 public class ElasticSearchResponse {
 
     private long took;
 
     private long total;
+
+    private String scrollId;
 
     private List<RawQuery.Result<String>> results;
 
@@ -42,11 +45,23 @@ public class ElasticSearchResponse {
         this.total = total;
     }
 
-    public List<RawQuery.Result<String>> getResults() {
-        return results;
+    public Stream<RawQuery.Result<String>> getResults() {
+        return results.stream();
     }
 
     public void setResults(List<RawQuery.Result<String>> results) {
         this.results = results;
+    }
+
+    public int numResults() {
+        return results.size();
+    }
+
+    public String getScrollId() {
+        return scrollId;
+    }
+
+    public void setScrollId(String scrollId) {
+        this.scrollId = scrollId;
     }
 }

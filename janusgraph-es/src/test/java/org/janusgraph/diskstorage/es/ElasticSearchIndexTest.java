@@ -96,6 +96,7 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         config.set(INTERFACE, ElasticSearchSetup.REST_CLIENT.toString(), index);
         config.set(INDEX_HOSTS, new String[]{ "127.0.0.1" }, index);
         config.set(BULK_REFRESH, "wait_for", index);
+        config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index);
         return config.restrictTo(index);
     }
 

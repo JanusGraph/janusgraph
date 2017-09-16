@@ -15,6 +15,7 @@
 package org.janusgraph.core;
 
 import org.janusgraph.core.schema.Parameter;
+import java.util.stream.Stream;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
 /**
@@ -82,23 +83,53 @@ public interface JanusGraphIndexQuery {
     /**
      * Returns all vertices that match the query in the indexing backend.
      *
+     * @deprecated use {@link #vertexStream()} instead.
+     *
      * @return
      */
+    @Deprecated
     public Iterable<Result<JanusGraphVertex>> vertices();
+
+    /**
+     * Returns all vertices that match the query in the indexing backend.
+     *
+     * @return
+     */
+    public Stream<Result<JanusGraphVertex>> vertexStream();
+
+    /**
+     * Returns all edges that match the query in the indexing backend.
+     *
+     * @deprecated use {@link #edgeStream()} instead.
+     *
+     * @return
+     */
+    @Deprecated
+    public Iterable<Result<JanusGraphEdge>> edges();
 
     /**
      * Returns all edges that match the query in the indexing backend.
      *
      * @return
      */
-    public Iterable<Result<JanusGraphEdge>> edges();
+    public Stream<Result<JanusGraphEdge>> edgeStream();
 
     /**
      * Returns all properties that match the query in the indexing backend.
      *
+     * @deprecated use {@link #propertyStream()} instead.
+     *
      * @return
      */
+    @Deprecated
     public Iterable<Result<JanusGraphVertexProperty>> properties();
+
+	/**
+     * Returns all properties that match the query in the indexing backend.
+     *
+     * @return
+     */
+    public Stream<Result<JanusGraphVertexProperty>> propertyStream();
 
     /**
      * Returns total vertices that match the query in the indexing backend ignoring limit and offset.
