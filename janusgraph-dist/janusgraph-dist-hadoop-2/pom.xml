@@ -171,39 +171,5 @@
             </build>
         </profile>
 
-        <profile>
-            <id>dev-install-hadoop2</id>
-
-            <!-- Enable Hadoop 2 by default -->
-            <activation>
-                <property>
-                    <name>!dev.hadoop</name>
-                </property>
-            </activation>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-clean-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>clean-dev-dirs-hadoop</id>
-                                <phase>clean</phase>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>install-dev-dirs-hadoop</id>
-                                <phase>install</phase>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
     </profiles>
 </project>
