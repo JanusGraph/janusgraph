@@ -19,11 +19,11 @@ import org.janusgraph.diskstorage.indexing.IndexFeatures;
 import static org.janusgraph.diskstorage.es.ElasticSearchConstants.CUSTOM_ALL_FIELD;
 
 /**
- * Mapping and query object builder for Elasticsearch 5.x.
+ * Mapping and query object builder for Elasticsearch 6.x.
  */
-public class ES5Compat extends AbstractESCompat {
+public class ES6Compat extends AbstractESCompat {
 
-    private static final IndexFeatures FEATURES = coreFeatures().supportsGeoContains().build();
+    private static final IndexFeatures FEATURES = coreFeatures().setWildcardField(CUSTOM_ALL_FIELD).supportsGeoContains().build();
 
     @Override
     public IndexFeatures getIndexFeatures() {
