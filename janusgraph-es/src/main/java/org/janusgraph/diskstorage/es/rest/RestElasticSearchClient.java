@@ -119,6 +119,9 @@ public class RestElasticSearchClient implements ElasticSearchClient {
                     case 5:
                         majorVersion = ElasticMajorVersion.FIVE;
                         break;
+                    case 6:
+                        majorVersion = ElasticMajorVersion.SIX;
+                        break;
                     default:
                         throw new IllegalArgumentException("Unsupported Elasticsearch server version: " + version);
                 }
@@ -218,11 +221,18 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     @Override
     public void deleteIndex(String indexName) throws IOException {
-        try {
+        if (majorVersion.getValue() < 6 && indexExists(indexName)) {
             performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + indexName, null);
-        } catch (IOException e) {
-            if (majorVersion == ElasticMajorVersion.ONE && !e.getMessage().contains("IndexMissingException") || majorVersion != ElasticMajorVersion.ONE && !e.getMessage().contains("no such index")) {
-                throw e;
+        } else {
+            final Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + "_cat/aliases?format=json", null);
+            try (final InputStream inputStream = response.getEntity().getContent()) {
+                final List<Map<String,Object>> records = mapper.readValue(inputStream, new TypeReference<List<Map<String, Object>>>() {});
+                for (final Map<String,Object> record : records) {
+                    final String index = (String) record.get("index");
+                    if (indexExists(index)) {
+                        performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + index, null);
+                    }
+                }
             }
         }
     }

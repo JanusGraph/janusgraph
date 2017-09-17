@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
+import org.janusgraph.diskstorage.es.compat.ES6Compat;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
@@ -106,17 +107,6 @@ public class ElasticSearchIndex implements IndexProvider {
     public static final ConfigNamespace ELASTICSEARCH_NS =
             new ConfigNamespace(INDEX_NS, "elasticsearch", "Elasticsearch index configuration");
 
-    public static final ConfigOption<String> CLUSTER_NAME =
-            new ConfigOption<>(ELASTICSEARCH_NS, "cluster-name",
-            "The name of the Elasticsearch cluster.  This should match the \"cluster.name\" setting " +
-            "in the Elasticsearch nodes' configuration.", ConfigOption.Type.GLOBAL_OFFLINE, "elasticsearch");
-
-    public static final ConfigOption<Boolean> CLIENT_SNIFF =
-            new ConfigOption<>(ELASTICSEARCH_NS, "sniff",
-            "Whether to enable cluster sniffing.  This option only applies to the TransportClient.  " +
-            "Enabling this option makes the TransportClient attempt to discover other cluster nodes " +
-            "besides those in the initial host list provided at startup.", ConfigOption.Type.MASKABLE, true);
-
     public static final ConfigOption<String> INTERFACE =
             new ConfigOption<>(ELASTICSEARCH_NS, "interface",
             "Whether to connect to ES using the Node or Transport client (see the \"Talking to Elasticsearch\" " +
@@ -124,12 +114,6 @@ public class ElasticSearchIndex implements IndexProvider {
             "interface config track (see manual for more information about ES config tracks).",
             ConfigOption.Type.MASKABLE, String.class, ElasticSearchSetup.REST_CLIENT.toString(),
             disallowEmpty(String.class));
-
-    public static final ConfigOption<Boolean> IGNORE_CLUSTER_NAME =
-            new ConfigOption<>(ELASTICSEARCH_NS, "ignore-cluster-name",
-            "Whether to bypass validation of the cluster name of connected nodes.  " +
-            "This option is only used on the interface configuration track (see manual for " +
-            "information about ES config tracks).", ConfigOption.Type.MASKABLE, true);
 
     public static final ConfigOption<String> HEALTH_REQUEST_TIMEOUT =
             new ConfigOption<>(ELASTICSEARCH_NS, "health-request-timeout",
@@ -163,9 +147,16 @@ public class ElasticSearchIndex implements IndexProvider {
             new ConfigOption<>(ES_CREATE_NS, "use-external-mappings",
             "Whether JanusGraph should make use of an external mapping when registering an index.", ConfigOption.Type.MASKABLE, false);
 
+    public static final ConfigOption<Boolean> USE_ALL_FIELD =
+        new ConfigOption<>(ELASTICSEARCH_NS, "use-all-field",
+            "Whether JanusGraph should add an \"all\" field mapping. When enabled field mappings will " +
+            "include a \"copy_to\" parameter referencing the \"all\" field. This is supported since Elasticsearch 6.x " +
+            " and is required when using wildcard fields starting in Elasticsearch 6.x.", ConfigOption.Type.GLOBAL_OFFLINE, true);
+
     public static final ConfigOption<Boolean> USE_DEPRECATED_MULTITYPE_INDEX =
             new ConfigOption<>(ELASTICSEARCH_NS, "use-deprecated-multitype-index",
-            "Whether JanusGraph should group these indices into a single Elasticsearch index.", ConfigOption.Type.GLOBAL_OFFLINE, false);
+            "Whether JanusGraph should group these indices into a single Elasticsearch index " +
+            "(requires Elasticsearch 5.x or earlier).", ConfigOption.Type.GLOBAL_OFFLINE, false);
 
     public static final ConfigOption<Integer> ES_SCROLL_KEEP_ALIVE =
             new ConfigOption<>(ELASTICSEARCH_NS, "scroll-keep-alive",
@@ -199,10 +190,12 @@ public class ElasticSearchIndex implements IndexProvider {
     private final boolean useExternalMappings;
     private final Map<String,Object> indexSetting;
     private final long createSleep;
+    private final boolean useAllField;
     private final boolean useMultitypeIndex;
 
     public ElasticSearchIndex(Configuration config) throws BackendException {
         indexName = config.get(INDEX_NAME);
+        useAllField = config.get(USE_ALL_FIELD);
         useExternalMappings = config.get(USE_EXTERNAL_MAPPINGS);
         createSleep = config.get(CREATE_SLEEP);
         useMultitypeIndex = config.get(USE_DEPRECATED_MULTITYPE_INDEX);
@@ -222,6 +215,9 @@ public class ElasticSearchIndex implements IndexProvider {
                 break;
             case FIVE:
                 compat = new ES5Compat();
+                break;
+            case SIX:
+                compat = new ES6Compat();
                 break;
             default:
                 throw new PermanentBackendException("Unsupported Elasticsearch version: " + client.getMajorVersion());
@@ -406,6 +402,19 @@ public class ElasticSearchIndex implements IndexProvider {
         } else if (dataType == UUID.class) {
             log.debug("Registering uuid type for {}", key);
             properties.put(key, compat.createKeywordMapping());
+        }
+
+        if (useAllField && client.getMajorVersion().getValue() >= 6) {
+            // add custom all field mapping if it doesn't exist
+            properties.put(ElasticSearchConstants.CUSTOM_ALL_FIELD, compat.createTextMapping(null));
+
+            // add copy_to for custom all field mapping
+            if (properties.containsKey(key) && dataType != Geoshape.class) {
+                final Map<String,Object> mapping = new HashMap<>();
+                mapping.putAll(((Map<String,Object>) properties.get(key)));
+                mapping.put("copy_to", ElasticSearchConstants.CUSTOM_ALL_FIELD);
+                properties.put(key, mapping);
+            }
         }
 
         final Map<String,Object> mapping = ImmutableMap.of("properties", properties);
@@ -1067,4 +1076,7 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
+    ElasticMajorVersion getVersion() {
+        return client.getMajorVersion();
+    }
 }

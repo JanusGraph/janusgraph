@@ -18,6 +18,8 @@ import com.google.common.collect.ImmutableMap;
 
 import java.util.Map;
 
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_UPSERT_KEY;
+
 public class ElasticSearchMutation {
 
     public enum RequestType {
@@ -61,7 +63,7 @@ public class ElasticSearchMutation {
     }
 
     public static ElasticSearchMutation createUpdateRequest(String index, String type, String id, ImmutableMap.Builder builder, Map upsert) {
-        final Map source = upsert == null ? builder.build() : builder.put("upsert", upsert).build();
+        final Map source = upsert == null ? builder.build() : builder.put(ES_UPSERT_KEY, upsert).build();
         return new ElasticSearchMutation(RequestType.UPDATE, index, type, id, source);
     }
 

@@ -16,12 +16,23 @@ package org.janusgraph.diskstorage.es;
 
 public enum ElasticMajorVersion {
 
-    ONE,
+    ONE(1),
 
-    TWO,
+    TWO(2),
 
-    FIVE,
+    FIVE(5),
+
+    SIX(6),
 
     ;
 
+    int value;
+
+    ElasticMajorVersion(int value) {
+        this.value = value;
+    }
+
+    public int getValue() {
+        return value;
+    }
 }
