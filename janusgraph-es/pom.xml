@@ -15,6 +15,9 @@
         <elasticsearch2.test.version>2.4.6</elasticsearch2.test.version>
         <elasticsearch5.test.version>5.6.0</elasticsearch5.test.version>
         <elasticsearch6.test.version>6.0.0-beta2</elasticsearch6.test.version>
+        <elasticsearch.test.version>${elasticsearch5.test.version}</elasticsearch.test.version>
+        <!-- Enabling Groovy dynamic scripting is not required from ES 5.x -->
+        <elasticsearch.test.groovy.inline/>
         <skip.es.test>${skipTests}</skip.es.test>
         <es.docker.image>docker.elastic.co/elasticsearch/elasticsearch</es.docker.image>
         <elasticsearch.docker.test.version>${elasticsearch.test.version}</elasticsearch.docker.test.version>
