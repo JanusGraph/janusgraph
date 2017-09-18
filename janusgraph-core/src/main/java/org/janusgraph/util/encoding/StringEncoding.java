@@ -64,4 +64,11 @@ public class StringEncoding {
         return attribute.isEmpty()?1:attribute.length();
     }
 
+    public static String launder(String input) {
+        Preconditions.checkNotNull(input);
+        final StringBuilder sb = new StringBuilder();
+        input.chars().forEach(c -> sb.append((char) Integer.valueOf(c).intValue()));
+        return sb.toString();
+    }
+
 }

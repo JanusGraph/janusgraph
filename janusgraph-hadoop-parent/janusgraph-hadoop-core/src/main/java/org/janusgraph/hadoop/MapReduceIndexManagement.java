@@ -17,7 +17,9 @@ package org.janusgraph.hadoop;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.RelationType;
 import org.janusgraph.core.schema.RelationTypeIndex;
 import org.janusgraph.core.schema.SchemaAction;
 import org.janusgraph.core.schema.JanusGraphIndex;
@@ -163,10 +165,9 @@ public class MapReduceIndexManagement {
 
         // The index name and relation type name (if the latter is applicable)
         final String indexName = index.name();
-        final String relationTypeName =
-                RelationTypeIndex.class.isAssignableFrom(index.getClass()) ?
-                ((RelationTypeIndex)index).getType().name() :
-                "";
+        final RelationType relationType =
+            RelationTypeIndex.class.isAssignableFrom(index.getClass()) ? ((RelationTypeIndex) index).getType() : null;
+        final String relationTypeName = relationType == null ? StringUtils.EMPTY : relationType.name();
         Preconditions.checkNotNull(indexName);
 
         // Set the class of the IndexUpdateJob

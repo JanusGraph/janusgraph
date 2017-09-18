@@ -198,7 +198,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + "/_settings", null);
         try (final InputStream inputStream = response.getEntity().getContent()) {
             Map<String,RestIndexSettings> settings = mapper.readValue(inputStream, new TypeReference<Map<String, RestIndexSettings>>() {});
-            return settings.get(indexName).getSettings().getMap();
+            return settings == null ? null : settings.get(indexName).getSettings().getMap();
         }
     }
 
@@ -212,7 +212,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + "/_mapping/" + typeName, null);
         try (final InputStream inputStream = response.getEntity().getContent()) {
             Map<String, RestIndexMappings> settings = mapper.readValue(inputStream, new TypeReference<Map<String, RestIndexMappings>>() {});
-            return settings.get(indexName).getMappings().get(typeName).getProperties();
+            return settings == null ? null : settings.get(indexName).getMappings().get(typeName).getProperties();
         }
     }
 

@@ -269,7 +269,7 @@ public class QueryUtil {
                 }
             }
             sublimit = (int) Math.min(Integer.MAX_VALUE - 1, Math.max(Math.pow(sublimit, 1.5),(sublimit+1)*2));
-        } while (results.size() < limit && !exhaustedResults);
+        } while (results != null && results.size() < limit && !exhaustedResults);
         return results;
     }
 

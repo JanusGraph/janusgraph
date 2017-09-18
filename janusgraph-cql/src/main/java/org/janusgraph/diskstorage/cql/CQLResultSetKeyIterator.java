@@ -67,7 +67,7 @@ class CQLResultSetKeyIterator extends AbstractIterator<StaticBuffer> implements 
 
         while (this.iterator.hasNext()) {
             this.iterator.next();
-            if (!this.currentKey.equals(this.lastKey)) {
+            if (this.currentKey != null && !this.currentKey.equals(this.lastKey)) {
                 this.lastKey = this.currentKey;
                 return this.lastKey;
             }
