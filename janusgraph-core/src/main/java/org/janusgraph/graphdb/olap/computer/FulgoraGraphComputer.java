@@ -366,6 +366,9 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
             try {
                 for (Map.Entry<Long, Map<String, Object>> vprop : properties) {
                     Vertex v = tx.getVertex(vprop.getKey());
+                    if (v == null) {
+                        continue;
+                    }
                     for (Map.Entry<String, Object> prop : vprop.getValue().entrySet()) {
                         v.property(VertexProperty.Cardinality.single, prop.getKey(), prop.getValue());
                     }

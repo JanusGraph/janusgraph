@@ -99,7 +99,7 @@ public abstract class AbstractDistCacheConfigurer {
                     localPath, destPath, destFS);
         }
 
-        if (!fileStats.isRemoteCopyCurrent()) {
+        if (fileStats != null && !fileStats.isRemoteCopyCurrent()) {
             log.debug("Copying {} to {}", localPath, destPath);
             destFS.copyFromLocalFile(localPath, destPath);
             if (null != fileStats.local) {
@@ -146,8 +146,9 @@ public abstract class AbstractDistCacheConfigurer {
         for (String cpentry : classpath.split(File.pathSeparator)) {
             if (cpentry.toLowerCase().endsWith(".jar") || cpentry.toLowerCase().endsWith(".properties")) {
                 paths.add(new Path(cpentry));
-                if (cpentry.toLowerCase().endsWith(mrj));
+                if (cpentry.toLowerCase().endsWith(mrj)) {
                     mapredJarPath = cpentry;
+                }
             }
         }
         return new Conf(paths, mapredJarPath);
