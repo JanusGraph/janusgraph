@@ -46,6 +46,7 @@ import org.janusgraph.graphdb.database.cache.SchemaCache;
 import org.janusgraph.graphdb.database.serialize.StandardSerializer;
 import org.janusgraph.util.encoding.LongEncoding;
 import org.janusgraph.util.system.ConfigurationUtil;
+import org.janusgraph.util.system.LoggerUtil;
 import org.janusgraph.util.system.NetworkUtil;
 
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -1391,10 +1392,12 @@ public class GraphDatabaseConfiguration {
                     TimestampProviders backendPreference = null;
                     if (f.hasTimestamps() && null != (backendPreference = f.getPreferredTimestamps())) {
                         globalWrite.set(TIMESTAMP_PROVIDER, backendPreference);
-                        log.info("Set timestamps to {} according to storage backend preference", globalWrite.get(TIMESTAMP_PROVIDER));
+                        log.info("Set timestamps to {} according to storage backend preference",
+                            LoggerUtil.sanitizeAndLaunder(globalWrite.get(TIMESTAMP_PROVIDER)));
                     }
                     globalWrite.set(TIMESTAMP_PROVIDER, TIMESTAMP_PROVIDER.getDefaultValue());
-                    log.info("Set default timestamp provider {}", globalWrite.get(TIMESTAMP_PROVIDER));
+                    log.info("Set default timestamp provider {}",
+                        LoggerUtil.sanitizeAndLaunder(globalWrite.get(TIMESTAMP_PROVIDER)));
                 } else {
                     log.info("Using configured timestamp provider {}", localbc.get(TIMESTAMP_PROVIDER));
                 }

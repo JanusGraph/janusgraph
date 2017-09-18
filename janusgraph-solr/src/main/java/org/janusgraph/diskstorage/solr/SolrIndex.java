@@ -510,7 +510,7 @@ public class SolrIndex implements IndexProvider {
             for (final SolrInputDocument d : documents) {
                 final Collection<String> fieldNames = d.getFieldNames();
                 for (final String name : fieldNames) {
-                    logger.error(name + ":" + d.getFieldValue(name).toString());
+                    logger.error(name + ":" + d.getFieldValue(name));
                 }
             }
 
@@ -1070,7 +1070,7 @@ public class SolrIndex implements IndexProvider {
                 zkStateReader.updateClusterState();
                 final ClusterState clusterState = zkStateReader.getClusterState();
                 final Map<String, Slice> slices = clusterState.getSlicesMap(collection);
-                Preconditions.checkNotNull("Could not find collection:" + collection, slices);
+                Preconditions.checkNotNull(slices, "Could not find collection:" + collection);
 
                // change paths for Replica.State per Solr refactoring
                // remove SYNC state per: http://tinyurl.com/pag6rwt
