@@ -437,6 +437,10 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             if (this.storageConfig.get(GraphDatabaseConfiguration.DROP_ON_CLEAR)) {
                 ks.dropKeyspace();
             } else {
+                final KeyspaceDefinition keyspaceDefinition = cluster.describeKeyspace(keySpaceName);
+                if (keyspaceDefinition == null) {
+                    return;
+                }
                 for (final ColumnFamilyDefinition cf : cluster.describeKeyspace(keySpaceName).getColumnFamilyList()) {
                     ks.truncateColumnFamily(new ColumnFamily<Object, Object>(cf.getName(), null, null));
                 }

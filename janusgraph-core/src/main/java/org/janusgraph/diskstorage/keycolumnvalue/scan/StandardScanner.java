@@ -73,8 +73,7 @@ public class StandardScanner  {
                 runningJobs.remove(jobs.getKey(),exe);
             }
         }
-        runningJobs.putIfAbsent(jobId,executor);
-        Preconditions.checkArgument(runningJobs.get(jobId)==executor,"Another job with the same id is already running: %s",jobId);
+        Preconditions.checkArgument(runningJobs.putIfAbsent(jobId, executor) == null,"Another job with the same id is already running: %s",jobId);
     }
 
     public JanusGraphManagement.IndexJobFuture getRunningJob(Object jobId) {

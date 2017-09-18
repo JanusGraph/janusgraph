@@ -43,7 +43,7 @@ public class IndexFeatures {
                          String wildcardField, ImmutableSet<Cardinality> supportedCardinaities, boolean supportsNanoseconds,
                          boolean supportCustomAnalyzer, boolean supportsGeoContains) {
 
-        Preconditions.checkArgument(defaultMap!=null || defaultMap!=Mapping.DEFAULT);
+        Preconditions.checkArgument(defaultMap!=null && defaultMap!=Mapping.DEFAULT);
         Preconditions.checkArgument(supportedMap!=null && !supportedMap.isEmpty()
                                     && supportedMap.contains(defaultMap));
         this.supportsDocumentTTL = supportsDocumentTTL;

@@ -344,7 +344,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                     if (merge==null) merge = (VertexListInternal)vlist;
                     else merge.addAll(vlist);
                 }
-                if (merge.size()>baseQuery.getLimit()) merge = (VertexListInternal)merge.subList(0,baseQuery.getLimit());
+                if (merge != null && merge.size()>baseQuery.getLimit()) merge = (VertexListInternal)merge.subList(0,baseQuery.getLimit());
                 return merge;
             } else vertex = tx.getCanonicalVertex(vertex);
         }

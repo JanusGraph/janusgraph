@@ -40,7 +40,7 @@ public class ConfigurationLint {
             System.exit(1);
         }
 
-        log.info("Checking " + args[0]);
+        log.info("Checking " + LoggerUtil.sanitizeAndLaunder(args[0]));
         Status s = validate(args[0]);
         if (0 == s.errors) {
             log.info(s.toString());

@@ -87,15 +87,12 @@ public class MetricsQueryExecutor<Q extends ElementQuery,R extends JanusGraphEle
 
         final MetricManager mgr = MetricManager.INSTANCE;
         mgr.getCounter(metricsPrefix, opName, M_CALLS).inc();
-        final Timer.Context tc = mgr.getTimer(metricsPrefix, opName, M_TIME).time();
 
-        try {
+        try (final Timer.Context tc = mgr.getTimer(metricsPrefix, opName, M_TIME).time()) {
             return impl.apply(null);
         } catch (RuntimeException e) {
             mgr.getCounter(metricsPrefix, opName, M_EXCEPTIONS).inc();
             throw e;
-        } finally {
-            tc.stop();
         }
     }
 }

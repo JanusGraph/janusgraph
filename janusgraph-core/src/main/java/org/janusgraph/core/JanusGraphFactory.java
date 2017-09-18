@@ -28,6 +28,7 @@ import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.util.system.LoggerUtil.sanitizeAndLaunder;
 
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
@@ -313,10 +314,10 @@ public class JanusGraphFactory {
         File storedir = new File(file);
         if (!storedir.isAbsolute()) {
             String newFile = configParent.getAbsolutePath() + File.separator + file;
-            log.debug("Overwrote relative path: was {}, now {}", file, newFile);
+            log.debug("Overwrote relative path: was {}, now {}", sanitizeAndLaunder(file), sanitizeAndLaunder(newFile));
             return newFile;
         } else {
-            log.debug("Loaded absolute path for key: {}", file);
+            log.debug("Loaded absolute path for key: {}", sanitizeAndLaunder(file));
             return file;
         }
     }

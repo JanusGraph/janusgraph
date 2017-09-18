@@ -163,8 +163,7 @@ public class RangeInterval<T> implements Interval<T> {
         else if (other==null) return false;
         else if (!getClass().isInstance(other)) return false;
         RangeInterval oth = (RangeInterval)other;
-        if ((start==null ^ oth.start==null) || (end==null ^ oth.end==null)) return false;
-        return start.equals(oth.start) && end.equals(oth.end) && endInclusive==oth.endInclusive && startInclusive==oth.startInclusive;
+        return Objects.equals(start, oth.start) && Objects.equals(end, oth.end) && end.equals(oth.end) && endInclusive==oth.endInclusive && startInclusive==oth.startInclusive;
     }
 
     @Override

@@ -669,6 +669,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             if (logTransaction) {
                 //[FAILURE] Inability to log transaction fails the transaction by escalation since it's likely due to unavailability of primary
                 //storage backend.
+                Preconditions.checkState(txLog != null, "Transaction log is null");
                 txLog.add(txLogHeader.serializeModifications(serializer, LogTxStatus.PRECOMMIT, tx, addedRelations, deletedRelations),txLogHeader.getLogKey());
             }
 

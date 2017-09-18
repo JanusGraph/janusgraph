@@ -232,7 +232,7 @@ public class EdgeSerializer implements RelationReader {
     }
 
     public StaticArrayEntry writeRelation(InternalRelation relation, InternalRelationType type, int position, TypeInspector tx) {
-        assert type==relation.getType() || type.getBaseType().equals(relation.getType());
+        assert type==relation.getType() || (type.getBaseType() != null && type.getBaseType().equals(relation.getType()));
         Direction dir = EdgeDirection.fromPosition(position);
         Preconditions.checkArgument(type.isUnidirected(Direction.BOTH) || type.isUnidirected(dir));
         long typeid = type.longId();

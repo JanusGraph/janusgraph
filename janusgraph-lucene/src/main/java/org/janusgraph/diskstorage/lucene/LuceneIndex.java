@@ -407,7 +407,7 @@ public class LuceneIndex implements IndexProvider {
             for (IndexableField f : spatialStrategy.createIndexableFields(geo.getValue())) {
                 doc.add(f);
                 if (spatialStrategy instanceof PointVectorStrategy) {
-                    doc.add(new DoubleDocValuesField(f.name(), f.numericValue().doubleValue()));
+                    doc.add(new DoubleDocValuesField(f.name(), f.numericValue() == null ? null : f.numericValue().doubleValue()));
                 }
             }
         }
@@ -453,7 +453,8 @@ public class LuceneIndex implements IndexProvider {
             log.debug("Executed query [{}] in {} ms", q, System.currentTimeMillis() - time);
             List<String> result = new ArrayList<String>(docs.scoreDocs.length);
             for (int i = 0; i < docs.scoreDocs.length; i++) {
-                result.add(searcher.doc(docs.scoreDocs[i].doc).getField(DOCID).stringValue());
+                final IndexableField field = searcher.doc(docs.scoreDocs[i].doc).getField(DOCID);
+                result.add(field == null ? null : field.stringValue());
             }
             return result.stream();
         } catch (IOException e) {
@@ -642,7 +643,8 @@ public class LuceneIndex implements IndexProvider {
             log.debug("Executed query [{}] in {} ms",q, System.currentTimeMillis() - time);
             List<RawQuery.Result<String>> result = new ArrayList<RawQuery.Result<String>>(docs.scoreDocs.length);
             for (int i = offset; i < docs.scoreDocs.length; i++) {
-                result.add(new RawQuery.Result<String>(searcher.doc(docs.scoreDocs[i].doc).getField(DOCID).stringValue(),docs.scoreDocs[i].score));
+                final IndexableField field = searcher.doc(docs.scoreDocs[i].doc).getField(DOCID);
+                result.add(new RawQuery.Result<String>(field == null ? null : field.stringValue(),docs.scoreDocs[i].score));
             }
             return result.stream();
         } catch (IOException e) {
