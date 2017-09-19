@@ -136,6 +136,7 @@
         <module>janusgraph-dist</module>
         <module>janusgraph-doc</module>
         <module>janusgraph-solr</module>
+        <module>janusgraph-examples</module>
     </modules>
     <repositories>
         <repository>
