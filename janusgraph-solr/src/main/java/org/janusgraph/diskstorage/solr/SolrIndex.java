@@ -854,7 +854,10 @@ public class SolrIndex implements IndexProvider {
     @Override
     public void clearStorage() throws BackendException {
         try {
-            if (mode!=Mode.CLOUD) throw new UnsupportedOperationException("Operation only supported for SolrCloud");
+            if (mode!=Mode.CLOUD) {
+                logger.error("Operation only supported for SolrCloud. Cores must be deleted manually through the Solr API when using HTTP mode.");
+                return;
+            }
             logger.debug("Clearing storage from Solr: {}", solrClient);
             final ZkStateReader zkStateReader = ((CloudSolrClient) solrClient).getZkStateReader();
             zkStateReader.updateClusterState();
