@@ -387,7 +387,7 @@ public class IDManager {
      */
     private static final long DEFAULT_PARTITION_BITS = 0;
     /**
-     * The padding bit with for user vertices
+     * The padding bit width for user vertices
      */
     public static final long USERVERTEX_PADDING_BITWIDTH = VertexIDType.NormalVertex.offset();
 
