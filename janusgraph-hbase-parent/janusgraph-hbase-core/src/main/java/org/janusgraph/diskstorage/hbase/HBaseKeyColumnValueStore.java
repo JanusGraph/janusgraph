@@ -14,9 +14,11 @@
 
 package org.janusgraph.diskstorage.hbase;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.keycolumnvalue.*;
 import org.janusgraph.diskstorage.util.RecordIterator;
@@ -77,7 +79,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         this.tableName = tableName;
         //this.columnFamily = columnFamily;
         this.storeName = storeName;
-        this.columnFamilyBytes = columnFamily.getBytes();
+        this.columnFamilyBytes = Bytes.toBytes(columnFamily);
         this.entryGetter = new HBaseGetter(storeManager.getMetaDataSchema(storeName));
     }
 
@@ -263,7 +265,12 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             ensureOpen();
 
             return new RecordIterator<Entry>() {
-                private final Iterator<Map.Entry<byte[], NavigableMap<Long, byte[]>>> kv = currentRow.getMap().get(columnFamilyBytes).entrySet().iterator();
+                private final Iterator<Map.Entry<byte[], NavigableMap<Long, byte[]>>> kv;
+                {
+                    final Map<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> map = currentRow.getMap();
+                    Preconditions.checkNotNull(map);
+                    kv = map.get(columnFamilyBytes).entrySet().iterator();
+                }
 
                 @Override
                 public boolean hasNext() {

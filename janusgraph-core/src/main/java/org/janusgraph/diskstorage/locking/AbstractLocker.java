@@ -347,8 +347,8 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
         // interrupt
         boolean ok = false;
         try {
-            for (KeyColumn kc : m.keySet()) {
-                checkSingleLock(kc, m.get(kc), tx);
+            for (final Map.Entry<KeyColumn, S> entry : m.entrySet()) {
+                checkSingleLock(entry.getKey(), entry.getValue(), tx);
             }
             ok = true;
         } catch (TemporaryLockingException tle) {
@@ -378,10 +378,11 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
 
         Map<KeyColumn, S> m = lockState.getLocksForTx(tx);
 
-        Iterator<KeyColumn> iter = m.keySet().iterator();
+        final Iterator<Map.Entry<KeyColumn, S>> iter = m.entrySet().iterator();
         while (iter.hasNext()) {
-            KeyColumn kc = iter.next();
-            S ls = m.get(kc);
+            final Map.Entry<KeyColumn, S> entry = iter.next();
+            final KeyColumn kc = entry.getKey();
+            final S ls = entry.getValue();
             try {
                 deleteSingleLock(kc, ls, tx);
             } catch (AssertionError ae) {

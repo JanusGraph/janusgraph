@@ -26,6 +26,7 @@ import org.janusgraph.graphdb.database.idassigner.IDBlockSizer;
 import java.time.Duration;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
+import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
 
 
 /**
@@ -57,7 +58,7 @@ public abstract class AbstractIDAuthority implements IDAuthority {
     public AbstractIDAuthority(Configuration config) {
         this.uid = config.get(UNIQUE_INSTANCE_ID);
 
-        this.uidBytes = uid.getBytes();
+        this.uidBytes = uid.getBytes(UTF8_CHARSET);
 
         this.isActive = false;
 

@@ -425,6 +425,7 @@ public class IndexSerializer {
                 @Nullable
                 @Override
                 public Object[] apply(@Nullable RecordEntry[] record) {
+                    Preconditions.checkNotNull(record);
                     return getValues(record);
                 }
             });
@@ -563,7 +564,7 @@ public class IndexSerializer {
                     @Nullable
                     @Override
                     public Condition<JanusGraphElement> apply(@Nullable Condition<JanusGraphElement> condition) {
-                        Preconditions.checkArgument(condition instanceof PredicateCondition);
+                        Preconditions.checkArgument(condition != null && condition instanceof PredicateCondition);
                         PredicateCondition pc = (PredicateCondition) condition;
                         PropertyKey key = (PropertyKey) pc.getKey();
                         return new PredicateCondition<String, JanusGraphElement>(key2Field(index,key), pc.getPredicate(), pc.getValue());
