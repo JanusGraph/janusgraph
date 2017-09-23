@@ -113,6 +113,7 @@ public class HadoopConfiguration implements WriteConfiguration {
         Iterable<String> prefixedKeys = Iterables.filter(internalKeys, new Predicate<String>() {
             @Override
             public boolean apply(@Nullable String internalKey) {
+                Preconditions.checkNotNull(internalKey);
                 String k = internalKey;
                 if (null != prefix) {
                     if (k.startsWith(prefix)) {

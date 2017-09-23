@@ -314,7 +314,7 @@ public class ElasticSearchIndex implements IndexProvider {
             try {
                 //We check if the externalMapping have the property 'key'
                 final Map mappings = client.getMapping(indexStoreName, store);
-                if (!mappings.containsKey(key)) {
+                if (mappings == null || !mappings.containsKey(key)) {
                     throw new PermanentBackendException("The external mapping for index '"+ indexStoreName +"' and type '"+store+"' do not have property '"+key+"'");
                 }
             } catch (final IOException e) {
@@ -711,7 +711,6 @@ public class ElasticSearchIndex implements IndexProvider {
             if (value instanceof Number) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on numeric types: " + janusgraphPredicate);
                 final Cmp numRel = (Cmp) janusgraphPredicate;
-                Preconditions.checkArgument(value instanceof Number);
 
                 switch (numRel) {
                     case EQUAL:

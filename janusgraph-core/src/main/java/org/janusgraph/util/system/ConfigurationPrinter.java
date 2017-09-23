@@ -14,8 +14,8 @@
 
 package org.janusgraph.util.system;
 
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -30,6 +30,8 @@ import org.janusgraph.core.util.ReflectiveConfigOptionLoader;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
+
+import static org.janusgraph.util.encoding.StringEncoding.UTF8_ENCODING;
 
 /**
  * Recursively dump the root configuration namespace to either System.out or the
@@ -49,8 +51,7 @@ public class ConfigurationPrinter {
     private final boolean showMutability;
     private final PrintStream stream;
 
-    public static void main(String args[]) throws FileNotFoundException, IllegalAccessException,
-            NoSuchFieldException, ClassNotFoundException {
+    public static void main(String args[]) throws IOException, ReflectiveOperationException {
 
         ReflectiveConfigOptionLoader.INSTANCE.loadStandard(ConfigurationPrinter.class);
 
@@ -62,7 +63,7 @@ public class ConfigurationPrinter {
         }
 
         final ConfigNamespace root = stringToNamespace(args[0]);
-        final PrintStream stream = new PrintStream(new FileOutputStream(args[1]));
+        final PrintStream stream = new PrintStream(new FileOutputStream(args[1]), false, UTF8_ENCODING);
         final boolean mutability = Boolean.valueOf(args[2]);
 
         new ConfigurationPrinter(stream, mutability).write(root);

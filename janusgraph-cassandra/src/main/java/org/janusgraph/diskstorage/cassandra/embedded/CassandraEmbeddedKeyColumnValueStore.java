@@ -209,7 +209,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
     }
 
-    private class FilterDeletedColumns implements Predicate<Cell> {
+    private static class FilterDeletedColumns implements Predicate<Cell> {
 
         private final long tsMillis;
         private final int tsSeconds;
