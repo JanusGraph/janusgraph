@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,7 +102,7 @@ public class HBaseAdmin0_98 implements AdminMask
     @Override
     public HTableDescriptor getTableDescriptor(String tableName) throws TableNotFoundException, IOException
     {
-        return adm.getTableDescriptor(tableName.getBytes());
+        return adm.getTableDescriptor(Bytes.toBytes(tableName));
     }
 
     @Override

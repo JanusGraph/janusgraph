@@ -1082,6 +1082,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
                     @Override
                     public boolean apply(@Nullable InternalRelation relation) {
+                        Preconditions.checkNotNull(relation);
                         if ((relation instanceof JanusGraphEdge) && relation.isLoop()
                                 && query.getDirection() != Direction.BOTH) {
                             if (relation.equals(previous))
@@ -1179,6 +1180,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     ConditionUtil.traversal(query.getCondition(), new Predicate<Condition<JanusGraphElement>>() {
                         @Override
                         public boolean apply(@Nullable Condition<JanusGraphElement> cond) {
+                            Preconditions.checkNotNull(cond);
                             Preconditions.checkArgument(cond.getType() != Condition.Type.LITERAL || cond instanceof PredicateCondition);
                             if (cond instanceof PredicateCondition)
                                 keys.add(((PredicateCondition<PropertyKey, JanusGraphElement>) cond).getKey());
@@ -1190,6 +1192,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     for (JanusGraphRelation r : addedRelations.getView(new Predicate<InternalRelation>() {
                         @Override
                         public boolean apply(@Nullable InternalRelation relation) {
+                            Preconditions.checkNotNull(relation);
                             return keys.contains(relation.getType());
                         }
                     })) {
@@ -1207,6 +1210,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                         @Nullable
                         @Override
                         public JanusGraphVertex apply(@Nullable JanusGraphVertexProperty o) {
+                            Preconditions.checkNotNull(o);
                             return o.element();
                         }
                     });
@@ -1223,6 +1227,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                 return (Iterator) addedRelations.getView(new Predicate<InternalRelation>() {
                     @Override
                     public boolean apply(@Nullable InternalRelation relation) {
+                        Preconditions.checkNotNull(relation);
                         return query.getResultType().isInstance(relation) && !relation.isInvisible() && query.matches(relation);
                     }
                 }).iterator();

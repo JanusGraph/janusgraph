@@ -40,6 +40,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
+
 /**
  * A global {@link Locker} that resolves inter-thread lock contention via
  * {@link AbstractLocker} and resolves inter-process contention by reading and
@@ -224,7 +226,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         }
 
         public Builder fromConfig(Configuration config) {
-            rid(new StaticArrayBuffer(config.get(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID).getBytes()));
+            rid(new StaticArrayBuffer(config.get(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID).getBytes(UTF8_CHARSET)));
 
             final String llmPrefix = config.get(GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP);
 

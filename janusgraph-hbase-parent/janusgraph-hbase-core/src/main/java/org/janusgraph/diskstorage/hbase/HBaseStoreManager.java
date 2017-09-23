@@ -60,6 +60,7 @@ import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Row;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.janusgraph.core.JanusGraphException;
@@ -714,7 +715,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 // Check and warn if long and short cf names are mixedly used for the same table.
                 if (shortCfNames && initialCFName.equals(shortCfNameMap.get(SYSTEM_PROPERTIES_STORE_NAME))) {
                     String longCFName = shortCfNameMap.inverse().get(initialCFName);
-                    if (desc.getFamily(longCFName.getBytes()) != null) {
+                    if (desc.getFamily(Bytes.toBytes(longCFName)) != null) {
                         logger.warn("Configuration {}=true, but the table \"{}\" already has column family with long name \"{}\".",
                             SHORT_CF_NAMES.getName(), tableName, longCFName);
                         logger.warn("Check {} configuration.", SHORT_CF_NAMES.getName());
@@ -722,7 +723,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 }
                 else if (!shortCfNames && initialCFName.equals(SYSTEM_PROPERTIES_STORE_NAME)) {
                     String shortCFName = shortCfNameMap.get(initialCFName);
-                    if (desc.getFamily(shortCFName.getBytes()) != null) {
+                    if (desc.getFamily(Bytes.toBytes(shortCFName)) != null) {
                         logger.warn("Configuration {}=false, but the table \"{}\" already has column family with short name \"{}\".",
                             SHORT_CF_NAMES.getName(), tableName, shortCFName);
                         logger.warn("Check {} configuration.", SHORT_CF_NAMES.getName());
@@ -808,7 +809,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
             Preconditions.checkNotNull(desc);
 
-            HColumnDescriptor cf = desc.getFamily(columnFamily.getBytes());
+            HColumnDescriptor cf = desc.getFamily(Bytes.toBytes(columnFamily));
 
             // Create our column family, if necessary
             if (cf == null) {
@@ -878,7 +879,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> entry : mutations.entrySet()) {
 
             String cfString = getCfNameForStoreName(entry.getKey());
-            byte[] cfName = cfString.getBytes();
+            byte[] cfName = Bytes.toBytes(cfString);
 
             for (Map.Entry<StaticBuffer, KCVMutation> m : entry.getValue().entrySet()) {
                 final byte[] key = m.getKey().as(StaticBuffer.ARRAY_FACTORY);

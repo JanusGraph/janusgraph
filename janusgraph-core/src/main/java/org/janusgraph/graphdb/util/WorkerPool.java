@@ -25,9 +25,9 @@ import java.util.concurrent.TimeUnit;
  */
 public class WorkerPool implements AutoCloseable {
 
-    private final ThreadPoolExecutor processor;
-    private final long shutdownWaitMS = 10000;
+    private static final long SHUTDOWN_WAIT_MS = 10000;
 
+    private final ThreadPoolExecutor processor;
 
     public WorkerPool(int numThreads) {
         processor = new ThreadPoolExecutor(numThreads, numThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(128));
@@ -41,7 +41,7 @@ public class WorkerPool implements AutoCloseable {
     @Override
     public void close() throws Exception {
         processor.shutdown();
-        processor.awaitTermination(shutdownWaitMS,TimeUnit.MILLISECONDS);
+        processor.awaitTermination(SHUTDOWN_WAIT_MS,TimeUnit.MILLISECONDS);
         if (!processor.isTerminated()) {
             //log.error("Processor did not terminate in time");
             processor.shutdownNow();

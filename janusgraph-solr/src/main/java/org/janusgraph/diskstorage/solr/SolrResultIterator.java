@@ -63,7 +63,7 @@ class SolrResultIterator<E> implements Iterator<E> {
 
     @Override
     public boolean hasNext() {
-        if (count != 0 && count % batchSize == 0 && batchSize * numBatches < limit) {
+        if (count != 0 && count % batchSize == 0 && count < limit) {
             try {
                 solrQuery.setStart(numBatches * batchSize + offset);
                 solrClient.queryAndStreamResponse(collection, solrQuery, new SolrCallbackHandler(this, getFieldValue));

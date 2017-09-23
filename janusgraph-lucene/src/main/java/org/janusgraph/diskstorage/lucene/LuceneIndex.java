@@ -121,9 +121,9 @@ public class LuceneIndex implements IndexProvider {
     public LuceneIndex(Configuration config) {
         String dir = config.get(GraphDatabaseConfiguration.INDEX_DIRECTORY);
         File directory = new File(dir);
-        if (!directory.exists()) directory.mkdirs();
-        if (!directory.exists() || !directory.isDirectory() || !directory.canWrite())
+        if ((!directory.exists() && !directory.mkdirs()) || !directory.isDirectory() || !directory.canWrite()) {
             throw new IllegalArgumentException("Cannot access or write to directory: " + dir);
+        }
         basePath = directory.getAbsolutePath();
         log.debug("Configured Lucene to use base directory [{}]", basePath);
     }
@@ -133,9 +133,9 @@ public class LuceneIndex implements IndexProvider {
         String dir = basePath + File.separator + store;
         try {
             File path = new File(dir);
-            if (!path.exists()) path.mkdirs();
-            if (!path.exists() || !path.isDirectory() || !path.canWrite())
+            if ((!path.exists() && !path.mkdirs()) || !path.isDirectory() || !path.canWrite()) {
                 throw new PermanentBackendException("Cannot access or write to directory: " + dir);
+            }
             log.debug("Opening store directory [{}]", path);
             return FSDirectory.open(path.toPath());
         } catch (IOException e) {
@@ -508,7 +508,6 @@ public class LuceneIndex implements IndexProvider {
             JanusGraphPredicate janusgraphPredicate = atom.getPredicate();
             if (value instanceof Number) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on numeric types: " + janusgraphPredicate);
-                Preconditions.checkArgument(value instanceof Number);
                 params.addQuery(numericQuery(key, (Cmp) janusgraphPredicate, (Number) value));
             } else if (value instanceof String) {
                 Mapping map = Mapping.getMapping(informations.get(key));

@@ -45,7 +45,6 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
     private final TypeInspector typeManager;
     private final SystemTypeInspector systemTypes;
     private final IDManager idManager;
-    private final boolean verifyVertexExistence = false;
 
     private static final Logger log =
             LoggerFactory.getLogger(JanusGraphVertexDeserializer.class);
@@ -90,8 +89,6 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
         // Create TinkerVertex
         TinkerGraph tg = TinkerGraph.open();
 
-        boolean foundVertexState = !verifyVertexExistence;
-
         TinkerVertex tv = null;
 
         // Iterate over edgestore columns to find the vertex's label relation
@@ -103,14 +100,12 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
                 long vertexLabelId = relation.getOtherVertexId();
                 VertexLabel vl = typeManager.getExistingVertexLabel(vertexLabelId);
                 // Create TinkerVertex with this label
-                //tv = (TinkerVertex)tg.addVertex(T.label, vl.label(), T.id, vertexId);
                 tv = getOrCreateVertex(vertexId, vl.name(), tg);
             }
         }
 
         // Added this following testing
         if (null == tv) {
-            //tv = (TinkerVertex)tg.addVertex(T.id, vertexId);
             tv = getOrCreateVertex(vertexId, null, tg);
         }
 
@@ -121,9 +116,6 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
             try {
                 RelationReader relationReader = setup.getRelationReader(vertexId);
                 final RelationCache relation = relationReader.parseRelation(data, false, typeManager);
-                if (systemTypes.isVertexExistsSystemType(relation.typeId)) {
-                    foundVertexState = true;
-                }
 
                 if (systemTypes.isSystemType(relation.typeId)) continue; //Ignore system types
                 final RelationType type = typeManager.getExistingRelationType(relation.typeId);
@@ -175,54 +167,21 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
                             assert next.value != null;
                             RelationType rt = typeManager.getExistingRelationType(next.key);
                             if (rt.isPropertyKey()) {
-//                                PropertyKey pkey = (PropertyKey)vertex.getTypeManager().getPropertyKey(rt.name());
-//                                log.debug("Retrieved key {} for name \"{}\"", pkey, rt.name());
-//                                frel.property(pkey.label(), next.value);
                                 te.property(rt.name(), next.value);
                             } else {
                                 throw new RuntimeException("Metaedges are not supported");
-//                                assert next.value instanceof Long;
-//                                EdgeLabel el = (EdgeLabel)vertex.getTypeManager().getEdgeLabel(rt.name());
-//                                log.debug("Retrieved ege label {} for name \"{}\"", el, rt.name());
-//                                frel.setProperty(el, new FaunusVertex(configuration,(Long)next.value));
                             }
                         }
                     }
                 }
-
-//                // Iterate over and copy the relation's metaproperties
-//                if (relation.hasProperties()) {
-//                    // Load relation properties
-//                    for (final LongObjectCursor<Object> next : relation) {
-//                        assert next.value != null;
-//                        RelationType rt = typeManager.getExistingRelationType(next.key);
-//                        if (rt.isPropertyKey()) {
-//                            PropertyKey pkey = (PropertyKey)vertex.getTypeManager().getPropertyKey(rt.name());
-//                            log.debug("Retrieved key {} for name \"{}\"", pkey, rt.name());
-//                            frel.property(pkey.label(), next.value);
-//                        } else {
-//                            assert next.value instanceof Long;
-//                            EdgeLabel el = (EdgeLabel)vertex.getTypeManager().getEdgeLabel(rt.name());
-//                            log.debug("Retrieved ege label {} for name \"{}\"", el, rt.name());
-//                            frel.setProperty(el, new FaunusVertex(configuration,(Long)next.value));
-//                        }
-//                    }
-//                    for (JanusGraphRelation rel : frel.query().queryAll().relations())
-//                        ((FaunusRelation)rel).setLifeCycle(ElementLifeCycle.Loaded);
-//                }
-//                frel.setLifeCycle(ElementLifeCycle.Loaded);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
-        //vertex.setLifeCycle(ElementLifeCycle.Loaded);
 
         /*Since we are filtering out system relation types, we might end up with vertices that have no incident relations.
          This is especially true for schema vertices. Those are filtered out.     */
-        if (!foundVertexState) {
-            log.trace("Vertex {} has unknown lifecycle state", vertexId);
-            return null;
-        } else if (!tv.edges(Direction.BOTH).hasNext() && !tv.properties().hasNext()) {
+        if (!tv.edges(Direction.BOTH).hasNext() && !tv.properties().hasNext()) {
             log.trace("Vertex {} has no relations", vertexId);
             return null;
         }
