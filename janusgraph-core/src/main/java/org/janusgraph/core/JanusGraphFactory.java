@@ -39,6 +39,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
+import org.janusgraph.util.system.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,7 +126,12 @@ public class JanusGraphFactory {
             graph.close();
         }
         final GraphDatabaseConfiguration config = g.getConfiguration();
-        config.getBackend().clearStorage();
+        final Backend backend = config.getBackend();
+        try {
+            backend.clearStorage();
+        } finally {
+            IOUtils.closeQuietly(backend);
+        }
     }
 
     /**

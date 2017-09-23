@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.query.condition;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import org.janusgraph.core.JanusGraphElement;
 
@@ -32,6 +33,7 @@ public class ConditionUtil {
             @Nullable
             @Override
             public Condition<E> apply(@Nullable Condition<E> cond) {
+                Preconditions.checkNotNull(cond);
                 if (cond.getType()== Condition.Type.LITERAL) return transformation.apply(cond);
                 else return null;
             }

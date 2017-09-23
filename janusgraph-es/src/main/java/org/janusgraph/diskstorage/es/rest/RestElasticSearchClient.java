@@ -49,6 +49,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
+
 public class RestElasticSearchClient implements ElasticSearchClient {
 
 
@@ -126,7 +128,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
                         throw new IllegalArgumentException("Unsupported Elasticsearch server version: " + version);
                 }
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.warn("Unable to determine Elasticsearch server version. Default to {}.", majorVersion, e);
         }
 
@@ -227,6 +229,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
             final Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + "_cat/aliases?format=json", null);
             try (final InputStream inputStream = response.getEntity().getContent()) {
                 final List<Map<String,Object>> records = mapper.readValue(inputStream, new TypeReference<List<Map<String, Object>>>() {});
+                if (records == null) return;
                 for (final Map<String,Object> record : records) {
                     final String index = (String) record.get("index");
                     if (indexExists(index)) {
@@ -244,10 +247,10 @@ public class RestElasticSearchClient implements ElasticSearchClient {
             Map actionData = ImmutableMap.of(request.getRequestType().name().toLowerCase(),
                     ImmutableMap.of("_index", request.getIndex(), "_type", request.getType(), "_id", request.getId()));
                 outputStream.write(mapWriter.writeValueAsBytes(actionData));
-            outputStream.write("\n".getBytes());
+            outputStream.write("\n".getBytes(UTF8_CHARSET));
             if (request.getSource() != null) {
                 outputStream.write(mapWriter.writeValueAsBytes(request.getSource()));
-                outputStream.write("\n".getBytes());
+                outputStream.write("\n".getBytes(UTF8_CHARSET));
             }
         }
 
@@ -295,7 +298,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         final byte[] requestData;
         if (ElasticMajorVersion.ONE == majorVersion) {
              path = new StringBuilder(REQUEST_SEPARATOR).append("/_search/scroll?scroll=").append(scrollKeepAlive).toString();
-             requestData = scrollId.getBytes();
+             requestData = scrollId.getBytes(UTF8_CHARSET);
         } else {
             path = "_search/scroll";
             final Map<String, Object> request = new HashMap<>();
@@ -315,7 +318,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     @Override
     public void deleteScroll(String scrollId) throws IOException {
         if (ElasticMajorVersion.ONE == majorVersion) {
-            performRequest(REQUEST_TYPE_DELETE, "/_search/scroll", scrollId.getBytes());
+            performRequest(REQUEST_TYPE_DELETE, "/_search/scroll", scrollId.getBytes(UTF8_CHARSET));
         } else {
             delegate.performRequest(REQUEST_TYPE_DELETE, "/_search/scroll/" + scrollId);
         }

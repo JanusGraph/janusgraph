@@ -90,8 +90,8 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
                 throw new RuntimeException(e);
             }
         }
-        scanner.addFamily(cfName.getBytes());
         edgeStoreFamily = Bytes.toBytes(cfName);
+        scanner.addFamily(edgeStoreFamily);
 
         //scanner.setFilter(getColumnFilter(janusgraphSetup.inputSlice(this.vertexQuery))); // TODO
         //TODO (minor): should we set other options in http://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Scan.html for optimization?

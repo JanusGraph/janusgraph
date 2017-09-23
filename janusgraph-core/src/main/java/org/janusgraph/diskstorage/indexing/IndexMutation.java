@@ -72,6 +72,7 @@ public class IndexMutation extends Mutation<IndexEntry,IndexEntry> {
         @Nullable
         @Override
         public String apply(@Nullable IndexEntry indexEntry) {
+            Preconditions.checkNotNull(indexEntry);
             return indexEntry.field;
         }
     };

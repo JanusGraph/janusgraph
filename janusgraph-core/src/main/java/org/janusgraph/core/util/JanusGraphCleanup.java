@@ -17,9 +17,11 @@ package org.janusgraph.core.util;
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.JanusGraph;
 
+import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.util.BackendOperation;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.util.system.IOUtils;
 
 import java.time.Duration;
 import java.util.concurrent.Callable;
@@ -50,7 +52,12 @@ public class JanusGraphCleanup {
         BackendOperation.execute(new Callable<Boolean>(){
             @Override
             public Boolean call() throws Exception {
-                config.getBackend().clearStorage();
+                final Backend backend = config.getBackend();
+                try {
+                    backend.clearStorage();
+                } finally {
+                    IOUtils.closeQuietly(backend);
+                }
                 return true;
             }
             @Override
