@@ -12,4 +12,15 @@
         <componentDescriptor>${assembly.descriptor.dir}/htmldocs.component.xml</componentDescriptor>
         <componentDescriptor>${assembly.descriptor.dir}/readmes.component.xml</componentDescriptor>
     </componentDescriptors>
+
+    <fileSets>
+        <fileSet>
+            <directory>${top.level.basedir}/janusgraph-examples</directory>
+            <outputDirectory>/examples</outputDirectory>
+            <excludes>
+                <exclude>**/target/**</exclude>
+            </excludes>
+        </fileSet>
+    </fileSets>
+
 </assembly>
