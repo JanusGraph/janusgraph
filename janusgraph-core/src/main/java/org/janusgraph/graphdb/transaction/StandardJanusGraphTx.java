@@ -1081,8 +1081,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     private JanusGraphRelation previous = null;
 
                     @Override
-                    public boolean apply(@Nullable InternalRelation relation) {
-                        Preconditions.checkNotNull(relation);
+                    public boolean apply(final InternalRelation relation) {
                         if ((relation instanceof JanusGraphEdge) && relation.isLoop()
                                 && query.getDirection() != Direction.BOTH) {
                             if (relation.equals(previous))
@@ -1179,8 +1178,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     final Set<PropertyKey> keys = Sets.newHashSet();
                     ConditionUtil.traversal(query.getCondition(), new Predicate<Condition<JanusGraphElement>>() {
                         @Override
-                        public boolean apply(@Nullable Condition<JanusGraphElement> cond) {
-                            Preconditions.checkNotNull(cond);
+                        public boolean apply(final Condition<JanusGraphElement> cond) {
                             Preconditions.checkArgument(cond.getType() != Condition.Type.LITERAL || cond instanceof PredicateCondition);
                             if (cond instanceof PredicateCondition)
                                 keys.add(((PredicateCondition<PropertyKey, JanusGraphElement>) cond).getKey());
@@ -1191,8 +1189,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     Set<JanusGraphVertex> vertexSet = Sets.newHashSet();
                     for (JanusGraphRelation r : addedRelations.getView(new Predicate<InternalRelation>() {
                         @Override
-                        public boolean apply(@Nullable InternalRelation relation) {
-                            Preconditions.checkNotNull(relation);
+                        public boolean apply(final InternalRelation relation) {
                             return keys.contains(relation.getType());
                         }
                     })) {
@@ -1209,8 +1206,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     vertices = com.google.common.collect.Iterators.transform(newVertexIndexEntries.get(standardIndexKey.getValue(), standardIndexKey.getKey()).iterator(), new com.google.common.base.Function<JanusGraphVertexProperty, JanusGraphVertex>() {
                         @Nullable
                         @Override
-                        public JanusGraphVertex apply(@Nullable JanusGraphVertexProperty o) {
-                            Preconditions.checkNotNull(o);
+                        public JanusGraphVertex apply(final JanusGraphVertexProperty o) {
                             return o.element();
                         }
                     });
@@ -1226,8 +1222,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                                         && !addedRelations.isEmpty()) {
                 return (Iterator) addedRelations.getView(new Predicate<InternalRelation>() {
                     @Override
-                    public boolean apply(@Nullable InternalRelation relation) {
-                        Preconditions.checkNotNull(relation);
+                    public boolean apply(final InternalRelation relation) {
                         return query.getResultType().isInstance(relation) && !relation.isInvisible() && query.matches(relation);
                     }
                 }).iterator();
@@ -1328,7 +1323,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     private final Function<Object, JanusGraphVertex> vertexIDConversionFct = new Function<Object, JanusGraphVertex>() {
         @Override
-        public JanusGraphVertex apply(@Nullable Object id) {
+        public JanusGraphVertex apply(final Object id) {
             Preconditions.checkNotNull(id);
             Preconditions.checkArgument(id instanceof Long);
             return getInternalVertex((Long) id);
@@ -1337,7 +1332,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     private final Function<Object, JanusGraphEdge> edgeIDConversionFct = new Function<Object, JanusGraphEdge>() {
         @Override
-        public JanusGraphEdge apply(@Nullable Object id) {
+        public JanusGraphEdge apply(final Object id) {
             Preconditions.checkNotNull(id);
             Preconditions.checkArgument(id instanceof RelationIdentifier);
             return ((RelationIdentifier)id).findEdge(StandardJanusGraphTx.this);
@@ -1346,7 +1341,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     private final Function<Object, JanusGraphVertexProperty> propertyIDConversionFct = new Function<Object, JanusGraphVertexProperty>() {
         @Override
-        public JanusGraphVertexProperty apply(@Nullable Object id) {
+        public JanusGraphVertexProperty apply(final Object id) {
             Preconditions.checkNotNull(id);
             Preconditions.checkArgument(id instanceof RelationIdentifier);
             return ((RelationIdentifier)id).findProperty(StandardJanusGraphTx.this);

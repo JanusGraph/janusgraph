@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.util;
 
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import org.janusgraph.core.*;
@@ -42,8 +41,7 @@ public class ElementHelper {
             return Iterables.transform((((JanusGraphVertex) element).query()).keys(key.name()).properties(), new Function<JanusGraphVertexProperty, Object>() {
                 @Nullable
                 @Override
-                public Object apply(@Nullable JanusGraphVertexProperty janusgraphProperty) {
-                    Preconditions.checkNotNull(janusgraphProperty);
+                public Object apply(final JanusGraphVertexProperty janusgraphProperty) {
                     return janusgraphProperty.value();
                 }
             });
