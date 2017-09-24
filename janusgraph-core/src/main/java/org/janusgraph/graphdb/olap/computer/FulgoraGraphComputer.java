@@ -301,8 +301,7 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
                         new Function<Map<String, Object>, Map<String, Object>>() {
                             @Nullable
                             @Override
-                            public Map<String, Object> apply(@Nullable Map<String, Object> o) {
-                                Preconditions.checkNotNull(o);
+                            public Map<String, Object> apply(final Map<String, Object> o) {
                                 return Maps.filterKeys(o, s -> !VertexProgramHelper.isTransientVertexComputeKey(s, vertexProgram.getVertexComputeKeys()));
                             }
                         });

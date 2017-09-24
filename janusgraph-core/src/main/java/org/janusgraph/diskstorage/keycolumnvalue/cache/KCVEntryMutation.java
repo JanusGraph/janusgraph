@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.keycolumnvalue.cache;
 
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.Mutation;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -35,8 +34,7 @@ public class KCVEntryMutation extends Mutation<Entry,Entry> {
     public static final Function<Entry,StaticBuffer> ENTRY2COLUMN_FCT = new Function<Entry, StaticBuffer>() {
         @Nullable
         @Override
-        public StaticBuffer apply(@Nullable Entry entry) {
-            Preconditions.checkNotNull(entry);
+        public StaticBuffer apply(final Entry entry) {
             return entry.getColumn();
         }
     };

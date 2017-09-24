@@ -628,8 +628,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     private static final Predicate<InternalRelation> SCHEMA_FILTER = new Predicate<InternalRelation>() {
         @Override
-        public boolean apply(@Nullable InternalRelation internalRelation) {
-            Preconditions.checkNotNull(internalRelation);
+        public boolean apply(final InternalRelation internalRelation) {
             return internalRelation.getType() instanceof BaseRelationType && internalRelation.getVertex(0) instanceof JanusGraphSchemaVertex;
         }
     };
