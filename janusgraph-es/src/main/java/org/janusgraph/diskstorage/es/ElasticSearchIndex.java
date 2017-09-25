@@ -162,6 +162,9 @@ public class ElasticSearchIndex implements IndexProvider {
             new ConfigOption<>(ELASTICSEARCH_NS, "scroll-keep-alive",
             "How long (in secondes) elasticsearch should keep alive the scroll context.", ConfigOption.Type.GLOBAL_OFFLINE, 60);
 
+    public static final ConfigNamespace ES_INGEST_PIPELINES =
+            new ConfigNamespace(ELASTICSEARCH_NS, "ingest-pipeline", "Ingest pipeline applicable to a store of an index.");
+
     public static final int HOST_PORT_DEFAULT = 9200;
 
     /**
@@ -188,10 +191,11 @@ public class ElasticSearchIndex implements IndexProvider {
     private final String indexName;
     private final int batchSize;
     private final boolean useExternalMappings;
-    private final Map<String,Object> indexSetting;
+    private final Map<String, Object> indexSetting;
     private final long createSleep;
     private final boolean useAllField;
     private final boolean useMultitypeIndex;
+    private final Map<String, Object> ingestPipelines;
 
     public ElasticSearchIndex(Configuration config) throws BackendException {
         indexName = config.get(INDEX_NAME);
@@ -199,7 +203,7 @@ public class ElasticSearchIndex implements IndexProvider {
         useExternalMappings = config.get(USE_EXTERNAL_MAPPINGS);
         createSleep = config.get(CREATE_SLEEP);
         useMultitypeIndex = config.get(USE_DEPRECATED_MULTITYPE_INDEX);
-
+        ingestPipelines = config.getSubset(ES_INGEST_PIPELINES);
         final ElasticSearchSetup.Connection c = interfaceConfiguration(config);
         client = c.getClient();
 
@@ -209,9 +213,11 @@ public class ElasticSearchIndex implements IndexProvider {
         switch (client.getMajorVersion()) {
             case ONE:
                 compat = new ES1Compat();
+                Preconditions.checkArgument(ingestPipelines.isEmpty(), "Ingest pipelines are not supported by Elasticsearch 1.x.");
                 break;
             case TWO:
                 compat = new ES2Compat();
+                Preconditions.checkArgument(ingestPipelines.isEmpty(), "Ingest pipelines are not supported by Elasticsearch 2.x.");
                 break;
             case FIVE:
                 compat = new ES5Compat();
@@ -532,7 +538,9 @@ public class ElasticSearchIndex implements IndexProvider {
         final List<ElasticSearchMutation> requests = new ArrayList<>();
         try {
             for (final Map.Entry<String, Map<String, IndexMutation>> stores : mutations.entrySet()) {
+                final List<ElasticSearchMutation> requestByStore = new ArrayList<>();
                 final String storename = stores.getKey();
+                final String indexStoreName = getIndexStoreName(storename);
                 for (final Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
                     final String docid = entry.getKey();
                     final IndexMutation mutation = entry.getValue();
@@ -541,15 +549,14 @@ public class ElasticSearchIndex implements IndexProvider {
                     Preconditions.checkArgument(!mutation.isNew() || !mutation.hasDeletions());
                     Preconditions.checkArgument(!mutation.isDeleted() || !mutation.hasAdditions());
                     //Deletions first
-                    final String indexStoreName = getIndexStoreName(storename);
                     if (mutation.hasDeletions()) {
                         if (mutation.isDeleted()) {
                             log.trace("Deleting entire document {}", docid);
-                            requests.add(ElasticSearchMutation.createDeleteRequest(indexStoreName, storename, docid));
+                            requestByStore.add(ElasticSearchMutation.createDeleteRequest(indexStoreName, storename, docid));
                         } else {
                             final String script = getDeletionScript(informations, storename, mutation);
                             final Map<String,Object> doc = compat.prepareScript(script).build();
-                            requests.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storename, docid, doc));
+                            requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storename, docid, doc));
                             log.trace("Adding script {}", script);
                         }
                     }
@@ -557,7 +564,7 @@ public class ElasticSearchIndex implements IndexProvider {
                         if (mutation.isNew()) { //Index
                             log.trace("Adding entire document {}", docid);
                             final Map<String, Object> source = getNewDocument(mutation.getAdditions(), informations.get(storename));
-                            requests.add(ElasticSearchMutation.createIndexRequest(indexStoreName, storename, docid, source));
+                            requestByStore.add(ElasticSearchMutation.createIndexRequest(indexStoreName, storename, docid, source));
                         } else {
                             final Map upsert;
                             if (!mutation.hasDeletions()) {
@@ -569,23 +576,27 @@ public class ElasticSearchIndex implements IndexProvider {
                             final String inline = getAdditionScript(informations, storename, mutation);
                             if (!inline.isEmpty()) {
                                 final ImmutableMap.Builder builder = compat.prepareScript(inline);
-                                requests.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storename, docid, builder, upsert));
+                                requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storename, docid, builder, upsert));
                                 log.trace("Adding script {}", inline);
                             }
 
                             final Map<String, Object> doc = getAdditionDoc(informations, storename, mutation);
                             if (!doc.isEmpty()) {
                                 final ImmutableMap.Builder builder = ImmutableMap.builder().put(ES_DOC_KEY, doc);
-                                requests.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storename, docid, builder, upsert));
+                                requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storename, docid, builder, upsert));
                                 log.trace("Adding update {}", doc);
                             }
                         }
                     }
-
+                }
+                if (!requestByStore.isEmpty() && ingestPipelines.containsKey(storename)) {
+                    client.bulkRequest(requestByStore, String.valueOf(ingestPipelines.get(storename)));
+                } else if (!requestByStore.isEmpty()) {
+                    requests.addAll(requestByStore);
                 }
             }
             if (!requests.isEmpty()) {
-                client.bulkRequest(requests);
+                client.bulkRequest(requests, null);
             }
         } catch (final Exception e) {
             log.error("Failed to execute bulk Elasticsearch mutation", e);
@@ -674,29 +685,34 @@ public class ElasticSearchIndex implements IndexProvider {
         final List<ElasticSearchMutation> requests = new ArrayList<>();
         try {
             for (final Map.Entry<String, Map<String, List<IndexEntry>>> stores : documents.entrySet()) {
+                final List<ElasticSearchMutation> requestByStore = new ArrayList<>();
                 final String store = stores.getKey();
+                final String indexStoreName = getIndexStoreName(store);
                 for (final Map.Entry<String, List<IndexEntry>> entry : stores.getValue().entrySet()) {
                     final String docID = entry.getKey();
                     final List<IndexEntry> content = entry.getValue();
-                    final String indexStoreName = getIndexStoreName(store);
                     if (content == null || content.size() == 0) {
                         // delete
                         if (log.isTraceEnabled())
                             log.trace("Deleting entire document {}", docID);
 
-                        requests.add(ElasticSearchMutation.createDeleteRequest(indexStoreName, store, docID));
+                        requestByStore.add(ElasticSearchMutation.createDeleteRequest(indexStoreName, store, docID));
                     } else {
                         // Add
                         if (log.isTraceEnabled())
                             log.trace("Adding entire document {}", docID);
                         final Map<String, Object> source = getNewDocument(content, informations.get(store));
-                        requests.add(ElasticSearchMutation.createIndexRequest(indexStoreName, store, docID, source));
+                        requestByStore.add(ElasticSearchMutation.createIndexRequest(indexStoreName, store, docID, source));
                     }
                 }
+                if (!requestByStore.isEmpty() && ingestPipelines.containsKey(store)) {
+                    client.bulkRequest(requestByStore, String.valueOf(ingestPipelines.get(store)));
+                } else if (!requestByStore.isEmpty()) {
+                    requests.addAll(requestByStore);
+                }
             }
-
             if (!requests.isEmpty())
-                client.bulkRequest(requests);
+                client.bulkRequest(requests, null);
         } catch (final Exception e) {
             throw convert(e);
         }
