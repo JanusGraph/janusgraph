@@ -56,19 +56,19 @@ mvn test -Dtest=BerkeleyJEGraphPerformanceMemoryTest
 mvn test -Dtest=BerkeleyJEGraphPerformanceMemoryTest -Dtest.skip.mem=false
 ```
 
-### Running Solr Tests with External Server
+### Running Solr tests against a managed Docker container
 
-Solr tests can be run using an external Solr server using Docker with [Compose](https://docs.docker.com/compose/).
+Solr tests can be run using a Docker container through the `docker` profile
 
 ```bash
-# optionally update the solr image version in the compose file prior to starting
-docker-compose -f janusgraph-solr/src/test/resources/docker-compose.yml up
+mvn clean install -pl janusgraph-solr -Pdocker
 ```
 
-Monitor container logs and wait until the setup container exits (message will be `resources_janusgraph_solr_test_setup_1 exited with code 0`). Once setup is complete run janusgraph-solr tests with the `index.search.solr.zookeeper-url` property.
+Specify a custom Solr test version using one of the version profiles or the `solr.test.version` property
 
 ```bash
-mvn clean install -pl janusgraph-solr -Dindex.search.solr.zookeeper-url=localhost:2181
+mvn clean install -pl janusgraph-solr -Pdocker,solr5
+mvn clean install -pl janusgraph-solr -Pdocker -Dsolr.test.version=5.5.4
 ```
 
 ### Running Thrift/CQL tests with ScyllaDB (requires Docker)
@@ -79,12 +79,18 @@ To run Thrift or CQL tests with the [ScyllaDB](http://www.scylladb.com/) backend
 mvn clean install -pl janusgraph-cql -Pscylladb-test
 ```
 
-### Running Elasticsearch tests against managed Docker container
+### Running Elasticsearch tests against a managed Docker container
 
-To run Elasicsearch tests using an embedded Elasticsearch Docker container, use the `es-docker` profile
+Elasicsearch tests can be run using a Docker container through the `es-docker` profile
 
 ```bash
 mvn clean install -pl janusgraph-es -Pes-docker
+```
+
+Specify a custom Elasticsearch test version using one of the version profiles and optionally the `elasticsearch.docker.test.version` property
+
+```bash
+mvn clean install -pl janusgraph-es -Pes-docker,elasticsearch5
 ```
 
 ### Running Hadoop tests with Cassandra-3 using CQL record reader (requires Docker)

@@ -24,7 +24,9 @@ env:
     # sort modules by test time with quickest modules first
     - MODULE='hadoop-parent/janusgraph-hadoop-2'
     - MODULE='lucene'
-    - MODULE='solr'
+    - MODULE='solr' ARGS='-Pdocker,solr7'
+    - MODULE='solr' ARGS='-Pdocker,solr6'
+    - MODULE='solr' ARGS='-Pdocker,solr5'
     - MODULE='es' ARGS='-Pelasticsearch6'
     - MODULE='es' ARGS='-Pelasticsearch5'
     - MODULE='es' ARGS='-Pelasticsearch2'
