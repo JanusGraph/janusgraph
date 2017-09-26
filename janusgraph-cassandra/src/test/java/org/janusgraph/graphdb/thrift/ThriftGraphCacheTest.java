@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.thrift;
 
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.StorageSetup;
+import org.janusgraph.diskstorage.cassandra.utils.CassandraDaemonWrapper;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphTest;
 import org.junit.BeforeClass;
@@ -31,5 +32,10 @@ public class ThriftGraphCacheTest extends JanusGraphTest {
     @BeforeClass
     public static void beforeClass() {
         CassandraStorageSetup.startCleanEmbedded();
+    }
+
+    @Override
+    public long additionalLatency() {
+        return CassandraDaemonWrapper.isStarted() ? 0L : 700L;
     }
 }

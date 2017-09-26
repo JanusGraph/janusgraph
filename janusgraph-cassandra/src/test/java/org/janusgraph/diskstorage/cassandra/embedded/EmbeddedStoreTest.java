@@ -33,7 +33,7 @@ public class EmbeddedStoreTest extends AbstractCassandraStoreTest {
 
     @BeforeClass
     public static void startCassandra() {
-        CassandraStorageSetup.startCleanEmbedded();
+        CassandraStorageSetup.startCleanEmbedded(true);
     }
 
     @Override

@@ -40,6 +40,7 @@ public class CassandraStorageSetup {
     public static final String CONFDIR_SYSPROP = "test.cassandra.confdir";
     public static final String DATADIR_SYSPROP = "test.cassandra.datadir";
     public static final String HOSTNAME = System.getProperty(ConfigElement.getPath(STORAGE_HOSTS));
+    private static final String CASSANDRA_SEED_SYSPROP = "test.cassandra.seeds";
 
     private static volatile Paths paths;
 
@@ -63,6 +64,12 @@ public class CassandraStorageSetup {
         config.set(STORAGE_BACKEND, backend);
         if (HOSTNAME != null) config.set(STORAGE_HOSTS, new String[]{HOSTNAME});
         config.set(DROP_ON_CLEAR, false);
+
+        String test_backend = System.getProperty(CASSANDRA_SEED_SYSPROP);
+        if (!backend.contains("embedded") && test_backend != null) {
+            config.set(STORAGE_HOSTS, new String[]{ test_backend });
+        }
+
         return config;
     }
 
@@ -126,11 +133,32 @@ public class CassandraStorageSetup {
      * <p>
      * This method is idempotent. Calls after the first have no effect aside
      * from logging statements.
+     * @param forceLocal - A boolean that specifies whether we need to ignore
+     *     testing against external backends because the test requires the database
+     *  to run locally.
+     */
+    public static void startCleanEmbedded(boolean forceLocal) {
+        String backend = System.getProperty(CASSANDRA_SEED_SYSPROP);
+        if (!forceLocal && backend == null) {
+            startCleanEmbedded(getPaths());
+        } else {
+            log.info("Test will use external backend at: " + backend);
+        }
+    }
+
+    /**
+     * Load cassandra.yaml and data paths from the environment or from default
+     * values if nothing is set in the environment, then delete all existing
+     * data, and finally start Cassandra.
+     * <p>
+     * This method is idempotent. Calls after the first have no effect aside
+     * from logging statements.
      */
     public static void startCleanEmbedded() {
         if (HOSTNAME == null) {
             startCleanEmbedded(getPaths());
         }
+        startCleanEmbedded(false);
     }
 
     /*
