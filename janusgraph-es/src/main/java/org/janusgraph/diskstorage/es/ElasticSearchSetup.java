@@ -37,7 +37,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IN
  * Create an ES {@link org.elasticsearch.client.RestClient} from a JanusGraph
  * {@link org.janusgraph.diskstorage.configuration.Configuration}.
  * <p>
- * Any key-value pairs under the {@link org.janusgraph.diskstorage.es.ElasticSearchIndex#ES_EXTRAS_NS} namespace
+ * Any key-value pairs under the {@link org.janusgraph.diskstorage.es.ElasticSearchIndex#ES_CREATE_EXTRAS_NS} namespace
  * are copied into the Elasticsearch settings builder.  This allows overriding arbitrary
  * ES settings from within the JanusGraph properties file.
  * <p>

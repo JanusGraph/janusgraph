@@ -127,9 +127,6 @@ public class ElasticSearchIndex implements IndexProvider {
             "Elasticsearch bulk API refresh setting used to control when changes made by this request are made " +
             "visible to search", ConfigOption.Type.MASKABLE, "false");
 
-    public static final ConfigNamespace ES_EXTRAS_NS =
-            new ConfigNamespace(ELASTICSEARCH_NS, "ext", "Overrides for arbitrary elasticsearch.yaml settings", true);
-
     public static final ConfigNamespace ES_CREATE_NS =
             new ConfigNamespace(ELASTICSEARCH_NS, "create", "Settings related to index creation");
 
