@@ -152,7 +152,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     // Thrift transport
     public static final ConfigOption<Integer> THRIFT_FRAME_SIZE_MB =
             new ConfigOption<>(CASSANDRA_NS, "frame-size-mb",
-            "The thrift frame size in megabytes", ConfigOption.Type.MASKABLE, 15);
+            "The thrift frame size in megabytes", ConfigOption.Type.MASKABLE, 15, (p -> p != null && p > 0 && p < 2048));
 
     /**
      * The default Thrift port used by Cassandra. Set
