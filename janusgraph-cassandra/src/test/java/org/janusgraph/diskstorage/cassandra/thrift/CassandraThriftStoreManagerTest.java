@@ -14,6 +14,8 @@
 
 package org.janusgraph.diskstorage.cassandra.thrift;
 
+import static org.junit.Assert.assertEquals;
+
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.junit.Test;
@@ -31,7 +33,8 @@ public class CassandraThriftStoreManagerTest {
     public void configOptionFrameSizeMbShouldBeHappy() {
         ModifiableConfiguration config = CassandraStorageSetup.getCassandraThriftConfiguration("janusgraph");
         config.set(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB, 1);
-        config.get(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB);
+        Integer result = config.get(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB);
+        assertEquals(1, result.intValue());
     }
 
     @Test(expected = IllegalArgumentException.class)
