@@ -32,7 +32,12 @@ public class ThriftStoreTest extends AbstractCassandraStoreTest {
 
     @Override
     public ModifiableConfiguration getBaseStorageConfiguration() {
-        return CassandraStorageSetup.getCassandraThriftConfiguration(this.getClass().getSimpleName());
+        return getBaseStorageConfiguration(getClass().getSimpleName());
+    }
+
+    @Override
+    public ModifiableConfiguration getBaseStorageConfiguration(String keyspace) {
+        return CassandraStorageSetup.getCassandraThriftConfiguration(keyspace);
     }
 
     @Override

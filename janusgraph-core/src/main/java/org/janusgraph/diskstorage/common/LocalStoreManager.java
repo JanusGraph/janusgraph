@@ -19,8 +19,11 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.util.DirectoryUtil;
 
 import java.io.File;
+import com.google.common.base.Preconditions;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_ROOT;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
 
 /**
  * Abstract Store Manager used as the basis for local StoreManager implementations.
@@ -35,11 +38,20 @@ public abstract class LocalStoreManager extends AbstractStoreManager {
 
     public LocalStoreManager(Configuration storageConfig) throws BackendException {
         super(storageConfig);
-        String storageDir = storageConfig.get(STORAGE_DIRECTORY);
-        if (null == storageDir) {
-            directory = null;
-        } else { 
+        Preconditions.checkArgument(storageConfig.has(STORAGE_DIRECTORY) ||
+                                    (storageConfig.has(STORAGE_ROOT) && storageConfig.has(GRAPH_NAME)),
+                                    String.format("Please supply configuration parameter \"%s\" or both \"%s\" and \"%s\".",
+                                                  STORAGE_DIRECTORY.toStringWithoutRoot(),
+                                                  STORAGE_ROOT.toStringWithoutRoot(),
+                                                  GRAPH_NAME.toStringWithoutRoot()
+                                    ));
+        if (storageConfig.has(STORAGE_DIRECTORY)) {
+            final String storageDir = storageConfig.get(STORAGE_DIRECTORY);
             directory = DirectoryUtil.getOrCreateDataDirectory(storageDir);
+        } else {
+            final String storageRoot = storageConfig.get(STORAGE_ROOT);
+            final String graphName = storageConfig.get(GRAPH_NAME);
+            directory = DirectoryUtil.getOrCreateDataDirectory(storageRoot, graphName);
         }
     }
 }

@@ -22,6 +22,9 @@ import org.janusgraph.diskstorage.util.BackendOperation;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.util.system.IOUtils;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.Backend;
+import org.janusgraph.diskstorage.indexing.IndexProvider;
 
 import java.time.Duration;
 import java.util.concurrent.Callable;
@@ -58,6 +61,13 @@ public class JanusGraphCleanup {
                 } finally {
                     IOUtils.closeQuietly(backend);
                 }
+                backend.getIndexInformation().forEach((name, index) -> {
+                    try {
+                        ((IndexProvider) index).clearStorage();
+                    } catch (BackendException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
                 return true;
             }
             @Override
