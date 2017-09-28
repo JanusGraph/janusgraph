@@ -11,8 +11,23 @@
     <url>http://janusgraph.org</url>
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
+        <solr7.test.version>7.0.0</solr7.test.version>
+        <solr6.test.version>6.6.1</solr6.test.version>
+        <solr5.test.version>5.5.4</solr5.test.version>
+        <solr.test.version>${solr7.test.version}</solr.test.version>
+        <skip.solr.test>${skipTests}</skip.solr.test>
     </properties>
     <dependencies>
+        <!-- MiniSolrCloudCluster used in tests requires the more recent
+             metrics-core than the com.codahale.metrics version provided
+             by janusgraph-core. This can be removed when janusgraph-core is
+             updated to io.dropwizard.metrics:metrics-core. -->
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+            <version>3.2.2</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-core</artifactId>
@@ -60,6 +75,11 @@
                     <groupId>org.slf4j</groupId>
                     <artifactId>jcl-over-slf4j</artifactId>
                 </exclusion>
+                <!-- Use noggit from janusgraph-core -->
+                <exclusion>
+                    <groupId>org.noggit</groupId>
+                    <artifactId>noggit</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -84,6 +104,10 @@
                 <exclusion>
                     <groupId>com.github.ben-manes.caffeine</groupId>
                     <artifactId>caffeine</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.noggit</groupId>
+                    <artifactId>noggit</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -164,10 +188,182 @@
                         <id>default-test</id>
                         <configuration>
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
+                            <skipTests>${skip.solr.test}</skipTests>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>solr7</id>
+            <properties>
+                <solr.test.version>${solr7.test.version}</solr.test.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>solr6</id>
+            <properties>
+                <solr.test.version>${solr6.test.version}</solr.test.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>solr5</id>
+            <properties>
+                <solr.test.version>${solr5.test.version}</solr.test.version>
+            </properties>
+        </profile>
+        <profile>
+            <!-- Run tests with Solr Docker container -->
+            <id>docker</id>
+            <properties>
+                <skip.solr.test>true</skip.solr.test>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-jts</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>copy</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>com.vividsolutions</groupId>
+                                            <artifactId>jts</artifactId>
+                                            <destFileName>jts.jar</destFileName>
+                                        </artifactItem>
+                                    </artifactItems>
+                                    <outputDirectory>${project.build.directory}/dependency</outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <skipITs>false</skipITs>
+                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
+                            <includes>
+                                <include>**/org/janusgraph/diskstorage/solr/*.java</include>
+                            </includes>
+                            <systemProperties>
+                                <property>
+                                    <name>index.search.solr.zookeeper-url</name>
+                                    <value>0.0.0.0:2181</value>
+                                </property>
+                                <property>
+                                    <name>log4j.configuration</name>
+                                    <value>file:${project.build.directory}/test-classes/log4j.properties</value>
+                                </property>
+                            </systemProperties>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <version>0.18.1</version>
+                        <configuration>
+                            <images>
+                                <image>
+                                    <alias>zookeeper</alias>
+                                    <name>jplock/zookeeper</name>
+                                    <run>
+                                        <ports>
+                                            <port>2181:2181</port>
+                                        </ports>
+                                        <wait>
+                                            <tcp>
+                                                <ports>
+                                                    <port>2181</port>
+                                                </ports>
+                                            </tcp>
+                                            <time>60000</time>
+                                        </wait>
+                                    </run>
+                                </image>
+                                <image>
+                                    <alias>solr</alias>
+                                    <name>solr:${solr.test.version}</name>
+                                    <run>
+                                        <volumes>
+                                            <bind>
+                                                <volume>${project.build.directory}/dependency/jts.jar:/opt/solr/server/lib/jts.jar</volume>
+                                            </bind>
+                                        </volumes>
+                                        <ports>
+                                            <port>8983:8983</port>
+                                        </ports>
+                                        <links>
+                                            <link>zookeeper</link>
+                                        </links>
+                                        <cmd>/opt/solr/bin/solr start -f -z zookeeper:2181</cmd>
+                                         <wait>
+                                            <http>
+                                                <url>http://localhost:8983</url>
+                                                <method>GET</method>
+                                                <status>200..399</status>
+                                            </http>
+                                        </wait>
+                                    </run>
+                                </image>
+                                <image>
+                                    <alias>solr-setup</alias>
+                                    <name>solr:${solr.test.version}</name>
+                                    <run>
+                                        <volumes>
+                                            <bind>
+                                                <volume>${basedir}/src/test/resources/solr/core-template:/opt/solr/mydata</volume>
+                                                <volume>${basedir}/src/test/resources/collections.txt:/tmp/collections.txt</volume>
+                                                <volume>${basedir}/src/test/resources/import-collections.sh:/usr/bin/import-collections</volume>
+                                            </bind>
+                                        </volumes>
+                                        <cmd>bash -c 'import-collections'</cmd>
+                                        <links>
+                                            <link>zookeeper</link>
+                                            <link>solr</link>
+                                        </links>
+                                        <wait>
+                                            <log>All collections imported</log>
+                                            <time>600000</time>
+                                        </wait>
+                                    </run>
+                                </image>
+                            </images>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>docker-start</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>start</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>docker-stop</id>
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>stop</goal>
+                                    <goal>remove</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
