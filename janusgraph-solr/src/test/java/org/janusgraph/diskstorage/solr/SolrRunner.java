@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -68,7 +69,7 @@ public class SolrRunner {
             File coreDirectory = new File(temp.getAbsolutePath() + File.separator + core);
             assert coreDirectory.mkdirs();
             FileUtils.copyDirectory(templateDirectory, coreDirectory);
-            miniSolrCloudCluster.uploadConfigDir(coreDirectory.getAbsoluteFile(), core);
+            miniSolrCloudCluster.uploadConfigSet(Paths.get(coreDirectory.getAbsolutePath()), core);
         }
     }
 
