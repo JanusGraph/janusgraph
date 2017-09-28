@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
+import org.janusgraph.diskstorage.cassandra.utils.CassandraDaemonWrapper;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
@@ -42,6 +43,11 @@ public abstract class CassandraGraphTest extends JanusGraphTest {
     @BeforeClass
     public static void startCassandra() {
         CassandraStorageSetup.startCleanEmbedded();
+    }
+
+    @Override
+    public long additionalLatency() {
+        return CassandraDaemonWrapper.isStarted() ? 0L : 1000L;
     }
 
     @Test

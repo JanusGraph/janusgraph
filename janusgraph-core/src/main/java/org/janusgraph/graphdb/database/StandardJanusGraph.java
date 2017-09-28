@@ -440,7 +440,11 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         }
         Map<StaticBuffer,EntryList> result = tx.edgeStoreMultiQuery(vertexIds, query);
         List<EntryList> resultList = new ArrayList<EntryList>(result.size());
-        for (StaticBuffer v : vertexIds) resultList.add(result.get(v));
+        for (StaticBuffer v : vertexIds) {
+            EntryList vertexResult = result.get(v);
+            if (vertexResult == null) vertexResult = EntryList.EMPTY_LIST;
+            resultList.add(vertexResult);
+        }
         return resultList;
     }
 

@@ -26,6 +26,10 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import static org.junit.Assert.assertEquals;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.diskstorage.DistributedStoreManagerTest;
+import org.janusgraph.diskstorage.cassandra.utils.CassandraDaemonWrapper;
+import org.janusgraph.diskstorage.common.DistributedStoreManager.Deployment;
 
 public class ThriftDistributedStoreManagerTest extends DistributedStoreManagerTest<CassandraThriftStoreManager> {
 
@@ -39,6 +43,11 @@ public class ThriftDistributedStoreManagerTest extends DistributedStoreManagerTe
         manager = new CassandraThriftStoreManager(
                 CassandraStorageSetup.getCassandraThriftConfiguration(this.getClass().getSimpleName()));
         store = manager.openDatabase("distributedcf");
+    }
+
+    @Override
+    public Deployment getDeploymentType() {
+        return CassandraDaemonWrapper.isStarted() ? Deployment.LOCAL : Deployment.REMOTE;
     }
 
     @After

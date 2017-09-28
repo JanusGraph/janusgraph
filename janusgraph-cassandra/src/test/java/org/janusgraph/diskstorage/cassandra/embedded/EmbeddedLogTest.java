@@ -28,7 +28,7 @@ public class EmbeddedLogTest extends KCVSLogTest {
 
     @BeforeClass
     public static void startCassandra() {
-        CassandraStorageSetup.startCleanEmbedded();
+        CassandraStorageSetup.startCleanEmbedded(true);
     }
 
     @Override

@@ -25,7 +25,8 @@ public class AstyanaxSSLStoreTest extends AstyanaxStoreTest {
 
     @BeforeClass
     public static void startCassandra() {
-        CassandraStorageSetup.startCleanEmbedded();
+        // ssl test must use local ssl-enabled database
+        CassandraStorageSetup.startCleanEmbedded(true);
     }
 
     @Override
