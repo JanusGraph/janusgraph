@@ -2,8 +2,9 @@ host: 0.0.0.0
 port: 8182
 scriptEvaluationTimeout: 30000
 channelizer: org.apache.tinkerpop.gremlin.server.channel.WebSocketChannelizer
+graphManager: org.janusgraph.graphdb.management.JanusGraphManager
 graphs: {
-  graph: conf/gremlin-server/janusgraph-cassandra-es-server.properties
+  ConfigurationManagementGraph: conf/janusgraph-cassandra-configurationgraph.properties
 }
 plugins:
   - janusgraph.imports

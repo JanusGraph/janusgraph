@@ -29,7 +29,7 @@ public class JanusGraphFactoryShorthandTest {
 
     @Test
     public void testJanusGraphFactoryShorthand() {
-        JanusGraph g = JanusGraphFactory.open("inmemory");
+        final JanusGraph g = JanusGraphFactory.open("inmemory");
         g.close();
     }
 }

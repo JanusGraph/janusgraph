@@ -56,8 +56,10 @@ public class CassandraStorageSetup {
 
     private static ModifiableConfiguration getGenericConfiguration(String ks, String backend) {
         ModifiableConfiguration config = buildGraphConfiguration();
-        config.set(CASSANDRA_KEYSPACE, cleanKeyspaceName(ks));
-        log.debug("Set keyspace name: {}", config.get(CASSANDRA_KEYSPACE));
+        if (null != ks) {
+            config.set(CASSANDRA_KEYSPACE, cleanKeyspaceName(ks));
+            log.debug("Set keyspace name: {}", config.get(CASSANDRA_KEYSPACE));
+        }
         config.set(PAGE_SIZE,500);
         config.set(CONNECTION_TIMEOUT, Duration.ofSeconds(60L));
         config.set(STORAGE_BACKEND, backend);
