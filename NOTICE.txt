@@ -31,6 +31,7 @@ It also includes software from other open source projects including, but not lim
  * DataStax Driver for Apache Cassandra  [https://github.com/datastax/java-driver]
  * EasyMock [http://easymock.org/]
  * Elasticsearch [https://www.elastic.co/]
+ * Google Cloud Bigtable [https://github.com/googlecloudplatform/cloud-bigtable-client]
  * Google Guava [https://github.com/google/guava]
  * H2 [http://h2database.com]
  * HPPC [https://labs.carrotsearch.com/hppc.html]
