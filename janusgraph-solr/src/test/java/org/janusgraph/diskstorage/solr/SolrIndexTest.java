@@ -33,6 +33,7 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Date;
@@ -157,4 +158,11 @@ public class SolrIndexTest extends IndexProviderTest {
         assertTrue(index.supports(of(UUID.class, Cardinality.SINGLE), Cmp.NOT_EQUAL));
     }
 
+    /**
+     * Dropping collection is not implemented with Solr Cloud to accommodate use case where collection is created
+     * outside of JanusGraph and associated with a config set with a different name.
+     * @throws Exception
+     */
+    @Override @Test @Ignore
+    public void clearStorageTest() throws Exception { }
 }
