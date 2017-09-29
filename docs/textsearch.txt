@@ -86,7 +86,7 @@ mgmt.commit()
 Note that the data will be stored in the index twice, once for exact matching and once for fuzzy matching.
 
 [[geo-search]]
-===Geo Mapping
+=== Geo Mapping
 
 By default, JanusGraph supports indexing geo properties with point type and querying geo properties by circle or box. To index a non-point geo property with support for querying by any geoshape type, specify the mapping as `Mapping.PREFIX_TREE`:
 
