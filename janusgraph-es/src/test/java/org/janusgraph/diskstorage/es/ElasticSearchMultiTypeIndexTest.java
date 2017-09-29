@@ -14,13 +14,16 @@
 
 package org.janusgraph.diskstorage.es;
 
+import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.After;
 import org.junit.Before;
@@ -55,7 +58,11 @@ public class ElasticSearchMultiTypeIndexTest extends ElasticSearchIndexTest {
 
     public Configuration getESTestConfig() {
         final String index = "es";
-        final ModifiableConfiguration config = esr.setElasticsearchConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), index);
+        final CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
+        if (esr.getEsMajorVersion().value > 2) {
+            cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
+        }
+        final ModifiableConfiguration config = esr.setElasticsearchConfiguration(new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,cc, BasicConfiguration.Restriction.NONE), index);
         config.set(USE_DEPRECATED_MULTITYPE_INDEX, true, index);
         config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index);
         return config.restrictTo(index);

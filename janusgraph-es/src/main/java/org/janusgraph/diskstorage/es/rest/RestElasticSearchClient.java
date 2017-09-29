@@ -45,8 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
@@ -78,6 +77,8 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     private static final ElasticMajorVersion DEFAULT_VERSION = ElasticMajorVersion.FIVE;
 
+    private static final Function<StringBuilder, StringBuilder> APPEND_OP = sb -> sb.append(sb.length() == 0 ? "?" : "&");
+
     private final RestClient delegate;
 
     private ElasticMajorVersion majorVersion;
@@ -103,30 +104,12 @@ public class RestElasticSearchClient implements ElasticSearchClient {
             return majorVersion;
         }
 
-        final Pattern pattern = Pattern.compile("(\\d+)\\.\\d+\\.\\d+");
         majorVersion = DEFAULT_VERSION;
         try {
             final Response response = delegate.performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR);
             try (final InputStream inputStream = response.getEntity().getContent()) {
                 final ClusterInfo info = mapper.readValue(inputStream, ClusterInfo.class);
-                final String version = info.getVersion() != null ? (String) info.getVersion().get("number") : null;
-                final Matcher m = version != null ? pattern.matcher(version) : null;
-                switch (m != null && m.find() ? Integer.valueOf(m.group(1)) : -1) {
-                    case 1:
-                        majorVersion = ElasticMajorVersion.ONE;
-                        break;
-                    case 2:
-                        majorVersion = ElasticMajorVersion.TWO;
-                        break;
-                    case 5:
-                        majorVersion = ElasticMajorVersion.FIVE;
-                        break;
-                    case 6:
-                        majorVersion = ElasticMajorVersion.SIX;
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Unsupported Elasticsearch server version: " + version);
-                }
+                majorVersion = ElasticMajorVersion.parse(info.getVersion() != null ? (String) info.getVersion().get("number") : null);
             }
         } catch (IOException e) {
             log.warn("Unable to determine Elasticsearch server version. Default to {}.", majorVersion, e);
@@ -241,7 +224,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     }
 
     @Override
-    public void bulkRequest(List<ElasticSearchMutation> requests) throws IOException {
+    public void bulkRequest(List<ElasticSearchMutation> requests, String ingestPipeline) throws IOException {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         for (final ElasticSearchMutation request : requests) {
             Map actionData = ImmutableMap.of(request.getRequestType().name().toLowerCase(),
@@ -254,10 +237,14 @@ public class RestElasticSearchClient implements ElasticSearchClient {
             }
         }
 
-        final StringBuilder builder = new StringBuilder("/_bulk");
-        if (bulkRefresh != null && !bulkRefresh.toLowerCase().equals("false")) {
-            builder.append("?refresh=" + bulkRefresh);
+        final StringBuilder builder = new StringBuilder();
+        if (ingestPipeline != null) {
+            APPEND_OP.apply(builder).append("pipeline=").append(ingestPipeline);
         }
+        if (bulkRefresh != null && !bulkRefresh.toLowerCase().equals("false")) {
+            APPEND_OP.apply(builder).append("refresh=").append(bulkRefresh);
+        }
+        builder.insert(0, "/_bulk");
 
         final Response response = performRequest(REQUEST_TYPE_POST, builder.toString(), outputStream.toByteArray());
         try (final InputStream inputStream = response.getEntity().getContent()) {

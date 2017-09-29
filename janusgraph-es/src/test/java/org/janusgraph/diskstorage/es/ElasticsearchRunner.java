@@ -51,6 +51,8 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
 
     private final String homedir;
 
+    private ElasticMajorVersion majorVersion;
+
     private static final Logger log =
             LoggerFactory.getLogger(ElasticsearchRunner.class);
 
@@ -73,7 +75,7 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
         if (version == null) {
             throw new RuntimeException("Unable to find Elasticsearch version");
         }
-
+        majorVersion = ElasticMajorVersion.parse(version);
         this.homedir = esHome + File.separator + "target" + File.separator + "elasticsearch-" + version;
     }
 
@@ -196,6 +198,10 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
 
     public String getHostname() {
         return HOSTNAME != null ? HOSTNAME : "127.0.0.1";
+    }
+
+    public ElasticMajorVersion getEsMajorVersion() {
+        return majorVersion;
     }
 
     /**
