@@ -145,7 +145,7 @@ public class JanusGraphFactory {
     public static JanusGraph open(ReadConfiguration configuration, String backupName) {
         final ModifiableConfiguration config = new ModifiableConfiguration(ROOT_NS, (WriteConfiguration) configuration, BasicConfiguration.Restriction.NONE);
         final String graphName = config.has(GRAPH_NAME) ? config.get(GRAPH_NAME) : backupName;
-        final JanusGraphManager jgm = JanusGraphManager.getInstance();
+        final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         if (null != graphName) {
             Preconditions.checkState(jgm != null, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
             return (JanusGraph) jgm.openGraph(graphName, (gName) -> {
@@ -171,7 +171,7 @@ public class JanusGraphFactory {
      *  @return Set<String>
      */
     public static Set<String> getGraphNames() {
-       final JanusGraphManager jgm = JanusGraphManager.getInstance();
+       final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
        Preconditions.checkState(jgm != null, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
        return jgm.getGraphNames();
     }
@@ -183,7 +183,7 @@ public class JanusGraphFactory {
      * @param graph Graph
      */
     public static void close(Graph graph) throws Exception {
-        final JanusGraphManager jgm = JanusGraphManager.getInstance();
+        final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         if (jgm != null) {
             jgm.removeGraph(((StandardJanusGraph) graph).getGraphName());
         }
@@ -203,7 +203,7 @@ public class JanusGraphFactory {
         Preconditions.checkNotNull(graph);
         Preconditions.checkArgument(graph instanceof StandardJanusGraph,"Invalid graph instance detected: %s",graph.getClass());
         final StandardJanusGraph g = (StandardJanusGraph) graph;
-        final JanusGraphManager jgm = JanusGraphManager.getInstance();
+        final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         if (jgm != null) {
             jgm.removeGraph(g.getGraphName());
         }

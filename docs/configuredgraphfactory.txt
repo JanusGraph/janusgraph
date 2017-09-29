@@ -121,6 +121,12 @@ also act upon said graph. Furthermore, this is the graph that will be
 used to access the configurations used to create/open graphs using the
 `ConfiguredGraphFactory`.
 
+IMPORTANT: The `pom.xml` included in the JanusGraph distribution lists this dependency as
+optional, but the `ConfiguredGraphFactory` makes use of the `JanusGraphManager`,
+which requires a declared dependency on the `org.apache.tinkerpop:gremlin-server`. So
+if you run into `NoClassDefFoundError` errors, then be sure to update according to this
+message.
+
 [[configurationmanagementgraph]]
 === ConfigurationManagementGraph
 

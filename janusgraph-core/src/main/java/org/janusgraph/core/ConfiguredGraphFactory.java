@@ -80,7 +80,7 @@ public class ConfiguredGraphFactory {
         templateConfigMap.put(ConfigurationManagementGraph.PROPERTY_GRAPH_NAME, graphName);
         templateConfigMap.put(ConfigurationManagementGraph.PROPERTY_CREATED_USING_TEMPLATE, true);
 
-        final JanusGraphManager jgm = JanusGraphManager.getInstance();
+        final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         Preconditions.checkState(jgm != null, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
         final CommonsConfiguration config = new CommonsConfiguration(new MapConfiguration(templateConfigMap));
         final JanusGraph g = (JanusGraph) jgm.openGraph(graphName, (String gName) -> new StandardJanusGraph(new GraphDatabaseConfiguration(config)));
@@ -105,7 +105,7 @@ public class ConfiguredGraphFactory {
         final Map<String, Object> graphConfigMap = configManagementGraph.getConfiguration(graphName);
         Preconditions.checkState(null != graphConfigMap,
                                 "Please create configuration for this graph using the ConfigurationManagementGraph#createConfiguration API.");
-        final JanusGraphManager jgm = JanusGraphManager.getInstance();
+        final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         Preconditions.checkState(jgm != null, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
         final CommonsConfiguration config = new CommonsConfiguration(new MapConfiguration(graphConfigMap));
         return (JanusGraph) jgm.openGraph(graphName, (String gName) -> new StandardJanusGraph(new GraphDatabaseConfiguration(config)));
@@ -132,7 +132,7 @@ public class ConfiguredGraphFactory {
      * @return JanusGraph
      */
     public static JanusGraph close(String graphName) throws Exception {
-        final JanusGraphManager jgm = JanusGraphManager.getInstance();
+        final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         Preconditions.checkState(jgm != null, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
         final Graph graph = jgm.removeGraph(graphName);
         if (null != graph) graph.close();
