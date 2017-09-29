@@ -18,13 +18,13 @@ To build with default tests:
 mvn clean install
 ```
 
-To build with default plus TinkerPop tests\*:
+To build with default plus TinkerPop tests:
 
 ```
 mvn clean install -Dtest.skip.tp=false
 ```
 
-To build with only the TinkerPop tests\*:
+To build with only the TinkerPop tests:
 
 ```
 mvn clean install -Dtest.skip.tp=false -DskipTests=true
