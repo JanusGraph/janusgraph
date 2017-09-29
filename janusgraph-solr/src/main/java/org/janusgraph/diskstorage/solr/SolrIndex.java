@@ -870,8 +870,10 @@ public class SolrIndex implements IndexProvider {
             final ClusterState clusterState = zkStateReader.getClusterState();
             for (final String collection : clusterState.getCollectionsMap().keySet()) {
                 logger.debug("Clearing collection [{}] in Solr",collection);
-                final CollectionAdminRequest.Delete request = CollectionAdminRequest.deleteCollection(collection);
-                solrClient.request(request, collection);
+                // Collection is not dropped because it may have been created externally
+                final UpdateRequest deleteAll = newUpdateRequest();
+                deleteAll.deleteByQuery("*:*");
+                solrClient.request(deleteAll, collection);
             }
 
         } catch (final SolrServerException e) {
