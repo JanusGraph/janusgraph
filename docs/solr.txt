@@ -1,11 +1,11 @@
 [[solr]]
-== Solr
+== Apache Solr
 
 
-[quote, 'http://lucene.apache.org/solr/[Solr Homepage]']
+[quote, 'http://lucene.apache.org/solr/[Apache Solr Homepage]']
 Solr is the popular, blazing fast open source enterprise search platform from the Apache Lucene project. Solr is a standalone enterprise search server with a REST-like API. Solr is highly reliable, scalable and fault tolerant, providing distributed indexing, replication and load-balanced querying, automated failover and recovery, centralized configuration and more.
 
-JanusGraph supports http://lucene.apache.org/solr/[Solr] as an index backend.  Here are some of the Solr features supported by JanusGraph:
+JanusGraph supports http://lucene.apache.org/solr/[Apache Solr] as an index backend.  Here are some of the Solr features supported by JanusGraph:
 
 * *Full-Text*: Supports all `Text` predicates to search for text properties that matches a given word, prefix or regular expression.
 * *Geo*: Supports all `Geo` predicates to search for geo properties that are intersecting, within, disjoint to or contained in a given query geometry. Supports points, lines and polygons for indexing. Supports circles, boxes and polygons for querying point properties and all shapes for querying non-point properties. Note that JTS is required when using line and polygon shapes (see <<search-predicates#geoshape,Geoshape documentation>> for more information).
@@ -16,16 +16,30 @@ JanusGraph supports http://lucene.apache.org/solr/[Solr] as an index backend.  H
 
 Please see <<version-compat>> for details on what versions of Solr will work with JanusGraph.
 
+
 === Solr Configuration Overview
 
-==== Connecting to Solr
+JanusGraph supports Solr running in either a SolrCloud or Solr Standalone (HTTP) configuration for use with a *mixed index* (see <<index-mixed>>). The desired connection mode is configured via the parameter `mode` which must be set to either `cloud` or `http`, the former being the default value.  For example, to explicitly specify that Solr is running in a SolrCloud configuration the following property is specified as a JanusGraph configuration property:
 
-JanusGraph supports Solr running in either a SolrCloud or HTTP configuration. The desired connection mode is configured via the parameter `mode` which must be set to either `http` or `cloud`, the latter being the default value.  For example, to explicitly specify that Solr is running in a SolrCloud configuration the following property is specified as a JanusGraph configuration property: index.search.solr.mode=cloud where 'search' is the name of the Solr index.
+[source, properties]
+----
+index.search.solr.mode=cloud
+----
+
+These are some key Solr terms:
+
+* *Core*: A 'single index' on a single machine
+
+* *Configuration*: 'solrconfig.xml', 'schema.xml', and other files required to define a core.
+
+* *Collection*: A 'single logical index' that can span mulitple cores on different machines.
+
+* *Configset*: A shared 'configuration' that can be reused by mulitple cores.
 
 
-===== Connecting to SolrCloud
+=== Connecting to SolrCloud
 
-When connecting to a SolrCloud enabled cluster by setting the `mode` equal to `cloud`, the Zookeeper URL (and optionally port) must be specified so that JanusGraph can discover and interact with the Solr cluster.
+When connecting to a SolrCloud cluster by setting the `mode` equal to `cloud`, the Zookeeper URL (and optionally port) must be specified so that JanusGraph can discover and interact with the Solr cluster.
 
 [source, properties]
 ----
@@ -36,10 +50,77 @@ index.search.solr.zookeeper-url=localhost:2181
 
 A number of additional configuration options pertaining to the creation of new collections (which is only supported in SolrCloud operation mode) can be configured to control sharding behavior among other things. Refer to the <<config-ref>> for a complete listing of those options.
 
+SolrCloud leverages Zookeeper to coordinate collection and configset information between the Solr servers. The use of Zookeeper with SolrCloud provides the opportunity to significantly reduce the amount of manual configuration required to use Solr as a back end index for JanusGraph.
 
-===== Connecting via HTTP
 
-When connecting to Solr via HTTP by setting the `mode` equal to `http` a single or list of URLs for the Solr instances must be provided.
+==== Configset Configuration
+
+A configset is required to create a collection. The configset is stored in Zookeeper to enable access to it across the Solr servers.
+
+* Each collection can provide its own configset when it is created, so that each collection may have a different configuration. With this approach, each collection must be created manually.
+* A shared configset can be uploaded separately to Zookeeper if it will be reused by multiple collections. With this approach, JanusGraph can create collections automatically by using the shared configset. Another benefit is that reusing a configset significantly reduces the amount of data stored in Zookeeper.
+
+
+===== Using an Individual Configset
+
+In this example, a collection named `verticesByAge` is created manually using the default JanusGraph configuration for Solr that is found in the distribution. When the collection is created, the configuration is uploaded into Zookeeper, using the same collection name `verticesByAge` for the configset name. Refer to the https://lucene.apache.org/solr/guide/6_6/solr-control-script-reference.html#SolrControlScriptReference-CollectionsandCores[Solr Reference Guide] for available parameters.
+
+[source, bourne]
+----
+# create the collection
+$SOLR_HOME/bin/solr create -c verticesByAge -d $JANUSGRAPH_HOME/conf/solr
+----
+
+Define a mixed index using `JanusGraphManagement` and the same collection name.
+
+[source, gremlin]
+----
+mgmt = graph.openManagement()
+age = mgmt.makePropertyKey("age").dataType(Integer.class).make()
+mgmt.buildIndex("verticesByAge", Vertex.class).addKey(age).buildMixedIndex("search")
+mgmt.commit()
+----
+
+
+===== Using a Shared Configset
+
+When using a shared configset, it is most convenient to upload the configuration first as a one time operation. In this example, a configset named `janusgraph-configset` is uploaded in to Zookeeper using the default JanusGraph configuration for Solr that is found in the distribution. Refer to the https://lucene.apache.org/solr/guide/6_6/solr-control-script-reference.html#SolrControlScriptReference-CollectionsandCores[Solr Reference Guide] for available parameters.
+
+[source, bourne]
+----
+# upload the shared configset into Zookeeper
+# Solr 5
+$SOLR_HOME/server/scripts/cloud-scripts/zkcli.sh -cmd upconfig -z localhost:2181 \
+    -d $JANUSGRAPH_HOME/conf/solr -n janusgraph-configset
+# Solr 6 and higher
+$SOLR_HOME/bin/solr zk upconfig -d $JANUSGRAPH_HOME/conf/solr -n janusgraph-configset \
+    -z localhost:2181
+----
+
+When configuring the SolrCloud indexing backend for JanusGraph, make sure to provide the name of the shared configset using the `index.search.solr.configset` property.
+
+[source, properties]
+----
+index.search.backend=solr
+index.search.solr.mode=cloud
+index.search.solr.zookeeper-url=localhost:2181
+index.search.solr.configset=janusgraph-configset
+----
+
+Define a mixed index using `JanusGraphManagement` and the collection name.
+
+[source, gremlin]
+----
+mgmt = graph.openManagement()
+age = mgmt.makePropertyKey("age").dataType(Integer.class).make()
+mgmt.buildIndex("verticesByAge", Vertex.class).addKey(age).buildMixedIndex("search")
+mgmt.commit()
+----
+
+
+=== Connecting to Solr Standalone (HTTP)
+
+When connecting to Solr Standalone via HTTP by setting the `mode` equal to `http`, a single or list of URLs for the Solr instances must be provided.
 
 [source, properties]
 ----
@@ -50,88 +131,32 @@ index.search.solr.http-urls=http://localhost:8983/solr
 
 Additional configuration options for controlling the maximum number of connections, connection timeout and transmission compression are available for the HTTP mode. Refer to the <<config-ref>> for a complete listing of those options.
 
-==== Solr Collections
 
-.Note:
-[NOTE]
-Solr documentation makes a distinction between the terms *core* and *configuration set*.  For the purposes of configuring JanusGraph to work with Solr, the terms are used interchangeably.  
+==== Core Configuration
 
-===== Collection Initialization
+Solr Standalone is used for a single instance, and it keeps configuration information on the file system. A core must be created manually for each mixed index.
 
-SolrCloud leverages Zookeeper to coordinate Solr *configuration sets* and *collection* information between instances of Solr.  Solr HTTP, because it is a single instance, keeps *configuration set* information exclusively on the file system. The use of Zookeeper with SolrCloud provides the opportunity to significantly reduce the amount of manual configuration required to use Solr as a back end index for JanusGraph.
+To create a core, a `core_name` and a `configuration` directory is required. Refer to the https://lucene.apache.org/solr/guide/6_6/solr-control-script-reference.html#SolrControlScriptReference-CollectionsandCores[Solr Reference Guide] for available parameters. In this example, a core named `verticesByAge` is created using the default JanusGraph configuration for Solr that is found in the distribution.
 
-
-
-===== Using Solr in SolrCloud Configuration
-
-When a <<index-mixed>> is defined for a graph, JanusGraph creates a new *collection* in Solr that matches the index name. In order to create a new collection, Solr requires that a *configuration set* be defined that specifies the schema (schema.xml and other files) to be used for the collection. The JanusGraph distribution contains a default configuration set.  The JanusGraph provided configuration set must be manually copied from where JanusGraph is installed to one of the Solr nodes in the SolrCloud.
-
-To copy the default configuration set (core) provided by JanusGraph to a Solr node:
-
-* Identify the target Solr machine where the configuration files will be copied.
-* Create a new *configuration set* directory under the "solr" directory.  If using the default Solr installation:
-+
-$SOLR_HOME/server/solr/configsets/{config_set}
-* Copy the contents, including the subdirectories, of janusgraph/conf/solr under $SOLR_HOME/server/solr/configsets/{config_set}/
-
-Next, the default configuration set must be loaded into Zookeeper.  There are two recommended ways to accomplish this:
-
-
-Option 1:
-
-. After performing the manual copy of the configuration set:
-+
-open the Solr web interface and select Core Admin->Add Core (remember *core* is the same as *configuration set* for our purposes)
-. Change the name and instance dir to match your {config_set} name
-. Finish by clicking 'Add Core'
-
-Option 2:
-
-. After performing the manual copy of the configuration set:
-. Use the Solr command line to load a configuration set and the first collection (index) that your application will define:
-+
-$JAVA_HOME/bin/java -Dsolr.install.dir=$SOLR_HOME -Dlog4j.configuration=file:$SOLR_HOME/server/scripts/cloud-scripts/log4j.properties
--classpath $SOLR_HOME/server/solr-webapp/webapp/WEB-INF/lib/\*:$SOLR_HOME/server/lib/ext/\* org.apache.solr.util.SolrCLI create_collection -name {index name} -shards 2
--replicationFactor 1 -confname {config_set} -confdir {config_set} -configsetsDir $SOLR_HOME/server/solr/configsets -solrUrl http://<solrhostname>:8983/solr
-
-
-JanusGraph provides an index.[X].solr.configset configuration property that, if specified, allows JanusGraph to re-use a single configuration set for all the collections (index) it creates. To use this property, specify it in the JanusGraph configuration parameters, and set the value to the name of the {config_set} manually copied per the above steps.
-
-
-[source, properties]
+[source, bourne]
 ----
-index.search.solr.configset=janusgraph-configset
+$SOLR_HOME/bin/solr create -c verticesByAge -d $JANUSGRAPH_HOME/conf/solr
 ----
 
-In the above example, the default JanusGraph configuration set files would be copied to one solr node under: $SOLR_HOME/server/solr/configsets/janusgraph-configset
-
-Use of the configset property provides two significant benefits:
-
-. After performing the manual steps above to configure the first configuration set in Zookeeper, no more manual steps are required for additional mixed index definitions.  New mixed indexes may be defined using mgmt commands, using any index name desired.
-. Only a single configuration set is loaded into Zookeeper, significantly decreasing the amount of data potentially stored in Zookeeper for SolrCloud.
-
-If the property is not specified, then the manual configuration process must be followed for each new mixed index that is defined in Solr.
-
-
-===== Using Solr in HTTP Configuration
-
-To create a new core that is compatible with JanusGraph:
-
-* Identify the target Solr machine where the configuration files will be copied.
-* Create a new *configuration set* directory under the "solr" directory.  If
-* using the default Solr installation:
-+
-$SOLR_HOME/server/solr/configsets/{config_set}
-* Copy the contents, including the subdirectories, of janusgraph/conf/solr under $SOLR_HOME/server/solr/configsets/{config_set}/
-
-The core_name must match the index name used to build the index and you will need to create a new core, following the steps above, for each unique index.
+Define a mixed index using `JanusGraphManagement` and the same core name.
 
 [source, gremlin]
 ----
-mgmt.buildIndex('{core_name}', Vertex.class).addKey(name).buildMixedIndex('search')
+mgmt = graph.openManagement()
+age = mgmt.makePropertyKey("age").dataType(Integer.class).make()
+mgmt.buildIndex("verticesByAge", Vertex.class).addKey(age).buildMixedIndex("search")
+mgmt.commit()
 ----
 
-===== Dynamic Field Definition
+
+=== Solr Schema Design
+
+==== Dynamic Field Definition
 
 By default, JanusGraph uses Solr's https://cwiki.apache.org/confluence/display/solr/Dynamic+Fields[Dynamic Fields] feature to define the field types for all indexed keys. This requires no extra configuration when adding property keys to a mixed index backed by Solr and provides better performance than schemaless mode.
 
@@ -153,9 +178,9 @@ is additional xml definition of the following fields required in a solr schema.x
 
 ----
 
-In JanusGraph's default configuration, property key names do not have to end with the type-appropriate suffix to take advantage of Solr's dynamic field feature.  JanusGraph generates the Solr field name from the property key name by encoding the property key definition's numeric identifier and the type-appropriate suffix.  This means that JanusGraph uses synthetic field names with type-appropriate suffixes behind the scenes, regardless of the property key names defined and used by application code using JanusGraph.  This field name mapping can be overridden through non-default configuration.  That's described in the next section. 
+In JanusGraph's default configuration, property key names do not have to end with the type-appropriate suffix to take advantage of Solr's dynamic field feature.  JanusGraph generates the Solr field name from the property key name by encoding the property key definition's numeric identifier and the type-appropriate suffix.  This means that JanusGraph uses synthetic field names with type-appropriate suffixes behind the scenes, regardless of the property key names defined and used by application code using JanusGraph.  This field name mapping can be overridden through non-default configuration.  That's described in the next section.
 
-===== Manual Field Definition
+==== Manual Field Definition
 
 If the user would rather manually define the field types for each of the indexed fields in a collection, the configuration option `dyn-fields` needs to be disabled.  It is important that the field for each indexed property key is defined in the backing Solr schema before the property key is added to the index.
 
@@ -164,25 +189,71 @@ In this scenario, it is advisable to enable explicit property key name to field 
 . Configuring the name of the field by providing a `mapped-name` parameter when adding the property key to the index. See <<index-local-field-mapping>> for more information.
 . By enabling the `map-name` configuration option for the Solr index which will use the property key name as the field name in Solr. See <<index-global-field-mapping>> for more information.
 
-===== Schemaless Mode
+==== Schemaless Mode
 
 JanusGraph can also interact with a SolrCloud cluster that is configured for https://cwiki.apache.org/confluence/display/solr/Schemaless+Mode[schemaless mode]. In this scenario, the configuration option `dyn-fields` should be disabled since Solr will infer the field type from the values and not the field name.
 
-Note, however, that schemaless mode is recommended only for prototyping and initial application development and NOT recommended for production use. 
+Note, however, that schemaless mode is recommended only for prototyping and initial application development and NOT recommended for production use.
+
 
 === Troubleshooting
 
 ==== Collection Does Not Exist
 
-The collection (and all of the required configuration files) must be initialized before a defined index can use the collection.
+The collection (and all of the required configuration files) must be initialized before a defined index can use the collection. See <<solr.html#_connecting_to_solrcloud, Connecting to SolrCloud>> for more information.
 
 When using SolrCloud, the Zookeeper zkCli.sh command line tool can be used to inspect the configurations loaded into Zookeeper.  Also verify that
 the default JanusGraph configuration files are copied to the correct location under solr and that the directory where the files are copied is correct.
 
+==== Cannot Find the Specified Configset
+
+When using SolrCloud, a configset is required to create a mixed index for JanusGraph. See <<solr.html#_configset_configuration, Configset Configuration>> for more information.
+
+* If using an individual configset, the collection must be created manually first.
+* If using a shared configset, the configset must be uploaded into Zookeeper first.
+
+You can verify that the configset and its configuration files are in Zookeeper under `/configs`. Refer to the https://lucene.apache.org/solr/guide/6_6/solr-control-script-reference.html#SolrControlScriptReference-ZooKeeperOperations[Solr Reference Guide] for other Zookeeper operations.
+
+[source, bourne]
+----
+# verify the configset in Zookeeper
+# Solr 5
+$SOLR_HOME/server/scripts/cloud-scripts/zkcli.sh -cmd list -z localhost:2181
+# Solr 6 and higher
+$SOLR_HOME/bin/solr zk ls -r /configs/configset-name -z localhost:2181
+----
+
+==== HTTP Error 404
+
+This error may be encountered when using Solr Standalone (HTTP) mode. An example of the error:
+
+[source, text]
+----
+20:01:22 ERROR org.janusgraph.diskstorage.solr.SolrIndex  - Unable to save documents
+to Solr as one of the shape objects stored were not compatible with Solr.
+org.apache.solr.client.solrj.impl.HttpSolrClient$RemoteSolrException: Error from server
+at http://localhost:8983/solr: Expected mime type application/octet-stream but got text/html.
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+<title>Error 404 Not Found</title>
+</head>
+<body><h2>HTTP ERROR 404</h2>
+<p>Problem accessing /solr/verticesByAge/update. Reason:
+<pre>    Not Found</pre></p>
+</body>
+</html>
+----
+
+Make sure to create the core manually before attempting to store data into the index. See <<solr.html#_core_configuration, Core Configuration>> for more information.
+
+==== Invalid core or collection name
+
+The core or collection name is an identifier. It must consist entirely of periods, underscores, hyphens, and/or alphanumerics, and also it may not start with a hyphen.
+
 ==== Connection Problems
 
 Irrespective of the operation mode, a Solr instance or a cluster of Solr instances must be running and accessible from the JanusGraph instance(s) in order for JanusGraph to use Solr as an indexing backend. Check that the Solr cluster is running correctly and that it is visible and accessible over the network (or locally) from the JanusGraph instances.
-
 
 ==== JTS ClassNotFoundException with Geo Data
 
@@ -256,7 +327,7 @@ Start DSE Cassandra and Solr in a single background daemon:
 
 [source, bourne]
 ----
-# The "dse-data" path below was chosen to match the 
+# The "dse-data" path below was chosen to match the
 # "Installing DataStax Enterprise using the binary tarball"
 # documentation page from DataStax.  The exact path is not
 # significant.
@@ -278,11 +349,11 @@ Status=Up/Down
 UN  127.0.0.1  99.89 KB   100.0%  5484ef7b-ebce-4560-80f0-cbdcd9e9f496  -7317038863489909889                     rack1
 ----
 
-Next, switch to `gremlin.sh` and open a JanusGraph database against the DSE instance.  This will create JanusGraph's keyspace and column families.
+Next, switch to Gremlin Console and open a JanusGraph database against the DSE instance.  This will create JanusGraph's keyspace and column families.
 [source, gremlin]
 ----
 cd $JANUSGRAPH_HOME
-bin/gremlin.sh 
+bin/gremlin.sh
 
          \,,,/
          (o o)
@@ -294,8 +365,8 @@ gremlin> g = graph.traversal()
 gremlin>
 ----
 
-Keep this `gremlin.sh` shell open.  We'll take a break now to install
-a Solr core.  Then we'll come back to this shell to load some sample
+Keep this Gremlin Console open.  We'll take a break now to install
+a Solr core.  Then we'll come back to this console to load some sample
 data.
 
 Next, upload configuration files for JanusGraph's Solr collection, then
@@ -347,7 +418,7 @@ curl "http://localhost:8983/solr/admin/cores?action=STATUS&core=$CORE_NAME"
 
 Now the JanusGraph database and backing Solr core are ready for use.  We
 can test it out with the <<getting-started, Graph of the Gods>>
-dataset.  Picking up the gremlin.sh session started above:
+dataset.  Picking up the Gremlin Console session started above:
 
 [source, gremlin]
 ----
