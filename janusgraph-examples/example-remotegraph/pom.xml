@@ -30,4 +30,9 @@
         </dependency>
     </dependencies>
 
+    <properties>
+        <example.main.class>org.janusgraph.example.RemoteGraphApp</example.main.class>
+        <example.config>${project.basedir}/conf/jgex-remote.properties</example.config>
+    </properties>
+
 </project>
