@@ -1,29 +1,26 @@
 [[bdb]]
-== BerkeleyDB
+== Oracle Berkeley DB Java Edition
 
-[quote, 'http://www.oracle.com/technetwork/products/berkeleydb[BerkeleyDB Homepage]']
-Berkeley DB enables the development of custom data management
-solutions, without the overhead traditionally associated with such
-custom projects. Berkeley DB provides a collection of well-proven
-building-block technologies that can be configured to address any
-application need from the hand-held device to the datacenter, from a
-local storage solution to a world-wide distributed one, from kilobytes
-to petabytes.
+[quote, 'http://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html[Oracle Berkeley DB Java Edition Homepage]']
+Oracle Berkeley DB Java Edition is an open source, embeddable, transactional
+storage engine written entirely in Java. It takes full advantage of the Java
+environment to simplify development and deployment. The architecture of
+Oracle Berkeley DB Java Edition supports very high performance and concurrency
+for both read-intensive and write-intensive workloads.
 
+The http://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html[Oracle Berkeley DB Java Edition] storage backend runs in the same JVM as JanusGraph and provides local persistence on a single machine. Hence, the BerkeleyDB storage backend requires that all of the graph data fits on the local disk and all of the frequently accessed graph elements fit into main memory. This imposes a practical limitation of graphs with 10-100s million vertices on commodity hardware. However, for graphs of that size the BerkeleyDB storage backend exhibits high performance because all data can be accessed locally within the same JVM.
 
-The http://www.oracle.com/technetwork/products/berkeleydb[Oracle BerkeleyDB] storage backend runs in the same JVM as JanusGraph and provides local persistence on a single machine. Hence, the BerkeleyDB storage backend requires that all of the graph data fits on the local disk and all of the frequently accessed graph elements fit into main memory. This imposes a practical limitation of graphs with 10-100s million vertices on commodity hardware. However, for graphs of that size the BerkeleyDB storage backend exhibits high performance because all data can be accessed locally within the same JVM.
-
-=== BerkeleyDB Setup
+=== BerkeleyDB JE Setup
 
 Since BerkeleyDB runs in the same JVM as JanusGraph, connecting the two only requires a simple configuration and no additional setup:
 
 [source, java]
 JanusGraph g = JanusGraphFactory.build().
 set("storage.backend", "berkeleyje").
-set("storage.directory", "/tmp/graph").
+set("storage.directory", "/data/graph").
 open();
 
-In the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration. 
+In the Gremlin Console, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
 === BerkeleyDB Specific Configuration
 
@@ -42,6 +39,6 @@ Since BerkeleyDB runs in the same JVM as JanusGraph, this storage backend is ide
 
 === Global Graph Operations
 
-JanusGraph backed by BerkeleyDB supports global graph operations such as iterating over all vertices or edges. However, note that such operations need to scan the entire database which can require a significant amount of time for larger graphs. 
+JanusGraph backed by BerkeleyDB supports global graph operations such as iterating over all vertices or edges. However, note that such operations need to scan the entire database which can require a significant amount of time for larger graphs.
 
 In order to not run out of memory, it is advised to disable transactions (`storage.transactions=false`) when iterating over large graphs. Having transactions enabled requires BerkeleyDB to acquire read locks on the data it is reading. When iterating over the entire graph, these read locks can easily require more memory than is available.
