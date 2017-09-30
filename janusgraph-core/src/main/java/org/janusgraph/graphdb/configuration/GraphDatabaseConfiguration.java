@@ -1882,7 +1882,7 @@ public class GraphDatabaseConfiguration {
 
     public String getBackendDescription() {
         String clazzname = configuration.get(STORAGE_BACKEND);
-        if (clazzname.equalsIgnoreCase("berkeleyje")) {
+        if (clazzname.equalsIgnoreCase("berkeleyje") || clazzname.equalsIgnoreCase("tupl")) {
             return clazzname + ":" + configuration.get(STORAGE_DIRECTORY);
         } else {
             return clazzname + ":" + Arrays.toString(configuration.get(STORAGE_HOSTS));

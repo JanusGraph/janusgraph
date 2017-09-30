@@ -22,6 +22,23 @@ This configuration file configures JanusGraph to use <<bdb, BerkeleyDB>> as an e
 
 In addition, this configures an embedded <<elasticsearch, Elasticsearch>> index backend with the name `search`. JanusGraph will start Elasticsearch internally and it will not be externally accessible since `local-mode` is enabled. Elasticsearch stores all data for the `search` index in `/tmp/searchindex`. Configuring an index backend is optional.
 
+==== Tupl
+
+[source, properties]
+----
+storage.backend=tupl
+storage.directory=/tmp/graph
+
+index.search.backend=elasticsearch
+index.search.directory=/tmp/searchindex
+index.search.elasticsearch.client-only=false
+index.search.elasticsearch.local-mode=true
+----
+
+This configuration file configures JanusGraph to use <<tupl, Tupl>> as an embedded storage backend, meaning, JanusGraph will start Tupl internally. The primary data will be stored in the directory `/tmp/graph`.
+
+In addition, this configures an embedded <<elasticsearch, Elasticsearch>> index backend with the name `search`. JanusGraph will start Elasticsearch internally and it will not be externally accessible since `local-mode` is enabled. Elasticsearch stores all data for the `search` index in `/tmp/searchindex`. Configuring an index backend is optional.
+
 ==== Cassandra
 
 ===== Cassandra Remote

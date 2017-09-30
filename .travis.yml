@@ -32,6 +32,7 @@ env:
     - MODULE='es' ARGS='-Pelasticsearch2'
     - MODULE='es' ARGS='-Pelasticsearch1,es-docker'
     - MODULE='berkeleyje'
+    - MODULE='tupl'
     - MODULE='test'
     - MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
     - MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
