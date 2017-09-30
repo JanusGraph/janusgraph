@@ -16,15 +16,15 @@ JanusGraph is designed to support the processing of graphs so large that they re
 * Support for very many concurrent transactions and operational graph processing. JanusGraph's transactional capacity scales with the number of machines in the cluster and answers complex traversal queries on huge graphs in milliseconds.
 * Support for global graph analytics and batch graph processing through the Hadoop framework.
 * Support for geo, numeric range, and full text search for vertices and edges on very large graphs.
-* Native support for the popular property graph data model exposed by http://tinkerpop.apache.org/[TinkerPop].
-* Native support for the graph traversal language http://tinkerpop.apache.org/[Gremlin].
-* Easy integration with the http://tinkerpop.apache.org/[Gremlin] graph server for programming language agnostic connectivity.
+* Native support for the popular property graph data model exposed by http://tinkerpop.apache.org/[Apache TinkerPop].
+* Native support for the graph traversal language http://tinkerpop.apache.org/gremlin.html[Gremlin].
+* Easy integration with the http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference/#gremlin-server[Gremlin Server] for programming language agnostic connectivity.
 * Numerous graph-level configurations provide knobs for tuning performance.
 * Vertex-centric indices provide vertex-level querying to alleviate issues with the infamous http://thinkaurelius.com/2012/10/25/a-solution-to-the-supernode-problem/[super node problem].
 * Provides an optimized disk representation to allow for efficient use of storage and speed of access.
 * Open source under the liberal http://en.wikipedia.org/wiki/Apache_License[Apache 2 license].
 
-=== Benefits of JanusGraph with Cassandra
+=== Benefits of JanusGraph with Apache Cassandra
 
 [.tss-floatright.tss-width-125]
 image:cassandra-small.svg[link="http://cassandra.apache.org/"]
@@ -34,7 +34,7 @@ image:cassandra-small.svg[link="http://cassandra.apache.org/"]
 * http://en.wikipedia.org/wiki/Elastic_computing[Elastic scalability] allows for the introduction and removal of machines.
 * Caching layer ensures that continuously accessed data is available in memory.
 * Increase the size of the cache by adding more machines to the cluster.
-* Integration with http://hadoop.apache.org/[Hadoop].
+* Integration with http://hadoop.apache.org/[Apache Hadoop].
 * Open source under the liberal Apache 2 license.
 
 
@@ -43,7 +43,7 @@ image:cassandra-small.svg[link="http://cassandra.apache.org/"]
 [.tss-floatright.tss-width-125]
 image:http://hbase.apache.org/images/hbase_logo.png[link="http://hbase.apache.org/"]
 
-* Tight integration with the http://hadoop.apache.org/[Hadoop] ecosystem.
+* Tight integration with the http://hadoop.apache.org/[Apache Hadoop] ecosystem.
 * Native support for http://en.wikipedia.org/wiki/Strong_consistency[strong consistency].
 * Linear scalability with the addition of more machines.
 * http://en.wikipedia.org/wiki/Strict_consistency[Strictly consistent] reads and writes.
@@ -64,7 +64,7 @@ on incomplete data). This decision should be based on business
 requirements.
 _____________________
 
-When using a database, the http://en.wikipedia.org/wiki/CAP_theorem[CAP theorem] should be thoroughly considered (C=Consistency, A=Availability, P=Partitionability). JanusGraph is distributed with 3 supporting backends: http://cassandra.apache.org/[Cassandra], http://hbase.apache.org/[HBase], and http://www.oracle.com/technetwork/products/berkeleydb/[BerkeleyDB]. Note that BerkeleyDB is a non-distributed database and as such, is typically only used with JanusGraph for testing and exploration purposes.
+When using a database, the http://en.wikipedia.org/wiki/CAP_theorem[CAP theorem] should be thoroughly considered (C=Consistency, A=Availability, P=Partitionability). JanusGraph is distributed with 3 supporting backends: http://cassandra.apache.org/[Apache Cassandra], http://hbase.apache.org/[Apache HBase], and http://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html[Oracle Berkeley DB Java Edition]. Note that BerkeleyDB JE is a non-distributed database and is typically only used with JanusGraph for testing and exploration purposes.
 
 HBase gives preference to consistency at the expense of yield, i.e. the probability of completing a request. Cassandra gives preference to availability at the expense of harvest, i.e. the completeness of the answer to the query (data available/complete data).
 
@@ -85,18 +85,18 @@ adapters.  JanusGraph comes standard with the following adapters, but
 JanusGraph's modular architecture supports third-party adapters.
 
 * Data storage:
-** <<cassandra, Cassandra>>
-** <<hbase, HBase>>
-** <<bdb, BerkeleyDB>>
+** <<cassandra, Apache Cassandra>>
+** <<hbase, Apache HBase>>
+** <<bdb, Oracle Berkeley DB Java Edition>>
 * Indices, which speed up and enable more complex queries:
 ** <<elasticsearch, Elasticsearch>>
-** <<solr, Solr>>
-** <<lucene, Lucene>>
+** <<solr, Apache Solr>>
+** <<lucene, Apache Lucene>>
 
 Broadly speaking, applications can interact with JanusGraph in two ways:
 
 * Embed JanusGraph inside the application executing http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#graph-traversal-steps[Gremlin] queries directly against the graph within the same JVM. Query execution, JanusGraph's caches, and transaction handling all happen in the same JVM as the application while data retrieval from the storage backend may be local or remote.
-* Interact with a local or remote JanusGraph instance by submitting Gremlin queries to the server. JanusGraph natively supports the Gremlin Server component of the http://tinkerpop.apache.org/[Tinkerpop] stack.
+* Interact with a local or remote JanusGraph instance by submitting Gremlin queries to the server. JanusGraph natively supports the Gremlin Server component of the http://tinkerpop.apache.org/[Apache TinkerPop] stack.
 
 .High-level JanusGraph Architecture and Context
 image::architecture-layer-diagram.svg[]
@@ -120,9 +120,9 @@ image::graph-of-the-gods-2.png[]
 |=====
 
 
-=== Downloading JanusGraph and Running the Gremlin Shell
+=== Downloading JanusGraph and Running the Gremlin Console
 
-JanusGraph can be downloaded from the https://github.com/JanusGraph/janusgraph/releases[Releases] section of the project repository.  Once retrieved and unpacked, a Gremlin console can be opened. The Gremlin http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] (i.e.  interactive shell) is distributed with JanusGraph and only differs from the standard Gremlin console insofar that JanusGraph is a pre-installed and pre-loaded package. Alternatively, a user may choose to install and activate JanusGraph in an existing Gremlin console by downloading the JanusGraph package from the central repository. In the example below, `janusgraph.zip` is used, however, be sure to unzip the zip-file that was downloaded.
+JanusGraph can be downloaded from the https://github.com/JanusGraph/janusgraph/releases[Releases] section of the project repository.  Once retrieved and unpacked, a Gremlin Console can be opened. The Gremlin Console is a http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] (i.e. interactive shell) that is distributed with JanusGraph and only differs from the standard Gremlin Console insofar that JanusGraph is a pre-installed and pre-loaded package. Alternatively, a user may choose to install and activate JanusGraph in an existing Gremlin Console by downloading the JanusGraph package from the central repository. In the example below, `janusgraph.zip` is used, however, be sure to unzip the zip-file that was downloaded.
 
 [IMPORTANT]
 JanusGraph requires Java 8 (Standard Edition).  Oracle Java 8 is recommended.  JanusGraph's shell scripts expect that the `$JAVA_HOME` environment variable points to the directory where JRE or JDK is installed.
@@ -145,9 +145,7 @@ plugin activated: janusgraph.imports
 gremlin>
 ----
 
-Note, that this tutorial assumes the activation of the `tinkerpop.sugar` package for more concise syntax. Please refer to the http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference[Tinkerpop documentation] for more information on package handling.
-
-The Gremlin terminal is a http://www.groovy-lang.org/[Groovy] shell. Groovy is a superset of Java that has various shorthand notations that make interactive programming easier. Likewise Gremlin is a superset of Groovy with various shorthand notations that make graph traversals easy. The basic examples below demonstrate handling numbers, strings, and maps. The remainder of the tutorial will discuss graph-specific constructs.
+The Gremlin Console interprets commands using http://www.groovy-lang.org/[Apache Groovy]. Groovy is a superset of Java that has various shorthand notations that make interactive programming easier. Likewise Gremlin-Groovy is a superset of Groovy with various shorthand notations that make graph traversals easy. The basic examples below demonstrate handling numbers, strings, and maps. The remainder of the tutorial will discuss graph-specific constructs.
 
 [source, gremlin]
 gremlin> 100-10
@@ -159,7 +157,7 @@ gremlin> [name:'aurelius', vocation:['philosopher', 'emperor']]
 ==>vocation=[philosopher, emperor]
 
 [TIP]
-Refer to http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference[Tinkerpop documentation], http://gremlindocs.com/[GremlinDocs] and http://sql2gremlin.com/[SQL2Gremlin] for more information about using Gremlin.
+Refer to http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference[Apache TinkerPop], http://sql2gremlin.com/[SQL2Gremlin], and http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/recipes/[Gremlin Recipes] for more information about using Gremlin.
 
 === Loading the Graph of the Gods Into JanusGraph
 

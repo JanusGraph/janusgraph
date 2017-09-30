@@ -8,7 +8,7 @@ JanusGraph ships with an in-memory storage backend which can be used through the
 storage.backend=inmemory
 ----
 
-Alternatively, an in-memory JanusGraph graph can be opened directly in the Gremlin shell:
+Alternatively, an in-memory JanusGraph graph can be opened directly in the Gremlin Console:
 
 [source, gremlin]
 graph = JanusGraphFactory.build().set('storage.backend', 'inmemory').open()
