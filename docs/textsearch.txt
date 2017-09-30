@@ -75,7 +75,7 @@ Full-text search predicates may be used in queries, but those require filtering 
 
 ==== Full text and string search
 
-If you are using ElasticSearch it is possible to index properties as both text and string allowing you to use all of the predicates for exact and fuzzy matching.
+If you are using Elasticsearch it is possible to index properties as both text and string allowing you to use all of the predicates for exact and fuzzy matching.
 
 [source, gremlin]
 mgmt = graph.openManagement()
