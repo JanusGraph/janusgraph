@@ -594,16 +594,16 @@ gremlin.graph=org.janusgraph.core.JanusGraphFactory
 . Once a local configuration is tested and you have a working properties file, copy the properties file from the ./conf directory to the ./conf/gremlin-server directory.
 +
 ```
-cp conf/janusgraph-hbase.properties conf/gremlin-server/rest-janusgraph-hbase-server.properties
+cp conf/janusgraph-hbase.properties conf/gremlin-server/http-janusgraph-hbase-server.properties
 ```
 +
-. Copy ./conf/gremlin-server/gremlin-server.yaml to a new file called rest-gremlin-server.yaml.  Do this in case you need to refer to the original version of the file
+. Copy ./conf/gremlin-server/gremlin-server.yaml to a new file called http-gremlin-server.yaml.  Do this in case you need to refer to the original version of the file
 +
 ```
-cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/rest-gremlin-server.yaml
+cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/http-gremlin-server.yaml
 ```
 +
-. Edit the rest-gremlin-server.yaml file and make the following updates:
+. Edit the http-gremlin-server.yaml file and make the following updates:
 .. If you are planning to connect to JanusGraph Server from something other than localhost, update the ip address for host:
 +
 ```
@@ -620,13 +620,13 @@ channelizer: org.apache.tinkerpop.gremlin.server.channel.HttpChannelizer
 +
 ```
 graphs: {
-  graph: conf/gremlin-server/rest-janusgraph-hbase-server.properties}
+  graph: conf/gremlin-server/http-janusgraph-hbase-server.properties}
 ```
 +
 . Start the JanusGraph Server, specifying the yaml file you just configured:
 +
 ```
-bin/gremlin-server.sh ./conf/gremlin-server/rest-gremlin-server.yaml
+bin/gremlin-server.sh ./conf/gremlin-server/http-gremlin-server.yaml
 ```
 +
 . The JanusGraph Server should now be running in HTTP mode and available for testing.  *curl* can be used to verify the server is working:
