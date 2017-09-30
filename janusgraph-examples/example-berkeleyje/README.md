@@ -4,14 +4,11 @@
 
 [Oracle Berkeley DB Java Edition](http://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html)
 is an embedded database, so it runs within your application rather than as
-a standalone server. By including the `janusgraph-berkeleyje` dependency,
-the required jar files are pulled in. The data is stored in a directory on
-the file system.
+a standalone server. The data is stored in a directory on the file system.
 
 [Apache Lucene](http://lucene.apache.org/) is an embedded index, so it runs
-within your application rather than as a standalone server. By including the
-`janusgraph-lucene` dependency, the required jar files are pulled in. The
-data is stored in a directory on the file system.
+within your application rather than as a standalone server. The data is
+stored in a directory on the file system.
 
 ## JanusGraph configuration
 
@@ -21,28 +18,52 @@ the directory locations for BerkeleyJE and Lucene.
 Refer to the JanusGraph [configuration reference](http://docs.janusgraph.org/latest/config-ref.html)
 for additional properties.
 
-## Running the example
+## Dependencies
 
-Use [Apache Maven](http://maven.apache.org/) and the
-[exec-maven-plugin](http://www.mojohaus.org/exec-maven-plugin/java-mojo.html)
-to pull in the required jar files onto the runtime classpath.
+The required Maven dependency for BerkeleyJE:
 
 ```
-$ cd $JANUSGRAPH_HOME/janusgraph-examples/example-berkeleyje
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-berkeleyje</artifactId>
+            <version>${janusgraph.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+```
 
-$ mvn exec:java -Dexec.mainClass="org.janusgraph.example.JanusGraphApp" -Dexec.args="conf/jgex-berkeleyje.properties"
+The required Maven dependency for Lucene:
+
+```
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-lucene</artifactId>
+            <version>${janusgraph.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+```
+
+## Run the example
+
+This command can be run from the `examples` or the project's directory.
+
+```
+mvn exec:java -pl :example-berkeleyje
 ```
 
 ## Drop the graph
 
-Make sure to stop the application before dropping the graph. The configuration
-uses the application name `jgex` as the root directory for the BerkeleyJE
-and Lucene directories.
+After running an example, you may want to drop the graph from storage. Make
+sure to stop the application before dropping the graph. This command can be
+run from the `examples` or the project's directory.
 
 ```
-$ cd $JANUSGRAPH_HOME/janusgraph-examples/example-berkeleyje
+mvn exec:java -pl :example-berkeleyje -Dcmd=drop
+```
 
-$ mvn exec:java -Dexec.mainClass="org.janusgraph.example.JanusGraphApp" -Dexec.args="conf/jgex-berkeleyje.properties drop"
+The configuration uses the application name `jgex` as the root directory
+for the BerkeleyJE and Lucene directories. The directory is safe to remove
+after running the drop command.
 
-$ rm -rf jgex/
+```
+rm -rf jgex/
 ```

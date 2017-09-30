@@ -107,18 +107,18 @@ public class GraphApp {
 
             // see GraphOfTheGodsFactory.java
 
-            Vertex saturn = g.addV("titan").property("name", "saturn").property("age", 10000).next();
-            Vertex sky = g.addV("location").property("name", "sky").next();
-            Vertex sea = g.addV("location").property("name", "sea").next();
-            Vertex jupiter = g.addV("god").property("name", "jupiter").property("age", 5000).next();
-            Vertex neptune = g.addV("god").property("name", "neptune").property("age", 4500).next();
-            Vertex hercules = g.addV("demigod").property("name", "hercules").property("age", 30).next();
-            Vertex alcmene = g.addV("human").property("name", "alcmene").property("age", 45).next();
-            Vertex pluto = g.addV("god").property("name", "pluto").property("age", 4000).next();
-            Vertex nemean = g.addV("monster").property("name", "nemean").next();
-            Vertex hydra = g.addV("monster").property("name", "hydra").next();
-            Vertex cerberus = g.addV("monster").property("name", "cerberus").next();
-            Vertex tartarus = g.addV("location").property("name", "tartarus").next();
+            final Vertex saturn = g.addV("titan").property("name", "saturn").property("age", 10000).next();
+            final Vertex sky = g.addV("location").property("name", "sky").next();
+            final Vertex sea = g.addV("location").property("name", "sea").next();
+            final Vertex jupiter = g.addV("god").property("name", "jupiter").property("age", 5000).next();
+            final Vertex neptune = g.addV("god").property("name", "neptune").property("age", 4500).next();
+            final Vertex hercules = g.addV("demigod").property("name", "hercules").property("age", 30).next();
+            final Vertex alcmene = g.addV("human").property("name", "alcmene").property("age", 45).next();
+            final Vertex pluto = g.addV("god").property("name", "pluto").property("age", 4000).next();
+            final Vertex nemean = g.addV("monster").property("name", "nemean").next();
+            final Vertex hydra = g.addV("monster").property("name", "hydra").next();
+            final Vertex cerberus = g.addV("monster").property("name", "cerberus").next();
+            final Vertex tartarus = g.addV("location").property("name", "tartarus").next();
 
             g.V(jupiter).as("a").V(saturn).addE("father").from("a").next();
             g.V(jupiter).as("a").V(sky).addE("lives").property("reason", "loves fresh breezes").from("a").next();
@@ -187,7 +187,7 @@ public class GraphApp {
             LOGGER.info("reading elements");
 
             // look up vertex by name can use a composite index in JanusGraph
-            Optional<Map<String, Object>> v = g.V().has("name", "jupiter").valueMap(true).tryNext();
+            final Optional<Map<String, Object>> v = g.V().has("name", "jupiter").valueMap(true).tryNext();
             if (v.isPresent()) {
                 LOGGER.info(v.get().toString());
             } else {
@@ -195,7 +195,7 @@ public class GraphApp {
             }
 
             // look up an incident edge
-            Optional<Map<String, Object>> edge = g.V().has("name", "hercules").outE("battled").as("e").inV()
+            final Optional<Map<String, Object>> edge = g.V().has("name", "hercules").outE("battled").as("e").inV()
                     .has("name", "hydra").select("e").valueMap(true).tryNext();
             if (edge.isPresent()) {
                 LOGGER.info(edge.get().toString());
@@ -204,11 +204,11 @@ public class GraphApp {
             }
 
             // numerical range query can use a mixed index in JanusGraph
-            List<Object> list = g.V().has("age", P.gte(5000)).values("age").toList();
+            final List<Object> list = g.V().has("age", P.gte(5000)).values("age").toList();
             LOGGER.info(list.toString());
 
             // pluto might be deleted
-            boolean plutoExists = g.V().has("name", "pluto").hasNext();
+            final boolean plutoExists = g.V().has("name", "pluto").hasNext();
             if (plutoExists) {
                 LOGGER.info("pluto exists");
             } else {
@@ -216,7 +216,7 @@ public class GraphApp {
             }
 
             // look up jupiter's brothers
-            List<Object> brothers = g.V().has("name", "jupiter").both("brother").values("name").dedup().toList();
+            final List<Object> brothers = g.V().has("name", "jupiter").both("brother").values("name").dedup().toList();
             LOGGER.info("jupiter's brothers: " + brothers.toString());
 
         } finally {
