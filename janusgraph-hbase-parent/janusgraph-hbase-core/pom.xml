@@ -19,7 +19,7 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-client</artifactId>
+            <artifactId>hbase-shaded-client</artifactId>
             <version>${hbase.version}</version>
             <optional>true</optional>
             <exclusions>
@@ -39,7 +39,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-server</artifactId>
+            <artifactId>hbase-shaded-server</artifactId>
             <version>${hbase.version}</version>
             <optional>true</optional>
             <exclusions>
