@@ -31,23 +31,68 @@ console and adjusts the logging level for some noisier packages. Refer to
 the Logback [manual](https://logback.qos.ch/manual/index.html) for additional
 details.
 
-## Run the example
+### Cassandra configuration
 
-Use [Apache Maven](http://maven.apache.org/) and the [exec-maven-plugin](http://www.mojohaus.org/exec-maven-plugin/java-mojo.html)
-to pull in the required jar files onto the runtime classpath.
+The JanusGraph properties file assumes that Cassandra is installed on localhost
+using its default configuration. Please refer to the Cassandra documentation
+for installation instructions.
+
+When using Cassandra Thrift storage, you must make sure that Thrift is enabled
+for Cassandra. This can be done through its configuration by setting
+`start_rpc: true` in the `cassandra.yaml`. Alternatively, it can be enabled
+at runtime with `$CASSANDRA_HOME/bin/nodetool enablethrift`.
+
+### Elasticsearch configuration
+
+The JanusGraph properties file assumes that Elasticsearch is installed on
+localhost using its default configuration. Please refer to the Elasticsearch
+documentation for installation instructions.
+
+### JanusGraph pre-packaged distribution
+
+Rather than installing Cassandra and Elasticsearch separately, the JanusGraph
+[pre-packaged distribution](http://docs.janusgraph.org/latest/server.html#_using_the_pre_packaged_distribution)
+is provided for convenience. The distribution starts a local Cassandra,
+Elasticsearch, and Gremlin Server.
+
+## Dependencies
+
+The required Maven dependency for Cassandra:
 
 ```
-$ cd $JANUSGRAPH_HOME/janusgraph-examples/example-cassandra
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-cassandra</artifactId>
+            <version>${janusgraph.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+```
 
-$ mvn exec:java -Dexec.mainClass="org.janusgraph.example.JanusGraphApp" -Dlogback.configurationFile="conf/logback.xml" -Dexec.args="conf/jgex-cassandra.properties"
+The required Maven dependency for Elasticsearch:
+
+```
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-es</artifactId>
+            <version>${janusgraph.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+```
+
+## Run the example
+
+This command can be run from the `examples` or the project's directory.
+
+```
+mvn exec:java -pl :example-cassandra
 ```
 
 ## Drop the graph
 
-Make sure to stop the application before dropping the graph.
+After running an example, you may want to drop the graph from storage. Make
+sure to stop the application before dropping the graph. This command can be
+run from the `examples` or the project's directory.
 
 ```
-$ cd $JANUSGRAPH_HOME/janusgraph-examples/example-cassandra
-
-$ mvn exec:java -Dexec.mainClass="org.janusgraph.example.JanusGraphApp" -Dlogback.configurationFile="conf/logback.xml" -Dexec.args="conf/jgex-cassandra.properties drop"
+mvn exec:java -pl :example-cassandra -Dcmd=drop
 ```

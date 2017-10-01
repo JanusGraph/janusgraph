@@ -19,4 +19,9 @@
         </dependency>
     </dependencies>
 
+    <properties>
+        <example.main.class>org.janusgraph.example.JanusGraphApp</example.main.class>
+        <example.config>${project.basedir}/conf/jgex-inmemory.properties</example.config>
+    </properties>
+
 </project>
