@@ -23,7 +23,7 @@ for additional details.
     contains the HBase and SolrCloud server locations.
 
     * [`jgex-hbase-solr-http.properties`](conf/jgex-hbase-solr-http.properties)
-    contains the HBase and Solr HTTP server locations
+    contains the HBase and Solr Standalone (HTTP) server locations
 
 * By providing different values for `storage.hbase.table` and `index.jgex.index-name`,
 you can store multiple graphs on the same HBase and Solr servers. Refer to
@@ -35,69 +35,115 @@ The example configuration logs to the console and adjusts the logging level
 for some noisier packages. Refer to the Logback [manual](https://logback.qos.ch/manual/index.html)
 for additional details.
 
-## Run the example
+### HBase configuration
 
-Use [Apache Maven](http://maven.apache.org/) and the [exec-maven-plugin](http://www.mojohaus.org/exec-maven-plugin/java-mojo.html)
-to pull in the required jar files onto the runtime classpath.
+The JanusGraph properties file assumes that HBase is installed on localhost
+using its quickstart configuration. The quickstart configuration uses the
+local filesystem for storing data and manages its own local Zookeeper. Please
+refer to the HBase documentation for installation instructions.
 
+### Solr configuration
+
+The JanusGraph properties file assumes that Solr is installed on localhost
+using its default configuration. Please refer to the Solr documentation for
+installation instructions.
+
+SolrCloud requires Zookeeper for sharing configset information. The JanusGraph
+properties file assumes that SolrCloud is starting its own local Zookeeper,
+rather than sharing a common Zookeeper with HBase.
+
+## Dependencies
+
+The required Maven dependencies for HBase:
+
+```
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-hbase</artifactId>
+            <version>${janusgraph.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-client</artifactId>
+            <version>${hbase100.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+```
+
+The required Maven dependency for Solr:
+
+```
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-solr</artifactId>
+            <version>${janusgraph.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+```
 
 ## HBase and SolrCloud
 
 ### Upload the configset to Zookeeper
 
+Before running the example, a configset must be uploaded to Zookeeper.
 Using a configset makes it possible to reuse the same configuration for new
 cores. The configset is stored in Zookeeper under `/configs/jgex` where the
 name `jgex` matches the properties file value for `index.jgex.solr.configset`.
 Make sure the Zookeeper url matches the properties value for `index.jgex.solr.zookeeper-url`.
 
 ```
-$ cd $SOLR_HOME
+# Solr 5
+$SOLR_HOME/server/scripts/cloud-scripts/zkcli.sh -z 127.0.0.1:9983 -cmd upconfig -d $JANUSGRAPH_HOME/conf/solr -n jgex
 
-$ server/scripts/cloud-scripts/zkcli.sh -z 127.0.0.1:9983 -cmd upconfig -d $JANUSGRAPH_HOME/conf/solr -n jgex
+# Solr 6 or higher
+$SOLR_HOME/bin/solr zk upconfig -z 127.0.0.1:9983 -d $JANUSGRAPH_HOME/conf/solr -n jgex
 ```
 
-### Run the program
+### Run the example
+
+This command can be run from the `examples` or the project's directory.
 
 ```
-$ cd $JANUSGRAPH_HOME/janusgraph-examples/example-hbase
-
-$ mvn exec:java -Dexec.mainClass="org.janusgraph.example.JanusGraphApp" -Dlogback.configurationFile="conf/logback.xml" -Dexec.args="conf/jgex-hbase-solr-cloud.properties"
+mvn exec:java -pl :example-hbase
 ```
 
 ### Drop the graph
 
-Make sure to stop the application before dropping the graph.
+After running an example, you may want to drop the graph from storage. Make
+sure to stop the application before dropping the graph. This command can be
+run from the `examples` or the project's directory.
 
 ```
-$ cd $JANUSGRAPH_HOME/janusgraph-examples/example-hbase
-
-$ mvn exec:java -Dexec.mainClass="org.janusgraph.example.JanusGraphApp" -Dlogback.configurationFile="conf/logback.xml" -Dexec.args="conf/jgex-hbase-solr-cloud.properties drop"
+mvn exec:java -pl :example-hbase -Dcmd=drop
 ```
 
 ### Remove the configset from Zookeeper
 
+After dropping the graph, the configset can be removed from Zookeeper.
 The configset is stored in Zookeeper under `/configs/jgex` where the name
 `jgex` matches the properties file value for `index.jgex.solr.configset`.
 Make sure the Zookeeper url matches the properties value for `index.jgex.solr.zookeeper-url`.
 
 ```
-$ cd $SOLR_HOME
+# Solr 5
+$SOLR_HOME/server/scripts/cloud-scripts/zkcli.sh -z 127.0.0.1:9983 -cmd clear /configs/jgex
 
-$ server/scripts/cloud-scripts/zkcli.sh -z 127.0.0.1:9983 -cmd clear /configs/jgex
+# Solr 6
+$SOLR_HOME/bin/solr zk rm -r /configs/jgex -z 127.0.0.1:9983
 ```
 
 
-## HBase and Solr HTTP
+## HBase and Solr Standalone (HTTP)
 
 ### Create the Solr cores
 
-The core names match the `vAge` or `eReasonPlace` values when `mgmt.buildIndex()`
-defines the mixed indexes in `JanusGraphApp.createMixedIndexes()`
+Before running the example, there are additional manual steps needed to create
+the Solr Cores. This example uses two cores: `vAge` and `eReasonPlace`. These
+core names can be found in `JanusGraphApp#createMixedIndexes`.
 
 ```
-$ cd $SOLR_HOME
-
-$ bin/solr create_core -d $JANUSGRAPH_HOME/conf/solr -c vAge
+$ $SOLR_HOME/bin/solr create_core -d $JANUSGRAPH_HOME/conf/solr -c vAge
 
 Copying configuration to new core instance directory:
 /usr/lib/solr-5.5.4/server/solr/vAge
@@ -111,7 +157,7 @@ http://localhost:8983/solr/admin/cores?action=CREATE&name=vAge&instanceDir=vAge
     "QTime":577},
   "core":"vAge"}
 
-$ bin/solr create_core -d $JANUSGRAPH_HOME/conf/solr -c eReasonPlace
+$ $SOLR_HOME/bin/solr create_core -d $JANUSGRAPH_HOME/conf/solr -c eReasonPlace
 
 Copying configuration to new core instance directory:
 /usr/lib/solr-5.5.4/server/solr/eReasonPlace
@@ -126,28 +172,29 @@ http://localhost:8983/solr/admin/cores?action=CREATE&name=eReasonPlace&instanceD
   "core":"eReasonPlace"}
 ```
 
-### Run the program
+### Run the example
+
+This command can be run from the `examples` or the project's directory.
 
 ```
-$ cd $JANUSGRAPH_HOME/janusgraph-examples/example-hbase
-
-$ mvn exec:java -Dexec.mainClass="org.janusgraph.example.JanusGraphApp" -Dlogback.configurationFile="conf/logback.xml" -Dexec.args="conf/jgex-hbase-solr-http.properties"
+mvn exec:java -pl :example-hbase -Dexample.config="\${project.basedir}/conf/jgex-hbase-solr-http.properties"
 ```
 
 ### Drop the graph
 
-Make sure to stop the application before dropping the graph.
+After running an example, you may want to drop the graph from storage. Make
+sure to stop the application before dropping the graph. This command can be
+run from the `examples` or the project's directory.
 
 ```
-$ cd $JANUSGRAPH_HOME/janusgraph-examples/example-hbase
-
-$ mvn exec:java -Dexec.mainClass="org.janusgraph.example.JanusGraphApp" -Dlogback.configurationFile="conf/logback.xml" -Dexec.args="conf/jgex-hbase-solr-http.properties drop"
+mvn exec:java -pl :example-hbase -Dexample.config="\${project.basedir}/conf/jgex-hbase-solr-http.properties" -Dcmd=drop
 ```
 
 ### Drop the Solr cores
 
-The core names match the `vAge` or `eReasonPlace` values when `mgmt.buildIndex()`
-defines the mixed indexes in `JanusGraphApp.createMixedIndexes()`
+After dropping the graph, there are additional manual steps needed to delete
+the Solr Cores. This example uses two cores: `vAge` and `eReasonPlace`. These
+core names can be found in `JanusGraphApp#createMixedIndexes`.
 
 ```
 $ cd $SOLR_HOME

@@ -24,4 +24,9 @@
         </dependency>
     </dependencies>
 
+    <properties>
+        <example.main.class>org.janusgraph.example.TinkerGraphApp</example.main.class>
+        <example.config>${project.basedir}/conf/jgex-tinkergraph.properties</example.config>
+    </properties>
+
 </project>

@@ -9,7 +9,7 @@
     </parent>
     <artifactId>example-cql</artifactId>
     <packaging>pom</packaging>
-    <name>Example-Cql: C* CQL Storage, ES Index</name>
+    <name>Example-Cql: Cassandra CQL Storage, Elasticsearch Index</name>
     <url>http://janusgraph.org</url>
 
     <dependencies>
@@ -33,5 +33,11 @@
             <scope>runtime</scope>
         </dependency>
     </dependencies>
+
+    <properties>
+        <example.main.class>org.janusgraph.example.JanusGraphApp</example.main.class>
+        <example.config>${project.basedir}/conf/jgex-cql.properties</example.config>
+        <logback.config>${project.basedir}/conf/logback.xml</logback.config>
+    </properties>
 
 </project>
