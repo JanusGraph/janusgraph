@@ -78,7 +78,7 @@
         <hadoop2.version>2.7.2</hadoop2.version>
         <hbase098.core.version>0.98.24</hbase098.core.version>
         <hbase098.version>${hbase098.core.version}-hadoop2</hbase098.version>
-        <hbase100.core.version>1.2.4</hbase100.core.version>
+        <hbase100.core.version>1.2.6</hbase100.core.version>
         <hbase100.version>${hbase100.core.version}</hbase100.version>
         <scylladb.version>1.7.1</scylladb.version>
         <!-- align with org.apache.hbase:hbase -->
