@@ -199,7 +199,6 @@ public class ElasticSearchIndex implements IndexProvider {
         useAllField = config.get(USE_ALL_FIELD);
         useExternalMappings = config.get(USE_EXTERNAL_MAPPINGS);
         createSleep = config.get(CREATE_SLEEP);
-        useMultitypeIndex = config.get(USE_DEPRECATED_MULTITYPE_INDEX);
         ingestPipelines = config.getSubset(ES_INGEST_PIPELINES);
         final ElasticSearchSetup.Connection c = interfaceConfiguration(config);
         client = c.getClient();
@@ -231,8 +230,14 @@ public class ElasticSearchIndex implements IndexProvider {
         } catch (final IOException e) {
             throw new PermanentBackendException(e.getMessage(), e);
         }
-        Preconditions.checkArgument(!useMultitypeIndex || !client.isAlias(indexName), "The key '" + USE_DEPRECATED_MULTITYPE_INDEX + "' cannot be true when existing index is split.");
-        Preconditions.checkArgument(useMultitypeIndex || !client.isIndex(indexName), "The key '" + USE_DEPRECATED_MULTITYPE_INDEX + "' cannot be false when existing index contains multiple types.");
+        if (!config.has(USE_DEPRECATED_MULTITYPE_INDEX) && client.isIndex(indexName)) {
+            // upgrade scenario where multitype index was the default behavior
+            useMultitypeIndex = true;
+        } else {
+            useMultitypeIndex = config.get(USE_DEPRECATED_MULTITYPE_INDEX);
+            Preconditions.checkArgument(!useMultitypeIndex || !client.isAlias(indexName), "The key '" + USE_DEPRECATED_MULTITYPE_INDEX + "' cannot be true when existing index is split.");
+            Preconditions.checkArgument(useMultitypeIndex || !client.isIndex(indexName), "The key '" + USE_DEPRECATED_MULTITYPE_INDEX + "' cannot be false when existing index contains multiple types.");
+        }
         indexSetting = new HashMap<>();
 
         ElasticSearchSetup.applySettingsFromJanusGraphConf(indexSetting, config, ES_CREATE_EXTRAS_NS);
