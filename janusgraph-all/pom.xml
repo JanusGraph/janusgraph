@@ -54,6 +54,11 @@
             <version>${hbase100.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-bigtable</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>janusgraph-hadoop</artifactId>
             <version>${project.version}</version>
