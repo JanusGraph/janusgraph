@@ -80,6 +80,7 @@
         <hbase098.version>${hbase098.core.version}-hadoop2</hbase098.version>
         <hbase100.core.version>1.2.6</hbase100.core.version>
         <hbase100.version>${hbase100.core.version}</hbase100.version>
+        <bigtable.version>1.0.0-pre3</bigtable.version>
         <scylladb.version>1.7.1</scylladb.version>
         <!-- align with org.apache.hbase:hbase -->
         <jackson1.version>1.9.13</jackson1.version>
@@ -130,6 +131,7 @@
         <module>janusgraph-cassandra</module>
         <module>janusgraph-hadoop-parent</module>
         <module>janusgraph-hbase-parent</module>
+        <module>janusgraph-bigtable</module>
         <module>janusgraph-es</module>
         <module>janusgraph-lucene</module>
         <module>janusgraph-all</module>
