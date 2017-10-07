@@ -80,6 +80,10 @@
                     <artifactId>lz4</artifactId>
                 </exclusion>
                 <exclusion>
+                    <groupId>org.eclipse.jetty.orbit</groupId>
+                    <artifactId>javax.servlet</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>com.fasterxml.jackson.module</groupId>
                     <artifactId>jackson-module-scala_2.10</artifactId>
                 </exclusion>
