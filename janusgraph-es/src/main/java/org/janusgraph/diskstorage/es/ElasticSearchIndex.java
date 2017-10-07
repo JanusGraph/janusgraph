@@ -109,9 +109,9 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public static final ConfigOption<String> INTERFACE =
             new ConfigOption<>(ELASTICSEARCH_NS, "interface",
-            "Whether to connect to ES using the Node or Transport client (see the \"Talking to Elasticsearch\" " +
-            "section of the ES manual for discussion of the difference).  Setting this option enables the " +
-            "interface config track (see manual for more information about ES config tracks).",
+            "Interface for connecting to Elasticsearch. " +
+            "TRANSPORT_CLIENT and NODE were previously supported, but now are required to migrate to REST_CLIENT. " +
+            "See the JanusGraph upgrade instructions for more details.",
             ConfigOption.Type.MASKABLE, String.class, ElasticSearchSetup.REST_CLIENT.toString(),
             disallowEmpty(String.class));
 
