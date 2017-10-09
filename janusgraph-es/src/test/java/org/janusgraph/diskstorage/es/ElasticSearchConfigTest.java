@@ -278,6 +278,23 @@ public class ElasticSearchConfigTest {
         idx.close();
     }
 
+    @Test
+    public void testMultiTypeUpgrade() throws InterruptedException, BackendException, IOException {
+        // create multi-type index
+        ModifiableConfiguration config = esr.setElasticsearchConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME);
+        config.set(USE_DEPRECATED_MULTITYPE_INDEX, true, INDEX_NAME);
+        Configuration indexConfig = config.restrictTo(INDEX_NAME);
+        IndexProvider idx = open(indexConfig);
+        simpleWriteAndQuery(idx);
+        idx.close();
+
+        // should be able to open multi-type index if USE_DEPRECATED_MULTITYPE_INDEX is unset
+        config.remove(USE_DEPRECATED_MULTITYPE_INDEX, INDEX_NAME);
+        indexConfig = config.restrictTo(INDEX_NAME);
+        idx = open(indexConfig);
+        idx.close();
+    }
+
     private void simpleWriteAndQuery(IndexProvider idx) throws BackendException, InterruptedException {
         final Duration maxWrite = Duration.ofMillis(2000L);
         final String storeName = "jvmlocal_test_store";
