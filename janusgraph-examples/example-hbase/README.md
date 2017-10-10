@@ -65,7 +65,7 @@ The required Maven dependencies for HBase:
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-client</artifactId>
+            <artifactId>hbase-shaded-client</artifactId>
             <version>${hbase100.version}</version>
             <scope>runtime</scope>
         </dependency>
