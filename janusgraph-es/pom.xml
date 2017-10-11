@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.2.0-SNAPSHOT</version>
+        <version>0.2.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-es</artifactId>
@@ -17,7 +17,7 @@
         <elasticsearch6.test.version>6.0.0-rc1</elasticsearch6.test.version>
         <elasticsearch.test.version>${elasticsearch5.test.version}</elasticsearch.test.version>
         <!-- Enabling Groovy dynamic scripting is not required from ES 5.x -->
-        <elasticsearch.test.groovy.inline/>
+        <elasticsearch.test.groovy.inline />
         <skip.es.test>${skipTests}</skip.es.test>
         <es.docker.image>docker.elastic.co/elasticsearch/elasticsearch</es.docker.image>
         <elasticsearch.docker.test.version>${elasticsearch.test.version}</elasticsearch.docker.test.version>
@@ -291,7 +291,7 @@
             <properties>
                 <elasticsearch.test.version>${elasticsearch5.test.version}</elasticsearch.test.version>
                 <!-- Enabling Groovy dynamic scripting is not required from ES 5.x -->
-                <elasticsearch.test.groovy.inline/>
+                <elasticsearch.test.groovy.inline />
             </properties>
         </profile>
         <profile>
@@ -299,7 +299,7 @@
             <properties>
                 <elasticsearch.test.version>${elasticsearch6.test.version}</elasticsearch.test.version>
                 <!-- Enabling Groovy dynamic scripting is not required from ES 5.x -->
-                <elasticsearch.test.groovy.inline/>
+                <elasticsearch.test.groovy.inline />
             </properties>
             <build>
                 <plugins>
