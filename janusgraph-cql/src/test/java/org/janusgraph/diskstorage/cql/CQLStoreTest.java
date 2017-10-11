@@ -19,6 +19,7 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.*;
 import static org.junit.Assert.*;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.janusgraph.diskstorage.BackendException;
@@ -34,8 +35,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableMap;
 
 public class CQLStoreTest extends KeyColumnValueStoreTest {
 
@@ -102,11 +101,12 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
         final CQLStoreManager cqlStoreManager = openStorageManager();
         cqlStoreManager.openDatabase(cf);
 
-        final Map<String, String> defaultCfCompressionOps = new ImmutableMap.Builder<String, String>()
-                .put("sstable_compression", DEFAULT_COMPRESSOR_PACKAGE + "." + CF_COMPRESSION_TYPE.getDefaultValue())
-                .put("chunk_length_kb", "64")
-                .build();
-        assertEquals(defaultCfCompressionOps, cqlStoreManager.getCompressionOptions(cf));
+        final Map<String, String> opts = cqlStoreManager.getCompressionOptions(cf);
+        assertEquals(2, opts.size());
+        // chunk length key differs between 2.x (chunk_length_kb) and 3.x (chunk_length_in_kb)
+        assertEquals("64", opts.getOrDefault("chunk_length_kb", opts.get("chunk_length_in_kb")));
+        // compression class key differs between 2.x (sstable_compression) and 3.x (class)
+        assertEquals(DEFAULT_COMPRESSOR_PACKAGE + "." + CF_COMPRESSION_TYPE.getDefaultValue(), opts.getOrDefault("sstable_compression", opts.get("class")));
     }
 
     @Test
@@ -124,13 +124,12 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
         // N.B.: clearStorage() truncates CFs but does not delete them
         mgr.openDatabase(cf);
 
-        final Map<String, String> expected = ImmutableMap
-                .<String, String> builder()
-                .put("sstable_compression", DEFAULT_COMPRESSOR_PACKAGE + "." + cname)
-                .put("chunk_length_kb", String.valueOf(ckb))
-                .build();
-
-        assertEquals(expected, mgr.getCompressionOptions(cf));
+        final Map<String, String> opts = mgr.getCompressionOptions(cf);
+        assertEquals(2, opts.size());
+        // chunk length key differs between 2.x (chunk_length_kb) and 3.x (chunk_length_in_kb)
+        assertEquals(String.valueOf(ckb), opts.getOrDefault("chunk_length_kb", opts.get("chunk_length_in_kb")));
+        // compression class key differs between 2.x (sstable_compression) and 3.x (class)
+        assertEquals(DEFAULT_COMPRESSOR_PACKAGE + "." + cname, opts.getOrDefault("sstable_compression", opts.get("class")));
     }
 
     @Test
@@ -144,7 +143,12 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
         // N.B.: clearStorage() truncates CFs but does not delete them
         mgr.openDatabase(cf);
 
-        assertEquals(Collections.emptyMap(), mgr.getCompressionOptions(cf));
+        final Map<String, String> opts = new HashMap<>(mgr.getCompressionOptions(cf));
+        if ("false".equals(opts.get("enabled"))) {
+            // Cassandra 3.x contains {"enabled": false"} mapping not found in 2.x
+            opts.remove("enabled");
+        }
+        assertEquals(Collections.emptyMap(), opts);
     }
 
     @Test

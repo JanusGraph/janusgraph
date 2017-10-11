@@ -1,0 +1,21 @@
+Bag Attributes
+    friendlyName: cassandra
+    2.16.840.1.113894.746875.1.1: <Unsupported tag 6>
+subject=/C=Unknown/ST=Unknown/L=Unknown/O=Unknown/OU=Unknown/CN=localhost
+issuer=/C=Unknown/ST=Unknown/L=Unknown/O=Unknown/OU=Unknown/CN=localhost
+-----BEGIN CERTIFICATE-----
+MIICdjCCAd+gAwIBAgIEctIFMzANBgkqhkiG9w0BAQsFADBuMRAwDgYDVQQGEwdV
+bmtub3duMRAwDgYDVQQIEwdVbmtub3duMRAwDgYDVQQHEwdVbmtub3duMRAwDgYD
+VQQKEwdVbmtub3duMRAwDgYDVQQLEwdVbmtub3duMRIwEAYDVQQDEwlsb2NhbGhv
+c3QwHhcNMTQwOTAxMDczNTI2WhcNMTQxMTMwMDczNTI2WjBuMRAwDgYDVQQGEwdV
+bmtub3duMRAwDgYDVQQIEwdVbmtub3duMRAwDgYDVQQHEwdVbmtub3duMRAwDgYD
+VQQKEwdVbmtub3duMRAwDgYDVQQLEwdVbmtub3duMRIwEAYDVQQDEwlsb2NhbGhv
+c3QwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAMcvbCEQJfqxZJoGSLZSrpf1
+1BGnhDLZLorkCcERNKyduiHRWE62M9Y0h7mNcQ4EXaNIeJS9G9LvQrO3ojSyU2bx
+vYEgiySnabcZbC7tR4Y9VdW7WRb/qkzmCXRCnj6merQXxsc3UxIRQOBaSnjfDMwv
+OaXMG9pJddP1rSYKVLcPAgMBAAGjITAfMB0GA1UdDgQWBBSosZvuR4EuYrpf3mop
+uif6CXEUWzANBgkqhkiG9w0BAQsFAAOBgQAAS54akNJUnlfj3a/vCM+Zf0C5wJIy
+KMGj+hg1sSs6hrvH4xjti+p8fqMffjazxtjhho2orWd/A0/5pFMzGg1hy+OMu02K
+mF9EyveKm5Dw35Y/6o2IXIeAz1/zdQfoPbEniu7MSjyX8E0ZmVWqnombOusOR/tE
+mc2ku/RrFXlOUA==
+-----END CERTIFICATE-----
