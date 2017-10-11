@@ -121,6 +121,16 @@ public class CassandraStorageSetup {
         return getCassandraThriftConfiguration(ks).getConfiguration();
     }
 
+    public static ModifiableConfiguration getEmbeddedOrThriftConfiguration(String keyspace) {
+        final ModifiableConfiguration config;
+        if (HOSTNAME == null) {
+            config = getEmbeddedConfiguration(keyspace);
+        }  else {
+            config = getCassandraThriftConfiguration(keyspace);
+        }
+        return config;
+    }
+
     /**
      * Load cassandra.yaml and data paths from the environment or from default
      * values if nothing is set in the environment, then delete all existing

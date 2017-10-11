@@ -207,7 +207,7 @@ public abstract class LogTest {
             StaticBuffer sb = StaticArrayBuffer.of(raw);
             l.add(sb);
             expected.add(sb);
-            Thread.sleep(50L);
+            Thread.sleep(100L);
         }
         reader.await(TIMEOUT_MS);
         assertEquals(rounds, reader.msgCount);
