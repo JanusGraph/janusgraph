@@ -106,6 +106,7 @@ mgmt.commit()
 
 Note that some indexing backends (e.g. Solr) may require additional external schema configuration to support and tune indexing non-point properties.
 
+[[field-mapping]]
 == Field Mapping
 
 [[index-local-field-mapping]]

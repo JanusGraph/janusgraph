@@ -1259,12 +1259,12 @@ public class GraphDatabaseConfiguration {
      * IP:hostname pair. If null, Ganglia will automatically determine the IP
      * and hostname to set on outgoing datagrams.
      * <p/>
-     * See http://sourceforge.net/apps/trac/ganglia/wiki/gmetric_spoofing
+     * See https://github.com/ganglia/monitor-core/wiki/Gmetric-Spoofing
      * <p/>
      */
     public static final ConfigOption<String> GANGLIA_SPOOF = new ConfigOption<String>(METRICS_GANGLIA_NS,"spoof",
             "If non-null, it must be a valid Gmetric spoof string formatted as an IP:hostname pair. " +
-            "See http://sourceforge.net/apps/trac/ganglia/wiki/gmetric_spoofing for information about this setting.",
+            "See https://github.com/ganglia/monitor-core/wiki/Gmetric-Spoofing for information about this setting.",
             ConfigOption.Type.MASKABLE, String.class, new Predicate<String>() {
         @Override
         public boolean apply(@Nullable String s) {
