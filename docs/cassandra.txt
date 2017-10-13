@@ -120,7 +120,7 @@ Follow these steps to setup a Cassandra cluster on EC2 and deploy JanusGraph ove
 
 ==== Setup Cassandra Cluster
 
-These instructions for configuring and launching the DataStax Cassandra Community Edition AMI are based on the http://docs.datastax.com/en/cassandra/2.1/cassandra/install/installAMILaunch.html[DataStax AMI Docs] and focus on aspects relevant for a JanusGraph deployment.
+These instructions for configuring and launching the DataStax Cassandra Community Edition AMI are based on the DataStax AMI Docs and focus on aspects relevant for a JanusGraph deployment.
 
 ==== Setting up Security Group
 

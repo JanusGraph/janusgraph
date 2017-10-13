@@ -21,7 +21,7 @@ Please see <<version-compat>> for details on what versions of ES will work with 
 ===============================
 Beginning with Elasticsearch 5.0 JanusGraph uses sandboxed https://www.elastic.co/guide/en/elasticsearch/reference/master/modules-scripting-painless.html[Painless scripts] for inline updates, which are enabled by default in Elasticsearch 5.x.
 
-Using JanusGraph with Elasticsearch 2.x requires enabling Groovy inline scripting by setting `script.engine.groovy.inline.update` to `true` on the Elasticsearch cluster (see https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-scripting-security.html#enable-dynamic-scripting[dynamic scripting documentation] for more information).
+Using JanusGraph with Elasticsearch 2.x requires enabling Groovy inline scripting by setting `script.engine.groovy.inline.update` to `true` on the Elasticsearch cluster (see https://www.elastic.co/guide/en/elasticsearch/reference/2.3/modules-scripting.html#enable-dynamic-scripting[dynamic scripting documentation] for more information).
 ===============================
 
 === Running Elasticsearch
@@ -91,7 +91,7 @@ For example https://www.elastic.co/guide/en/elasticsearch/reference/current/date
 
 * `index.[X].elasticsearch.ingest-pipeline.[mixedIndexName] = pipeline_id`
 
-See https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html[ingest documentation] for more information about ingest pipelines and https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest-processors.htmll[processors documentation] for more information about ingest processors.
+See https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html[ingest documentation] for more information about ingest pipelines and https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest-processors.html[processors documentation] for more information about ingest processors.
 
 === Secure Elasticsearch
 

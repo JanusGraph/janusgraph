@@ -3,7 +3,7 @@
 
 === Metrics in JanusGraph
 
-JanusGraph supports http://metrics.codahale.com/[Metrics].  JanusGraph can measure the following:
+JanusGraph supports http://dropwizard.io/[Metrics].  JanusGraph can measure the following:
 
 * The number of transactions begun, comitted, and rolled back
 * The number of attempts and failures of each storage backend operation type
@@ -114,7 +114,7 @@ NOTE: Configuration of link:http://ganglia.sourceforge.net/[Ganglia] requires an
 |metrics.ganglia.ttl |no |Multicast datagram TTL; ignore for unicast | 1
 |metrics.ganglia.protocol-31 |no |Boolean; true to use Ganglia protocol 3.1, false to use 3.0 | true
 |metrics.ganglia.uuid |no |https://github.com/ganglia/monitor-core/wiki/UUIDSources[Host UUID to report instead of IP:hostname] | null
-|metrics.ganglia.spoof |no |http://sourceforge.net/apps/trac/ganglia/wiki/gmetric_spoofing[Override IP:hostname reported to Ganglia] | null
+|metrics.ganglia.spoof |no |https://github.com/ganglia/monitor-core/wiki/Gmetric-Spoofing[Override IP:hostname reported to Ganglia] | null
 |==========================
 
 Example janusgraph.properties snippet that sends unicast UDP datagrams to localhost on the default port once every 30 seconds:
