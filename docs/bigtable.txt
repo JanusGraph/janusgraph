@@ -15,8 +15,8 @@ ____
 
 === Bigtable Setup
 
-Bigtable implements the HBase interface for all data access operations, and requires some extra binary dependencies and
-some specific configuration options to connect.
+Bigtable implements the HBase interface for all data access operations, and
+requires a few configuration options to connect.
 
 ==== Connecting to Bigtable
 
