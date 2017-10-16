@@ -86,6 +86,7 @@
                 <version>3.0.0</version>
                 <executions>
                     <execution>
+                        <id>shade-codepipelines</id>
                         <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
@@ -129,4 +130,32 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+    <profiles>
+        <!-- This profile forces gpg-plugin to run after shade-plugin.
+             Otherwise, Maven will sign the unshaded jar, then shade the jar
+             (giving it completely different contents and breaking the sig) -->
+        <profile>
+            <id>janusgraph-release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>shade-codepipelines</id>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
