@@ -73,14 +73,11 @@
             <artifactId>janusgraph-es</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!--
-        Commented since it requires Hadoop 2 and TP3 requires Hadoop 1.
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-solr</artifactId>
             <version>${project.version}</version>
         </dependency>
-        -->
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-lucene</artifactId>
