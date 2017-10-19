@@ -4,7 +4,7 @@
 
 === Version 0.2.0 (Release Date: October 11, 2017)
 
-[source, m2]
+[source, xml]
 <dependency>
    <groupId>org.janusgraph</groupId>
    <artifactId>janusgraph-core</artifactId>
@@ -29,7 +29,7 @@ For more information on features and bug fixes in 0.2.0, see the GitHub mileston
 
 === Version 0.1.1 (Release Date: May 11, 2017)
 
-[source, m2]
+[source, xml]
 <dependency>
    <groupId>org.janusgraph</groupId>
    <artifactId>janusgraph-core</artifactId>
@@ -54,7 +54,7 @@ For more information on features and bug fixes in 0.1.1, see the GitHub mileston
 
 === Version 0.1.0 (Release Date: April 11, 2017) 
 
-[source, m2]
+[source, xml]
 <dependency>
    <groupId>org.janusgraph</groupId>
    <artifactId>janusgraph-core</artifactId>
