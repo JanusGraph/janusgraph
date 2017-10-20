@@ -134,7 +134,7 @@
                             <mainClass>org.janusgraph.util.system.ConfigurationPrinter</mainClass>
                             <arguments>
                                 <argument>org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS</argument>
-                                <argument>${asciidoc.output.dir}/listings/janusgraph_cfg.txt</argument>
+                                <argument>${asciidoc.output.dir}/listings/janusgraph_cfg.adoc</argument>
                                 <argument>true</argument>
                             </arguments>
                         </configuration>
