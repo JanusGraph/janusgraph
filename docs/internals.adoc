@@ -1,6 +1,6 @@
 [[internals]]
 = JanusGraph Internals
 
-include::datamodel.txt[]
+include::datamodel.adoc[]
 
-include::building.txt[]
+include::building.adoc[]

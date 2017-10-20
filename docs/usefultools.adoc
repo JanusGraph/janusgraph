@@ -1,6 +1,6 @@
 [[tools-and-utilities]]
 = Useful Tools
 
-include::advblueprints.txt[]
+include::advblueprints.adoc[]
 
-include::generating.txt[]
+include::generating.adoc[]

@@ -1,24 +1,24 @@
 [[advanced]]
 = Advanced Topics
 
-include::advschema.txt[]
+include::advschema.adoc[]
 
-include::eventualconsistency.txt[]
+include::eventualconsistency.adoc[]
 
-include::recovery.txt[]
+include::recovery.adoc[]
 
-include::reindex.txt[]
+include::reindex.adoc[]
 
-include::bulkloading.txt[]
+include::bulkloading.adoc[]
 
-//include::multiquery.txt[]
+//include::multiquery.adoc[]
 
-include::partitioning.txt[]
+include::partitioning.adoc[]
 
-include::serializer.txt[]
+include::serializer.adoc[]
 
-include::hadoop.txt[]
+include::hadoop.adoc[]
 
-include::monitoring.txt[]
+include::monitoring.adoc[]
 
-include::migrating.txt[]
+include::migrating.adoc[]

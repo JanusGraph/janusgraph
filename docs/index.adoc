@@ -1,19 +1,19 @@
 = JanusGraph Documentation
 
-include::adoc_attributes.txt[]
+include::adoc_attributes.adoc[]
 
-include::intro.txt[]
+include::intro.adoc[]
 
-include::basics.txt[]
+include::basics.adoc[]
 
-include::storagebackends.txt[]
+include::storagebackends.adoc[]
 
-include::indexbackends.txt[]
+include::indexbackends.adoc[]
 
-include::advanced.txt[]
+include::advanced.adoc[]
 
-include::internals.txt[]
+include::internals.adoc[]
 
-include::development.txt[]
+include::development.adoc[]
 
-include::appendices.txt[]
+include::appendices.adoc[]
