@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import org.janusgraph.diskstorage.es.IndexMappings.IndexMapping;
+
 public interface ElasticSearchClient extends Closeable {
 
     ElasticMajorVersion getMajorVersion();
@@ -37,7 +39,7 @@ public interface ElasticSearchClient extends Closeable {
 
     void createMapping(String indexName, String typeName, Map<String,Object> mapping) throws IOException;
 
-    Map getMapping(String indexName, String typeName) throws IOException;
+    IndexMapping getMapping(String indexName, String typeName) throws IOException;
 
     void deleteIndex(String indexName) throws IOException;
 
