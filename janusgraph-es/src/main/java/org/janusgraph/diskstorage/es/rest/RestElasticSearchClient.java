@@ -33,6 +33,7 @@ import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.diskstorage.es.ElasticMajorVersion;
 import org.janusgraph.diskstorage.es.ElasticSearchClient;
 import org.janusgraph.diskstorage.es.ElasticSearchMutation;
+import org.janusgraph.diskstorage.es.rest.RestBulkResponse.RestBulkItemResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,9 +45,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
 
 public class RestElasticSearchClient implements ElasticSearchClient {
 
@@ -75,15 +77,20 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     private static final ElasticMajorVersion DEFAULT_VERSION = ElasticMajorVersion.FIVE;
 
-    private RestClient delegate;
+    private static final Function<StringBuilder, StringBuilder> APPEND_OP = sb -> sb.append(sb.length() == 0 ? "?" : "&");
+
+    private final RestClient delegate;
 
     private ElasticMajorVersion majorVersion;
 
     private String bulkRefresh;
 
-    public RestElasticSearchClient(RestClient delegate) {
+    private final String scrollKeepAlive;
+
+    public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive) {
         this.delegate = delegate;
         majorVersion = getMajorVersion();
+        this.scrollKeepAlive = scrollKeepAlive+"s";
     }
 
     @Override
@@ -97,29 +104,14 @@ public class RestElasticSearchClient implements ElasticSearchClient {
             return majorVersion;
         }
 
-        final Pattern pattern = Pattern.compile("(\\d+)\\.\\d+\\.\\d+");
         majorVersion = DEFAULT_VERSION;
         try {
             final Response response = delegate.performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR);
             try (final InputStream inputStream = response.getEntity().getContent()) {
                 final ClusterInfo info = mapper.readValue(inputStream, ClusterInfo.class);
-                final String version = info.getVersion() != null ? (String) info.getVersion().get("number") : null;
-                final Matcher m = version != null ? pattern.matcher(version) : null;
-                switch (m != null && m.find() ? Integer.valueOf(m.group(1)) : -1) {
-                    case 1:
-                        majorVersion = ElasticMajorVersion.ONE;
-                        break;
-                    case 2:
-                        majorVersion = ElasticMajorVersion.TWO;
-                        break;
-                    case 5:
-                        majorVersion = ElasticMajorVersion.FIVE;
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Unsupported Elasticsearch server version: " + version);
-                }
+                majorVersion = ElasticMajorVersion.parse(info.getVersion() != null ? (String) info.getVersion().get("number") : null);
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.warn("Unable to determine Elasticsearch server version. Default to {}.", majorVersion, e);
         }
 
@@ -194,7 +186,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + "/_settings", null);
         try (final InputStream inputStream = response.getEntity().getContent()) {
             Map<String,RestIndexSettings> settings = mapper.readValue(inputStream, new TypeReference<Map<String, RestIndexSettings>>() {});
-            return settings.get(indexName).getSettings().getMap();
+            return settings == null ? null : settings.get(indexName).getSettings().getMap();
         }
     }
 
@@ -208,39 +200,51 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + "/_mapping/" + typeName, null);
         try (final InputStream inputStream = response.getEntity().getContent()) {
             Map<String, RestIndexMappings> settings = mapper.readValue(inputStream, new TypeReference<Map<String, RestIndexMappings>>() {});
-            return settings.get(indexName).getMappings().get(typeName).getProperties();
+            return settings == null ? null : settings.get(indexName).getMappings().get(typeName).getProperties();
         }
     }
 
     @Override
     public void deleteIndex(String indexName) throws IOException {
-        try {
+        if (majorVersion.getValue() < 6 && indexExists(indexName)) {
             performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + indexName, null);
-        } catch (IOException e) {
-            if (majorVersion == ElasticMajorVersion.ONE && !e.getMessage().contains("IndexMissingException") || majorVersion != ElasticMajorVersion.ONE && !e.getMessage().contains("no such index")) {
-                throw e;
+        } else {
+            final Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + "_cat/aliases?format=json", null);
+            try (final InputStream inputStream = response.getEntity().getContent()) {
+                final List<Map<String,Object>> records = mapper.readValue(inputStream, new TypeReference<List<Map<String, Object>>>() {});
+                if (records == null) return;
+                for (final Map<String,Object> record : records) {
+                    final String index = (String) record.get("index");
+                    if (indexExists(index)) {
+                        performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + index, null);
+                    }
+                }
             }
         }
     }
 
     @Override
-    public void bulkRequest(List<ElasticSearchMutation> requests) throws IOException {
+    public void bulkRequest(List<ElasticSearchMutation> requests, String ingestPipeline) throws IOException {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         for (final ElasticSearchMutation request : requests) {
             Map actionData = ImmutableMap.of(request.getRequestType().name().toLowerCase(),
                     ImmutableMap.of("_index", request.getIndex(), "_type", request.getType(), "_id", request.getId()));
                 outputStream.write(mapWriter.writeValueAsBytes(actionData));
-            outputStream.write("\n".getBytes());
+            outputStream.write("\n".getBytes(UTF8_CHARSET));
             if (request.getSource() != null) {
                 outputStream.write(mapWriter.writeValueAsBytes(request.getSource()));
-                outputStream.write("\n".getBytes());
+                outputStream.write("\n".getBytes(UTF8_CHARSET));
             }
         }
 
-        final StringBuilder builder = new StringBuilder("/_bulk");
-        if (bulkRefresh != null && !bulkRefresh.toLowerCase().equals("false")) {
-            builder.append("?refresh=" + bulkRefresh);
+        final StringBuilder builder = new StringBuilder();
+        if (ingestPipeline != null) {
+            APPEND_OP.apply(builder).append("pipeline=").append(ingestPipeline);
         }
+        if (bulkRefresh != null && !bulkRefresh.toLowerCase().equals("false")) {
+            APPEND_OP.apply(builder).append("refresh=").append(bulkRefresh);
+        }
+        builder.insert(0, "/_bulk");
 
         final Response response = performRequest(REQUEST_TYPE_POST, builder.toString(), outputStream.toByteArray());
         try (final InputStream inputStream = response.getEntity().getContent()) {
@@ -248,7 +252,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
             final List<Object> errors = bulkResponse.getItems().stream()
                 .flatMap(item -> item.values().stream())
                 .filter(item -> item.getError() != null && item.getStatus() != 404)
-                .map(item -> item.getError()).collect(Collectors.toList());
+                .map(RestBulkItemResponse::getError).collect(Collectors.toList());
             if (!errors.isEmpty()) {
                 errors.forEach(error -> log.error("Failed to execute ES query: {}", error));
                 throw new IOException("Failure(s) in Elasicsearch bulk request: " + errors);
@@ -257,12 +261,13 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     }
 
     @Override
-    public RestSearchResponse search(String indexName, String type, Map<String,Object> request) throws IOException {
+    public RestSearchResponse search(String indexName, String type, Map<String,Object> request, boolean useScroll) throws IOException {
         final StringBuilder path = new StringBuilder(REQUEST_SEPARATOR).append(indexName);
         if (!Strings.isNullOrEmpty(type)) {
             path.append(REQUEST_SEPARATOR).append(type);
         }
         path.append("/_search");
+        if (useScroll) path.append("?scroll=").append(scrollKeepAlive);
         final byte[] requestData = mapper.writeValueAsBytes(request);
         if (log.isDebugEnabled()) {
             log.debug("Elasticsearch request: " + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(request));
@@ -271,6 +276,38 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         final Response response = performRequest(REQUEST_TYPE_POST, path.toString(), requestData);
         try (final InputStream inputStream = response.getEntity().getContent()) {
             return mapper.readValue(inputStream, RestSearchResponse.class);
+        }
+    }
+
+    @Override
+    public RestSearchResponse search(String scrollId) throws IOException {
+        final String path;
+        final byte[] requestData;
+        if (ElasticMajorVersion.ONE == majorVersion) {
+             path = new StringBuilder(REQUEST_SEPARATOR).append("/_search/scroll?scroll=").append(scrollKeepAlive).toString();
+             requestData = scrollId.getBytes(UTF8_CHARSET);
+        } else {
+            path = "_search/scroll";
+            final Map<String, Object> request = new HashMap<>();
+            request.put("scroll", scrollKeepAlive);
+            request.put("scroll_id", scrollId);
+            requestData = mapper.writeValueAsBytes(request);
+            if (log.isDebugEnabled()) {
+                log.debug("Elasticsearch request: " + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(request));
+            }
+        }
+        final Response response = performRequest(REQUEST_TYPE_POST, path, requestData);
+        try (final InputStream inputStream = response.getEntity().getContent()) {
+            return mapper.readValue(inputStream, RestSearchResponse.class);
+        }
+    }
+
+    @Override
+    public void deleteScroll(String scrollId) throws IOException {
+        if (ElasticMajorVersion.ONE == majorVersion) {
+            performRequest(REQUEST_TYPE_DELETE, "/_search/scroll", scrollId.getBytes(UTF8_CHARSET));
+        } else {
+            delegate.performRequest(REQUEST_TYPE_DELETE, "/_search/scroll/" + scrollId);
         }
     }
 
@@ -306,5 +343,4 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         }
 
     }
-
 }

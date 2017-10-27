@@ -267,6 +267,11 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     }
 
     @Override
+    public boolean exists() throws BackendException {
+        return !environment.getDatabaseNames().isEmpty();
+    }
+
+    @Override
     public String getName() {
         return getClass().getSimpleName() + ":" + directory.toString();
     }

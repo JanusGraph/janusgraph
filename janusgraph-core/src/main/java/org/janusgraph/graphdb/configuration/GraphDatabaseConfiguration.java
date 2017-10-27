@@ -46,6 +46,7 @@ import org.janusgraph.graphdb.database.cache.SchemaCache;
 import org.janusgraph.graphdb.database.serialize.StandardSerializer;
 import org.janusgraph.util.encoding.LongEncoding;
 import org.janusgraph.util.system.ConfigurationUtil;
+import org.janusgraph.util.system.LoggerUtil;
 import org.janusgraph.util.system.NetworkUtil;
 
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -110,6 +111,12 @@ public class GraphDatabaseConfiguration {
             "Useful when operating JanusGraph in concert with another storage system that assigns long ids but disables some " +
             "of JanusGraph's advanced features which can lead to inconsistent data. EXPERT FEATURE - USE WITH GREAT CARE.",
             ConfigOption.Type.FIXED, false);
+
+    public static final ConfigOption<String> GRAPH_NAME = new ConfigOption<String>(GRAPH_NS, "graphname",
+            "This config option is an optional configuration setting that you may supply when opening a graph. " +
+            "The String value you provide will be the name of your graph. If you use the ConfigurationManagament APIs, " +
+            "then you will be able to access your graph by this String representation using the ConfiguredGraphFactory APIs.",
+            ConfigOption.Type.LOCAL, String.class);
 
     public static final ConfigOption<TimestampProviders> TIMESTAMP_PROVIDER = new ConfigOption<TimestampProviders>(GRAPH_NS, "timestamps",
             "The timestamp resolution to use when writing to storage and indices. Sets the time granularity for the " +
@@ -393,10 +400,19 @@ public class GraphDatabaseConfiguration {
     public static final ConfigNamespace STORAGE_NS = new ConfigNamespace(ROOT_NS,"storage","Configuration options for the storage backend.  Some options are applicable only for certain backends.");
 
     /**
+     * Storage root directory for those storage backends that require local storage
+     */
+    public static final ConfigOption<String> STORAGE_ROOT = new ConfigOption<String>(STORAGE_NS,"root",
+            "Storage root directory for those storage backends that require local storage. " +
+            "If you do not supply storage.directory and you do supply graph.graphname, then your data " +
+            "will be stored in the directory equivalent to <STORAGE_ROOT>/<GRAPH_NAME>.",
+            ConfigOption.Type.LOCAL, String.class);
+
+    /**
      * Storage directory for those storage backends that require local storage
      */
     public static final ConfigOption<String> STORAGE_DIRECTORY = new ConfigOption<String>(STORAGE_NS,"directory",
-            "Storage directory for those storage backends that require local storage",
+            "Storage directory for those storage backends that require local storage.",
             ConfigOption.Type.LOCAL, String.class);
 //    public static final String STORAGE_DIRECTORY_KEY = "directory";
 
@@ -576,6 +592,11 @@ public class GraphDatabaseConfiguration {
 //    public static final int PAGE_SIZE_DEFAULT = 100;
 //    public static final String PAGE_SIZE_KEY = "page-size";
 
+    public static final ConfigOption<Boolean> DROP_ON_CLEAR = new ConfigOption<>(STORAGE_NS, "drop-on-clear",
+        "Whether to drop the graph database (true) or delete rows (false) when clearing storage. " +
+            "Note that some backends always drop the graph database when clearing storage. Also note that indices are " +
+            "always dropped when clearing storage.",
+        ConfigOption.Type.MASKABLE, true);
 
     public static final ConfigNamespace LOCK_NS =
             new ConfigNamespace(STORAGE_NS, "lock", "Options for locking on eventually-consistent stores");
@@ -892,8 +913,9 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.MASKABLE, String.class);
 
     public static final ConfigOption<Integer> INDEX_MAX_RESULT_SET_SIZE = new ConfigOption<Integer>(INDEX_NS, "max-result-set-size",
-            "Maxium number of results to return if no limit is specified",
-            ConfigOption.Type.MASKABLE, 100000);
+            "Maxium number of results to return if no limit is specified. For index backends that support scrolling, it represents " +
+                    "the number of results in each batch",
+            ConfigOption.Type.MASKABLE, 50);
 
     public static final ConfigOption<Boolean> INDEX_NAME_MAPPING = new ConfigOption<Boolean>(INDEX_NS,"map-name",
             "Whether to use the name of the property key as the field name in the index. It must be ensured, that the" +
@@ -1237,12 +1259,12 @@ public class GraphDatabaseConfiguration {
      * IP:hostname pair. If null, Ganglia will automatically determine the IP
      * and hostname to set on outgoing datagrams.
      * <p/>
-     * See http://sourceforge.net/apps/trac/ganglia/wiki/gmetric_spoofing
+     * See https://github.com/ganglia/monitor-core/wiki/Gmetric-Spoofing
      * <p/>
      */
     public static final ConfigOption<String> GANGLIA_SPOOF = new ConfigOption<String>(METRICS_GANGLIA_NS,"spoof",
             "If non-null, it must be a valid Gmetric spoof string formatted as an IP:hostname pair. " +
-            "See http://sourceforge.net/apps/trac/ganglia/wiki/gmetric_spoofing for information about this setting.",
+            "See https://github.com/ganglia/monitor-core/wiki/Gmetric-Spoofing for information about this setting.",
             ConfigOption.Type.MASKABLE, String.class, new Predicate<String>() {
         @Override
         public boolean apply(@Nullable String s) {
@@ -1251,6 +1273,7 @@ public class GraphDatabaseConfiguration {
     });
 //    public static final String GANGLIA_SPOOF_KEY = "spoof";
 //    public static final String GANGLIA_SPOOF_DEFAULT = null;
+
 
     /**
      * The configuration namespace within {@link #METRICS_NS} for
@@ -1385,10 +1408,12 @@ public class GraphDatabaseConfiguration {
                     TimestampProviders backendPreference = null;
                     if (f.hasTimestamps() && null != (backendPreference = f.getPreferredTimestamps())) {
                         globalWrite.set(TIMESTAMP_PROVIDER, backendPreference);
-                        log.info("Set timestamps to {} according to storage backend preference", globalWrite.get(TIMESTAMP_PROVIDER));
+                        log.info("Set timestamps to {} according to storage backend preference",
+                            LoggerUtil.sanitizeAndLaunder(globalWrite.get(TIMESTAMP_PROVIDER)));
                     }
                     globalWrite.set(TIMESTAMP_PROVIDER, TIMESTAMP_PROVIDER.getDefaultValue());
-                    log.info("Set default timestamp provider {}", globalWrite.get(TIMESTAMP_PROVIDER));
+                    log.info("Set default timestamp provider {}",
+                        LoggerUtil.sanitizeAndLaunder(globalWrite.get(TIMESTAMP_PROVIDER)));
                 } else {
                     log.info("Using configured timestamp provider {}", localbc.get(TIMESTAMP_PROVIDER));
                 }
@@ -1873,6 +1898,10 @@ public class GraphDatabaseConfiguration {
         backend.initialize(configuration);
         storeFeatures = backend.getStoreFeatures();
         return backend;
+    }
+
+    public String getGraphName() {
+        return getConfigurationAtOpen().getString(GRAPH_NAME.toString());
     }
 
     public StoreFeatures getStoreFeatures() {

@@ -51,7 +51,6 @@ public class VertexIDAssignerTest {
 
     final VertexIDAssigner idAssigner;
 
-
     @Parameterized.Parameters
     public static Collection<Object[]> configs() {
         List<Object[]> configurations = new ArrayList<Object[]>();

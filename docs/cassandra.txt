@@ -1,5 +1,5 @@
 [[cassandra]]
-== Cassandra
+== Apache Cassandra
 
 [quote, 'http://cassandra.apache.org/[Apache Cassandra Homepage]']
 The Apache Cassandra database is the right choice when you need
@@ -12,7 +12,7 @@ lower latency for your users and the peace of mind of knowing that you
 can survive regional outages. The largest known Cassandra cluster has
 over 300 TB of data in over 400 machines.
 
-The following sections outline the various ways in which JanusGraph can be used in concert with Cassandra.
+The following sections outline the various ways in which JanusGraph can be used in concert with Apache Cassandra.
 
 [NOTE]
 If you are using Cassandra 2.2 or higher you need to explicitly enable thrift so that JanusGraph can connect to the cluster.
@@ -36,7 +36,7 @@ set("storage.backend", "cassandra").
 set("storage.hostname", "127.0.0.1").
 open();
 
-In the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
+In the Gremlin Console, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
 === Remote Server Mode
 
@@ -52,7 +52,7 @@ set("storage.backend", "cassandra").
 set("storage.hostname", "77.77.77.77").
 open();
 
-In the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
+In the Gremlin Console, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
 === Remote Server Mode with Gremlin Server
 
@@ -60,7 +60,7 @@ image:modes-rexster.png[]
 
 Gremlin Server can be wrapped around each JanusGraph instance defined in the previous subsection. In this way, the end-user application need not be a Java-based application as it can communicate with Gremlin Server as a client. This type of deployment is great for polyglot architectures where various components written in different languages need to reference and compute on the graph.
 
-Start gremlin server using bin/gremlin-server.sh and then in an external gremlin.sh session you can send gremlin commands over the wire:
+Start Gremlin Server using `bin/gremlin-server.sh` and then in an external Gremlin Console session using `bin/gremlin.sh` you can send Gremlin commands over the wire:
 
 ----
 :plugin use tinkerpop.server
@@ -68,7 +68,7 @@ Start gremlin server using bin/gremlin-server.sh and then in an external gremlin
 :> g.addV()
 ----
 
-In this case, each Gremlin server would be configured to connect to the Cassandra cluster. The following shows the graph specific fragment of the Gremlin server configuration. Refer to <<server>> for a complete example and more information on how to configure the server.
+In this case, each Gremlin Server would be configured to connect to the Cassandra cluster. The following shows the graph specific fragment of the Gremlin Server configuration. Refer to <<server>> for a complete example and more information on how to configure the server.
 
 [source, yaml]
 ----
@@ -79,7 +79,7 @@ plugins:
   - janusgraph.imports
 ...
 ----
-For more information about gremlin server see the latest http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#gremlin-server[Tinkerpop documentation]
+For more information about Gremlin Server see the http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#gremlin-server[Apache TinkerPop documentation]
 
 === JanusGraph Embedded Mode
 
@@ -120,7 +120,7 @@ Follow these steps to setup a Cassandra cluster on EC2 and deploy JanusGraph ove
 
 ==== Setup Cassandra Cluster
 
-These instructions for configuring and launching the DataStax Cassandra Community Edition AMI are based on the http://docs.datastax.com/en/cassandra/2.1/cassandra/install/installAMILaunch.html[DataStax AMI Docs] and focus on aspects relevant for a JanusGraph deployment.
+These instructions for configuring and launching the DataStax Cassandra Community Edition AMI are based on the DataStax AMI Docs and focus on aspects relevant for a JanusGraph deployment.
 
 ==== Setting up Security Group
 
@@ -130,7 +130,7 @@ These instructions for configuring and launching the DataStax Cassandra Communit
 
 ==== Launch DataStax Cassandra AMI
 
-* "Launch the https://aws.amazon.com/amis/datastax-auto-clustering-ami-2-2[DataStax AMI] in your desired zone 
+* "Launch the https://aws.amazon.com/amis/datastax-auto-clustering-ami-2-2[DataStax AMI] in your desired zone
 
 * On the Instance Details page of the Request Instances Wizard, set "Number of Instances" to your desired number of Cassandra nodes. Set "Instance Type" to at least m1.large. We recommend m1.large.
 
@@ -139,7 +139,7 @@ These instructions for configuring and launching the DataStax Cassandra Communit
 ----
 --clustername [cassandra-cluster-name]
 --totalnodes [number-of-instances]
---version community 
+--version community
 --opscenter no
 ----
 
@@ -148,7 +148,7 @@ These instructions for configuring and launching the DataStax Cassandra Communit
 ----
 --clustername janusgraph
 --totalnodes 4
---version community 
+--version community
 --opscenter no
 ----
 
@@ -178,7 +178,7 @@ Launch additional EC2 instances to run JanusGraph which are either configured in
 
 * SSH into the newly created instance via `ssh -i [your-private-key].pem ec2-user@[public-dns-name-of-the-instance]`. You may have to wait a little for the instance to launch.
 
-* https://github.com/JanusGraph/janusgraph/releases[Download] the current JanusGraph distribution with `wget` and unpack the archive locally to the home directory. Start the gremlin shell to verify that JanusGraph runs successfully. For more information on how to unpack JanusGraph and start the gremlin shell, please refer to the <<getting-started, Getting Started guide>>
+* https://github.com/JanusGraph/janusgraph/releases[Download] the current JanusGraph distribution with `wget` and unpack the archive locally to the home directory. Start the Gremlin Console to verify that JanusGraph runs successfully. For more information on how to unpack JanusGraph and start the Gremlin Console, please refer to the <<getting-started, Getting Started guide>>
 
 * Create a configuration file with `vi janusgraph.properties` and add the following lines::
 
@@ -187,9 +187,9 @@ Launch additional EC2 instances to run JanusGraph which are either configured in
 
 You may add additional configuration options found on this page or in <<config-ref>>.
 
-* Start the gremlin shell again and type the following::
+* Start the Gremlin Console again and type the following::
 
-      gremlin> graph = JanusGraphFactory.open('janusgraph.properties')              
+      gremlin> graph = JanusGraphFactory.open('janusgraph.properties')
       ==>janusgraph[cassandra:[IP-address-of-one-Cassandra-EC2-instance]]
 
 You have successfully connected this JanusGraph instance to the Cassandra cluster and can start to operate on the graph.

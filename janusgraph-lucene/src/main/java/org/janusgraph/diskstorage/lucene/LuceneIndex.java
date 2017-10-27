@@ -15,10 +15,8 @@
 package org.janusgraph.diskstorage.lucene;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.lucene.queries.TermsQuery;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
 
@@ -57,13 +55,16 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.Version;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
@@ -81,9 +82,6 @@ public class LuceneIndex implements IndexProvider {
 
     private static final String DOCID = "_____elementid";
     private static final String GEOID = "_____geo";
-    private static final int MAX_STRING_FIELD_LEN = 256;
-
-    private static final Version LUCENE_VERSION = Version.LUCENE_6_4_1;
 
     private static final IndexFeatures LUCENE_FEATURES = new IndexFeatures.Builder()
         .supportedStringMappings(Mapping.TEXT, Mapping.STRING)
@@ -117,9 +115,9 @@ public class LuceneIndex implements IndexProvider {
     public LuceneIndex(Configuration config) {
         String dir = config.get(GraphDatabaseConfiguration.INDEX_DIRECTORY);
         File directory = new File(dir);
-        if (!directory.exists()) directory.mkdirs();
-        if (!directory.exists() || !directory.isDirectory() || !directory.canWrite())
+        if ((!directory.exists() && !directory.mkdirs()) || !directory.isDirectory() || !directory.canWrite()) {
             throw new IllegalArgumentException("Cannot access or write to directory: " + dir);
+        }
         basePath = directory.getAbsolutePath();
         log.debug("Configured Lucene to use base directory [{}]", basePath);
     }
@@ -129,9 +127,9 @@ public class LuceneIndex implements IndexProvider {
         String dir = basePath + File.separator + store;
         try {
             File path = new File(dir);
-            if (!path.exists()) path.mkdirs();
-            if (!path.exists() || !path.isDirectory() || !path.canWrite())
+            if ((!path.exists() && !path.mkdirs()) || !path.isDirectory() || !path.canWrite()) {
                 throw new PermanentBackendException("Cannot access or write to directory: " + dir);
+            }
             log.debug("Opening store directory [{}]", path);
             return FSDirectory.open(path.toPath());
         } catch (IOException e) {
@@ -166,7 +164,7 @@ public class LuceneIndex implements IndexProvider {
 //                    SpatialPrefixTree grid = new GeohashPrefixTree(ctx, GEO_MAX_LEVELS);
 //                    strategy = new RecursivePrefixTreeStrategy(grid, key);
                     if (mapping == Mapping.DEFAULT) {
-                        strategy = PointVectorStrategy.newLegacyInstance(ctx, key);
+                        strategy = PointVectorStrategy.newInstance(ctx, key);
                     } else {
                         SpatialPrefixTree grid = new QuadPrefixTree(ctx, maxLevels);
                         strategy = new RecursivePrefixTreeStrategy(grid, key);
@@ -352,10 +350,10 @@ public class LuceneIndex implements IndexProvider {
                 Field field;
                 Field sortField;
                 if (AttributeUtil.isWholeNumber((Number) e.value)) {
-                    field = new LegacyLongField(e.field, ((Number) e.value).longValue(), Field.Store.YES);
+                    field = new LongPoint(e.field, ((Number) e.value).longValue());
                     sortField = new NumericDocValuesField(e.field, ((Number) e.value).longValue());
                 } else { //double or float
-                    field = new LegacyDoubleField(e.field, ((Number) e.value).doubleValue(), Field.Store.YES);
+                    field = new DoublePoint(e.field, ((Number) e.value).doubleValue());
                     sortField = new DoubleDocValuesField(e.field, ((Number) e.value).doubleValue());
                 }
                 doc.add(field);
@@ -380,11 +378,11 @@ public class LuceneIndex implements IndexProvider {
                 geofields.put(e.field, shape);
                 doc.add(new StoredField(e.field, GEOID +  e.value.toString()));
             } else if (e.value instanceof Date) {
-                doc.add(new LegacyLongField(e.field, (((Date) e.value).getTime()), Field.Store.YES));
+                doc.add(new LongPoint(e.field, (((Date) e.value).getTime())));
             } else if (e.value instanceof Instant) {
-                doc.add(new LegacyLongField(e.field, (((Instant) e.value).toEpochMilli()), Field.Store.YES));
+                doc.add(new LongPoint(e.field, (((Instant) e.value).toEpochMilli())));
             } else if (e.value instanceof Boolean) {
-                doc.add(new LegacyIntField(e.field, ((Boolean)e.value)? 1 : 0, Field.Store.YES));
+                doc.add(new IntPoint(e.field, ((Boolean)e.value)? 1 : 0));
             } else if (e.value instanceof UUID) {
                 //Solr stores UUIDs as strings, we we do the same.
                 Field field = new StringField(e.field, e.value.toString(), Field.Store.YES);
@@ -401,9 +399,12 @@ public class LuceneIndex implements IndexProvider {
             KeyInformation ki = informations.get(store, geo.getKey());
             SpatialStrategy spatialStrategy = getSpatialStrategy(geo.getKey(), ki);
             for (IndexableField f : spatialStrategy.createIndexableFields(geo.getValue())) {
+                if (doc.getField(f.name()) != null) {
+                    doc.removeFields(f.name());
+                }
                 doc.add(f);
                 if (spatialStrategy instanceof PointVectorStrategy) {
-                    doc.add(new DoubleDocValuesField(f.name(), f.numericValue().doubleValue()));
+                    doc.add(new DoubleDocValuesField(f.name(), f.numericValue() == null ? null : f.numericValue().doubleValue()));
                 }
             }
         }
@@ -432,13 +433,13 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
+    public Stream<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         //Construct query
         SearchParams searchParams = convertQuery(query.getCondition(),informations.get(query.getStore()));
 
         try {
             IndexSearcher searcher = ((Transaction) tx).getSearcher(query.getStore());
-            if (searcher == null) return ImmutableList.of(); //Index does not yet exist
+            if (searcher == null) return Collections.unmodifiableList(new ArrayList<String>()).stream(); //Index does not yet exist
 
             Query q = searchParams.getQuery();
             if (null == q)
@@ -449,9 +450,10 @@ public class LuceneIndex implements IndexProvider {
             log.debug("Executed query [{}] in {} ms", q, System.currentTimeMillis() - time);
             List<String> result = new ArrayList<String>(docs.scoreDocs.length);
             for (int i = 0; i < docs.scoreDocs.length; i++) {
-                result.add(searcher.doc(docs.scoreDocs[i].doc).getField(DOCID).stringValue());
+                final IndexableField field = searcher.doc(docs.scoreDocs[i].doc).getField(DOCID);
+                result.add(field == null ? null : field.stringValue());
             }
-            return result;
+            return result.stream();
         } catch (IOException e) {
             throw new TemporaryBackendException("Could not execute Lucene query", e);
         }
@@ -461,34 +463,34 @@ public class LuceneIndex implements IndexProvider {
         switch (relation) {
             case EQUAL:
                 return AttributeUtil.isWholeNumber(value) ?
-                        LegacyNumericRangeQuery.newLongRange(key, value.longValue(), value.longValue(), true, true) :
-                    LegacyNumericRangeQuery.newDoubleRange(key, value.doubleValue(), value.doubleValue(), true, true);
+                        LongPoint.newRangeQuery(key, value.longValue(), value.longValue()) :
+                    DoublePoint.newRangeQuery(key, value.doubleValue(), value.doubleValue());
             case NOT_EQUAL:
                 BooleanQuery.Builder q = new BooleanQuery.Builder();
                 if (AttributeUtil.isWholeNumber(value)) {
-                    q.add(LegacyNumericRangeQuery.newLongRange(key, Long.MIN_VALUE, value.longValue(), true, false), BooleanClause.Occur.SHOULD);
-                    q.add(LegacyNumericRangeQuery.newLongRange(key, value.longValue(), Long.MAX_VALUE, false, true), BooleanClause.Occur.SHOULD);
+                    q.add(LongPoint.newRangeQuery(key, Long.MIN_VALUE, Math.addExact(value.longValue(), -1)), BooleanClause.Occur.SHOULD);
+                    q.add(LongPoint.newRangeQuery(key, Math.addExact(value.longValue(), 1), Long.MAX_VALUE), BooleanClause.Occur.SHOULD);
                 } else {
-                    q.add(LegacyNumericRangeQuery.newDoubleRange(key, Double.MIN_VALUE, value.doubleValue(), true, false), BooleanClause.Occur.SHOULD);
-                    q.add(LegacyNumericRangeQuery.newDoubleRange(key, value.doubleValue(), Double.MAX_VALUE, false, true), BooleanClause.Occur.SHOULD);
+                    q.add(DoublePoint.newRangeQuery(key, Double.MIN_VALUE, DoublePoint.nextDown(value.doubleValue())), BooleanClause.Occur.SHOULD);
+                    q.add(DoublePoint.newRangeQuery(key, DoublePoint.nextUp(value.doubleValue()), Double.MAX_VALUE), BooleanClause.Occur.SHOULD);
                 }
                 return q.build();
             case LESS_THAN:
                 return (AttributeUtil.isWholeNumber(value)) ?
-                    LegacyNumericRangeQuery.newLongRange(key, Long.MIN_VALUE, value.longValue(), true, false) :
-                    LegacyNumericRangeQuery.newDoubleRange(key, Double.MIN_VALUE, value.doubleValue(), true, false);
+                    LongPoint.newRangeQuery(key, Long.MIN_VALUE, Math.addExact(value.longValue(), -1)) :
+                    DoublePoint.newRangeQuery(key, Double.MIN_VALUE, DoublePoint.nextDown(value.doubleValue()));
             case LESS_THAN_EQUAL:
                 return (AttributeUtil.isWholeNumber(value)) ?
-                    LegacyNumericRangeQuery.newLongRange(key, Long.MIN_VALUE, value.longValue(), true, true) :
-                    LegacyNumericRangeQuery.newDoubleRange(key, Double.MIN_VALUE, value.doubleValue(), true, true);
+                    LongPoint.newRangeQuery(key, Long.MIN_VALUE, value.longValue()) :
+                    DoublePoint.newRangeQuery(key, Double.MIN_VALUE, value.doubleValue());
             case GREATER_THAN:
                 return (AttributeUtil.isWholeNumber(value)) ?
-                    LegacyNumericRangeQuery.newLongRange(key, value.longValue(), Long.MAX_VALUE, false, true) :
-                    LegacyNumericRangeQuery.newDoubleRange(key, value.doubleValue(), Double.MAX_VALUE, false, true);
+                    LongPoint.newRangeQuery(key, Math.addExact(value.longValue(), 1), Long.MAX_VALUE) :
+                    DoublePoint.newRangeQuery(key, DoublePoint.nextUp(value.doubleValue()), Double.MAX_VALUE);
             case GREATER_THAN_EQUAL:
                 return (AttributeUtil.isWholeNumber(value)) ?
-                    LegacyNumericRangeQuery.newLongRange(key, value.longValue(), Long.MAX_VALUE, true, true) :
-                    LegacyNumericRangeQuery.newDoubleRange(key, value.doubleValue(), Double.MAX_VALUE, true, true);
+                    LongPoint.newRangeQuery(key, value.longValue(), Long.MAX_VALUE) :
+                    DoublePoint.newRangeQuery(key, value.doubleValue(), Double.MAX_VALUE);
             default:
                 throw new IllegalArgumentException("Unexpected relation: " + relation);
         }
@@ -503,7 +505,6 @@ public class LuceneIndex implements IndexProvider {
             JanusGraphPredicate janusgraphPredicate = atom.getPredicate();
             if (value instanceof Number) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on numeric types: " + janusgraphPredicate);
-                Preconditions.checkArgument(value instanceof Number);
                 params.addQuery(numericQuery(key, (Cmp) janusgraphPredicate, (Number) value));
             } else if (value instanceof String) {
                 Mapping map = Mapping.getMapping(informations.get(key));
@@ -518,7 +519,7 @@ public class LuceneIndex implements IndexProvider {
                     value = ((String) value).toLowerCase();
                     BooleanQuery.Builder b = new BooleanQuery.Builder();
                     for (String term : Text.tokenize((String)value)) {
-                        b.add(new TermsQuery(new Term(key, term)), BooleanClause.Occur.MUST);
+                        b.add(new TermQuery(new Term(key, term)), BooleanClause.Occur.MUST);
                     }
                     params.addQuery(b.build());
                 } else if (janusgraphPredicate == Text.CONTAINS_PREFIX) {
@@ -534,11 +535,11 @@ public class LuceneIndex implements IndexProvider {
                     RegexpQuery rq = new RegexpQuery(new Term(key, ".*" + (value) + ".*"));
                     params.addQuery(rq);
                 } else if (janusgraphPredicate == Cmp.EQUAL) {
-                    params.addQuery(new TermsQuery(new Term(key,(String)value)));
+                    params.addQuery(new TermQuery(new Term(key,(String)value)));
                 } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
                     BooleanQuery.Builder q = new BooleanQuery.Builder();
                     q.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
-                    q.add(new TermsQuery(new Term(key, (String) value)), BooleanClause.Occur.MUST_NOT);
+                    q.add(new TermQuery(new Term(key, (String) value)), BooleanClause.Occur.MUST_NOT);
                     params.addQuery(q.build());
                 } else if(janusgraphPredicate == Text.FUZZY){
                     params.addQuery(new FuzzyQuery(new Term(key, (String) value)));
@@ -569,11 +570,11 @@ public class LuceneIndex implements IndexProvider {
                 switch ((Cmp)janusgraphPredicate) {
                     case EQUAL:
                         intValue = ((Boolean) value) ? 1 : 0;
-                        params.addQuery(LegacyNumericRangeQuery.newIntRange(key, intValue, intValue, true, true));
+                        params.addQuery(IntPoint.newRangeQuery(key, intValue, intValue));
                         break;
                     case NOT_EQUAL:
                         intValue = ((Boolean) value) ? 0 : 1;
-                        params.addQuery(LegacyNumericRangeQuery.newIntRange(key, intValue, intValue, true, true));
+                        params.addQuery(IntPoint.newRangeQuery(key, intValue, intValue));
                         break;
                     default:
                         throw new IllegalArgumentException("Boolean types only support EQUAL or NOT_EQUAL");
@@ -582,11 +583,11 @@ public class LuceneIndex implements IndexProvider {
             } else if (value instanceof UUID) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on UUID types: " + janusgraphPredicate);
                 if (janusgraphPredicate == Cmp.EQUAL) {
-                    params.addQuery(new TermsQuery(new Term(key, value.toString())));
+                    params.addQuery(new TermQuery(new Term(key, value.toString())));
                 } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
                     BooleanQuery.Builder q = new BooleanQuery.Builder();
                     q.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
-                    q.add(new TermsQuery(new Term(key, value.toString())), BooleanClause.Occur.MUST_NOT);
+                    q.add(new TermQuery(new Term(key, value.toString())), BooleanClause.Occur.MUST_NOT);
                     params.addQuery(q.build());
                 } else {
                     throw new IllegalArgumentException("Relation is not supported for UUID type: " + janusgraphPredicate);
@@ -615,7 +616,7 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
+    public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         Query q;
         try {
             q = new QueryParser("_all",analyzer).parse(query.getQuery());
@@ -626,7 +627,7 @@ public class LuceneIndex implements IndexProvider {
 
         try {
             IndexSearcher searcher = ((Transaction) tx).getSearcher(query.getStore());
-            if (searcher == null) return ImmutableList.of(); //Index does not yet exist
+            if (searcher == null) return Collections.unmodifiableList(new ArrayList<RawQuery.Result<String>>()).stream(); //Index does not yet exist
 
             long time = System.currentTimeMillis();
             //TODO: can we make offset more efficient in Lucene?
@@ -638,9 +639,10 @@ public class LuceneIndex implements IndexProvider {
             log.debug("Executed query [{}] in {} ms",q, System.currentTimeMillis() - time);
             List<RawQuery.Result<String>> result = new ArrayList<RawQuery.Result<String>>(docs.scoreDocs.length);
             for (int i = offset; i < docs.scoreDocs.length; i++) {
-                result.add(new RawQuery.Result<String>(searcher.doc(docs.scoreDocs[i].doc).getField(DOCID).stringValue(),docs.scoreDocs[i].score));
+                final IndexableField field = searcher.doc(docs.scoreDocs[i].doc).getField(DOCID);
+                result.add(new RawQuery.Result<String>(field == null ? null : field.stringValue(),docs.scoreDocs[i].score));
             }
-            return result;
+            return result.stream();
         } catch (IOException e) {
             throw new TemporaryBackendException("Could not execute Lucene query", e);
         }
@@ -747,6 +749,19 @@ public class LuceneIndex implements IndexProvider {
             FileUtils.deleteDirectory(new File(basePath));
         } catch (IOException e) {
             throw new PermanentBackendException("Could not delete lucene directory: " + basePath, e);
+        }
+    }
+
+    @Override
+    public boolean exists() throws BackendException {
+        if (Files.exists(Paths.get(basePath))) {
+            try (final DirectoryStream<Path> dirStream = Files.newDirectoryStream(Paths.get(basePath))) {
+                return dirStream.iterator().hasNext();
+            } catch (IOException e) {
+                throw new PermanentBackendException("Could not read lucene directory: " + basePath, e);
+            }
+        } else {
+            return false;
         }
     }
 

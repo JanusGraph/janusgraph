@@ -21,6 +21,7 @@ import org.janusgraph.diskstorage.BaseTransactionConfigurable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * External index for querying.
@@ -83,7 +84,7 @@ public interface IndexProvider extends IndexInformation {
      * @throws org.janusgraph.diskstorage.BackendException
      * @see IndexQuery
      */
-    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
+    public Stream<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
 
 
     /**
@@ -96,7 +97,7 @@ public interface IndexProvider extends IndexInformation {
      * @throws org.janusgraph.diskstorage.BackendException
      * @see RawQuery
      */
-    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
+    public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
 
     /**
      * Executes the given raw query against the index and returns the total hits. e.g. limit=0
@@ -110,7 +111,6 @@ public interface IndexProvider extends IndexInformation {
      */
     public Long totals(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
 
-    
     /**
      * Returns a transaction handle for a new index transaction.
      *
@@ -129,5 +129,12 @@ public interface IndexProvider extends IndexInformation {
      * @throws org.janusgraph.diskstorage.BackendException
      */
     public void clearStorage() throws BackendException;
+
+    /**
+     * Checks whether the index exists.
+     * @return Flag indicating whether index exists
+     * @throws org.janusgraph.diskstorage.BackendException
+     */
+    public boolean exists() throws BackendException;
 
 }

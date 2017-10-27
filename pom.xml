@@ -7,7 +7,7 @@
     </parent>
     <groupId>org.janusgraph</groupId>
     <artifactId>janusgraph</artifactId>
-    <version>0.2.0-SNAPSHOT</version>
+    <version>0.3.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <prerequisites>
         <maven>2.2.1</maven>
@@ -63,7 +63,7 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
-        <janusgraph.compatible.versions>0.1.0,0.1.1</janusgraph.compatible.versions>
+        <janusgraph.compatible.versions>0.1.0,0.1.1,0.2.0</janusgraph.compatible.versions>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
         <tinkerpop.version>3.2.6</tinkerpop.version>
         <junit.version>4.12</junit.version>
@@ -78,14 +78,15 @@
         <hadoop2.version>2.7.2</hadoop2.version>
         <hbase098.core.version>0.98.24</hbase098.core.version>
         <hbase098.version>${hbase098.core.version}-hadoop2</hbase098.version>
-        <hbase100.core.version>1.2.4</hbase100.core.version>
+        <hbase100.core.version>1.2.6</hbase100.core.version>
         <hbase100.version>${hbase100.core.version}</hbase100.version>
+        <bigtable.version>1.0.0-pre3</bigtable.version>
         <scylladb.version>1.7.1</scylladb.version>
         <!-- align with org.apache.hbase:hbase -->
         <jackson1.version>1.9.13</jackson1.version>
         <jackson2.version>2.6.6</jackson2.version>
-        <lucene-solr.version>6.6.0</lucene-solr.version>
-        <elasticsearch.version>5.4.2</elasticsearch.version>
+        <lucene-solr.version>7.0.0</lucene-solr.version>
+        <elasticsearch.version>5.6.2</elasticsearch.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <joda.version>2.8.2</joda.version>
@@ -96,6 +97,8 @@
         <asm4.version>4.0</asm4.version>
         <zookeeper.version>3.4.6</zookeeper.version>
         <jersey.version>1.9</jersey.version>
+        <!-- align with org.apache.tinkerpop:tinkerpop -->
+        <netty4.version>4.0.50.Final</netty4.version>
         <jna.version>4.0.0</jna.version>
         <kuali.s3.wagon.version>1.1.20</kuali.s3.wagon.version>
         <jasper.version>5.5.23</jasper.version>
@@ -128,12 +131,14 @@
         <module>janusgraph-cassandra</module>
         <module>janusgraph-hadoop-parent</module>
         <module>janusgraph-hbase-parent</module>
+        <module>janusgraph-bigtable</module>
         <module>janusgraph-es</module>
         <module>janusgraph-lucene</module>
         <module>janusgraph-all</module>
         <module>janusgraph-dist</module>
         <module>janusgraph-doc</module>
         <module>janusgraph-solr</module>
+        <module>janusgraph-examples</module>
     </modules>
     <repositories>
         <repository>
@@ -729,10 +734,14 @@
             </dependency>
 
             <dependency>
-                <!-- align with org.apache.tinkerpop:tinkerpop -->
                 <groupId>io.netty</groupId>
                 <artifactId>netty-all</artifactId>
-                <version>4.0.42.Final</version>
+                <version>${netty4.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-handler</artifactId>
+                <version>${netty4.version}</version>
             </dependency>
 
             <dependency>
@@ -1496,54 +1505,6 @@
                                 </configuration>
                             </execution>
                         </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>target-jre6</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>xml-maven-plugin</artifactId>
-                        <configuration>
-                            <forceCreation>true</forceCreation>
-                            <transformationSets>
-                                <transformationSet>
-                                    <dir>${basedir}</dir>
-                                    <includes>
-                                        <include>pom.xml</include>
-                                    </includes>
-                                    <stylesheet>${top.level.basedir}/jre6.xslt</stylesheet>
-                                </transformationSet>
-                            </transformationSets>
-                        </configuration>
-                        <dependencies>
-                            <dependency>
-                                <groupId>net.sourceforge.saxon</groupId>
-                                <artifactId>saxon</artifactId>
-                                <version>9.1.0.8</version>
-                            </dependency>
-                        </dependencies>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <configuration>
-                            <outputDirectory>${basedir}</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${basedir}/target/generated-resources/xml/xslt/</directory>
-                                    <includes>
-                                        <include>pom.xml</include>
-                                    </includes>
-                                </resource>
-                            </resources>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>

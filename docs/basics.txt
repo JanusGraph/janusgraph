@@ -48,7 +48,7 @@ cache.db-cache-size = 0.5
 
 ==== BerkeleyDB
 
-Sets up JanusGraph to use BerkeleyDB as an embedded persistence engine with ElasticSearch as an embedded indexing system.
+Sets up JanusGraph to use BerkeleyDB as an embedded persistence engine with Elasticsearch as an embedded indexing system.
 
 [source, properties]
 ----
@@ -61,7 +61,7 @@ index.search.elasticsearch.client-only=false
 index.search.elasticsearch.local-mode=true
 ----
 
-<<config-ref>>_ describes all of these configuration options in detail. The +conf+ directory of the JanusGraph distribution contains additional configuration examples.
+<<config-ref>> describes all of these configuration options in detail. The +conf+ directory of the JanusGraph distribution contains additional configuration examples.
 
 ==== Further Examples
 
@@ -82,9 +82,9 @@ How the configuration is provided to JanusGraph depends on the instantiation mod
 
 ==== JanusGraphFactory
 
-===== Console
+===== Gremlin Console
 
-The JanusGraph distribution contains a command line Console which makes it easy to get started and interact with JanusGraph. Invoke `bin/gremlin.sh` (Unix/Linux) or `bin/gremlin.bat`
+The JanusGraph distribution contains a command line Gremlin Console which makes it easy to get started and interact with JanusGraph. Invoke `bin/gremlin.sh` (Unix/Linux) or `bin/gremlin.bat`
 (Windows) to start the Console and then open a JanusGraph graph using the factory with the configuration stored in an accessible properties configuration file:
 
 [source, gremlin]
@@ -116,10 +116,10 @@ graph = JanusGraphFactory.open('berkeleyje:/tmp/graph')
 JanusGraph, by itself, is simply a set of jar files with no thread of execution.  There are two basic patterns for connecting to, and using a JanusGraph database:
 
 .Patterns
-. JanusGraph can be used by embedding JanusGraph calls in a client program where the program provides the thread of execution.  
-. JanusGraph packages a long running server process that, when started, allows a remote client or logic running in a separate program to make JanusGraph calls.  This long running server process is called *JanusGraph Server*.  
+. JanusGraph can be used by embedding JanusGraph calls in a client program where the program provides the thread of execution.
+. JanusGraph packages a long running server process that, when started, allows a remote client or logic running in a separate program to make JanusGraph calls.  This long running server process is called *JanusGraph Server*.
 
-For the JanusGraph Server, JanusGraph uses http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-server[Gremlin Server] of the http://tinkerpop.apache.org/[TinkerPop] stack to service client requests.  JanusGraph provides an out-of-the-box configuration for a quick start with JanusGraph Server, but the configuration can be changed to provide a wide range of server capabilities.
+For the JanusGraph Server, JanusGraph uses http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-server[Gremlin Server] of the http://tinkerpop.apache.org/[Apache TinkerPop] stack to service client requests.  JanusGraph provides an out-of-the-box configuration for a quick start with JanusGraph Server, but the configuration can be changed to provide a wide range of server capabilities.
 
 Configuring JanusGraph Server is accomplished through a JanusGraph Server yaml configuration file located in the ./conf/gremlin-server directory in the JanusGraph distribution. To configure JanusGraph Server with a graph instance (`JanusGraph`), the JanusGraph Server configuration file requires the following settings:
 
@@ -140,7 +140,7 @@ Learn more about configuring and using JanusGraph Server in <<server>>.
 
 ===== Server Distribution
 
-The JanusGraph zip file contains a quick start server component that helps make it easier to get started with Gremlin Server and JanusGraph. Invoke `bin/janusgraph.sh start` to start Gremlin Server with Cassandra and ElasticSearch.  
+The JanusGraph zip file contains a quick start server component that helps make it easier to get started with Gremlin Server and JanusGraph. Invoke `bin/janusgraph.sh start` to start Gremlin Server with Cassandra and Elasticsearch.
 
 [NOTE]
 For security reasons Elasticsearch and therefore `janusgraph.sh` must be run under a non-root account
@@ -248,9 +248,9 @@ JanusGraph natively supports the following data types.
 |Long			|long value
 |Float			|4 byte floating point number
 |Double			|8 byte floating point number
-|Date                   |Date
+|Date                   |Specific instant in time (`java.util.Date`)
 |Geoshape		|Geographic shape like point, circle or box
-|UUID   		|UUID
+|UUID   		|Universally unique identifier (`java.util.UUID`)
 |=====
 
 
@@ -333,16 +333,20 @@ However, note that this would not affect vertices, edges, or properties previous
 [[gremlin]]
 == Gremlin Query Language
 
-image:http://tinkerpop.apache.org/docs/{tinkerpop_version}/images/gremlin-logo.png[link="http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference"]
+image:http://tinkerpop.apache.org/docs/{tinkerpop_version}/images/gremlin-logo.png[width=370,height=143]
 
-http://tinkerpop.apache.org/[Gremlin] is JanusGraph's query language used to retrieve data from and modify data in the graph. Gremlin is a path-oriented language which succinctly expresses complex graph traversals and mutation operations. Gremlin is a http://en.wikipedia.org/wiki/Functional_programming[functional language] whereby traversal operators are chained together to form path-like expressions. For example, "from Hercules, traverse to his father and then his father's father and return the grandfather's name."
+http://tinkerpop.apache.org/gremlin.html[Gremlin] is JanusGraph's query language used to retrieve data from and modify data in the graph. Gremlin is a path-oriented language which succinctly expresses complex graph traversals and mutation operations. Gremlin is a http://en.wikipedia.org/wiki/Functional_programming[functional language] whereby traversal operators are chained together to form path-like expressions. For example, "from Hercules, traverse to his father and then his father's father and return the grandfather's name."
 
-Gremlin is developed independently from JanusGraph and supported by most graph databases. By building applications on top of JanusGraph through the Gremlin query language users avoid vendor-lock in because their application can be migrated to other graph databases supporting Gremlin.
+Gremlin is a component of http://tinkerpop.apache.org[Apache TinkerPop]. It is developed independently from JanusGraph and is supported by most graph databases. By building applications on top of JanusGraph through the Gremlin query language, users avoid vendor-lock in because their application can be migrated to other graph databases supporting Gremlin.
 
 This section is a brief overview of the Gremlin query language. For more information on Gremlin, refer to the following resources:
 
-* http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference[Complete Gremlin Manual]
-* http://sql2gremlin.com[Gremlin for SQL developers *Gremlin2 Syntax*]
+* http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference[Complete Gremlin Manual]: Reference manual for all of the Gremlin steps.
+* http://tinkerpop.apache.org/docs/{tinkerpop_version}/tutorials/the-gremlin-console/[Gremlin Console Tutorial]: Learn how to use the Gremlin Console effectively to traverse and analyze a graph interactively.
+* http://tinkerpop.apache.org/docs/{tinkerpop_version}/recipes/[Gremlin Recipes]: A collection of best practices and common traversal patterns for Gremlin.
+* http://tinkerpop.apache.org/index.html#language-drivers[Gremlin Language Drivers]: Connect to a Gremlin Server with different programming languages, including Go, JavaScript, .NET/C#, PHP, Python, Ruby, Scala, and TypeScript.
+* http://tinkerpop.apache.org/docs/{tinkerpop_version}/tutorials/gremlin-language-variants/[Gremlin Language Variants]: Learn how to embed Gremlin in a host programming language.
+* http://sql2gremlin.com[Gremlin for SQL developers]: Learn Gremlin using typical patterns found when querying data with SQL.
 
 
 === Introductory Traversals
@@ -442,8 +446,33 @@ The example above has 4 chained functions: `out`, `in`, `except`, and `values` (
 When chaining together functions, the incoming type must match the outgoing type, where `U` matches anything. Thus, the "co-battled/ally" traversal above is correct.
 
 [NOTE]
-The Gremlin overview presented in this section focused on the Gremlin-Groovy language implementation. Additional https://github.com/tinkerpop/gremlin/wiki/JVM-Language-Implementations[JVM language implementations] of Gremlin are available.
+The Gremlin overview presented in this section focused on the Gremlin-Groovy language implementation used in the Gremlin Console. Additional http://tinkerpop.apache.org/index.html#language-drivers[language drivers] and http://tinkerpop.apache.org/docs/{tinkerpop_version}/tutorials/gremlin-language-variants/[language variants] of Gremlin are available.
 
+=== Iterating the Traversal
+
+One convenient feature of the Gremlin Console is that it automatically iterates all results from a query executed from the `gremlin>` prompt. This works well within the http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] environment as it shows you the results as a String. As you transition towards writing a Gremlin application, it is important to understand how to iterate a traversal explicitly because your application's traversals will not iterate automatically. These are some of the common ways to iterate the http://tinkerpop.apache.org/javadocs/{tinkerpop_version}/full/org/apache/tinkerpop/gremlin/process/traversal/Traversal.html[`Traversal`]:
+
+* `iterate()` - Zero results are expected or can be ignored.
+* `next()` - Get one result. Make sure to check `hasNext()` first.
+* `next(int n)` - Get the next `n` results. Make sure to check `hasNext()` first.
+* `toList()` - Get all results as a list. If there are no results, an empty list is returned.
+
+A Java code example is shown below to demonstrate these concepts:
+
+[source, java]
+Traversal t = g.V().has("name", "pluto"); // Define a traversal
+// Note the traversal is not executed/iterated yet
+Vertex pluto = null;
+if (t.hasNext()) { // Check if results are available
+    pluto = g.V().has("name", "pluto").next(); // Get one result
+    g.V(pluto).drop().iterate(); // Execute a traversal to drop pluto from graph
+}
+// Note the traversal can be cloned for reuse
+Traversal tt = t.asAdmin().clone();
+if (tt.hasNext()) {
+    System.err.println("pluto was not dropped!");
+}
+List<Vertex> gods = g.V().hasLabel("god").toList(); // Find all the gods
 
 [[server]]
 == JanusGraph Server
@@ -457,7 +486,7 @@ JanusGraph Server must be started manually in order to use it.  JanusGraph Serve
 
 ==== Using the Pre-Packaged Distribution
 
-The JanusGraph https://github.com/JanusGraph/janusgraph/releases[release] comes pre-configured to run JanusGraph Server out of the box leveraging a sample Cassandra and ElasticSearch configuration to allow users to get started quickly with JanusGraph Server.  This configuration defaults to client applications that can connect to JanusGraph Server via WebSocket with a custom subprotocol.  There are a number of clients developed in different languages to help support the subprotocol.  The most familiar client to use the WebSocket interface is the gremlin.sh shell. The quick-start bundle is not intended to be representative of a production installation, but does provide a way to perform development with JanusGraph Server, run tests and see how the components are wired together. To use this default configuration:
+The JanusGraph https://github.com/JanusGraph/janusgraph/releases[release] comes pre-configured to run JanusGraph Server out of the box leveraging a sample Cassandra and Elasticsearch configuration to allow users to get started quickly with JanusGraph Server.  This configuration defaults to client applications that can connect to JanusGraph Server via WebSocket with a custom subprotocol.  There are a number of clients developed in different languages to help support the subprotocol.  The most familiar client to use the WebSocket interface is the Gremlin Console. The quick-start bundle is not intended to be representative of a production installation, but does provide a way to perform development with JanusGraph Server, run tests and see how the components are wired together. To use this default configuration:
 
 * Download a copy of the current `janusgraph-$VERSION.zip` file from the https://github.com/JanusGraph/janusgraph/releases[Releases page]
 * Unzip it and enter the `janusgraph-$VERSION` directory
@@ -508,7 +537,7 @@ The `:remote` command tells the console to configure a remote connection to Grem
 The default configuration described in <<server-getting-started>> is already a WebSocket configuration.  If you want to alter the default configuration to work with your own Cassandra or HBase environment rather than use the quick start environment, follow these steps:
 
 .To Configure JanusGraph Server For WebSocket
-. Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/janusgraph-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line: 
+. Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/janusgraph-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line:
 +
 ```
 gremlin.graph=org.janusgraph.core.JanusGraphFactory
@@ -527,7 +556,7 @@ cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/socket-gremlin-se
 ```
 +
 . Edit the socket-gremlin-server.yaml file and make the following updates:
-.. If you are planning to connect to JanusGraph Server from something other than localhost, update the ip address for host: 
+.. If you are planning to connect to JanusGraph Server from something other than localhost, update the ip address for host:
 +
 ```
 host: 10.10.10.100
@@ -545,7 +574,7 @@ graphs: {
 ```
 bin/gremlin-server.sh ./conf/gremlin-server/socket-gremlin-server.yaml
 ```
-IMPORTANT: Do not use bin/janusgraph.sh.  That starts the default configuration, which starts a separate Cassandra/ElasticSearch environment.
+IMPORTANT: Do not use bin/janusgraph.sh.  That starts the default configuration, which starts a separate Cassandra/Elasticsearch environment.
 +
 . The JanusGraph Server should now be running in WebSocket mode and can be tested by following the instructions in <<first-example-connecting-gremlin-server>>
 
@@ -553,10 +582,10 @@ IMPORTANT: Do not use bin/janusgraph.sh.  That starts the default configuration,
 
 === JanusGraph Server as a HTTP Endpoint
 
-The default configuration described in <<server-getting-started>> is a WebSocket configuration.  If you want to alter the default configuration in order to use JanusGraph Server as a HTTP endpoint for your JanusGraph database, follow these steps:
+The default configuration described in <<server-getting-started>> is a WebSocket configuration.  If you want to alter the default configuration in order to use JanusGraph Server as an HTTP endpoint for your JanusGraph database, follow these steps:
 
-.To Configure JanusGraph Server For Rest
-. Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/janusgraph-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line: 
+.To Configure JanusGraph Server for HTTP
+. Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/janusgraph-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line:
 +
 ```
 gremlin.graph=org.janusgraph.core.JanusGraphFactory
@@ -565,17 +594,17 @@ gremlin.graph=org.janusgraph.core.JanusGraphFactory
 . Once a local configuration is tested and you have a working properties file, copy the properties file from the ./conf directory to the ./conf/gremlin-server directory.
 +
 ```
-cp conf/janusgraph-hbase.properties conf/gremlin-server/rest-janusgraph-hbase-server.properties
+cp conf/janusgraph-hbase.properties conf/gremlin-server/http-janusgraph-hbase-server.properties
 ```
 +
-. Copy ./conf/gremlin-server/gremlin-server.yaml to a new file called rest-gremlin-server.yaml.  Do this in case you need to refer to the original version of the file
+. Copy ./conf/gremlin-server/gremlin-server.yaml to a new file called http-gremlin-server.yaml.  Do this in case you need to refer to the original version of the file
 +
 ```
-cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/rest-gremlin-server.yaml
+cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/http-gremlin-server.yaml
 ```
 +
-. Edit the rest-gremlin-server.yaml file and make the following updates:
-.. If you are planning to connect to JanusGraph Server from something other than localhost, update the ip address for host: 
+. Edit the http-gremlin-server.yaml file and make the following updates:
+.. If you are planning to connect to JanusGraph Server from something other than localhost, update the ip address for host:
 +
 ```
 host: 10.10.10.100
@@ -591,13 +620,13 @@ channelizer: org.apache.tinkerpop.gremlin.server.channel.HttpChannelizer
 +
 ```
 graphs: {
-  graph: conf/gremlin-server/rest-janusgraph-hbase-server.properties}
+  graph: conf/gremlin-server/http-janusgraph-hbase-server.properties}
 ```
 +
 . Start the JanusGraph Server, specifying the yaml file you just configured:
 +
 ```
-bin/gremlin-server.sh ./conf/gremlin-server/rest-gremlin-server.yaml
+bin/gremlin-server.sh ./conf/gremlin-server/http-gremlin-server.yaml
 ```
 +
 . The JanusGraph Server should now be running in HTTP mode and available for testing.  *curl* can be used to verify the server is working:
@@ -610,7 +639,7 @@ curl -XPOST -Hcontent-type:application/json -d '{"gremlin":"g.V().count()"}' htt
 
 ==== WebSocket versus HTTP
 
-JanusGraph Server must be run with a configuration for either WebSocket (for gremlin shell or other WebSocket programs) or re-configured for HTTP to work with HTTP clients.
+JanusGraph Server must be run with a configuration for either WebSocket (for Gremlin Console or other WebSocket programs) or re-configured for HTTP to work with HTTP clients.
 
 Currently, there is no way to configure a single running instance of JanusGraph Server to communicate simultaneously with clients talking WebSocket and HTTP.
 However, it is possible to create configuration files (following the steps in this chapter) for both WebSocket and HTTP and start two instances of the JanusGraph Server by pointing it to the various configurations when it is started.
@@ -620,14 +649,14 @@ Make sure the port parameter in each yaml configuration is different if starting
 ```
 port: 8182
 ```
- 
+
 In the future, the option to have one running instance of JanusGraph Server supporting multiple protocols may be possible.
 
 [[gremlin-server-with-janusgraph]]
 ==== Using TinkerPop Gremlin Server with JanusGraph
 
-Since JanusGraph Server is a TinkerPop Gremlin Server packaged with configuration files for JanusGraph, a version compatible 
-TinkerPop Gremlin Server can be downloaded separately and used with JanusGraph.  Get started by link:http://tinkerpop.apache.org/[downloading] the appropriate version of Gremlin Server, which needs to <<versions.txt#version-compat,match a version>> supported by the JanusGraph version in use.  
+Since JanusGraph Server is a TinkerPop Gremlin Server packaged with configuration files for JanusGraph, a version compatible
+TinkerPop Gremlin Server can be downloaded separately and used with JanusGraph.  Get started by link:http://tinkerpop.apache.org/downloads.html[downloading] the appropriate version of Gremlin Server, which needs to <<versions.txt#version-compat,match a version>> supported by the JanusGraph version in use ({tinkerpop_version}).
 
 IMPORTANT: Any references to file paths in this section refer to paths under a TinkerPop distribution for Gremlin Server and not a JanusGraph distribution with the JanusGraph Server, unless specifically noted.
 
@@ -644,7 +673,7 @@ When this process completes, Gremlin Server should now have all the JanusGraph d
 
 IMPORTANT: The above command uses Groovy Grape and if it is not configured properly download errors may ensue.  Please refer to link:http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-applications[this section] of the TinkerPop documentation for more information around setting up `~/.groovy/grapeConfig.xml`.
 
-Create a file called `GREMLIN_SERVER_HOME/conf/janusgraph.properties` with the following contents:  
+Create a file called `GREMLIN_SERVER_HOME/conf/janusgraph.properties` with the following contents:
 
 [source,text]
 ----
@@ -675,9 +704,9 @@ metrics: {
   slf4jReporter: {enabled: true, interval: 180000}}
 ----
 
-.There are several important parts to this configuration file as they relate to JanusGraph.  
-. In the `graphs` map, there is a key called `graph` and its value is `conf/janusgraph.properties`.  This tells Gremlin Server to instantiate a `Graph` instance called "graph" and use the `conf/janusgraph.properties` file to configure it.  The "graph" key becomes the unique name for the `Graph` instance in Gremlin Server and it can be referenced as such in the scripts submitted to it. 
-. In the `plugins` list, there is a reference to `janusgraph.imports`, which tells Gremlin Server to initialize the "JanusGraph Plugin".  The "JanusGraph Plugin" will auto-import JanusGraph specific classes for usage in scripts.  
+.There are several important parts to this configuration file as they relate to JanusGraph.
+. In the `graphs` map, there is a key called `graph` and its value is `conf/janusgraph.properties`.  This tells Gremlin Server to instantiate a `Graph` instance called "graph" and use the `conf/janusgraph.properties` file to configure it.  The "graph" key becomes the unique name for the `Graph` instance in Gremlin Server and it can be referenced as such in the scripts submitted to it.
+. In the `plugins` list, there is a reference to `janusgraph.imports`, which tells Gremlin Server to initialize the "JanusGraph Plugin".  The "JanusGraph Plugin" will auto-import JanusGraph specific classes for usage in scripts.
 . Note the `scripts` key and the reference to `scripts/janusgraph.groovy`.  This Groovy file is an initialization script for Gremlin Server and that particular ScriptEngine.  Create `scripts/janusgraph.groovy` with the following contents:
 
 
@@ -694,7 +723,7 @@ At this point, Gremlin Server is configured and can be used to connect to a new 
 [source,bourne]
 ----
 $ bin/gremlin-server.sh conf/gremlin-server-janusgraph.yaml
-[INFO] GremlinServer - 
+[INFO] GremlinServer -
          \,,,/
          (o o)
 -----oOOo-(3)-oOOo-----
@@ -742,8 +771,10 @@ By adding the `JanusGraphIoRegistry` to the `org.apache.tinkerpop.gremlin.driver
 
 It is possible to extend Gremlin Server with other means of communication by implementing the interfaces that it provides and leverage this with JanusGraph.  See more details in the appropriate TinkerPop documentation.
 
+include::configuredgraphfactory.txt[]
+
 [[indexes]]
-== Indexing for better Performance
+== Indexing for Better Performance
 
 JanusGraph supports two different kinds of indexing to speed up query processing: *graph indexes* and *vertex-centric indexes*. Most graph queries start the traversal from a list of vertices or edges that are identified by their properties. Graph indexes make these global retrieval operations efficient on large graphs. Vertex-centric indexes speed up the actual traversal through the graph, in particular when traversing through vertices with many incident edges.
 
@@ -1040,7 +1071,7 @@ Ordered vertex queries are a JanusGraph extension to Gremlin which causes the ve
 [[tx]]
 == Transactions
 
-Almost all interaction with JanusGraph is associated with a transaction.  JanusGraph transactions are safe for concurrent use by multiple threads.  Methods on a JanusGraph instance like `graph.v(...)` and `graph.commit()` perform a `ThreadLocal` lookup to retrieve or create a transaction associated with the calling thread.  Callers can alternatively forego `ThreadLocal` transaction management in favor of calling `graph.newTransaction()`, which returns a reference to a transaction object with methods to read/write graph data and commit or rollback.
+Almost all interaction with JanusGraph is associated with a transaction.  JanusGraph transactions are safe for concurrent use by multiple threads.  Methods on a JanusGraph instance like `graph.V(...)` and `graph.tx().commit()` perform a `ThreadLocal` lookup to retrieve or create a transaction associated with the calling thread.  Callers can alternatively forego `ThreadLocal` transaction management in favor of calling `graph.tx().createThreadedTx()`, which returns a reference to a transaction object with methods to read/write graph data and commit or rollback.
 
 JanusGraph transactions are not necessarily ACID.  They can be so configured on BerkleyDB, but they are not generally so on Cassandra or HBase, where the underlying storage system does not provide serializable isolation or multi-row atomic writes and the cost of simulating those properties would be substantial.
 
@@ -1058,7 +1089,7 @@ juno.property("name", "juno")
 graph.tx().commit() //Commits transaction
 ----
 
-In this example, a local JanusGraph graph database is opened. Adding the vertex "juno" is the first operation (in this thread) which automatically opens a new transaction. All subsequent operations occur in the context of that same transaction until the transaction is explicitly stopped or the graph database is `shutdown()`.  If transactions are still open when `shutdown()` is called, then the behavior of the outstanding transactions is technically undefined.  In practice, any non-thread-bound transactions will usually be effectively rolled back, but the thread-bound transaction belonging to the thread that invoked shutdown will first be committed. Note, that both read and write operations occur within the context of a transaction.
+In this example, a local JanusGraph graph database is opened. Adding the vertex "juno" is the first operation (in this thread) which automatically opens a new transaction. All subsequent operations occur in the context of that same transaction until the transaction is explicitly stopped or the graph database is closed.  If transactions are still open when `close()` is called, then the behavior of the outstanding transactions is technically undefined.  In practice, any non-thread-bound transactions will usually be effectively rolled back, but the thread-bound transaction belonging to the thread that invoked shutdown will first be committed. Note, that both read and write operations occur within the context of a transaction.
 
 === Transactional Scope
 
@@ -1167,7 +1198,8 @@ graph.tx().commit() // Can't fail due to uniqueName write lock contention involv
 
 Transactions are started automatically with the first operation executed against the graph. One does NOT have to start a transaction manually. The method `newTransaction` is used to start <<multi-thread-tx, multi-threaded transactions>> only.
 
-Transactions are automatically started under the TinkerPop semantics but *not* automatically terminated. Transactions have to be terminated manually with `g.commit()` if successful or `g.rollback()` if not. Manual termination of transactions is necessary because only the user knows the transactional boundary.
+Transactions are automatically started under the TinkerPop semantics but *not* automatically terminated. Transactions must be terminated manually with `commit()` or `rollback()`. If a `commit()` transactions fails, it should be terminated manually with `rollback()` after catching the failure. Manual termination of transactions is necessary because only the user knows the transactional boundary.
+
 A transaction will attempt to maintain its state from the beginning of the transaction. This might lead to unexpected behavior in multi-threaded applications as illustrated in the following artificial example::
 
 [source, gremlin]
@@ -1440,9 +1472,9 @@ export JANUSGRAPH_JAVA_OPTS=-javaagent:$JANUSGRAPH_HOME/lib/jamm-$MAVEN{jamm.ver
 
 By default, JanusGraph uses the Astyanax library to connect to Cassandra clusters. On EC2 and Rackspace, it has been reported that Astyanax was unable to establish a connection to the cluster. In those cases, changing the backend to `storage.backend=cassandrathrift` solved the problem.
 
-=== ElasticSearch OutOfMemoryException
+=== Elasticsearch OutOfMemoryException
 
-When numerous clients are connecting to ElasticSearch, it is likely that an `OutOfMemoryException` occurs. This is not due to a memory issue, but to the OS not allowing more threads to be spawned by the user (the user running ElasticSearch). To circumvent this issue, increase the number of allowed processes to the user running ElasticSearch. For example, increase the `ulimit -u` from the default 1024 to 10024.
+When numerous clients are connecting to Elasticsearch, it is likely that an `OutOfMemoryException` occurs. This is not due to a memory issue, but to the OS not allowing more threads to be spawned by the user (the user running Elasticsearch). To circumvent this issue, increase the number of allowed processes to the user running Elasticsearch. For example, increase the `ulimit -u` from the default 1024 to 10024.
 
 [[limitations]]
 == Technical Limitations

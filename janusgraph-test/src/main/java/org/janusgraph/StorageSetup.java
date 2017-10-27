@@ -66,7 +66,10 @@ public class StorageSetup {
     }
 
     public static ModifiableConfiguration getInMemoryConfiguration() {
-        return buildGraphConfiguration().set(STORAGE_BACKEND, "inmemory").set(IDAUTHORITY_WAIT, Duration.ZERO);
+        return buildGraphConfiguration()
+            .set(STORAGE_BACKEND, "inmemory")
+            .set(IDAUTHORITY_WAIT, Duration.ZERO)
+            .set(DROP_ON_CLEAR, false);
     }
 
     public static JanusGraph getInMemoryGraph() {

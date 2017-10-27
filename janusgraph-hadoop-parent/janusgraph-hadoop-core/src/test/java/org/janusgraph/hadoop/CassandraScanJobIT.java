@@ -157,9 +157,7 @@ public class CassandraScanJobIT extends JanusGraphBaseTest {
 
     @Override
     public WriteConfiguration getConfiguration() {
-        String className = getClass().getSimpleName();
-        ModifiableConfiguration mc = CassandraStorageSetup.getEmbeddedConfiguration(className);
-        return mc.getConfiguration();
+        return CassandraStorageSetup.getEmbeddedOrThriftConfiguration(getClass().getSimpleName()).getConfiguration();
     }
 
 //    public static class NoopScanJob implements ScanJob {

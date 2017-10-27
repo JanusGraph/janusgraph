@@ -8,6 +8,7 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 [![Build Status][travis-shield]][travis-link]
 [![Maven][maven-shield]][maven-link]
 [![Javadoc][javadoc-shield]][javadoc-link]
+[![Codecov][codecov-shield]][codecov-link]
 [![Coverity Scan][coverity-shield]][coverity-link]
 [![Gitter][gitter-shield]][gitter-link]
 [![Stack Overflow][stackoverflow-shield]][stackoverflow-link]
@@ -18,6 +19,8 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 [maven-link]: https://search.maven.org/#search%7Cga%7C1%7Corg.janusgraph
 [javadoc-shield]: https://javadoc.io/badge/org.janusgraph/janusgraph-core.svg?color=blue
 [javadoc-link]: https://javadoc.io/doc/org.janusgraph/janusgraph-core
+[codecov-shield]:https://codecov.io/gh/JanusGraph/janusgraph/branch/master/graph/badge.svg
+[codecov-link]:https://codecov.io/gh/JanusGraph/janusgraph
 [coverity-shield]: https://img.shields.io/coverity/scan/janusgraph-janusgraph.svg
 [coverity-link]: https://scan.coverity.com/projects/janusgraph-janusgraph
 [gitter-shield]: https://img.shields.io/gitter/room/janusgraph/janusgraph.svg
@@ -77,6 +80,7 @@ The following users have deployed JanusGraph in production.
 * [FiNC](https://finc.com)
 * [G DATA](https://gdatasoftware.com)
 * [Seeq](https://seeq.com)
+* [Sift Security](https://siftsecurity.com)
 * [Uber](https://uber.com)
 
 The following companies offer JanusGraph hosted as-a-service:

@@ -177,7 +177,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             currentStep = currentStep.getNextStep();
         }
 
-        if (lastOrder != null && lastOrder instanceof OrderGlobalStep) {
+        if (lastOrder != null) {
             if (validJanusGraphOrder(lastOrder, rootTraversal, isVertexOrder)) {
                 //Add orders to HasStepFolder
                 for (Pair<Traversal.Admin<Object, Comparable>, Comparator<Comparable>> comp : (List<Pair<Traversal.Admin<Object, Comparable>, Comparator<Comparable>>>) ((OrderGlobalStep) lastOrder).getComparators()) {

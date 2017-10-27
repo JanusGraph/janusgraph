@@ -16,6 +16,7 @@ package org.janusgraph.diskstorage.cql;
 
 import static com.datastax.driver.core.schemabuilder.SchemaBuilder.createKeyspace;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.truncate;
+import static com.datastax.driver.core.schemabuilder.SchemaBuilder.dropKeyspace;
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
@@ -38,9 +39,11 @@ import static org.janusgraph.diskstorage.cql.CQLKeyColumnValueStore.EXCEPTION_MA
 import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_PASSWORD;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_USERNAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_PREFIX;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.buildGraphConfiguration;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -128,7 +131,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
      */
     public CQLStoreManager(final Configuration configuration) throws BackendException {
         super(configuration, DEFAULT_PORT);
-        this.keyspace = configuration.get(KEYSPACE);
+        this.keyspace = determineKeyspaceName(configuration);
         this.batchSize = configuration.get(BATCH_STATEMENT_SIZE);
         this.atomicBatch = configuration.get(ATOMIC_BATCH_MUTATE);
 
@@ -327,10 +330,19 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     @Override
     public void clearStorage() throws BackendException {
-        final Future<Seq<ResultSet>> result = Future.sequence(
-            Iterator.ofAll(this.cluster.getMetadata().getKeyspace(this.keyspace).getTables())
-                .map(table -> Future.fromJavaFuture(this.session.executeAsync(truncate(this.keyspace, table.getName())))));
-        result.await();
+        if (this.storageConfig.get(DROP_ON_CLEAR)) {
+            this.session.execute(dropKeyspace(this.keyspace));
+        } else {
+            final Future<Seq<ResultSet>> result = Future.sequence(
+                Iterator.ofAll(this.cluster.getMetadata().getKeyspace(this.keyspace).getTables())
+                    .map(table -> Future.fromJavaFuture(this.session.executeAsync(truncate(this.keyspace, table.getName())))));
+            result.await();
+        }
+    }
+
+    @Override
+    public boolean exists() throws BackendException {
+        return cluster.getMetadata().getKeyspace(this.keyspace) != null;
     }
 
     @Override
@@ -415,5 +427,10 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             throw EXCEPTION_MAPPER.apply(result.getCause().get());
         }
         sleepAfterWrite(txh, commitTime);
+    }
+
+    private String determineKeyspaceName(Configuration config) {
+        if ((!config.has(KEYSPACE) && (config.has(GRAPH_NAME)))) return config.get(GRAPH_NAME);
+        return config.get(KEYSPACE);
     }
 }

@@ -258,11 +258,20 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             if (ksMetaData == null)
                 return;
 
-            for (String cfName : ksMetaData.cfMetaData().keySet())
-                StorageService.instance.truncate(keySpaceName, cfName);
+            if (this.storageConfig.get(GraphDatabaseConfiguration.DROP_ON_CLEAR)) {
+                MigrationManager.announceKeyspaceDrop(keySpaceName);
+            } else {
+                for (final String cfName : ksMetaData.cfMetaData().keySet())
+                    StorageService.instance.truncate(keySpaceName, cfName);
+            }
         } catch (Exception e) {
             throw new PermanentBackendException(e);
         }
+    }
+
+    @Override
+    public boolean exists() throws BackendException {
+        return Schema.instance.getKeyspaceInstance(keySpaceName) != null;
     }
 
     private void ensureKeyspaceExists(String keyspaceName) throws BackendException {

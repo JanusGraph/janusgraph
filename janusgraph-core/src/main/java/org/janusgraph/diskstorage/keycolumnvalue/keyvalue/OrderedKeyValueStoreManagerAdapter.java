@@ -78,6 +78,11 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
     }
 
     @Override
+    public boolean exists() throws BackendException {
+        return manager.exists();
+    }
+
+    @Override
     public synchronized OrderedKeyValueStoreAdapter openDatabase(String name) throws BackendException {
         return openDatabase(name, StoreMetaData.EMPTY);
     }

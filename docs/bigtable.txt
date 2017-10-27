@@ -15,45 +15,13 @@ ____
 
 === Bigtable Setup
 
-Bigtable implements the HBase interface for all data access operations, and requires some extra binary dependencies and
-some specific configuration options to connect.
-
-==== Dependencies
-
-Bigtable connectivity relies on the `cloud-bigtable-client` library. This library is open-source and is
-https://github.com/GoogleCloudPlatform/cloud-bigtable-client[hosted on GitHub]. JanusGraph uses the HBase 1.0 API,
-so we require the lastest version of the
-https://mvnrepository.com/artifact/com.google.cloud.bigtable/bigtable-hbase-1.x-hadoop/1.0.0-pre2[bigtable-hbase-1.x-hadoop artifact.]
-
-This library also uses the
-https://mvnrepository.com/artifact/io.netty/netty-tcnative-boringssl-static/1.1.33.Fork26[netty-tcnative-boringssl-static] library
-to make secure connections to Bigtable. Use the version recommended by the cloud-bigtable-client library.
-
-These two dependencies must be on the classpath of the Java binary that connects to Bigtable. Maven dependencies could
-be defined as:
-
-[source,xml]
-....
-<dependency>
-    <groupId>com.google.cloud.bigtable</groupId>
-    <artifactId>bigtable-hbase-1.x-hadoop</artifactId>
-    <version>1.0.0-pre2</version>
-</dependency>
-
-<dependency>
-   <groupId>io.netty</groupId>
-   <artifactId>netty-tcnative-boringssl-static</artifactId>
-   <version>1.1.33.Fork26</version>
-</dependency>
-....
-
-It is recommended to check the documentation on the cloud-bigtable-client github homepage for updated documentation on
-dependencies and version numbers.
+Bigtable implements the HBase interface for all data access operations, and
+requires a few configuration options to connect.
 
 ==== Connecting to Bigtable
 
 Configuring JanusGraph to connect to Bigtable is achieved by using the `hbase` backend, along with a custom connection
-implementation, the project id of the Google Cloud Platform project containing the Bigtable instance, and the Cloud 
+implementation, the project id of the Google Cloud Platform project containing the Bigtable instance, and the Cloud
 Bigtable instance id you are connecting to.
 
 Example:

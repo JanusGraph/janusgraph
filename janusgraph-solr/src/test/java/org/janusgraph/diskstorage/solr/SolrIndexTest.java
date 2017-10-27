@@ -28,18 +28,24 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexProviderTest;
+import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-
+import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Date;
 
 import java.util.UUID;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 
 /**
  * @author Jared Holmberg (jholmberg@bericotechnologies.com)
@@ -70,7 +76,7 @@ public class SolrIndexTest extends IndexProviderTest {
     public String getEnglishAnalyzerName() {
         return WhitespaceTokenizer.class.getName();
     }
-    
+
     @Override
     public String getKeywordAnalyzerName() {
         return KeywordTokenizer.class.getName();
@@ -78,10 +84,11 @@ public class SolrIndexTest extends IndexProviderTest {
 
     private Configuration getLocalSolrTestConfig() {
         final String index = "solr";
-        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
+        final ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
 
         config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getZookeeperUrls(), index);
         config.set(SolrIndex.WAIT_SEARCHER, true, index);
+        config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index);
         return config.restrictTo(index);
     }
 
@@ -151,4 +158,11 @@ public class SolrIndexTest extends IndexProviderTest {
         assertTrue(index.supports(of(UUID.class, Cardinality.SINGLE), Cmp.NOT_EQUAL));
     }
 
+    /**
+     * Dropping collection is not implemented with Solr Cloud to accommodate use case where collection is created
+     * outside of JanusGraph and associated with a config set with a different name.
+     * @throws Exception
+     */
+    @Override @Test @Ignore
+    public void clearStorageTest() throws Exception { }
 }

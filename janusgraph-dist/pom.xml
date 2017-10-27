@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.2.0-SNAPSHOT</version>
+        <version>0.3.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
@@ -88,6 +88,10 @@
                 <exclusion>
                     <groupId>net.jpountz.lz4</groupId>
                     <artifactId>lz4</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty.orbit</groupId>
+                    <artifactId>javax.servlet</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -472,83 +476,6 @@
             </plugin>
         </plugins>
 
-        <pluginManagement>
-            <plugins>
-                <!-- Delete bin, lib, conf, ... dirs in the root -->
-                <plugin>
-                    <artifactId>maven-clean-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <id>clean-dev-dirs-hadoop</id>
-                            <phase>none</phase>
-                            <goals>
-                                <goal>clean</goal>
-                            </goals>
-                            <configuration>
-                                <excludeDefaultDirectories>true</excludeDefaultDirectories>
-                                <filesets>
-                                    <fileset>
-                                        <directory>${top.level.basedir}/bin/</directory>
-                                    </fileset>
-                                    <fileset>
-                                        <directory>${top.level.basedir}/conf/</directory>
-                                    </fileset>
-                                    <fileset>
-                                        <directory>${top.level.basedir}/db/</directory>
-                                    </fileset>
-                                    <fileset>
-                                        <directory>${top.level.basedir}/examples/</directory>
-                                    </fileset>
-                                    <fileset>
-                                        <directory>${top.level.basedir}/ext/</directory>
-                                    </fileset>
-                                    <fileset>
-                                        <directory>${top.level.basedir}/lib/</directory>
-                                    </fileset>
-                                    <fileset>
-                                        <directory>${top.level.basedir}/log/</directory>
-                                    </fileset>
-                                    <fileset>
-                                        <directory>${top.level.basedir}/data/</directory>
-                                    </fileset>
-                                    <fileset>
-                                        <directory>${top.level.basedir}/elasticsearch/</directory>
-                                    </fileset>
-                                    <fileset>
-                                        <directory>${top.level.basedir}/scripts/</directory>
-                                    </fileset>
-                                </filesets>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-
-                <plugin>
-                    <artifactId>maven-assembly-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <id>install-dev-dirs-hadoop</id>
-                            <phase>none</phase>
-                            <goals>
-                                <goal>single</goal>
-                            </goals>
-                            <configuration>
-                                <attach>false</attach>
-                                <outputDirectory>${top.level.basedir}</outputDirectory>
-                                <finalName>/</finalName>
-                                <appendAssemblyId>false</appendAssemblyId>
-                                <descriptors>
-                                    <descriptor>../src/assembly/descriptor/filesystem.xml</descriptor>
-                                </descriptors>
-                                <formats combine.self="override">
-                                    <format>dir</format>
-                                </formats>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
 
     <profiles>

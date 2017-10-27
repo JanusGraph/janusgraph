@@ -31,7 +31,7 @@ public class ConditionUtil {
         return transformation(condition,new Function<Condition<E>, Condition<E>>() {
             @Nullable
             @Override
-            public Condition<E> apply(@Nullable Condition<E> cond) {
+            public Condition<E> apply(final Condition<E> cond) {
                 if (cond.getType()== Condition.Type.LITERAL) return transformation.apply(cond);
                 else return null;
             }

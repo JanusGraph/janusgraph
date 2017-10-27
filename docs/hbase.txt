@@ -1,5 +1,5 @@
 [[hbase]]
-== HBase
+== Apache HBase
 
 [.tss-center.tss-width-250]
 image:http://hbase.apache.org/images/hbase_logo.png[link="http://hbase.apache.org"]
@@ -9,7 +9,7 @@ Apache HBase is an open-source, distributed, versioned, non-relational database 
 
 === HBase Setup
 
-The following sections outline the various ways in which JanusGraph can be used in concert with HBase.
+The following sections outline the various ways in which JanusGraph can be used in concert with Apache HBase.
 
 ==== Local Server Mode
 
@@ -21,7 +21,7 @@ HBase can be run as a standalone database on the same local host as JanusGraph a
 * Start HBase by invoking the `start-hbase.sh` script in the _bin_ directory inside the extracted HBase directory. To stop HBase, use `stop-hbase.sh`.
 
 [source, bourne]
-$ ./bin/start-hbase.sh 
+$ ./bin/start-hbase.sh
 starting master, logging to ../logs/hbase-master-machine-name.local.out
 
 Now, you can create an HBase JanusGraph as follows:
@@ -31,7 +31,7 @@ JanusGraph graph = JanusGraphFactory.build()
 	.set("storage.backend", "hbase")
 	.open();
 
-Note, that you do not need to specify a hostname since a localhost connection is attempted by default. Also, in the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
+Note, that you do not need to specify a hostname since a localhost connection is attempted by default. Also, in the Gremlin Console, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
 ==== Remote Server Mode
 
@@ -47,20 +47,20 @@ JanusGraph g = JanusGraphFactory.build()
 	.set("storage.hostname", "77.77.77.77, 77.77.77.78, 77.77.77.79")
 	.open();
 
-`storage.hostname` accepts a comma separated list of IP addresses and hostname for any subset of machines in the HBase cluster JanusGraph should connect to. Also, in the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
+`storage.hostname` accepts a comma separated list of IP addresses and hostname for any subset of machines in the HBase cluster JanusGraph should connect to. Also, in the Gremlin Console, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
 ==== Remote Server Mode with Gremlin Server
 
 image:modes-rexster.png[]
 
-Finally, Gremlin server can be wrapped around each JanusGraph instance defined in the previous subsection. In this way, the end-user application need not be a Java-based application as it can communicate with Gremlin server as a client. This type of deployment is great for polyglot architectures where various components written in different languages need to reference and compute on the graph.
+Finally, Gremlin Server can be wrapped around each JanusGraph instance defined in the previous subsection. In this way, the end-user application need not be a Java-based application as it can communicate with Gremlin Server as a client. This type of deployment is great for polyglot architectures where various components written in different languages need to reference and compute on the graph.
 
 ----
 http://gremlin-server.janusgraph.machine1/mygraph/vertices/1
 http://gremlin-server.janusgraph.machine2/mygraph/tp/gremlin?script=g.v(1).out('follows').out('created')
 ----
 
-In this case, each Gremlin server server would be configured to connect to the HBase cluster. The following shows the graph specific fragment of the Gremlin server configuration. Refer to <<server>> for a complete example and more information on how to configure the server.
+In this case, each Gremlin Server would be configured to connect to the HBase cluster. The following shows the graph specific fragment of the Gremlin Server configuration. Refer to <<server>> for a complete example and more information on how to configure the server.
 
 [source, yaml]
 ----
@@ -153,7 +153,7 @@ git clone 'git://github.com/JanusGraph/janusgraph.git' && cd janusgraph
 # [INFO] BUILD SUCCESS
 # [INFO] ------------------------------------------------------------------------
 ~/apache-maven-3.0.4/bin/mvn test -Dtest=ExternalHBaseGraphPerformanceTest#unlabeledEdgeInsertion
-# Check on hadoop 
+# Check on hadoop
 hadoop version # Should print 1.0.3
 # List the hadoop root; should print something like:
 #

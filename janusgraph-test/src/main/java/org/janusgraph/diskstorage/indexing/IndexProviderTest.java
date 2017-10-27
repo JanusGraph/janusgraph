@@ -979,7 +979,46 @@ public abstract class IndexProviderTest {
         assertEquals(query.toString(), 1, tx.query(query).size());
 
     }
-    
+
+    @Test
+    public void testScroll() throws BackendException {
+        final String store = "vertex";
+        initialize(store);
+        add(store, "doc1", getDocument("Hello world", 1001, 5.2), true);
+        add(store, "doc2", getDocument("Hello world", 1001, 5.2), true);
+        add(store, "doc3", getDocument("Hello world", 1001, 6.2), true);
+        add(store, "doc4", getDocument("Hello world", 1002, 7.2), true);
+        add(store, "doc5", getDocument("Hello world", 1002, 8.2), true);
+        add(store, "doc6", getDocument("Hello world", 1002, 9.2), true);
+        add(store, "doc7", getDocument("Hello world", 1002, 10.2), true);
+
+        clopen();
+
+        //Test res < batchSize
+        assertEquals(2, tx.queryStream(new IndexQuery(store, PredicateCondition.of(WEIGHT, Cmp.EQUAL, 5.2))).count());
+        //Test res = batchSize
+        assertEquals(3, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TIME, Cmp.EQUAL, 1001))).count());
+        //Test res > batchSize
+        assertEquals(7, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, "Hello world"))).count());
+        //Test res == limit
+        assertEquals(4, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TIME, Cmp.EQUAL, 1002), 4)).count());
+        //Test limit % batchSize == 0
+        assertEquals(6, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, "Hello world"), 6)).count());
+    }
+
+    @Test
+    public void clearStorageTest() throws Exception {
+        final String store = "vertex";
+        initialize(store);
+        final Multimap<String, Object> doc1 = getDocument("Hello world", 1001, 5.2, Geoshape.point(48.0, 0.0), Geoshape.polygon(Arrays.asList(new double[][] {{-0.1,47.9},{0.1,47.9},{0.1,48.1},{-0.1,48.1},{-0.1,47.9}})),Arrays.asList("1", "2", "3"), Sets.newHashSet("1", "2"), Instant.ofEpochSecond(1));
+        add(store, "doc1", doc1, true);
+        clopen();
+        assertTrue(index.exists());
+        tearDown();
+        setUp();
+        assertFalse(index.exists());
+    }
+
     /* ==================================================================================
                             HELPER METHODS
      ==================================================================================*/
@@ -1057,6 +1096,14 @@ public abstract class IndexProviderTest {
         for (RawQuery.Result<String> r : result) {
             System.out.println(r.getResult() + ":"+r.getScore());
         }
+    }
+
+    private Multimap<String, Object> getDocument(String txt, final long time, final double weight) {
+        final Multimap<String, Object> toReturn = HashMultimap.create();
+        toReturn.put(NAME, txt);
+        toReturn.put(TIME, time);
+        toReturn.put(WEIGHT, weight);
+        return toReturn;
     }
 
 }

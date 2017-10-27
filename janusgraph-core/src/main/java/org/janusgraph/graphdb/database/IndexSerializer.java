@@ -56,6 +56,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME_MAPPING;
 
@@ -423,7 +424,7 @@ public class IndexSerializer {
             return Iterables.transform(this, new Function<RecordEntry[], Object[]>() {
                 @Nullable
                 @Override
-                public Object[] apply(@Nullable RecordEntry[] record) {
+                public Object[] apply(final RecordEntry[] record) {
                     return getValues(record);
                 }
             });
@@ -522,16 +523,16 @@ public class IndexSerializer {
                 Querying
     ################################################### */
 
-    public List<Object> query(final JointIndexQuery.Subquery query, final BackendTransaction tx) {
-        IndexType index = query.getIndex();
+    public Stream<Object> query(final JointIndexQuery.Subquery query, final BackendTransaction tx) {
+        final IndexType index = query.getIndex();
         if (index.isCompositeIndex()) {
-            MultiKeySliceQuery sq = query.getCompositeQuery();
-            List<EntryList> rs = sq.execute(tx);
-            List<Object> results = new ArrayList<Object>(rs.get(0).size());
+            final MultiKeySliceQuery sq = query.getCompositeQuery();
+            final List<EntryList> rs = sq.execute(tx);
+            final List<Object> results = new ArrayList<>(rs.get(0).size());
             for (EntryList r : rs) {
                 for (java.util.Iterator<Entry> iterator = r.reuseIterator(); iterator.hasNext(); ) {
-                    Entry entry = iterator.next();
-                    ReadBuffer entryValue = entry.asReadBuffer();
+                    final Entry entry = iterator.next();
+                    final ReadBuffer entryValue = entry.asReadBuffer();
                     entryValue.movePositionTo(entry.getValuePosition());
                     switch(index.getElement()) {
                         case VERTEX:
@@ -542,12 +543,9 @@ public class IndexSerializer {
                     }
                 }
             }
-            return results;
+            return results.stream();
         } else {
-            List<String> r = tx.indexQuery(((MixedIndexType) index).getBackingIndexName(), query.getMixedQuery());
-            List<Object> result = new ArrayList<Object>(r.size());
-            for (String id : r) result.add(string2ElementId(id));
-            return result;
+            return tx.indexQuery(((MixedIndexType) index).getBackingIndexName(), query.getMixedQuery()).map(IndexSerializer::string2ElementId);
         }
     }
 
@@ -564,7 +562,7 @@ public class IndexSerializer {
                 new Function<Condition<JanusGraphElement>, Condition<JanusGraphElement>>() {
                     @Nullable
                     @Override
-                    public Condition<JanusGraphElement> apply(@Nullable Condition<JanusGraphElement> condition) {
+                    public Condition<JanusGraphElement> apply(final Condition<JanusGraphElement> condition) {
                         Preconditions.checkArgument(condition instanceof PredicateCondition);
                         PredicateCondition pc = (PredicateCondition) condition;
                         PropertyKey key = (PropertyKey) pc.getKey();
@@ -581,36 +579,7 @@ public class IndexSerializer {
         }
         return new IndexQuery(index.getStoreName(), newCondition, newOrders);
     }
-//
-//
-//
-//    public IndexQuery getQuery(String index, final ElementCategory resultType, final Condition condition, final OrderList orders) {
-//        if (isStandardIndex(index)) {
-//            Preconditions.checkArgument(orders.isEmpty());
-//            return new IndexQuery(getStoreName(resultType), condition, IndexQuery.NO_ORDER);
-//        } else {
-//            Condition newCondition = ConditionUtil.literalTransformation(condition,
-//                    new Function<Condition<JanusGraphElement>, Condition<JanusGraphElement>>() {
-//                        @Nullable
-//                        @Override
-//                        public Condition<JanusGraphElement> apply(@Nullable Condition<JanusGraphElement> condition) {
-//                            Preconditions.checkArgument(condition instanceof PredicateCondition);
-//                            PredicateCondition pc = (PredicateCondition) condition;
-//                            JanusGraphKey key = (JanusGraphKey) pc.getKey();
-//                            return new PredicateCondition<String, JanusGraphElement>(key2Field(key), pc.getPredicate(), pc.getValue());
-//                        }
-//                    });
-//            ImmutableList<IndexQuery.OrderEntry> newOrders = IndexQuery.NO_ORDER;
-//            if (!orders.isEmpty()) {
-//                ImmutableList.Builder<IndexQuery.OrderEntry> lb = ImmutableList.builder();
-//                for (int i = 0; i < orders.size(); i++) {
-//                    lb.add(new IndexQuery.OrderEntry(key2Field(orders.getKey(i)), orders.getOrder(i), orders.getKey(i).getDataType()));
-//                }
-//                newOrders = lb.build();
-//            }
-//            return new IndexQuery(getStoreName(resultType), newCondition, newOrders);
-//        }
-//    }
+
 
     /* ################################################
     	Common code used by executeQuery and executeTotals
@@ -674,20 +643,14 @@ public class IndexSerializer {
         return queryStr;
     }
     
-    public Iterable<RawQuery.Result> executeQuery(IndexQueryBuilder query, final ElementCategory resultType,
+    public Stream<RawQuery.Result> executeQuery(IndexQueryBuilder query, final ElementCategory resultType,
                                                   final BackendTransaction backendTx, final StandardJanusGraphTx transaction) {
         final MixedIndexType index = getMixedIndex(query.getIndex(), transaction);
         final String queryStr = createQueryString(query, resultType, transaction, index);
         final RawQuery rawQuery = new RawQuery(index.getStoreName(),queryStr,query.getParameters());
         if (query.hasLimit()) rawQuery.setLimit(query.getLimit());
         rawQuery.setOffset(query.getOffset());
-        return Iterables.transform(backendTx.rawQuery(index.getBackingIndexName(), rawQuery), new Function<RawQuery.Result<String>, RawQuery.Result>() {
-            @Nullable
-            @Override
-            public RawQuery.Result apply(@Nullable RawQuery.Result<String> result) {
-                return new RawQuery.Result(string2ElementId(result.getResult()), result.getScore());
-            }
-        });
+        return backendTx.rawQuery(index.getBackingIndexName(), rawQuery).map(result ->  new RawQuery.Result(string2ElementId(result.getResult()), result.getScore()));
     }
 
     public Long executeTotals(IndexQueryBuilder query, final ElementCategory resultType,

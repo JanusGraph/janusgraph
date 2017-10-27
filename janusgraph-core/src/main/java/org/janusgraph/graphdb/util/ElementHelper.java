@@ -41,7 +41,7 @@ public class ElementHelper {
             return Iterables.transform((((JanusGraphVertex) element).query()).keys(key.name()).properties(), new Function<JanusGraphVertexProperty, Object>() {
                 @Nullable
                 @Override
-                public Object apply(@Nullable JanusGraphVertexProperty janusgraphProperty) {
+                public Object apply(final JanusGraphVertexProperty janusgraphProperty) {
                     return janusgraphProperty.value();
                 }
             });

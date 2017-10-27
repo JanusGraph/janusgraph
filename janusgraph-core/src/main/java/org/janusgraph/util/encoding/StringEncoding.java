@@ -17,10 +17,16 @@ package org.janusgraph.util.encoding;
 
 import com.google.common.base.Preconditions;
 
+import java.nio.charset.Charset;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class StringEncoding {
+
+    public static final String UTF8_ENCODING = "UTF-8";
+
+    public static final Charset UTF8_CHARSET = Charset.forName(UTF8_ENCODING);
 
     public static boolean isAsciiString(String input) {
         Preconditions.checkNotNull(input);
@@ -62,6 +68,13 @@ public class StringEncoding {
     public static final int getAsciiByteLength(String attribute) {
         Preconditions.checkArgument(isAsciiString(attribute));
         return attribute.isEmpty()?1:attribute.length();
+    }
+
+    public static String launder(String input) {
+        Preconditions.checkNotNull(input);
+        final StringBuilder sb = new StringBuilder();
+        input.chars().forEach(c -> sb.append((char) Integer.valueOf(c).intValue()));
+        return sb.toString();
     }
 
 }

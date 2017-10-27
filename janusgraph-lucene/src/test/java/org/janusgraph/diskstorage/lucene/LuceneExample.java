@@ -110,14 +110,10 @@ public abstract class LuceneExample {
 
         //Auesee
         BooleanQuery.Builder filter = new BooleanQuery.Builder();
-        //filter.add(new TermsFilter(new Term("name_txt","know")), BooleanClause.Occur.MUST);
 
         SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,Geoshape.circle(51.666167,6.58905,450).getShape());
-        //filter.add(getSpatialStrategy("location").makeFilter(args), BooleanClause.Occur.MUST);
 
-        filter.add(LegacyNumericRangeQuery.newLongRange("time",(long)1000342034,(long)1000342034,true,true), BooleanClause.Occur.MUST);
-//        filter.add(NumericRangeFilter.newLongRange("time",(long)1000342034-100,Long.MAX_VALUE,true,true), BooleanClause.Occur.MUST);
-//        filter.add(NumericRangeFilter.newLongRange("time",Long.MIN_VALUE,(long)1000342034+300,true,true), BooleanClause.Occur.MUST);
+        filter.add(LongPoint.newRangeQuery("time",(long)1000342034,(long)1000342034), BooleanClause.Occur.MUST);
 
 
         filter.add(new PrefixQuery(new Term("city_str","B")), BooleanClause.Occur.MUST);
@@ -155,9 +151,9 @@ public abstract class LuceneExample {
             if (value instanceof Number) {
                 Field field = null;
                 if (value instanceof Integer || value instanceof Long) {
-                    field = new LegacyLongField(key, ((Number)value).longValue(), Field.Store.NO);
+                    field = new LongPoint(key, ((Number)value).longValue());
                 } else { //double or float
-                    field = new LegacyDoubleField(key, ((Number)value).doubleValue(), Field.Store.NO);
+                    field = new DoublePoint(key, ((Number)value).doubleValue());
                 }
                 doc.add(field);
             } else if (value instanceof String) {

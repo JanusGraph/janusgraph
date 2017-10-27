@@ -52,6 +52,7 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.exceptions.ConfigurationException;
@@ -433,9 +434,26 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             if (ks == null)
                 return;
 
-            for (ColumnFamilyDefinition cf : cluster.describeKeyspace(keySpaceName).getColumnFamilyList()) {
-                ks.truncateColumnFamily(new ColumnFamily<Object, Object>(cf.getName(), null, null));
+            if (this.storageConfig.get(GraphDatabaseConfiguration.DROP_ON_CLEAR)) {
+                ks.dropKeyspace();
+            } else {
+                final KeyspaceDefinition keyspaceDefinition = cluster.describeKeyspace(keySpaceName);
+                if (keyspaceDefinition == null) {
+                    return;
+                }
+                for (final ColumnFamilyDefinition cf : keyspaceDefinition.getColumnFamilyList()) {
+                    ks.truncateColumnFamily(new ColumnFamily<Object, Object>(cf.getName(), null, null));
+                }
             }
+        } catch (ConnectionException e) {
+            throw new PermanentBackendException(e);
+        }
+    }
+
+    @Override
+    public boolean exists() throws BackendException {
+        try {
+            return clusterContext.getClient().describeKeyspace(keySpaceName) != null;
         } catch (ConnectionException e) {
             throw new PermanentBackendException(e);
         }

@@ -1,0 +1,42 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph-examples</artifactId>
+        <version>0.3.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <artifactId>example-cassandra</artifactId>
+    <packaging>pom</packaging>
+    <name>Example-Cassandra: Cassandra Thrift Storage, Elasticsearch Index</name>
+    <url>http://janusgraph.org</url>
+
+    <dependencies>
+        <!-- These are all runtime dependencies -->
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>example-common</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-cassandra</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-es</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+
+    <properties>
+        <example.main.class>org.janusgraph.example.JanusGraphApp</example.main.class>
+        <example.config>${project.basedir}/conf/jgex-cassandra.properties</example.config>
+        <logback.config>${project.basedir}/conf/logback.xml</logback.config>
+    </properties>
+
+</project>

@@ -21,6 +21,7 @@ import org.janusgraph.diskstorage.indexing.*;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NS;
@@ -65,12 +66,12 @@ public class TestMockIndexProvider implements IndexProvider {
     }
 
     @Override
-    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
+    public Stream<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         return index.query(query,informations,tx);
     }
 
     @Override
-    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
+    public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         return index.query(query,informations,tx);
     }
 
@@ -95,6 +96,11 @@ public class TestMockIndexProvider implements IndexProvider {
     }
 
     @Override
+    public boolean exists() throws BackendException {
+        return index.exists();
+    }
+
+    @Override
     public boolean supports(KeyInformation information, JanusGraphPredicate janusgraphPredicate) {
         return index.supports(information,janusgraphPredicate);
     }
@@ -113,4 +119,5 @@ public class TestMockIndexProvider implements IndexProvider {
     public IndexFeatures getFeatures() {
         return index.getFeatures();
     }
+
 }

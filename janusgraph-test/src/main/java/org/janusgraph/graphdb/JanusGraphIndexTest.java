@@ -46,9 +46,12 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
+import org.janusgraph.diskstorage.indexing.IndexInformation;
+import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.example.GraphOfTheGodsFactory;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.Order;
@@ -84,7 +87,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import static org.janusgraph.graphdb.JanusGraphTest.evaluateQuery;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -168,7 +170,6 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertGraphOfTheGods(graph);
     }
 
-
     public static void assertGraphOfTheGods(JanusGraph gotg) {
         assertCount(12, gotg.query().vertices());
         assertCount(3, gotg.query().has(LABEL_NAME, "god").vertices());
@@ -177,6 +178,32 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertEquals("demigod", h.label());
         assertCount(5, h.query().direction(Direction.BOTH).edges());
         gotg.tx().commit();
+    }
+
+    /**
+     * Ensure clearing storage actually removes underlying graph and index databases.
+     * @throws Exception
+     */
+    @Test
+    public void testClearStorage() throws Exception {
+        GraphOfTheGodsFactory.load(graph);
+        tearDown();
+        config.set(ConfigElement.getPath(GraphDatabaseConfiguration.DROP_ON_CLEAR), true);
+        final Backend backend = getBackend(config, false);
+        assertStorageExists(backend, true);
+        clearGraph(config);
+        try { backend.close(); } catch (Exception e) { /* Most backends do not support closing after clearing */}
+        try (final Backend newBackend = getBackend(config, false)) {
+            assertStorageExists(newBackend, false);
+        }
+    }
+
+    private static void assertStorageExists(Backend backend, boolean exists) throws Exception {
+        final String suffix = exists ? "should exist before clearing" : "should not exist after clearing";
+        assertTrue("graph " + suffix, backend.getStoreManager().exists() == exists);
+        for (final IndexInformation index : backend.getIndexInformation().values()) {
+            assertTrue("index " + suffix, ((IndexProvider) index).exists() == exists);
+        }
     }
 
     @Test
@@ -1029,9 +1056,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         JanusGraphVertex v2 = tx.addVertex();
         JanusGraphVertex v3 = tx.addVertex();
 
-        v1.property("field1", "Hello Hello Hello Hello Hello Hello Hello Hello");
+        v1.property("field1", "Hello Hello Hello Hello Hello Hello Hello Hello world");
         v2.property("field1", "Hello blue and yellow meet green");
-        v3.property("field1", "Hello");
+        v3.property("field1", "Hello Hello world world");
 
         tx.commit();
 
@@ -1575,9 +1602,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         JanusGraphVertex v2 = tx.addVertex();
         JanusGraphVertex v3 = tx.addVertex();
 
-        v1.property("text", "Hello Hello Hello Hello Hello Hello Hello Hello");
+        v1.property("text", "Hello Hello Hello Hello Hello Hello Hello Hello world");
         v2.property("text", "Hello abab abab fsdfsd sfdfsd sdffs fsdsdf fdf fsdfsd aera fsad abab abab fsdfsd sfdf");
-        v3.property("text", "Hello");
+        v3.property("text", "Hello Hello world world");
 
         tx.commit();
 

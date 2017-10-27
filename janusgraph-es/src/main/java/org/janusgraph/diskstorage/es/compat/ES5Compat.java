@@ -16,6 +16,8 @@ package org.janusgraph.diskstorage.es.compat;
 
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
 
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.CUSTOM_ALL_FIELD;
+
 /**
  * Mapping and query object builder for Elasticsearch 5.x.
  */

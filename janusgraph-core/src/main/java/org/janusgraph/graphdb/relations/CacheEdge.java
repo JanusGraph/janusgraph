@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.relations;
 
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import org.janusgraph.core.PropertyKey;
@@ -46,7 +47,9 @@ public class CacheEdge extends AbstractEdge {
     }
 
     public Direction getVertexCentricDirection() {
-        return data.getCache().direction;
+        final RelationCache cache = data.getCache();
+        Preconditions.checkState(cache != null, "Cache is null");
+        return cache.direction;
     }
 
     //############## Similar code as CacheProperty but be careful when copying #############################

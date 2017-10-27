@@ -28,9 +28,11 @@ It also includes software from other open source projects including, but not lim
  * Apache Solr [http://lucene.apache.org/solr/]
  * Apache TinkerPop [http://tinkerpop.apache.org/]
  * Astyanax [https://github.com/Netflix/astyanax]
+ * AWS SDK for Java [https://aws.amazon.com/sdkforjava]
  * DataStax Driver for Apache Cassandra  [https://github.com/datastax/java-driver]
  * EasyMock [http://easymock.org/]
  * Elasticsearch [https://www.elastic.co/]
+ * Google Cloud Bigtable [https://github.com/googlecloudplatform/cloud-bigtable-client]
  * Google Guava [https://github.com/google/guava]
  * H2 [http://h2database.com]
  * HPPC [https://labs.carrotsearch.com/hppc.html]
@@ -40,11 +42,14 @@ It also includes software from other open source projects including, but not lim
  * Kryo [https://github.com/EsotericSoftware/kryo]
  * Metrics [http://metrics.dropwizard.io]
  * Mockito [http://site.mockito.org/]
+ * Noggit [https://github.com/yonik/noggit]
  * OpenRDF [http://rdf4j.org/]
  * Oracle BerkeleyDB Java Edition [http://www.oracle.com/technetwork/products/berkeleydb/] (see license below)
+ * Project Lombok [https://projectlombok.org/]
  * Reflections [https://github.com/ronmamo/reflections]
  * SLF4J [https://www.slf4j.org/]
  * Spatial4j [https://github.com/locationtech/spatial4j]
+ * Vavr [http://www.vavr.io/]
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Copyright (C) 2002, 2016, Oracle  and/or its affiliates. All rights reserved.

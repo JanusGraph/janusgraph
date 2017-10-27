@@ -24,6 +24,7 @@ import java.util.Map;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
@@ -43,6 +44,7 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
     private static final String DEFAULT_COMPRESSOR_PACKAGE = "org.apache.cassandra.io.compress";
 
     public abstract ModifiableConfiguration getBaseStorageConfiguration();
+    public abstract ModifiableConfiguration getBaseStorageConfiguration(String keyspace);
 
     public abstract AbstractCassandraStoreManager openStorageManager(Configuration c) throws BackendException;
 
@@ -143,8 +145,29 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
         assertTrue(features.hasCellTTL());
     }
 
+    @Test
+    public void keyspaceShouldBeEquivalentToProvidedOne() throws BackendException {
+        final ModifiableConfiguration config = getBaseStorageConfiguration("randomNewKeyspace");
+        final AbstractCassandraStoreManager mgr = openStorageManager(config);
+        assertEquals("randomNewKeyspace", mgr.keySpaceName);
+    }
+
+    @Test
+    public void keyspaceShouldBeEquivalentToGraphName() throws BackendException {
+        final ModifiableConfiguration config = getBaseStorageConfiguration(null);
+        config.set(GraphDatabaseConfiguration.GRAPH_NAME, "randomNewGraphName");
+        final AbstractCassandraStoreManager mgr = openStorageManager(config);
+        assertEquals("randomNewGraphName", mgr.keySpaceName);
+    }
+
     @Override
     public AbstractCassandraStoreManager openStorageManager() throws BackendException {
         return openStorageManager(getBaseStorageConfiguration());
     }
+
+    @Override
+    public AbstractCassandraStoreManager openStorageManagerForClearStorageTest() throws Exception {
+        return openStorageManager(getBaseStorageConfiguration().set(GraphDatabaseConfiguration.DROP_ON_CLEAR, true));
+    }
+
 }

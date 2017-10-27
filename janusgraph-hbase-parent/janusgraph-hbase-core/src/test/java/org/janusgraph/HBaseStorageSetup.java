@@ -14,7 +14,6 @@
 
 package org.janusgraph;
 
-import com.google.common.base.Joiner;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.hbase.HBaseStoreManager;
@@ -31,11 +30,8 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,7 +44,7 @@ public class HBaseStorageSetup {
 
     public static final String HBASE_PARENT_DIR_PROP = "test.hbase.parentdir";
 
-    private static final Pattern HBASE_SUPPORTED_VERSION_PATTERN = Pattern.compile("^((0\\.9[8])|(1\\.[012]))\\..*");
+    private static final Pattern HBASE_SUPPORTED_VERSION_PATTERN = Pattern.compile("^((0\\.9[8])|(1\\.[0123]))\\..*");
 
     private static final String HBASE_VERSION_1_STRING = "1.";
 
@@ -98,11 +94,18 @@ public class HBaseStorageSetup {
     }
 
     public static ModifiableConfiguration getHBaseConfiguration(String tableName) {
+        return getHBaseConfiguration(tableName, "");
+    }
+
+    public static ModifiableConfiguration getHBaseConfiguration(String tableName, String graphName) {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, "hbase");
-        if (!StringUtils.isEmpty(tableName)) config.set(HBaseStoreManager.HBASE_TABLE,tableName);
+        if (!StringUtils.isEmpty(tableName)) config.set(HBaseStoreManager.HBASE_TABLE, tableName);
+        if (!StringUtils.isEmpty(graphName)) config.set(GraphDatabaseConfiguration.GRAPH_NAME, graphName);
+        config.set(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER, HBaseStoreManager.PREFERRED_TIMESTAMPS);
         config.set(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER, HBaseStoreManager.PREFERRED_TIMESTAMPS);
         config.set(SimpleBulkPlacementStrategy.CONCURRENT_PARTITIONS, 1);
+        config.set(GraphDatabaseConfiguration.DROP_ON_CLEAR, false);
 
         return config;
     }

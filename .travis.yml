@@ -24,9 +24,13 @@ env:
     # sort modules by test time with quickest modules first
     - MODULE='hadoop-parent/janusgraph-hadoop-2'
     - MODULE='lucene'
-    - MODULE='solr'
-    - MODULE='es'
+    - MODULE='solr' ARGS='-Pdocker,solr7'
+    - MODULE='solr' ARGS='-Pdocker,solr6'
+    - MODULE='solr' ARGS='-Pdocker,solr5'
+    - MODULE='es' ARGS='-Pelasticsearch6'
+    - MODULE='es' ARGS='-Pelasticsearch5'
     - MODULE='es' ARGS='-Pelasticsearch2'
+    - MODULE='es' ARGS='-Pelasticsearch1,es-docker'
     - MODULE='berkeleyje'
     - MODULE='test'
     - MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
@@ -55,6 +59,8 @@ matrix:
   fast_finish: true
   # https://docs.travis-ci.com/user/customizing-the-build#Rows-that-are-Allowed-to-Fail
   allow_failures:
+    # Elasticsearch 1.x tests can fail non-deterministically
+    - env: MODULE='es' ARGS='-Pelasticsearch1,es-docker'
     # Can fail due to timeout (runs longer than 50min)
     - env: MODULE='hbase-parent/janusgraph-hbase-098' ARGS='-Dtest=**/diskstorage/hbase/*'
     - env: MODULE='hbase-parent/janusgraph-hbase-098' ARGS='-Dtest=**/graphdb/hbase/*'

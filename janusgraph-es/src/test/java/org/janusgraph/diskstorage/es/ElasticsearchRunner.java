@@ -15,6 +15,8 @@
 package org.janusgraph.diskstorage.es;
 
 import org.janusgraph.DaemonRunner;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.io.FileUtils;
@@ -27,21 +29,34 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.janusgraph.diskstorage.es.ElasticSearchIndex.BULK_REFRESH;
+import static org.janusgraph.diskstorage.es.ElasticSearchIndex.INTERFACE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
+
 /**
  * Start and stop a separate Elasticsearch server process.
  */
 public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
 
+    /**
+     * External server can be used for testing by setting the "index.hostname" environment variable.
+     *
+     * <p><b>Warning: JanusGraph ("janusgraph*") indices will be deleted from the server during testing.</b></p>
+     */
+    private static final String HOSTNAME = System.getProperty(ConfigElement.getPath(INDEX_HOSTS, "search"));
+
+    public static final int PORT = 9200;
+
     private static final String DEFAULT_HOME_DIR = ".";
 
     private final String homedir;
+
+    private ElasticMajorVersion majorVersion;
 
     private static final Logger log =
             LoggerFactory.getLogger(ElasticsearchRunner.class);
 
     public static final String ES_PID_FILE = "/tmp/janusgraph-test-es.pid";
-
-    public static final boolean IS_EXTERNAL = Boolean.valueOf(System.getProperty("is.external.es", "false"));
 
     public ElasticsearchRunner(String esHome) {
         final Pattern VERSION_PATTERN = Pattern.compile("elasticsearch.version=(.*)");
@@ -60,12 +75,27 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
         if (version == null) {
             throw new RuntimeException("Unable to find Elasticsearch version");
         }
-
+        majorVersion = ElasticMajorVersion.parse(version);
         this.homedir = esHome + File.separator + "target" + File.separator + "elasticsearch-" + version;
     }
 
     public ElasticsearchRunner() {
         this(DEFAULT_HOME_DIR);
+    }
+
+    @Override
+    public ElasticsearchStatus start() {
+        if (HOSTNAME == null) {
+            return super.start();
+        }
+        return null;
+    }
+
+    @Override
+    public void stop() {
+        if (HOSTNAME == null) {
+            super.stop();
+        }
     }
 
     @Override
@@ -95,7 +125,6 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
 
     @Override
     protected ElasticsearchStatus startImpl() throws IOException {
-
         File data = new File(homedir + File.separator + "data");
         File logs = new File(homedir + File.separator + "logs");
 
@@ -158,6 +187,21 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
         }
 
         log.info("Elasticsearch logfile timeout ({} {})", elapsedMS, TimeUnit.MILLISECONDS);
+    }
+
+    ModifiableConfiguration setElasticsearchConfiguration(ModifiableConfiguration config, String index) {
+        config.set(INTERFACE, ElasticSearchSetup.REST_CLIENT.toString(), index);
+        config.set(INDEX_HOSTS, new String[] {getHostname() }, index);
+        config.set(BULK_REFRESH, "wait_for", index);
+        return config;
+    }
+
+    public String getHostname() {
+        return HOSTNAME != null ? HOSTNAME : "127.0.0.1";
+    }
+
+    public ElasticMajorVersion getEsMajorVersion() {
+        return majorVersion;
     }
 
     /**

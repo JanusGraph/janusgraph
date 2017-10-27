@@ -19,8 +19,10 @@ import static org.janusgraph.diskstorage.Backend.INDEXSTORE_NAME;
 import static org.janusgraph.diskstorage.Backend.LOCK_STORE_SUFFIX;
 import static org.janusgraph.diskstorage.Backend.SYSTEM_MGMT_LOG_NAME;
 import static org.janusgraph.diskstorage.Backend.SYSTEM_TX_LOG_NAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_STORE_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -59,6 +61,7 @@ import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Row;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.janusgraph.core.JanusGraphException;
@@ -130,7 +133,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     public static final ConfigOption<String> HBASE_TABLE =
             new ConfigOption<>(HBASE_NS, "table",
             "The name of the table JanusGraph will use.  When " + ConfigElement.getPath(SKIP_SCHEMA_CHECK) +
-            " is false, JanusGraph will automatically create this table if it does not already exist.",
+            " is false, JanusGraph will automatically create this table if it does not already exist." +
+            " If this configuration option is not provided but graph.graphname is, the table will be set" +
+            " to that value.",
             ConfigOption.Type.LOCAL, "janusgraph");
 
     /**
@@ -264,7 +269,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         checkConfigDeprecation(config);
 
-        this.tableName = config.get(HBASE_TABLE);
+        this.tableName = determineTableName(config);
         this.compression = config.get(COMPRESSION);
         this.regionCount = config.has(REGION_COUNT) ? config.get(REGION_COUNT) : -1;
         this.regionsPerServer = config.has(REGIONS_PER_SERVER) ? config.get(REGIONS_PER_SERVER) : -1;
@@ -492,9 +497,22 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     @Override
     public void clearStorage() throws BackendException {
         try (AdminMask adm = getAdminInterface()) {
-            adm.clearTable(tableName, times.getTime(times.getTime()));
+            if (this.storageConfig.get(DROP_ON_CLEAR)) {
+                adm.dropTable(tableName);
+            } else {
+                adm.clearTable(tableName, times.getTime(times.getTime()));
+            }
         } catch (IOException e)
         {
+            throw new TemporaryBackendException(e);
+        }
+    }
+
+    @Override
+    public boolean exists() throws BackendException {
+        try (final AdminMask adm = getAdminInterface()) {
+            return adm.tableExists(tableName);
+        } catch (IOException e) {
             throw new TemporaryBackendException(e);
         }
     }
@@ -700,7 +718,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 // Check and warn if long and short cf names are mixedly used for the same table.
                 if (shortCfNames && initialCFName.equals(shortCfNameMap.get(SYSTEM_PROPERTIES_STORE_NAME))) {
                     String longCFName = shortCfNameMap.inverse().get(initialCFName);
-                    if (desc.getFamily(longCFName.getBytes()) != null) {
+                    if (desc.getFamily(Bytes.toBytes(longCFName)) != null) {
                         logger.warn("Configuration {}=true, but the table \"{}\" already has column family with long name \"{}\".",
                             SHORT_CF_NAMES.getName(), tableName, longCFName);
                         logger.warn("Check {} configuration.", SHORT_CF_NAMES.getName());
@@ -708,7 +726,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 }
                 else if (!shortCfNames && initialCFName.equals(SYSTEM_PROPERTIES_STORE_NAME)) {
                     String shortCFName = shortCfNameMap.get(initialCFName);
-                    if (desc.getFamily(shortCFName.getBytes()) != null) {
+                    if (desc.getFamily(Bytes.toBytes(shortCFName)) != null) {
                         logger.warn("Configuration {}=false, but the table \"{}\" already has column family with short name \"{}\".",
                             SHORT_CF_NAMES.getName(), tableName, shortCFName);
                         logger.warn("Check {} configuration.", SHORT_CF_NAMES.getName());
@@ -794,7 +812,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
             Preconditions.checkNotNull(desc);
 
-            HColumnDescriptor cf = desc.getFamily(columnFamily.getBytes());
+            HColumnDescriptor cf = desc.getFamily(Bytes.toBytes(columnFamily));
 
             // Create our column family, if necessary
             if (cf == null) {
@@ -864,7 +882,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> entry : mutations.entrySet()) {
 
             String cfString = getCfNameForStoreName(entry.getKey());
-            byte[] cfName = cfString.getBytes();
+            byte[] cfName = Bytes.toBytes(cfString);
 
             for (Map.Entry<StaticBuffer, KCVMutation> m : entry.getValue().entrySet()) {
                 final byte[] key = m.getKey().as(StaticBuffer.ARRAY_FACTORY);
@@ -960,5 +978,12 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         } catch (IOException e) {
             throw new JanusGraphException(e);
         }
+    }
+
+    private String determineTableName(org.janusgraph.diskstorage.configuration.Configuration config) {
+        if ((!config.has(HBASE_TABLE)) && (config.has(GRAPH_NAME))) {
+            return config.get(GRAPH_NAME);
+        }
+        return config.get(HBASE_TABLE);
     }
 }

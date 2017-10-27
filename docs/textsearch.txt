@@ -75,7 +75,7 @@ Full-text search predicates may be used in queries, but those require filtering 
 
 ==== Full text and string search
 
-If you are using ElasticSearch it is possible to index properties as both text and string allowing you to use all of the predicates for exact and fuzzy matching.
+If you are using Elasticsearch it is possible to index properties as both text and string allowing you to use all of the predicates for exact and fuzzy matching.
 
 [source, gremlin]
 mgmt = graph.openManagement()
@@ -86,7 +86,7 @@ mgmt.commit()
 Note that the data will be stored in the index twice, once for exact matching and once for fuzzy matching.
 
 [[geo-search]]
-===Geo Mapping
+=== Geo Mapping
 
 By default, JanusGraph supports indexing geo properties with point type and querying geo properties by circle or box. To index a non-point geo property with support for querying by any geoshape type, specify the mapping as `Mapping.PREFIX_TREE`:
 
@@ -106,6 +106,7 @@ mgmt.commit()
 
 Note that some indexing backends (e.g. Solr) may require additional external schema configuration to support and tune indexing non-point properties.
 
+[[field-mapping]]
 == Field Mapping
 
 [[index-local-field-mapping]]

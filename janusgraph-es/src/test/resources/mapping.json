@@ -15,31 +15,21 @@
           "type": "geo_point"
         },
         "name": {
-          "type": "string",
-          "index": "not_analyzed"
+          "type": "keyword"
         },
         "phone_list": {
-          "type": "string",
-          "index": "not_analyzed"
+          "type": "keyword"
         },
         "phone_set": {
-          "type": "string",
-          "index": "not_analyzed"
+          "type": "keyword"
         },
         "text": {
-          "type": "string"
+          "type": "text"
         },
         "time": {
           "type": "long"
         }
       }
-    }
-  },
-  "settings": {
-    "index": {
-      "number_of_shards": "5",
-      "max_result_window": "2147483647",
-      "number_of_replicas": "1"
     }
   }
 }
