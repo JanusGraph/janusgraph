@@ -82,7 +82,9 @@ The following users have deployed JanusGraph in production.
 * [Seeq](https://seeq.com)
 * [Sift Security](https://siftsecurity.com)
 * [Uber](https://uber.com)
+* [Flux.io](https://flux.io)
 
 The following companies offer JanusGraph hosted as-a-service:
 
 * [IBM](https://www.compose.com/databases/janusgraph)
+* [Flux.io](https://flux.io) - For AEC Industry Design & Construction Services
