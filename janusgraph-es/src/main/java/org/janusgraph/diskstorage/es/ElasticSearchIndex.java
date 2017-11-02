@@ -21,6 +21,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import org.janusgraph.diskstorage.es.compat.ES6Compat;
+import org.janusgraph.diskstorage.es.rest.util.HttpAuthTypes;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
@@ -166,6 +167,86 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public static final ConfigNamespace ES_INGEST_PIPELINES =
             new ConfigNamespace(ELASTICSEARCH_NS, "ingest-pipeline", "Ingest pipeline applicable to a store of an index.");
+
+    public static final ConfigNamespace SSL_NS =
+            new ConfigNamespace(ELASTICSEARCH_NS, "ssl", "Elasticsearch SSL configuration");
+
+    public static final ConfigOption<Boolean> SSL_ENABLED =
+            new ConfigOption<>(SSL_NS, "enabled",
+            "Controls use of the SSL connection to Elasticsearch.", ConfigOption.Type.LOCAL, false);
+
+    public static final ConfigOption<Boolean> SSL_DISABLE_HOSTNAME_VERIFICATION =
+            new ConfigOption<>(SSL_NS, "disable-hostname-verification",
+            "Disables the SSL hostname verification if set to true. Hostname verification is enabled by default.",
+            ConfigOption.Type.LOCAL, false);
+
+    public static final ConfigOption<Boolean> SSL_ALLOW_SELF_SIGNED_CERTIFICATES =
+            new ConfigOption<>(SSL_NS, "allow-self-signed-certificates",
+            "Controls the accepting of the self-signed SSL certificates.",
+            ConfigOption.Type.LOCAL, false);
+
+    public static final ConfigNamespace SSL_TRUSTSTORE_NS =
+            new ConfigNamespace(SSL_NS, "truststore", "Configuration options for SSL Truststore.");
+
+    public static final ConfigOption<String> SSL_TRUSTSTORE_LOCATION =
+            new ConfigOption<>(SSL_TRUSTSTORE_NS, "location",
+            "Marks the location of the SSL Truststore.", ConfigOption.Type.LOCAL, "");
+
+    public static final ConfigOption<String> SSL_TRUSTSTORE_PASSWORD =
+            new ConfigOption<>(SSL_TRUSTSTORE_NS, "password",
+            "The password to access SSL Truststore.", ConfigOption.Type.LOCAL, "", val -> val != null);
+
+    public static final ConfigNamespace SSL_KEYSTORE_NS =
+            new ConfigNamespace(SSL_NS, "keystore", "Configuration options for SSL Keystore.");
+
+    public static final ConfigOption<String> SSL_KEYSTORE_LOCATION =
+            new ConfigOption<>(SSL_KEYSTORE_NS, "location",
+            "Marks the location of the SSL Keystore.", ConfigOption.Type.LOCAL, "");
+
+    public static final ConfigOption<String> SSL_KEYSTORE_PASSWORD =
+            new ConfigOption<>(SSL_KEYSTORE_NS, "storepassword",
+            "The password to access SSL Keystore.", ConfigOption.Type.LOCAL, "", val -> val != null);
+
+    public static final ConfigOption<String> SSL_KEY_PASSWORD =
+            new ConfigOption<>(SSL_KEYSTORE_NS, "keypassword",
+            "The password to access the key in the SSL Keystore. If the option is not present, the value of \"storepassword\" is used.",
+            ConfigOption.Type.LOCAL, "", val -> val != null);
+
+    public static final ConfigNamespace ES_HTTP_NS =
+            new ConfigNamespace(ELASTICSEARCH_NS, "http", "Configuration options for HTTP(S) transport.");
+
+    public static final ConfigNamespace ES_HTTP_AUTH_NS =
+            new ConfigNamespace(ES_HTTP_NS, "auth", "Configuration options for HTTP(S) authentication.");
+
+    public static final ConfigOption<String> ES_HTTP_AUTH_TYPE =
+            new ConfigOption<>(ES_HTTP_AUTH_NS, "type",
+            "Authentication type to be used for HTTP(S) access.", ConfigOption.Type.LOCAL, HttpAuthTypes.NONE.toString());
+
+    public static final ConfigNamespace ES_HTTP_AUTH_BASIC_NS =
+            new ConfigNamespace(ES_HTTP_AUTH_NS, "basic", "Configuration options for HTTP(S) Basic authentication.");
+
+    public static final ConfigOption<String> ES_HTTP_AUTH_USERNAME =
+            new ConfigOption<>(ES_HTTP_AUTH_BASIC_NS, "username",
+            "Username for HTTP(S) authentication.", ConfigOption.Type.LOCAL, "");
+
+    public static final ConfigOption<String> ES_HTTP_AUTH_PASSWORD =
+            new ConfigOption<>(ES_HTTP_AUTH_BASIC_NS, "password",
+            "Password for HTTP(S) authentication.", ConfigOption.Type.LOCAL, "");
+
+    public static final ConfigOption<String> ES_HTTP_AUTH_REALM = new ConfigOption<>(ES_HTTP_AUTH_BASIC_NS,
+            "realm", "Realm value for HTTP(S) authentication. If empty, any realm is accepted.",
+            ConfigOption.Type.LOCAL, "");
+
+    public static final ConfigNamespace ES_HTTP_AUTH_CUSTOM_NS =
+            new ConfigNamespace(ES_HTTP_AUTH_NS, "custom", "Configuration options for custom HTTP(S) authenticator.");
+
+    public static final ConfigOption<String> ES_HTTP_AUTHENTICATOR_CLASS = new ConfigOption<>(
+            ES_HTTP_AUTH_CUSTOM_NS, "authenticator-class", "Authenticator fully qualified class name.",
+            ConfigOption.Type.LOCAL, "");
+
+    public static final ConfigOption<String[]> ES_HTTP_AUTHENTICATOR_ARGS = new ConfigOption<>(
+            ES_HTTP_AUTH_CUSTOM_NS, "authenticator-args", "Comma-separated custom authenticator constructor arguments.",
+            ConfigOption.Type.LOCAL, new String[0]);
 
     public static final int HOST_PORT_DEFAULT = 9200;
 
