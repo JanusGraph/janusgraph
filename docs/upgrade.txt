@@ -60,7 +60,7 @@ mgmt.commit()
 ===== Node client
 
 A node client with JanusGraph can be configured in a few ways. If the node
-client was configured as a clienty-only or non-data node, follow the steps
+client was configured as a client-only or non-data node, follow the steps
 from the <<_transport_client, transport client>> section to connect to the
 existing cluster using the `REST_CLIENT` instead. If the node client was
 a data node (local-mode), then convert it into a standalone Elasticsearch
