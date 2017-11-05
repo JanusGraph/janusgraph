@@ -1,5 +1,5 @@
 [[advanced-blueprints]]
-Advanced Tinkerpop
+Advanced TinkerPop
 -------------------
 
 http://tinkerpop.apache.org/[Tinkerpop] provides a set of common http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#traversalstrategy[traversal strategies] that add additional functionality to graphs.
