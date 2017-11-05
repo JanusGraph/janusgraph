@@ -324,7 +324,7 @@ mgmt.commit()
 Note, that schema name changes may not be immediately visible in currently running transactions and other JanusGraph graph instances in the cluster. While schema name changes are announced to all JanusGraph instances through the storage backend, it may take a while for the schema changes to take effect and it may require a instance restart in the event of certain failure conditions - like network partitions - if they coincide with the rename. Hence, the user must ensure that either of the following holds:
 
 * The renamed label or key is not currently in active use (i.e. written or read) and will not be in use until all JanusGraph instances are aware of the name change.
-* Running transactions actively accomodate the brief intermediate period where either the old or new name is valid based on the specific JanusGraph instance and status of the name-change announcement. For instance, that could mean transactions query for both names simultaneously.
+* Running transactions actively accommodate the brief intermediate period where either the old or new name is valid based on the specific JanusGraph instance and status of the name-change announcement. For instance, that could mean transactions query for both names simultaneously.
 
 Should the need arise to re-define an existing schema type, it is recommended to change the name of this type to a name that is not currently (and will never be) in use. After that, a new label or key can be defined with the original name, thereby effectively replacing the old one.
 However, note that this would not affect vertices, edges, or properties previously written with the existing type. Redefining existing graph elements is not supported online and must be accomplished through a batch graph transformation.
@@ -556,7 +556,7 @@ cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/socket-gremlin-se
 ```
 +
 . Edit the socket-gremlin-server.yaml file and make the following updates:
-.. If you are planning to connect to JanusGraph Server from something other than localhost, update the ip address for host:
+.. If you are planning to connect to JanusGraph Server from something other than localhost, update the IP address for host:
 +
 ```
 host: 10.10.10.100
@@ -604,7 +604,7 @@ cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/http-gremlin-serv
 ```
 +
 . Edit the http-gremlin-server.yaml file and make the following updates:
-.. If you are planning to connect to JanusGraph Server from something other than localhost, update the ip address for host:
+.. If you are planning to connect to JanusGraph Server from something other than localhost, update the IP address for host:
 +
 ```
 host: 10.10.10.100
@@ -891,7 +891,7 @@ mgmt.commit()
 
 The example above defines a mixed index containing the property keys `name` and `age`. The definition refers to the indexing backend name `search` so that JanusGraph knows which configured indexing backend it should use for this particular index.  The `search` parameter specified in the buildMixedIndex call must match the second clause in the JanusGraph configuration definition like this: index.*search*.backend   If the index was named 'solrsearch' then the configuration definition would appear like this: index.*solrsearch*.backend.
 
-The mgmt.buildIndex example specified above uses text search as its default behavior. An index statement that explicity defines the index as a text index can be written as follows:
+The mgmt.buildIndex example specified above uses text search as its default behavior. An index statement that explicitly defines the index as a text index can be written as follows:
 
 [source,gremlin]
 mgmt.buildIndex('nameAndAge',Vertex.class).addKey(name,Mapping.TEXT.getParameter()).addKey(age,Mapping.TEXT.getParameter()).buildMixedIndex("search")
@@ -1073,7 +1073,7 @@ Ordered vertex queries are a JanusGraph extension to Gremlin which causes the ve
 
 Almost all interaction with JanusGraph is associated with a transaction.  JanusGraph transactions are safe for concurrent use by multiple threads.  Methods on a JanusGraph instance like `graph.V(...)` and `graph.tx().commit()` perform a `ThreadLocal` lookup to retrieve or create a transaction associated with the calling thread.  Callers can alternatively forego `ThreadLocal` transaction management in favor of calling `graph.tx().createThreadedTx()`, which returns a reference to a transaction object with methods to read/write graph data and commit or rollback.
 
-JanusGraph transactions are not necessarily ACID.  They can be so configured on BerkleyDB, but they are not generally so on Cassandra or HBase, where the underlying storage system does not provide serializable isolation or multi-row atomic writes and the cost of simulating those properties would be substantial.
+JanusGraph transactions are not necessarily ACID.  They can be so configured on BerkeleyDB, but they are not generally so on Cassandra or HBase, where the underlying storage system does not provide serializable isolation or multi-row atomic writes and the cost of simulating those properties would be substantial.
 
 This section describes JanusGraph's transactional semantics and API.
 

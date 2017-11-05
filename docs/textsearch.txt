@@ -132,7 +132,7 @@ However, this approach has two limitations: 1) The user has to ensure that the p
 Note, that individual field mappings as described above can be used to overwrite the default name for a particular key.
 
 
-==== Custom Analyser
+==== Custom Analyzer
 
 By default, JanusGraph will use the default analyzer from the indexing backend for properties with Mapping.TEXT, and no analyzer for properties with Mapping.STRING. If one wants to use another analyzer, it can be explicitly specified through a parameter : ParameterType.TEXT_ANALYZER for Mapping.TEXT and ParameterType.STRING_ANALYZER for Mapping.STRING.
 
