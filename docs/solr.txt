@@ -32,9 +32,9 @@ These are some key Solr terms:
 
 * *Configuration*: 'solrconfig.xml', 'schema.xml', and other files required to define a core.
 
-* *Collection*: A 'single logical index' that can span mulitple cores on different machines.
+* *Collection*: A 'single logical index' that can span multiple cores on different machines.
 
-* *Configset*: A shared 'configuration' that can be reused by mulitple cores.
+* *Configset*: A shared 'configuration' that can be reused by multiple cores.
 
 
 === Connecting to SolrCloud
