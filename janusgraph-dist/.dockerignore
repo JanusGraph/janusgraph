@@ -1,0 +1,14 @@
+# janusgraph-dist files
+target/
+src/assembly
+src/release
+src/pkg
+src/test
+README.md
+pom.xml
+*.iml
+
+# janusgrpah-dist-hadoop-2 files
+janusgraph-dist-hadoop-2/es
+janusgraph-dist-hadoop-2/src
+!janusgraph-dist-hadoop-2/target/*.zip

@@ -1,0 +1,35 @@
+version: '2.1'
+
+services:
+  janusgraph:
+    image: janusgraph/janusgraph:latest
+    container_name: jc2-janusgraph
+    environment:
+      JANUS_STORAGE_BACKEND: cassandra
+      JANUS_STORAGE_HOSTNAME: cassandra-host
+    ports:
+      - "8182:8182"
+    links:
+      - cassandra:cassandra-host
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    healthcheck:
+        test: [ "CMD-SHELL", "timeout -t 2 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/8182'" ]
+        interval: 10s
+        timeout: 10s
+        retries: 6
+
+  cassandra:
+    image: cassandra:2.2.9
+    container_name: jc2-cassandra
+    ports:
+      - "9042:9042"
+      - "9160:9160"
+    environment:
+      CASSANDRA_START_RPC: 'true'
+    healthcheck:
+      test: [ "CMD-SHELL", "timeout 2 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/9160'" ]
+      interval: 10s
+      timeout: 10s
+      retries: 6

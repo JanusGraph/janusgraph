@@ -39,7 +39,11 @@
         <pkgtools.dir>${project.basedir}/..</pkgtools.dir>
 
         <skipDefaultDistroIT>${it.skip}</skipDefaultDistroIT>
-        <docker.maven.version>0.4.13</docker.maven.version>
+
+        <!-- Docker Configuration -->
+        <docker.maven.version>1.3.6</docker.maven.version>
+        <docker.org>janusgraph</docker.org>
+        <docker.tag>${project.version}</docker.tag>
     </properties>
 
     <modules>
@@ -557,18 +561,16 @@
                     <plugins>
                         <plugin>
                             <groupId>com.spotify</groupId>
-                            <artifactId>docker-maven-plugin</artifactId>
+                            <artifactId>dockerfile-maven-plugin</artifactId>
                             <version>${docker.maven.version}</version>
                             <configuration>
-                                <dockerDirectory>${project.basedir}/janusgraph-dist-hadoop-2</dockerDirectory>
+                                <repository>${docker.org}/janusgraph</repository>
+                                <tag>${docker.tag}</tag>
+                                <useMavenSettingsForAuth>true</useMavenSettingsForAuth>
+                                <googleContainerRegistryEnabled>false</googleContainerRegistryEnabled>
                                 <buildArgs>
-                                    <server_zip>target/janusgraph-${project.version}-hadoop2.zip</server_zip>
+                                    <SERVER_BASE>janusgraph-${project.version}-hadoop2</SERVER_BASE>
                                 </buildArgs>
-                                <forceTags>true</forceTags>
-                                <imageName>janusgraph/server</imageName>
-                                <imageTags>
-                                    <imageTag>${project.version}</imageTag>
-                                </imageTags>
                             </configuration>
                         </plugin>
                     </plugins>

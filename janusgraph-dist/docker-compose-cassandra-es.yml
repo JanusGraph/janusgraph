@@ -1,0 +1,57 @@
+version: '2.1'
+
+services:
+  janusgraph:
+    image: janusgraph/janusgraph:latest
+    container_name: jce-janusgraph
+    environment:
+      JANUS_STORAGE_BACKEND: cassandra
+      JANUS_STORAGE_HOSTNAME: cassandra-host
+      JANUS_INDEX_DEFINED_NAME: search
+      JANUS_INDEX_HOSTNAME: elasticsearch
+    ports:
+      - "8182:8182"
+    links:
+      - cassandra:cassandra-host
+      - elasticsearch:elasticsearch
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    healthcheck:
+        test: [ "CMD-SHELL", "timeout -t 2 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/8182'" ]
+        interval: 10s
+        timeout: 10s
+        retries: 6
+
+  cassandra:
+    image: cassandra:3
+    container_name: jce-cassandra
+    ports:
+      - "9042:9042"
+      - "9160:9160"
+    environment:
+      CASSANDRA_START_RPC: 'true'
+    healthcheck:
+      test: [ "CMD-SHELL", "timeout 2 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/9160'" ]
+      interval: 10s
+      timeout: 10s
+      retries: 6
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.3.2
+    container_name: jce-elastic
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "http.host=0.0.0.0"
+      - "network.host=0.0.0.0"
+      - "transport.host=127.0.0.1"
+      - "cluster.name=docker-cluster"
+      - "xpack.security.enabled=false"
+      - "discovery.zen.minimum_master_nodes=1"
+    ports:
+      - "9200:9200"
+    healthcheck:
+        test: [ "CMD-SHELL", "timeout -t 5 bash -c 'curl --output /dev/null --silent --head --fail http://127.0.0.1:9200'" ]
+        interval: 10s
+        timeout: 10s
+        retries: 6

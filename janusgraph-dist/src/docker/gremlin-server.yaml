@@ -1,0 +1,60 @@
+host: ${JANUS_BIND_HOST}
+port: ${JANUS_BIND_PORT}
+threadPoolWorker: ${JANUS_WORKER_POOL_SIZE}
+gremlinPool: ${JANUS_GREMLIN_POOL_SIZE}
+scriptEvaluationTimeout: 30000
+serializedResponseTimeout: 30000
+channelizer: org.apache.tinkerpop.gremlin.server.channel.WebSocketChannelizer
+graphs: { graph: /opt/janusgraph.properties }
+plugins:
+  - janusgraph.imports
+scriptEngines: {
+  gremlin-groovy: {
+    imports: [java.lang.Math],
+    staticImports: [java.lang.Math.PI],
+    scripts: [scripts/empty-sample.groovy]
+  }
+}
+serializers:
+  - { 
+      className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, 
+      config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }
+    }
+  - { 
+      className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, 
+      config: { serializeResultToString: true }
+    }
+  - { 
+      className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerGremlinV1d0,
+      config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }
+    }
+  - { 
+      className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerGremlinV2d0,
+      config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }
+    }
+  - { 
+      className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV1d0,
+      config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }
+    }
+  - { 
+      className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV2d0,
+      config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }
+    }
+processors:
+  - { 
+      className: org.apache.tinkerpop.gremlin.server.op.session.SessionOpProcessor,
+      config: { sessionTimeout: 28800000 }
+    }
+metrics: {
+  jmxReporter: {enabled: true},
+  slf4jReporter: {enabled: true, interval: 180000},
+}
+threadPoolBoss: 1
+maxInitialLineLength: 4096
+maxHeaderSize: 8192
+maxChunkSize: 8192
+maxContentLength: 65536
+maxAccumulationBufferComponents: 1024
+resultIterationBatchSize: 64
+writeBufferHighWaterMark: 32768
+writeBufferHighWaterMark: 65536

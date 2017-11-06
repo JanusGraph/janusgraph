@@ -36,8 +36,8 @@ To build and run Docker images with JanusGraph and Gremlin Server, configured
 to run the BerkeleyJE backend and Elasticsearch (requires [Docker Compose](https://docs.docker.com/compose/)):
 
 ```bash
-mvn clean install -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true && mvn docker:build -Pjanusgraph-docker -pl janusgraph-dist
-docker-compose -f janusgraph-dist/janusgraph-dist-hadoop-2/docker-compose.yml up
+mvn clean install -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true && mvn dockerfile:build -Ddocker.tag=latest -Pjanusgraph-docker -pl janusgraph-dist
+docker-compose -f janusgraph-dist/docker-compose.yml up
 ```
 
 Note the above `docker-compose` call launches containers in the foreground and is convenient for monitoring logs but add "-d" to instead run in the background.

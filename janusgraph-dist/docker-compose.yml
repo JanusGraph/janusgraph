@@ -1,0 +1,37 @@
+version: '2.1'
+services:
+  janusgraph:
+    image: janusgraph/janusgraph:latest
+    container_name: jbe-janusgraph
+    environment:
+      - "JANUS_INDEX_DEFINED_NAME=search"
+      - "JANUS_INDEX_HOSTNAME=elasticsearch"
+      - "JANUS_STORAGE_BACKEND=berkeleyje"
+      - "JANUS_STORAGE_DIRECTORY=../db/berkeley"
+    ports:
+      - "8182:8182"
+    links:
+      - elasticsearch:elasticsearch
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.3.2
+    container_name: jbe-elasticsearch
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "http.host=0.0.0.0"
+      - "network.host=0.0.0.0"
+      - "transport.host=127.0.0.1"
+      - "cluster.name=docker-cluster"
+      - "xpack.security.enabled=false"
+      - "discovery.zen.minimum_master_nodes=1"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 1s
+      timeout: 30s
+      retries: 30
+    ports:
+      - "9200:9200"
+
