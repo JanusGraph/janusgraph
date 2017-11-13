@@ -748,19 +748,13 @@ public class ElasticSearchIndex implements IndexProvider {
                 }
             } else if (value instanceof String) {
                 final Mapping map = getStringMapping(informations.get(key));
-                String fieldName = key;
                 if (map==Mapping.TEXT && !Text.HAS_CONTAINS.contains(janusgraphPredicate))
                     throw new IllegalArgumentException("Text mapped string values only support CONTAINS queries and not: " + janusgraphPredicate);
                 if (map==Mapping.STRING && Text.HAS_CONTAINS.contains(janusgraphPredicate))
                     throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + janusgraphPredicate);
-                if (map==Mapping.TEXTSTRING && !Text.HAS_CONTAINS.contains(janusgraphPredicate)) {
-                    fieldName = getDualMappingName(key);
-                } else {
-                    fieldName = key;
-                }
-
+                final String fieldName = (map==Mapping.TEXTSTRING && !Text.HAS_CONTAINS.contains(janusgraphPredicate)) ? getDualMappingName(key) : key;
                 if (janusgraphPredicate == Text.CONTAINS || janusgraphPredicate == Cmp.EQUAL) {
-                    return compat.match(key, value);
+                    return compat.match(fieldName, value);
                 } else if (janusgraphPredicate == Text.CONTAINS_PREFIX) {
                     if (!ParameterType.TEXT_ANALYZER.hasParameter(informations.get(key).getParameters()))
                         value = ((String) value).toLowerCase();
@@ -921,8 +915,8 @@ public class ElasticSearchIndex implements IndexProvider {
 
         ElasticSearchResponse response;
         try {
-            String indexStoreName = getIndexStoreName(query.getStore());
-            String indexType = useMultitypeIndex ? query.getStore() : null;
+            final String indexStoreName = getIndexStoreName(query.getStore());
+            final String indexType = useMultitypeIndex ? query.getStore() : null;
             response = client.search(indexStoreName, indexType, compat.createRequestBody(sr, NULL_PARAMETERS), sr.getSize() >= batchSize);
             log.debug("First Executed query [{}] in {} ms", query.getCondition(), response.getTook());
             final ElasticSearchScroll resultIterator = new ElasticSearchScroll(client, response, sr.getSize());
@@ -1088,7 +1082,7 @@ public class ElasticSearchIndex implements IndexProvider {
     public boolean exists() throws BackendException {
         try {
             return client.indexExists(indexName);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new PermanentBackendException("Could not check if index " + indexName + " exists", e);
         }
     }
