@@ -127,7 +127,7 @@ $ git ci
 to commit files, and it will automatically append the `-s` switch to ensure that
 you've signed the contribution.
 
-> Note: as it is an alias, you can still append flags to the commad line, e.g.,
+> Note: as it is an alias, you can still append flags to the command line, e.g.,
 > `git ci -v` will get you a diff of your commit while writing your commit
 > message.
 
@@ -161,7 +161,7 @@ changes.
 
 Go to the [JanusGraph repository](https://github.com/JanusGraph/janusgraph) and
 you should see that it will offer you a chance to compare your recently-pushed
-branch to the current `master` of JanusGraph and subit a PR at the same time.
+branch to the current `master` of JanusGraph and submit a PR at the same time.
 
 Review the [PR check list](.github/PULL_REQUEST_TEMPLATE.md) for criteria for acceptable contributions.
 
