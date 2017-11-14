@@ -345,7 +345,7 @@ This is why updates to your configurations require a few steps to guarantee corr
 
 This is a new configuration option you can use when defining a property in your configuration that defines how to access a graph. All configurations that include this property will result in the graph instantiation happening through the `JanusGraphManager` (process explained above).
 
-For backwards compatability, any graphs that do not supply this parameter but supplied at server start in your graphs object in your .yaml file, these graphs will be bound through the JanusGraphManager denoted by their `key` supplied for that graph. For example, if your .yaml graphs object looks like:
+For backwards compatibility, any graphs that do not supply this parameter but supplied at server start in your graphs object in your .yaml file, these graphs will be bound through the JanusGraphManager denoted by their `key` supplied for that graph. For example, if your .yaml graphs object looks like:
 
 [source, properties]
 ----

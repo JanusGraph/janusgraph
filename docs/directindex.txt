@@ -43,7 +43,7 @@ In addition <<elasticsearch, Elasticsearch>> supports wildcard queries, use "v.\
 
 === Query Totals
 
-It is sometimes useful to know how many total results were returned from a query without having to retrieve all results.  Fortunately, Elasticsearch and Solr provide a shortcut that does not involve retreiving and ranking all documents.  This shortcut is exposed through the ".vertexTotals()", ".edgeTotals()", and ".propertyTotals()" methods.
+It is sometimes useful to know how many total results were returned from a query without having to retrieve all results.  Fortunately, Elasticsearch and Solr provide a shortcut that does not involve retrieving and ranking all documents.  This shortcut is exposed through the ".vertexTotals()", ".edgeTotals()", and ".propertyTotals()" methods.
 
 The totals can be retrieved using the same query syntax as the indexQuery builder, but size is overwritten to be 0.
 
