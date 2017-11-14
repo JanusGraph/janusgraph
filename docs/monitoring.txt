@@ -5,7 +5,7 @@
 
 JanusGraph supports http://dropwizard.io/[Metrics].  JanusGraph can measure the following:
 
-* The number of transactions begun, comitted, and rolled back
+* The number of transactions begun, committed, and rolled back
 * The number of attempts and failures of each storage backend operation type
 * The response time distribution of each storage backend operation type
 
@@ -34,7 +34,7 @@ metrics.prefix = janusgraph
 Transaction-Specific Metrics Names
 +++++++++++++++++++++++++++++++++
 
-Each JanusGraph transaction may optionally specify its own Metrics name prefix, overridding both the default Metrics name prefix and the `metrics.prefix` configuration property.  For example, the prefix could be changed to the name of the frontend application that opened the JanusGraph transaction.  Note that Metrics maintains a ConcurrentHashMap of metric names and their associated objects in memory, so it's probably a good idea to keep the number of distinct metric prefixes small.
+Each JanusGraph transaction may optionally specify its own Metrics name prefix, overriding both the default Metrics name prefix and the `metrics.prefix` configuration property.  For example, the prefix could be changed to the name of the frontend application that opened the JanusGraph transaction.  Note that Metrics maintains a ConcurrentHashMap of metric names and their associated objects in memory, so it's probably a good idea to keep the number of distinct metric prefixes small.
 
 To do this, call `TransactionBuilder.setMetricsPrefix(String)`:
 

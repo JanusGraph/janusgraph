@@ -338,9 +338,9 @@ The following index keys have invalid status: desc has status INSTALLED
 The index mixedExample is in an invalid state and cannot be indexed.
 The index has status INSTALLED, but one of [REGISTERED, ENABLED] is required
 
-When an index is built, its existence is broadcast to all other JanusGraph instances in the cluster. Those must acknowledge the existence of the index before the reindexing process can be started. The acknowledgements can take a while to come in depending on the size of the cluster and the connection speed. Hence, one should wait a few minutes after building the index and before starting the reindex process.
+When an index is built, its existence is broadcast to all other JanusGraph instances in the cluster. Those must acknowledge the existence of the index before the reindexing process can be started. The acknowledgments can take a while to come in depending on the size of the cluster and the connection speed. Hence, one should wait a few minutes after building the index and before starting the reindex process.
 
-Note, that the acknowledgement might fail due to JanusGraph instance failure. In other words, the cluster might wait indefinitely on the acknowledgement of a failed instance. In this case, the user must manually remove the failed instance from the cluster registry as described in <<failure-recovery>>. After the cluster state has been restored, the acknowledgement process must be reinitiated by manually registering the index again in the management system.
+Note, that the acknowledgment might fail due to JanusGraph instance failure. In other words, the cluster might wait indefinitely on the acknowledgment of a failed instance. In this case, the user must manually remove the failed instance from the cluster registry as described in <<failure-recovery>>. After the cluster state has been restored, the acknowledgment process must be reinitiated by manually registering the index again in the management system.
 
 [source,gremlin]
 mgmt = graph.openManagement()
@@ -350,7 +350,7 @@ gindex = mgmt.getGraphIndex("byName")
 mgmt.updateIndex(gindex, SchemaAction.REGISTER_INDEX).get()
 mgmt.commit()
 
-After waiting a few minutes for the acknowledgement to arrive the reindex job should start successfully.
+After waiting a few minutes for the acknowledgment to arrive the reindex job should start successfully.
 
 ==== Could not find index
 
