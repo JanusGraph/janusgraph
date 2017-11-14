@@ -167,7 +167,7 @@ hadoop fs -ls /
 
 === Tips and Tricks for Managing an HBase Cluster
 
-The http://wiki.apache.org/hadoop/Hbase/Shell[HBase shell] on the master server can be used to get an overal status check of the cluster.
+The http://wiki.apache.org/hadoop/Hbase/Shell[HBase shell] on the master server can be used to get an overall status check of the cluster.
 
 [source, bourne]
 $HBASE_HOME/bin/hbase shell
