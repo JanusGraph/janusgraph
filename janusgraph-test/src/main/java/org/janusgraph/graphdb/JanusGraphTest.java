@@ -1764,6 +1764,66 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     }
 
+    @Category({BrittleTests.class})
+    @Test
+    public void testIndexShouldRegisterWhenWeRemoveAnInstance() throws InterruptedException {
+        clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
+                option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250)
+        );
+
+        StandardJanusGraph graph2 = (StandardJanusGraph) JanusGraphFactory.open(config);
+        JanusGraphTransaction tx2;
+
+        mgmt.makePropertyKey("name").dataType(String.class).make();
+        finishSchema();
+
+        tx.addVertex("name", "v1");
+        newTx();
+        evaluateQuery(tx.query().has("name", "v1"), ElementCategory.VERTEX, 1, new boolean[]{false, true});
+        tx2 = graph2.newTransaction();
+        evaluateQuery(tx2.query().has("name", "v1"), ElementCategory.VERTEX, 1, new boolean[]{false, true});
+        //Leave tx2 open to delay acknowledgement
+
+        mgmt.buildIndex("theIndex", Vertex.class).addKey(mgmt.getPropertyKey("name")).buildCompositeIndex();
+        mgmt.commit();
+
+        JanusGraphTransaction tx3 = graph2.newTransaction();
+        tx3.addVertex("name", "v2");
+        tx3.commit();
+        newTx();
+        tx.addVertex("name", "v3");
+        tx.commit();
+
+        finishSchema();
+        try {
+            mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
+            fail(); //Open tx2 should not make this possible
+        } catch (IllegalArgumentException e) {
+        }
+        finishSchema();
+
+        //close second graph instance, so index can move to REGISTERED
+        Set<String> openInstances = mgmt.getOpenInstances();
+        assertEquals(2, openInstances.size());
+        assertTrue(openInstances.contains(graph.getConfiguration().getUniqueGraphId() + "(current)"));
+        assertTrue(openInstances.contains(graph2.getConfiguration().getUniqueGraphId()));
+        try {
+            mgmt.forceCloseInstance(graph.getConfiguration().getUniqueGraphId());
+            fail(); //Cannot close current instance
+        } catch (IllegalArgumentException e) {
+        }
+        mgmt.forceCloseInstance(graph2.getConfiguration().getUniqueGraphId());
+
+        mgmt.commit();
+        assertTrue(ManagementSystem.awaitGraphIndexStatus(graph, "theIndex").status(SchemaStatus.REGISTERED)
+                .timeout(TestGraphConfigs.getSchemaConvergenceTime(ChronoUnit.SECONDS), ChronoUnit.SECONDS)
+                .call().getSucceeded());
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
+        finishSchema();
+    }
+
    /* ==================================================================================
                             ADVANCED
      ==================================================================================*/
@@ -3745,6 +3805,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         for (LogTxStatus status : LogTxStatus.values()) txMsgCounter.put(status, new AtomicInteger(0));
         final AtomicInteger userlogMeta = new AtomicInteger(0);
         txlog.registerReader(startMarker, new MessageReader() {
+            @Override public void updateState() {}
+
             @Override
             public void read(Message message) {
                 Instant msgTime = message.getTimestamp();
@@ -3784,6 +3846,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         for (Change change : Change.values()) userChangeCounter.put(change, new AtomicInteger(0));
         final AtomicInteger userLogMsgCounter = new AtomicInteger(0);
         userLog.registerReader(startMarker, new MessageReader() {
+            @Override
+            public void updateState() {}
+
             @Override
             public void read(Message message) {
                 Instant msgTime = message.getTimestamp();

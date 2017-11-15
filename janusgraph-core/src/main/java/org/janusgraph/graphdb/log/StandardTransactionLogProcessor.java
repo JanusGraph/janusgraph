@@ -350,7 +350,8 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
             entry.update(txentry);
         }
 
-
+        @Override
+        public void updateState() {}
     }
 
     private class TxEntry {
