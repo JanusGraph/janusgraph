@@ -18,6 +18,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.es.rest.RestElasticSearchClient;
@@ -66,7 +67,11 @@ public enum ElasticSearchSetup {
                 log.debug("Configured remote host: {} : {}", hostname, hostport);
                 hosts.add(new HttpHost(hostname, hostport, "http"));
             }
-            RestClient rc = RestClient.builder(hosts.toArray(new HttpHost[hosts.size()])).build();
+            final RestClientBuilder rcb = RestClient.builder(hosts.toArray(new HttpHost[hosts.size()]));
+            if (config.has(ElasticSearchIndex.MAX_RETRY_TIMEOUT)) {
+                rcb.setMaxRetryTimeoutMillis(config.get(ElasticSearchIndex.MAX_RETRY_TIMEOUT));
+            }
+            final RestClient rc = rcb.build();
 
             final int scrollKeepAlive = config.get(ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE);
             Preconditions.checkArgument(scrollKeepAlive >= 1, "Scroll Keep alive should be greater or equals than 1");
