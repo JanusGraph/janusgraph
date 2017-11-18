@@ -15,12 +15,12 @@
 package org.janusgraph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.graphdb.query.BackendQuery;
 import org.janusgraph.graphdb.query.BaseQuery;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +46,7 @@ public class MultiKeySliceQuery extends BaseQuery implements BackendQuery<MultiK
 
     public List<EntryList> execute(final BackendTransaction tx) {
         int total = 0;
-        List<EntryList> result = new ArrayList<EntryList>(4);
+        final List<EntryList> result = new ArrayList<>(Math.min(getLimit(), queries.size()));
         for (KeySliceQuery ksq : queries) {
             EntryList next =tx.indexQuery(ksq.updateLimit(getLimit()-total));
             result.add(next);
