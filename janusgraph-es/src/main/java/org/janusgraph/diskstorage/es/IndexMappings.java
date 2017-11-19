@@ -12,30 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.diskstorage.es.rest;
+package org.janusgraph.diskstorage.es;
 
 import java.util.Map;
+
+import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * Serialization of Elasticsearch index mapping.
  *
  * @author David Clement (davidclement90@laposte.net)
  */
-public class RestIndexMappings {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class IndexMappings {
 
-    private Map<String, RestIndexMapping> mappings;
+    private Map<String, IndexMapping> mappings;
 
-    public Map<String, RestIndexMapping> getMappings() {
+    public Map<String, IndexMapping> getMappings() {
         return mappings;
     }
 
-    public void setMappings(Map<String, RestIndexMapping> mappings){
+    public void setMappings(Map<String, IndexMapping> mappings){
         this.mappings = mappings;
     }
 
-    public static class RestIndexMapping {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class IndexMapping {
 
         private Map<String, Object> properties;
+
+        private String dynamic;
 
         public Map<String, Object> getProperties() {
             return properties;
@@ -43,6 +49,14 @@ public class RestIndexMappings {
 
         public void setProperties(Map<String, Object> properties) {
             this.properties = properties;
+        }
+
+        public boolean isDynamic() {
+            return dynamic == null || "true".equalsIgnoreCase(dynamic);
+        }
+
+        public void setDynamic(String dynamic) {
+            this.dynamic = dynamic;
         }
     }
 }

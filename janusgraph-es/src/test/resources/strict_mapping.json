@@ -1,0 +1,38 @@
+{
+  "mappings": {
+    "test_mapping": {
+      "dynamic": "strict",
+      "date_detection": false,
+      "properties": {
+        "boundary": {
+          "type": "geo_shape",
+          "tree": "quadtree",
+          "tree_levels": 20,
+          "distance_error_pct": 0.025
+        },
+        "date": {
+          "type": "date"
+        },
+        "location": {
+          "type": "geo_point"
+        },
+        "name": {
+          "type": "keyword"
+        },
+        "phone_list": {
+          "type": "keyword"
+        },
+        "phone_set": {
+          "type": "keyword"
+        },
+        "text": {
+          "type": "text"
+        },
+        "time": {
+          "type": "long"
+        }
+      }
+    }
+  }
+}
+
