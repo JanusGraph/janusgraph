@@ -67,13 +67,3 @@ To build the .deb and .rpm packages:
 
 To delete the packaging scripts from the root of the repository, run
 `mvn -N -Ppkg-tools clean` from the janusgraph-dist module.
-
-Gollum-site is no longer required
----------------------------------
-
-Previous versions of janusgraph-dist needed a companion module called
-janusgraph-site, which in turn required the gollum-site binary to be
-command on the local system.  This is no longer required now that the
-docs have moved from the GitHub wiki to AsciiDoc files stored in the
-repo.  The AsciiDoc files are converted to HTML using a DocBook-based
-toolchain completely managed by maven.
