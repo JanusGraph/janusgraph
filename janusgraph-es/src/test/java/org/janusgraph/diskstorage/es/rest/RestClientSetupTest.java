@@ -481,6 +481,23 @@ public class RestClientSetupTest {
     }
 
     @Test
+    public void testSSLDisableHostNameVerifierExplicitOff() throws Exception {
+
+        final SSLConfigurationCallback.Builder sslConfBuilderMock = mock(SSLConfigurationCallback.Builder.class);
+
+        doReturn(sslConfBuilderMock).when(restClientSetup).getSSLConfigurationCallbackBuilder();
+
+        baseConfigTest(ImmutableMap.<String, String>builder().
+                put("index." + INDEX_NAME + ".elasticsearch.ssl.enabled", "true").
+                put("index." + INDEX_NAME + ".elasticsearch.ssl.disable-hostname-verification", "false").
+                build()
+            );
+
+        verify(restClientSetup).getSSLConfigurationCallbackBuilder();
+        verify(sslConfBuilderMock, never()).disableHostNameVerification();
+    }
+
+    @Test
     public void testSSLDisableHostNameVerifierDefaultOff() throws Exception {
 
         final SSLConfigurationCallback.Builder sslConfBuilderMock = mock(SSLConfigurationCallback.Builder.class);
@@ -509,6 +526,23 @@ public class RestClientSetupTest {
         verify(sslConfBuilderMock).allowSelfSignedCertificates();
         verify(sslConfBuilderMock).build();
         verifyNoMoreInteractions(sslConfBuilderMock);
+    }
+
+    @Test
+    public void testSSLAllowSelfSignedCertsExplicitOff() throws Exception {
+
+        final SSLConfigurationCallback.Builder sslConfBuilderMock = mock(SSLConfigurationCallback.Builder.class);
+
+        doReturn(sslConfBuilderMock).when(restClientSetup).getSSLConfigurationCallbackBuilder();
+
+        baseConfigTest(ImmutableMap.<String, String>builder().
+                put("index." + INDEX_NAME + ".elasticsearch.ssl.enabled", "true").
+                put("index." + INDEX_NAME + ".elasticsearch.ssl.allow-self-signed-certificates", "false").
+                build()
+            );
+
+        verify(restClientSetup).getSSLConfigurationCallbackBuilder();
+        verify(sslConfBuilderMock, never()).allowSelfSignedCertificates();
     }
 
     @Test

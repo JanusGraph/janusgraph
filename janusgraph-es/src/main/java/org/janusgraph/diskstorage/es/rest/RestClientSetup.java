@@ -183,14 +183,14 @@ public class RestClientSetup {
             }
 
             if (config.has(ElasticSearchIndex.SSL_DISABLE_HOSTNAME_VERIFICATION) &&
-                    config.has(ElasticSearchIndex.SSL_DISABLE_HOSTNAME_VERIFICATION)) {
+                    config.get(ElasticSearchIndex.SSL_DISABLE_HOSTNAME_VERIFICATION).booleanValue()) {
                 log.warn("SSL hostname verification is disabled, Elasticsearch HTTPS connections may not be secure");
                 sslConfCBBuilder.disableHostNameVerification();
                 configureSSL = true;
             }
 
             if (config.has(ElasticSearchIndex.SSL_ALLOW_SELF_SIGNED_CERTIFICATES) &&
-                    config.has(ElasticSearchIndex.SSL_ALLOW_SELF_SIGNED_CERTIFICATES)) {
+                    config.get(ElasticSearchIndex.SSL_ALLOW_SELF_SIGNED_CERTIFICATES).booleanValue()) {
                 log.warn("Self-signed SSL certificate support is enabled, Elasticsearch HTTPS connections may not be secure");
                 sslConfCBBuilder.allowSelfSignedCertificates();
                 configureSSL = true;
