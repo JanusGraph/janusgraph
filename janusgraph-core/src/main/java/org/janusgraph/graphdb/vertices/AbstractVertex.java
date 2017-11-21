@@ -60,6 +60,10 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         return tx.isOpen() ? tx : tx.getNextTx();
     }
 
+    public final boolean isTxOpen() {
+        return tx.isOpen();
+    }
+
     @Override
     public long getCompareId() {
         if (tx.isPartitionedVertex(this)) return tx.getIdInspector().getCanonicalVertexId(longId());

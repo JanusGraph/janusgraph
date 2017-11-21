@@ -17,6 +17,7 @@ package org.janusgraph.graphdb.transaction.vertexcache;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.*;
 import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.vertices.AbstractVertex;
 import org.janusgraph.util.datastructures.Retriever;
 
 import java.util.ArrayList;
@@ -51,7 +52,7 @@ public class GuavaVertexCache implements VertexCache {
                         //Should only get evicted based on size constraint or replaced through add
                         assert (notification.getCause() == RemovalCause.SIZE || notification.getCause() == RemovalCause.REPLACED) : "Cause: " + notification.getCause();
                         InternalVertex v = notification.getValue();
-                        if (v.isModified()) {
+                        if (((AbstractVertex) v).isTxOpen() && v.isModified()) {
                             volatileVertices.putIfAbsent(notification.getKey(), v);
                         }
                     }
