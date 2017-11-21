@@ -35,25 +35,20 @@ Release Steps
 ### Preparing Documentation
 
 Update version-sensitive files in the root and documentation sources
-in the docs/ subdirectory off the root.
+in the `docs` subdirectory:
 
-Documentation pages:
+* `docs/changelog.txt`
+* `docs/versions.txt`
+* `docs/upgrade.txt`
 
-* changelog.txt
-* versions.txt
-* upgrade.txt
+Use the [`docs/build-and-copy-docs.sh`](docs/build-and-copy-docs.sh) script to
+build a set of docs for this release and copy them to the cloned
+`docs.janusgraph.org` repo which you will update later.
 
-Files in the main repo:
+You may also need to update the following files in the main repo for any new
+or updated dependencies:
 
-* CHANGELOG.asc
-* NOTICE.txt
-* UPGRADE.asc
-* janusgraph-site/src/site-resources/index.html
-  (this template generates a new root index page)
-
-Some of these updates could potentially be automated, but tweaking
-documentation before a release will always require at least human in
-the loop.
+* `NOTICE.txt`
 
 ### Preparing the Local Repository
 
