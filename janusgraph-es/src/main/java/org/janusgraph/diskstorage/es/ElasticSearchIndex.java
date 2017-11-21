@@ -48,6 +48,7 @@ import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_DOC_KEY;
 import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_GEO_COORDS_KEY;
 import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_TYPE_KEY;
 
+import org.janusgraph.diskstorage.es.IndexMappings.IndexMapping;
 import org.janusgraph.diskstorage.es.compat.AbstractESCompat;
 import org.janusgraph.diskstorage.es.compat.ES1Compat;
 import org.janusgraph.diskstorage.es.compat.ES2Compat;
@@ -70,6 +71,7 @@ import org.janusgraph.graphdb.query.condition.Not;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.types.ParameterType;
+import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -407,9 +409,13 @@ public class ElasticSearchIndex implements IndexProvider {
         if (useExternalMappings) {
             try {
                 //We check if the externalMapping have the property 'key'
-                final Map mappings = client.getMapping(indexStoreName, store);
-                if (mappings == null || !mappings.containsKey(key)) {
-                    throw new PermanentBackendException("The external mapping for index '"+ indexStoreName +"' and type '"+store+"' do not have property '"+key+"'");
+                final IndexMapping mappings = client.getMapping(indexStoreName, store);
+                if (mappings == null || (!mappings.isDynamic() && !mappings.getProperties().containsKey(key))) {
+                    //Error if it is not dynamic and have not the property 'key'
+                    throw new PermanentBackendException("The external mapping for index '"+ indexStoreName + "' and type '" + store + "' do not have property '" + key + "'");
+                } else if (mappings.isDynamic()) {
+                    //If it is dynamic, we push the unknown property 'key'
+                    this.pushMapping(store, key, information);
                 }
             } catch (final IOException e) {
                 throw new PermanentBackendException(e);
