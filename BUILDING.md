@@ -30,13 +30,24 @@ To build with only the TinkerPop tests:
 mvn clean install -Dtest.skip.tp=false -DskipTests=true
 ```
 
+To build the distribution archive:
+
+```
+mvn clean install -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true
+```
+This command generates the distribution archive in `janusgraph-dist/janusgraph-dist-hadoop-2/target/janusgraph-$VERSION-hadoop2.zip`.
+For more details information, please see [here](janusgraph-dist/README.md#building-zip-archives)
+
 ## Building Docker Image for JanusGraph Gremlin Server
 
-To build and run Docker images with JanusGraph and Gremlin Server, configured 
+In order to build Docker image for JanusGraph Gremlin Server, a
+distribution archive is needed. Refer to `To build the distribution archive`
+section to build the distribution archive first. Then use the following command
+to build and run Docker images with JanusGraph and Gremlin Server, configured
 to run the BerkeleyJE backend and Elasticsearch (requires [Docker Compose](https://docs.docker.com/compose/)):
 
 ```bash
-mvn clean install -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true && mvn docker:build -Pjanusgraph-docker -pl janusgraph-dist
+mvn docker:build -Pjanusgraph-docker -pl janusgraph-dist
 docker-compose -f janusgraph-dist/janusgraph-dist-hadoop-2/docker-compose.yml up
 ```
 
