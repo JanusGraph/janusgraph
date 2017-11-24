@@ -28,5 +28,5 @@ import org.janusgraph.diskstorage.BackendException;
 public interface StorageCallable<T> extends Callable<T> {
 
     @Override
-    public T call() throws BackendException;
+    T call() throws BackendException;
 }

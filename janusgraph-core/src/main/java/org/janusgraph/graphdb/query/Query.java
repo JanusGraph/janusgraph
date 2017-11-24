@@ -21,20 +21,20 @@ package org.janusgraph.graphdb.query;
  */
 public interface Query {
 
-    public static final int NO_LIMIT = Integer.MAX_VALUE;
+    int NO_LIMIT = Integer.MAX_VALUE;
 
     /**
      * Whether this query has a defined limit
      *
      * @return
      */
-    public boolean hasLimit();
+    boolean hasLimit();
 
     /**
      *
      * @return The maximum number of results this query should return
      */
-    public int getLimit();
+    int getLimit();
 
 
 

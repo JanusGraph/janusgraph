@@ -23,31 +23,31 @@ import org.janusgraph.graphdb.internal.ElementCategory;
  */
 public interface IndexType {
 
-    public ElementCategory getElement();
+    ElementCategory getElement();
 
-    public IndexField[] getFieldKeys();
+    IndexField[] getFieldKeys();
 
-    public IndexField getField(PropertyKey key);
+    IndexField getField(PropertyKey key);
 
-    public boolean indexesKey(PropertyKey key);
+    boolean indexesKey(PropertyKey key);
 
-    public boolean isCompositeIndex();
+    boolean isCompositeIndex();
 
-    public boolean isMixedIndex();
+    boolean isMixedIndex();
 
-    public boolean hasSchemaTypeConstraint();
+    boolean hasSchemaTypeConstraint();
 
-    public JanusGraphSchemaType getSchemaTypeConstraint();
+    JanusGraphSchemaType getSchemaTypeConstraint();
 
-    public String getBackingIndexName();
+    String getBackingIndexName();
 
-    public String getName();
+    String getName();
 
     /**
      * Resets the internal caches used to speed up lookups on this index.
      * This is needed when the index gets modified in {@link org.janusgraph.graphdb.database.management.ManagementSystem}.
      */
-    public void resetCache();
+    void resetCache();
 
     //TODO: Add in the future
     //public And getCondition();

@@ -29,7 +29,7 @@ public interface BaseTransaction {
      *
      * @throws BackendException
      */
-    public void commit() throws BackendException;
+    void commit() throws BackendException;
 
     /**
      * Aborts (or rolls back) the transaction.
@@ -38,6 +38,6 @@ public interface BaseTransaction {
      *
      * @throws BackendException
      */
-    public void rollback() throws BackendException;
+    void rollback() throws BackendException;
 
 }

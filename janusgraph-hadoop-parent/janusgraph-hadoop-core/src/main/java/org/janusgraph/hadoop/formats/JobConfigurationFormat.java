@@ -25,5 +25,5 @@ import java.io.IOException;
  */
 public interface JobConfigurationFormat {
 
-    public void updateJob(Job job) throws InterruptedException, IOException;
+    void updateJob(Job job) throws InterruptedException, IOException;
 }

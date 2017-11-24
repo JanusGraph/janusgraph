@@ -21,10 +21,10 @@ import org.janusgraph.core.PropertyKey;
  */
 public interface MixedIndexType extends IndexType {
 
-    public ParameterIndexField[] getFieldKeys();
+    ParameterIndexField[] getFieldKeys();
 
-    public ParameterIndexField getField(PropertyKey key);
+    ParameterIndexField getField(PropertyKey key);
 
-    public String getStoreName();
+    String getStoreName();
 
 }

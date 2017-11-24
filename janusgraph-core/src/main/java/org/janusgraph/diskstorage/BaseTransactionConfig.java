@@ -32,7 +32,7 @@ public interface BaseTransactionConfig {
      *
      * @return commit timestamp for this transaction
      */
-    public Instant getCommitTime();
+    Instant getCommitTime();
 
     /**
      * Sets the commit time of this transaction. If a commit time has already been set, this method throws
@@ -40,19 +40,19 @@ public interface BaseTransactionConfig {
      *
      * @param time
      */
-    public void setCommitTime(Instant time);
+    void setCommitTime(Instant time);
 
     /**
      * Returns true if a commit time has been set on this transaction.
      *
      * @return
      */
-    public boolean hasCommitTime();
+    boolean hasCommitTime();
 
     /**
      * Returns the timestamp provider of this transaction.
      */
-    public TimestampProvider getTimestampProvider();
+    TimestampProvider getTimestampProvider();
 
     /**
      * Returns the (possibly null) group name for this transaction.
@@ -60,12 +60,12 @@ public interface BaseTransactionConfig {
      *
      * @return group name prefix string or null
      */
-    public String getGroupName();
+    String getGroupName();
 
     /**
      * True when {@link #getGroupName()} is non-null, false when null.
      */
-    public boolean hasGroupName();
+    boolean hasGroupName();
 
     /**
      * Get an arbitrary transaction-specific option.
@@ -73,7 +73,7 @@ public interface BaseTransactionConfig {
      * @param opt option for which to return a value
      * @return value of the option
      */
-    public <V> V getCustomOption(ConfigOption<V> opt);
+    <V> V getCustomOption(ConfigOption<V> opt);
 
     /**
      * Return any transaction-specific options.
@@ -81,5 +81,5 @@ public interface BaseTransactionConfig {
      * @see #getCustomOption(ConfigOption)
      * @return options for this tx
      */
-    public Configuration getCustomOptions();
+    Configuration getCustomOptions();
 }

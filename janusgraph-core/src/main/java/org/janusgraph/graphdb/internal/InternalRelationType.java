@@ -28,27 +28,27 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
  */
 public interface InternalRelationType extends RelationType, InternalVertex {
 
-    public boolean isInvisibleType();
+    boolean isInvisibleType();
 
-    public long[] getSignature();
+    long[] getSignature();
 
-    public long[] getSortKey();
+    long[] getSortKey();
 
-    public Order getSortOrder();
+    Order getSortOrder();
 
-    public Multiplicity multiplicity();
+    Multiplicity multiplicity();
 
-    public ConsistencyModifier getConsistencyModifier();
+    ConsistencyModifier getConsistencyModifier();
 
-    public Integer getTTL();
+    Integer getTTL();
 
-    public boolean isUnidirected(Direction dir);
+    boolean isUnidirected(Direction dir);
 
-    public InternalRelationType getBaseType();
+    InternalRelationType getBaseType();
 
-    public Iterable<InternalRelationType> getRelationIndexes();
+    Iterable<InternalRelationType> getRelationIndexes();
 
-    public SchemaStatus getStatus();
+    SchemaStatus getStatus();
 
-    public Iterable<IndexType> getKeyIndexes();
+    Iterable<IndexType> getKeyIndexes();
 }

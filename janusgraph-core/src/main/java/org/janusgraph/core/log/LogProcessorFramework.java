@@ -32,7 +32,7 @@ public interface LogProcessorFramework {
      *                      i.e. the one used in {@link org.janusgraph.core.TransactionBuilder#logIdentifier(String)}
      * @return
      */
-    public LogProcessorBuilder addLogProcessor(String logIdentifier);
+    LogProcessorBuilder addLogProcessor(String logIdentifier);
 
     /**
      * Removes the log processor for the given identifier and closes the associated log.
@@ -40,14 +40,14 @@ public interface LogProcessorFramework {
      * @param logIdentifier
      * @return
      */
-    public boolean removeLogProcessor(String logIdentifier);
+    boolean removeLogProcessor(String logIdentifier);
 
     /**
      * Closes all log processors, their associated logs, and the backing graph instance
      *
      * @throws JanusGraphException
      */
-    public void shutdown() throws JanusGraphException;
+    void shutdown() throws JanusGraphException;
 
 
 }
