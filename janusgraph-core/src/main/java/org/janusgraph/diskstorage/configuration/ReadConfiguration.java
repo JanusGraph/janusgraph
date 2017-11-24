@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
  */
 public interface ReadConfiguration {
 
-    public static final ReadConfiguration EMPTY = new ReadConfiguration() {
+    ReadConfiguration EMPTY = new ReadConfiguration() {
         @Override
         public<O> O get(String key, Class<O> datatype) {
             return null;
@@ -38,10 +38,10 @@ public interface ReadConfiguration {
         }
     };
 
-    public<O> O get(String key, Class<O> datatype);
+    <O> O get(String key, Class<O> datatype);
 
-    public Iterable<String> getKeys(String prefix);
+    Iterable<String> getKeys(String prefix);
 
-    public void close();
+    void close();
 
 }

@@ -22,12 +22,12 @@ package org.janusgraph.diskstorage;
  */
 public interface ReadBuffer extends ScanBuffer, StaticBuffer {
 
-    public int getPosition();
+    int getPosition();
 
-    public void movePositionTo(int position);
+    void movePositionTo(int position);
 
-    public<T> T asRelative(Factory<T> factory);
+    <T> T asRelative(Factory<T> factory);
 
-    public ReadBuffer subrange(int length, boolean invert);
+    ReadBuffer subrange(int length, boolean invert);
 
 }

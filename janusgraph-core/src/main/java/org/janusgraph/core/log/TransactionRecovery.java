@@ -32,6 +32,6 @@ public interface TransactionRecovery {
      *
      * @throws JanusGraphException
      */
-    public void shutdown() throws JanusGraphException;
+    void shutdown() throws JanusGraphException;
 
 }

@@ -25,20 +25,20 @@ import java.util.Set;
  */
 public interface Configuration {
 
-    public boolean has(ConfigOption option, String... umbrellaElements);
+    boolean has(ConfigOption option, String... umbrellaElements);
 
-    public<O> O get(ConfigOption<O> option, String... umbrellaElements);
+    <O> O get(ConfigOption<O> option, String... umbrellaElements);
 
-    public Set<String> getContainedNamespaces(ConfigNamespace umbrella, String... umbrellaElements);
+    Set<String> getContainedNamespaces(ConfigNamespace umbrella, String... umbrellaElements);
 
-    public Map<String,Object> getSubset(ConfigNamespace umbrella, String... umbrellaElements);
+    Map<String,Object> getSubset(ConfigNamespace umbrella, String... umbrellaElements);
 
-    public Configuration restrictTo(final String... umbrellaElements);
+    Configuration restrictTo(final String... umbrellaElements);
 
 
     //--------------------
 
-    public static final Configuration EMPTY = new Configuration() {
+    Configuration EMPTY = new Configuration() {
         @Override
         public boolean has(ConfigOption option, String... umbrellaElements) {
             return false;

@@ -21,6 +21,6 @@ import org.janusgraph.graphdb.database.serialize.DataOutput;
  */
 public interface LoggableTransaction extends BaseTransaction {
 
-    public void logMutations(DataOutput out);
+    void logMutations(DataOutput out);
 
 }

@@ -30,13 +30,13 @@ public interface VertexListInternal extends VertexList {
      *
      * @param n
      */
-    public void add(JanusGraphVertex n);
+    void add(JanusGraphVertex n);
 
     /**
      * Copies all vertices in the given vertex list into this list.
      *
      * @param vertices
      */
-    public void addAll(VertexList vertices);
+    void addAll(VertexList vertices);
 
 }

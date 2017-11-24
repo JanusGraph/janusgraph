@@ -36,7 +36,7 @@ public interface HBaseCompat {
      * @param algo
      *            compression type to use
      */
-    public void setCompression(HColumnDescriptor cd, String algo);
+    void setCompression(HColumnDescriptor cd, String algo);
 
     /**
      * Create and return a HTableDescriptor instance with the given name. The
@@ -50,7 +50,7 @@ public interface HBaseCompat {
      *            HBase table name
      * @return a new table descriptor instance
      */
-    public HTableDescriptor newTableDescriptor(String tableName);
+    HTableDescriptor newTableDescriptor(String tableName);
 
     ConnectionMask createConnection(Configuration conf) throws IOException;
 

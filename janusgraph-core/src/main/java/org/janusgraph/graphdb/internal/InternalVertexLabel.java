@@ -21,9 +21,9 @@ import org.janusgraph.core.VertexLabel;
  */
 public interface InternalVertexLabel extends VertexLabel {
 
-    public boolean hasDefaultConfiguration();
+    boolean hasDefaultConfiguration();
 
-    public int getTTL();
+    int getTTL();
 
 
 }

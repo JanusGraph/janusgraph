@@ -26,24 +26,24 @@ import org.janusgraph.graphdb.relations.RelationCache;
  */
 public interface Entry extends StaticBuffer, MetaAnnotated {
 
-    public int getValuePosition();
+    int getValuePosition();
 
-    public boolean hasValue();
+    boolean hasValue();
 
-    public StaticBuffer getColumn();
+    StaticBuffer getColumn();
 
-    public<T> T getColumnAs(Factory<T> factory);
+    <T> T getColumnAs(Factory<T> factory);
 
-    public StaticBuffer getValue();
+    StaticBuffer getValue();
 
-    public<T> T getValueAs(Factory<T> factory);
+    <T> T getValueAs(Factory<T> factory);
 
     /**
      * Returns the cached parsed representation of this Entry if it exists, else NULL
      *
      * @return
      */
-    public RelationCache getCache();
+    RelationCache getCache();
 
     /**
      * Sets the cached parsed representation of this Entry. This method does not synchronize,
@@ -51,5 +51,5 @@ public interface Entry extends StaticBuffer, MetaAnnotated {
      *
      * @param cache
      */
-    public void setCache(RelationCache cache);
+    void setCache(RelationCache cache);
 }

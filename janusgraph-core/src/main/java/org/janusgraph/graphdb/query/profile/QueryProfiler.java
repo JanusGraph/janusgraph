@@ -25,25 +25,25 @@ import java.util.function.Function;
  */
 public interface QueryProfiler {
 
-    public static final String CONDITION_ANNOTATION = "condition";
-    public static final String ORDERS_ANNOTATION = "orders";
-    public static final String LIMIT_ANNOTATION = "limit";
+    String CONDITION_ANNOTATION = "condition";
+    String ORDERS_ANNOTATION = "orders";
+    String LIMIT_ANNOTATION = "limit";
 
-    public static final String MULTIQUERY_ANNOTATION = "multi";
-    public static final String NUMVERTICES_ANNOTATION = "vertices";
-    public static final String PARTITIONED_VERTEX_ANNOTATION = "partitioned";
+    String MULTIQUERY_ANNOTATION = "multi";
+    String NUMVERTICES_ANNOTATION = "vertices";
+    String PARTITIONED_VERTEX_ANNOTATION = "partitioned";
 
-    public static final String FITTED_ANNOTATION = "isFitted";
-    public static final String ORDERED_ANNOTATION = "isOrdered";
-    public static final String QUERY_ANNOTATION = "query";
-    public static final String FULLSCAN_ANNOTATION = "fullscan";
-    public static final String INDEX_ANNOTATION = "index";
+    String FITTED_ANNOTATION = "isFitted";
+    String ORDERED_ANNOTATION = "isOrdered";
+    String QUERY_ANNOTATION = "query";
+    String FULLSCAN_ANNOTATION = "fullscan";
+    String INDEX_ANNOTATION = "index";
 
-    public static final String OR_QUERY = "OR-query";
-    public static final String AND_QUERY = "AND-query";
-    public static final String OPTIMIZATION = "optimization";
+    String OR_QUERY = "OR-query";
+    String AND_QUERY = "AND-query";
+    String OPTIMIZATION = "optimization";
 
-    public static final QueryProfiler NO_OP = new QueryProfiler() {
+    QueryProfiler NO_OP = new QueryProfiler() {
         @Override
         public QueryProfiler addNested(String groupName) {
             return this;
@@ -68,29 +68,29 @@ public interface QueryProfiler {
     };
 
 
-    public QueryProfiler addNested(String groupName);
+    QueryProfiler addNested(String groupName);
 
-    public QueryProfiler setAnnotation(String key, Object value);
+    QueryProfiler setAnnotation(String key, Object value);
 
-    public void startTimer();
+    void startTimer();
 
-    public void stopTimer();
+    void stopTimer();
 
-    public void setResultSize(long size);
+    void setResultSize(long size);
 
-    public static<Q extends Query,R extends Collection> R profile(QueryProfiler profiler, Q query, Function<Q,R> queryExecutor) {
+    static<Q extends Query,R extends Collection> R profile(QueryProfiler profiler, Q query, Function<Q,R> queryExecutor) {
         return profile(profiler,query,false,queryExecutor);
     }
 
-    public static<Q extends Query,R extends Collection> R profile(String groupName, QueryProfiler profiler, Q query, Function<Q,R> queryExecutor) {
+    static<Q extends Query,R extends Collection> R profile(String groupName, QueryProfiler profiler, Q query, Function<Q,R> queryExecutor) {
         return profile(groupName,profiler,query,false,queryExecutor);
     }
 
-    public static<Q extends Query,R extends Collection> R profile(QueryProfiler profiler, Q query, boolean multiQuery, Function<Q,R> queryExecutor) {
+    static<Q extends Query,R extends Collection> R profile(QueryProfiler profiler, Q query, boolean multiQuery, Function<Q,R> queryExecutor) {
         return profile("backend-query",profiler,query,multiQuery,queryExecutor);
     }
 
-    public static<Q extends Query,R extends Collection> R profile(String groupName, QueryProfiler profiler, Q query, boolean multiQuery, Function<Q,R> queryExecutor) {
+    static<Q extends Query,R extends Collection> R profile(String groupName, QueryProfiler profiler, Q query, boolean multiQuery, Function<Q,R> queryExecutor) {
         final QueryProfiler sub = profiler.addNested(groupName);
         sub.setAnnotation(QUERY_ANNOTATION, query);
         if (query.hasLimit()) sub.setAnnotation(LIMIT_ANNOTATION,query.getLimit());
@@ -111,7 +111,7 @@ public interface QueryProfiler {
         return result;
     }
 
-    public static QueryProfiler startProfile(QueryProfiler profiler, Subquery query) {
+    static QueryProfiler startProfile(QueryProfiler profiler, Subquery query) {
         final QueryProfiler sub = profiler.addNested("backend-query");
         sub.setAnnotation(QUERY_ANNOTATION, query);
         if (query.hasLimit()) sub.setAnnotation(LIMIT_ANNOTATION,query.getLimit());

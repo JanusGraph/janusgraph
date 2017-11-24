@@ -19,6 +19,6 @@ package org.janusgraph.graphdb.query.profile;
  */
 public interface ProfileObservable {
 
-    public void observeWith(QueryProfiler profiler);
+    void observeWith(QueryProfiler profiler);
 
 }

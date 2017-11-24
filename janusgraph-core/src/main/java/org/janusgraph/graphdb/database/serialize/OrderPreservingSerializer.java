@@ -37,7 +37,7 @@ public interface OrderPreservingSerializer<V> extends AttributeSerializer<V> {
      * @param buffer ReadBuffer to read attribute from
      * @return Read attribute
      */
-    public V readByteOrder(ScanBuffer buffer);
+    V readByteOrder(ScanBuffer buffer);
 
     /**
      * Writes the attribute value to the given WriteBuffer such that the byte order of the result is equal to the
@@ -48,6 +48,6 @@ public interface OrderPreservingSerializer<V> extends AttributeSerializer<V> {
      * @param buffer    WriteBuffer to write attribute to
      * @param attribute Attribute to write to WriteBuffer
      */
-    public void writeByteOrder(WriteBuffer buffer, V attribute);
+    void writeByteOrder(WriteBuffer buffer, V attribute);
 
 }
