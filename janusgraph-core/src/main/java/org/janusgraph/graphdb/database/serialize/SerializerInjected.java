@@ -24,6 +24,6 @@ package org.janusgraph.graphdb.database.serialize;
  */
 public interface SerializerInjected {
 
-    public void setSerializer(Serializer serializer);
+    void setSerializer(Serializer serializer);
 
 }

@@ -25,17 +25,12 @@ public interface PartitionAssignment {
     /**
      * Default assignment (when no id has been assigned yet)
      */
-    public static final PartitionAssignment EMPTY = new PartitionAssignment() {
-        @Override
-        public int getPartitionID() {
-            return -1;
-        }
-    };
+    PartitionAssignment EMPTY = () -> -1;
 
     /**
      * Returns the assigned partition id
      * @return
      */
-    public int getPartitionID();
+    int getPartitionID();
 
 }

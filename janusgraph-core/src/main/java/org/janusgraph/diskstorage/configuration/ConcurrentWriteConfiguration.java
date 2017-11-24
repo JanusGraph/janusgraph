@@ -19,6 +19,6 @@ package org.janusgraph.diskstorage.configuration;
  */
 public interface ConcurrentWriteConfiguration extends WriteConfiguration {
 
-    public<O> void set(String key, O value, O expectedValue);
+    <O> void set(String key, O value, O expectedValue);
 
 }

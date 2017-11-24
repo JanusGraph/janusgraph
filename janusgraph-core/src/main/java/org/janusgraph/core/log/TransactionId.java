@@ -33,19 +33,19 @@ public interface TransactionId {
      *
      * @return
      */
-    public String getInstanceId();
+    String getInstanceId();
 
     /**
      * Returns the unique transaction id within a particular JanusGraph instance.
      * @return
      */
-    public long getTransactionId();
+    long getTransactionId();
 
     /**
      * Returns the time of the transaction
      *
      * @return
      */
-    public Instant getTransactionTime();
+    Instant getTransactionTime();
 
 }

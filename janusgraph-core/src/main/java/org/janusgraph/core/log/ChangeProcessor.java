@@ -32,6 +32,6 @@ public interface ChangeProcessor {
      * @param txId
      * @param changeState
      */
-    public void process(JanusGraphTransaction tx, TransactionId txId, ChangeState changeState);
+    void process(JanusGraphTransaction tx, TransactionId txId, ChangeState changeState);
 
 }

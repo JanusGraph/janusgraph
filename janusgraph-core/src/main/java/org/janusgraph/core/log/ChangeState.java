@@ -36,7 +36,7 @@ public interface ChangeState {
      * @param change
      * @return
      */
-    public Set<JanusGraphVertex> getVertices(Change change);
+    Set<JanusGraphVertex> getVertices(Change change);
 
     /**
      * Returns all relations that match the change state and any of the provided relation types. If no relation types
@@ -46,7 +46,7 @@ public interface ChangeState {
      * @param types
      * @return
      */
-    public Iterable<JanusGraphRelation> getRelations(Change change, RelationType... types);
+    Iterable<JanusGraphRelation> getRelations(Change change, RelationType... types);
 
     /**
      * Returns all edges incident on the given vertex in the given direction that match the provided change state and edge labels.
@@ -57,7 +57,7 @@ public interface ChangeState {
      * @param labels
      * @return
      */
-    public Iterable<JanusGraphEdge> getEdges(Vertex vertex, Change change, Direction dir, String... labels);
+    Iterable<JanusGraphEdge> getEdges(Vertex vertex, Change change, Direction dir, String... labels);
 
 
     /**
@@ -68,7 +68,7 @@ public interface ChangeState {
      * @param keys
      * @return
      */
-    public Iterable<JanusGraphVertexProperty> getProperties(Vertex vertex, Change change, String... keys);
+    Iterable<JanusGraphVertexProperty> getProperties(Vertex vertex, Change change, String... keys);
 
 
 

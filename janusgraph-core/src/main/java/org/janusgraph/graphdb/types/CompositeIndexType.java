@@ -23,16 +23,16 @@ import org.janusgraph.core.schema.SchemaStatus;
 */
 public interface CompositeIndexType extends IndexType {
 
-    public long getID();
+    long getID();
 
-    public IndexField[] getFieldKeys();
+    IndexField[] getFieldKeys();
 
-    public SchemaStatus getStatus();
+    SchemaStatus getStatus();
 
     /*
      * single == unique,
      */
-    public Cardinality getCardinality();
+    Cardinality getCardinality();
 
-    public ConsistencyModifier getConsistencyModifier();
+    ConsistencyModifier getConsistencyModifier();
 }

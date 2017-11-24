@@ -31,7 +31,7 @@ public interface EntryList extends List<Entry> {
      *
      * @return
      */
-    public Iterator<Entry> reuseIterator();
+    Iterator<Entry> reuseIterator();
 
 
     /**
@@ -39,13 +39,13 @@ public interface EntryList extends List<Entry> {
      *
      * @return
      */
-    public int getByteSize();
+    int getByteSize();
 
 
 
-    public static final EmptyList EMPTY_LIST = new EmptyList();
+    EmptyList EMPTY_LIST = new EmptyList();
 
-    static class EmptyList extends AbstractList<Entry> implements EntryList {
+    class EmptyList extends AbstractList<Entry> implements EntryList {
 
         @Override
         public Entry get(int index) {

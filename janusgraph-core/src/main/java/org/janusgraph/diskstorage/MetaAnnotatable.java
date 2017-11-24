@@ -19,6 +19,6 @@ package org.janusgraph.diskstorage;
  */
 public interface MetaAnnotatable {
 
-    public Object setMetaData(EntryMetaData key, Object value);
+    Object setMetaData(EntryMetaData key, Object value);
 
 }

@@ -22,20 +22,20 @@ import java.util.Collection;
 
 public interface Interval<T> {
 
-    public T getStart();
+    T getStart();
 
-    public T getEnd();
+    T getEnd();
 
-    public boolean startInclusive();
+    boolean startInclusive();
 
-    public boolean endInclusive();
+    boolean endInclusive();
 
-    public boolean isPoints();
+    boolean isPoints();
 
-    public Collection<T> getPoints();
+    Collection<T> getPoints();
 
-    public boolean isEmpty();
+    boolean isEmpty();
 
-    public Interval<T> intersect(Interval<T> other);
+    Interval<T> intersect(Interval<T> other);
 
 }

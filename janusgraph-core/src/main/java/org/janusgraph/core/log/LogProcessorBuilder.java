@@ -29,7 +29,7 @@ public interface LogProcessorBuilder {
      *
      * @return
      */
-    public String getLogIdentifier();
+    String getLogIdentifier();
 
     /**
      * Sets the identifier of this processor. This String should uniquely identify a log processing instance and will be used to record
@@ -41,7 +41,7 @@ public interface LogProcessorBuilder {
      * @param name
      * @return
      */
-    public LogProcessorBuilder setProcessorIdentifier(String name);
+    LogProcessorBuilder setProcessorIdentifier(String name);
 
     /**
      * Sets the time at which this log processor should start processing transaction log entries
@@ -49,32 +49,32 @@ public interface LogProcessorBuilder {
      * @param startTime
      * @return
      */
-    public LogProcessorBuilder setStartTime(Instant startTime);
+    LogProcessorBuilder setStartTime(Instant startTime);
 
     /**
      * Indicates that the transaction log processor should process newly added events.
      *
      * @return
      */
-    public LogProcessorBuilder setStartTimeNow();
+    LogProcessorBuilder setStartTimeNow();
 
     /**
      * Adds a {@link ChangeProcessor} to this transaction log processor. These are executed independently.
      * @param processor
      * @return
      */
-    public LogProcessorBuilder addProcessor(ChangeProcessor processor);
+    LogProcessorBuilder addProcessor(ChangeProcessor processor);
 
     /**
      * Sets how often this log processor should attempt to retry executing a contained {@link ChangeProcessor} in case of failure.
      * @param attempts
      * @return
      */
-    public LogProcessorBuilder setRetryAttempts(int attempts);
+    LogProcessorBuilder setRetryAttempts(int attempts);
 
     /**
      * Builds this transaction log processor and starts processing the log.
      */
-    public void build();
+    void build();
 
 }

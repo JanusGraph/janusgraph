@@ -29,7 +29,7 @@ public interface IDBlockSizer {
      * @param idNamespace
      * @return
      */
-    public long getBlockSize(int idNamespace);
+    long getBlockSize(int idNamespace);
 
     /**
      * Returns the upper bound for any id block returned by {@link org.janusgraph.diskstorage.IDAuthority#getIDBlock(int,int, Duration)}
@@ -39,6 +39,6 @@ public interface IDBlockSizer {
      * @param idNamespace
      * @return
      */
-    public long getIdUpperBound(int idNamespace);
+    long getIdUpperBound(int idNamespace);
 
 }

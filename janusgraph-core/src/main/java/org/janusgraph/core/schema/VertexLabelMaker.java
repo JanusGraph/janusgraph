@@ -34,7 +34,7 @@ public interface VertexLabelMaker {
      * Returns the name of the to-be-build vertex label
      * @return the label name
      */
-    public String getName();
+    String getName();
 
     /**
      * Enables partitioning for this vertex label. If a vertex label is partitioned, all of its
@@ -42,7 +42,7 @@ public interface VertexLabelMaker {
      *
      * @return this VertexLabelMaker
      */
-    public VertexLabelMaker partition();
+    VertexLabelMaker partition();
 
     /**
      * Makes this vertex label static, which means that vertices of this label cannot be modified outside of the transaction
@@ -50,14 +50,14 @@ public interface VertexLabelMaker {
      *
      * @return this VertexLabelMaker
      */
-    public VertexLabelMaker setStatic();
+    VertexLabelMaker setStatic();
 
     /**
      * Creates a {@link VertexLabel} according to the specifications of this builder.
      *
      * @return the created vertex label
      */
-    public VertexLabel make();
+    VertexLabel make();
 
 
 }

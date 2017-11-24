@@ -24,20 +24,20 @@ import org.janusgraph.core.VertexLabel;
  */
 public interface TypeInspector {
 
-    public default PropertyKey getExistingPropertyKey(long id) {
+    default PropertyKey getExistingPropertyKey(long id) {
         return (PropertyKey)getExistingRelationType(id);
     }
 
-    public default EdgeLabel getExistingEdgeLabel(long id) {
+    default EdgeLabel getExistingEdgeLabel(long id) {
         return (EdgeLabel)getExistingRelationType(id);
     }
 
-    public RelationType getExistingRelationType(long id);
+    RelationType getExistingRelationType(long id);
 
-    public VertexLabel getExistingVertexLabel(long id);
+    VertexLabel getExistingVertexLabel(long id);
 
-    public boolean containsRelationType(String name);
+    boolean containsRelationType(String name);
 
-    public RelationType getRelationType(String name);
+    RelationType getRelationType(String name);
 
 }

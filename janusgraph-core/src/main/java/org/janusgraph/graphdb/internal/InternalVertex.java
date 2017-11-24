@@ -31,7 +31,7 @@ import java.util.List;
 public interface InternalVertex extends JanusGraphVertex, InternalElement {
 
     @Override
-    public InternalVertex it();
+    InternalVertex it();
 
     /**
      * Deleted relation e from the adjacency list of this vertex and updates the state of the vertex to reflect
@@ -43,21 +43,21 @@ public interface InternalVertex extends JanusGraphVertex, InternalElement {
      *
      * @param e JanusGraphRelation to be removed
      */
-    public void removeRelation(InternalRelation e);
+    void removeRelation(InternalRelation e);
 
     /**
      * Add a new relation to the vertex
      * @param e
      * @return
      */
-    public boolean addRelation(InternalRelation e);
+    boolean addRelation(InternalRelation e);
 
     /**
      * Returns an iterable over all newly added relations incident on this vertex that match the given predicate
      * @param query
      * @return
      */
-    public List<InternalRelation> getAddedRelations(Predicate<InternalRelation> query);
+    List<InternalRelation> getAddedRelations(Predicate<InternalRelation> query);
 
     /**
      * Returns all relations that match the given query. If these matching relations are not currently
@@ -66,29 +66,29 @@ public interface InternalVertex extends JanusGraphVertex, InternalElement {
      * @param lookup
      * @return
      */
-    public EntryList loadRelations(SliceQuery query, Retriever<SliceQuery,EntryList> lookup);
+    EntryList loadRelations(SliceQuery query, Retriever<SliceQuery,EntryList> lookup);
 
     /**
      * Returns true if the results for the given query have already been loaded for this vertex and are locally cached.
      * @param query
      * @return
      */
-    public boolean hasLoadedRelations(SliceQuery query);
+    boolean hasLoadedRelations(SliceQuery query);
 
     /**
      * Whether this vertex has removed relations
      * @return
      */
-    public boolean hasRemovedRelations();
+    boolean hasRemovedRelations();
 
     /**
      * Whether this vertex has added relations
      * @return
      */
-    public boolean hasAddedRelations();
+    boolean hasAddedRelations();
 
     @Override
-    public VertexCentricQueryBuilder query();
+    VertexCentricQueryBuilder query();
 
 
 }

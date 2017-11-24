@@ -21,26 +21,26 @@ package org.janusgraph.graphdb.idmanagement;
  */
 public interface IDInspector {
 
-    public boolean isSchemaVertexId(long id);
+    boolean isSchemaVertexId(long id);
 
-    public boolean isRelationTypeId(long id);
+    boolean isRelationTypeId(long id);
 
-    public boolean isEdgeLabelId(long id);
+    boolean isEdgeLabelId(long id);
 
-    public boolean isPropertyKeyId(long id);
+    boolean isPropertyKeyId(long id);
 
-    public boolean isSystemRelationTypeId(long id);
+    boolean isSystemRelationTypeId(long id);
 
-    public boolean isVertexLabelVertexId(long id);
+    boolean isVertexLabelVertexId(long id);
 
-    public boolean isGenericSchemaVertexId(long id);
+    boolean isGenericSchemaVertexId(long id);
 
-    public boolean isUserVertexId(long id);
+    boolean isUserVertexId(long id);
 
-    public boolean isUnmodifiableVertex(long id);
+    boolean isUnmodifiableVertex(long id);
 
-    public boolean isPartitionedVertex(long id);
+    boolean isPartitionedVertex(long id);
 
-    public long getCanonicalVertexId(long partitionedVertexId);
+    long getCanonicalVertexId(long partitionedVertexId);
 
 }
