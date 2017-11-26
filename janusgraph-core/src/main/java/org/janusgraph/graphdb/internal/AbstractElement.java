@@ -23,6 +23,8 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
+import lombok.AllArgsConstructor;
+
 /**
  * AbstractElement is the base class for all elements in JanusGraph.
  * It is defined and uniquely identified by its id.
@@ -34,13 +36,10 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@AllArgsConstructor
 public abstract class AbstractElement implements InternalElement, Comparable<JanusGraphElement> {
 
     private long id;
-
-    public AbstractElement(long id) {
-        this.id = id;
-    }
 
     public static boolean isTemporaryId(long elementId) {
         return elementId < 0;

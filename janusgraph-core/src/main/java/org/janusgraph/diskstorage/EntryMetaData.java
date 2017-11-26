@@ -21,6 +21,8 @@ import org.janusgraph.util.encoding.StringEncoding;
 import java.util.EnumMap;
 import java.util.function.Function;
 
+import lombok.Getter;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  * @author Alexander Patrikalakis (amcp@mit.edu)
@@ -33,22 +35,16 @@ public enum EntryMetaData {
 
     EntryMetaData(final Class<?> dataType, final boolean identifying, final Function<Object, Boolean> validator) {
         this.dataType = dataType;
-        this.identifying = identifying;
+        this.isIdentifying = identifying;
         this.validator = validator;
     }
     public static final java.util.Map<EntryMetaData,Object> EMPTY_METADATA = ImmutableMap.of();
 
+    @Getter
     private final Class<?> dataType;
-    private final boolean identifying;
+    @Getter
+    private final boolean isIdentifying;
     private final Function<Object, Boolean> validator;
-
-    public Class<?> getDataType() {
-        return dataType;
-    }
-
-    public boolean isIdentifying() {
-        return identifying;
-    }
 
     /**
      * Validates a datum according to the metadata type.

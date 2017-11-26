@@ -18,18 +18,21 @@ import com.google.common.base.Preconditions;
 
 import java.util.Map;
 
+import lombok.Getter;
+
 /**
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class ModifiableConfiguration extends BasicConfiguration {
 
-    private final WriteConfiguration config;
+    @Getter
+    private final WriteConfiguration configuration;
 
     public ModifiableConfiguration(ConfigNamespace root, WriteConfiguration config, Restriction restriction) {
         super(root, config, restriction);
         Preconditions.checkNotNull(config);
-        this.config = config;
+        this.configuration = config;
     }
 
     public<O> ModifiableConfiguration set(ConfigOption<O> option, O value, String... umbrellaElements) {
@@ -37,7 +40,7 @@ public class ModifiableConfiguration extends BasicConfiguration {
         Preconditions.checkArgument(!option.isFixed() || !isFrozen(), "Cannot change configuration option: %s", option);
         String key = super.getPath(option,umbrellaElements);
         value = option.verify(value);
-        config.set(key,value);
+        configuration.set(key,value);
         return this;
     }
 
@@ -52,16 +55,11 @@ public class ModifiableConfiguration extends BasicConfiguration {
         verifyOption(option);
         Preconditions.checkArgument(!option.isFixed() || !isFrozen(), "Cannot change configuration option: %s", option);
         String key = super.getPath(option,umbrellaElements);
-        config.remove(key);
+        configuration.remove(key);
     }
 
     public void freezeConfiguration() {
-        config.set(FROZEN_KEY, Boolean.TRUE);
+        configuration.set(FROZEN_KEY, Boolean.TRUE);
         if (!isFrozen()) setFrozen();
-    }
-
-    @Override
-    public WriteConfiguration getConfiguration() {
-        return config;
     }
 }

@@ -14,24 +14,21 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue.scan;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.EnumMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@Slf4j
 public class StandardScanMetrics implements ScanMetrics {
 
     private final EnumMap<Metric,AtomicLong> metrics;
     private final ConcurrentMap<String,AtomicLong> customMetrics;
-
-    private static final Logger log =
-            LoggerFactory.getLogger(StandardScanMetrics.class);
 
     public StandardScanMetrics() {
         metrics = new EnumMap<>(ScanMetrics.Metric.class);

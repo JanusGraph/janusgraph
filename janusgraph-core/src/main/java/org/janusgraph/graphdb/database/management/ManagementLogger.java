@@ -32,9 +32,6 @@ import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.serialize.Serializer;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.Set;
@@ -42,36 +39,34 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import lombok.AccessLevel;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@Slf4j
+@RequiredArgsConstructor
 public class ManagementLogger implements MessageReader {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(ManagementLogger.class);
 
     private static final Duration SLEEP_INTERVAL = Duration.ofMillis(100L);
     private static final Duration MAX_WAIT_TIME = Duration.ofSeconds(60L);
 
     private final StandardJanusGraph graph;
-    private final SchemaCache schemaCache;
     private final Log sysLog;
+    private final SchemaCache schemaCache;
+
 
     /**
      * This belongs in JanusGraphConfig.
      */
+    @NonNull
     private final TimestampProvider times;
 
     private final AtomicInteger evictionTriggerCounter = new AtomicInteger(0);
     private final ConcurrentMap<Long,EvictionTrigger> evictionTriggerMap = new ConcurrentHashMap<Long,EvictionTrigger>();
-
-    public ManagementLogger(StandardJanusGraph graph, Log sysLog, SchemaCache schemaCache, TimestampProvider times) {
-        this.graph = graph;
-        this.schemaCache = schemaCache;
-        this.sysLog = sysLog;
-        this.times = times;
-        Preconditions.checkNotNull(times);
-    }
 
     @Override
     public void read(Message message) {
@@ -157,17 +152,12 @@ public class ManagementLogger implements MessageReader {
         }
     }
 
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     private class SendAckOnTxClose implements Runnable {
 
         private final long evictionId;
-        private final Set<? extends JanusGraphTransaction> openTx;
         private final String originId;
-
-        private SendAckOnTxClose(long evictionId, String originId, Set<? extends JanusGraphTransaction> openTx) {
-            this.evictionId = evictionId;
-            this.openTx = openTx;
-            this.originId = originId;
-        }
+        private final Set<? extends JanusGraphTransaction> openTx;
 
         @Override
         public void run() {

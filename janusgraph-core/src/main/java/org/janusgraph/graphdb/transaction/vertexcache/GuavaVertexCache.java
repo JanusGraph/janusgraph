@@ -26,13 +26,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class GuavaVertexCache implements VertexCache {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(GuavaVertexCache.class);
 
     private final ConcurrentMap<Long, InternalVertex> volatileVertices;
     private final Cache<Long, InternalVertex> cache;
@@ -116,13 +116,10 @@ public class GuavaVertexCache implements VertexCache {
         cache.cleanUp();
     }
 
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     private static class NewVertexCallable implements Callable<InternalVertex> {
 
         private final InternalVertex vertex;
-
-        private NewVertexCallable(InternalVertex vertex) {
-            this.vertex = vertex;
-        }
 
         @Override
         public InternalVertex call() {

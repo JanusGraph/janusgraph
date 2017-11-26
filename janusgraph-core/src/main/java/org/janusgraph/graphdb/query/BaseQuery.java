@@ -14,6 +14,8 @@
 
 package org.janusgraph.graphdb.query;
 
+import lombok.Getter;
+
 /**
  * Standard implementation of {@link Query}.
  *
@@ -21,6 +23,7 @@ package org.janusgraph.graphdb.query;
  */
 public class BaseQuery implements Query {
 
+    @Getter
     private int limit;
 
     public BaseQuery() {
@@ -41,11 +44,6 @@ public class BaseQuery implements Query {
         assert limit >= 0;
         this.limit = limit;
         return this;
-    }
-
-    @Override
-    public int getLimit() {
-        return limit;
     }
 
     @Override

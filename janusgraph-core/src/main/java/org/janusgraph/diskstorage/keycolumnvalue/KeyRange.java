@@ -16,20 +16,20 @@ package org.janusgraph.diskstorage.keycolumnvalue;
 
 import org.janusgraph.diskstorage.StaticBuffer;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
 /**
  * A range of bytes between start and end where start is inclusive and end is exclusive.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@Getter
+@RequiredArgsConstructor
 public class KeyRange {
 
     private final StaticBuffer start;
     private final StaticBuffer end;
-
-    public KeyRange(StaticBuffer start, StaticBuffer end) {
-        this.start = start;
-        this.end = end;
-    }
 
     @Override
     public String toString() {
@@ -42,13 +42,5 @@ public class KeyRange {
             case 1: return end;
             default: throw new IndexOutOfBoundsException("Exceed length of 2: " + position);
         }
-    }
-
-    public StaticBuffer getStart() {
-        return start;
-    }
-
-    public StaticBuffer getEnd() {
-        return end;
     }
 }

@@ -28,6 +28,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+
 
 /**
  * Queries for a slice of data identified by a start point (inclusive) and end point (exclusive).
@@ -37,40 +41,26 @@ import java.util.List;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
+@RequiredArgsConstructor
 public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
+    /**
+     * The start of the slice is considered to be inclusive
+     */
+    @NonNull
+    @Getter
     private final StaticBuffer sliceStart;
+
+    /**
+     * The end of the slice is considered to be exclusive
+     */
+    @NonNull
+    @Getter
     private final StaticBuffer sliceEnd;
-
-    public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd) {
-        assert sliceStart != null && sliceEnd != null;
-
-        this.sliceStart = sliceStart;
-        this.sliceEnd = sliceEnd;
-    }
 
     public SliceQuery(final SliceQuery query) {
         this(query.getSliceStart(), query.getSliceEnd());
         setLimit(query.getLimit());
-    }
-
-    /**
-     * The start of the slice is considered to be inclusive
-     *
-     * @return The StaticBuffer denoting the start of the slice
-     */
-    public StaticBuffer getSliceStart() {
-        return sliceStart;
-    }
-
-    /**
-     * The end of the slice is considered to be exclusive
-     *
-     * @return The StaticBuffer denoting the end of the slice
-     */
-    public StaticBuffer getSliceEnd() {
-        return sliceEnd;
     }
 
     @Override

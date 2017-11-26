@@ -23,16 +23,15 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.Optional;
 import java.util.Set;
 
+import lombok.RequiredArgsConstructor;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@RequiredArgsConstructor
 public class JanusGraphVariables implements Graph.Variables {
 
     private final WriteConfiguration config;
-
-    public JanusGraphVariables(WriteConfiguration config) {
-        this.config = config;
-    }
 
     @Override
     public Set<String> keys() {

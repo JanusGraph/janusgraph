@@ -33,13 +33,13 @@ import org.janusgraph.util.encoding.ConversionHelper;
 import org.janusgraph.util.stats.NumberUtil;
 import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Implementation of {@link LogManager} against an arbitrary {@link KeyColumnValueStoreManager}. Issues {@link Log} instances
@@ -48,10 +48,8 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 @PreInitializeConfigOptions
+@Slf4j
 public class KCVSLogManager implements LogManager {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(KCVSLogManager.class);
 
     public static final ConfigOption<Boolean> LOG_FIXED_PARTITION = new ConfigOption<Boolean>(LOG_NS,"fixed-partition",
             "Whether all log entries are written to one fixed partition even if the backend store is partitioned." +

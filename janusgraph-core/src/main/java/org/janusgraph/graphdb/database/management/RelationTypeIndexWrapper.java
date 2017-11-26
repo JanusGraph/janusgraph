@@ -23,6 +23,8 @@ import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
+import lombok.Getter;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -30,25 +32,22 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
 
     public static final char RELATION_INDEX_SEPARATOR = ':';
 
-    private final InternalRelationType type;
+    @Getter
+    private final InternalRelationType wrappedType;
 
     public RelationTypeIndexWrapper(InternalRelationType type) {
         Preconditions.checkArgument(type != null && type.getBaseType() != null);
-        this.type = type;
+        this.wrappedType = type;
     }
 
     @Override
     public RelationType getType() {
-        return type.getBaseType();
-    }
-
-    public InternalRelationType getWrappedType() {
-        return type;
+        return wrappedType.getBaseType();
     }
 
     @Override
     public String name() {
-        String typeName = type.name();
+        String typeName = wrappedType.name();
         int index = typeName.lastIndexOf(RELATION_INDEX_SEPARATOR);
         Preconditions.checkArgument(index > 0 && index < typeName.length() - 1, "Invalid name encountered: %s", typeName);
         return typeName.substring(index + 1, typeName.length());
@@ -56,14 +55,14 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
 
     @Override
     public Order getSortOrder() {
-        return type.getSortOrder().getTP();
+        return wrappedType.getSortOrder().getTP();
 
     }
 
     @Override
     public RelationType[] getSortKey() {
-        StandardJanusGraphTx tx = type.tx();
-        long[] ids = type.getSortKey();
+        StandardJanusGraphTx tx = wrappedType.tx();
+        long[] ids = wrappedType.getSortKey();
         RelationType[] keys = new RelationType[ids.length];
         for (int i = 0; i < keys.length; i++) {
             keys[i] = tx.getExistingRelationType(ids[i]);
@@ -73,15 +72,15 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
 
     @Override
     public Direction getDirection() {
-        if (type.isUnidirected(Direction.BOTH)) return Direction.BOTH;
-        else if (type.isUnidirected(Direction.OUT)) return Direction.OUT;
-        else if (type.isUnidirected(Direction.IN)) return Direction.IN;
+        if (wrappedType.isUnidirected(Direction.BOTH)) return Direction.BOTH;
+        else if (wrappedType.isUnidirected(Direction.OUT)) return Direction.OUT;
+        else if (wrappedType.isUnidirected(Direction.IN)) return Direction.IN;
         throw new AssertionError();
     }
 
     @Override
     public int hashCode() {
-        return type.hashCode();
+        return wrappedType.hashCode();
     }
 
     @Override
@@ -89,12 +88,12 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
         if (oth == null) return false;
         else if (oth == this) return true;
         else if (!getClass().isInstance(oth)) return false;
-        return type.equals(((RelationTypeIndexWrapper) oth).type);
+        return wrappedType.equals(((RelationTypeIndexWrapper) oth).wrappedType);
     }
 
     @Override
     public SchemaStatus getIndexStatus() {
-        return type.getStatus();
+        return wrappedType.getStatus();
     }
 
     @Override

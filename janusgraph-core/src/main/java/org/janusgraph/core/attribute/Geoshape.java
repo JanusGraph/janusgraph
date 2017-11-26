@@ -63,6 +63,10 @@ import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
 /**
  * A generic representation of a geographic shape, which can either be a single point,
  * circle, box, line or polygon. Use {@link #getType()} to determine the type of shape of a particular Geoshape object.
@@ -129,6 +133,7 @@ public class Geoshape {
         }
     }
 
+    @Getter
     private final Shape shape;
 
     protected Geoshape(final Shape shape) {
@@ -169,14 +174,6 @@ public class Geoshape {
 
     public Map<String,Object> toMap() throws IOException {
         return mapReader.readValue(toGeoJson());
-    }
-
-    /**
-     * Returns the underlying {@link Shape}.
-     * @return
-     */
-    public Shape getShape() {
-        return shape;
     }
 
     /**
@@ -379,36 +376,12 @@ public class Geoshape {
      * A single point representation. A point is identified by its coordinate on the earth sphere using the spherical
      * system of latitudes and longitudes.
      */
+    @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+    @Getter
     public static final class Point {
 
-        private final double longitude;
         private final double latitude;
-
-        /**
-         * Constructs a point with the given latitude and longitude
-         * @param latitude Between -90 and 90 degrees
-         * @param longitude Between -180 and 180 degrees
-         */
-        Point(double latitude, double longitude) {
-            this.longitude = longitude;
-            this.latitude = latitude;
-        }
-
-        /**
-         * Longitude of this point
-         * @return
-         */
-        public double getLongitude() {
-            return longitude;
-        }
-
-        /**
-         * Latitude of this point
-         * @return
-         */
-        public double getLatitude() {
-            return latitude;
-        }
+        private final double longitude;
 
         private org.locationtech.spatial4j.shape.Point getSpatial4jPoint() {
             return getShapeFactory().pointXY(longitude, latitude);

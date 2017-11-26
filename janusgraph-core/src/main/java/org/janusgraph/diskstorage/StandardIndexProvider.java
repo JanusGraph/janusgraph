@@ -22,37 +22,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
 /**
  * This enum is only intended for use by JanusGraph internals.
  * It is subject to backwards-incompatible change.
  */
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public enum StandardIndexProvider {
     LUCENE("org.janusgraph.diskstorage.lucene.LuceneIndex", "lucene"),
     ELASTICSEARCH("org.janusgraph.diskstorage.es.ElasticSearchIndex", ImmutableList.of("elasticsearch", "es")),
     SOLR("org.janusgraph.diskstorage.solr.SolrIndex", "solr");
 
+    @Getter
     private final String providerName;
+    @Getter
     private final ImmutableList<String> shorthands;
 
     StandardIndexProvider(String providerName, String shorthand) {
         this(providerName, ImmutableList.of(shorthand));
     }
 
-    StandardIndexProvider(String providerName, ImmutableList<String> shorthands) {
-        this.providerName = providerName;
-        this.shorthands = shorthands;
-    }
-
     private static final ImmutableList<String> ALL_SHORTHANDS;
     private static final ImmutableMap<String, String> ALL_MANAGER_CLASSES;
-
-    public List<String> getShorthands() {
-        return shorthands;
-    }
-
-    public String getProviderName() {
-        return providerName;
-    }
 
     static {
         StandardIndexProvider backends[] = values();

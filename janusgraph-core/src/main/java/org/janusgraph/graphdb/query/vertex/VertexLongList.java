@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import lombok.Getter;
+
 /**
  * An implementation of {@link VertexListInternal} that stores only the vertex ids
  * and simply wraps an {@link LongArrayList} and keeps a boolean flag to remember whether this list is in sort order.
@@ -37,8 +39,10 @@ import java.util.NoSuchElementException;
 public class VertexLongList implements VertexListInternal {
 
     private final StandardJanusGraphTx tx;
-    private LongArrayList vertices;
-    private boolean sorted;
+    @Getter
+    private LongArrayList IDs;
+    @Getter
+    private boolean isSorted;
 
     public VertexLongList(StandardJanusGraphTx tx) {
         this(tx,new LongArrayList(10),true);
@@ -47,24 +51,19 @@ public class VertexLongList implements VertexListInternal {
     public VertexLongList(StandardJanusGraphTx tx, LongArrayList vertices, boolean sorted) {
         assert !sorted || AbstractLongListUtil.isSorted(vertices);
         this.tx = tx;
-        this.vertices = vertices;
-        this.sorted = sorted;
+        this.IDs = vertices;
+        this.isSorted = sorted;
     }
 
     @Override
     public void add(JanusGraphVertex n) {
-        if (!vertices.isEmpty()) sorted = sorted && vertices.get(vertices.size()-1)<=n.longId();
-        vertices.add(n.longId());
+        if (!IDs.isEmpty()) isSorted = isSorted && IDs.get(IDs.size()-1)<=n.longId();
+        IDs.add(n.longId());
     }
 
     @Override
     public long getID(int pos) {
-        return vertices.get(pos);
-    }
-
-    @Override
-    public LongArrayList getIDs() {
-        return vertices;
+        return IDs.get(pos);
     }
 
     @Override
@@ -74,34 +73,29 @@ public class VertexLongList implements VertexListInternal {
 
     @Override
     public void sort() {
-        if (sorted) return;
-        Arrays.sort(vertices.buffer,0,vertices.size());
-        sorted = true;
-    }
-
-    @Override
-    public boolean isSorted() {
-        return sorted;
+        if (isSorted) return;
+        Arrays.sort(IDs.buffer,0,IDs.size());
+        isSorted = true;
     }
 
     @Override
     public VertexList subList(int fromPosition, int length) {
         LongArrayList subList = new LongArrayList(length);
-        subList.add(vertices.buffer, fromPosition, length);
+        subList.add(IDs.buffer, fromPosition, length);
         assert subList.size()==length;
-        return new VertexLongList(tx,subList,sorted);
+        return new VertexLongList(tx,subList,isSorted);
     }
 
     @Override
     public int size() {
-        return vertices.size();
+        return IDs.size();
     }
 
     @Override
     public void addAll(VertexList vertexlist) {
         LongArrayList othervertexids = null;
         if (vertexlist instanceof VertexLongList) {
-            othervertexids = ((VertexLongList) vertexlist).vertices;
+            othervertexids = ((VertexLongList) vertexlist).IDs;
         } else if (vertexlist instanceof VertexArrayList) {
             VertexArrayList other = (VertexArrayList) vertexlist;
             othervertexids = new LongArrayList(other.size());
@@ -109,18 +103,18 @@ public class VertexLongList implements VertexListInternal {
         } else {
             throw new IllegalArgumentException("Unsupported vertex-list: " + vertexlist.getClass());
         }
-        if (sorted && vertexlist.isSorted()) {
+        if (isSorted && vertexlist.isSorted()) {
             //Merge join
-            vertices = AbstractLongListUtil.mergeSort(vertices,othervertexids);
+            IDs = AbstractLongListUtil.mergeSort(IDs,othervertexids);
         } else {
-            sorted = false;
-            vertices.add(othervertexids.buffer, 0, othervertexids.size());
+            isSorted = false;
+            IDs.add(othervertexids.buffer, 0, othervertexids.size());
         }
     }
 
     public VertexArrayList toVertexArrayList() {
         VertexArrayList list = new VertexArrayList(tx);
-        for (int i=0;i<vertices.size();i++) {
+        for (int i=0;i<IDs.size();i++) {
             list.add(get(i));
         }
         return list;

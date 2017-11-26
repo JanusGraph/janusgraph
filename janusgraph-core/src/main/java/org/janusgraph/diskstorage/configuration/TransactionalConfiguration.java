@@ -24,22 +24,20 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@RequiredArgsConstructor
 public class TransactionalConfiguration implements WriteConfiguration {
 
+    @NonNull
     private final WriteConfiguration config;
 
-    private final Map<String,Object> readValues;
-    private final Map<String,Object> writtenValues;
-
-    public TransactionalConfiguration(WriteConfiguration config) {
-        Preconditions.checkNotNull(config);
-        this.config = config;
-        this.readValues = new HashMap<String, Object>();
-        this.writtenValues = new HashMap<String, Object>();
-    }
+    private final Map<String,Object> readValues = new HashMap<>();
+    private final Map<String,Object> writtenValues = new HashMap<>();
 
     @Override
     public <O> void set(String key, O value) {

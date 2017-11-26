@@ -23,16 +23,15 @@ import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.util.time.Timer;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class GraphIndexStatusWatcher
         extends AbstractIndexStatusWatcher<GraphIndexStatusReport, GraphIndexStatusWatcher> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(GraphIndexStatusWatcher.class);
 
     private String graphIndexName;
 
@@ -66,7 +65,7 @@ public class GraphIndexStatusWatcher
                 idx = mgmt.getGraphIndex(graphIndexName);
                 for (PropertyKey pk : idx.getFieldKeys()) {
                     SchemaStatus s = idx.getIndexStatus(pk);
-                    LOGGER.debug("Key {} has status {}", pk, s);
+                    log.debug("Key {} has status {}", pk, s);
                     if (!statuses.contains(s))
                         notConverged.put(pk.toString(), s);
                     else
@@ -79,16 +78,16 @@ public class GraphIndexStatusWatcher
 
             String waitingOn = Joiner.on(",").withKeyValueSeparator("=").join(notConverged);
             if (!notConverged.isEmpty()) {
-                LOGGER.info("Some key(s) on index {} do not currently have status(es) {}: {}", graphIndexName, statuses, waitingOn);
+                log.info("Some key(s) on index {} do not currently have status(es) {}: {}", graphIndexName, statuses, waitingOn);
             } else {
-                LOGGER.info("All {} key(s) on index {} have status(es) {}", converged.size(), graphIndexName, statuses);
+                log.info("All {} key(s) on index {} have status(es) {}", converged.size(), graphIndexName, statuses);
                 return new GraphIndexStatusReport(true, graphIndexName, statuses, notConverged, converged, t.elapsed());
             }
 
             timedOut = null != timeout && 0 < t.elapsed().compareTo(timeout);
 
             if (timedOut) {
-                LOGGER.info("Timed out ({}) while waiting for index {} to converge on status(es) {}",
+                log.info("Timed out ({}) while waiting for index {} to converge on status(es) {}",
                         timeout, graphIndexName, statuses);
                 return new GraphIndexStatusReport(false, graphIndexName, statuses, notConverged, converged, t.elapsed());
             }

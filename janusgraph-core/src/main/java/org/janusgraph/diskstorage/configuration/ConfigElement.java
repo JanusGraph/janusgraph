@@ -21,6 +21,8 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.List;
 
+import lombok.Getter;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -31,7 +33,9 @@ public abstract class ConfigElement {
     public static final char[] ILLEGAL_CHARS = new char[]{SEPARATOR,' ','\t','#','@','<','>','?','/',';','"','\'',':','+','(',')','*','^','`','~','$','%','|','\\','{','[',']','}'};
 
     private final ConfigNamespace namespace;
+    @Getter
     private final String name;
+    @Getter
     private final String description;
 
     public ConfigElement(ConfigNamespace namespace, String name, String description) {
@@ -57,14 +61,6 @@ public abstract class ConfigElement {
     public ConfigNamespace getRoot() {
         if (isRoot()) return (ConfigNamespace)this;
         else return getNamespace().getRoot();
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
     public abstract boolean isOption();

@@ -16,20 +16,19 @@ package org.janusgraph.graphdb.transaction.lock;
 
 import org.janusgraph.graphdb.types.CompositeIndexType;
 
+import lombok.Getter;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class IndexLockTuple extends LockTuple {
 
+    @Getter
     private final CompositeIndexType index;
 
     public IndexLockTuple(CompositeIndexType index, Object... tuple) {
         super(tuple);
         this.index=index;
-    }
-
-    public CompositeIndexType getIndex() {
-        return index;
     }
 
     @Override

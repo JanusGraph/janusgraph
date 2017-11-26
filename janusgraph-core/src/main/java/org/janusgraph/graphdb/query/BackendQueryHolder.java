@@ -18,6 +18,8 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.graphdb.query.profile.ProfileObservable;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 
+import lombok.Getter;
+
 /**
  * Holds a {@link BackendQuery} and captures additional information that pertains to its execution and to be used by a
  * {@link QueryExecutor}:
@@ -32,6 +34,7 @@ import org.janusgraph.graphdb.query.profile.QueryProfiler;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@Getter
 public class BackendQueryHolder<E extends BackendQuery<E>> implements ProfileObservable {
 
     private final E backendQuery;
@@ -50,26 +53,6 @@ public class BackendQueryHolder<E extends BackendQuery<E>> implements ProfileObs
 
     public BackendQueryHolder(E backendQuery, boolean fitted, boolean sorted) {
         this(backendQuery, fitted, sorted, null);
-    }
-
-    public Object getExecutionInfo() {
-        return executionInfo;
-    }
-
-    public boolean isFitted() {
-        return isFitted;
-    }
-
-    public boolean isSorted() {
-        return isSorted;
-    }
-
-    public E getBackendQuery() {
-        return backendQuery;
-    }
-
-    public QueryProfiler getProfiler() {
-        return profiler;
     }
 
     @Override

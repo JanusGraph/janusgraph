@@ -50,8 +50,6 @@ import org.janusgraph.graphdb.transaction.TransactionConfiguration;
 import org.janusgraph.util.system.ConfigurationUtil;
 
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
@@ -63,16 +61,17 @@ import java.util.concurrent.*;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Orchestrates and configures all backend systems:
  * The primary backend storage ({@link KeyColumnValueStore}) and all external indexing providers ({@link IndexProvider}).
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
+@Slf4j
 public class Backend implements LockerProvider, AutoCloseable {
-
-    private static final Logger log = LoggerFactory.getLogger(Backend.class);
 
     /**
      * These are the names for the edge store and property index databases, respectively.
@@ -104,16 +103,20 @@ public class Backend implements LockerProvider, AutoCloseable {
 
     public static final int THREAD_POOL_SIZE_SCALE_FACTOR = 2;
 
+    @Getter
     private final KeyColumnValueStoreManager storeManager;
     private final KeyColumnValueStoreManager storeManagerLocking;
+    @Getter
     private final StoreFeatures storeFeatures;
 
     private KCVSCache edgeStore;
     private KCVSCache indexStore;
     private KCVSCache txLogStore;
     private IDAuthority idAuthority;
-    private KCVSConfiguration systemConfig;
-    private KCVSConfiguration userConfig;
+    @Getter
+    private KCVSConfiguration globalSystemConfig;
+    @Getter
+    private KCVSConfiguration userConfiguration;
     private boolean hasAttemptedClose;
 
     private final StandardScanner scanner;
@@ -274,7 +277,7 @@ public class Backend implements LockerProvider, AutoCloseable {
 
             //Open global configuration
             KeyColumnValueStore systemConfigStore = storeManagerLocking.openDatabase(SYSTEM_PROPERTIES_STORE_NAME);
-            systemConfig = getGlobalConfiguration(new BackendOperation.TransactionalProvider() {
+            globalSystemConfig = getGlobalConfiguration(new BackendOperation.TransactionalProvider() {
                 @Override
                 public StoreTransaction openTx() throws BackendException {
                     return storeManagerLocking.beginTransaction(StandardBaseTransactionConfig.of(
@@ -287,7 +290,7 @@ public class Backend implements LockerProvider, AutoCloseable {
                     //Do nothing, storeManager is closed explicitly by Backend
                 }
             },systemConfigStore,configuration);
-            userConfig = getConfiguration(new BackendOperation.TransactionalProvider() {
+            userConfiguration = getConfiguration(new BackendOperation.TransactionalProvider() {
                 @Override
                 public StoreTransaction openTx() throws BackendException {
                     return storeManagerLocking.beginTransaction(StandardBaseTransactionConfig.of(configuration.get(TIMESTAMP_PROVIDER)));
@@ -367,14 +370,6 @@ public class Backend implements LockerProvider, AutoCloseable {
     public static final String getUserLogName(String identifier) {
         Preconditions.checkArgument(StringUtils.isNotBlank(identifier));
         return USER_LOG_PREFIX +identifier;
-    }
-
-    public KCVSConfiguration getGlobalSystemConfig() {
-        return systemConfig;
-    }
-
-    public KCVSConfiguration getUserConfiguration() {
-        return userConfig;
     }
 
     private String getMetricsCacheName(String storeName) {
@@ -488,21 +483,8 @@ public class Backend implements LockerProvider, AutoCloseable {
         return idAuthority;
     }
 
-    /**
-     * Returns the {@link StoreFeatures} of the configured backend storage engine.
-     *
-     * @return
-     */
-    public StoreFeatures getStoreFeatures() {
-        return storeFeatures;
-    }
-
     public Class<? extends KeyColumnValueStoreManager> getStoreManagerClass() {
         return storeManager.getClass();
-    }
-
-    public StoreManager getStoreManager() {
-        return storeManager;
     }
 
     /**
@@ -553,8 +535,8 @@ public class Backend implements LockerProvider, AutoCloseable {
             if (edgeStore != null) edgeStore.close();
             if (indexStore != null) indexStore.close();
             if (idAuthority != null) idAuthority.close();
-            if (systemConfig != null) systemConfig.close();
-            if (userConfig != null) userConfig.close();
+            if (globalSystemConfig != null) globalSystemConfig.close();
+            if (userConfiguration != null) userConfiguration.close();
             storeManager.close();
             if(threadPool != null) {
             	threadPool.shutdown();
@@ -584,8 +566,8 @@ public class Backend implements LockerProvider, AutoCloseable {
             edgeStore.close();
             indexStore.close();
             idAuthority.close();
-            systemConfig.close();
-            userConfig.close();
+            globalSystemConfig.close();
+            userConfiguration.close();
             storeManager.clearStorage();
             storeManager.close();
             //Indexes

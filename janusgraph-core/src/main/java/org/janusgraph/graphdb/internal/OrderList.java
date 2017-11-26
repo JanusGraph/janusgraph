@@ -23,6 +23,10 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -34,10 +38,11 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
     }};
 
     private List<OrderEntry> list = new ArrayList<OrderList.OrderEntry>(3);
-    private boolean immutable = false;
+    @Getter
+    private boolean isImmutable = false;
 
     public void add(PropertyKey key, Order order) {
-        Preconditions.checkArgument(!immutable, "This OrderList has been closed");
+        Preconditions.checkArgument(!isImmutable, "This OrderList has been closed");
         list.add(new OrderEntry(key, order));
     }
 
@@ -63,11 +68,7 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
     }
 
     public void makeImmutable() {
-        this.immutable = true;
-    }
-
-    public boolean isImmutable() {
-        return immutable;
+        this.isImmutable = true;
     }
 
     /**
@@ -125,26 +126,14 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
     /**
      * @author Matthias Broecheler (me@matthiasb.com)
      */
-
+    @Getter
+    @RequiredArgsConstructor
     public static class OrderEntry implements Comparator<JanusGraphElement> {
 
+        @NonNull
         private final PropertyKey key;
+        @NonNull
         private final Order order;
-
-        public OrderEntry(PropertyKey key, Order order) {
-            Preconditions.checkNotNull(key);
-            Preconditions.checkNotNull(order);
-            this.key = key;
-            this.order = order;
-        }
-
-        public PropertyKey getKey() {
-            return key;
-        }
-
-        public Order getOrder() {
-            return order;
-        }
 
         @Override
         public int hashCode() {

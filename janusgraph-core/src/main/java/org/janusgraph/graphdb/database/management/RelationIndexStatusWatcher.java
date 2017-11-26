@@ -21,13 +21,12 @@ import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.util.time.Timer;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class RelationIndexStatusWatcher
         extends AbstractIndexStatusWatcher<RelationIndexStatusReport, RelationIndexStatusWatcher> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(RelationIndexStatusWatcher.class);
 
     private String relationIndexName;
     private String relationTypeName;
@@ -67,7 +66,7 @@ public class RelationIndexStatusWatcher
                 mgmt = g.openManagement();
                 idx = mgmt.getRelationIndex(mgmt.getRelationType(relationTypeName), relationIndexName);
                 actualStatus = idx.getIndexStatus();
-                LOGGER.info("Index {} (relation type {}) has status {}", relationIndexName, relationTypeName, actualStatus);
+                log.info("Index {} (relation type {}) has status {}", relationIndexName, relationTypeName, actualStatus);
                 if (statuses.contains(actualStatus)) {
                     return new RelationIndexStatusReport(true, relationIndexName, relationTypeName, actualStatus, statuses, t.elapsed());
                 }
@@ -79,7 +78,7 @@ public class RelationIndexStatusWatcher
             timedOut = null != timeout && 0 < t.elapsed().compareTo(timeout);
 
             if (timedOut) {
-                LOGGER.info("Timed out ({}) while waiting for index {} (relation type {}) to reach status(es) {}",
+                log.info("Timed out ({}) while waiting for index {} (relation type {}) to reach status(es) {}",
                         timeout, relationIndexName, relationTypeName, statuses);
                 return new RelationIndexStatusReport(false, relationIndexName, relationTypeName, actualStatus, statuses, t.elapsed());
             }

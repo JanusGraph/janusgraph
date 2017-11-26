@@ -27,6 +27,9 @@ import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import javax.annotation.Nullable;
 import java.util.*;
 
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+
 /**
  * Executes a given {@link ElementQuery} against a provided {@link QueryExecutor} to produce the result set of elements.
  * </p>
@@ -45,20 +48,16 @@ import java.util.*;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@RequiredArgsConstructor
 public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphElement, B extends BackendQuery<B>> implements Iterable<R> {
 
     private static final int MAX_SORT_ITERATION = 1000000;
 
 
+    @NonNull
     private final Q query;
+    @NonNull
     private final QueryExecutor<Q, R, B> executor;
-
-    public QueryProcessor(Q query, QueryExecutor<Q, R, B> executor) {
-        Preconditions.checkNotNull(query);
-        Preconditions.checkNotNull(executor);
-        this.query = query;
-        this.executor = executor;
-    }
 
     @Override
     public Iterator<R> iterator() {

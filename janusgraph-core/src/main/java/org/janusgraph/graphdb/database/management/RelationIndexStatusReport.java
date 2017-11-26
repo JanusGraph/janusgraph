@@ -20,6 +20,9 @@ import org.janusgraph.core.schema.SchemaStatus;
 import java.time.Duration;
 import java.util.List;
 
+import lombok.Getter;
+
+@Getter
 public class RelationIndexStatusReport extends AbstractIndexStatusReport {
 
     private final String relationTypeName;
@@ -30,14 +33,6 @@ public class RelationIndexStatusReport extends AbstractIndexStatusReport {
         super(success, indexName, targetStatuses, elapsed);
         this.relationTypeName = relationTypeName;
         this.actualStatus = actualStatus;
-    }
-
-    public String getRelationTypeName() {
-        return relationTypeName;
-    }
-
-    public SchemaStatus getActualStatus() {
-        return actualStatus;
     }
 
     @Override

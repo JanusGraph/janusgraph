@@ -32,16 +32,23 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import java.io.Serializable;
 import java.util.Arrays;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class RelationIdentifier implements Serializable {
 
     public static final String TOSTRING_DELIMITER = "-";
 
+    @Getter
     private final long outVertexId;
+    @Getter
     private final long typeId;
+    @Getter
     private final long relationId;
     private final long inVertexId;
 
@@ -52,31 +59,12 @@ public final class RelationIdentifier implements Serializable {
         inVertexId = 0;
     }
 
-    private RelationIdentifier(final long outVertexId, final long typeId, final long relationId, final long inVertexId) {
-        this.outVertexId = outVertexId;
-        this.typeId = typeId;
-        this.relationId = relationId;
-        this.inVertexId = inVertexId;
-    }
-
     static final RelationIdentifier get(InternalRelation r) {
         if (r.hasId()) {
             return new RelationIdentifier(r.getVertex(0).longId(),
                     r.getType().longId(),
                     r.longId(), (r.isEdge() ? r.getVertex(1).longId() : 0));
         } else return null;
-    }
-
-    public long getRelationId() {
-        return relationId;
-    }
-
-    public long getTypeId() {
-        return typeId;
-    }
-
-    public long getOutVertexId() {
-        return outVertexId;
     }
 
     public long getInVertexId() {

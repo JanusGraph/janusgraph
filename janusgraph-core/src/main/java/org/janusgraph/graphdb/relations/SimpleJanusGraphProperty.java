@@ -23,20 +23,17 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import java.util.NoSuchElementException;
 
+import lombok.RequiredArgsConstructor;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@RequiredArgsConstructor
 public class SimpleJanusGraphProperty<V> implements JanusGraphProperty<V> {
 
+    private final InternalRelation relation;
     private final PropertyKey key;
     private final V value;
-    private final InternalRelation relation;
-
-    public SimpleJanusGraphProperty(InternalRelation relation, PropertyKey key, V value) {
-        this.key = key;
-        this.value = value;
-        this.relation = relation;
-    }
 
     @Override
     public PropertyKey propertyKey() {

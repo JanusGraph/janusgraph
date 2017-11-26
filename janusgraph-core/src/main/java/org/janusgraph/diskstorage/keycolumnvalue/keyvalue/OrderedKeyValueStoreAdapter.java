@@ -22,13 +22,13 @@ import org.janusgraph.diskstorage.keycolumnvalue.*;
 import org.janusgraph.diskstorage.util.*;
 
 import org.janusgraph.graphdb.query.BaseQuery;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Wraps a {@link OrderedKeyValueStore} and exposes it as a {@link KeyColumnValueStore}.
@@ -40,9 +40,8 @@ import java.util.*;
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
+@Slf4j
 public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
-
-    private final Logger log = LoggerFactory.getLogger(OrderedKeyValueStoreAdapter.class);
 
     public static final int variableKeyLength = 0;
 

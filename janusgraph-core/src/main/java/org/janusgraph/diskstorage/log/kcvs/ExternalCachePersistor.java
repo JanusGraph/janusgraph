@@ -22,18 +22,16 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
 
+import lombok.RequiredArgsConstructor;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@RequiredArgsConstructor
 public class ExternalCachePersistor implements ExternalPersistor {
 
     private final KCVSCache kcvs;
     private final CacheTransaction tx;
-
-    public ExternalCachePersistor(KCVSCache kcvs, CacheTransaction tx) {
-        this.kcvs = kcvs;
-        this.tx = tx;
-    }
 
     @Override
     public void add(StaticBuffer key, Entry cell) {

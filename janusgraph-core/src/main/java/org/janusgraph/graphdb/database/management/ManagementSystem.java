@@ -96,8 +96,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
@@ -118,14 +116,17 @@ import java.util.function.Consumer;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.janusgraph.graphdb.database.management.RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  * @author Joshua Shinavier (http://fortytwo.net)
  */
+@Slf4j
 public class ManagementSystem implements JanusGraphManagement {
-
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(ManagementSystem.class);
 
     private static final String CURRENT_INSTANCE_SUFFIX = "(current)";
 
@@ -139,13 +140,15 @@ public class ManagementSystem implements JanusGraphManagement {
     private final UserModifiableConfiguration userConfig;
     private final SchemaCache schemaCache;
 
-    private final StandardJanusGraphTx transaction;
+    @Getter
+    private final StandardJanusGraphTx wrappedTx;
 
     private final Set<JanusGraphSchemaVertex> updatedTypes;
     private final List<Callable<Boolean>> updatedTypeTriggers;
 
     private final Instant txStartTime;
     private boolean graphShutdownRequired;
+    @Getter
     private boolean isOpen;
 
     public ManagementSystem(StandardJanusGraph graph, KCVSConfiguration config, Log sysLog,
@@ -165,7 +168,7 @@ public class ManagementSystem implements JanusGraphManagement {
         this.updatedTypeTriggers = new ArrayList<Callable<Boolean>>();
         this.graphShutdownRequired = false;
 
-        this.transaction = (StandardJanusGraphTx) graph.buildTransaction().disableBatchLoading().start();
+        this.wrappedTx = (StandardJanusGraphTx) graph.buildTransaction().disableBatchLoading().start();
         this.txStartTime = graph.getConfiguration().getTimestampProvider().getTime();
         this.isOpen = true;
     }
@@ -192,7 +195,7 @@ public class ManagementSystem implements JanusGraphManagement {
 
     public Set<String> getOpenInstancesInternal() {
         Set<String> openInstances = Sets.newHashSet(modifyConfig.getContainedNamespaces(REGISTRATION_NS));
-        LOGGER.debug("Open instances: {}", openInstances);
+        log.debug("Open instances: {}", openInstances);
         return openInstances;
     }
 
@@ -234,7 +237,7 @@ public class ManagementSystem implements JanusGraphManagement {
         transactionalConfig.commit();
 
         //Commit underlying transaction
-        transaction.commit();
+        wrappedTx.commit();
 
         //Communicate schema changes
         if (!updatedTypes.isEmpty()) {
@@ -252,26 +255,17 @@ public class ManagementSystem implements JanusGraphManagement {
     public synchronized void rollback() {
         ensureOpen();
         transactionalConfig.rollback();
-        transaction.rollback();
+        wrappedTx.rollback();
         close();
-    }
-
-    @Override
-    public boolean isOpen() {
-        return isOpen;
     }
 
     private void close() {
         isOpen = false;
     }
 
-    public StandardJanusGraphTx getWrappedTx() {
-        return transaction;
-    }
-
     private JanusGraphEdge addSchemaEdge(JanusGraphVertex out, JanusGraphVertex in, TypeDefinitionCategory def, Object modifier) {
         assert def.isEdge();
-        JanusGraphEdge edge = transaction.addEdge(out, in, BaseLabel.SchemaDefinitionEdge);
+        JanusGraphEdge edge = wrappedTx.addEdge(out, in, BaseLabel.SchemaDefinitionEdge);
         TypeDefinitionDescription desc = new TypeDefinitionDescription(def, modifier);
         edge.property(BaseKey.SchemaDefinitionDesc.name(), desc);
         return edge;
@@ -284,7 +278,7 @@ public class ManagementSystem implements JanusGraphManagement {
      --------------- */
 
     public JanusGraphSchemaElement getSchemaElement(long id) {
-        JanusGraphVertex v = transaction.getVertex(id);
+        JanusGraphVertex v = wrappedTx.getVertex(id);
         if (v == null) return null;
         if (v instanceof RelationType) {
             if (((InternalRelationType) v).getBaseType() == null) return (RelationType) v;
@@ -333,13 +327,13 @@ public class ManagementSystem implements JanusGraphManagement {
         String composedName = composeRelationTypeIndexName(type, name);
         StandardRelationTypeMaker maker;
         if (type.isEdgeLabel()) {
-            StandardEdgeLabelMaker lm = (StandardEdgeLabelMaker) transaction.makeEdgeLabel(composedName);
+            StandardEdgeLabelMaker lm = (StandardEdgeLabelMaker) wrappedTx.makeEdgeLabel(composedName);
             lm.unidirected(direction);
             maker = lm;
         } else {
             assert type.isPropertyKey();
             assert direction == Direction.OUT;
-            StandardPropertyKeyMaker lm = (StandardPropertyKeyMaker) transaction.makePropertyKey(composedName);
+            StandardPropertyKeyMaker lm = (StandardPropertyKeyMaker) wrappedTx.makePropertyKey(composedName);
             lm.dataType(((PropertyKey) type).dataType());
             maker = lm;
         }
@@ -352,7 +346,7 @@ public class ManagementSystem implements JanusGraphManagement {
         //Compose signature
         long[] typeSig = ((InternalRelationType) type).getSignature();
         Set<PropertyKey> signature = Sets.newHashSet();
-        for (long typeId : typeSig) signature.add(transaction.getExistingPropertyKey(typeId));
+        for (long typeId : typeSig) signature.add(wrappedTx.getExistingPropertyKey(typeId));
         for (RelationType sortType : sortKeys) signature.remove(sortType);
         if (!signature.isEmpty()) {
             PropertyKey[] sig = signature.toArray(new PropertyKey[signature.size()]);
@@ -381,7 +375,7 @@ public class ManagementSystem implements JanusGraphManagement {
         String composedName = composeRelationTypeIndexName(type, name);
 
         //Don't use SchemaCache to make code more compact and since we don't need the extra performance here
-        JanusGraphVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(transaction, BaseKey.SchemaName, JanusGraphSchemaCategory.getRelationTypeName(composedName)), null);
+        JanusGraphVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(wrappedTx, BaseKey.SchemaName, JanusGraphSchemaCategory.getRelationTypeName(composedName)), null);
         if (v == null) return null;
         assert v instanceof InternalRelationType;
         return new RelationTypeIndexWrapper((InternalRelationType) v);
@@ -421,14 +415,14 @@ public class ManagementSystem implements JanusGraphManagement {
 
     @Override
     public JanusGraphIndex getGraphIndex(String name) {
-        IndexType index = getGraphIndexDirect(name, transaction);
+        IndexType index = getGraphIndexDirect(name, wrappedTx);
         return index == null ? null : new JanusGraphIndexWrapper(index);
     }
 
     @Override
     public Iterable<JanusGraphIndex> getGraphIndexes(final Class<? extends Element> elementType) {
         return Iterables.transform(Iterables.filter(Iterables.transform(
-                QueryUtil.getVertices(transaction, BaseKey.SchemaCategory, JanusGraphSchemaCategory.GRAPHINDEX),
+                QueryUtil.getVertices(wrappedTx, BaseKey.SchemaCategory, JanusGraphSchemaCategory.GRAPHINDEX),
                 new Function<JanusGraphVertex, IndexType>() {
                     @Nullable
                     @Override
@@ -501,7 +495,7 @@ public class ManagementSystem implements JanusGraphManagement {
         def.setValue(TypeDefinitionCategory.INDEXSTORE_NAME, indexName);
         def.setValue(TypeDefinitionCategory.INDEX_CARDINALITY, Cardinality.LIST);
         def.setValue(TypeDefinitionCategory.STATUS, SchemaStatus.ENABLED);
-        JanusGraphSchemaVertex indexVertex = transaction.makeSchemaVertex(JanusGraphSchemaCategory.GRAPHINDEX, indexName, def);
+        JanusGraphSchemaVertex indexVertex = wrappedTx.makeSchemaVertex(JanusGraphSchemaCategory.GRAPHINDEX, indexName, def);
 
         Preconditions.checkArgument(constraint == null || (elementCategory.isValidConstraint(constraint) && constraint instanceof JanusGraphSchemaVertex));
         if (constraint != null) {
@@ -544,7 +538,7 @@ public class ManagementSystem implements JanusGraphManagement {
         }
 
         try {
-            IndexSerializer.register((MixedIndexType) indexType, key, transaction.getTxHandle());
+            IndexSerializer.register((MixedIndexType) indexType, key, wrappedTx.getTxHandle());
         } catch (BackendException e) {
             throw new JanusGraphException("Could not register new index field with index backend", e);
         }
@@ -576,7 +570,7 @@ public class ManagementSystem implements JanusGraphManagement {
         def.setValue(TypeDefinitionCategory.INDEXSTORE_NAME, indexName);
         def.setValue(TypeDefinitionCategory.INDEX_CARDINALITY, indexCardinality);
         def.setValue(TypeDefinitionCategory.STATUS, oneNewKey ? SchemaStatus.ENABLED : SchemaStatus.INSTALLED);
-        JanusGraphSchemaVertex indexVertex = transaction.makeSchemaVertex(JanusGraphSchemaCategory.GRAPHINDEX, indexName, def);
+        JanusGraphSchemaVertex indexVertex = wrappedTx.makeSchemaVertex(JanusGraphSchemaCategory.GRAPHINDEX, indexName, def);
         for (int i = 0; i < keys.length; i++) {
             Parameter[] paras = {ParameterType.INDEX_POSITION.getParameter(i)};
             addSchemaEdge(indexVertex, keys[i], TypeDefinitionCategory.INDEX_FIELD, paras);
@@ -597,6 +591,7 @@ public class ManagementSystem implements JanusGraphManagement {
         return new IndexBuilder(indexName, ElementCategory.getByClazz(elementType));
     }
 
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     private class IndexBuilder implements JanusGraphManagement.IndexBuilder {
 
         private final String indexName;
@@ -604,11 +599,6 @@ public class ManagementSystem implements JanusGraphManagement {
         private boolean unique = false;
         private JanusGraphSchemaType constraint = null;
         private Map<PropertyKey, Parameter[]> keys = new HashMap<PropertyKey, Parameter[]>();
-
-        private IndexBuilder(String indexName, ElementCategory elementCategory) {
-            this.indexName = indexName;
-            this.elementCategory = elementCategory;
-        }
 
         @Override
         public JanusGraphManagement.IndexBuilder addKey(PropertyKey key) {
@@ -795,10 +785,8 @@ public class ManagementSystem implements JanusGraphManagement {
         }
     }
 
+    @Slf4j
     private static class UpdateStatusTrigger implements Callable<Boolean> {
-
-        private static final Logger log =
-                LoggerFactory.getLogger(UpdateStatusTrigger.class);
 
         private final StandardJanusGraph graph;
         private final long schemaVertexId;
@@ -822,12 +810,12 @@ public class ManagementSystem implements JanusGraphManagement {
         public Boolean call() throws Exception {
             ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
             try {
-                JanusGraphVertex vertex = mgmt.transaction.getVertex(schemaVertexId);
+                JanusGraphVertex vertex = mgmt.wrappedTx.getVertex(schemaVertexId);
                 Preconditions.checkArgument(vertex != null && vertex instanceof JanusGraphSchemaVertex);
                 JanusGraphSchemaVertex schemaVertex = (JanusGraphSchemaVertex) vertex;
 
                 Set<PropertyKeyVertex> keys = Sets.newHashSet();
-                for (Long keyId : propertyKeys) keys.add((PropertyKeyVertex) mgmt.transaction.getVertex(keyId));
+                for (Long keyId : propertyKeys) keys.add((PropertyKeyVertex) mgmt.wrappedTx.getVertex(keyId));
                 mgmt.setStatus(schemaVertex, newStatus, keys);
                 mgmt.updatedTypes.addAll(keys);
                 mgmt.updatedTypes.add(schemaVertex);
@@ -893,7 +881,7 @@ public class ManagementSystem implements JanusGraphManagement {
             }
         }
         //Add new status
-        JanusGraphVertexProperty p = transaction.addProperty(vertex, BaseKey.SchemaDefinitionProperty, status);
+        JanusGraphVertexProperty p = wrappedTx.addProperty(vertex, BaseKey.SchemaDefinitionProperty, status);
         p.property(BaseKey.SchemaDefinitionDesc.name(), TypeDefinitionDescription.of(TypeDefinitionCategory.STATUS));
     }
 
@@ -1005,12 +993,12 @@ public class ManagementSystem implements JanusGraphManagement {
                                 mgmt.commit();
                             }
                         }
-                        LOGGER.info("Index update job successful for [{}]", IndexIdentifier.this.toString());
+                        log.info("Index update job successful for [{}]", IndexIdentifier.this.toString());
                     } else {
-                        LOGGER.error("Index update job unsuccessful for [{}]. Check logs", IndexIdentifier.this.toString());
+                        log.error("Index update job unsuccessful for [{}]. Check logs", IndexIdentifier.this.toString());
                     }
                 } catch (Throwable e) {
-                    LOGGER.error("Error encountered when updating index after job finished [" + IndexIdentifier.this.toString() + "]: ", e);
+                    log.error("Error encountered when updating index after job finished [" + IndexIdentifier.this.toString() + "]: ", e);
                 }
             };
         }
@@ -1041,7 +1029,7 @@ public class ManagementSystem implements JanusGraphManagement {
             checkIndexName(newName);
         }
 
-        transaction.addProperty(schemaVertex, BaseKey.SchemaName, schemaCategory.getSchemaName(newName));
+        wrappedTx.addProperty(schemaVertex, BaseKey.SchemaName, schemaCategory.getSchemaName(newName));
         updateSchemaVertex(schemaVertex);
         schemaVertex.resetCache();
         updatedTypes.add(schemaVertex);
@@ -1068,7 +1056,7 @@ public class ManagementSystem implements JanusGraphManagement {
     }
 
     private void updateSchemaVertex(JanusGraphSchemaVertex schemaVertex) {
-        transaction.updateSchemaVertex(schemaVertex);
+        wrappedTx.updateSchemaVertex(schemaVertex);
     }
 
     /* --------------
@@ -1196,7 +1184,7 @@ public class ManagementSystem implements JanusGraphManagement {
         if (null != value) {
             TypeDefinitionMap def = new TypeDefinitionMap();
             def.setValue(cat, value);
-            JanusGraphSchemaVertex cVertex = transaction.makeSchemaVertex(JanusGraphSchemaCategory.TYPE_MODIFIER, null, def);
+            JanusGraphSchemaVertex cVertex = wrappedTx.makeSchemaVertex(JanusGraphSchemaCategory.TYPE_MODIFIER, null, def);
             addSchemaEdge(typeVertex, cVertex, TypeDefinitionCategory.TYPE_MODIFIER, null);
         }
 
@@ -1208,52 +1196,52 @@ public class ManagementSystem implements JanusGraphManagement {
 
     @Override
     public boolean containsRelationType(String name) {
-        return transaction.containsRelationType(name);
+        return wrappedTx.containsRelationType(name);
     }
 
     @Override
     public RelationType getRelationType(String name) {
-        return transaction.getRelationType(name);
+        return wrappedTx.getRelationType(name);
     }
 
     @Override
     public boolean containsPropertyKey(String name) {
-        return transaction.containsPropertyKey(name);
+        return wrappedTx.containsPropertyKey(name);
     }
 
     @Override
     public PropertyKey getPropertyKey(String name) {
-        return transaction.getPropertyKey(name);
+        return wrappedTx.getPropertyKey(name);
     }
 
     @Override
     public boolean containsEdgeLabel(String name) {
-        return transaction.containsEdgeLabel(name);
+        return wrappedTx.containsEdgeLabel(name);
     }
 
     @Override
     public EdgeLabel getOrCreateEdgeLabel(String name) {
-        return transaction.getOrCreateEdgeLabel(name);
+        return wrappedTx.getOrCreateEdgeLabel(name);
     }
 
     @Override
     public PropertyKey getOrCreatePropertyKey(String name) {
-        return transaction.getOrCreatePropertyKey(name);
+        return wrappedTx.getOrCreatePropertyKey(name);
     }
 
     @Override
     public EdgeLabel getEdgeLabel(String name) {
-        return transaction.getEdgeLabel(name);
+        return wrappedTx.getEdgeLabel(name);
     }
 
     @Override
     public PropertyKeyMaker makePropertyKey(String name) {
-        return transaction.makePropertyKey(name);
+        return wrappedTx.makePropertyKey(name);
     }
 
     @Override
     public EdgeLabelMaker makeEdgeLabel(String name) {
-        return transaction.makeEdgeLabel(name);
+        return wrappedTx.makeEdgeLabel(name);
     }
 
     @Override
@@ -1261,9 +1249,9 @@ public class ManagementSystem implements JanusGraphManagement {
         Preconditions.checkNotNull(clazz);
         Iterable<? extends JanusGraphVertex> types = null;
         if (PropertyKey.class.equals(clazz)) {
-            types = QueryUtil.getVertices(transaction, BaseKey.SchemaCategory, JanusGraphSchemaCategory.PROPERTYKEY);
+            types = QueryUtil.getVertices(wrappedTx, BaseKey.SchemaCategory, JanusGraphSchemaCategory.PROPERTYKEY);
         } else if (EdgeLabel.class.equals(clazz)) {
-            types = QueryUtil.getVertices(transaction, BaseKey.SchemaCategory, JanusGraphSchemaCategory.EDGELABEL);
+            types = QueryUtil.getVertices(wrappedTx, BaseKey.SchemaCategory, JanusGraphSchemaCategory.EDGELABEL);
         } else if (RelationType.class.equals(clazz)) {
             types = Iterables.concat(getRelationTypes(EdgeLabel.class), getRelationTypes(PropertyKey.class));
         } else throw new IllegalArgumentException("Unknown type class: " + clazz);
@@ -1278,27 +1266,27 @@ public class ManagementSystem implements JanusGraphManagement {
 
     @Override
     public boolean containsVertexLabel(String name) {
-        return transaction.containsVertexLabel(name);
+        return wrappedTx.containsVertexLabel(name);
     }
 
     @Override
     public VertexLabel getVertexLabel(String name) {
-        return transaction.getVertexLabel(name);
+        return wrappedTx.getVertexLabel(name);
     }
 
     @Override
     public VertexLabel getOrCreateVertexLabel(String name) {
-        return transaction.getOrCreateVertexLabel(name);
+        return wrappedTx.getOrCreateVertexLabel(name);
     }
 
     @Override
     public VertexLabelMaker makeVertexLabel(String name) {
-        return transaction.makeVertexLabel(name);
+        return wrappedTx.makeVertexLabel(name);
     }
 
     @Override
     public Iterable<VertexLabel> getVertexLabels() {
-        return Iterables.filter(QueryUtil.getVertices(transaction, BaseKey.SchemaCategory,
+        return Iterables.filter(QueryUtil.getVertices(wrappedTx, BaseKey.SchemaCategory,
                 JanusGraphSchemaCategory.VERTEXLABEL), VertexLabel.class);
     }
 

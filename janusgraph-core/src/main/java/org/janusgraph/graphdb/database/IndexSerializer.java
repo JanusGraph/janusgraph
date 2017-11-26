@@ -50,8 +50,6 @@ import org.janusgraph.graphdb.types.*;
 import org.janusgraph.util.encoding.LongEncoding;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -60,13 +58,15 @@ import java.util.stream.Stream;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME_MAPPING;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
+@Slf4j
 public class IndexSerializer {
-
-    private static final Logger log = LoggerFactory.getLogger(IndexSerializer.class);
 
     private static final int DEFAULT_OBJECT_BYTELEN = 30;
     private static final byte FIRST_INDEX_COLUMN_BYTE = 0;
@@ -183,53 +183,34 @@ public class IndexSerializer {
                Index Updates
     ################################################### */
 
+    @Getter
     public static class IndexUpdate<K,E> {
 
         private enum Type { ADD, DELETE };
 
         private final IndexType index;
-        private final Type mutationType;
+        private final Type type;
         private final K key;
         private final E entry;
         private final JanusGraphElement element;
 
-        private IndexUpdate(IndexType index, Type mutationType, K key, E entry, JanusGraphElement element) {
-            assert index!=null && mutationType!=null && key!=null && entry!=null && element!=null;
+        private IndexUpdate(IndexType index, Type type, K key, E entry, JanusGraphElement element) {
+            assert index!=null && type !=null && key!=null && entry!=null && element!=null;
             assert !index.isCompositeIndex() || (key instanceof StaticBuffer && entry instanceof Entry);
             assert !index.isMixedIndex() || (key instanceof String && entry instanceof IndexEntry);
             this.index = index;
-            this.mutationType = mutationType;
+            this.type = type;
             this.key = key;
             this.entry = entry;
             this.element = element;
         }
 
-        public JanusGraphElement getElement() {
-            return element;
-        }
-
-        public IndexType getIndex() {
-            return index;
-        }
-
-        public Type getType() {
-            return mutationType;
-        }
-
-        public K getKey() {
-            return key;
-        }
-
-        public E getEntry() {
-            return entry;
-        }
-
         public boolean isAddition() {
-            return mutationType==Type.ADD;
+            return type ==Type.ADD;
         }
 
         public boolean isDeletion() {
-            return mutationType==Type.DELETE;
+            return type ==Type.DELETE;
         }
 
         public boolean isCompositeIndex() {
@@ -241,13 +222,13 @@ public class IndexSerializer {
         }
 
         public void setTTL(int ttl) {
-            Preconditions.checkArgument(ttl>0 && mutationType==Type.ADD);
+            Preconditions.checkArgument(ttl>0 && type ==Type.ADD);
             ((MetaAnnotatable)entry).setMetaData(EntryMetaData.TTL,ttl);
         }
 
         @Override
         public int hashCode() {
-            return new HashCodeBuilder().append(index).append(mutationType).append(key).append(entry).toHashCode();
+            return new HashCodeBuilder().append(index).append(type).append(key).append(entry).toHashCode();
         }
 
         @Override
@@ -255,7 +236,7 @@ public class IndexSerializer {
             if (this==other) return true;
             else if (other==null || !(other instanceof IndexUpdate)) return false;
             IndexUpdate oth = (IndexUpdate)other;
-            return index.equals(oth.index) && mutationType==oth.mutationType && key.equals(oth.key) && entry.equals(oth.entry);
+            return index.equals(oth.index) && type ==oth.type && key.equals(oth.key) && entry.equals(oth.entry);
         }
     }
 
@@ -440,17 +421,12 @@ public class IndexSerializer {
 
     }
 
+    @RequiredArgsConstructor
     private static class RecordEntry {
 
         final long relationId;
         final Object value;
         final PropertyKey key;
-
-        private RecordEntry(long relationId, Object value, PropertyKey key) {
-            this.relationId = relationId;
-            this.value = value;
-            this.key = key;
-        }
 
         private RecordEntry(JanusGraphVertexProperty property) {
             this(property.longId(),property.value(),property.propertyKey());

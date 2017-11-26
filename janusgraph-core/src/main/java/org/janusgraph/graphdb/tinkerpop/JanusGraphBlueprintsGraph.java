@@ -31,12 +31,12 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.Io;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Consumer;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Blueprints specific implementation for {@link JanusGraph}.
@@ -44,13 +44,8 @@ import java.util.function.Consumer;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@Slf4j
 public abstract class JanusGraphBlueprintsGraph implements JanusGraph {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(JanusGraphBlueprintsGraph.class);
-
-
-
 
     // ########## TRANSACTION HANDLING ###########################
 

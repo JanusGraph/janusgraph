@@ -22,24 +22,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import lombok.Getter;
+
+@Getter
 public class GraphIndexStatusReport extends AbstractIndexStatusReport {
-    private final Map<String, SchemaStatus> notConverged;
-    private final Map<String, SchemaStatus> converged;
+    private final Map<String, SchemaStatus> notConvergedKeys;
+    private final Map<String, SchemaStatus> convergedKeys;
 
     public GraphIndexStatusReport(boolean success, String indexName, List<SchemaStatus> targetStatuses,
                    Map<String, SchemaStatus> notConverged,
                    Map<String, SchemaStatus> converged, Duration elapsed) {
         super(success, indexName, targetStatuses, elapsed);
-        this.notConverged = notConverged;
-        this.converged = converged;
-    }
-
-    public Map<String, SchemaStatus> getNotConvergedKeys() {
-        return notConverged;
-    }
-
-    public Map<String, SchemaStatus> getConvergedKeys() {
-        return converged;
+        this.notConvergedKeys = notConverged;
+        this.convergedKeys = converged;
     }
 
     @Override
@@ -48,8 +43,8 @@ public class GraphIndexStatusReport extends AbstractIndexStatusReport {
                 "success=" + success +
                 ", indexName='" + indexName + '\'' +
                 ", targetStatus=" + targetStatuses +
-                ", notConverged=" + notConverged +
-                ", converged=" + converged +
+                ", notConverged=" + notConvergedKeys +
+                ", converged=" + convergedKeys +
                 ", elapsed=" + elapsed +
                 ']';
     }

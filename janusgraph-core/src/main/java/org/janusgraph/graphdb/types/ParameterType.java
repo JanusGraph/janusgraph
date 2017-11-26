@@ -18,6 +18,8 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.core.schema.Parameter;
 import org.apache.commons.lang.StringUtils;
 
+import lombok.Getter;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -43,7 +45,8 @@ public enum ParameterType {
     /** Analyzer for String Type with mapping TEXT**/
     TEXT_ANALYZER("text-analyzer"),
     ;
-    
+
+    @Getter
     private final String name;
 
     private ParameterType(String name) {
@@ -53,10 +56,6 @@ public enum ParameterType {
 
     @Override
     public String toString() {
-        return name;
-    }
-
-    public String getName() {
         return name;
     }
 

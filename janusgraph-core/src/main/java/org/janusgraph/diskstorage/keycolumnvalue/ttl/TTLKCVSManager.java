@@ -33,6 +33,8 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import java.util.Collection;
 import java.util.Map;
 
+import lombok.Getter;
+
 /**
  * Turns a store with fine-grained cell-level TTL support into a store
  * with coarse-grained store-level (columnfamily-level) TTL support.
@@ -46,6 +48,7 @@ import java.util.Map;
  */
 public class TTLKCVSManager extends KCVSManagerProxy {
 
+    @Getter
     private final StoreFeatures features;
     private final Map<String, Integer> ttlEnabledStores = Maps.newConcurrentMap();
 
@@ -71,11 +74,6 @@ public class TTLKCVSManager extends KCVSManagerProxy {
      */
     public static boolean supportsAnyTTL(StoreFeatures features) {
         return features.hasCellTTL() || features.hasStoreTTL();
-    }
-
-    @Override
-    public StoreFeatures getFeatures() {
-        return features;
     }
 
     @Override

@@ -29,6 +29,8 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 
+import lombok.Getter;
+
 /**
  * Used to configure a {@link org.janusgraph.core.JanusGraphTransaction}.
  *
@@ -37,6 +39,7 @@ import org.janusgraph.diskstorage.util.time.TimestampProvider;
  */
 public class StandardTransactionBuilder implements TransactionConfiguration, TransactionBuilder {
 
+    @Getter
     private boolean isReadOnly = false;
 
     private boolean hasEnabledBatchLoading = false;
@@ -45,7 +48,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private boolean preloadedData = false;
 
-    private DefaultSchemaMaker defaultSchemaMaker;
+    @Getter
+    private DefaultSchemaMaker autoSchemaMaker;
 
     private boolean verifyExternalVertexExistence = true;
 
@@ -57,28 +61,38 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private boolean propertyPrefetching = true;
 
-    private boolean singleThreaded = false;
+    @Getter
+    private boolean isSingleThreaded = false;
 
-    private boolean threadBound = false;
+    @Getter
+    private boolean isThreadBound = false;
 
+    @Getter
     private int vertexCacheSize;
 
+    @Getter
     private int dirtyVertexSize;
 
+    @Getter
     private long indexCacheWeight;
 
+    @Getter
     private String logIdentifier;
 
+    @Getter
     private int[] restrictedPartitions = new int[0];
 
-    private Instant userCommitTime = null;
+    @Getter
+    private Instant commitTime = null;
 
+    @Getter
     private String groupName;
 
     private final boolean forceIndexUsage;
 
     private final ModifiableConfiguration writableCustomOptions;
 
+    @Getter
     private final Configuration customOptions;
 
     private final StandardJanusGraph graph;
@@ -92,7 +106,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         if (graphConfig.isReadOnly()) readOnly();
         if (graphConfig.isBatchLoading()) enableBatchLoading();
         this.graph = graph;
-        this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
+        this.autoSchemaMaker = graphConfig.getDefaultSchemaMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.forceIndexUsage = graphConfig.hasForceIndexUsage();
         this.groupName = graphConfig.getMetricsPrefix();
@@ -110,7 +124,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         if (graphConfig.isReadOnly()) readOnly();
         if (graphConfig.isBatchLoading()) enableBatchLoading();
         this.graph = graph;
-        this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
+        this.autoSchemaMaker = graphConfig.getDefaultSchemaMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.forceIndexUsage = graphConfig.hasForceIndexUsage();
         this.groupName = graphConfig.getMetricsPrefix();
@@ -123,8 +137,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     public StandardTransactionBuilder threadBound() {
-        this.threadBound = true;
-        this.singleThreaded = true;
+        this.isThreadBound = true;
+        this.isSingleThreaded = true;
         return this;
     }
 
@@ -185,7 +199,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public StandardTransactionBuilder commitTime(Instant timestampSinceEpoch) {
-        this.userCommitTime = timestampSinceEpoch;
+        this.commitTime = timestampSinceEpoch;
         return this;
     }
 
@@ -232,22 +246,16 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         TransactionConfiguration immutable = new ImmutableTxCfg(isReadOnly, hasEnabledBatchLoading,
                 assignIDsImmediately, preloadedData, forceIndexUsage, verifyExternalVertexExistence,
                 verifyInternalVertexExistence, acquireLocks, verifyUniqueness,
-                propertyPrefetching, singleThreaded, threadBound, getTimestampProvider(), userCommitTime,
+                propertyPrefetching, isSingleThreaded, isThreadBound, getTimestampProvider(), commitTime,
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
                 logIdentifier, restrictedPartitions, groupName,
-                defaultSchemaMaker, customOptions);
+            autoSchemaMaker, customOptions);
         return graph.newTransaction(immutable);
     }
 
     /* ##############################################
                     TransactionConfig
     ############################################## */
-
-
-    @Override
-    public final boolean isReadOnly() {
-        return isReadOnly;
-    }
 
     @Override
     public final boolean hasAssignIDsImmediately() {
@@ -283,11 +291,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public final DefaultSchemaMaker getAutoSchemaMaker() {
-        return defaultSchemaMaker;
-    }
-
-    @Override
     public final boolean hasVerifyUniqueness() {
         return verifyUniqueness;
     }
@@ -297,48 +300,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public final boolean isSingleThreaded() {
-        return singleThreaded;
-    }
-
-    @Override
-    public final boolean isThreadBound() {
-        return threadBound;
-    }
-
-    @Override
-    public final int getVertexCacheSize() {
-        return vertexCacheSize;
-    }
-
-    @Override
-    public final int getDirtyVertexSize() {
-        return dirtyVertexSize;
-    }
-
-    @Override
-    public final long getIndexCacheWeight() {
-        return indexCacheWeight;
-    }
-
-    @Override
-    public String getLogIdentifier() {
-        return logIdentifier;
-    }
-
-    @Override
-    public int[] getRestrictedPartitions() {
-        return restrictedPartitions;
-    }
-
-    @Override
     public boolean hasRestrictedPartitions() {
         return restrictedPartitions.length>0;
-    }
-
-    @Override
-    public String getGroupName() {
-        return groupName;
     }
 
     @Override
@@ -347,23 +310,13 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public Instant getCommitTime() {
-        return userCommitTime;
-    }
-
-    @Override
     public boolean hasCommitTime() {
-        return userCommitTime!=null;
+        return commitTime!=null;
     }
 
     @Override
     public <V> V getCustomOption(ConfigOption<V> opt) {
         return getCustomOptions().get(opt);
-    }
-
-    @Override
-    public Configuration getCustomOptions() {
-        return customOptions;
     }
 
     @Override

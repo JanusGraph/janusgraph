@@ -33,12 +33,16 @@ import org.janusgraph.diskstorage.configuration.ConfigOption;
 
 import static org.janusgraph.util.encoding.StringEncoding.UTF8_ENCODING;
 
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+
 /**
  * Recursively dump the root configuration namespace to either System.out or the
  * named file in a CSV-type format with configurable delimiter, header, and
  * footer. Used to generate a table of all configuration keys for inclusion in
  * the AsciiDoc documentation.
  */
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConfigurationPrinter {
 
 //    private static final String TABLE_HEADER_LINES = "[role=\"tss-config-table\",cols=\"2,3,1,1,1\",options=\"header\",width=\"100%\"]\n|=====\n| Name | Description | Datatype | Default Value | Mutability";
@@ -48,8 +52,8 @@ public class ConfigurationPrinter {
     private static boolean DELIM_AT_LINE_START = true;
     private static boolean DELIM_AT_LINE_END = false;
 
-    private final boolean showMutability;
     private final PrintStream stream;
+    private final boolean showMutability;
 
     public static void main(String args[]) throws IOException, ReflectiveOperationException {
 
@@ -70,11 +74,6 @@ public class ConfigurationPrinter {
 
         stream.flush();
         stream.close();
-    }
-
-    private ConfigurationPrinter(PrintStream stream, boolean showMutability) {
-        this.stream = stream;
-        this.showMutability = showMutability;
     }
 
     private void write(ConfigNamespace root) {

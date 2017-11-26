@@ -22,21 +22,18 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class VertexState<M> {
 
     protected Object properties;
-
     private Object previousMessages;
     private Object currentMessages;
-
-    private VertexState() {
-        properties=null;
-        previousMessages=null;
-        currentMessages=null;
-    }
 
     public VertexState(Map<String,Integer> keyMap) {
         assert isValidIdMap(keyMap);

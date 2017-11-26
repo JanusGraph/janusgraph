@@ -20,15 +20,13 @@ import java.util.Set;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 public class MergedConfiguration implements Configuration {
 
     private final Configuration first;
     private final Configuration second;
-
-    public MergedConfiguration(Configuration first, Configuration second) {
-        this.first = first;
-        this.second = second;
-    }
 
     @Override
     public boolean has(ConfigOption option, String... umbrellaElements) {

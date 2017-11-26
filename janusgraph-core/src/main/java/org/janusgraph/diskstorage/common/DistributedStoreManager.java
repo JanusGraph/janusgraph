@@ -27,6 +27,10 @@ import java.time.Instant;
 import java.util.Random;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+
 /**
  * Abstract class that handles configuration options shared by all distributed storage backends
  *
@@ -62,6 +66,11 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
     protected final String[] hostnames;
     protected final int port;
     protected final Duration connectionTimeoutMS;
+    /**
+     * pageSize is the default configured page size for this storage backend. The page size is used to determine
+     * the number of records to request at a time when streaming result data.
+     */
+    @Getter
     protected final int pageSize;
 
     protected final String username;
@@ -104,15 +113,6 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
      */
     public boolean hasAuthentication() {
         return username!=null;
-    }
-
-    /**
-     * Returns the default configured page size for this storage backend. The page size is used to determine
-     * the number of records to request at a time when streaming result data.
-     * @return
-     */
-    public int getPageSize() {
-        return pageSize;
     }
 
     /*
@@ -235,14 +235,11 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
      * It needs to be ensured that the deletion time is prior to the addition time since
      * some storage backends use the time to resolve conflicts.
      */
+    @RequiredArgsConstructor
     public static class MaskedTimestamp {
 
+        @NonNull
         private final Instant t;
-
-        public MaskedTimestamp(Instant commitTime) {
-            Preconditions.checkNotNull(commitTime);
-            this.t=commitTime;
-        }
 
         public MaskedTimestamp(StoreTransaction txh) {
             this(txh.getConfiguration().getCommitTime());

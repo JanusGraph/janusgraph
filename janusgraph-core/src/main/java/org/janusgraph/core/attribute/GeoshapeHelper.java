@@ -38,22 +38,30 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import lombok.Getter;
+
 /**
  * Base class for default implementation of spatial context and associated I/O operations supporting point, circle and
  * rectangle shapes.
  */
 public class GeoshapeHelper {
 
+    @Getter
     protected SpatialContext context;
 
+    @Getter
     protected WKTReader wktReader;
 
+    @Getter
     protected WKTWriter wktWriter;
 
+    @Getter
     protected GeoJSONReader geojsonReader;
 
+    @Getter
     protected GeoJSONWriter geojsonWriter;
 
+    @Getter
     protected BinaryCodec binaryCodec;
 
     protected SpatialContextFactory factory;
@@ -173,30 +181,6 @@ public class GeoshapeHelper {
 
     public boolean isJts(Shape shape) {
         return false;
-    }
-
-    public SpatialContext getContext() {
-        return context;
-    }
-
-    public WKTReader getWktReader() {
-        return wktReader;
-    }
-
-    public WKTWriter getWktWriter() {
-        return wktWriter;
-    }
-
-    public GeoJSONReader getGeojsonReader() {
-        return geojsonReader;
-    }
-
-    public GeoJSONWriter getGeojsonWriter() {
-        return geojsonWriter;
-    }
-
-    public BinaryCodec getBinaryCodec() {
-        return binaryCodec;
     }
 
 }

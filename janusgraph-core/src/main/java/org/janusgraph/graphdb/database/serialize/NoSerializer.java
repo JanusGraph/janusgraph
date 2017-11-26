@@ -18,16 +18,15 @@ import org.janusgraph.core.attribute.AttributeSerializer;
 import org.janusgraph.diskstorage.ScanBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
 
+import lombok.RequiredArgsConstructor;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@RequiredArgsConstructor
 public class NoSerializer<V> implements AttributeSerializer<V> {
 
     private final Class<V> datatype;
-
-    public NoSerializer(Class<V> datatype) {
-        this.datatype = datatype;
-    }
 
     private final IllegalArgumentException error() {
         return new IllegalArgumentException("Serializing objects of type ["+datatype+"] is not supported");

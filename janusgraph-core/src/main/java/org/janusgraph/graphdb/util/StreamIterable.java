@@ -20,16 +20,15 @@ package org.janusgraph.graphdb.util;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
+import lombok.RequiredArgsConstructor;
+
 /**
  * @author davidclement90@laposte.net
  */
+@RequiredArgsConstructor
 public class StreamIterable<E> implements Iterable<E>{
 
     private final Stream<E> stream;
-
-    public StreamIterable(Stream<E> stream) {
-        this.stream = stream;
-    }
 
     @Override
     public Iterator<E> iterator() {

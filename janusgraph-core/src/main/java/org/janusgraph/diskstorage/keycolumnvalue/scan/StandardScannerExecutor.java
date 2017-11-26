@@ -25,8 +25,6 @@ import org.janusgraph.diskstorage.util.RecordIterator;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.janusgraph.diskstorage.util.StaticArrayEntryList;
 import org.janusgraph.util.system.Threads;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -34,13 +32,16 @@ import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@Slf4j
 class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements JanusGraphManagement.IndexJobFuture, Runnable {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(StandardScannerExecutor.class);
 
     private static final int QUEUE_SIZE = 1000;
     private static final int TIMEOUT_MS = 180000; // 60 seconds
@@ -55,7 +56,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
     private final int workBlockSize;
     private final Configuration jobConfiguration;
     private final Configuration graphConfiguration;
-    private final ScanMetrics metrics;
+    private final ScanMetrics intermediateResult;
 
     private boolean hasCompleted = false;
     private boolean interrupted = false;
@@ -81,7 +82,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
         this.jobConfiguration = jobConfiguration;
         this.graphConfiguration = graphConfiguration;
 
-        metrics = new StandardScanMetrics();
+        intermediateResult = new StandardScanMetrics();
 
     }
 
@@ -98,7 +99,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
     @Override
     public void run() {
         try {
-            job.workerIterationStart(jobConfiguration, graphConfiguration, metrics);
+            job.workerIterationStart(jobConfiguration, graphConfiguration, intermediateResult);
 
             queries = job.getQueries();
             numQueries = queries.size();
@@ -122,7 +123,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
         }  catch (Throwable e) {
             log.error("Exception trying to setup the job:", e);
             cleanupSilent();
-            job.workerIterationEnd(metrics);
+            job.workerIterationEnd(intermediateResult);
             setException(e);
             return;
         }
@@ -183,17 +184,17 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
             if (!Threads.waitForCompletion(processors,TIMEOUT_MS)) log.error("Processor did not terminate in time");
 
             cleanup();
-            job.workerIterationEnd(metrics);
+            job.workerIterationEnd(intermediateResult);
 
             if (interrupted) {
                 setException(new InterruptedException("Scanner got interrupted"));
             } else {
-                finishJob.accept(metrics);
-                set(metrics);
+                finishJob.accept(intermediateResult);
+                set(intermediateResult);
             }
         } catch (Throwable e) {
             log.error("Exception occured during job execution: {}",e);
-            job.workerIterationEnd(metrics);
+            job.workerIterationEnd(intermediateResult);
             setException(e);
         } finally {
             Threads.terminate(processors);
@@ -230,18 +231,14 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
 
     @Override
     public ScanMetrics getIntermediateResult() {
-        return metrics;
+        return intermediateResult;
     }
 
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     private static class Row {
 
         final StaticBuffer key;
         final Map<SliceQuery,EntryList> entries;
-
-        private Row(StaticBuffer key, Map<SliceQuery, EntryList> entries) {
-            this.key = key;
-            this.entries = entries;
-        }
     }
 
 
@@ -266,23 +263,23 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
         @Override
         public void run() {
             try {
-                job.workerIterationStart(jobConfiguration, graphConfiguration, metrics);
+                job.workerIterationStart(jobConfiguration, graphConfiguration, intermediateResult);
                 while (!finished || !processorQueue.isEmpty()) {
                     Row row;
                     while ((row=processorQueue.poll(100,TimeUnit.MILLISECONDS))!=null) {
                         if (numProcessed>=workBlockSize) {
                             //Setup new chunk of work
-                            job.workerIterationEnd(metrics);
+                            job.workerIterationEnd(intermediateResult);
                             job = job.clone();
-                            job.workerIterationStart(jobConfiguration, graphConfiguration, metrics);
+                            job.workerIterationStart(jobConfiguration, graphConfiguration, intermediateResult);
                             numProcessed=0;
                         }
                         try {
-                            job.process(row.key,row.entries,metrics);
-                            metrics.increment(ScanMetrics.Metric.SUCCESS);
+                            job.process(row.key,row.entries, intermediateResult);
+                            intermediateResult.increment(ScanMetrics.Metric.SUCCESS);
                         } catch (Throwable ex) {
                             log.error("Exception processing row ["+row.key+"]: ",ex);
-                            metrics.increment(ScanMetrics.Metric.FAILURE);
+                            intermediateResult.increment(ScanMetrics.Metric.FAILURE);
                         }
                         numProcessed++;
                     }
@@ -292,7 +289,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
             } catch (Throwable e) {
                 log.error("Unexpected error processing data: {}",e);
             } finally {
-                job.workerIterationEnd(metrics);
+                job.workerIterationEnd(intermediateResult);
             }
         }
 
@@ -308,7 +305,8 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
         private final KeyIterator keyIter;
         private final SliceQuery query;
         private final Predicate<StaticBuffer> keyFilter;
-        private volatile boolean finished;
+        @Getter
+        private volatile boolean isFinished;
 
         private DataPuller(SliceQuery query, BlockingQueue<SliceResult> queue,
                            KeyIterator keyIter, Predicate<StaticBuffer> keyFilter) {
@@ -316,7 +314,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
             this.queue = queue;
             this.keyIter = keyIter;
             this.keyFilter = keyFilter;
-            this.finished = false;
+            this.isFinished = false;
         }
 
         @Override
@@ -329,7 +327,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
                     EntryList entryList = StaticArrayEntryList.ofStaticBuffer(entries, StaticArrayEntry.ENTRY_GETTER);
                     queue.put(new SliceResult(query, key, entryList));
                 }
-                finished = true;
+                isFinished = true;
             } catch (InterruptedException e) {
                 log.error("Data-pulling thread interrupted while waiting on queue or data", e);
             } catch (Throwable e) {
@@ -342,23 +340,14 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
                 }
             }
         }
-
-        public boolean isFinished() {
-            return finished;
-        }
     }
 
+    @RequiredArgsConstructor
     private static class SliceResult {
 
         final SliceQuery query;
         final StaticBuffer key;
         final EntryList entries;
-
-        private SliceResult(SliceQuery query, StaticBuffer key, EntryList entries) {
-            this.query = query;
-            this.key = key;
-            this.entries = entries;
-        }
     }
 
 

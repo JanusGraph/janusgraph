@@ -25,18 +25,16 @@ import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.util.WorkerPool;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@Slf4j
 public class PartitionedVertexProgramExecutor<M> {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(PartitionedVertexProgramExecutor.class);
 
     private final StandardJanusGraph graph;
     private final IDManager idManager;

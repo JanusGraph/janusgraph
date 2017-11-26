@@ -33,6 +33,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
+import lombok.Getter;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -89,9 +91,11 @@ public class StandardScanner  {
         private int workBlockSize;
         private TimestampProvider times;
         private Configuration graphConfiguration;
+        @Getter
         private Configuration jobConfiguration;
         private String dbName;
         private Consumer<ScanMetrics> finishJob;
+        @Getter
         private Object jobId;
 
         private Builder() {
@@ -131,10 +135,6 @@ public class StandardScanner  {
             return this;
         }
 
-        public Object getJobId() {
-            return jobId;
-        }
-
         public Builder setJobId(Object id) {
             Preconditions.checkArgument(id!=null,"Need to provide a valid id: %s",id);
             this.jobId = id;
@@ -157,10 +157,6 @@ public class StandardScanner  {
             Preconditions.checkArgument(config!=null);
             this.jobConfiguration = config;
             return this;
-        }
-
-        public Configuration getJobConfiguration() {
-            return this.jobConfiguration;
         }
 
         public Builder setFinishJob(Consumer<ScanMetrics> finishJob) {
