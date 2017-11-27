@@ -30,6 +30,7 @@ import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.Namifiable;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.schema.JanusGraphIndex;
@@ -48,13 +49,13 @@ public class JanusGraphAppTest {
         final JanusGraphManagement mgmt = janusGraph.openManagement();
 
         final List<String> vertexLabels = StreamSupport.stream(mgmt.getVertexLabels().spliterator(), false)
-                .map(l -> l.name()).collect(Collectors.toList());
+                .map(Namifiable::name).collect(Collectors.toList());
         final List<String> expectedVertexLabels = Stream.of("titan", "location", "god", "demigod", "human", "monster")
                 .collect(Collectors.toList());
         assertTrue(vertexLabels.containsAll(expectedVertexLabels));
 
         final List<String> edgeLabels = StreamSupport
-                .stream(mgmt.getRelationTypes(EdgeLabel.class).spliterator(), false).map(l -> l.name())
+                .stream(mgmt.getRelationTypes(EdgeLabel.class).spliterator(), false).map(Namifiable::name)
                 .collect(Collectors.toList());
         final List<String> expectedEdgeLabels = Stream.of("father", "mother", "brother", "pet", "lives", "battled")
                 .collect(Collectors.toList());
@@ -66,7 +67,7 @@ public class JanusGraphAppTest {
         assertEquals(Multiplicity.MANY2ONE, father.multiplicity());
 
         final List<String> propertyKeys = StreamSupport
-                .stream(mgmt.getRelationTypes(PropertyKey.class).spliterator(), false).map(l -> l.name())
+                .stream(mgmt.getRelationTypes(PropertyKey.class).spliterator(), false).map(Namifiable::name)
                 .collect(Collectors.toList());
         final List<String> expectedPropertyKeys = Stream.of("name", "age", "time", "place", "reason")
                 .collect(Collectors.toList());

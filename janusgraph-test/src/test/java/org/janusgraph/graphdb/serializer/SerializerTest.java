@@ -106,16 +106,13 @@ public class SerializerTest extends SerializerTestCommon {
         int numThreads = 4;
         Thread[] threads = new Thread[numThreads];
         for (int i = 0; i < numThreads; i++) {
-            threads[i] = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    for (int j = 0; j < 100000; j++) {
-                        ReadBuffer buffer = b.asReadBuffer();
-                        assertEquals(8, buffer.getLong());
-                        assertEquals (value , (long)serialize.readClassAndObject(buffer));
-                        assertEquals(c,serialize.readObject(buffer,TClass2.class));
-                        assertEquals(str,serialize.readObjectNotNull(buffer,String.class));
-                    }
+            threads[i] = new Thread(() -> {
+                for (int j = 0; j < 100000; j++) {
+                    ReadBuffer buffer = b.asReadBuffer();
+                    assertEquals(8, buffer.getLong());
+                    assertEquals (value , (long)serialize.readClassAndObject(buffer));
+                    assertEquals(c,serialize.readObject(buffer,TClass2.class));
+                    assertEquals(str,serialize.readObjectNotNull(buffer,String.class));
                 }
             });
             threads[i].start();

@@ -122,7 +122,7 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
 
             // Find minimum distance among all incoming messages, or null if no messages came in
             Long shortestDistanceSeenOnThisIteration =
-                    IteratorUtils.stream(distances).reduce((a, b) -> Math.min(a, b)).orElse(null);
+                    IteratorUtils.stream(distances).reduce(Math::min).orElse(null);
 
             if (null == shortestDistanceSeenOnThisIteration)
                 return; // no messages to process or forward on this superstep

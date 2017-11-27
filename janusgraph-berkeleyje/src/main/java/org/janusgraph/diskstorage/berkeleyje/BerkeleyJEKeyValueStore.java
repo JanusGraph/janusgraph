@@ -38,12 +38,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
     private static final Logger log = LoggerFactory.getLogger(BerkeleyJEKeyValueStore.class);
 
-    private static final StaticBuffer.Factory<DatabaseEntry> ENTRY_FACTORY = new StaticBuffer.Factory<DatabaseEntry>() {
-        @Override
-        public DatabaseEntry get(byte[] array, int offset, int limit) {
-            return new DatabaseEntry(array,offset,limit-offset);
-        }
-    };
+    private static final StaticBuffer.Factory<DatabaseEntry> ENTRY_FACTORY = (array, offset, limit) -> new DatabaseEntry(array,offset,limit-offset);
 
 
     private final Database db;

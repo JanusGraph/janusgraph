@@ -56,15 +56,12 @@ public class VariableLongTest {
         ReadBuffer rb = wb.getStaticBuffer().asReadBuffer();
         log.info("Writing " + num + " longs in " + rb.length() + " bytes. in time: " + w.getTime());
 
-        final ReadVerify read = new ReadVerify() {
-            @Override
-            public void next(ReadBuffer rb, long expected) {
-                int beforePos = rb.getPosition();
-                long value = impl.read(rb);
-                assertEquals(expected, value);
-                int length = Math.abs(rb.getPosition()-beforePos);
-                assertEquals("On: " + expected,length,impl.length(expected));
-            }
+        final ReadVerify read = (rb1, expected) -> {
+            int beforePos = rb1.getPosition();
+            long value = impl.read(rb1);
+            assertEquals(expected, value);
+            int length = Math.abs(rb1.getPosition()-beforePos);
+            assertEquals("On: " + expected,length,impl.length(expected));
         };
 
         if (backward) {

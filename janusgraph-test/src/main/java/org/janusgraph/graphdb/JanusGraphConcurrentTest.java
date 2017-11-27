@@ -128,17 +128,14 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
 
         Thread[] threads = new Thread[numThreads];
         for (int t = 0; t < numThreads; t++) {
-            threads[t] = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    JanusGraphTransaction tx = graph.newTransaction();
-                    for (int i = 0; i < numTypes; i++) {
-                        RelationType type = tx.getRelationType("test" + i);
-                        if (i < numTypes / 2) assertTrue(type.isPropertyKey());
-                        else assertTrue(type.isEdgeLabel());
-                    }
-                    tx.commit();
+            threads[t] = new Thread(() -> {
+                JanusGraphTransaction tx = graph.newTransaction();
+                for (int i = 0; i < numTypes; i++) {
+                    RelationType type = tx.getRelationType("test" + i);
+                    if (i < numTypes / 2) assertTrue(type.isPropertyKey());
+                    else assertTrue(type.isEdgeLabel());
                 }
+                tx.commit();
             });
             threads[t].start();
         }
@@ -231,23 +228,20 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
         final Random random = new Random();
         final AtomicInteger duplicates = new AtomicInteger(0);
 
-        Thread writer = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (run.get()) {
-                    JanusGraphTransaction tx = graph.newTransaction();
-                    try {
-                        for (int i = 0; i < batchV; i++) {
-                            JanusGraphVertex v = tx.addVertex();
-                            v.property("k", random.nextInt(maxK));
-                            v.property("q", random.nextInt(maxQ));
-                        }
-                        tx.commit();
-                    } catch (Throwable e) {
-                        e.printStackTrace();
-                    } finally {
-                        if (tx.isOpen()) tx.rollback();
+        Thread writer = new Thread(() -> {
+            while (run.get()) {
+                JanusGraphTransaction tx = graph.newTransaction();
+                try {
+                    for (int i = 0; i < batchV; i++) {
+                        JanusGraphVertex v = tx.addVertex();
+                        v.property("k", random.nextInt(maxK));
+                        v.property("q", random.nextInt(maxQ));
                     }
+                    tx.commit();
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                } finally {
+                    if (tx.isOpen()) tx.rollback();
                 }
             }
         });
