@@ -91,13 +91,13 @@ public class IDManagementTest {
 
         for (long count=minCount;count<maxCount;count++) {
 
-            for (IDManager.VertexIDType vtype : USER_VERTEX_TYPES) {
-                if (partitionBits==0 && vtype== IDManager.VertexIDType.PartitionedVertex) continue;
-                if (vtype== IDManager.VertexIDType.PartitionedVertex) partition=IDManager.PARTITIONED_VERTEX_PARTITION;
-                long id = eid.getVertexID(count, partition,vtype);
+            for (IDManager.VertexIDType userVertexType : USER_VERTEX_TYPES) {
+                if (partitionBits==0 && userVertexType== IDManager.VertexIDType.PartitionedVertex) continue;
+                if (userVertexType== IDManager.VertexIDType.PartitionedVertex) partition=IDManager.PARTITIONED_VERTEX_PARTITION;
+                long id = eid.getVertexID(count, partition,userVertexType);
                 assertTrue(eid.isUserVertexId(id));
-                assertTrue(vtype.is(id));
-                if (vtype != IDManager.VertexIDType.PartitionedVertex) assertEquals(eid.getPartitionId(id), partition);
+                assertTrue(userVertexType.is(id));
+                if (userVertexType != IDManager.VertexIDType.PartitionedVertex) assertEquals(eid.getPartitionId(id), partition);
                 assertEquals(id, eid.getKeyID(eid.getKey(id)));
             }
 
@@ -250,21 +250,21 @@ public class IDManagementTest {
         }
     }
 
-    public void testEdgeTypeWriting(long etid) {
-        IDHandler.DirectionID[] dir = IDManager.VertexIDType.EdgeLabel.is(etid)?
+    public void testEdgeTypeWriting(long edgeTypeId) {
+        IDHandler.DirectionID[] dir = IDManager.VertexIDType.EdgeLabel.is(edgeTypeId)?
                     new IDHandler.DirectionID[]{IDHandler.DirectionID.EDGE_IN_DIR, IDHandler.DirectionID.EDGE_OUT_DIR}:
                     new IDHandler.DirectionID[]{IDHandler.DirectionID.PROPERTY_DIR};
-        boolean invisible = IDManager.isSystemRelationTypeId(etid);
+        boolean invisible = IDManager.isSystemRelationTypeId(edgeTypeId);
         for (IDHandler.DirectionID d : dir) {
-            StaticBuffer b = IDHandler.getRelationType(etid, d, invisible);
+            StaticBuffer b = IDHandler.getRelationType(edgeTypeId, d, invisible);
             IDHandler.RelationTypeParse parse = IDHandler.readRelationType(b.asReadBuffer());
             assertEquals(d,parse.dirID);
-            assertEquals(etid,parse.typeId);
+            assertEquals(edgeTypeId,parse.typeId);
         }
     }
 
     @Test
-    public void testUserVertexBitWdith() {
+    public void testUserVertexBitWidth() {
         for (IDManager.VertexIDType type : IDManager.VertexIDType.values()) {
             if (IDManager.VertexIDType.UserVertex.is(type.suffix()) && type.isProper())
                 assert type.offset()==IDManager.USERVERTEX_PADDING_BITWIDTH;

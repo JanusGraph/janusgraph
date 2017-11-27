@@ -57,7 +57,7 @@ public class GraphOfTheGodsCompatIT extends AbstractJanusGraphAssemblyIT {
                 }
                 String version = tokens[0].trim();
                 String config = tokens[1].trim();
-                String archiveurl = tokens[2].trim();
+                String archiveUrl = tokens[2].trim();
                 if (version.isEmpty()) {
                     log.warn("Ignoring line {} due to empty version field", lineNumber);
                     continue;
@@ -66,7 +66,7 @@ public class GraphOfTheGodsCompatIT extends AbstractJanusGraphAssemblyIT {
                     log.warn("Ignoring line {} due to empty config field", lineNumber);
                     continue;
                 }
-                if (archiveurl.isEmpty()) {
+                if (archiveUrl.isEmpty()) {
                     log.warn("Ignoring line {} due to empty archiveurl field", lineNumber);
                     continue;
                 }
@@ -75,7 +75,7 @@ public class GraphOfTheGodsCompatIT extends AbstractJanusGraphAssemblyIT {
                     log.warn("Ignoring line {} with unknown config string {} (only {} is supported)", lineNumber, config, BDB_ES);
                 }
 
-                downloadAndTest(archiveurl);
+                downloadAndTest(archiveUrl);
                 tested++;
             }
         } finally {
@@ -86,13 +86,13 @@ public class GraphOfTheGodsCompatIT extends AbstractJanusGraphAssemblyIT {
                 lineNumber, tested, lineNumber - tested);
     }
 
-    private void downloadAndTest(String archiveurl) throws IOException, InterruptedException {
-        // Extract the current release's zipfile
+    private void downloadAndTest(String archiveUrl) throws IOException, InterruptedException {
+        // Extract the current release's zip file
         FileUtils.deleteQuietly(new File(ZIPFILE_EXTRACTED));
         unzip(BUILD_DIR, ZIPFILE_PATH);
 
         // Now download the archive at the URL containing DB files from an older JanusGraph version
-        downloadFile(archiveurl, "old_db.zip", new File(ZIPFILE_EXTRACTED));
+        downloadFile(archiveUrl, "old_db.zip", new File(ZIPFILE_EXTRACTED));
         unzip(ZIPFILE_EXTRACTED, "old_db.zip");
 
         // Now start the current release using the old DB files (new code, old data) and query it

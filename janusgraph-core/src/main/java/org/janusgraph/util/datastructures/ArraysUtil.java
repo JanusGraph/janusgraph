@@ -42,20 +42,20 @@ public class ArraysUtil {
 
     public static long[] insertSortedInc(long[] arr, long element) {
         assert arr == null || isSortedInc(arr);
-        long[] newarr = new long[(arr != null ? arr.length + 1 : 1)];
+        long[] newArray = new long[(arr != null ? arr.length + 1 : 1)];
         int offset = 0;
         if (arr != null) {
             for (int i = 0; i < arr.length; i++) {
                 Preconditions.checkArgument(element != arr[i]);
                 if (element < arr[i]) {
-                    newarr[i] = element;
+                    newArray[i] = element;
                     offset = 1;
                 }
-                newarr[i + offset] = arr[i];
+                newArray[i + offset] = arr[i];
             }
         }
-        if (offset == 0) newarr[newarr.length - 1] = element;
-        return newarr;
+        if (offset == 0) newArray[newArray.length - 1] = element;
+        return newArray;
     }
 
     public static long[] arrayDifference(long[] arr, long[] subset) {

@@ -383,24 +383,24 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                 ByteBuffer key = ent.getKey().asByteBuffer();
 
                 if (janusgraphMutation.hasDeletions()) {
-                    ColumnListMutation<ByteBuffer> dels = m.withRow(columnFamily, key);
-                    dels.setTimestamp(commitTime.getDeletionTime(times));
+                    ColumnListMutation<ByteBuffer> deletions = m.withRow(columnFamily, key);
+                    deletions.setTimestamp(commitTime.getDeletionTime(times));
 
                     for (StaticBuffer b : janusgraphMutation.getDeletions())
-                        dels.deleteColumn(b.as(StaticBuffer.BB_FACTORY));
+                        deletions.deleteColumn(b.as(StaticBuffer.BB_FACTORY));
                 }
 
                 if (janusgraphMutation.hasAdditions()) {
-                    ColumnListMutation<ByteBuffer> upds = m.withRow(columnFamily, key);
-                    upds.setTimestamp(commitTime.getAdditionTime(times));
+                    ColumnListMutation<ByteBuffer> updates = m.withRow(columnFamily, key);
+                    updates.setTimestamp(commitTime.getAdditionTime(times));
 
                     for (Entry e : janusgraphMutation.getAdditions()) {
                         Integer ttl = (Integer) e.getMetaData().get(EntryMetaData.TTL);
 
                         if (null != ttl && ttl > 0) {
-                            upds.putColumn(e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), ttl);
+                            updates.putColumn(e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), ttl);
                         } else {
-                            upds.putColumn(e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY));
+                            updates.putColumn(e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY));
                         }
                     }
                 }
@@ -545,7 +545,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             log.debug("Set local datacenter: {}", cpool.getLocalDatacenter());
         }
 
-        AstyanaxConfigurationImpl aconf =
+        AstyanaxConfigurationImpl astyanaxConfiguration =
                 new AstyanaxConfigurationImpl()
                         .setConnectionPoolType(poolType)
                         .setDiscoveryType(discType)
@@ -570,7 +570,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         ctxBuilder
             .forCluster(clusterName)
             .forKeyspace(keySpaceName)
-            .withAstyanaxConfiguration(aconf)
+            .withAstyanaxConfiguration(astyanaxConfiguration)
             .withConnectionPoolConfiguration(cpool)
             .withConnectionPoolMonitor(new CountingConnectionPoolMonitor());
 
@@ -697,19 +697,19 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         try {
             Keyspace k = keyspaceContext.getClient();
 
-            KeyspaceDefinition kdef = k.describeKeyspace();
+            KeyspaceDefinition keyspaceDefinition = k.describeKeyspace();
 
-            if (null == kdef) {
+            if (null == keyspaceDefinition) {
                 throw new PermanentBackendException("Keyspace " + k.getKeyspaceName() + " is undefined");
             }
 
-            ColumnFamilyDefinition cfdef = kdef.getColumnFamily(cf);
+            ColumnFamilyDefinition columnFamilyDefinition = keyspaceDefinition.getColumnFamily(cf);
 
-            if (null == cfdef) {
+            if (null == columnFamilyDefinition) {
                 throw new PermanentBackendException("Column family " + cf + " is undefined");
             }
 
-            return cfdef.getCompressionOptions();
+            return columnFamilyDefinition.getCompressionOptions();
         } catch (ConnectionException e) {
             throw new PermanentBackendException(e);
         }

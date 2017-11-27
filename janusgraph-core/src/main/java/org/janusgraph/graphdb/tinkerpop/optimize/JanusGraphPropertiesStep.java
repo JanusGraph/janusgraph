@@ -93,11 +93,11 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
         useMultiQuery = useMultiQuery && elements.stream().noneMatch(e -> !(e.get() instanceof Vertex));
 
         if (useMultiQuery) {
-            JanusGraphMultiVertexQuery mquery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
-            elements.forEach(e -> mquery.addVertex((Vertex) e.get()));
-            makeQuery(mquery);
+            JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
+            elements.forEach(e -> multiQuery.addVertex((Vertex) e.get()));
+            makeQuery(multiQuery);
 
-            multiQueryResults = mquery.properties();
+            multiQueryResults = multiQuery.properties();
         }
     }
 
@@ -117,19 +117,19 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
             return convertIterator(query.properties());
         } else {
             //It is some other element (edge or vertex property)
-            Iterator<E> iter;
+            Iterator<E> iterator;
             if (getReturnType().forValues()) {
                 assert orders.isEmpty() && hasContainers.isEmpty();
-                iter = traverser.get().values(getPropertyKeys());
+                iterator = traverser.get().values(getPropertyKeys());
             } else {
                 //this asks for properties
                 assert orders.isEmpty();
                 //HasContainers don't apply => empty result set
                 if (!hasContainers.isEmpty()) return Collections.emptyIterator();
-                iter = (Iterator<E>) traverser.get().properties(getPropertyKeys());
+                iterator = (Iterator<E>) traverser.get().properties(getPropertyKeys());
             }
-            if (limit!=Query.NO_LIMIT) iter = Iterators.limit(iter,limit);
-            return iter;
+            if (limit!=Query.NO_LIMIT) iterator = Iterators.limit(iterator,limit);
+            return iterator;
         }
     }
 

@@ -75,7 +75,7 @@ public class ConfigOption<O> extends ConfigElement {
 
     /**
      * This is a subset of types accepted by StandardSerializer.
-     * Its subset-ness is enforced in the static initializer block further down this file.
+     * Inclusion is enforced in the static initializer block further down this file.
      */
     private static final Set<Class<?>> ACCEPTED_DATATYPES;
 
@@ -126,35 +126,35 @@ public class ConfigOption<O> extends ConfigElement {
         this(parent,name,description,type,(Class<O>)defaultValue.getClass(),defaultValue,verificationFct);
     }
 
-    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> datatype) {
-        this(parent,name,description,type,datatype, disallowEmpty(datatype));
+    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> dataType) {
+        this(parent,name,description,type,dataType, disallowEmpty(dataType));
     }
 
-    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> datatype, Predicate<O> verificationFct) {
-        this(parent,name,description,type,datatype,null,verificationFct);
+    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> dataType, Predicate<O> verificationFct) {
+        this(parent,name,description,type,dataType,null,verificationFct);
     }
 
-    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> datatype, O defaultValue) {
-        this(parent,name,description,type,datatype,defaultValue,disallowEmpty(datatype));
+    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> dataType, O defaultValue) {
+        this(parent,name,description,type,dataType,defaultValue,disallowEmpty(dataType));
     }
 
-    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> datatype, O defaultValue, Predicate<O> verificationFct) {
-        this(parent, name, description, type, datatype, defaultValue, verificationFct, null);
+    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> dataType, O defaultValue, Predicate<O> verificationFct) {
+        this(parent, name, description, type, dataType, defaultValue, verificationFct, null);
     }
 
-    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> datatype, O defaultValue, Predicate<O> verificationFct, ConfigOption<?> supersededBy) {
+    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> dataType, O defaultValue, Predicate<O> verificationFct, ConfigOption<?> supersededBy) {
         super(parent, name, description);
         Preconditions.checkNotNull(type);
-        Preconditions.checkNotNull(datatype);
+        Preconditions.checkNotNull(dataType);
         Preconditions.checkNotNull(verificationFct);
         this.type = type;
-        this.datatype = datatype;
+        this.datatype = dataType;
         this.defaultValue = defaultValue;
         this.verificationFct = verificationFct;
         this.supersededBy = supersededBy;
-        // This constructor tends to get called by static initializers, so log before throwing the IAE
-        if (!ACCEPTED_DATATYPES.contains(datatype)) {
-            String msg = String.format("Datatype %s is not one of %s", datatype, ACCEPTED_DATATYPES_STRING);
+        // A static initializer calls this constructor, so log before throwing the IAE
+        if (!ACCEPTED_DATATYPES.contains(dataType)) {
+            String msg = String.format("Datatype %s is not one of %s", dataType, ACCEPTED_DATATYPES_STRING);
             log.error(msg);
             throw new IllegalArgumentException(msg);
         }

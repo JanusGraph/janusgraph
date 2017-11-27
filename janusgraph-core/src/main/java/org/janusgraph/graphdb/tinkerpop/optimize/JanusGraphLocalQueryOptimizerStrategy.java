@@ -58,24 +58,24 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
          */
 
         TraversalHelper.getStepsOfClass(VertexStep.class, traversal).forEach(originalStep -> {
-            JanusGraphVertexStep vstep = new JanusGraphVertexStep(originalStep);
-            TraversalHelper.replaceStep(originalStep, vstep, traversal);
+            JanusGraphVertexStep vertexStep = new JanusGraphVertexStep(originalStep);
+            TraversalHelper.replaceStep(originalStep, vertexStep, traversal);
 
 
-            if (JanusGraphTraversalUtil.isEdgeReturnStep(vstep)) {
-                HasStepFolder.foldInHasContainer(vstep, traversal);
+            if (JanusGraphTraversalUtil.isEdgeReturnStep(vertexStep)) {
+                HasStepFolder.foldInHasContainer(vertexStep, traversal);
                 //We cannot fold in orders or ranges since they are not local
             }
 
-            assert JanusGraphTraversalUtil.isEdgeReturnStep(vstep) || JanusGraphTraversalUtil.isVertexReturnStep(vstep);
-            Step nextStep = JanusGraphTraversalUtil.getNextNonIdentityStep(vstep);
+            assert JanusGraphTraversalUtil.isEdgeReturnStep(vertexStep) || JanusGraphTraversalUtil.isVertexReturnStep(vertexStep);
+            Step nextStep = JanusGraphTraversalUtil.getNextNonIdentityStep(vertexStep);
             if (nextStep instanceof RangeGlobalStep) {
                 int limit = QueryUtil.convertLimit(((RangeGlobalStep) nextStep).getHighRange());
-                vstep.setLimit(QueryUtil.mergeLimits(limit, vstep.getLimit()));
+                vertexStep.setLimit(QueryUtil.mergeLimits(limit, vertexStep.getLimit()));
             }
 
             if (useMultiQuery) {
-                vstep.setUseMultiQuery(true);
+                vertexStep.setUseMultiQuery(true);
             }
         });
 
@@ -86,17 +86,17 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
 
 
         TraversalHelper.getStepsOfClass(PropertiesStep.class, traversal).forEach(originalStep -> {
-            JanusGraphPropertiesStep vstep = new JanusGraphPropertiesStep(originalStep);
-            TraversalHelper.replaceStep(originalStep, vstep, traversal);
+            JanusGraphPropertiesStep propertiesStep = new JanusGraphPropertiesStep(originalStep);
+            TraversalHelper.replaceStep(originalStep, propertiesStep, traversal);
 
 
-            if (vstep.getReturnType().forProperties()) {
-                HasStepFolder.foldInHasContainer(vstep, traversal);
+            if (propertiesStep.getReturnType().forProperties()) {
+                HasStepFolder.foldInHasContainer(propertiesStep, traversal);
                 //We cannot fold in orders or ranges since they are not local
             }
 
             if (useMultiQuery) {
-                vstep.setUseMultiQuery(true);
+                propertiesStep.setUseMultiQuery(true);
             }
         });
 
@@ -109,31 +109,31 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
             Step localStart = localTraversal.getStartStep();
 
             if (localStart instanceof VertexStep) {
-                JanusGraphVertexStep vstep = new JanusGraphVertexStep((VertexStep) localStart);
-                TraversalHelper.replaceStep(localStart, vstep, localTraversal);
+                JanusGraphVertexStep vertexStep = new JanusGraphVertexStep((VertexStep) localStart);
+                TraversalHelper.replaceStep(localStart, vertexStep, localTraversal);
 
-                if (JanusGraphTraversalUtil.isEdgeReturnStep(vstep)) {
-                    HasStepFolder.foldInHasContainer(vstep, localTraversal);
-                    HasStepFolder.foldInOrder(vstep, localTraversal, traversal, false);
+                if (JanusGraphTraversalUtil.isEdgeReturnStep(vertexStep)) {
+                    HasStepFolder.foldInHasContainer(vertexStep, localTraversal);
+                    HasStepFolder.foldInOrder(vertexStep, localTraversal, traversal, false);
                 }
-                HasStepFolder.foldInRange(vstep, localTraversal);
+                HasStepFolder.foldInRange(vertexStep, localTraversal);
 
 
-                unfoldLocalTraversal(traversal,localStep,localTraversal,vstep,useMultiQuery);
+                unfoldLocalTraversal(traversal,localStep,localTraversal,vertexStep,useMultiQuery);
             }
 
             if (localStart instanceof PropertiesStep) {
-                JanusGraphPropertiesStep vstep = new JanusGraphPropertiesStep((PropertiesStep) localStart);
-                TraversalHelper.replaceStep(localStart, vstep, localTraversal);
+                JanusGraphPropertiesStep propertiesStep = new JanusGraphPropertiesStep((PropertiesStep) localStart);
+                TraversalHelper.replaceStep(localStart, propertiesStep, localTraversal);
 
-                if (vstep.getReturnType().forProperties()) {
-                    HasStepFolder.foldInHasContainer(vstep, localTraversal);
-                    HasStepFolder.foldInOrder(vstep, localTraversal, traversal, false);
+                if (propertiesStep.getReturnType().forProperties()) {
+                    HasStepFolder.foldInHasContainer(propertiesStep, localTraversal);
+                    HasStepFolder.foldInOrder(propertiesStep, localTraversal, traversal, false);
                 }
-                HasStepFolder.foldInRange(vstep, localTraversal);
+                HasStepFolder.foldInRange(propertiesStep, localTraversal);
 
 
-                unfoldLocalTraversal(traversal,localStep,localTraversal,vstep,useMultiQuery);
+                unfoldLocalTraversal(traversal,localStep,localTraversal,propertiesStep,useMultiQuery);
             }
 
         });
@@ -141,16 +141,16 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
 
     private static void unfoldLocalTraversal(final Traversal.Admin<?, ?> traversal,
                                              LocalStep<?,?> localStep, Traversal.Admin localTraversal,
-                                             MultiQueriable vstep, boolean useMultiQuery) {
+                                             MultiQueriable vertexStep, boolean useMultiQuery) {
         assert localTraversal.asAdmin().getSteps().size() > 0;
         if (localTraversal.asAdmin().getSteps().size() == 1) {
             //Can replace the entire localStep by the vertex step in the outer traversal
-            assert localTraversal.getStartStep() == vstep;
-            vstep.setTraversal(traversal);
-            TraversalHelper.replaceStep(localStep, vstep, traversal);
+            assert localTraversal.getStartStep() == vertexStep;
+            vertexStep.setTraversal(traversal);
+            TraversalHelper.replaceStep(localStep, vertexStep, traversal);
 
             if (useMultiQuery) {
-                vstep.setUseMultiQuery(true);
+                vertexStep.setUseMultiQuery(true);
             }
         }
     }

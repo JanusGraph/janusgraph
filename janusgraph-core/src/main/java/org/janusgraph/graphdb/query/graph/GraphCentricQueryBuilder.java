@@ -249,11 +249,11 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             double candidateScore = 0.0;
             Set<Condition> candidateSubcover = null;
             boolean candidateSupportsSort = false;
-            Object candidateSubcondition = null;
+            Object candidateSubCondition = null;
 
             for (IndexType index : indexCandidates) {
                 Set<Condition> subcover = Sets.newHashSet();
-                Object subcondition;
+                Object subCondition;
                 boolean supportsSort = orders.isEmpty();
                 //Check that this index actually applies in case of a schema constraint
                 if (index.hasSchemaTypeConstraint()) {
@@ -271,13 +271,13 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
                 }
 
                 if (index.isCompositeIndex()) {
-                    subcondition = indexCover((CompositeIndexType) index,conditions,subcover);
+                    subCondition = indexCover((CompositeIndexType) index,conditions,subcover);
                 } else {
-                    subcondition = indexCover((MixedIndexType) index,conditions,serializer,subcover);
+                    subCondition = indexCover((MixedIndexType) index,conditions,serializer,subcover);
                     if (coveredClauses.isEmpty() && !supportsSort
                             && indexCoversOrder((MixedIndexType)index,orders)) supportsSort=true;
                 }
-                if (subcondition==null) continue;
+                if (subCondition==null) continue;
                 assert !subcover.isEmpty();
                 double score = 0.0;
                 boolean coversAdditionalClause = false;
@@ -296,7 +296,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
                     candidateScore=score;
                     bestCandidate=index;
                     candidateSubcover = subcover;
-                    candidateSubcondition = subcondition;
+                    candidateSubCondition = subCondition;
                     candidateSupportsSort = supportsSort;
                 }
             }
@@ -305,10 +305,10 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
                 coveredClauses.addAll(candidateSubcover);
                 if (bestCandidate.isCompositeIndex()) {
                     jointQuery.add((CompositeIndexType)bestCandidate,
-                            serializer.getQuery((CompositeIndexType)bestCandidate,(List<Object[]>)candidateSubcondition));
+                            serializer.getQuery((CompositeIndexType)bestCandidate,(List<Object[]>)candidateSubCondition));
                 } else {
                     jointQuery.add((MixedIndexType)bestCandidate,
-                            serializer.getQuery((MixedIndexType)bestCandidate,(Condition)candidateSubcondition,orders));
+                            serializer.getQuery((MixedIndexType)bestCandidate,(Condition)candidateSubCondition,orders));
                 }
             } else {
                 break;
@@ -401,14 +401,14 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
                                                            final IndexSerializer indexInfo, final Set<Condition> covered) {
         assert QueryUtil.isQueryNormalForm(condition);
         assert condition instanceof And;
-        And<JanusGraphElement> subcondition = new And<JanusGraphElement>(condition.numChildren());
-        for (Condition<JanusGraphElement> subclause : condition.getChildren()) {
-            if (coversAll(index,subclause,indexInfo)) {
-                subcondition.add(subclause);
-                covered.add(subclause);
+        And<JanusGraphElement> subCondition = new And<JanusGraphElement>(condition.numChildren());
+        for (Condition<JanusGraphElement> subClause : condition.getChildren()) {
+            if (coversAll(index,subClause,indexInfo)) {
+                subCondition.add(subClause);
+                covered.add(subClause);
             }
         }
-        return subcondition.isEmpty()?null:subcondition;
+        return subCondition.isEmpty()?null:subCondition;
     }
 
     private static boolean coversAll(final MixedIndexType index, Condition<JanusGraphElement> condition, IndexSerializer indexInfo) {

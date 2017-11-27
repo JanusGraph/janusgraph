@@ -45,17 +45,17 @@ public class JobClasspathConfigurers {
         POSSIBLE_MAPRED_JAR_DIRS = b.build();
     }
 
-    public static JobClasspathConfigurer get(String configuredMapredJar, String defaultMapredJar) {
+    public static JobClasspathConfigurer get(String configuredMapReduceJar, String defaultMapReduceJar) {
 
         // Check for Hadoop's mapred.jar config key; this takes highest precedence
-        if (null != configuredMapredJar) {
-            log.info("Using configuration's mapred job jar: {}", configuredMapredJar);
-            return DEFAULT_COMPAT.newMapredJarConfigurer(configuredMapredJar);
+        if (null != configuredMapReduceJar) {
+            log.info("Using configuration's mapred job jar: {}", configuredMapReduceJar);
+            return DEFAULT_COMPAT.newMapredJarConfigurer(configuredMapReduceJar);
         }
 
         // Check for job jar with default filename in some hardcoded directories
         for (String dir : POSSIBLE_MAPRED_JAR_DIRS) {
-            String candidate = dir + File.separator + defaultMapredJar;
+            String candidate = dir + File.separator + defaultMapReduceJar;
             if (new File(candidate).exists()) {
                 log.info("Using mapred job jar found in {}: {}", dir, candidate);
                 return DEFAULT_COMPAT.newMapredJarConfigurer(candidate);

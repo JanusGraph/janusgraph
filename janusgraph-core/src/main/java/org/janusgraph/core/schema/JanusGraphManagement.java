@@ -294,7 +294,7 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
     /**
      * Sets the time-to-live for the given {@link JanusGraphSchemaType}. The most granular time unit used for TTL values
      * is seconds. Any argument will be rounded to seconds if it is more granular than that.
-     * The {@code ttl} must be nonnegative.  When {@code ttl} is zero, any existing TTL on {@code type} is removed
+     * The {@code ttl} must be non-negative.  When {@code ttl} is zero, any existing TTL on {@code type} is removed
      * ("lives forever"). Positive {@code ttl} values are interpreted literally.
      *
      * @param type the affected type

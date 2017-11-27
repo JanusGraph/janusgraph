@@ -209,9 +209,9 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
             this.retryAttempts = retryAttempts;
         }
 
-        private void readRelations(TransactionLogHeader.Entry txentry,
+        private void readRelations(TransactionLogHeader.Entry transactionEntry,
                                    StandardJanusGraphTx tx, StandardChangeState changes) {
-            for (TransactionLogHeader.Modification modification : txentry.getContentAsModifications(serializer)) {
+            for (TransactionLogHeader.Modification modification : transactionEntry.getContentAsModifications(serializer)) {
                 InternalRelation rel = ModificationDeserializer.parseRelation(modification,tx);
 
                 //Special case for vertex addition/removal
@@ -236,13 +236,13 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
                 try {
                     ReadBuffer content = message.getContent().asReadBuffer();
                     String senderId =  message.getSenderId();
-                    TransactionLogHeader.Entry txentry = TransactionLogHeader.parse(content, serializer, times);
-                    if (txentry.getMetadata().containsKey(LogTxMeta.SOURCE_TRANSACTION)) {
-                        transactionId = (StandardTransactionId)txentry.getMetadata().get(LogTxMeta.SOURCE_TRANSACTION);
+                    TransactionLogHeader.Entry transactionEntry = TransactionLogHeader.parse(content, serializer, times);
+                    if (transactionEntry.getMetadata().containsKey(LogTxMeta.SOURCE_TRANSACTION)) {
+                        transactionId = (StandardTransactionId)transactionEntry.getMetadata().get(LogTxMeta.SOURCE_TRANSACTION);
                     } else {
-                        transactionId = new StandardTransactionId(senderId,txentry.getHeader().getId(), txentry.getHeader().getTimestamp());
+                        transactionId = new StandardTransactionId(senderId,transactionEntry.getHeader().getId(), transactionEntry.getHeader().getTimestamp());
                     }
-                    readRelations(txentry,tx,changes);
+                    readRelations(transactionEntry,tx,changes);
                 } catch (Throwable e) {
                     tx.rollback();
                     logger.error("Encountered exception [{}] when preparing processor [{}] for user log [{}] on attempt {} of {}",

@@ -28,7 +28,7 @@ public interface JanusGraphHadoopSetup {
 
     public SystemTypeInspector getSystemTypeInspector();
 
-    public RelationReader getRelationReader(long vertexid);
+    public RelationReader getRelationReader(long vertexId);
 
     public IDManager getIDManager();
 

@@ -103,8 +103,8 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
     @Override
     public Iterable<Entry> getRelated(TypeDefinitionCategory def, Direction dir) {
         assert dir==Direction.OUT || dir==Direction.IN;
-        ListMultimap<TypeDefinitionCategory,Entry> rels = dir==Direction.OUT?outRelations:inRelations;
-        if (rels==null) {
+        ListMultimap<TypeDefinitionCategory,Entry> relations = dir==Direction.OUT?outRelations:inRelations;
+        if (relations==null) {
             ImmutableListMultimap.Builder<TypeDefinitionCategory,Entry> b = ImmutableListMultimap.builder();
             Iterable<JanusGraphEdge> edges;
             if (isLoaded()) {
@@ -126,12 +126,12 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
                 }
                 b.put(desc.getCategory(), new Entry((JanusGraphSchemaVertex) oth, modifier));
             }
-            rels = b.build();
-            if (dir==Direction.OUT) outRelations=rels;
-            else inRelations=rels;
+            relations = b.build();
+            if (dir==Direction.OUT) outRelations=relations;
+            else inRelations=relations;
         }
-        assert rels!=null;
-        return rels.get(def);
+        assert relations!=null;
+        return relations.get(def);
     }
 
     /**

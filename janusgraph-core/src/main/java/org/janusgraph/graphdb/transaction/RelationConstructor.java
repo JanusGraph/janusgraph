@@ -47,17 +47,17 @@ public class RelationConstructor {
             public Iterator<JanusGraphRelation> iterator() {
                 return new Iterator<JanusGraphRelation>() {
 
-                    Iterator<Entry> iter = data.iterator();
+                    Iterator<Entry> iterator = data.iterator();
                     JanusGraphRelation current = null;
 
                     @Override
                     public boolean hasNext() {
-                        return iter.hasNext();
+                        return iterator.hasNext();
                     }
 
                     @Override
                     public JanusGraphRelation next() {
-                        current = readRelation(vertex,iter.next(),tx);
+                        current = readRelation(vertex, iterator.next(),tx);
                         return current;
                     }
 

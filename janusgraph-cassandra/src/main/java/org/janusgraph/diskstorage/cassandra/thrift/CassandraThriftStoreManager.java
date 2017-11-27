@@ -280,7 +280,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
                 if (mutation.hasAdditions()) {
                     for (Entry ent : mutation.getAdditions()) {
-                        ColumnOrSuperColumn cosc = new ColumnOrSuperColumn();
+                        ColumnOrSuperColumn columnOrSuperColumn = new ColumnOrSuperColumn();
                         Column column = new Column(ent.getColumnAs(StaticBuffer.BB_FACTORY));
                         column.setValue(ent.getValueAs(StaticBuffer.BB_FACTORY));
 
@@ -291,9 +291,9 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                             column.setTtl(ttl);
                         }
 
-                        cosc.setColumn(column);
+                        columnOrSuperColumn.setColumn(column);
                         org.apache.cassandra.thrift.Mutation m = new org.apache.cassandra.thrift.Mutation();
-                        m.setColumn_or_supercolumn(cosc);
+                        m.setColumn_or_supercolumn(columnOrSuperColumn);
                         thriftMutation.add(m);
                     }
                 }
@@ -417,9 +417,9 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 client.system_drop_keyspace(keySpaceName);
                 pool.clear();
             } else {
-                final List<CfDef> cfDefs = ksDef.getCf_defs();
+                final List<CfDef> columnFamilyDefinitions = ksDef.getCf_defs();
 
-                if (null == cfDefs) {
+                if (null == columnFamilyDefinitions) {
                     log.debug(lp + "Received empty CfDef list for keyspace {}; not truncating CFs", keySpaceName);
                     return;
                 }

@@ -259,7 +259,7 @@ public class IndexSerializer {
         }
     }
 
-    private static IndexUpdate.Type getUpateType(InternalRelation relation) {
+    private static IndexUpdate.Type getUpdateType(InternalRelation relation) {
         assert relation.isNew() || relation.isRemoved();
         return (relation.isNew()? IndexUpdate.Type.ADD : IndexUpdate.Type.DELETE);
     }
@@ -274,7 +274,7 @@ public class IndexSerializer {
     public Collection<IndexUpdate> getIndexUpdates(InternalRelation relation) {
         assert relation.isNew() || relation.isRemoved();
         Set<IndexUpdate> updates = Sets.newHashSet();
-        IndexUpdate.Type updateType = getUpateType(relation);
+        IndexUpdate.Type updateType = getUpdateType(relation);
         int ttl = updateType==IndexUpdate.Type.ADD?StandardJanusGraph.getTTL(relation):0;
         for (RelationType type : relation.getPropertyKeysDirect()) {
             if (!(type instanceof PropertyKey)) continue;
@@ -323,7 +323,7 @@ public class IndexSerializer {
             assert rel.isProperty();
             JanusGraphVertexProperty p = (JanusGraphVertexProperty)rel;
             assert rel.isNew() || rel.isRemoved(); assert rel.getVertex(0).equals(vertex);
-            IndexUpdate.Type updateType = getUpateType(rel);
+            IndexUpdate.Type updateType = getUpdateType(rel);
             for (IndexType index : ((InternalRelationType)p.propertyKey()).getKeyIndexes()) {
                 if (!indexAppliesTo(index,vertex)) continue;
                 if (index.isCompositeIndex()) { //Gather composite indexes
@@ -613,22 +613,22 @@ public class IndexSerializer {
             }
             if (quoteTerminated) pos++;
             int endPos = pos;
-            String keyname = keyBuilder.toString();
-            Preconditions.checkArgument(StringUtils.isNotBlank(keyname),
+            String keyName = keyBuilder.toString();
+            Preconditions.checkArgument(StringUtils.isNotBlank(keyName),
                     "Found reference to empty key at position [%s]",startPos);
             String replacement;
-            if(keyname.equals("*")) {
+            if(keyName.equals("*")) {
                 replacement = indexInformation.getFeatures().getWildcardField();
             }
-            else if (transaction.containsRelationType(keyname)) {
-                PropertyKey key = transaction.getPropertyKey(keyname);
+            else if (transaction.containsRelationType(keyName)) {
+                PropertyKey key = transaction.getPropertyKey(keyName);
                 Preconditions.checkNotNull(key);
                 Preconditions.checkArgument(index.indexesKey(key),
                         "The used key [%s] is not indexed in the targeted index [%s]",key.name(),query.getIndex());
                 replacement = key2Field(index,key);
             } else {
                 Preconditions.checkArgument(query.getUnknownKeyName()!=null,
-                        "Found reference to non-existant property key in query at position [%s]: %s",startPos,keyname);
+                        "Found reference to non-existant property key in query at position [%s]: %s",startPos,keyName);
                 replacement = query.getUnknownKeyName();
             }
             Preconditions.checkArgument(StringUtils.isNotBlank(replacement));

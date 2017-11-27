@@ -254,7 +254,7 @@ public enum ReflectiveConfigOptionLoader {
             }
         }
 
-        log.debug("Preloaded {} config option(s) via Reflections ({} class(es) with errors)", loadCount, errorCount);
+        log.debug("Pre-loaded {} config option(s) via Reflections ({} class(es) with errors)", loadCount, errorCount);
 
     }
 

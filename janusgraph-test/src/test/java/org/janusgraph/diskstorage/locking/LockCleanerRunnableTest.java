@@ -114,29 +114,29 @@ public class LockCleanerRunnableTest {
         final int lockCount = 10;
         final int expiredCount = 3;
         assertTrue(expiredCount + 2 <= lockCount);
-        final long timeIncr = 1L;
+        final long timeIncremement = 1L;
         final Instant timeStart = Instant.EPOCH;
-        final Instant timeCutoff = timeStart.plusMillis(expiredCount * timeIncr);
+        final Instant timeCutoff = timeStart.plusMillis(expiredCount * timeIncremement);
 
         ImmutableList.Builder<Entry> locksBuilder = ImmutableList.builder();
-        ImmutableList.Builder<Entry> delsBuilder  = ImmutableList.builder();
+        ImmutableList.Builder<Entry> deletionBuilder  = ImmutableList.builder();
 
         for (int i = 0; i < lockCount; i++) {
-            final Instant ts = timeStart.plusMillis(timeIncr * i);
+            final Instant ts = timeStart.plusMillis(timeIncremement * i);
             Entry lock = StaticArrayEntry.of(
                     codec.toLockCol(ts, defaultLockRid, TimestampProviders.MILLI),
                     BufferUtil.getIntBuffer(0));
 
             if (ts.isBefore(timeCutoff)) {
-                delsBuilder.add(lock);
+                deletionBuilder.add(lock);
             }
 
             locksBuilder.add(lock);
         }
 
         EntryList locks = StaticArrayEntryList.of(locksBuilder.build());
-        EntryList dels  = StaticArrayEntryList.of(delsBuilder.build());
-        assertTrue(expiredCount == dels.size());
+        EntryList deletions  = StaticArrayEntryList.of(deletionBuilder.build());
+        assertTrue(expiredCount == deletions.size());
 
         del = new StandardLockCleanerRunnable(store, kc, tx, codec, timeCutoff, TimestampProviders.MILLI);
 
@@ -145,7 +145,7 @@ public class LockCleanerRunnableTest {
         store.mutate(
                 eq(key),
                 eq(ImmutableList.<Entry> of()),
-                eq(columnsOf(dels)),
+                eq(columnsOf(deletions)),
                 anyObject(StoreTransaction.class));
 
         ctrl.replay();

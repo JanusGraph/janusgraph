@@ -27,9 +27,9 @@ public class Maps {
         V res = map.get(key);
         if (res != null) return res;
         else {
-            V newobj = factory.create();
-            res = map.putIfAbsent(key, newobj);
-            if (res == null) return newobj;
+            V newObject = factory.create();
+            res = map.putIfAbsent(key, newObject);
+            if (res == null) return newObject;
             else return res;
         }
     }

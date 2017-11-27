@@ -51,13 +51,13 @@ public class SerializerGraphConfiguration {
 
     @Test
     public void testOnlyRegisteredSerialization() {
-        JanusGraphManagement mgmt = graph.openManagement();
-        PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
-        mgmt.makePropertyKey("any").cardinality(Cardinality.LIST).dataType(Object.class).make();
-        mgmt.buildIndex("byTime",Vertex.class).addKey(time).buildCompositeIndex();
-        mgmt.makeEdgeLabel("knows").make();
-        mgmt.makeVertexLabel("person").make();
-        mgmt.commit();
+        JanusGraphManagement management = graph.openManagement();
+        PropertyKey time = management.makePropertyKey("time").dataType(Integer.class).make();
+        management.makePropertyKey("any").cardinality(Cardinality.LIST).dataType(Object.class).make();
+        management.buildIndex("byTime",Vertex.class).addKey(time).buildCompositeIndex();
+        management.makeEdgeLabel("knows").make();
+        management.makeVertexLabel("person").make();
+        management.commit();
 
         JanusGraphTransaction tx = graph.newTransaction();
         JanusGraphVertex v = tx.addVertex("person");

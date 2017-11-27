@@ -73,12 +73,12 @@ public interface AttributeSerializer<V> {
     }
 
     /**
-     * Converts the given (not-null) value to the expected datatype V.
+     * Converts the given (not-null) value to the expected data type V.
      * The given object will NOT be of type V.
      * Throws an {@link IllegalArgumentException} if it cannot be converted.
      *
      * @param value to convert
-     * @return converted to expected datatype
+     * @return converted to expected data type
      */
     default V convert(Object value) {
         try {

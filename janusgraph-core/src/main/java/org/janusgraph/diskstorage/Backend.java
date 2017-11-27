@@ -118,7 +118,7 @@ public class Backend implements LockerProvider, AutoCloseable {
 
     private final StandardScanner scanner;
 
-    private final KCVSLogManager mgmtLogManager;
+    private final KCVSLogManager managementLogManager;
     private final KCVSLogManager txLogManager;
     private final LogManager userLogManager;
 
@@ -149,7 +149,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         indexes = getIndexes(configuration);
         storeFeatures = storeManager.getFeatures();
 
-        mgmtLogManager = getKCVSLogManager(MANAGEMENT_LOG);
+        managementLogManager = getKCVSLogManager(MANAGEMENT_LOG);
         txLogManager = getKCVSLogManager(TRANSACTION_LOG);
         userLogManager = getLogManager(USER_LOG);
 
@@ -173,9 +173,9 @@ public class Backend implements LockerProvider, AutoCloseable {
         }
 
         if (configuration.get(PARALLEL_BACKEND_OPS)) {
-            int poolsize = Runtime.getRuntime().availableProcessors() * THREAD_POOL_SIZE_SCALE_FACTOR;
-            threadPool = Executors.newFixedThreadPool(poolsize);
-            log.info("Initiated backend operations thread pool of size {}", poolsize);
+            int poolSize = Runtime.getRuntime().availableProcessors() * THREAD_POOL_SIZE_SCALE_FACTOR;
+            threadPool = Executors.newFixedThreadPool(poolSize);
+            log.info("Initiated backend operations thread pool of size {}", poolSize);
         } else {
             threadPool = null;
         }
@@ -190,7 +190,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         }
         // Never used for backends that have innate transaction support, but we
         // want to maintain the non-null invariant regardless; it will default
-        // to connsistentkey impl if none is specified
+        // to consistent-key implementation if none is specified
         Preconditions.checkNotNull(lockerCreator);
 
         scanner = new StandardScanner(storeManager);
@@ -243,15 +243,15 @@ public class Backend implements LockerProvider, AutoCloseable {
                 if (expirationTime==0) expirationTime=ETERNAL_CACHE_EXPIRATION;
 
                 long cacheSizeBytes;
-                double cachesize = configuration.get(DB_CACHE_SIZE);
-                Preconditions.checkArgument(cachesize>0.0,"Invalid cache size specified: %s",cachesize);
-                if (cachesize<1.0) {
+                double cacheSize = configuration.get(DB_CACHE_SIZE);
+                Preconditions.checkArgument(cacheSize>0.0,"Invalid cache size specified: %s",cacheSize);
+                if (cacheSize<1.0) {
                     //Its a percentage
                     Runtime runtime = Runtime.getRuntime();
-                    cacheSizeBytes = (long)((runtime.maxMemory()-(runtime.totalMemory()-runtime.freeMemory())) * cachesize);
+                    cacheSizeBytes = (long)((runtime.maxMemory()-(runtime.totalMemory()-runtime.freeMemory())) * cacheSize);
                 } else {
-                    Preconditions.checkArgument(cachesize>1000,"Cache size is too small: %s",cachesize);
-                    cacheSizeBytes = (long)cachesize;
+                    Preconditions.checkArgument(cacheSize>1000,"Cache size is too small: %s",cacheSize);
+                    cacheSizeBytes = (long)cacheSize;
                 }
                 log.info("Configuring total store cache size: {}",cacheSizeBytes);
                 long cleanWaitTime = configuration.get(DB_CACHE_CLEAN_WAIT);
@@ -268,7 +268,7 @@ public class Backend implements LockerProvider, AutoCloseable {
 
             //Just open them so that they are cached
             txLogManager.openLog(SYSTEM_TX_LOG_NAME);
-            mgmtLogManager.openLog(SYSTEM_MGMT_LOG_NAME);
+            managementLogManager.openLog(SYSTEM_MGMT_LOG_NAME);
             txLogStore = new NoKCVSCache(storeManager.openDatabase(SYSTEM_TX_LOG_NAME));
 
 
@@ -329,7 +329,7 @@ public class Backend implements LockerProvider, AutoCloseable {
 
     public Log getSystemMgmtLog() {
         try {
-            return mgmtLogManager.openLog(SYSTEM_MGMT_LOG_NAME);
+            return managementLogManager.openLog(SYSTEM_MGMT_LOG_NAME);
         } catch (BackendException e) {
             throw new JanusGraphException("Could not re-open management log", e);
         }
@@ -427,10 +427,10 @@ public class Backend implements LockerProvider, AutoCloseable {
                                                             final KeyColumnValueStore store, final String identifier,
                                                             final Configuration config) {
         try {
-            KCVSConfiguration kcvsConfig =
+            KCVSConfiguration keyColumnValueStoreConfiguration =
                     new KCVSConfiguration(txProvider,config,store,identifier);
-            kcvsConfig.setMaxOperationWaitTime(config.get(SETUP_WAITTIME));
-            return kcvsConfig;
+            keyColumnValueStoreConfiguration.setMaxOperationWaitTime(config.get(SETUP_WAITTIME));
+            return keyColumnValueStoreConfiguration;
         } catch (BackendException e) {
             throw new JanusGraphException("Could not open global configuration",e);
         }
@@ -469,12 +469,12 @@ public class Backend implements LockerProvider, AutoCloseable {
         return builder.build();
     }
 
-    public static <T> T getImplementationClass(Configuration config, String clazzname, Map<String, String> registeredImpls) {
-        if (registeredImpls.containsKey(clazzname.toLowerCase())) {
-            clazzname = registeredImpls.get(clazzname.toLowerCase());
+    public static <T> T getImplementationClass(Configuration config, String className, Map<String, String> registeredImplementations) {
+        if (registeredImplementations.containsKey(className.toLowerCase())) {
+            className = registeredImplementations.get(className.toLowerCase());
         }
 
-        return ConfigurationUtil.instantiate(clazzname, new Object[]{config}, new Class[]{Configuration.class});
+        return ConfigurationUtil.instantiate(className, new Object[]{config}, new Class[]{Configuration.class});
     }
 
 
@@ -545,7 +545,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     public synchronized void close() throws BackendException {
         if (!hasAttemptedClose) {
             hasAttemptedClose = true;
-            mgmtLogManager.close();
+            managementLogManager.close();
             txLogManager.close();
             userLogManager.close();
 
@@ -576,7 +576,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     public synchronized void clearStorage() throws BackendException {
         if (!hasAttemptedClose) {
             hasAttemptedClose = true;
-            mgmtLogManager.close();
+            managementLogManager.close();
             txLogManager.close();
             userLogManager.close();
 

@@ -197,19 +197,19 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
     protected void mutateManyStressTestWithVariableRounds(int rounds) throws BackendException {
         Map<StaticBuffer, Map<StaticBuffer, StaticBuffer>> state = new HashMap<>();
 
-        int dels = 1024;
-        int adds = 4096;
+        int deletions = 1024;
+        int additions = 4096;
 
         for (int round = 0; round < rounds; round++) {
-            Map<StaticBuffer, KCVEntryMutation> changes = mutateState(state, dels, adds);
+            Map<StaticBuffer, KCVEntryMutation> changes = mutateState(state, deletions, additions);
 
             applyChanges(changes, store1, tx);
             applyChanges(changes, store2, tx);
             newTx();
 
-            int deletesExpected = 0 == round ? 0 : dels;
+            int deletesExpected = 0 == round ? 0 : deletions;
 
-            int stateSizeExpected = adds + (adds - dels) * round;
+            int stateSizeExpected = additions + (additions - deletions) * round;
 
             Assert.assertEquals(stateSizeExpected, checkThatStateExistsInStore(state, store1, round));
             Assert.assertEquals(deletesExpected, checkThatDeletionsApplied(changes, store1, round));
@@ -277,12 +277,12 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
     }
 
     /**
-     * Pseudorandomly change the supplied {@code state}.
+     * Change the supplied {@code state} with a pseudorandom number generator.
      * <p/>
      * This method removes {@code min(maxDeletionCount, S)} entries from the
      * maps in {@code state.values()}, where {@code S} is the sum of the sizes
      * of the maps in {@code state.values()}; this method then adds
-     * {@code additionCount} pseudorandomly generated entries spread across
+     * {@code additionCount} pseudorandom entries spread across
      * {@code state.values()}, potentially adding new keys to {@code state}
      * since they are randomly generated. This method then returns a map of keys
      * to Mutations representing the changes it has made to {@code state}.
@@ -302,21 +302,21 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
         Map<StaticBuffer, KCVEntryMutation> result = new HashMap<StaticBuffer, KCVEntryMutation>();
 
         // deletion pass
-        int dels = 0;
+        int deletions = 0;
 
         StaticBuffer key = null, col = null;
         Entry entry = null;
 
-        Iterator<StaticBuffer> keyIter = state.keySet().iterator();
+        Iterator<StaticBuffer> iterator = state.keySet().iterator();
 
-        while (keyIter.hasNext() && dels < maxDeletionCount) {
-            key = keyIter.next();
+        while (iterator.hasNext() && deletions < maxDeletionCount) {
+            key = iterator.next();
 
-            Iterator<Map.Entry<StaticBuffer,StaticBuffer>> colIter =
+            Iterator<Map.Entry<StaticBuffer,StaticBuffer>> columnIterator =
                     state.get(key).entrySet().iterator();
 
-            while (colIter.hasNext() && dels < maxDeletionCount) {
-                Map.Entry<StaticBuffer,StaticBuffer> colEntry = colIter.next();
+            while (columnIterator.hasNext() && deletions < maxDeletionCount) {
+                Map.Entry<StaticBuffer,StaticBuffer> colEntry = columnIterator.next();
                 entry = StaticArrayEntry.of(colEntry.getKey(),colEntry.getValue());
 
                 if (!result.containsKey(key)) {
@@ -326,13 +326,13 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
 
                 result.get(key).deletion(entry);
 
-                dels++;
+                deletions++;
 
-                colIter.remove();
+                columnIterator.remove();
 
                 if (state.get(key).isEmpty()) {
-                    assert !colIter.hasNext();
-                    keyIter.remove();
+                    assert !columnIterator.hasNext();
+                    iterator.remove();
                 }
             }
         }

@@ -38,7 +38,7 @@ public abstract class LimitAdjustingIterator<R> implements Iterator<R> {
     private int currentLimit;
     private int count;
 
-    private Iterator<R> iter;
+    private Iterator<R> iterator;
 
     /**
      * Initializes this iterator with the current limit and the maximum number of elements that may be retrieved from the
@@ -52,7 +52,7 @@ public abstract class LimitAdjustingIterator<R> implements Iterator<R> {
         this.currentLimit = currentLimit;
         this.maxLimit = maxLimit;
         this.count = 0;
-        this.iter = null;
+        this.iterator = null;
     }
 
     /**
@@ -65,21 +65,21 @@ public abstract class LimitAdjustingIterator<R> implements Iterator<R> {
 
     @Override
     public boolean hasNext() {
-        if (iter==null) iter = getNewIterator(currentLimit);
+        if (iterator ==null) iterator = getNewIterator(currentLimit);
         if (count < currentLimit)
-            return iter.hasNext();
+            return iterator.hasNext();
         if (currentLimit>=maxLimit) return false;
 
         //Get an iterator with an updated limit
         currentLimit = (int) Math.min(maxLimit, Math.round(currentLimit * 2.0));
-        iter = getNewIterator(currentLimit);
+        iterator = getNewIterator(currentLimit);
 
         /*
         We need to iterate out the iterator to the point where we last left of. This is pretty expensive and hence
         it should be ensured that the initial limit is a good guesstimate.
          */
         for (int i = 0; i < count; i++)
-            iter.next();
+            iterator.next();
 
         assert count < currentLimit : count + " vs " + currentLimit + " | " + maxLimit;
         return hasNext();
@@ -91,7 +91,7 @@ public abstract class LimitAdjustingIterator<R> implements Iterator<R> {
             throw new NoSuchElementException();
 
         count++;
-        return iter.next();
+        return iterator.next();
     }
 
     @Override

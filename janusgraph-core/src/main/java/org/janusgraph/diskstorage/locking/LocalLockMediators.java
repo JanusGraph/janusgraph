@@ -87,13 +87,13 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
      * @param namespace
      */
     public void clear(String namespace) {
-        Iterator<Entry<String, LocalLockMediator<?>>> iter = mediators.entrySet().iterator();
+        Iterator<Entry<String, LocalLockMediator<?>>> iterator = mediators.entrySet().iterator();
 
-        while (iter.hasNext()) {
-            Entry<String, LocalLockMediator<?>> e = iter.next();
+        while (iterator.hasNext()) {
+            Entry<String, LocalLockMediator<?>> e = iterator.next();
 
             if (e.getKey().equals(namespace)) {
-                iter.remove();
+                iterator.remove();
             }
         }
     }

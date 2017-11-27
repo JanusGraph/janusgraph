@@ -486,11 +486,11 @@ public abstract class IndexProviderTest {
             assertEquals(0, result.size());
 
             if (index.supports(new StandardKeyInformation(String.class, Cardinality.LIST, new Parameter("mapping", Mapping.STRING)), Cmp.EQUAL)) {
-                for (int sufx=4; sufx<=8; sufx++) {
-                    assertTrue(tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "10"))).contains("doc"+sufx));
-                    assertTrue(tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "11"))).contains("doc"+sufx));
-                    assertTrue(tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "10"))).contains("doc"+sufx));
-                    assertTrue(tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "11"))).contains("doc"+sufx));
+                for (int suffix=4; suffix<=8; suffix++) {
+                    assertTrue(tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "10"))).contains("doc"+suffix));
+                    assertTrue(tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "11"))).contains("doc"+suffix));
+                    assertTrue(tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "10"))).contains("doc"+suffix));
+                    assertTrue(tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "11"))).contains("doc"+suffix));
                 }
                 assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "4"))).size());
                 assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "5"))).size());
@@ -557,13 +557,13 @@ public abstract class IndexProviderTest {
 //        List<String> result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of(LOCATION, Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))));
         long time = System.currentTimeMillis();
         List<String> result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 0.2), PredicateCondition.of(WEIGHT, Cmp.LESS_THAN, 0.6), PredicateCondition.of(LOCATION, Geo.WITHIN, Geoshape.circle(48.5, 0.5, 1000.00)))));
-        int oldresultSize = result.size();
+        int oldResultSize = result.size();
         System.out.println(result.size() + " vs " + (numDoc / 1000 * 2.4622623015));
         System.out.println("Query time on " + numDoc + " docs (ms): " + (System.currentTimeMillis() - time));
         result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 0.2), PredicateCondition.of(WEIGHT, Cmp.LESS_THAN, 0.6), PredicateCondition.of(LOCATION, Geo.WITHIN, Geoshape.circle(48.5, 0.5, 1000.00))), numDoc / 1000));
         assertEquals(numDoc / 1000, result.size());
         result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 0.2), PredicateCondition.of(WEIGHT, Cmp.LESS_THAN, 0.6), PredicateCondition.of(LOCATION, Geo.WITHIN, Geoshape.circle(48.5, 0.5, 1000.00))), numDoc / 1000 * 100));
-        assertEquals(oldresultSize, result.size());
+        assertEquals(oldResultSize, result.size());
     }
 
     @Test
@@ -1031,11 +1031,11 @@ public abstract class IndexProviderTest {
         }
     }
 
-    protected void add(String store, String docid, Multimap<String, Object> doc, boolean isNew) {
-        add(store, docid, doc, isNew, 0);
+    protected void add(String store, String documentId, Multimap<String, Object> doc, boolean isNew) {
+        add(store, documentId, doc, isNew, 0);
     }
 
-    private void add(String store, String docid, Multimap<String, Object> doc, boolean isNew, int ttlInSeconds) {
+    private void add(String store, String documentId, Multimap<String, Object> doc, boolean isNew, int ttlInSeconds) {
         for (Map.Entry<String, Object> kv : doc.entries()) {
             if (!index.supports(allKeys.get(kv.getKey())))
                 continue;
@@ -1044,14 +1044,14 @@ public abstract class IndexProviderTest {
             if (ttlInSeconds > 0)
                 idx.setMetaData(EntryMetaData.TTL, ttlInSeconds);
 
-            tx.add(store, docid, idx, isNew);
+            tx.add(store, documentId, idx, isNew);
         }
     }
 
-    private void remove(String store, String docid, Multimap<String, Object> doc, boolean deleteAll) {
+    private void remove(String store, String documentId, Multimap<String, Object> doc, boolean deleteAll) {
         for (Map.Entry<String, Object> kv : doc.entries()) {
             if (index.supports(allKeys.get(kv.getKey()))) {
-                tx.delete(store, docid, kv.getKey(), kv.getValue(), deleteAll);
+                tx.delete(store, documentId, kv.getKey(), kv.getValue(), deleteAll);
             }
         }
     }

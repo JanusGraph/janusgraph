@@ -30,7 +30,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 public interface JanusGraphIndexQuery {
 
     /**
-     * Specifies the maxium number of elements to return
+     * Specifies the maximum number of elements to return
      *
      * @param limit
      * @return

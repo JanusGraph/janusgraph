@@ -268,9 +268,9 @@ public class VariableLong {
     }
 
     private static int unsignedBackwardLength(final long value) {
-        int bitlength = unsignedBitLength(value);
-        assert bitlength>0 && bitlength<=64;
-        int numBytes= Math.max(3,1+(bitlength<=4?0:(1+(bitlength-5)/7)));
+        int bitLength = unsignedBitLength(value);
+        assert bitLength>0 && bitLength<=64;
+        int numBytes= Math.max(3,1+(bitLength<=4?0:(1+(bitLength-5)/7)));
         return numBytes;
     }
 

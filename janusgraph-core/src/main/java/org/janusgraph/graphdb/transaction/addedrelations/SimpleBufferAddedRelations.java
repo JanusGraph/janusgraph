@@ -61,11 +61,11 @@ public class SimpleBufferAddedRelations implements AddedRelationsContainer {
         if (deleted==null || deleted.isEmpty()) return;
         Set<InternalRelation> deletedSet = new HashSet<InternalRelation>(deleted);
         deleted=null;
-        List<InternalRelation> newadded = new ArrayList<InternalRelation>(added.size()-deletedSet.size()/2);
+        List<InternalRelation> newlyAdded = new ArrayList<InternalRelation>(added.size()-deletedSet.size()/2);
         for (InternalRelation r : added) {
-            if (!deletedSet.contains(r)) newadded.add(r);
+            if (!deletedSet.contains(r)) newlyAdded.add(r);
         }
-        added=newadded;
+        added=newlyAdded;
     }
 
     @Override

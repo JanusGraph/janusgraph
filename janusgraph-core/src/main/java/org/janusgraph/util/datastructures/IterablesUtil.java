@@ -74,10 +74,10 @@ public class IterablesUtil {
 
     public static boolean sizeLargerOrEqualThan(Iterable i, int limit) {
         if (i instanceof Collection) return ((Collection)i).size()>=limit;
-        Iterator iter = i.iterator();
+        Iterator iterator = i.iterator();
         int count=0;
-        while (iter.hasNext()) {
-            iter.next();
+        while (iterator.hasNext()) {
+            iterator.next();
             count++;
             if (count>=limit) return true;
         }
@@ -85,31 +85,31 @@ public class IterablesUtil {
     }
 
     public static<E> List<E> mergeSort(Collection<E> a, Collection<E> b, Comparator<E> comp) {
-        Iterator<E> itera = a.iterator(), iterb = b.iterator();
-        E heada = itera.hasNext()?itera.next():null;
-        E headb = iterb.hasNext()?iterb.next():null;
+        Iterator<E> iteratorA = a.iterator(), iteratorB = b.iterator();
+        E headA = iteratorA.hasNext()?iteratorA.next():null;
+        E headB = iteratorB.hasNext()?iteratorB.next():null;
         List<E> result = new ArrayList<>(a.size()+b.size());
-        while (heada!=null || headb!=null) {
+        while (headA!=null || headB!=null) {
             E next;
-            if (heada==null) {
-                next=headb;
-                headb = null;
-            } else if (headb==null) {
-                next=heada;
-                heada=null;
-            } else if (comp.compare(heada,headb)<=0) {
-                next=heada;
-                heada=null;
+            if (headA==null) {
+                next=headB;
+                headB = null;
+            } else if (headB==null) {
+                next=headA;
+                headA=null;
+            } else if (comp.compare(headA,headB)<=0) {
+                next=headA;
+                headA=null;
             } else {
-                next=headb;
-                headb=null;
+                next=headB;
+                headB=null;
             }
             assert next!=null;
             Preconditions.checkArgument(result.isEmpty() || comp.compare(result.get(result.size()-1),next)<=0,
                     "The input collections are not sorted");
             result.add(next);
-            if (heada==null) heada=itera.hasNext()?itera.next():null;
-            if (headb==null) headb=iterb.hasNext()?iterb.next():null;
+            if (headA==null) headA=iteratorA.hasNext()?iteratorA.next():null;
+            if (headB==null) headB=iteratorB.hasNext()?iteratorB.next():null;
         }
         return result;
     }

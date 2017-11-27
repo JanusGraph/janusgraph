@@ -211,7 +211,7 @@ public abstract class LogTest {
         }
         reader.await(TIMEOUT_MS);
         assertEquals(rounds, reader.msgCount);
-        assertEquals(expected, reader.msgs);
+        assertEquals(expected, reader.messages);
     }
 
     @Test
@@ -359,7 +359,7 @@ public abstract class LogTest {
 
     protected static class StoringReader extends LatchMessageReader {
 
-        private List<StaticBuffer> msgs = new ArrayList<>(64);
+        private List<StaticBuffer> messages = new ArrayList<>(64);
         private volatile int msgCount = 0;
 
         StoringReader(int expectedMessageCount) {
@@ -369,7 +369,7 @@ public abstract class LogTest {
         @Override
         public void processMessage(Message message) {
             StaticBuffer content = message.getContent();
-            msgs.add(content);
+            messages.add(content);
             msgCount++;
         }
     }

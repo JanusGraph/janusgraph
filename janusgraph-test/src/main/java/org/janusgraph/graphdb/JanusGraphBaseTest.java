@@ -160,18 +160,18 @@ public abstract class JanusGraphBaseTest {
         if (null != tx && tx.isOpen()) tx.commit();
         if (settings!=null && settings.length>0) {
             Map<TestConfigOption,Object> options = validateConfigOptions(settings);
-            JanusGraphManagement gconf = null;
-            ModifiableConfiguration lconf = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.LOCAL);
+            JanusGraphManagement janusGraphManagement = null;
+            ModifiableConfiguration modifiableConfiguration = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.LOCAL);
             for (Map.Entry<TestConfigOption,Object> option : options.entrySet()) {
                 if (option.getKey().option.isLocal()) {
-                    lconf.set(option.getKey().option,option.getValue(),option.getKey().umbrella);
+                    modifiableConfiguration.set(option.getKey().option,option.getValue(),option.getKey().umbrella);
                 } else {
-                    if (gconf==null) gconf = graph.openManagement();
-                    gconf.set(ConfigElement.getPath(option.getKey().option,option.getKey().umbrella),option.getValue());
+                    if (janusGraphManagement==null) janusGraphManagement = graph.openManagement();
+                    janusGraphManagement.set(ConfigElement.getPath(option.getKey().option,option.getKey().umbrella),option.getValue());
                 }
             }
-            if (gconf!=null) gconf.commit();
-            lconf.close();
+            if (janusGraphManagement!=null) janusGraphManagement.commit();
+            modifiableConfiguration.close();
         }
         if (null != graph && null != graph.tx() && graph.tx().isOpen())
             graph.tx().commit();
@@ -247,8 +247,8 @@ public abstract class JanusGraphBaseTest {
             StoreFeatures f = logStoreManager.getFeatures();
             boolean part = f.isDistributed() && f.isKeyOrdered();
             if (part) {
-                for (String logname : new String[]{USER_LOG,TRANSACTION_LOG,MANAGEMENT_LOG})
-                configuration.set(KCVSLogManager.LOG_MAX_PARTITIONS,8,logname);
+                for (String partitionedLogName : new String[]{USER_LOG,TRANSACTION_LOG,MANAGEMENT_LOG})
+                configuration.set(KCVSLogManager.LOG_MAX_PARTITIONS,8,partitionedLogName);
             }
             assert logStoreManager!=null;
             if (!logManagers.containsKey(logManagerName)) {
@@ -268,14 +268,14 @@ public abstract class JanusGraphBaseTest {
     ========= Schema Type Definition Helpers ============
      */
 
-    public PropertyKey makeVertexIndexedKey(String name, Class datatype) {
-        PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
+    public PropertyKey makeVertexIndexedKey(String name, Class dataType) {
+        PropertyKey key = mgmt.makePropertyKey(name).dataType(dataType).cardinality(Cardinality.SINGLE).make();
         mgmt.buildIndex(name,Vertex.class).addKey(key).buildCompositeIndex();
         return key;
     }
 
-    public PropertyKey makeVertexIndexedUniqueKey(String name, Class datatype) {
-        PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
+    public PropertyKey makeVertexIndexedUniqueKey(String name, Class dataType) {
+        PropertyKey key = mgmt.makePropertyKey(name).dataType(dataType).cardinality(Cardinality.SINGLE).make();
         mgmt.buildIndex(name,Vertex.class).addKey(key).unique().buildCompositeIndex();
         return key;
     }
@@ -307,8 +307,8 @@ public abstract class JanusGraphBaseTest {
         mgmt.addIndexKey(getExternalIndex(clazz,backingIndex),key);
     }
 
-    public PropertyKey makeKey(String name, Class datatype) {
-        PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
+    public PropertyKey makeKey(String name, Class dataType) {
+        PropertyKey key = mgmt.makePropertyKey(name).dataType(dataType).cardinality(Cardinality.SINGLE).make();
         return key;
     }
 

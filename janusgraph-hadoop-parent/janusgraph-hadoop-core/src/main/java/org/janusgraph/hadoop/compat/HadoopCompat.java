@@ -63,14 +63,14 @@ public interface HadoopCompat {
 //    boolean runVertexScan(String vertexScanJobClass, Configuration jobConf) throws IOException, ClassNotFoundException, InterruptedException;
 
     /**
-     * Add {@code incr} to the counter designated by {@code counter} on {@code context}.
+     * Add {@code increment} to the counter designated by {@code counter} on {@code context}.
      *
      * @param context Hadoop task IO context containing counter state
      * @param group the Hadoop counter group (heading under which the counter is displayed)
      * @param name the Hadoop counter name (the identifier for this counter within the group)
-     * @param incr amount to add to the counter's current value
+     * @param increment amount to add to the counter's current value
      */
-    void incrementContextCounter(TaskInputOutputContext context, String group, String name, long incr);
+    void incrementContextCounter(TaskInputOutputContext context, String group, String name, long increment);
 
     /**
      * Return the current value of counter designated by {@code counter} on {@code context}.
@@ -100,18 +100,18 @@ public interface HadoopCompat {
 
     /**
      * Construct a {@link org.janusgraph.hadoop.config.job.JobClasspathConfigurer}
-     * that sets the Mapreduce job jar config key to the supplied value.  The job jar
+     * that sets the MapReduce job jar config key to the supplied value.  The job jar
      * should contain Faunus's classes plus its entire dependency tree ("fat" jar).
      *
-     * @param mapredJarPath path to the mapreduce job jar
+     * @param mapReduceJarPath path to the map reduce job jar
      * @return a configurer
      */
-    JobClasspathConfigurer newMapredJarConfigurer(String mapredJarPath);
+    JobClasspathConfigurer newMapredJarConfigurer(String mapReduceJarPath);
 
     /**
      * Construct a {@link org.janusgraph.hadoop.config.job.JobClasspathConfigurer}
      * that walks the classpath and adds all jars its finds to the Hadoop Jobs's
-     * classpaths via the Hadoop Distributed Cache.
+     * class paths via the Hadoop Distributed Cache.
      *
      * @return a configurer
      */

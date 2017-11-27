@@ -192,7 +192,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
                 set(metrics);
             }
         } catch (Throwable e) {
-            log.error("Exception occured during job execution: {}",e);
+            log.error("Exception occurred during job execution: {}",e);
             job.workerIterationEnd(metrics);
             setException(e);
         } finally {
@@ -305,16 +305,16 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
     private static class DataPuller extends Thread {
 
         private final BlockingQueue<SliceResult> queue;
-        private final KeyIterator keyIter;
+        private final KeyIterator keyIterator;
         private final SliceQuery query;
         private final Predicate<StaticBuffer> keyFilter;
         private volatile boolean finished;
 
         private DataPuller(SliceQuery query, BlockingQueue<SliceResult> queue,
-                           KeyIterator keyIter, Predicate<StaticBuffer> keyFilter) {
+                           KeyIterator keyIterator, Predicate<StaticBuffer> keyFilter) {
             this.query = query;
             this.queue = queue;
-            this.keyIter = keyIter;
+            this.keyIterator = keyIterator;
             this.keyFilter = keyFilter;
             this.finished = false;
         }
@@ -322,9 +322,9 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
         @Override
         public void run() {
             try {
-                while (keyIter.hasNext()) {
-                    StaticBuffer key = keyIter.next();
-                    RecordIterator<Entry> entries = keyIter.getEntries();
+                while (keyIterator.hasNext()) {
+                    StaticBuffer key = keyIterator.next();
+                    RecordIterator<Entry> entries = keyIterator.getEntries();
                     if (!keyFilter.test(key)) continue;
                     EntryList entryList = StaticArrayEntryList.ofStaticBuffer(entries, StaticArrayEntry.ENTRY_GETTER);
                     queue.put(new SliceResult(query, key, entryList));
@@ -336,7 +336,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
                 log.error("Could not load data from storage: {}",e);
             } finally {
                 try {
-                    keyIter.close();
+                    keyIterator.close();
                 } catch (IOException e) {
                     log.warn("Could not close storage iterator ", e);
                 }

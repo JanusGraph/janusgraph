@@ -59,12 +59,12 @@ public class KVUtil {
         return convert(store.getSlice(new KVQuery(keyStart, keyEnd, limit), txh));
     }
 
-    public static EntryList convert(RecordIterator<KeyValueEntry> iter) throws BackendException {
+    public static EntryList convert(RecordIterator<KeyValueEntry> iterator) throws BackendException {
         try {
-            return StaticArrayEntryList.ofStaticBuffer(iter, KVEntryGetter.INSTANCE);
+            return StaticArrayEntryList.ofStaticBuffer(iterator, KVEntryGetter.INSTANCE);
         } finally {
             try {
-                iter.close();
+                iterator.close();
             } catch (IOException e) {
                 throw new TemporaryBackendException(e);
             }

@@ -54,7 +54,7 @@ public class ThriftSolrTest extends SolrJanusGraphIndexTest {
 
 
     /*
-    The following two test cases do not pass for Solr since there is no (performant) way of checking
+    The following two test cases do not pass for Solr since there is no (efficient) way of checking
     whether the document has been deleted before doing an update which will re-create the document.
      */
 

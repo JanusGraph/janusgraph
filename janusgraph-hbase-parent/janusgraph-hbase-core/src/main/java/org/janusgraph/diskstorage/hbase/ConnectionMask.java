@@ -50,5 +50,5 @@ public interface ConnectionMask extends Closeable
      * @return A map of HRegionInfo to ServerName that describes the storage regions for the named table.
      * @throws IOException in the case of backend exceptions.
      */
-    List<HRegionLocation> getRegionLocations(String tablename) throws IOException;
+    List<HRegionLocation> getRegionLocations(String tableName) throws IOException;
 }

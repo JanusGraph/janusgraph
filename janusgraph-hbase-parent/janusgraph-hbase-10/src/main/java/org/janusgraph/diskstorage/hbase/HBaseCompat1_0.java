@@ -27,8 +27,8 @@ import org.apache.hadoop.hbase.io.compress.Compression;
 public class HBaseCompat1_0 implements HBaseCompat {
 
     @Override
-    public void setCompression(HColumnDescriptor cd, String algo) {
-        cd.setCompressionType(Compression.Algorithm.valueOf(algo));
+    public void setCompression(HColumnDescriptor cd, String algorithm) {
+        cd.setCompressionType(Compression.Algorithm.valueOf(algorithm));
     }
 
     @Override
@@ -44,9 +44,9 @@ public class HBaseCompat1_0 implements HBaseCompat {
     }
 
     @Override
-    public void addColumnFamilyToTableDescriptor(HTableDescriptor tdesc, HColumnDescriptor cdesc)
+    public void addColumnFamilyToTableDescriptor(HTableDescriptor tableDescriptor, HColumnDescriptor columnDescriptor)
     {
-        tdesc.addFamily(cdesc);
+        tableDescriptor.addFamily(columnDescriptor);
     }
 
     @Override

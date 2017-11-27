@@ -36,15 +36,15 @@ public class GiraphRecordReader extends RecordReader<NullWritable, VertexWritabl
             LoggerFactory.getLogger(GiraphRecordReader.class);
 
     private RecordReader<StaticBuffer, Iterable<Entry>> reader;
-    private GiraphInputFormat.RefCountedCloseable countedDeser;
-    private JanusGraphVertexDeserializer deser;
+    private GiraphInputFormat.RefCountedCloseable countedDeserializer;
+    private JanusGraphVertexDeserializer deserializer;
     private VertexWritable vertex;
 
-    public GiraphRecordReader(final GiraphInputFormat.RefCountedCloseable<JanusGraphVertexDeserializer> countedDeser,
+    public GiraphRecordReader(final GiraphInputFormat.RefCountedCloseable<JanusGraphVertexDeserializer> countedDeserializer,
                               final RecordReader<StaticBuffer, Iterable<Entry>> reader) {
-        this.countedDeser = countedDeser;
+        this.countedDeserializer = countedDeserializer;
         this.reader = reader;
-        this.deser = countedDeser.acquire();
+        this.deserializer = countedDeserializer.acquire();
     }
 
     @Override
@@ -57,10 +57,10 @@ public class GiraphRecordReader extends RecordReader<NullWritable, VertexWritabl
         while (reader.nextKeyValue()) {
             // TODO janusgraph05 integration -- the duplicate() call may be unnecessary
             final TinkerVertex maybeNullTinkerVertex =
-                    deser.readHadoopVertex(reader.getCurrentKey(), reader.getCurrentValue());
+                    deserializer.readHadoopVertex(reader.getCurrentKey(), reader.getCurrentValue());
             if (null != maybeNullTinkerVertex) {
                 vertex = new VertexWritable(maybeNullTinkerVertex);
-                //vertexQuery.filterRelationsOf(vertex); // TODO reimplement vertexquery filtering
+                //vertexQuery.filterRelationsOf(vertex); // TODO reimplement vertex query filtering
                 return true;
             }
         }
@@ -80,8 +80,8 @@ public class GiraphRecordReader extends RecordReader<NullWritable, VertexWritabl
     @Override
     public void close() throws IOException {
         try {
-            deser = null;
-            countedDeser.release();
+            deserializer = null;
+            countedDeserializer.release();
         } catch (Exception e) {
             throw new IOException(e);
         }

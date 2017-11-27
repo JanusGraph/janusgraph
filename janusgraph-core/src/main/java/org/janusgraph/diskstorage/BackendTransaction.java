@@ -136,11 +136,11 @@ public class BackendTransaction implements LoggableTransaction {
 
     public Map<String,Throwable> commitIndexes() {
         Map<String,Throwable> exceptions = new HashMap<String, Throwable>(indexTx.size());
-        for (Map.Entry<String,IndexTransaction> txentry : indexTx.entrySet()) {
+        for (Map.Entry<String,IndexTransaction> indexTransactionEntry : indexTx.entrySet()) {
             try {
-                txentry.getValue().commit();
+                indexTransactionEntry.getValue().commit();
             } catch (Throwable e) {
-                exceptions.put(txentry.getKey(),e);
+                exceptions.put(indexTransactionEntry.getKey(),e);
             }
         }
         return exceptions;
@@ -159,18 +159,18 @@ public class BackendTransaction implements LoggableTransaction {
      */
     @Override
     public void rollback() throws BackendException {
-        Throwable excep = null;
+        Throwable exception = null;
         for (IndexTransaction itx : indexTx.values()) {
             try {
                 itx.rollback();
             } catch (Throwable e) {
-                excep = e;
+                exception = e;
             }
         }
         storeTx.rollback();
-        if (excep!=null) { //throw any encountered index transaction rollback exceptions
-            if (excep instanceof BackendException) throw (BackendException)excep;
-            else throw new PermanentBackendException("Unexpected exception",excep);
+        if (exception!=null) { //throw any encountered index transaction rollback exceptions
+            if (exception instanceof BackendException) throw (BackendException)exception;
+            else throw new PermanentBackendException("Unexpected exception",exception);
         }
     }
 

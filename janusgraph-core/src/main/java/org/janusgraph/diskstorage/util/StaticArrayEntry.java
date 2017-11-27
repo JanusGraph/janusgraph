@@ -96,20 +96,20 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
         return of(element, getter, ByteArrayHandler.INSTANCE);
     }
 
-    public static <E>  Entry ofByteBuffer(E element, StaticArrayEntry.GetColVal<E,ByteBuffer> getter) {
+    public static <E> Entry ofByteBuffer(E element, StaticArrayEntry.GetColVal<E,ByteBuffer> getter) {
         return of(element, getter, ByteBufferHandler.INSTANCE);
     }
 
-    public static <E>  Entry ofStaticBuffer(E element, StaticArrayEntry.GetColVal<E,StaticBuffer> getter) {
+    public static <E> Entry ofStaticBuffer(E element, StaticArrayEntry.GetColVal<E,StaticBuffer> getter) {
         return of(element, getter, StaticBufferHandler.INSTANCE);
     }
 
-    public static <E>  Entry of(StaticBuffer column, StaticBuffer value) {
+    public static <E> Entry of(StaticBuffer column, StaticBuffer value) {
         return of(column, value, StaticBufferHandler.INSTANCE);
     }
 
-    private static <E,D>  Entry of(E element, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> datahandler) {
-        StaticArrayEntry entry = of(getter.getColumn(element),getter.getValue(element),datahandler);
+    private static <E,D> Entry of(E element, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> dataHandler) {
+        StaticArrayEntry entry = of(getter.getColumn(element),getter.getValue(element),dataHandler);
         //Add meta data if exists
         if (getter.getMetaSchema(element).length>0) {
             for (EntryMetaData meta : getter.getMetaSchema(element)) {
@@ -119,11 +119,11 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
         return entry;
     }
 
-    private static <E,D>  StaticArrayEntry of(D column, D value, StaticArrayEntry.DataHandler<D> datahandler) {
-        int valuePos = datahandler.getSize(column);
-        byte[] data = new byte[valuePos+datahandler.getSize(value)];
-        datahandler.copy(column,data,0);
-        datahandler.copy(value,data,valuePos);
+    private static <E,D> StaticArrayEntry of(D column, D value, StaticArrayEntry.DataHandler<D> dataHandler) {
+        int valuePos = dataHandler.getSize(column);
+        byte[] data = new byte[valuePos+dataHandler.getSize(value)];
+        dataHandler.copy(column,data,0);
+        dataHandler.copy(value,data,valuePos);
         return new StaticArrayEntry(data,valuePos);
     }
 

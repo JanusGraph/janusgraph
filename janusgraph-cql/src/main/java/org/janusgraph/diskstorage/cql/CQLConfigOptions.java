@@ -73,7 +73,7 @@ public interface CQLConfigOptions {
             ConfigOption.Type.MASKABLE,
             20);
 
-    // Whether to use unlogged batches
+    // Whether to use un-logged batches
     ConfigOption<Boolean> ATOMIC_BATCH_MUTATE = new ConfigOption<>(
             CQL_NS,
             "atomic-batch-mutate",

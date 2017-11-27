@@ -117,7 +117,7 @@ public class ConfiguredGraphFactoryTest {
     }
 
     @Test
-    public void graphConfigurtionShouldBeWhatWeExpectWhenUsingTemplateConfiguration()
+    public void graphConfigurationShouldBeWhatWeExpectWhenUsingTemplateConfiguration()
         throws InterruptedException, BackendException, Exception {
 
         try {

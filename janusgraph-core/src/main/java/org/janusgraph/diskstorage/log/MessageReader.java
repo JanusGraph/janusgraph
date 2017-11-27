@@ -29,7 +29,7 @@ public interface MessageReader {
 
     /**
      * Need to override this method because the {@link Log} uses this comparison
-     * when unregistering readers
+     * when un-registering readers
      *
      * @param other other reader to compare against
      * @return

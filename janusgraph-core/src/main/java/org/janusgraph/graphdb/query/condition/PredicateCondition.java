@@ -63,10 +63,10 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
         Preconditions.checkNotNull(type);
 
         if (type.isPropertyKey()) {
-            Iterator<Object> iter = ElementHelper.getValues(element,(PropertyKey)type).iterator();
-            if (iter.hasNext()) {
-                while (iter.hasNext()) {
-                    if (satisfiesCondition(iter.next()))
+            Iterator<Object> iterator = ElementHelper.getValues(element,(PropertyKey)type).iterator();
+            if (iterator.hasNext()) {
+                while (iterator.hasNext()) {
+                    if (satisfiesCondition(iterator.next()))
                         return true;
                 }
                 return false;

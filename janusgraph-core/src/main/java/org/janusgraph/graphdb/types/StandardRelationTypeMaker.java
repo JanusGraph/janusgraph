@@ -157,7 +157,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
      * If multiple types are specified as sort key, then those are considered as a <i>composite</i> sort key, i.e. taken jointly
      * in the given order.
      * <p/>
-     * {@link org.janusgraph.core.RelationType}s used in the sort key must be either property out-unique keys or out-unique unidirected edge lables.
+     * {@link org.janusgraph.core.RelationType}s used in the sort key must be either property out-unique keys or out-unique unidirected edge labels.
      *
      * @param keys JanusGraphTypes composing the sort key. The order is relevant.
      * @return this LabelMaker

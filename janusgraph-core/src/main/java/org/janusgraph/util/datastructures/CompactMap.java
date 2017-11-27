@@ -50,13 +50,13 @@ public class CompactMap implements Map<String,Object> {
     private static final KeyContainer KEY_HULL = new KeyContainer();
 
     /**
-     * Deduplicates keys arrays to keep the memory footprint on CompactMap to a minimum.
+     * De-duplicates keys arrays to keep the memory footprint on CompactMap to a minimum.
      *
      * This implementation is blocking for simplicity. To improve performance in multi-threaded
      * environments, use a thread-local KEY_HULL and a concurrent hash map for KEY_CACHE.
      *
      * @param keys String array to deduplicate by checking against KEY_CACHE
-     * @return A deduplicated version of the given keys array
+     * @return A de-duplicated version of the given keys array
      */
     private static String[] deduplicateKeys(String[] keys) {
         synchronized (KEY_CACHE) {
