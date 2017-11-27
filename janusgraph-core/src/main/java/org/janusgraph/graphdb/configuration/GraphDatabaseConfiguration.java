@@ -312,8 +312,6 @@ public class GraphDatabaseConfiguration {
      * percentage of the total heap space available to the JVM this JanusGraph instance is running in.
      * If this value is bigger than 1.0 it is interpreted as an absolute size in bytes.
      */
-//    public static final String DB_CACHE_SIZE_KEY = "db-cache-size";
-//    public static final double DB_CACHE_SIZE_DEFAULT = 0.3;
     public static final ConfigOption<Double> DB_CACHE_SIZE = new ConfigOption<Double>(CACHE_NS,"db-cache-size",
             "Size of JanusGraph's database level cache.  Values between 0 and 1 are interpreted as a percentage " +
             "of VM heap, while larger values are interpreted as an absolute size in bytes.",
@@ -325,8 +323,6 @@ public class GraphDatabaseConfiguration {
      * This setting only ever makes sense for distributed storage backends where writes may be accepted but are not
      * immediately readable.
      */
-//    public static final String DB_CACHE_CLEAN_WAIT_KEY = "db-cache-clean-wait";
-//    public static final long DB_CACHE_CLEAN_WAIT_DEFAULT = 50;
     public static final ConfigOption<Integer> DB_CACHE_CLEAN_WAIT = new ConfigOption<Integer>(CACHE_NS,"db-cache-clean-wait",
             "How long, in milliseconds, database-level cache will keep entries after flushing them.  " +
             "This option is only useful on distributed storage backends that are capable of acknowledging writes " +
@@ -339,8 +335,6 @@ public class GraphDatabaseConfiguration {
      * Setting this value to 0 will cache elements forever (unless they get evicted due to space constraints). This only
      * makes sense when this is the only JanusGraph instance interacting with a storage backend.
      */
-//    public static final String DB_CACHE_TIME_KEY = "db-cache-time";
-//    public static final long DB_CACHE_TIME_DEFAULT = 10000;
     public static final ConfigOption<Long> DB_CACHE_TIME = new ConfigOption<Long>(CACHE_NS,"db-cache-time",
             "Default expiration time, in milliseconds, for entries in the database-level cache. " +
             "Entries are evicted when they reach this age even if the cache has room to spare. " +
@@ -358,8 +352,6 @@ public class GraphDatabaseConfiguration {
      * The recently-used vertex cache can contain both dirty and clean vertices, that is, both vertices which have been
      * created or updated in the current transaction and vertices which have only been read in the current transaction.
      */
-//    public static final String TX_CACHE_SIZE_KEY = "tx-cache-size";
-//    public static final int TX_CACHE_SIZE_DEFAULT = 20000;
     public static final ConfigOption<Integer> TX_CACHE_SIZE = new ConfigOption<Integer>(CACHE_NS,"tx-cache-size",
             "Maximum size of the transaction-level cache of recently-used vertices.",
             ConfigOption.Type.MASKABLE, 20000);
@@ -396,7 +388,6 @@ public class GraphDatabaseConfiguration {
     // ################ STORAGE #######################
     // ################################################
 
-//    public static final String STORAGE_NAMESPACE = "storage";
     public static final ConfigNamespace STORAGE_NS = new ConfigNamespace(ROOT_NS,"storage","Configuration options for the storage backend.  Some options are applicable only for certain backends.");
 
     /**
@@ -414,7 +405,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> STORAGE_DIRECTORY = new ConfigOption<String>(STORAGE_NS,"directory",
             "Storage directory for those storage backends that require local storage.",
             ConfigOption.Type.LOCAL, String.class);
-//    public static final String STORAGE_DIRECTORY_KEY = "directory";
 
     /**
      * Path to a configuration file for those storage backends that
@@ -423,7 +413,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> STORAGE_CONF_FILE = new ConfigOption<String>(STORAGE_NS,"conf-file",
             "Path to a configuration file for those storage backends which require/support a single separate config file.",
             ConfigOption.Type.LOCAL, String.class);
-//    public static final String STORAGE_CONF_FILE_KEY = "conffile";
 
     /**
      * Define the storage backed to use for persistence
@@ -434,8 +423,6 @@ public class GraphDatabaseConfiguration {
             "(shorthands: " + Joiner.on(", ").join(StandardStoreManager.getAllShorthands()) + ") " +
             "or to the full package and classname of a custom/third-party StoreManager implementation.",
             ConfigOption.Type.LOCAL, String.class);
-//    public static final String STORAGE_BACKEND_KEY = "backend";
-//    public static final String STORAGE_BACKEND_DEFAULT = "local";
 
     /**
      * Specifies whether this database is read-only, i.e. write operations are not supported
@@ -443,8 +430,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> STORAGE_READONLY = new ConfigOption<Boolean>(STORAGE_NS,"read-only",
             "Read-only database",
             ConfigOption.Type.LOCAL, false);
-//    public static final String STORAGE_READONLY_KEY = "read-only";
-//    public static final boolean STORAGE_READONLY_DEFAULT = false;
 
     /**
      * Enables batch loading which improves write performance but assumes that only one thread is interacting with
@@ -453,8 +438,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> STORAGE_BATCH = new ConfigOption<Boolean>(STORAGE_NS,"batch-loading",
             "Whether to enable batch loading into the storage backend",
             ConfigOption.Type.LOCAL, false);
-//    public static final String STORAGE_BATCH_KEY = "batch-loading";
-//    public static final boolean STORAGE_BATCH_DEFAULT = false;
 
     /**
      * Enables transactions on storage backends that support them
@@ -462,8 +445,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> STORAGE_TRANSACTIONAL = new ConfigOption<Boolean>(STORAGE_NS,"transactions",
             "Enables transactions on storage backends that support them",
             ConfigOption.Type.MASKABLE, true);
-//    public static final String STORAGE_TRANSACTIONAL_KEY = "transactions";
-//    public static final boolean STORAGE_TRANSACTIONAL_DEFAULT = true;
 
     /**
      * Buffers graph mutations locally up to the specified number before persisting them against the storage backend.
@@ -472,10 +453,8 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Integer> BUFFER_SIZE = new ConfigOption<Integer>(STORAGE_NS,"buffer-size",
             "Size of the batch in which mutations are persisted",
             ConfigOption.Type.MASKABLE, 1024, ConfigOption.positiveInt());
-//    public static final String BUFFER_SIZE_KEY = "buffer-size";
-//    public static final int BUFFER_SIZE_DEFAULT = 1024;
 
-    /**
+    /*
      * Number of times the database attempts to persist the transactional state to the storage layer.
      * Persisting the state of a committed transaction might fail for various reasons, some of which are
      * temporary such as network failures. For temporary failures, JanusGraph will re-attempt to persist the
@@ -484,10 +463,8 @@ public class GraphDatabaseConfiguration {
 //    public static final ConfigOption<Integer> WRITE_ATTEMPTS = new ConfigOption<Integer>(STORAGE_NS,"write-attempts",
 //            "Number of attempts for write operations that might experience temporary failures",
 //            ConfigOption.Type.MASKABLE, 5, ConfigOption.positiveInt());
-//    public static final String WRITE_ATTEMPTS_KEY = "write-attempts";
-//    public static final int WRITE_ATTEMPTS_DEFAULT = 5;
 
-    /**
+    /*
      * Number of times the database attempts to execute a read operation against the storage layer in the current transaction.
      * A read operation might fail for various reasons, some of which are
      * temporary such as network failures. For temporary failures, JanusGraph will re-attempt to read the
@@ -496,8 +473,6 @@ public class GraphDatabaseConfiguration {
 //    public static final ConfigOption<Integer> READ_ATTEMPTS = new ConfigOption<Integer>(STORAGE_NS,"read-attempts",
 //            "Number of attempts for read operations that might experience temporary failures",
 //            ConfigOption.Type.MASKABLE, 3, ConfigOption.positiveInt());
-//    public static final String READ_ATTEMPTS_KEY = "read-attempts";
-//    public static final int READ_ATTEMPTS_DEFAULT = 3;
 
     public static final ConfigOption<Duration> STORAGE_WRITE_WAITTIME = new ConfigOption<>(STORAGE_NS,"write-time",
             "Maximum time (in ms) to wait for a backend write operation to complete successfully. If a backend write operation" +
@@ -517,8 +492,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> PARALLEL_BACKEND_OPS = new ConfigOption<Boolean>(STORAGE_NS,"parallel-backend-ops",
             "Whether JanusGraph should attempt to parallelize storage operations",
             ConfigOption.Type.MASKABLE, true);
-//    public static final String PARALLEL_BACKEND_OPS_KEY = "parallel-backend-ops";
-//    public static final boolean PARALLEL_BACKEND_OPS_DEFAULT = true;
 
     /**
      * A unique identifier for the machine running the JanusGraph instance.
@@ -527,7 +500,6 @@ public class GraphDatabaseConfiguration {
 //    public static final ConfigOption<String> INSTANCE_RID_RAW = new ConfigOption<String>(STORAGE_NS,"machine-id",
 //            "A unique identifier for the machine running the JanusGraph instance",
 //            ConfigOption.Type.LOCAL, String.class);
-//    public static final String INSTANCE_RID_RAW_KEY = "machine-id";
 
     public static final ConfigOption<String[]> STORAGE_HOSTS = new ConfigOption<String[]>(STORAGE_NS,"hostname",
             "The hostname or comma-separated list of hostnames of storage backend servers.  " +
@@ -561,8 +533,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Duration> CONNECTION_TIMEOUT = new ConfigOption<>(STORAGE_NS,"connection-timeout",
             "Default timeout, in milliseconds, when connecting to a remote database instance",
             ConfigOption.Type.MASKABLE, Duration.ofMillis(10000L));
-//    public static final int CONNECTION_TIMEOUT_DEFAULT = 10000;
-//    public static final String CONNECTION_TIMEOUT_KEY = "connection-timeout";
 
     /**
      * Time in milliseconds for backend manager to wait for the storage backends to
@@ -576,8 +546,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Duration> SETUP_WAITTIME = new ConfigOption<>(STORAGE_NS,"setup-wait",
             "Time in milliseconds for backend manager to wait for the storage backends to become available when JanusGraph is run in server mode",
             ConfigOption.Type.MASKABLE, Duration.ofMillis(60000L));
-//    public static final int SETUP_WAITTIME_DEFAULT = 60000;
-//    public static final String SETUP_WAITTIME_KEY = "setup-wait";
 
     /**
      * Default number of results to pull over the wire when iterating over a distributed
@@ -589,8 +557,6 @@ public class GraphDatabaseConfiguration {
             "into a series of requests for small chunks/pages of results, where each chunk contains " +
             "up to this many elements.",
             ConfigOption.Type.MASKABLE, 100);
-//    public static final int PAGE_SIZE_DEFAULT = 100;
-//    public static final String PAGE_SIZE_KEY = "page-size";
 
     public static final ConfigOption<Boolean> DROP_ON_CLEAR = new ConfigOption<>(STORAGE_NS, "drop-on-clear",
         "Whether to drop the graph database (true) or delete rows (false) when clearing storage. " +
@@ -607,8 +573,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Integer> LOCK_RETRY = new ConfigOption<Integer>(LOCK_NS, "retries",
             "Number of times the system attempts to acquire a lock before giving up and throwing an exception",
             ConfigOption.Type.MASKABLE, 3);
-//    public static final String LOCK_RETRY_COUNT = "lock-retries";
-//    public static final int LOCK_RETRY_COUNT_DEFAULT = 3;
+
     /**
      * The number of milliseconds the system waits for a lock application to be acknowledged by the storage backend.
      * Also, the time waited at the end of all lock applications before verifying that the applications were successful.
@@ -619,8 +584,6 @@ public class GraphDatabaseConfiguration {
             "Also, the time waited at the end of all lock applications before verifying that the applications were successful. " +
             "This value should be a small multiple of the average consistent write time.",
             ConfigOption.Type.GLOBAL_OFFLINE, Duration.ofMillis(100L));
-//    public static final String LOCK_WAIT_MS = "lock-wait-time";
-//    public static final long LOCK_WAIT_MS_DEFAULT = 100;
 
     /**
      * Number of milliseconds after which a lock is considered to have expired. Lock applications that were not released
@@ -634,8 +597,6 @@ public class GraphDatabaseConfiguration {
             "This value should be larger than the maximum time a transaction can take in order to guarantee " +
             "that no correctly held applications are expired pre-maturely and as small as possible to avoid dead lock.",
             ConfigOption.Type.GLOBAL_OFFLINE, Duration.ofMillis(300 * 1000L));
-//    public static final String LOCK_EXPIRE_MS = "lock-expiry-time";
-//    public static final long LOCK_EXPIRE_MS_DEFAULT = 300 * 1000;
 
     /**
      * Whether to attempt to delete expired locks from the storage backend. True
@@ -655,8 +616,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> LOCK_BACKEND = new ConfigOption<String>(LOCK_NS, "backend",
             "Locker type to use",
             ConfigOption.Type.GLOBAL_OFFLINE, "consistentkey");
-//    public static final String LOCK_BACKEND = "lock-backend";
-//    public static final String LOCK_BACKEND_DEFAULT = "consistentkey";
 
     /**
      * Configuration setting key for the local lock mediator prefix
@@ -693,7 +652,7 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigNamespace CLUSTER_NS = new ConfigNamespace(ROOT_NS,"cluster","Configuration options for multi-machine deployments");
 
-    /**
+    /*
      * Whether the id space should be partitioned for equal distribution of keys. If the keyspace is ordered, this needs to be
      * enabled to ensure an even distribution of data. If the keyspace is random/hashed, then enabling this only has the benefit
      * of de-congesting a single id pool in the database.
@@ -723,8 +682,6 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigNamespace IDS_NS = new ConfigNamespace(ROOT_NS,"ids","General configuration options for graph element IDs");
 
-//    public static final String IDS_NAMESPACE = "ids";
-
     /**
      * Size of the block to be acquired. Larger block sizes require fewer block applications but also leave a larger
      * fraction of the id pool occupied and potentially lost. For write heavy applications, larger block sizes should
@@ -735,8 +692,6 @@ public class GraphDatabaseConfiguration {
             "frequently block on slow reservation requests.  Setting it too high will result in IDs wasted when a " +
             "graph instance shuts down with reserved but mostly-unused blocks.",
             ConfigOption.Type.GLOBAL_OFFLINE, 10000);
-//    public static final String IDS_BLOCK_SIZE_KEY = "block-size";
-//    public static final int IDS_BLOCK_SIZE_DEFAULT = 10000;
 
     /**
      * The name of the ID store. Currently this defaults to janusgraph_ids. You can override the ID store to
@@ -756,8 +711,6 @@ public class GraphDatabaseConfiguration {
             "When true, vertices and edges are assigned IDs immediately upon creation.  When false, " +
             "IDs are assigned only when the transaction commits. Must be disabled for graph partitioning to work.",
             ConfigOption.Type.MASKABLE, true);
-//    public static final String IDS_FLUSH_KEY = "flush";
-//    public static final boolean IDS_FLUSH_DEFAULT = true;
 
     /**
      * The number of milliseconds that the JanusGraph id pool manager will wait before giving up on allocating a new block
@@ -767,8 +720,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Duration> IDS_RENEW_TIMEOUT = new ConfigOption<>(IDS_NS,"renew-timeout",
             "The number of milliseconds that the JanusGraph id pool manager will wait before giving up on allocating a new block of ids",
             ConfigOption.Type.MASKABLE, Duration.ofMillis(120000L));
-//    public static final String IDS_RENEW_TIMEOUT_KEY = "renew-timeout";
-//    public static final long IDS_RENEW_TIMEOUT_DEFAULT = 60 * 1000; // 1 minute
 
     /**
      * Configures when the id pool manager will attempt to allocate a new id block. When all but the configured percentage
@@ -780,13 +731,10 @@ public class GraphDatabaseConfiguration {
             "(expressed as a value between 0 and 1), JanusGraph asynchronously begins reserving another block. " +
             "This helps avoid transaction commits waiting on ID reservation even if the block size is relatively small.",
             ConfigOption.Type.MASKABLE, 0.3);
-//    public static final String IDS_RENEW_BUFFER_PERCENTAGE_KEY = "renew-percentage";
-//    public static final double IDS_RENEW_BUFFER_PERCENTAGE_DEFAULT = 0.3; // 30 %
 
     // ################ IDAUTHORITY ###################
     // ################################################
 
-    //    public static final String STORAGE_NAMESPACE = "storage";
     public static final ConfigNamespace IDAUTHORITY_NS = new ConfigNamespace(IDS_NS,"authority","Configuration options for graph element ID reservation/allocation");
 
     /**
@@ -796,8 +744,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Duration> IDAUTHORITY_WAIT = new ConfigOption<>(IDAUTHORITY_NS,"wait-time",
             "The number of milliseconds the system waits for an ID block reservation to be acknowledged by the storage backend",
             ConfigOption.Type.GLOBAL_OFFLINE, Duration.ofMillis(300L));
-//    public static final String IDAUTHORITY_WAIT_MS_KEY = "idauthority-wait-time";
-//    public static final long IDAUTHORITY_WAIT_MS_DEFAULT = 300;
 
     /**
      * Sets the strategy used by {@link ConsistentKeyIDAuthority} to avoid
@@ -827,8 +773,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_RETRIES = new ConfigOption<Integer>(IDAUTHORITY_NS,"randomized-conflict-avoidance-retries",
             "Number of times the system attempts ID block reservations with random conflict avoidance tags before giving up and throwing an exception",
             ConfigOption.Type.MASKABLE, 5);
-//    public static final String IDAUTHORITY_RETRY_COUNT_KEY = "idauthority-retries";
-//    public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 20;
 
     /**
      * Configures the number of bits of JanusGraph assigned ids that are reserved for a unique id marker that
@@ -870,8 +814,6 @@ public class GraphDatabaseConfiguration {
     // ############## External Index ######################
     // ################################################
 
-    public static final String INDEX_NAMESPACE = "index";
-
     public static final ConfigNamespace INDEX_NS = new ConfigNamespace(ROOT_NS,"index","Configuration options for the individual indexing backends",true);
 
 
@@ -888,8 +830,6 @@ public class GraphDatabaseConfiguration {
             "(shorthands: " + Joiner.on(", ").join(StandardIndexProvider.getAllShorthands()) + ") " +
             "or to the full package and classname of a custom/third-party IndexProvider implementation.",
             ConfigOption.Type.GLOBAL_OFFLINE, "elasticsearch");
-//    public static final String INDEX_BACKEND_KEY = "backend";
-//    public static final String INDEX_BACKEND_DEFAULT = "lucene";
 
     public static final ConfigOption<String> INDEX_DIRECTORY = new ConfigOption<String>(INDEX_NS,"directory",
             "Directory to store index data locally",
@@ -991,8 +931,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> CUSTOM_SERIALIZER_CLASS = new ConfigOption<String>(CUSTOM_ATTRIBUTE_NS,"serializer-class",
             "Class of the custom attribute serializer to be registered",
             ConfigOption.Type.GLOBAL_OFFLINE, String.class);
-//    private static final String ATTRIBUTE_PREFIX = "attribute";
-//    private static final String SERIALIZER_PREFIX = "serializer";
 
     // ################ Metrics #######################
     // ################################################
@@ -1000,7 +938,6 @@ public class GraphDatabaseConfiguration {
     /**
      * Configuration key prefix for Metrics.
      */
-//    public static final String METRICS_NAMESPACE = "metrics";
     public static final ConfigNamespace METRICS_NS = new ConfigNamespace(ROOT_NS,"metrics","Configuration options for metrics reporting");
 
     /**
@@ -1010,8 +947,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> BASIC_METRICS = new ConfigOption<Boolean>(METRICS_NS,"enabled",
             "Whether to enable basic timing and operation count monitoring on backend",
             ConfigOption.Type.MASKABLE, false);
-//    public static final String BASIC_METRICS = "enable-basic-metrics";
-//    public static final boolean BASIC_METRICS_DEFAULT = false;
 
     /**
      * This is the prefix used outside of a graph database configuration, or for
@@ -1036,7 +971,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> METRICS_PREFIX = new ConfigOption<String>(METRICS_NS,"prefix",
             "The default name prefix for Metrics reported by JanusGraph.",
             ConfigOption.Type.MASKABLE, METRICS_PREFIX_DEFAULT);
-//    public static final String METRICS_PREFIX_KEY = "prefix";
 
     /**
      * Whether to aggregate measurements for the edge store, vertex index, edge
@@ -1057,10 +991,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> METRICS_MERGE_STORES = new ConfigOption<Boolean>(METRICS_NS,"merge-stores",
             "Whether to aggregate measurements for the edge store, vertex index, edge index, and ID store",
             ConfigOption.Type.MASKABLE, true);
-//    public static final String MERGE_BASIC_METRICS_KEY = "merge-basic-metrics";
-//    public static final boolean MERGE_BASIC_METRICS_DEFAULT = true;
-
-
 
     public static final ConfigNamespace METRICS_CONSOLE_NS = new ConfigNamespace(METRICS_NS,"console","Configuration options for metrics reporting to console");
 
@@ -1072,8 +1002,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Duration> METRICS_CONSOLE_INTERVAL = new ConfigOption<>(METRICS_CONSOLE_NS,"interval",
             "Time between Metrics reports printing to the console, in milliseconds",
             ConfigOption.Type.MASKABLE, Duration.class);
-//    public static final String METRICS_CONSOLE_INTERVAL_KEY = "console.interval";
-//    public static final Long METRICS_CONSOLE_INTERVAL_DEFAULT = null;
 
     public static final ConfigNamespace METRICS_CSV_NS = new ConfigNamespace(METRICS_NS,"csv","Configuration options for metrics reporting to CSV file");
 
@@ -1084,8 +1012,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Duration> METRICS_CSV_INTERVAL = new ConfigOption<>(METRICS_CSV_NS,"interval",
             "Time between dumps of CSV files containing Metrics data, in milliseconds",
             ConfigOption.Type.MASKABLE, Duration.class);
-//    public static final String METRICS_CSV_INTERVAL_KEY = "csv.interval";
-//    public static final Long METRICS_CSV_INTERVAL_DEFAULT = null;
 
     /**
      * Metrics CSV output directory. It will be created if it doesn't already
@@ -1097,9 +1023,6 @@ public class GraphDatabaseConfiguration {
             "Metrics CSV output directory",
             ConfigOption.Type.MASKABLE, String.class);
 
-//    public static final String METRICS_CSV_DIR_KEY = "csv.dir";
-//    public static final String METRICS_CSV_DIR_DEFAULT = null;
-
     public static final ConfigNamespace METRICS_JMX_NS = new ConfigNamespace(METRICS_NS,"jmx","Configuration options for metrics reporting through JMX");
 
     /**
@@ -1108,8 +1031,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> METRICS_JMX_ENABLED = new ConfigOption<Boolean>(METRICS_JMX_NS,"enabled",
             "Whether to report Metrics through a JMX MBean",
             ConfigOption.Type.MASKABLE, false);
-//    public static final String METRICS_JMX_ENABLED_KEY = "jmx.enabled";
-//    public static final boolean METRICS_JMX_ENABLED_DEFAULT = false;
 
     /**
      * The JMX domain in which to report Metrics. If null, then Metrics applies
@@ -1118,8 +1039,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> METRICS_JMX_DOMAIN = new ConfigOption<String>(METRICS_JMX_NS,"domain",
             "The JMX domain in which to report Metrics",
             ConfigOption.Type.MASKABLE, String.class);
-//    public static final String METRICS_JMX_DOMAIN_KEY = "jmx.domain";
-//    public static final String METRICS_JMX_DOMAIN_DEFAULT = null;
 
     /**
      * The JMX agentId through which to report Metrics. Calling
@@ -1131,11 +1050,7 @@ public class GraphDatabaseConfiguration {
             "The JMX agentId used by Metrics",
             ConfigOption.Type.MASKABLE, String.class);
 
-//    public static final String METRICS_JMX_AGENTID_KEY = "jmx.agentid";
-//    public static final String METRICS_JMX_AGENTID_DEFAULT = null;
-
     public static final ConfigNamespace METRICS_SLF4J_NS = new ConfigNamespace(METRICS_NS,"slf4j","Configuration options for metrics reporting through slf4j");
-
 
     /**
      * Metrics Slf4j reporter interval in milliseconds. Leaving this
@@ -1144,8 +1059,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Duration> METRICS_SLF4J_INTERVAL = new ConfigOption<>(METRICS_SLF4J_NS,"interval",
             "Time between slf4j logging reports of Metrics data, in milliseconds",
             ConfigOption.Type.MASKABLE, Duration.class);
-//    public static final String METRICS_SLF4J_INTERVAL_KEY = "slf4j.interval";
-//    public static final Long METRICS_SLF4J_INTERVAL_DEFAULT = null;
 
     /**
      * The complete name of the Logger through which Metrics will report via
@@ -1156,9 +1069,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> METRICS_SLF4J_LOGGER = new ConfigOption<String>(METRICS_SLF4J_NS,"logger",
             "The complete name of the Logger through which Metrics will report via Slf4j",
             ConfigOption.Type.MASKABLE, String.class);
-
-//    public static final String METRICS_SLF4J_LOGGER_KEY = "slf4j.logger";
-//    public static final String METRICS_SLF4J_LOGGER_DEFAULT = null;
 
     /**
      * The configuration namespace within {@link #METRICS_NS} for Ganglia.
@@ -1173,8 +1083,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> GANGLIA_HOST_OR_GROUP = new ConfigOption<String>(METRICS_GANGLIA_NS,"hostname",
             "The unicast host or multicast group name to which Metrics will send Ganglia data",
             ConfigOption.Type.MASKABLE, String.class);
-//
-//    public static final String GANGLIA_HOST_OR_GROUP_KEY = "hostname";
 
     /**
      * The number of milliseconds to wait between sending Metrics data to the
@@ -1185,8 +1093,6 @@ public class GraphDatabaseConfiguration {
             "The number of milliseconds to wait between sending Metrics data to Ganglia",
             ConfigOption.Type.MASKABLE, Duration.class);
 
-//    public static final String GANGLIA_INTERVAL_KEY = "interval";
-
     /**
      * The port to which Ganglia data are sent.
      * <p/>
@@ -1194,8 +1100,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Integer> GANGLIA_PORT = new ConfigOption<Integer>(METRICS_GANGLIA_NS,"port",
             "The port to which Ganglia data are sent",
             ConfigOption.Type.MASKABLE, 8649);
-//    public static final String GANGLIA_PORT = "port";
-//    public static final int GANGLIA_PORT_DEFAULT = 8649;
 
     /**
      * Whether to interpret {@link #GANGLIA_HOST_OR_GROUP} as a unicast or
@@ -1212,9 +1116,6 @@ public class GraphDatabaseConfiguration {
         }
     });
 
-//    public static final String GANGLIA_ADDRESSING_MODE_KEY = "addressing-mode";
-//    public static final String GANGLIA_ADDRESSING_MODE_DEFAULT = "unicast";
-
     /**
      * The multicast TTL to set on outgoing Ganglia datagrams. This has no
      * effect when {@link #GANGLIA_ADDRESSING_MODE} is set to "multicast".
@@ -1226,9 +1127,6 @@ public class GraphDatabaseConfiguration {
             "The multicast TTL to set on outgoing Ganglia datagrams",
             ConfigOption.Type.MASKABLE, 1);
 
-//    public static final String GANGLIA_TTL_KEY = "ttl";
-//    public static final int GANGLIA_TTL_DEFAULT = 1;
-
     /**
      * Whether to send data to Ganglia in the 3.1 protocol format (true) or the
      * 3.0 protocol format (false).
@@ -1237,8 +1135,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> GANGLIA_USE_PROTOCOL_31 = new ConfigOption<Boolean>(METRICS_GANGLIA_NS,"protocol-31",
             "Whether to send data to Ganglia in the 3.1 protocol format",
             ConfigOption.Type.MASKABLE, true);
-//    public static final String GANGLIA_USE_PROTOCOL_31_KEY = "protocol-31";
-//    public static final boolean GANGLIA_USE_PROTOCOL_31_DEFAULT = true;
 
     /**
      * The host UUID to set on outgoing Ganglia datagrams. If null, no UUID is
@@ -1251,8 +1147,6 @@ public class GraphDatabaseConfiguration {
             "The host UUID to set on outgoing Ganglia datagrams. " +
             "See https://github.com/ganglia/monitor-core/wiki/UUIDSources for information about this setting.",
             ConfigOption.Type.LOCAL, String.class);
-//    public static final String GANGLIA_UUID_KEY = "uuid";
-//    public static final UUID GANGLIA_UUID_DEFAULT = null;
 
     /**
      * If non-null, it must be a valid Gmetric spoof string formatted as an
@@ -1271,17 +1165,12 @@ public class GraphDatabaseConfiguration {
             return s!=null && 0 < s.indexOf(':');
         }
     });
-//    public static final String GANGLIA_SPOOF_KEY = "spoof";
-//    public static final String GANGLIA_SPOOF_DEFAULT = null;
-
 
     /**
      * The configuration namespace within {@link #METRICS_NS} for
      * Graphite.
      */
     public static final ConfigNamespace METRICS_GRAPHITE_NS = new ConfigNamespace(METRICS_NS,"graphite","Configuration options for metrics reporting through Graphite");
-
-//    public static final String GRAPHITE_NAMESPACE = "graphite";
 
     /**
      * The hostname to receive Graphite plaintext protocol metric data. Setting
@@ -1291,7 +1180,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> GRAPHITE_HOST = new ConfigOption<String>(METRICS_GRAPHITE_NS,"hostname",
             "The hostname to receive Graphite plaintext protocol metric data",
             ConfigOption.Type.MASKABLE, String.class);
-//    public static final String GRAPHITE_HOST_KEY = "hostname";
 
     /**
      * The number of milliseconds to wait between sending Metrics data to the
@@ -1301,7 +1189,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Duration> GRAPHITE_INTERVAL = new ConfigOption<>(METRICS_GRAPHITE_NS,"interval",
             "The number of milliseconds to wait between sending Metrics data",
             ConfigOption.Type.MASKABLE, Duration.class);
-//    public static final String GRAPHITE_INTERVAL_KEY = "interval";
 
     /**
      * The port to which Graphite data are sent.
@@ -1310,8 +1197,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Integer> GRAPHITE_PORT = new ConfigOption<Integer>(METRICS_GRAPHITE_NS,"port",
             "The port to which Graphite data are sent",
             ConfigOption.Type.MASKABLE, 2003);
-//    public static final String GRAPHITE_PORT_KEY = "port";
-//    public static final int GRAPHITE_PORT_DEFAULT = 2003;
 
     /**
      * A Graphite-specific prefix for reported metrics. If non-null, Metrics
@@ -1322,11 +1207,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> GRAPHITE_PREFIX = new ConfigOption<String>(METRICS_GRAPHITE_NS,"prefix",
             "A Graphite-specific prefix for reported metrics",
             ConfigOption.Type.MASKABLE, String.class);
-
-
-//    public static final String GRAPHITE_PREFIX_KEY = "prefix";
-//    public static final String GRAPHITE_PREFIX_DEFAULT = null;
-
 
     public static final ConfigNamespace GREMLIN_NS = new ConfigNamespace(ROOT_NS,"gremlin",
             "Gremlin configuration options");
