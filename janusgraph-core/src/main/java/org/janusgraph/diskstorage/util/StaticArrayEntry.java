@@ -295,9 +295,8 @@ class BaseStaticArrayEntry extends StaticArrayBuffer implements Entry {
         if (this == o) return true;
         if (o == null) return false;
         if (!(o instanceof StaticBuffer)) return false;
-        Entry b = (Entry)o;
-        if (getValuePosition()!=b.getValuePosition()) return false;
-        return compareTo(getValuePosition(),b,getValuePosition())==0;
+        final Entry b = (Entry) o;
+        return getValuePosition() == b.getValuePosition() && compareTo(getValuePosition(), b, getValuePosition()) == 0;
     }
 
     @Override

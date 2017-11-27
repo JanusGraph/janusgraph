@@ -997,9 +997,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     @Override
     public boolean containsVertexLabel(String name) {
         verifyOpen();
-        if (BaseVertexLabel.DEFAULT_VERTEXLABEL.name().equals(name)) return true;
+        return BaseVertexLabel.DEFAULT_VERTEXLABEL.name().equals(name) || getSchemaVertex(JanusGraphSchemaCategory.VERTEXLABEL.getSchemaName(name)) != null;
 
-        return getSchemaVertex(JanusGraphSchemaCategory.VERTEXLABEL.getSchemaName(name))!=null;
     }
 
     @Override
@@ -1245,9 +1244,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             else if (query.getResultType() == ElementCategory.VERTEX) {
                 Preconditions.checkArgument(result instanceof InternalVertex);
                 InternalVertex v = ((InternalVertex) result).it();
-                if (v.hasAddedRelations() || v.hasRemovedRelations()) {
-                    return !query.matches(result);
-                } else return false;
+                return (v.hasAddedRelations() || v.hasRemovedRelations()) && !query.matches(result);
             } else if (query.getResultType() == ElementCategory.EDGE || query.getResultType()==ElementCategory.PROPERTY) {
                 Preconditions.checkArgument(result.isLoaded() || result.isNew());
                 //Loaded relations are immutable so we don't need to check those
