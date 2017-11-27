@@ -48,7 +48,7 @@ public class HashingUtil {
         }
     };
 
-    public static final StaticBuffer hashPrefixKey(final HashLength hashPrefixLen, final StaticBuffer key) {
+    public static StaticBuffer hashPrefixKey(final HashLength hashPrefixLen, final StaticBuffer key) {
         final int prefixLen = hashPrefixLen.length();
         final StaticBuffer.Factory<HashCode> hashFactory;
         switch (hashPrefixLen) {
@@ -70,7 +70,7 @@ public class HashingUtil {
         return newKey.getStaticBuffer();
     }
 
-    public static final StaticBuffer getKey(final HashLength hashPrefixLen, StaticBuffer hasPrefixedKey) {
+    public static StaticBuffer getKey(final HashLength hashPrefixLen, StaticBuffer hasPrefixedKey) {
         return hasPrefixedKey.subrange(hashPrefixLen.length(), hasPrefixedKey.length() - hashPrefixLen.length());
     }
 

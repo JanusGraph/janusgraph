@@ -20,7 +20,7 @@ package org.janusgraph.graphdb.util;
 
 public class ExceptionFactory {
 
-    public static final void graphShutdown() {
+    public static void graphShutdown() {
         throw new IllegalStateException("Graph has been shut down");
     }
 

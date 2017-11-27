@@ -335,7 +335,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         return new GraphCentricQuery(resultType, conditions, orders, query, limit);
     }
 
-    public static final boolean indexCoversOrder(MixedIndexType index, OrderList orders) {
+    public static boolean indexCoversOrder(MixedIndexType index, OrderList orders) {
         for (int i = 0; i < orders.size(); i++) {
             if (!index.indexesKey(orders.getKey(i))) return false;
         }
@@ -379,7 +379,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
 
     }
 
-    private static final Map.Entry<Condition,Collection<Object>> getEqualityConditionValues(Condition<JanusGraphElement> condition, RelationType type) {
+    private static Map.Entry<Condition,Collection<Object>> getEqualityConditionValues(Condition<JanusGraphElement> condition, RelationType type) {
         for (Condition c : condition.getChildren()) {
             if (c instanceof Or) {
                 Map.Entry<RelationType,Collection> orEqual = QueryUtil.extractOrCondition((Or)c);
@@ -397,7 +397,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         return null;
     }
 
-    public static final Condition<JanusGraphElement> indexCover(final MixedIndexType index, Condition<JanusGraphElement> condition,
+    public static Condition<JanusGraphElement> indexCover(final MixedIndexType index, Condition<JanusGraphElement> condition,
                                                            final IndexSerializer indexInfo, final Set<Condition> covered) {
         assert QueryUtil.isQueryNormalForm(condition);
         assert condition instanceof And;
@@ -411,7 +411,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         return subcondition.isEmpty()?null:subcondition;
     }
 
-    private static final boolean coversAll(final MixedIndexType index, Condition<JanusGraphElement> condition, IndexSerializer indexInfo) {
+    private static boolean coversAll(final MixedIndexType index, Condition<JanusGraphElement> condition, IndexSerializer indexInfo) {
         if (condition.getType()==Condition.Type.LITERAL) {
             if (!(condition instanceof  PredicateCondition)) return false;
             PredicateCondition<RelationType, JanusGraphElement> atom = (PredicateCondition) condition;

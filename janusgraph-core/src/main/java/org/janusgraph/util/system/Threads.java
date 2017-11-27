@@ -19,14 +19,14 @@ package org.janusgraph.util.system;
  */
 public class Threads {
 
-    public static final boolean oneAlife(Thread[] threads) {
+    public static boolean oneAlife(Thread[] threads) {
         for (int i = 0; i < threads.length; i++) {
             if (threads[i] != null && threads[i].isAlive()) return true;
         }
         return false;
     }
 
-    public static final void terminate(Thread[] threads) {
+    public static void terminate(Thread[] threads) {
         for (int i = 0; i < threads.length; i++) {
             if (threads[i] != null && threads[i].isAlive()) threads[i].interrupt();
         }
@@ -34,15 +34,15 @@ public class Threads {
 
     public static final int DEFAULT_SLEEP_INTERVAL_MS = 100;
 
-    public static final boolean waitForCompletion(Thread[] threads) {
+    public static boolean waitForCompletion(Thread[] threads) {
         return waitForCompletion(threads,Integer.MAX_VALUE);
     }
 
-    public static final boolean waitForCompletion(Thread[] threads, int maxWaitMillis) {
+    public static boolean waitForCompletion(Thread[] threads, int maxWaitMillis) {
         return waitForCompletion(threads,maxWaitMillis,DEFAULT_SLEEP_INTERVAL_MS);
     }
 
-    public static final boolean waitForCompletion(Thread[] threads, int maxWaitMillis, int sleepPeriodMillis) {
+    public static boolean waitForCompletion(Thread[] threads, int maxWaitMillis, int sleepPeriodMillis) {
         long endTime = System.currentTimeMillis()+maxWaitMillis;
         while (oneAlife(threads)) {
             long currentTime = System.currentTimeMillis();

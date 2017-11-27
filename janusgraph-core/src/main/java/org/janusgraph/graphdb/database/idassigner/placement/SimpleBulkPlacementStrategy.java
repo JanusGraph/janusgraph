@@ -67,11 +67,11 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
         this(config.get(CONCURRENT_PARTITIONS));
     }
 
-    private final int nextPartitionID() {
+    private int nextPartitionID() {
         return currentPartitions[random.nextInt(currentPartitions.length)];
     }
 
-    private final void updateElement(int index) {
+    private void updateElement(int index) {
         Preconditions.checkArgument(localPartitionIdRanges!=null && !localPartitionIdRanges.isEmpty(),"Local partition id ranges have not been initialized");
         int newPartition;
         int attempts = 0;

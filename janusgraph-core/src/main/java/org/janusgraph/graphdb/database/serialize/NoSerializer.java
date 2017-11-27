@@ -29,7 +29,7 @@ public class NoSerializer<V> implements AttributeSerializer<V> {
         this.datatype = datatype;
     }
 
-    private final IllegalArgumentException error() {
+    private IllegalArgumentException error() {
         return new IllegalArgumentException("Serializing objects of type ["+datatype+"] is not supported");
     }
 

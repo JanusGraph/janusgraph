@@ -92,23 +92,23 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
         return new StaticArrayEntry(buffer,buffer.length());
     }
 
-    public static final<E> Entry ofBytes(E element, StaticArrayEntry.GetColVal<E,byte[]> getter) {
+    public static <E> Entry ofBytes(E element, StaticArrayEntry.GetColVal<E,byte[]> getter) {
         return of(element, getter, ByteArrayHandler.INSTANCE);
     }
 
-    public static final<E>  Entry ofByteBuffer(E element, StaticArrayEntry.GetColVal<E,ByteBuffer> getter) {
+    public static <E>  Entry ofByteBuffer(E element, StaticArrayEntry.GetColVal<E,ByteBuffer> getter) {
         return of(element, getter, ByteBufferHandler.INSTANCE);
     }
 
-    public static final<E>  Entry ofStaticBuffer(E element, StaticArrayEntry.GetColVal<E,StaticBuffer> getter) {
+    public static <E>  Entry ofStaticBuffer(E element, StaticArrayEntry.GetColVal<E,StaticBuffer> getter) {
         return of(element, getter, StaticBufferHandler.INSTANCE);
     }
 
-    public static final<E>  Entry of(StaticBuffer column, StaticBuffer value) {
+    public static <E>  Entry of(StaticBuffer column, StaticBuffer value) {
         return of(column, value, StaticBufferHandler.INSTANCE);
     }
 
-    private static final<E,D>  Entry of(E element, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> datahandler) {
+    private static <E,D>  Entry of(E element, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> datahandler) {
         StaticArrayEntry entry = of(getter.getColumn(element),getter.getValue(element),datahandler);
         //Add meta data if exists
         if (getter.getMetaSchema(element).length>0) {
@@ -119,7 +119,7 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
         return entry;
     }
 
-    private static final<E,D>  StaticArrayEntry of(D column, D value, StaticArrayEntry.DataHandler<D> datahandler) {
+    private static <E,D>  StaticArrayEntry of(D column, D value, StaticArrayEntry.DataHandler<D> datahandler) {
         int valuePos = datahandler.getSize(column);
         byte[] data = new byte[valuePos+datahandler.getSize(value)];
         datahandler.copy(column,data,0);

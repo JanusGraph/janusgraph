@@ -1495,20 +1495,20 @@ public class GraphDatabaseConfiguration {
         return uid;
     }
 
-    public static final ModifiableConfiguration buildGraphConfiguration() {
+    public static ModifiableConfiguration buildGraphConfiguration() {
         return new ModifiableConfiguration(ROOT_NS,
                 new CommonsConfiguration(new BaseConfiguration()),
                 BasicConfiguration.Restriction.NONE);
     }
 
-    public static final ModifiableConfiguration buildJobConfiguration() {
+    public static ModifiableConfiguration buildJobConfiguration() {
         return new ModifiableConfiguration(JOB_NS,
                 new CommonsConfiguration(new BaseConfiguration()),
                 BasicConfiguration.Restriction.NONE);
     }
 
 
-    public static final String getSystemMetricsPrefix() {
+    public static String getSystemMetricsPrefix() {
         return METRICS_SYSTEM_PREFIX_DEFAULT;
     }
 

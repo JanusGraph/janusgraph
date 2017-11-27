@@ -43,11 +43,11 @@ public class CharacterSerializer implements OrderPreservingSerializer<Character>
         write(buffer,attribute);
     }
 
-    public static final short char2short(char c) {
+    public static short char2short(char c) {
         return (short) (((int) c) + Short.MIN_VALUE);
     }
 
-    public static final char short2char(short s) {
+    public static char short2char(short s) {
         return (char) (((int) s) - Short.MIN_VALUE);
     }
 

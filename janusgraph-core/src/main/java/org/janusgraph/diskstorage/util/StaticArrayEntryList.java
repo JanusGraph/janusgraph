@@ -271,12 +271,12 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
 
     //############# CONSTRUCTORS #######################
 
-    public static final EntryList of(Entry... entries) {
+    public static EntryList of(Entry... entries) {
         return of(Arrays.asList(entries));
     }
 
 
-    public static final EntryList of(Iterable<Entry> entries) {
+    public static EntryList of(Iterable<Entry> entries) {
         Preconditions.checkNotNull(entries);
         int num=0;
         int datalen=0;
@@ -326,28 +326,28 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         }
     }
 
-    public static final<E>  EntryList ofBytes(Iterable<E> elements, StaticArrayEntry.GetColVal<E,byte[]> getter) {
+    public static <E>  EntryList ofBytes(Iterable<E> elements, StaticArrayEntry.GetColVal<E,byte[]> getter) {
         return of(elements, getter, StaticArrayEntry.ByteArrayHandler.INSTANCE);
     }
 
-    public static final<E>  EntryList ofByteBuffer(Iterable<E> elements, StaticArrayEntry.GetColVal<E,ByteBuffer> getter) {
+    public static <E>  EntryList ofByteBuffer(Iterable<E> elements, StaticArrayEntry.GetColVal<E,ByteBuffer> getter) {
         return of(elements, getter, StaticArrayEntry.ByteBufferHandler.INSTANCE);
     }
 
-    public static final<E>  EntryList ofStaticBuffer(Iterable<E> elements, StaticArrayEntry.GetColVal<E,StaticBuffer> getter) {
+    public static <E>  EntryList ofStaticBuffer(Iterable<E> elements, StaticArrayEntry.GetColVal<E,StaticBuffer> getter) {
         return of(elements, getter, StaticArrayEntry.StaticBufferHandler.INSTANCE);
     }
 
-    public static final<E>  EntryList ofByteBuffer(Iterator<E> elements, StaticArrayEntry.GetColVal<E,ByteBuffer> getter) {
+    public static <E>  EntryList ofByteBuffer(Iterator<E> elements, StaticArrayEntry.GetColVal<E,ByteBuffer> getter) {
         return of(elements, getter, StaticArrayEntry.ByteBufferHandler.INSTANCE);
     }
 
-    public static final<E>  EntryList ofStaticBuffer(Iterator<E> elements, StaticArrayEntry.GetColVal<E,StaticBuffer> getter) {
+    public static <E>  EntryList ofStaticBuffer(Iterator<E> elements, StaticArrayEntry.GetColVal<E,StaticBuffer> getter) {
         return of(elements, getter, StaticArrayEntry.StaticBufferHandler.INSTANCE);
     }
 
 
-    private static final<E,D>  EntryList of(Iterable<E> elements, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> datahandler) {
+    private static <E,D>  EntryList of(Iterable<E> elements, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> datahandler) {
         Preconditions.checkArgument(elements!=null && getter!=null && datahandler!=null);
         int num=0;
         int datalen=0;
@@ -386,7 +386,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         return new StaticArrayEntryList(data,limitAndValuePos,metadataschema);
     }
 
-    private static final<E,D>  EntryList of(Iterator<E> elements, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> datahandler) {
+    private static <E,D>  EntryList of(Iterator<E> elements, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> datahandler) {
         Preconditions.checkArgument(elements!=null && getter!=null && datahandler!=null);
         if (!elements.hasNext()) return EMPTY_LIST;
         long[] limitAndValuePos = new long[10];

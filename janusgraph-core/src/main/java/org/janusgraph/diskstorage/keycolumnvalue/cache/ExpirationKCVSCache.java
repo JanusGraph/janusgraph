@@ -171,15 +171,15 @@ public class ExpirationKCVSCache extends KCVSCache {
         return true;
     }
 
-    private final long getExpirationTime() {
+    private long getExpirationTime() {
         return System.currentTimeMillis()+cacheTimeMS;
     }
 
-    private final boolean isBeyondExpirationTime(long until) {
+    private boolean isBeyondExpirationTime(long until) {
         return until<System.currentTimeMillis();
     }
 
-    private final long getAge(long until) {
+    private long getAge(long until) {
         long age = System.currentTimeMillis() - (until-cacheTimeMS);
         assert age>=0;
         return age;

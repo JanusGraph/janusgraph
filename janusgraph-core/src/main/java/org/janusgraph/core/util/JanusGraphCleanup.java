@@ -46,7 +46,7 @@ public class JanusGraphCleanup {
      * @deprecated Use {@link org.janusgraph.core.JanusGraphFactory#drop(JanusGraph)}
      */
     @Deprecated
-    public static final void clear(JanusGraph graph) {
+    public static void clear(JanusGraph graph) {
         Preconditions.checkNotNull(graph);
         Preconditions.checkArgument(graph instanceof StandardJanusGraph,"Invalid graph instance detected: %s",graph.getClass());
         StandardJanusGraph g = (StandardJanusGraph)graph;

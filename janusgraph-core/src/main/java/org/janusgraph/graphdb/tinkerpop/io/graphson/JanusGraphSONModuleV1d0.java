@@ -30,7 +30,7 @@ public class JanusGraphSONModuleV1d0 extends JanusGraphSONModule {
 
     private static final JanusGraphSONModuleV1d0 INSTANCE = new JanusGraphSONModuleV1d0();
 
-    public static final JanusGraphSONModuleV1d0 getInstance() {
+    public static JanusGraphSONModuleV1d0 getInstance() {
         return INSTANCE;
     }
 

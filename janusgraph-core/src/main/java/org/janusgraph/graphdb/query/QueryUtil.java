@@ -106,7 +106,7 @@ public class QueryUtil {
         } else return false;
     }
 
-    private static final boolean isQNFLiteralOrNot(Condition<?> condition) {
+    private static boolean isQNFLiteralOrNot(Condition<?> condition) {
         if (condition instanceof Not) {
             Condition child = ((Not) condition).getChild();
             if (!isQNFLiteral(child)) return false;
@@ -116,14 +116,14 @@ public class QueryUtil {
         } else return isQNFLiteral(condition);
     }
 
-    private static final boolean isQNFLiteral(Condition<?> condition) {
+    private static boolean isQNFLiteral(Condition<?> condition) {
         if (condition.getType() != Condition.Type.LITERAL) return false;
         if (condition instanceof PredicateCondition) {
             return ((PredicateCondition) condition).getPredicate().isQNF();
         } else return true;
     }
 
-    public static final <E extends JanusGraphElement> Condition<E> simplifyQNF(Condition<E> condition) {
+    public static <E extends JanusGraphElement> Condition<E> simplifyQNF(Condition<E> condition) {
         Preconditions.checkArgument(isQueryNormalForm(condition));
         if (condition.numChildren() == 1) {
             Condition<E> child = ((And) condition).get(0);

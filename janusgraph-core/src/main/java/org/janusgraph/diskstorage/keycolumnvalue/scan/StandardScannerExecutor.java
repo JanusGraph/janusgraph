@@ -85,7 +85,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
 
     }
 
-    private final DataPuller addDataPuller(SliceQuery sq, StoreTransaction stx) throws BackendException {
+    private DataPuller addDataPuller(SliceQuery sq, StoreTransaction stx) throws BackendException {
         BlockingQueue<SliceResult> queue = new LinkedBlockingQueue<SliceResult>(QUEUE_SIZE);
         dataQueues.add(queue);
 
