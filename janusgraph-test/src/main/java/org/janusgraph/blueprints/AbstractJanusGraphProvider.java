@@ -158,7 +158,7 @@ public abstract class AbstractJanusGraphProvider extends AbstractGraphProvider {
         conf.set(GraphDatabaseConfiguration.COMPUTER_RESULT_MODE, "persist");
         conf.set(GraphDatabaseConfiguration.AUTO_TYPE, "tp3");
         Map<String, Object> result = new HashMap<>();
-        conf.getAll().entrySet().stream().forEach(e -> result.put(ConfigElement.getPath(e.getKey().element, e.getKey().umbrellaElements), e.getValue()));
+        conf.getAll().entrySet().forEach(e -> result.put(ConfigElement.getPath(e.getKey().element, e.getKey().umbrellaElements), e.getValue()));
         result.put(Graph.GRAPH, JanusGraphFactory.class.getName());
         return result;
     }

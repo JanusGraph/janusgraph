@@ -346,11 +346,7 @@ public class CqlBridgeRecordReader extends RecordReader<StaticBuffer, Iterable<E
     }
 
     private String makeColumnList(Collection<String> columns) {
-        return Joiner.on(',').join(Iterables.transform(columns, new Function<String, String>() {
-            public String apply(String column) {
-                return quote(column);
-            }
-        }));
+        return Joiner.on(',').join(Iterables.transform(columns, column -> quote(column)));
     }
 
     private void fetchKeys() {

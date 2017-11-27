@@ -118,9 +118,9 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     private static final String LIMIT_BINDING = "maxRows";
 
     static final Function<? super Throwable, BackendException> EXCEPTION_MAPPER = cause -> Match(cause).of(
-            Case($(instanceOf(QueryValidationException.class)), qve -> new PermanentBackendException(qve)),
-            Case($(instanceOf(UnsupportedFeatureException.class)), ufe -> new PermanentBackendException(ufe)),
-            Case($(), t -> new TemporaryBackendException(t)));
+            Case($(instanceOf(QueryValidationException.class)), PermanentBackendException::new),
+            Case($(instanceOf(UnsupportedFeatureException.class)), PermanentBackendException::new),
+            Case($(), TemporaryBackendException::new));
 
     private final CQLStoreManager storeManager;
     private final ExecutorService executorService;

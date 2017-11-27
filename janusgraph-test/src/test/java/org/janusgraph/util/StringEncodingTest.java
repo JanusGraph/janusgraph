@@ -54,7 +54,7 @@ public class StringEncodingTest {
 
     @Test
     public void testStringLaunder() {
-        ImmutableList.of("asdf3","","f232rdfjdhjkhfafb-38`138","8947(*&#$80124n"," _+%","ösdf30snü+p").stream()
+        ImmutableList.of("asdf3","","f232rdfjdhjkhfafb-38`138","8947(*&#$80124n"," _+%","ösdf30snü+p")
             .forEach(s -> assertEquals(s,StringEncoding.launder(s)));
     }
 

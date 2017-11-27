@@ -213,11 +213,7 @@ public class HBaseStorageSetup {
      *            the HBase daemon to kill
      */
     private static void registerKillerHook(final HBaseStatus stat) {
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                shutdownHBase(stat);
-            }
-        });
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdownHBase(stat)));
     }
 
     /**

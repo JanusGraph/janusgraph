@@ -103,26 +103,18 @@ public class HadoopConfiguration implements WriteConfiguration {
          * Is there a way to iterate over just the keys of a Hadoop Configuration?
          * Iterating over Map.Entry is needlessly wasteful since we don't need the values.
          */
-        Iterable<String> internalKeys = Iterables.transform(config, new Function<Entry<String, String>, String>() {
-            @Override
-            public String apply(Entry<String, String> internalEntry) {
-                return internalEntry.getKey();
-            }
-        });
+        Iterable<String> internalKeys = Iterables.transform(config, internalEntry -> internalEntry.getKey());
 
-        Iterable<String> prefixedKeys = Iterables.filter(internalKeys, new Predicate<String>() {
-            @Override
-            public boolean apply(final String internalKey) {
-                String k = internalKey;
-                if (null != prefix) {
-                    if (k.startsWith(prefix)) {
-                        k = getUserKey(k);
-                    } else {
-                        return false; // does not have the prefix
-                    }
+        Iterable<String> prefixedKeys = Iterables.filter(internalKeys, internalKey -> {
+            String k = internalKey;
+            if (null != prefix) {
+                if (k.startsWith(prefix)) {
+                    k = getUserKey(k);
+                } else {
+                    return false; // does not have the prefix
                 }
-                return k.startsWith(userPrefix);
             }
+            return k.startsWith(userPrefix);
         });
 
         return Iterables.transform(prefixedKeys, new Function<String, String>() {
