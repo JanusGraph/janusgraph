@@ -140,7 +140,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
 
     public static<M> Executor getVertexProgramScanJob(StandardJanusGraph graph, FulgoraMemory memory,
                                                   FulgoraVertexMemory vertexMemory, VertexProgram<M> vertexProgram) {
-        VertexProgramScanJob<M> job = new VertexProgramScanJob<M>(graph.getIDManager(),memory,vertexMemory,vertexProgram);
+        final VertexProgramScanJob<M> job = new VertexProgramScanJob<>(graph.getIDManager(), memory, vertexMemory, vertexProgram);
         return new Executor(graph,job);
     }
 

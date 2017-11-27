@@ -131,7 +131,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
             this.times = TimestampProviders.NANO;
             this.serializer = new ConsistentKeyLockerSerializer();
             this.llm = null; // redundant, but it preserves this constructor's overall pattern
-            this.lockState = new LockerState<S>();
+            this.lockState = new LockerState<>();
             this.lockExpire = GraphDatabaseConfiguration.LOCK_EXPIRE.getDefaultValue();
             this.log = LoggerFactory.getLogger(AbstractLocker.class);
         }

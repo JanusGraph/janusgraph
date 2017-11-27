@@ -55,7 +55,7 @@ public class VertexIDAssigner implements AutoCloseable {
 
     private static final int MAX_PARTITION_RENEW_ATTEMPTS = 1000;
 
-    public static final ConfigOption<String> PLACEMENT_STRATEGY = new ConfigOption<String>(IDS_NS,"placement",
+    public static final ConfigOption<String> PLACEMENT_STRATEGY = new ConfigOption<>(IDS_NS, "placement",
             "Name of the vertex placement strategy or full class name", ConfigOption.Type.MASKABLE, "simple");
 
     private static final Map<String,String> REGISTERED_PLACEMENT_STRATEGIES = ImmutableMap.of(
@@ -100,7 +100,7 @@ public class VertexIDAssigner implements AutoCloseable {
         renewTimeoutMS = config.get(IDS_RENEW_TIMEOUT);
         renewBufferPercentage = config.get(IDS_RENEW_BUFFER_PERCENTAGE);
 
-        idPools = new ConcurrentHashMap<Integer, PartitionIDPool>(partitionIdBound);
+        idPools = new ConcurrentHashMap<>(partitionIdBound);
         schemaIdPool = new StandardIDPool(idAuthority, IDManager.SCHEMA_PARTITION, PoolType.SCHEMA.getIDNamespace(),
                 IDManager.getSchemaCountBound(), renewTimeoutMS, renewBufferPercentage);
         partitionVertexIdPool = new StandardIDPool(idAuthority, IDManager.PARTITIONED_VERTEX_PARTITION, PoolType.PARTITIONED_VERTEX.getIDNamespace(),
@@ -245,7 +245,7 @@ public class VertexIDAssigner implements AutoCloseable {
             }
         } else {
             //2) only assign ids to (user) vertices
-            Map<InternalVertex, PartitionAssignment> assignments = new HashMap<InternalVertex, PartitionAssignment>();
+            Map<InternalVertex, PartitionAssignment> assignments = new HashMap<>();
             for (InternalRelation relation : addedRelations) {
                 for (int i = 0; i < relation.getArity(); i++) {
                     InternalVertex vertex = relation.getVertex(i);
@@ -269,7 +269,7 @@ public class VertexIDAssigner implements AutoCloseable {
                         assignID(entry.getKey(), entry.getValue().getPartitionID(), getVertexIDType(entry.getKey()));
                         Preconditions.checkArgument(entry.getKey().hasId());
                     } catch (IDPoolExhaustedException e) {
-                        if (leftOvers == null) leftOvers = new HashMap<InternalVertex, PartitionAssignment>();
+                        if (leftOvers == null) leftOvers = new HashMap<>();
                         leftOvers.put(entry.getKey(), PartitionAssignment.EMPTY);
                         break;
                     }

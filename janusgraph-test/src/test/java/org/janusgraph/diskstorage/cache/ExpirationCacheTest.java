@@ -67,8 +67,8 @@ public class ExpirationCacheTest extends KCVSCacheTest {
         //Replace cache with proper times
         cache = getCache(store,expirationTime, Duration.ZERO);
 
-        StaticBuffer key = BufferUtil.getIntBuffer(81);
-        List<StaticBuffer> keys = new ArrayList<StaticBuffer>();
+        final StaticBuffer key = BufferUtil.getIntBuffer(81);
+        final List<StaticBuffer> keys = new ArrayList<>();
         keys.add(key);
         keys.add(BufferUtil.getIntBuffer(37));
         keys.add(BufferUtil.getIntBuffer(2));
@@ -112,8 +112,8 @@ public class ExpirationCacheTest extends KCVSCacheTest {
         //Replace cache with proper times
         cache = getCache(store,Duration.ofDays(200),graceWait);
 
-        StaticBuffer key = BufferUtil.getIntBuffer(81);
-        List<StaticBuffer> keys = new ArrayList<StaticBuffer>();
+        final StaticBuffer key = BufferUtil.getIntBuffer(81);
+        final List<StaticBuffer> keys = new ArrayList<>();
         keys.add(key);
         keys.add(BufferUtil.getIntBuffer(37));
         keys.add(BufferUtil.getIntBuffer(2));

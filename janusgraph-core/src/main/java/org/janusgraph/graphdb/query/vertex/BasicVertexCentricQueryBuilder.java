@@ -300,7 +300,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     private Iterable<JanusGraphRelation> executeIndividualRelations(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
         VertexCentricQuery query = constructQuery(vertex, baseQuery);
         if (useSimpleQueryProcessor(query,vertex)) return new SimpleVertexQueryProcessor(query,tx).relations();
-        else return new QueryProcessor<VertexCentricQuery,JanusGraphRelation,SliceQuery>(query, tx.edgeProcessor);
+        else return new QueryProcessor<>(query, tx.edgeProcessor);
     }
 
     public Iterable<JanusGraphVertex> executeVertices(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
@@ -378,13 +378,13 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         Condition<JanusGraphRelation> condition = baseQuery.getCondition();
         if (!baseQuery.isEmpty()) {
             //Add adjacent-vertex and direction related conditions; copy conditions to so that baseQuery does not change
-            And<JanusGraphRelation> newCondition = new And<JanusGraphRelation>();
+            final And<JanusGraphRelation> newCondition = new And<>();
             if (condition instanceof And) newCondition.addAll((And) condition);
             else newCondition.add(condition);
 
-            newCondition.add(new DirectionCondition<JanusGraphRelation>(vertex,dir));
+            newCondition.add(new DirectionCondition<>(vertex,dir));
             if (adjacentVertex != null)
-                newCondition.add(new IncidenceCondition<JanusGraphRelation>(vertex,adjacentVertex));
+                newCondition.add(new IncidenceCondition<>(vertex,adjacentVertex));
 
             condition = newCondition;
         }
@@ -430,9 +430,8 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         EdgeSerializer serializer = tx.getEdgeSerializer();
         List<BackendQueryHolder<SliceQuery>> queries;
         if (!hasTypes()) {
-            BackendQueryHolder<SliceQuery> query = new BackendQueryHolder<SliceQuery>(serializer.getQuery(returnType, querySystem),
-                    ((dir == Direction.BOTH || (returnType == RelationCategory.PROPERTY && dir == Direction.OUT))
-                            && !conditions.hasChildren()), orders.isEmpty());
+            final BackendQueryHolder<SliceQuery> query = new BackendQueryHolder<>(serializer.getQuery(returnType, querySystem),
+                ((dir == Direction.BOTH || (returnType == RelationCategory.PROPERTY && dir == Direction.OUT)) && !conditions.hasChildren()), orders.isEmpty());
             if (sliceLimit!=Query.NO_LIMIT && sliceLimit<Integer.MAX_VALUE/3) {
                 //If only one direction is queried, ask for twice the limit from backend since approximately half will be filtered
                 if (dir != Direction.BOTH && (returnType == RelationCategory.EDGE || returnType == RelationCategory.RELATION))
@@ -441,12 +440,12 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             query.getBackendQuery().setLimit(computeLimit(conditions.size(),sliceLimit));
             queries = ImmutableList.of(query);
             conditions.add(returnType);
-            conditions.add(new VisibilityFilterCondition<JanusGraphRelation>(  //Need this to filter out newly created invisible relations in the transaction
-                    querySystem? VisibilityFilterCondition.Visibility.SYSTEM: VisibilityFilterCondition.Visibility.NORMAL));
+            conditions.add(new VisibilityFilterCondition<>(  //Need this to filter out newly created invisible relations in the transaction
+                querySystem ? VisibilityFilterCondition.Visibility.SYSTEM : VisibilityFilterCondition.Visibility.NORMAL));
         } else {
-            Set<RelationType> ts = new HashSet<RelationType>(types.length);
-            queries = new ArrayList<BackendQueryHolder<SliceQuery>>(types.length + 2);
-            Map<RelationType,Interval> intervalConstraints = new HashMap<RelationType, Interval>(conditions.size());
+            final Set<RelationType> ts = new HashSet<>(types.length);
+            queries = new ArrayList<>(types.length + 2);
+            final Map<RelationType,Interval> intervalConstraints = new HashMap<>(conditions.size());
             final boolean isIntervalFittedConditions = compileConstraints(conditions,intervalConstraints);
             for (Interval pint : intervalConstraints.values()) { //Check if one of the constraints leads to an empty result set
                 if (pint.isEmpty()) return BaseVertexCentricQuery.emptyQuery();
@@ -485,7 +484,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                     // ARE intervalConstraints or orders but those cannot be covered by any sort-keys
                     SliceQuery q = serializer.getQuery(type, typeDir, null);
                     q.setLimit(sliceLimit);
-                    queries.add(new BackendQueryHolder<SliceQuery>(q, isIntervalFittedConditions, true));
+                    queries.add(new BackendQueryHolder<>(q, isIntervalFittedConditions, true));
                 } else {
                     //Optimize for each direction independently
                     Direction[] dirs = {typeDir};
@@ -593,7 +592,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         EdgeSerializer serializer = tx.getEdgeSerializer();
         SliceQuery q = serializer.getQuery(bestCandidate, direction, sortKeyConstraints);
         q.setLimit(computeLimit(intervalConstraints.size()-position, sliceLimit));
-        queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted, bestCandidateSupportsOrder));
+        queries.add(new BackendQueryHolder<>(q, isFitted, bestCandidateSupportsOrder));
     }
 
 
@@ -702,11 +701,11 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     private static Condition<JanusGraphRelation> getTypeCondition(Set<RelationType> types) {
         assert !types.isEmpty();
         if (types.size() == 1)
-            return new RelationTypeCondition<JanusGraphRelation>(types.iterator().next());
+            return new RelationTypeCondition<>(types.iterator().next());
 
-        Or<JanusGraphRelation> typeCond = new Or<JanusGraphRelation>(types.size());
+        final Or<JanusGraphRelation> typeCond = new Or<>(types.size());
         for (RelationType type : types)
-            typeCond.add(new RelationTypeCondition<JanusGraphRelation>(type));
+            typeCond.add(new RelationTypeCondition<>(type));
 
         return typeCond;
     }

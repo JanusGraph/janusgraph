@@ -30,7 +30,7 @@ public class RemovableRelationIterable<O extends JanusGraphRelation>
 
     @Override
     public Iterator<O> iterator() {
-        return new RemovableRelationIterator<O>(iterable.iterator());
+        return new RemovableRelationIterator<>(iterable.iterator());
     }
 
 }

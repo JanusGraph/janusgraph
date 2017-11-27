@@ -35,7 +35,7 @@ public class PointInterval<T> implements Interval<T> {
     }
 
     public PointInterval(T point) {
-        points=new HashSet<T>(1);
+        points= new HashSet<>(1);
         points.add(point);
     }
 
@@ -44,7 +44,7 @@ public class PointInterval<T> implements Interval<T> {
     }
 
     public PointInterval(Iterable<T> points) {
-        this.points=new HashSet<T>(4);
+        this.points= new HashSet<>(4);
         Iterables.addAll(this.points,points);
     }
 
@@ -100,7 +100,7 @@ public class PointInterval<T> implements Interval<T> {
         if (other instanceof PointInterval) {
             Sets.newHashSet(points);
             points.retainAll(((PointInterval)other).points);
-            return new PointInterval<T>(points);
+            return new PointInterval<>(points);
         } else if (other instanceof RangeInterval) {
             final RangeInterval<T> rint = (RangeInterval)other;
             return new PointInterval<T>(Sets.newHashSet(Iterables.filter(points, t -> rint.containsPoint(t))));

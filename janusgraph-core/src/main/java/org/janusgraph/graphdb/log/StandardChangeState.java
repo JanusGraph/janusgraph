@@ -40,11 +40,11 @@ class StandardChangeState implements ChangeState {
 
 
     StandardChangeState() {
-        vertices = new EnumMap<Change, Set<JanusGraphVertex>>(Change.class);
-        relations = new EnumMap<Change, Set<JanusGraphRelation>>(Change.class);
+        vertices = new EnumMap<>(Change.class);
+        relations = new EnumMap<>(Change.class);
         for (Change state : new Change[]{Change.ADDED,Change.REMOVED}) {
-            vertices.put(state,new HashSet<JanusGraphVertex>());
-            relations.put(state,new HashSet<JanusGraphRelation>());
+            vertices.put(state, new HashSet<>());
+            relations.put(state, new HashSet<>());
         }
     }
 
@@ -61,7 +61,7 @@ class StandardChangeState implements ChangeState {
     public Set<JanusGraphVertex> getVertices(Change change) {
         if (change.isProper()) return vertices.get(change);
         assert change==Change.ANY;
-        Set<JanusGraphVertex> all = new HashSet<JanusGraphVertex>();
+        final Set<JanusGraphVertex> all = new HashSet<>();
         for (Change state : new Change[]{Change.ADDED,Change.REMOVED}) {
             all.addAll(vertices.get(state));
             for (JanusGraphRelation rel : relations.get(state)) {

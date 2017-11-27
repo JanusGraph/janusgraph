@@ -97,7 +97,7 @@ public abstract class JanusGraphIterativeBenchmark extends JanusGraphBaseTest {
         final int verticesPerTask = 1000;
         final int maxWeight = 10;
         final int maxTime = 10000;
-        BlockingQueue<Runnable> tasks = new ArrayBlockingQueue<Runnable>(maxQueue);
+        final BlockingQueue<Runnable> tasks = new ArrayBlockingQueue<>(maxQueue);
         ExecutorService exe = Executors.newFixedThreadPool(numThreads);
         for (int i=0;i<numVertices/verticesPerTask;i++) {
             while (tasks.size()>=maxQueue) Thread.sleep(maxQueue);

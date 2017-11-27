@@ -104,7 +104,7 @@ public class ResultMergeSortIterator<R> implements Iterator<R> {
 
     public static<R> Iterable<R> mergeSort(final Iterable<R> first, final Iterable<R> second,
                                            final Comparator<R> comparator, final boolean filterDuplicates) {
-        return () -> new ResultMergeSortIterator<R>(first.iterator(),second.iterator(),comparator,filterDuplicates);
+        return () -> new ResultMergeSortIterator<>(first.iterator(),second.iterator(),comparator,filterDuplicates);
     }
 
 

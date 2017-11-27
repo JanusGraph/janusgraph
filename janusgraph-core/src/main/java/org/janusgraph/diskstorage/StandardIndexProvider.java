@@ -56,12 +56,12 @@ public enum StandardIndexProvider {
 
     static {
         StandardIndexProvider backends[] = values();
-        List<String> tempShorthands = new ArrayList<String>();
-        Map<String, String> tempClassMap = new HashMap<String, String>();
-        for (int i = 0; i < backends.length; i++) {
-            tempShorthands.addAll(backends[i].getShorthands());
-            for (String shorthand : backends[i].getShorthands()) {
-                tempClassMap.put(shorthand, backends[i].getProviderName());
+        final List<String> tempShorthands = new ArrayList<>();
+        final Map<String, String> tempClassMap = new HashMap<>();
+        for (final StandardIndexProvider backend : backends) {
+            tempShorthands.addAll(backend.getShorthands());
+            for (final String shorthand : backend.getShorthands()) {
+                tempClassMap.put(shorthand, backend.getProviderName());
             }
         }
         ALL_SHORTHANDS = ImmutableList.copyOf(tempShorthands);

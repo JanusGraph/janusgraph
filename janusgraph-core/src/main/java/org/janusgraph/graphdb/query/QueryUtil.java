@@ -149,7 +149,7 @@ public class QueryUtil {
      * @see #isQueryNormalForm(org.janusgraph.graphdb.query.condition.Condition)
      */
     public static <E extends JanusGraphElement> And<E> constraints2QNF(StandardJanusGraphTx tx, List<PredicateCondition<String, E>> constraints) {
-        And<E> conditions = new And<E>(constraints.size() + 4);
+        final And<E> conditions = new And<>(constraints.size() + 4);
         for (PredicateCondition<String, E> atom : constraints) {
             RelationType type = getType(tx, atom.getKey());
 
@@ -188,7 +188,7 @@ public class QueryUtil {
                     } if (values.size() == 1) {
                         addConstraint(type, Cmp.EQUAL, values.iterator().next(), conditions, tx);
                     } else {
-                        Or<E> nested = new Or<E>(values.size());
+                        final Or<E> nested = new Or<>(values.size());
                         for (Object invalue : values)
                             addConstraint(type, Cmp.EQUAL, invalue, nested, tx);
                         conditions.add(nested);
@@ -209,14 +209,14 @@ public class QueryUtil {
         } else { //t.isEdgeLabel()
             Preconditions.checkArgument(value instanceof JanusGraphVertex);
         }
-        PredicateCondition<RelationType, E> pc = new PredicateCondition<RelationType, E>(type, predicate, value);
+        final PredicateCondition<RelationType, E> pc = new PredicateCondition<>(type, predicate, value);
         if (!conditions.contains(pc)) conditions.add(pc);
     }
 
 
     public static Map.Entry<RelationType,Collection> extractOrCondition(Or<JanusGraphRelation> condition) {
         RelationType masterType = null;
-        List<Object> values = new ArrayList<Object>();
+        final List<Object> values = new ArrayList<>();
         for (Condition c : condition.getChildren()) {
             if (!(c instanceof PredicateCondition)) return null;
             PredicateCondition<RelationType, JanusGraphRelation> atom = (PredicateCondition)c;

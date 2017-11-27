@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.schema.Mapping;

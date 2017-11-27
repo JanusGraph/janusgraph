@@ -33,7 +33,7 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
         makeImmutable();
     }};
 
-    private List<OrderEntry> list = new ArrayList<OrderList.OrderEntry>(3);
+    final private List<OrderEntry> list = new ArrayList<>(3);
     private boolean immutable = false;
 
     public void add(PropertyKey key, Order order) {

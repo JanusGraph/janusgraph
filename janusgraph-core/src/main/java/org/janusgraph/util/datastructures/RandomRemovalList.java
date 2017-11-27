@@ -44,14 +44,14 @@ public class RandomRemovalList<T> implements Collection<T>, Iterator<T> {
     }
 
     public RandomRemovalList(int capacity) {
-        list = new ArrayList<T>(capacity);
+        list = new ArrayList<>(capacity);
         size = 0;
         numberOfCompactions = 0;
         isIterating = false;
     }
 
     public RandomRemovalList(Collection<T> objects) {
-        list = new ArrayList<T>(objects);
+        list = new ArrayList<>(objects);
         size = objects.size();
         numberOfCompactions = 0;
         isIterating = false;
@@ -82,7 +82,7 @@ public class RandomRemovalList<T> implements Collection<T>, Iterator<T> {
             return element;
         } else {
             //Compact list
-            List<T> newList = new ArrayList<T>((int) Math.ceil(fillFactor * size));
+            final List<T> newList = new ArrayList<>((int) Math.ceil(fillFactor * size));
             for (T obj : list) {
                 if (obj != null) newList.add(obj);
             }

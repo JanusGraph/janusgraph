@@ -60,7 +60,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         this.numMutations = 0;
         this.persistChunkSize = persistChunkSize;
         this.maxWriteTime = maxWriteTime;
-        this.mutations = new HashMap<KCVSCache, Map<StaticBuffer, KCVEntryMutation>>(expectedNumStores);
+        this.mutations = new HashMap<>(expectedNumStores);
     }
 
     public StoreTransaction getWrappedTransaction() {
@@ -72,7 +72,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         if (additions.isEmpty() && deletions.isEmpty()) return;
 
         KCVEntryMutation m = new KCVEntryMutation(additions, deletions);
-        final Map<StaticBuffer, KCVEntryMutation> storeMutation = mutations.computeIfAbsent(store, k -> new HashMap<StaticBuffer, KCVEntryMutation>());
+        final Map<StaticBuffer, KCVEntryMutation> storeMutation = mutations.computeIfAbsent(store, k -> new HashMap<>());
         KCVEntryMutation existingM = storeMutation.get(key);
         if (existingM != null) {
             existingM.merge(m);
@@ -120,10 +120,10 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
             }
 
             //Chunk up mutations
-            final Map<String, Map<StaticBuffer, KCVMutation>> subMutations = new HashMap<String, Map<StaticBuffer, KCVMutation>>(mutations.size());
+            final Map<String, Map<StaticBuffer, KCVMutation>> subMutations = new HashMap<>(mutations.size());
             int numSubMutations = 0;
             for (Map.Entry<KCVSCache,Map<StaticBuffer, KCVEntryMutation>> storeMutations : mutations.entrySet()) {
-                Map<StaticBuffer, KCVMutation> sub = new HashMap<StaticBuffer, KCVMutation>();
+                final Map<StaticBuffer, KCVMutation> sub = new HashMap<>();
                 subMutations.put(storeMutations.getKey().getName(),sub);
                 for (Map.Entry<StaticBuffer,KCVEntryMutation> mutationsForKey : storeMutations.getValue().entrySet()) {
                     if (mutationsForKey.getValue().isEmpty()) continue;
@@ -140,18 +140,18 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
 
 
             for (Map.Entry<KCVSCache,Map<StaticBuffer, KCVEntryMutation>> storeMutations : mutations.entrySet()) {
-                KCVSCache cache = storeMutations.getKey();
+                final KCVSCache cache = storeMutations.getKey();
                 for (Map.Entry<StaticBuffer,KCVEntryMutation> mutationsForKey : storeMutations.getValue().entrySet()) {
                     if (cache.hasValidateKeysOnly()) {
                         cache.invalidate(mutationsForKey.getKey(), Collections.EMPTY_LIST);
                     } else {
-                        KCVEntryMutation m = mutationsForKey.getValue();
-                        List<CachableStaticBuffer> entries = new ArrayList<CachableStaticBuffer>(m.getTotalMutations());
-                        for (Entry e : m.getAdditions()) {
+                        final KCVEntryMutation m = mutationsForKey.getValue();
+                        final List<CachableStaticBuffer> entries = new ArrayList<>(m.getTotalMutations());
+                        for (final Entry e : m.getAdditions()) {
                             assert e instanceof CachableStaticBuffer;
                             entries.add((CachableStaticBuffer)e);
                         }
-                        for (StaticBuffer e : m.getDeletions()) {
+                        for (final StaticBuffer e : m.getDeletions()) {
                             assert e instanceof CachableStaticBuffer;
                             entries.add((CachableStaticBuffer)e);
                         }

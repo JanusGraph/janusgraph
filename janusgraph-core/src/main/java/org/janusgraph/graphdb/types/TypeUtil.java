@@ -94,7 +94,7 @@ public class TypeUtil {
     }
 
     public static List<CompositeIndexType> getUniqueIndexes(PropertyKey key) {
-        List<CompositeIndexType> indexes = new ArrayList<CompositeIndexType>();
+        final List<CompositeIndexType> indexes = new ArrayList<>();
         for (IndexType index : ((InternalRelationType)key).getKeyIndexes()) {
             if (index.isCompositeIndex()) {
                 CompositeIndexType iIndex = (CompositeIndexType)index;

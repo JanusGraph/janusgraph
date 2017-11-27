@@ -218,7 +218,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                                                 ,uniqueIdBitWidth,idNamespace,idUpperBound);
         final long idBlockUpperBound = (1L <<maxAvailableBits);
 
-        final List<Integer> exhaustedUniquePIDs = new ArrayList<Integer>(randomUniqueIDLimit);
+        final List<Integer> exhaustedUniquePIDs = new ArrayList<>(randomUniqueIDLimit);
 
         Duration backoffMS = idApplicationWaitMS;
 

@@ -53,7 +53,7 @@ public class ExpectedValueCheckingStoreManager extends KCVSManagerProxy {
         this.lockerProvider = lockerProvider;
         this.maxReadTime = maxReadTime;
         this.storeFeatures = new StandardStoreFeatures.Builder(storeManager.getFeatures()).locking(true).build();
-        this.stores = new HashMap<String,ExpectedValueCheckingStore>(6);
+        this.stores = new HashMap<>(6);
     }
 
     @Override

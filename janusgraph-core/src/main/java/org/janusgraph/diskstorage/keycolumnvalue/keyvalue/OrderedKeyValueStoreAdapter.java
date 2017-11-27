@@ -71,12 +71,12 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
 
     @Override
     public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException {
-        List<KVQuery> queries = new ArrayList<KVQuery>(keys.size());
-        for (int i = 0; i < keys.size(); i++) {
-            queries.add(convertQuery(new KeySliceQuery(keys.get(i),query)));
+        final List<KVQuery> queries = new ArrayList<>(keys.size());
+        for (StaticBuffer key : keys) {
+            queries.add(convertQuery(new KeySliceQuery(key, query)));
         }
-        Map<KVQuery,RecordIterator<KeyValueEntry>> results = store.getSlices(queries,txh);
-        Map<StaticBuffer,EntryList> convertedResults = new HashMap<StaticBuffer, EntryList>(keys.size());
+        final Map<KVQuery,RecordIterator<KeyValueEntry>> results = store.getSlices(queries,txh);
+        final Map<StaticBuffer,EntryList> convertedResults = new HashMap<>(keys.size());
         assert queries.size()==keys.size();
         for (int i = 0; i < queries.size(); i++) {
             convertedResults.put(keys.get(i),convert(results.get(queries.get(i))));

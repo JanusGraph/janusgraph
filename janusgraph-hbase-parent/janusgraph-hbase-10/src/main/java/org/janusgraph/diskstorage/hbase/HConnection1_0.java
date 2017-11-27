@@ -16,12 +16,8 @@ package org.janusgraph.diskstorage.hbase;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.NavigableMap;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-import org.apache.hadoop.hbase.HRegionInfo;
+
 import org.apache.hadoop.hbase.HRegionLocation;
-import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Connection;
 

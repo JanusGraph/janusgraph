@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.janusgraph.diskstorage.keycolumnvalue.*;
-import org.janusgraph.diskstorage.keycolumnvalue.KCVSUtil;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.janusgraph.diskstorage.util.WriteByteBuffer;
@@ -58,7 +57,7 @@ public class KeyColumnValueStoreUtil {
                            int shiftSliceLength) throws BackendException {
         for (int i = 0; i < values.length; i++) {
 
-            List<Entry> entries = new ArrayList<Entry>();
+            final List<Entry> entries = new ArrayList<>();
             for (int j = 0; j < values[i].length; j++) {
                 StaticBuffer col;
                 if (0 < shiftEveryNthRow && 0 == i/* +1 */ % shiftEveryNthRow) {

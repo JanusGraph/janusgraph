@@ -163,8 +163,8 @@ public class ManagementSystem implements JanusGraphManagement {
                 transactionalConfig, BasicConfiguration.Restriction.GLOBAL);
         this.userConfig = new UserModifiableConfiguration(modifyConfig, configVerifier);
 
-        this.updatedTypes = new HashSet<JanusGraphSchemaVertex>();
-        this.updatedTypeTriggers = new ArrayList<Callable<Boolean>>();
+        this.updatedTypes = new HashSet<>();
+        this.updatedTypeTriggers = new ArrayList<>();
         this.graphShutdownRequired = false;
 
         this.transaction = (StandardJanusGraphTx) graph.buildTransaction().disableBatchLoading().start();
@@ -588,7 +588,7 @@ public class ManagementSystem implements JanusGraphManagement {
         private final ElementCategory elementCategory;
         private boolean unique = false;
         private JanusGraphSchemaType constraint = null;
-        private Map<PropertyKey, Parameter[]> keys = new HashMap<PropertyKey, Parameter[]>();
+        private final Map<PropertyKey, Parameter[]> keys = new HashMap<>();
 
         private IndexBuilder(String indexName, ElementCategory elementCategory) {
             this.indexName = indexName;

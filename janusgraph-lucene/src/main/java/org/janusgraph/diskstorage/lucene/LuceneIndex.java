@@ -104,10 +104,10 @@ public class LuceneIndex implements IndexProvider {
 
     private final Analyzer analyzer = new StandardAnalyzer();
 
-    private final Map<String, IndexWriter> writers = new HashMap<String, IndexWriter>(4);
+    private final Map<String, IndexWriter> writers = new HashMap<>(4);
     private final ReentrantLock writerLock = new ReentrantLock();
 
-    private Map<String, SpatialStrategy> spatial = new ConcurrentHashMap<String, SpatialStrategy>(12);
+    private final Map<String, SpatialStrategy> spatial = new ConcurrentHashMap<>(12);
     private SpatialContext ctx = Geoshape.getSpatialContext();
 
     private final String basePath;
@@ -328,7 +328,7 @@ public class LuceneIndex implements IndexProvider {
             }
         }
 
-        return new ImmutablePair<Document, Map<String, Shape>>(doc, geoFields);
+        return new ImmutablePair<>(doc, geoFields);
     }
 
     private void addToDocument(String store,
@@ -448,7 +448,7 @@ public class LuceneIndex implements IndexProvider {
             long time = System.currentTimeMillis();
             final TopDocs docs = searcher.search(q, query.hasLimit() ? query.getLimit() : Integer.MAX_VALUE - 1, getSortOrder(query));
             log.debug("Executed query [{}] in {} ms", q, System.currentTimeMillis() - time);
-            List<String> result = new ArrayList<String>(docs.scoreDocs.length);
+            final List<String> result = new ArrayList<>(docs.scoreDocs.length);
             for (int i = 0; i < docs.scoreDocs.length; i++) {
                 final IndexableField field = searcher.doc(docs.scoreDocs[i].doc).getField(DOCID);
                 result.add(field == null ? null : field.stringValue());
@@ -637,10 +637,10 @@ public class LuceneIndex implements IndexProvider {
             else adjustedLimit = Integer.MAX_VALUE-1;
             final TopDocs docs = searcher.search(q, adjustedLimit);
             log.debug("Executed query [{}] in {} ms",q, System.currentTimeMillis() - time);
-            List<RawQuery.Result<String>> result = new ArrayList<RawQuery.Result<String>>(docs.scoreDocs.length);
+            final List<RawQuery.Result<String>> result = new ArrayList<>(docs.scoreDocs.length);
             for (int i = offset; i < docs.scoreDocs.length; i++) {
                 final IndexableField field = searcher.doc(docs.scoreDocs[i].doc).getField(DOCID);
-                result.add(new RawQuery.Result<String>(field == null ? null : field.stringValue(),docs.scoreDocs[i].score));
+                result.add(new RawQuery.Result<>(field == null ? null : field.stringValue(), docs.scoreDocs[i].score));
             }
             return result.stream();
         } catch (IOException e) {
@@ -769,7 +769,7 @@ public class LuceneIndex implements IndexProvider {
 
         private final BaseTransactionConfig config;
         private final Set<String> updatedStores = Sets.newHashSet();
-        private final Map<String, IndexSearcher> searchers = new HashMap<String, IndexSearcher>(4);
+        private final Map<String, IndexSearcher> searchers = new HashMap<>(4);
 
         private Transaction(BaseTransactionConfig config) {
             this.config = config;

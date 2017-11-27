@@ -60,7 +60,7 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
         this.indexTx=index.beginTransaction(config);
         Preconditions.checkNotNull(indexTx);
         this.maxWriteTime = maxWriteTime;
-        this.mutations = new HashMap<String,Map<String,IndexMutation>>(DEFAULT_OUTER_MAP_SIZE);
+        this.mutations = new HashMap<>(DEFAULT_OUTER_MAP_SIZE);
     }
 
     public void add(String store, String documentId, IndexEntry entry, boolean isNew) {
@@ -76,7 +76,7 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
     }
 
     private IndexMutation getIndexMutation(String store, String documentId, boolean isNew, boolean isDeleted) {
-        final Map<String, IndexMutation> storeMutations = mutations.computeIfAbsent(store, k -> new HashMap<String, IndexMutation>(DEFAULT_INNER_MAP_SIZE));
+        final Map<String, IndexMutation> storeMutations = mutations.computeIfAbsent(store, k -> new HashMap<>(DEFAULT_INNER_MAP_SIZE));
         IndexMutation m = storeMutations.get(documentId);
         if (m==null) {
             m = new IndexMutation(isNew,isDeleted);

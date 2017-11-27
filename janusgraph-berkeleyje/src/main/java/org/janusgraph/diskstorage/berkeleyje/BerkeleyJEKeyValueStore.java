@@ -123,7 +123,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         final StaticBuffer keyStart = query.getStart();
         final StaticBuffer keyEnd = query.getEnd();
         final KeySelector selector = query.getKeySelector();
-        final List<KeyValueEntry> result = new ArrayList<KeyValueEntry>();
+        final List<KeyValueEntry> result = new ArrayList<>();
         try {
             DatabaseEntry foundKey = keyStart.as(ENTRY_FACTORY);
             DatabaseEntry foundData = new DatabaseEntry();

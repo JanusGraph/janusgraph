@@ -221,12 +221,12 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         if (config.isSingleThreaded()) {
             addedRelations = new SimpleBufferAddedRelations();
             concurrencyLevel = 1;
-            newTypeCache = new HashMap<String, Long>();
+            newTypeCache = new HashMap<>();
             newVertexIndexEntries = new SimpleIndexCache();
         } else {
             addedRelations = new ConcurrentBufferAddedRelations();
             concurrencyLevel = 1; //TODO: should we increase this?
-            newTypeCache = new NonBlockingHashMap<String, Long>();
+            newTypeCache = new NonBlockingHashMap<>();
             newVertexIndexEntries = new ConcurrentIndexCache();
         }
 
@@ -252,8 +252,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         this.isOpen = true;
         if (null != config.getGroupName()) {
             MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "begin").inc();
-            elementProcessor = new MetricsQueryExecutor<GraphCentricQuery, JanusGraphElement, JointIndexQuery>(config.getGroupName(), "graph", elementProcessorImpl);
-            edgeProcessor    = new MetricsQueryExecutor<VertexCentricQuery, JanusGraphRelation, SliceQuery>(config.getGroupName(), "vertex", edgeProcessorImpl);
+            elementProcessor = new MetricsQueryExecutor<>(config.getGroupName(), "graph", elementProcessorImpl);
+            edgeProcessor    = new MetricsQueryExecutor<>(config.getGroupName(), "vertex", edgeProcessorImpl);
         } else {
             elementProcessor = elementProcessorImpl;
             edgeProcessor    = edgeProcessorImpl;
@@ -397,8 +397,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         if (null != config.getGroupName()) {
             MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVerticesByID").inc();
         }
-        List<JanusGraphVertex> result = new ArrayList<JanusGraphVertex>(ids.length);
-        LongArrayList vertexIds = new LongArrayList(ids.length);
+        final List<JanusGraphVertex> result = new ArrayList<>(ids.length);
+        final LongArrayList vertexIds = new LongArrayList(ids.length);
         for (long id : ids) {
             if (isValidVertexId(id)) {
                 if (idInspector.isPartitionedVertex(id)) id=idManager.getCanonicalVertexId(id);
@@ -604,12 +604,12 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             Map<Long, InternalRelation> result = deletedRelations;
             if (result == EMPTY_DELETED_RELATIONS) {
                 if (config.isSingleThreaded()) {
-                    deletedRelations = result = new HashMap<Long, InternalRelation>();
+                    deletedRelations = result = new HashMap<>();
                 } else {
                     synchronized (this) {
                         result = deletedRelations;
                         if (result == EMPTY_DELETED_RELATIONS)
-                            deletedRelations = result = new ConcurrentHashMap<Long, InternalRelation>();
+                            deletedRelations = result = new ConcurrentHashMap<>();
                     }
                 }
             }
@@ -633,7 +633,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             synchronized (this) {
                 result = uniqueLocks;
                 if (result == UNINITIALIZED_LOCKS)
-                    uniqueLocks = result = new ConcurrentHashMap<LockTuple, TransactionLock>();
+                    uniqueLocks = result = new ConcurrentHashMap<>();
             }
         }
         //TODO: clean out no longer used locks from uniqueLocks when it grows to large (use ReadWriteLock to protect against race conditions)
@@ -722,7 +722,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         Cardinality keyCardinality = key.cardinality();
 
         //Determine unique indexes
-        List<IndexLockTuple> uniqueIndexTuples = new ArrayList<IndexLockTuple>();
+        final List<IndexLockTuple> uniqueIndexTuples = new ArrayList<>();
         for (CompositeIndexType index : TypeUtil.getUniqueIndexes(key)) {
             IndexSerializer.IndexRecords matches = IndexSerializer.indexMatches(vertex, index, key, normalizedValue);
             for (Object[] match : matches.getRecordValues()) uniqueIndexTuples.add(new IndexLockTuple(index,match));
@@ -1211,7 +1211,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         public Iterator<JanusGraphElement> execute(final GraphCentricQuery query, final JointIndexQuery indexQuery, final Object exeInfo, final QueryProfiler profiler) {
             Iterator<JanusGraphElement> iterator;
             if (!indexQuery.isEmpty()) {
-                List<QueryUtil.IndexCall<Object>> retrievals = new ArrayList<QueryUtil.IndexCall<Object>>();
+                final List<QueryUtil.IndexCall<Object>> retrievals = new ArrayList<>();
                 for (int i = 1; i < indexQuery.size(); i++) {
                     final JointIndexQuery.Subquery subquery = indexQuery.getQuery(i);
                     retrievals.add(limit -> {

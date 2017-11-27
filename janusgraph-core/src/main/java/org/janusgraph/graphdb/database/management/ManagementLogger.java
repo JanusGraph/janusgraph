@@ -63,7 +63,7 @@ public class ManagementLogger implements MessageReader {
     private final TimestampProvider times;
 
     private final AtomicInteger evictionTriggerCounter = new AtomicInteger(0);
-    private final ConcurrentMap<Long,EvictionTrigger> evictionTriggerMap = new ConcurrentHashMap<Long,EvictionTrigger>();
+    private final ConcurrentMap<Long,EvictionTrigger> evictionTriggerMap = new ConcurrentHashMap<>();
 
     public ManagementLogger(StandardJanusGraph graph, Log sysLog, SchemaCache schemaCache, TimestampProvider times) {
         this.graph = graph;

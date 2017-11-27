@@ -93,7 +93,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
         CassandraDaemonWrapper.start(cassandraConfig);
 
-        this.openStores = new HashMap<String, CassandraEmbeddedKeyColumnValueStore>(8);
+        this.openStores = new HashMap<>(8);
         this.requestScheduler = DatabaseDescriptor.getRequestScheduler();
     }
 
@@ -147,9 +147,9 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         ensureKeyspaceExists(keySpaceName);
 
         
-        Collection<Range<Token>> ranges = StorageService.instance.getPrimaryRanges(keySpaceName);
+        final Collection<Range<Token>> ranges = StorageService.instance.getPrimaryRanges(keySpaceName);
 
-        List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());
+        final List<KeyRange> keyRanges = new ArrayList<>(ranges.size());
 
         for (Range<Token> range : ranges) {
             keyRanges.add(CassandraHelper.transformRange(range));
@@ -210,7 +210,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             }
         }
 
-        mutate(new ArrayList<org.apache.cassandra.db.Mutation>(rowMutations.values()), getTx(txh).getWriteConsistencyLevel().getDB());
+        mutate(new ArrayList<>(rowMutations.values()), getTx(txh).getWriteConsistencyLevel().getDB());
 
         sleepAfterWrite(txh, commitTime);
     }

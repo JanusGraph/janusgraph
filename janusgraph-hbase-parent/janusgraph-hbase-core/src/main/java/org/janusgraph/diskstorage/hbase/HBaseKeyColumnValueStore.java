@@ -148,7 +148,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     private Map<StaticBuffer,EntryList> getHelper(List<StaticBuffer> keys, Filter getFilter) throws BackendException {
-        List<Get> requests = new ArrayList<Get>(keys.size());
+        List<Get> requests = new ArrayList<>(keys.size());
         {
             for (StaticBuffer key : keys) {
                 Get g = new Get(key.as(StaticBuffer.ARRAY_FACTORY)).addFamily(columnFamilyBytes).setFilter(getFilter);
@@ -161,7 +161,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             }
         }
 
-        Map<StaticBuffer,EntryList> resultMap = new HashMap<StaticBuffer,EntryList>(keys.size());
+        final Map<StaticBuffer,EntryList> resultMap = new HashMap<>(keys.size());
 
         try {
             TableMask table = null;

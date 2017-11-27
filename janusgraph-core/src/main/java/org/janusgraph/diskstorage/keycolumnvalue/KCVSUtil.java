@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Contains static utility methods for operating on {@link KeyColumnValueStore}.
@@ -112,7 +113,7 @@ public class KCVSUtil {
 
 
     public static Map<StaticBuffer,EntryList> emptyResults(List<StaticBuffer> keys) {
-        Map<StaticBuffer,EntryList> result = new HashMap<StaticBuffer, EntryList>(keys.size());
+        final Map<StaticBuffer,EntryList> result = new HashMap<>(keys.size());
         for (StaticBuffer key : keys) {
             result.put(key,EntryList.EMPTY_LIST);
         }

@@ -144,7 +144,7 @@ public class IndexSerializer {
         public KeyInformation.IndexRetriever get(final String index) {
             return new KeyInformation.IndexRetriever() {
 
-                Map<String,KeyInformation.StoreRetriever> indexes = new ConcurrentHashMap<String, KeyInformation.StoreRetriever>();
+                final Map<String,KeyInformation.StoreRetriever> indexes = new ConcurrentHashMap<>();
 
                 @Override
                 public KeyInformation get(String store, String key) {
@@ -277,7 +277,7 @@ public class IndexSerializer {
                     CompositeIndexType iIndex= (CompositeIndexType) index;
                     RecordEntry[] record = indexMatch(relation, iIndex);
                     if (record==null) continue;
-                    update = new IndexUpdate<StaticBuffer,Entry>(iIndex,updateType,getIndexKey(iIndex,record),getIndexEntry(iIndex,record,relation), relation);
+                    update = new IndexUpdate<>(iIndex, updateType, getIndexKey(iIndex, record), getIndexEntry(iIndex, record, relation), relation);
                 } else {
                     assert relation.valueOrNull(key)!=null;
                     if (((MixedIndexType)index).getField(key).getStatus()== SchemaStatus.DISABLED) continue;
@@ -321,14 +321,14 @@ public class IndexSerializer {
                     CompositeIndexType cIndex = (CompositeIndexType)index;
                     IndexRecords updateRecords = indexMatches(vertex,cIndex,updateType==IndexUpdate.Type.DELETE,p.propertyKey(),new RecordEntry(p));
                     for (RecordEntry[] record : updateRecords) {
-                        IndexUpdate update = new IndexUpdate<StaticBuffer,Entry>(cIndex,updateType,getIndexKey(cIndex,record),getIndexEntry(cIndex,record,vertex), vertex);
+                        final IndexUpdate update = new IndexUpdate<>(cIndex, updateType, getIndexKey(cIndex, record), getIndexEntry(cIndex, record, vertex), vertex);
                         int ttl = getIndexTTL(vertex,getKeysOfRecords(record));
                         if (ttl>0 && updateType== IndexUpdate.Type.ADD) update.setTTL(ttl);
                         updates.add(update);
                     }
                 } else { //Update mixed indexes
                     if (((MixedIndexType)index).getField(p.propertyKey()).getStatus()== SchemaStatus.DISABLED) continue;
-                    IndexUpdate update = getMixedIndexUpdate(vertex, p.propertyKey(), p.value(), (MixedIndexType) index, updateType);
+                    final IndexUpdate update = getMixedIndexUpdate(vertex, p.propertyKey(), p.value(), (MixedIndexType) index, updateType);
                     int ttl = getIndexTTL(vertex,p.propertyKey());
                     if (ttl>0 && updateType== IndexUpdate.Type.ADD) update.setTTL(ttl);
                     updates.add(update);
@@ -340,7 +340,7 @@ public class IndexSerializer {
 
     private IndexUpdate<String,IndexEntry> getMixedIndexUpdate(JanusGraphElement element, PropertyKey key, Object value,
                                                                MixedIndexType index, IndexUpdate.Type updateType)  {
-        return new IndexUpdate<String,IndexEntry>(index,updateType,element2String(element),new IndexEntry(key2Field(index.getField(key)), value), element);
+        return new IndexUpdate<>(index, updateType, element2String(element), new IndexEntry(key2Field(index.getField(key)), value), element);
     }
 
     public void reindexElement(JanusGraphElement element, MixedIndexType index, Map<String,Map<String,List<IndexEntry>>> documentsPerStore) {
@@ -380,7 +380,7 @@ public class IndexSerializer {
             if (record!=null) records = ImmutableList.of(record);
         }
         for (RecordEntry[] record : records) {
-            indexEntries.add(new IndexUpdate<StaticBuffer,Entry>(index, IndexUpdate.Type.ADD,getIndexKey(index,record),getIndexEntry(index,record,element), element));
+            indexEntries.add(new IndexUpdate<>(index, IndexUpdate.Type.ADD, getIndexKey(index, record), getIndexEntry(index, record, element), element));
         }
         return indexEntries;
     }
@@ -477,7 +477,7 @@ public class IndexSerializer {
         if (key.equals(replaceKey)) {
             values = ImmutableList.of(replaceValue);
         } else {
-            values = new ArrayList<RecordEntry>();
+            values = new ArrayList<>();
             Iterable<JanusGraphVertexProperty> props;
             if (onlyLoaded ||
                     (!vertex.isNew() && IDManager.VertexIDType.PartitionedVertex.is(vertex.longId()))) {
@@ -533,7 +533,7 @@ public class IndexSerializer {
     }
 
     public MultiKeySliceQuery getQuery(final CompositeIndexType index, List<Object[]> values) {
-        List<KeySliceQuery> ksqs = new ArrayList<KeySliceQuery>(values.size());
+        final List<KeySliceQuery> ksqs = new ArrayList<>(values.size());
         for (Object[] value : values) {
             ksqs.add(new KeySliceQuery(getIndexKey(index,value), BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(1)));
         }
@@ -549,7 +549,7 @@ public class IndexSerializer {
                         Preconditions.checkArgument(condition instanceof PredicateCondition);
                         PredicateCondition pc = (PredicateCondition) condition;
                         PropertyKey key = (PropertyKey) pc.getKey();
-                        return new PredicateCondition<String, JanusGraphElement>(key2Field(index,key), pc.getPredicate(), pc.getValue());
+                        return new PredicateCondition<>(key2Field(index, key), pc.getPredicate(), pc.getValue());
                     }
                 });
         ImmutableList<IndexQuery.OrderEntry> newOrders = IndexQuery.NO_ORDER;

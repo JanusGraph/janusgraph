@@ -71,8 +71,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     private final StoreTransaction inconsistentTx;
     private final Duration maxReadTime;
 
-    private final Map<ExpectedValueCheckingStore, Map<KeyColumn, StaticBuffer>> expectedValuesByStore =
-            new HashMap<ExpectedValueCheckingStore, Map<KeyColumn, StaticBuffer>>();
+    private final Map<ExpectedValueCheckingStore, Map<KeyColumn, StaticBuffer>> expectedValuesByStore = new HashMap<>();
 
     public ExpectedValueCheckingTransaction(StoreTransaction inconsistentTx, StoreTransaction strongConsistentTx, Duration maxReadTime) {
         this.inconsistentTx = inconsistentTx;
@@ -209,8 +208,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     }
 
     private void lockedOn(ExpectedValueCheckingStore store) {
-        final Map<KeyColumn, StaticBuffer> m = expectedValuesByStore.computeIfAbsent(store, k -> new HashMap<KeyColumn, StaticBuffer>());
-
+        final Map<KeyColumn, StaticBuffer> m = expectedValuesByStore.computeIfAbsent(store, k -> new HashMap<>());
     }
 
     private void checkSingleExpectedValue(final KeyColumn kc,

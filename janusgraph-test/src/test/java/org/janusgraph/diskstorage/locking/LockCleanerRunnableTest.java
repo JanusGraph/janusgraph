@@ -44,7 +44,6 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
 import org.janusgraph.diskstorage.locking.consistentkey.StandardLockCleanerRunnable;
-import org.janusgraph.diskstorage.util.BufferUtil;
 
 public class LockCleanerRunnableTest {
 
