@@ -277,7 +277,7 @@ public class Geoshape {
      * @param longitude
      * @return
      */
-    public static final Geoshape point(final double latitude, final double longitude) {
+    public static Geoshape point(final double latitude, final double longitude) {
         Preconditions.checkArgument(isValidCoordinate(latitude, longitude), "Invalid coordinate provided");
         return new Geoshape(getShapeFactory().pointXY(longitude, latitude));
     }
@@ -289,7 +289,7 @@ public class Geoshape {
      * @param radiusInKM
      * @return
      */
-    public static final Geoshape circle(final double latitude, final double longitude, final double radiusInKM) {
+    public static Geoshape circle(final double latitude, final double longitude, final double radiusInKM) {
         Preconditions.checkArgument(isValidCoordinate(latitude, longitude), "Invalid coordinate provided");
         Preconditions.checkArgument(radiusInKM > 0, "Invalid radius provided [%s]", radiusInKM);
         return new Geoshape(getShapeFactory().circle(longitude, latitude, DistanceUtils.dist2Degrees(radiusInKM, DistanceUtils.EARTH_MEAN_RADIUS_KM)));
@@ -303,7 +303,7 @@ public class Geoshape {
      * @param northEastLongitude
      * @return
      */
-    public static final Geoshape box(final double southWestLatitude, final double southWestLongitude,
+    public static Geoshape box(final double southWestLatitude, final double southWestLongitude,
                                      final double northEastLatitude, final double northEastLongitude) {
         Preconditions.checkArgument(isValidCoordinate(southWestLatitude, southWestLongitude), "Invalid south-west coordinate provided");
         Preconditions.checkArgument(isValidCoordinate(northEastLatitude, northEastLongitude), "Invalid north-east coordinate provided");
@@ -315,7 +315,7 @@ public class Geoshape {
      * @param coordinates Coordinate (lon,lat) pairs
      * @return
      */
-    public static final Geoshape line(List<double[]> coordinates) {
+    public static Geoshape line(List<double[]> coordinates) {
         Preconditions.checkArgument(coordinates.size() >= 2, "Too few coordinate pairs provided");
         final LineStringBuilder builder = getShapeFactory().lineString();
         for (double[] coordinate : coordinates) {
@@ -330,7 +330,7 @@ public class Geoshape {
      * @param coordinates Coordinate (lon,lat) pairs
      * @return
      */
-    public static final Geoshape polygon(List<double[]> coordinates) {
+    public static Geoshape polygon(List<double[]> coordinates) {
         return HELPER.polygon(coordinates);
     }
 
@@ -339,7 +339,7 @@ public class Geoshape {
      * @param shape
      * @return
      */
-    public static final Geoshape geoshape(Shape shape) {
+    public static Geoshape geoshape(Shape shape) {
         return new Geoshape(shape);
     }
 
@@ -349,7 +349,7 @@ public class Geoshape {
      * @return
      * @throws ParseException
      */
-    public static final Geoshape fromWkt(String wkt) throws ParseException {
+    public static Geoshape fromWkt(String wkt) throws ParseException {
         return new Geoshape(HELPER.getWktReader().parse(wkt));
     }
 
@@ -359,19 +359,19 @@ public class Geoshape {
      * @param longitude
      * @return
      */
-    public static final boolean isValidCoordinate(final double latitude, final double longitude) {
+    public static boolean isValidCoordinate(final double latitude, final double longitude) {
         return latitude>=-90.0 && latitude<=90.0 && longitude>=-180.0 && longitude<=180.0;
     }
 
-    public static final SpatialContext getSpatialContext() {
+    public static SpatialContext getSpatialContext() {
         return HELPER.getContext();
     }
 
-    public static final ShapeFactory getShapeFactory() {
+    public static ShapeFactory getShapeFactory() {
         return getSpatialContext().getShapeFactory();
     }
 
-    public static final MultiShapeBuilder<Shape> getGeometryCollectionBuilder() {
+    public static MultiShapeBuilder<Shape> getGeometryCollectionBuilder() {
         return getShapeFactory().multiShape(Shape.class);
     }
 

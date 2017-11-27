@@ -38,7 +38,7 @@ public class KeySelector {
         count = 0;
     }
 
-    public static final KeySelector of(int limit) {
+    public static KeySelector of(int limit) {
         return new KeySelector(Predicates.<StaticBuffer>alwaysTrue(), limit);
     }
 

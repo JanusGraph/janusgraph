@@ -86,7 +86,7 @@ public interface JanusGraphPredicate extends BiPredicate<Object, Object> {
          * @return A JanusGraphPredicate equivalent to the given predicate
          * @throws IllegalArgumentException if the given Predicate is unknown
          */
-        public static final JanusGraphPredicate convertInternal(BiPredicate p) {
+        public static JanusGraphPredicate convertInternal(BiPredicate p) {
             if (p instanceof JanusGraphPredicate) {
                 return (JanusGraphPredicate)p;
             } else if (p instanceof Compare) {
@@ -111,13 +111,13 @@ public interface JanusGraphPredicate extends BiPredicate<Object, Object> {
             } else return null;
         }
 
-        public static final JanusGraphPredicate convert(BiPredicate p) {
+        public static JanusGraphPredicate convert(BiPredicate p) {
             JanusGraphPredicate janusgraphPred = convertInternal(p);
             if (janusgraphPred==null) throw new IllegalArgumentException("JanusGraph does not support the given predicate: " + p);
             return janusgraphPred;
         }
 
-        public static final boolean supports(BiPredicate p) {
+        public static boolean supports(BiPredicate p) {
             return convertInternal(p)!=null;
         }
     }

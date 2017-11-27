@@ -44,13 +44,13 @@ public class BackendOperation {
     private static final double PERTURBATION_PERCENTAGE = 0.2;
 
 
-    private static final Duration pertubateTime(Duration duration) {
+    private static Duration pertubateTime(Duration duration) {
         Duration newDuration = duration.dividedBy((int)(2.0 / (1 + (random.nextDouble() * 2 - 1.0) * PERTURBATION_PERCENTAGE)));
         assert !duration.isZero() : duration;
         return newDuration;
     }
 
-    public static final<V> V execute(Callable<V> exe, Duration totalWaitTime) throws JanusGraphException {
+    public static <V> V execute(Callable<V> exe, Duration totalWaitTime) throws JanusGraphException {
         try {
             return executeDirect(exe,totalWaitTime);
         } catch (BackendException e) {
@@ -59,7 +59,7 @@ public class BackendOperation {
     }
 
 
-    public static final<V> V executeDirect(Callable<V> exe, Duration totalWaitTime) throws BackendException {
+    public static <V> V executeDirect(Callable<V> exe, Duration totalWaitTime) throws BackendException {
         Preconditions.checkArgument(!totalWaitTime.isZero(),"Need to specify a positive waitTime: %s",totalWaitTime);
         long maxTime = System.currentTimeMillis()+totalWaitTime.toMillis();
         Duration waitTime = pertubateTime(BASE_REATTEMPT_TIME);

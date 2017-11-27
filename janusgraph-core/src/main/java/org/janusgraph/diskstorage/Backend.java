@@ -364,7 +364,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         return userLogManager.openLog(getUserLogName(identifier));
     }
 
-    public static final String getUserLogName(String identifier) {
+    public static String getUserLogName(String identifier) {
         Preconditions.checkArgument(StringUtils.isNotBlank(identifier));
         return USER_LOG_PREFIX +identifier;
     }
@@ -456,7 +456,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         }
     }
 
-    private final static Map<String, IndexProvider> getIndexes(Configuration config) {
+    private static Map<String, IndexProvider> getIndexes(Configuration config) {
         ImmutableMap.Builder<String, IndexProvider> builder = ImmutableMap.builder();
         for (String index : config.getContainedNamespaces(INDEX_NS)) {
             Preconditions.checkArgument(StringUtils.isNotBlank(index), "Invalid index name [%s]", index);
@@ -469,7 +469,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         return builder.build();
     }
 
-    public final static <T> T getImplementationClass(Configuration config, String clazzname, Map<String, String> registeredImpls) {
+    public static <T> T getImplementationClass(Configuration config, String clazzname, Map<String, String> registeredImpls) {
         if (registeredImpls.containsKey(clazzname.toLowerCase())) {
             clazzname = registeredImpls.get(clazzname.toLowerCase());
         }

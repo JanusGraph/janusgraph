@@ -131,7 +131,7 @@ public class VertexArrayList implements VertexListInternal {
      * @param vertices
      * @return
      */
-    private static final LongArrayList toLongList(List<JanusGraphVertex> vertices) {
+    private static LongArrayList toLongList(List<JanusGraphVertex> vertices) {
         LongArrayList result = new LongArrayList(vertices.size());
         for (JanusGraphVertex n : vertices) {
             result.add(n.longId());

@@ -26,21 +26,21 @@ import java.util.Arrays;
  */
 public class ArraysUtil {
 
-    public static final boolean isSortedInc(long[] arr) {
+    public static boolean isSortedInc(long[] arr) {
         for (int i = 0; i < arr.length; i++) {
             if (i > 0 && arr[i] <= arr[i - 1]) return false;
         }
         return true;
     }
 
-    public static final boolean isSortedInc(int[] arr) {
+    public static boolean isSortedInc(int[] arr) {
         for (int i = 0; i < arr.length; i++) {
             if (i > 0 && arr[i] <= arr[i - 1]) return false;
         }
         return true;
     }
 
-    public static final long[] insertSortedInc(long[] arr, long element) {
+    public static long[] insertSortedInc(long[] arr, long element) {
         assert arr == null || isSortedInc(arr);
         long[] newarr = new long[(arr != null ? arr.length + 1 : 1)];
         int offset = 0;
@@ -58,7 +58,7 @@ public class ArraysUtil {
         return newarr;
     }
 
-    public static final long[] arrayDifference(long[] arr, long[] subset) {
+    public static long[] arrayDifference(long[] arr, long[] subset) {
         long[] res = new long[arr.length - subset.length];
         int pos = 0;
         for (int i = 0; i < arr.length; i++) {
@@ -71,7 +71,7 @@ public class ArraysUtil {
         return res;
     }
 
-    public static final long[] mergeSortedInc(long[] a, long[] b) {
+    public static long[] mergeSortedInc(long[] a, long[] b) {
         assert isSortedInc(a) && isSortedInc(b);
         long[] res = new long[a.length + b.length];
         int ai = 0, bi = 0;
@@ -87,7 +87,7 @@ public class ArraysUtil {
         return res;
     }
 
-    public static final int sum(int[] values) {
+    public static int sum(int[] values) {
         int sum = 0;
         for (int i = 0; i < values.length; i++) {
             sum += values[i];
@@ -95,7 +95,7 @@ public class ArraysUtil {
         return sum;
     }
 
-    public static final int indexOfMin(double[] values) {
+    public static int indexOfMin(double[] values) {
         if (values.length < 1) return -1;
         int index = 0;
         for (int i = 1; i < values.length; i++) {
@@ -106,7 +106,7 @@ public class ArraysUtil {
         return index;
     }
 
-    public static final int indexOf(int[] array, int value) {
+    public static int indexOf(int[] array, int value) {
         for (int i = 0; i < array.length; i++) {
             if (array[i] == value) return i;
         }

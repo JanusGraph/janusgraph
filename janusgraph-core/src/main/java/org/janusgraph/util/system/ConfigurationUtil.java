@@ -45,11 +45,11 @@ public class ConfigurationUtil {
         return names;
     }
 
-    public final static <T> T instantiate(String clazzname) {
+    public static <T> T instantiate(String clazzname) {
         return instantiate(clazzname,new Object[0],new Class[0]);
     }
 
-    public final static <T> T instantiate(String clazzname, Object[] constructorArgs, Class[] classes) {
+    public static <T> T instantiate(String clazzname, Object[] constructorArgs, Class[] classes) {
         Preconditions.checkArgument(constructorArgs!=null && classes!=null);
         Preconditions.checkArgument(constructorArgs.length==classes.length);
         try {

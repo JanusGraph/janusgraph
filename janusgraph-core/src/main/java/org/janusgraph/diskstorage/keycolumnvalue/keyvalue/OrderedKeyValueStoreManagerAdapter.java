@@ -125,7 +125,7 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
         manager.mutateMany(converted, txh);
     }
 
-    private static final OrderedKeyValueStoreAdapter wrapKeyValueStore(OrderedKeyValueStore store, Map<String, Integer> keyLengths) {
+    private static OrderedKeyValueStoreAdapter wrapKeyValueStore(OrderedKeyValueStore store, Map<String, Integer> keyLengths) {
         String name = store.getName();
         if (keyLengths.containsKey(name)) {
             int keyLength = keyLengths.get(name);

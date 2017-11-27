@@ -362,14 +362,14 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
     }
 
 
-    private final StaticBuffer[] getBlockSlice(long blockValue) {
+    private StaticBuffer[] getBlockSlice(long blockValue) {
         StaticBuffer[] slice = new StaticBuffer[2];
         slice[0] = new WriteByteBuffer(16).putLong(-blockValue).putLong(0).getStaticBuffer();
         slice[1] = new WriteByteBuffer(16).putLong(-blockValue).putLong(-1).getStaticBuffer();
         return slice;
     }
 
-    private final StaticBuffer getBlockApplication(long blockValue, Instant timestamp) {
+    private StaticBuffer getBlockApplication(long blockValue, Instant timestamp) {
         WriteByteBuffer bb = new WriteByteBuffer(
                 8 // counter long
                         + 8 // time in ms
@@ -380,7 +380,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         return bb.getStaticBuffer();
     }
 
-    private final long getBlockValue(Entry column) {
+    private long getBlockValue(Entry column) {
         return -column.getLong(0);
     }
 
