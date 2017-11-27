@@ -70,11 +70,11 @@ public class JanusGraphManager implements GraphManager {
     }
 
     private synchronized void initialize() {
-        if (null != this.instance) {
+        if (null != instance) {
             final String errMsg = "You may not instantiate a JanusGraphManager. The single instance should be handled by Tinkerpop's GremlinServer startup processes.";
             throw new JanusGraphManagerException(errMsg);
         }
-        this.instance = this;
+        instance = this;
     }
 
     public static JanusGraphManager getInstance() {
