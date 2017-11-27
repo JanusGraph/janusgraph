@@ -127,8 +127,7 @@ public class RandomRemovalList<T> implements Collection<T>, Iterator<T> {
 
     @Override
     public boolean contains(Object o) {
-        if (o == null) return false;
-        return list.contains(o);
+        return o != null && list.contains(o);
     }
 
     @Override

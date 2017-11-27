@@ -40,8 +40,7 @@ import java.util.Set;
 public class TypeUtil {
 
     public static boolean hasSimpleInternalVertexKeyIndex(JanusGraphRelation rel) {
-        if (!(rel instanceof JanusGraphVertexProperty)) return false;
-        else return hasSimpleInternalVertexKeyIndex((JanusGraphVertexProperty)rel);
+        return rel instanceof JanusGraphVertexProperty && hasSimpleInternalVertexKeyIndex((JanusGraphVertexProperty) rel);
     }
 
     public static void checkTypeName(JanusGraphSchemaCategory category, String name) {
