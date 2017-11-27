@@ -11,12 +11,12 @@ standard storage backends.
 This section only addresses configuration of the stock storage
 backends that come with JanusGraph.
 
-include::cassandra.txt[]
+include::cassandra.adoc[]
 
-include::hbase.txt[]
+include::hbase.adoc[]
 
-include::bigtable.txt[]
+include::bigtable.adoc[]
 
-include::bdb.txt[]
+include::bdb.adoc[]
 
-include::inmemorybackend.txt[]
+include::inmemorybackend.adoc[]

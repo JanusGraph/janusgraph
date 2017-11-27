@@ -1,0 +1,6 @@
+[[internals]]
+= JanusGraph Internals
+
+include::datamodel.adoc[]
+
+include::building.adoc[]

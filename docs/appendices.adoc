@@ -11,8 +11,8 @@ We *strongly* encourage all users of JanusGraph to use the Gremlin query languag
 
 //---------------------------
 
-include::versions.txt[]
+include::versions.adoc[]
 
-include::changelog.txt[]
+include::changelog.adoc[]
 
-include::upgrade.txt[]
+include::upgrade.adoc[]
