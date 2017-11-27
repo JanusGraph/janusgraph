@@ -103,7 +103,7 @@ public class HBaseStatus {
         String l = br.readLine();
 
         if (null == l || "".equals(l.trim())) {
-            throw new HBasePidfileParseException("Empty HBase statusfile " + f);
+            throw new HBasePidfileParseException("Empty HBase status file " + f);
         }
 
         HBaseStatus stat = new HBaseStatus(f, l.trim());

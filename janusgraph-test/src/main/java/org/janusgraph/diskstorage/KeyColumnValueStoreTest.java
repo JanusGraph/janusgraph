@@ -329,10 +329,10 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
                 store.getSlice(new KeySliceQuery(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(start + delta)), tx);
             }
             //multiQuery version
-//            List<StaticBuffer> keylist = new ArrayList<StaticBuffer>();
-//            for (int t = 0; t < trials; t++) keylist.add(KeyValueStoreUtil.getBuffer(r.nextInt(keys)));
+//            List<StaticBuffer> keyList = new ArrayList<StaticBuffer>();
+//            for (int t = 0; t < trials; t++) keyList.add(KeyValueStoreUtil.getBuffer(r.nextInt(keys)));
 //            int start = r.nextInt(columns - delta);
-//            store.getSlice(keylist, new SliceQuery(KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(start + delta)), tx);
+//            store.getSlice(keyList, new SliceQuery(KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(start + delta)), tx);
             System.out.println("Reading time (ms): " + (System.currentTimeMillis() - time));
         }
     }
@@ -420,20 +420,20 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         }
     }
 
-    private void verifyIterator(KeyIterator iter, int expectedKeys, int exepctedCols) {
+    private void verifyIterator(KeyIterator iterator, int expectedKeys, int expectedColumns) {
         int keys = 0;
-        while (iter.hasNext()) {
-            StaticBuffer b = iter.next();
+        while (iterator.hasNext()) {
+            StaticBuffer b = iterator.next();
             assertTrue(b!=null && b.length()>0);
             keys++;
-            RecordIterator<Entry> entries = iter.getEntries();
+            RecordIterator<Entry> entryRecordIterator = iterator.getEntries();
             int cols = 0;
-            while (entries.hasNext()) {
-                Entry e = entries.next();
+            while (entryRecordIterator.hasNext()) {
+                Entry e = entryRecordIterator.next();
                 assertTrue(e!=null && e.length()>0);
                 cols++;
             }
-            assertEquals(exepctedCols,cols);
+            assertEquals(expectedColumns,cols);
         }
         assertEquals(expectedKeys,keys);
     }
@@ -871,7 +871,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
         /*
          * When limit is less the matching column count, the columns up to the
-         * limit (ordered bytewise) must be returned.
+         * limit (ordered byte-wise) must be returned.
          */
         result = store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(cols - 1), tx);
         Assert.assertEquals(cols - 1, result.size());

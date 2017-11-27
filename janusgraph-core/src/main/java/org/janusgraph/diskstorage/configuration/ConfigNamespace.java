@@ -38,7 +38,7 @@ public class ConfigNamespace extends ConfigElement {
     }
 
     /**
-     * Wether this namespace is an umbrella namespace, that is, is expects immediate sub-namespaces which are user defined.
+     * Whether this namespace is an umbrella namespace, that is, is expects immediate sub-namespaces which are user defined.
      * @return
      */
     public boolean isUmbrella() {

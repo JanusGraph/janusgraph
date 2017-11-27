@@ -56,9 +56,9 @@ public class IntHashSet extends IntIntHashMap implements IntSet {
     public int[] getAll() {
         KeysContainer keys = keys();
         int[] all = new int[keys.size()];
-        Iterator<IntCursor> iter = keys.iterator();
+        Iterator<IntCursor> iterator = keys.iterator();
         int pos=0;
-        while (iter.hasNext()) all[pos++]=iter.next().value;
+        while (iterator.hasNext()) all[pos++]=iterator.next().value;
         return all;
     }
 

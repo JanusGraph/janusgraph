@@ -138,11 +138,11 @@ public abstract class LuceneExample {
         return found;
     }
 
-    void indexDocs(IndexWriter writer, String docid, Map<String,Object> docMap) throws IOException {
+    void indexDocs(IndexWriter writer, String documentId, Map<String,Object> docMap) throws IOException {
         Document doc = new Document();
 
-        Field docidField = new StringField("docid", docid, Field.Store.YES);
-        doc.add(docidField);
+        Field documentIdField = new StringField("docid", documentId, Field.Store.YES);
+        doc.add(documentIdField);
 
         for (Map.Entry<String,Object> kv : docMap.entrySet()) {
             String key = kv.getKey();
@@ -171,7 +171,7 @@ public abstract class LuceneExample {
             } else throw new IllegalArgumentException("Unsupported type: " + value);
         }
 
-        writer.updateDocument(new Term("docid", docid), doc);
+        writer.updateDocument(new Term("docid", documentId), doc);
 
     }
 

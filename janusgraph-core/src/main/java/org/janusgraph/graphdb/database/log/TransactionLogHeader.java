@@ -146,10 +146,10 @@ public class TransactionLogHeader {
 
         Preconditions.checkArgument(meta.size()<Byte.MAX_VALUE,"Too much meta data: %s",meta.size());
         out.putByte(VariableLong.unsignedByte(meta.size()));
-        for (Map.Entry<LogTxMeta,Object> metaentry : meta.entrySet()) {
-            assert metaentry.getValue()!=null;
-            out.putByte(VariableLong.unsignedByte(metaentry.getKey().ordinal()));
-            out.writeObjectNotNull(metaentry.getValue());
+        for (Map.Entry<LogTxMeta,Object> metaEntry : meta.entrySet()) {
+            assert metaEntry.getValue()!=null;
+            out.putByte(VariableLong.unsignedByte(metaEntry.getKey().ordinal()));
+            out.writeObjectNotNull(metaEntry.getValue());
         }
         return out;
     }

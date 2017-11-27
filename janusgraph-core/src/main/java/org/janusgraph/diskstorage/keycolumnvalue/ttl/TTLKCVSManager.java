@@ -35,7 +35,7 @@ import java.util.Map;
 
 /**
  * Turns a store with fine-grained cell-level TTL support into a store
- * with coarse-grained store-level (columnfamily-level) TTL support.
+ * with coarse-grained store-level (column-family-level) TTL support.
  * Useful when running a KCVSLog atop Cassandra.  Cassandra has
  * cell-level TTL support, but KCVSLog just wants to write all of its
  * data with a fixed, CF-wide TTL.  This class stores a fixed TTL set

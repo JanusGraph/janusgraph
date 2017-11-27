@@ -227,14 +227,14 @@ public abstract class IDAuthorityTest {
          * values reflect a problem in either this test or the
          * implementation-under-test.
          */
-        Set<String> uids = new HashSet<String>();
+        Set<String> uniqueIds = new HashSet<String>();
         String uidErrorMessage = "Uniqueness failure detected for config option " + UNIQUE_INSTANCE_ID.getName();
         for (int i = 0; i < CONCURRENCY; i++) {
             String uid = idAuthorities[i].getUniqueID();
-            Assert.assertTrue(uidErrorMessage, !uids.contains(uid));
-            uids.add(uid);
+            Assert.assertTrue(uidErrorMessage, !uniqueIds.contains(uid));
+            uniqueIds.add(uid);
         }
-        assertEquals(uidErrorMessage, CONCURRENCY, uids.size());
+        assertEquals(uidErrorMessage, CONCURRENCY, uniqueIds.size());
     }
 
     @Test
@@ -379,19 +379,19 @@ public abstract class IDAuthorityTest {
         final Collection<Future<?>> futures = new ArrayList<Future<?>>(CONCURRENCY);
         ExecutorService es = Executors.newFixedThreadPool(CONCURRENCY);
 
-        Set<String> uids = new HashSet<String>(CONCURRENCY);
+        Set<String> uniqueIds = new HashSet<String>(CONCURRENCY);
         for (int i = 0; i < CONCURRENCY; i++) {
             final IDAuthority idAuthority = idAuthorities[i];
             final IDStressor stressRunnable = new IDStressor(
                     numAcquisitionsPerThreadPartition, numPartitions,
                     maxIterations, idAuthority, ids);
-            uids.add(idAuthority.getUniqueID());
+            uniqueIds.add(idAuthority.getUniqueID());
             futures.add(es.submit(stressRunnable));
         }
 
         // If this fails, it's likely to be a bug in the test rather than the
         // IDAuthority (the latter is technically possible, just less likely)
-        assertEquals(CONCURRENCY, uids.size());
+        assertEquals(CONCURRENCY, uniqueIds.size());
 
         for (Future<?> f : futures) {
             try {
@@ -404,8 +404,8 @@ public abstract class IDAuthorityTest {
         for (int i = 0; i < numPartitions; i++) {
             ConcurrentLinkedQueue<IDBlock> list = ids.get(i);
             assertEquals(numAcquisitionsPerThreadPartition * CONCURRENCY, list.size());
-            LongSet idset = new LongHashSet((int)blockSize*list.size());
-            for (IDBlock block : list) checkBlock(block,idset);
+            LongSet idSet = new LongHashSet((int)blockSize*list.size());
+            for (IDBlock block : list) checkBlock(block,idSet);
         }
 
         es.shutdownNow();
@@ -480,10 +480,10 @@ public abstract class IDAuthorityTest {
                 return null;
             }
             /*
-             * This is not guaranteed in the consistentkey implementation.
+             * This is not guaranteed in the consistent-key implementation.
              * Writers of ID block claims in that implementation delete their
              * writes if they take too long. A peek can see this short-lived
-             * block claim even though a subsequent getblock does not.
+             * block claim even though a subsequent getIDBlock() does not.
              */
 //            Assert.assertTrue(nextId <= block[0]);
             if (hasEmptyUid) assertEquals(block.getId(0)+ blockSize-1, block.getId(blockSize-1));

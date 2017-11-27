@@ -94,7 +94,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
      * @throws org.janusgraph.diskstorage.BackendException
      */
     @Override
-    public <O> O get(final String key, final Class<O> datatype) {
+    public <O> O get(final String key, final Class<O> dataType) {
         StaticBuffer column = string2StaticBuffer(key);
         final KeySliceQuery query = new KeySliceQuery(rowKey,column, BufferUtil.nextBiggerBuffer(column));
         StaticBuffer result = BackendOperation.execute(new BackendOperation.Transactional<StaticBuffer>() {
@@ -111,7 +111,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
             }
         }, txProvider, times, maxOperationWaitTime);
         if (result==null) return null;
-        return staticBuffer2Object(result, datatype);
+        return staticBuffer2Object(result, dataType);
     }
 
     public<O> void set(String key, O value, O expectedValue) {
@@ -202,8 +202,8 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         final Map<String,Object> entries = toMap();
         return new ReadConfiguration() {
             @Override
-            public <O> O get(String key, Class<O> datatype) {
-                Preconditions.checkArgument(!entries.containsKey(key) || datatype.isAssignableFrom(entries.get(key).getClass()));
+            public <O> O get(String key, Class<O> dataType) {
+                Preconditions.checkArgument(!entries.containsKey(key) || dataType.isAssignableFrom(entries.get(key).getClass()));
                 return (O)entries.get(key);
             }
 
@@ -258,9 +258,9 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         return out.getStaticBuffer();
     }
 
-    private<O> O staticBuffer2Object(final StaticBuffer s, Class<O> datatype) {
+    private<O> O staticBuffer2Object(final StaticBuffer s, Class<O> dataType) {
         Object value = serializer.readClassAndObject(s.asReadBuffer());
-        Preconditions.checkArgument(datatype.isInstance(value),"Could not deserialize to [%s], got: %s",datatype,value);
+        Preconditions.checkArgument(dataType.isInstance(value),"Could not deserialize to [%s], got: %s",dataType,value);
         return (O)value;
     }
 

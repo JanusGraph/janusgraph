@@ -86,12 +86,12 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
     public StaticBuffer get(StaticBuffer key, StoreTransaction txh) throws BackendException {
         Transaction tx = getTransaction(txh);
         try {
-            DatabaseEntry dbkey = key.as(ENTRY_FACTORY);
+            DatabaseEntry databaseKey = key.as(ENTRY_FACTORY);
             DatabaseEntry data = new DatabaseEntry();
 
             log.trace("db={}, op=get, tx={}", name, txh);
 
-            OperationStatus status = db.get(tx, dbkey, data, getLockMode(txh));
+            OperationStatus status = db.get(tx, databaseKey, data, getLockMode(txh));
 
             if (status == OperationStatus.SUCCESS) {
                 return getBuffer(data);

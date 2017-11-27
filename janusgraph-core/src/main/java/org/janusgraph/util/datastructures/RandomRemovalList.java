@@ -30,7 +30,7 @@ public class RandomRemovalList<T> implements Collection<T>, Iterator<T> {
     public static final Random random = new Random();
 
     private List<T> list;
-    private final static int numTriesBeforeCompactification = 13;
+    private final static int numTriesBeforeCompaction = 13;
     private static final double fillFactor = 1.05;
     private int size;
     private int numberOfCompactions;
@@ -50,9 +50,9 @@ public class RandomRemovalList<T> implements Collection<T>, Iterator<T> {
         isIterating = false;
     }
 
-    public RandomRemovalList(Collection<T> objs) {
-        list = new ArrayList<T>(objs);
-        size = objs.size();
+    public RandomRemovalList(Collection<T> objects) {
+        list = new ArrayList<T>(objects);
+        size = objects.size();
         numberOfCompactions = 0;
         isIterating = false;
     }
@@ -75,18 +75,18 @@ public class RandomRemovalList<T> implements Collection<T>, Iterator<T> {
             pos = random.nextInt(list.size());
             element = list.get(pos);
             numTries++;
-        } while (element == null && numTries < numTriesBeforeCompactification);
+        } while (element == null && numTries < numTriesBeforeCompaction);
         if (element != null) {
             list.set(pos, null);
             size--;
             return element;
         } else {
             //Compact list
-            List<T> newlist = new ArrayList<T>((int) Math.ceil(fillFactor * size));
+            List<T> newList = new ArrayList<T>((int) Math.ceil(fillFactor * size));
             for (T obj : list) {
-                if (obj != null) newlist.add(obj);
+                if (obj != null) newList.add(obj);
             }
-            list = newlist;
+            list = newList;
             numberOfCompactions++;
             return getRandom();
         }

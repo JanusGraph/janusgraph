@@ -262,7 +262,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
                 .map(RestBulkItemResponse::getError).collect(Collectors.toList());
             if (!errors.isEmpty()) {
                 errors.forEach(error -> log.error("Failed to execute ES query: {}", error));
-                throw new IOException("Failure(s) in Elasicsearch bulk request: " + errors);
+                throw new IOException("Failure(s) in Elasticsearch bulk request: " + errors);
             }
         }
     }

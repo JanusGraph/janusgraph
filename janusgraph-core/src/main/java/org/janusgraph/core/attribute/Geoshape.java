@@ -189,7 +189,7 @@ public class Geoshape {
     }
 
     /**
-     * Returns the number of points comprising this geoshape. A point and circle have only one point (center of cricle),
+     * Returns the number of points comprising this geoshape. A point and circle have only one point (center of circle),
      * a box has two points (the south-west and north-east corners). Lines and polygons have a variable number of points.
      *
      * @return
@@ -466,15 +466,15 @@ public class Geoshape {
                     else components=null;
                 }
                 Preconditions.checkArgument(components!=null,"Could not parse coordinates from string: %s",value);
-                double[] coords = new double[components.length];
+                double[] coordinates = new double[components.length];
                 try {
                     for (int i=0;i<components.length;i++) {
-                        coords[i]=Double.parseDouble(components[i]);
+                        coordinates[i]=Double.parseDouble(components[i]);
                     }
                 } catch (NumberFormatException e) {
                     throw new IllegalArgumentException("Could not parse coordinates from string: " + value, e);
                 }
-                return convert(coords);
+                return convert(coordinates);
             } else return null;
         }
 
@@ -721,8 +721,8 @@ public class Geoshape {
             GraphSONUtil.writeStartObject(geoshape, jgen, typeSerializer);
             final Map json = mapReader.readValue(toGeoJson(geoshape));
             if (geoshape.getType() == Type.POINT) {
-                final double[] coords = ((List<Number>) json.get(FIELD_COORDINATES)).stream().mapToDouble(i -> i.doubleValue()).toArray();
-                GraphSONUtil.writeWithType(FIELD_COORDINATES, coords, jgen, serializerProvider, typeSerializer);
+                final double[] coordinates = ((List<Number>) json.get(FIELD_COORDINATES)).stream().mapToDouble(i -> i.doubleValue()).toArray();
+                GraphSONUtil.writeWithType(FIELD_COORDINATES, coordinates, jgen, serializerProvider, typeSerializer);
             } else {
                 GraphSONUtil.writeWithType(FIELD_LABEL, json, jgen, serializerProvider, typeSerializer);
             }

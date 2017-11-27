@@ -50,12 +50,12 @@ public class JanusGraphTraversalUtil {
         return getJanusGraphVertex(traverser.get());
     }
 
-    public static boolean isEdgeReturnStep(JanusGraphVertexStep vstep) {
-        return Edge.class.isAssignableFrom(vstep.getReturnClass());
+    public static boolean isEdgeReturnStep(JanusGraphVertexStep vertexStep) {
+        return Edge.class.isAssignableFrom(vertexStep.getReturnClass());
     }
 
-    public static boolean isVertexReturnStep(JanusGraphVertexStep vstep) {
-        return Vertex.class.isAssignableFrom(vstep.getReturnClass());
+    public static boolean isVertexReturnStep(JanusGraphVertexStep vertexStep) {
+        return Vertex.class.isAssignableFrom(vertexStep.getReturnClass());
     }
 
     public static Step getNextNonIdentityStep(final Step start) {

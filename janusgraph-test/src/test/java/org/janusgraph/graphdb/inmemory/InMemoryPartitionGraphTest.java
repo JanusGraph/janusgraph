@@ -47,6 +47,6 @@ public class InMemoryPartitionGraphTest extends JanusGraphPartitionGraphTest {
     }
 
     @Override
-    public void testKeybasedGraphPartitioning() {}
+    public void testKeyBasedGraphPartitioning() {}
 
 }

@@ -24,7 +24,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * A JanusGraphVertexQuery is a VertexQuery executed for a single vertex.
  * <p />
  * Calling {@link org.janusgraph.core.JanusGraphVertex#query()} builds such a query against the vertex
- * this method is called on. This query builder provides the methods to specify which indicent edges or
+ * this method is called on. This query builder provides the methods to specify which incident edges or
  * properties to query for.
  *
  *

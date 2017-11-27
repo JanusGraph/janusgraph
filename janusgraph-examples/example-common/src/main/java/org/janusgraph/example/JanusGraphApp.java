@@ -99,66 +99,66 @@ public class JanusGraphApp extends GraphApp {
 
     @Override
     public void createSchema() {
-        final JanusGraphManagement mgmt = getJanusGraph().openManagement();
+        final JanusGraphManagement management = getJanusGraph().openManagement();
         try {
             // naive check if the schema was previously created
-            if (mgmt.getRelationTypes(RelationType.class).iterator().hasNext()) {
-                mgmt.rollback();
+            if (management.getRelationTypes(RelationType.class).iterator().hasNext()) {
+                management.rollback();
                 return;
             }
             LOGGER.info("creating schema");
-            createProperties(mgmt);
-            createVertexLabels(mgmt);
-            createEdgeLabels(mgmt);
-            createCompositeIndexes(mgmt);
-            createMixedIndexes(mgmt);
-            mgmt.commit();
+            createProperties(management);
+            createVertexLabels(management);
+            createEdgeLabels(management);
+            createCompositeIndexes(management);
+            createMixedIndexes(management);
+            management.commit();
         } catch (Exception e) {
-            mgmt.rollback();
+            management.rollback();
         }
     }
 
     /**
      * Creates the vertex labels.
      */
-    protected void createVertexLabels(final JanusGraphManagement mgmt) {
-        mgmt.makeVertexLabel("titan").make();
-        mgmt.makeVertexLabel("location").make();
-        mgmt.makeVertexLabel("god").make();
-        mgmt.makeVertexLabel("demigod").make();
-        mgmt.makeVertexLabel("human").make();
-        mgmt.makeVertexLabel("monster").make();
+    protected void createVertexLabels(final JanusGraphManagement management) {
+        management.makeVertexLabel("titan").make();
+        management.makeVertexLabel("location").make();
+        management.makeVertexLabel("god").make();
+        management.makeVertexLabel("demigod").make();
+        management.makeVertexLabel("human").make();
+        management.makeVertexLabel("monster").make();
     }
 
     /**
      * Creates the edge labels.
      */
-    protected void createEdgeLabels(final JanusGraphManagement mgmt) {
-        mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
-        mgmt.makeEdgeLabel("mother").multiplicity(Multiplicity.MANY2ONE).make();
-        mgmt.makeEdgeLabel("lives").signature(mgmt.getPropertyKey("reason")).make();
-        mgmt.makeEdgeLabel("pet").make();
-        mgmt.makeEdgeLabel("brother").make();
-        mgmt.makeEdgeLabel("battled").make();
+    protected void createEdgeLabels(final JanusGraphManagement management) {
+        management.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
+        management.makeEdgeLabel("mother").multiplicity(Multiplicity.MANY2ONE).make();
+        management.makeEdgeLabel("lives").signature(management.getPropertyKey("reason")).make();
+        management.makeEdgeLabel("pet").make();
+        management.makeEdgeLabel("brother").make();
+        management.makeEdgeLabel("battled").make();
     }
 
     /**
      * Creates the properties for vertices, edges, and meta-properties.
      */
-    protected void createProperties(final JanusGraphManagement mgmt) {
-        mgmt.makePropertyKey("name").dataType(String.class).make();
-        mgmt.makePropertyKey("age").dataType(Integer.class).make();
-        mgmt.makePropertyKey("time").dataType(Integer.class).make();
-        mgmt.makePropertyKey("reason").dataType(String.class).make();
-        mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
+    protected void createProperties(final JanusGraphManagement management) {
+        management.makePropertyKey("name").dataType(String.class).make();
+        management.makePropertyKey("age").dataType(Integer.class).make();
+        management.makePropertyKey("time").dataType(Integer.class).make();
+        management.makePropertyKey("reason").dataType(String.class).make();
+        management.makePropertyKey("place").dataType(Geoshape.class).make();
     }
 
     /**
      * Creates the composite indexes. A composite index is best used for
      * exact match lookups.
      */
-    protected void createCompositeIndexes(final JanusGraphManagement mgmt) {
-        mgmt.buildIndex("nameIndex", Vertex.class).addKey(mgmt.getPropertyKey("name")).buildCompositeIndex();
+    protected void createCompositeIndexes(final JanusGraphManagement management) {
+        management.buildIndex("nameIndex", Vertex.class).addKey(management.getPropertyKey("name")).buildCompositeIndex();
     }
 
     /**
@@ -166,12 +166,12 @@ public class JanusGraphApp extends GraphApp {
      * indexing backend is configured on the graph instance. A mixed index
      * is best for full text search, numerical range, and geospatial queries.
      */
-    protected void createMixedIndexes(final JanusGraphManagement mgmt) {
+    protected void createMixedIndexes(final JanusGraphManagement management) {
         if (useMixedIndex) {
-            mgmt.buildIndex("vAge", Vertex.class).addKey(mgmt.getPropertyKey("age"))
+            management.buildIndex("vAge", Vertex.class).addKey(management.getPropertyKey("age"))
                     .buildMixedIndex(mixedIndexConfigName);
-            mgmt.buildIndex("eReasonPlace", Edge.class).addKey(mgmt.getPropertyKey("reason"))
-                    .addKey(mgmt.getPropertyKey("place")).buildMixedIndex(mixedIndexConfigName);
+            management.buildIndex("eReasonPlace", Edge.class).addKey(management.getPropertyKey("reason"))
+                    .addKey(management.getPropertyKey("place")).buildMixedIndex(mixedIndexConfigName);
         }
     }
 
@@ -184,48 +184,48 @@ public class JanusGraphApp extends GraphApp {
     protected String createSchemaRequest() {
         final StringBuilder s = new StringBuilder();
 
-        s.append("JanusGraphManagement mgmt = graph.openManagement(); ");
+        s.append("JanusGraphManagement management = graph.openManagement(); ");
         s.append("boolean created = false; ");
 
         // naive check if the schema was previously created
         s.append(
-                "if (mgmt.getRelationTypes(RelationType.class).iterator().hasNext()) { mgmt.rollback(); created = false; } else { ");
+                "if (management.getRelationTypes(RelationType.class).iterator().hasNext()) { management.rollback(); created = false; } else { ");
 
         // properties
-        s.append("PropertyKey name = mgmt.makePropertyKey(\"name\").dataType(String.class).make(); ");
-        s.append("PropertyKey age = mgmt.makePropertyKey(\"age\").dataType(Integer.class).make(); ");
-        s.append("PropertyKey time = mgmt.makePropertyKey(\"time\").dataType(Integer.class).make(); ");
-        s.append("PropertyKey reason = mgmt.makePropertyKey(\"reason\").dataType(String.class).make(); ");
-        s.append("PropertyKey place = mgmt.makePropertyKey(\"place\").dataType(Geoshape.class).make(); ");
+        s.append("PropertyKey name = management.makePropertyKey(\"name\").dataType(String.class).make(); ");
+        s.append("PropertyKey age = management.makePropertyKey(\"age\").dataType(Integer.class).make(); ");
+        s.append("PropertyKey time = management.makePropertyKey(\"time\").dataType(Integer.class).make(); ");
+        s.append("PropertyKey reason = management.makePropertyKey(\"reason\").dataType(String.class).make(); ");
+        s.append("PropertyKey place = management.makePropertyKey(\"place\").dataType(Geoshape.class).make(); ");
 
         // vertex labels
-        s.append("mgmt.makeVertexLabel(\"titan\").make(); ");
-        s.append("mgmt.makeVertexLabel(\"location\").make(); ");
-        s.append("mgmt.makeVertexLabel(\"god\").make(); ");
-        s.append("mgmt.makeVertexLabel(\"demigod\").make(); ");
-        s.append("mgmt.makeVertexLabel(\"human\").make(); ");
-        s.append("mgmt.makeVertexLabel(\"monster\").make(); ");
+        s.append("management.makeVertexLabel(\"titan\").make(); ");
+        s.append("management.makeVertexLabel(\"location\").make(); ");
+        s.append("management.makeVertexLabel(\"god\").make(); ");
+        s.append("management.makeVertexLabel(\"demigod\").make(); ");
+        s.append("management.makeVertexLabel(\"human\").make(); ");
+        s.append("management.makeVertexLabel(\"monster\").make(); ");
 
         // edge labels
-        s.append("mgmt.makeEdgeLabel(\"father\").multiplicity(Multiplicity.MANY2ONE).make(); ");
-        s.append("mgmt.makeEdgeLabel(\"mother\").multiplicity(Multiplicity.MANY2ONE).make(); ");
-        s.append("mgmt.makeEdgeLabel(\"lives\").signature(reason).make(); ");
-        s.append("mgmt.makeEdgeLabel(\"pet\").make(); ");
-        s.append("mgmt.makeEdgeLabel(\"brother\").make(); ");
-        s.append("mgmt.makeEdgeLabel(\"battled\").make(); ");
+        s.append("management.makeEdgeLabel(\"father\").multiplicity(Multiplicity.MANY2ONE).make(); ");
+        s.append("management.makeEdgeLabel(\"mother\").multiplicity(Multiplicity.MANY2ONE).make(); ");
+        s.append("management.makeEdgeLabel(\"lives\").signature(reason).make(); ");
+        s.append("management.makeEdgeLabel(\"pet\").make(); ");
+        s.append("management.makeEdgeLabel(\"brother\").make(); ");
+        s.append("management.makeEdgeLabel(\"battled\").make(); ");
 
         // composite indexes
-        s.append("mgmt.buildIndex(\"nameIndex\", Vertex.class).addKey(name).buildCompositeIndex(); ");
+        s.append("management.buildIndex(\"nameIndex\", Vertex.class).addKey(name).buildCompositeIndex(); ");
 
         // mixed indexes
         if (useMixedIndex) {
-            s.append("mgmt.buildIndex(\"vAge\", Vertex.class).addKey(age).buildMixedIndex(\"" + mixedIndexConfigName
+            s.append("management.buildIndex(\"vAge\", Vertex.class).addKey(age).buildMixedIndex(\"" + mixedIndexConfigName
                     + "\"); ");
-            s.append("mgmt.buildIndex(\"eReasonPlace\", Edge.class).addKey(reason).addKey(place).buildMixedIndex(\""
+            s.append("management.buildIndex(\"eReasonPlace\", Edge.class).addKey(reason).addKey(place).buildMixedIndex(\""
                     + mixedIndexConfigName + "\"); ");
         }
 
-        s.append("mgmt.commit(); created = true; }");
+        s.append("management.commit(); created = true; }");
 
         return s.toString();
     }

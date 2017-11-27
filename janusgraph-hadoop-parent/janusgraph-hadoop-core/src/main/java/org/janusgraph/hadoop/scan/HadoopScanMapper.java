@@ -117,7 +117,7 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
         Map<SliceQuery, EntryList> matches = new HashMap<>();
         matches.put(initialQuery, initialQueryMatches);
 
-        // Find matches (if any are present) for noninitial queries
+        // Find matches (if any are present) for subsequent queries
         for (SliceQuery sq : subsequentQueries) {
             matches.put(sq, findEntriesMatchingQuery(sq, al));
         }

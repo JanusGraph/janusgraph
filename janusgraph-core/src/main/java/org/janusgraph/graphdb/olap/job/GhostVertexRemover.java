@@ -110,10 +110,10 @@ public class GhostVertexRemover extends VertexJobConverter {
         });
 
         int removedRelations = 0;
-        Iterator<JanusGraphRelation> iter = v.query().noPartitionRestriction().relations().iterator();
-        while (iter.hasNext()) {
-            iter.next();
-            iter.remove();
+        Iterator<JanusGraphRelation> iterator = v.query().noPartitionRestriction().relations().iterator();
+        while (iterator.hasNext()) {
+            iterator.next();
+            iterator.remove();
             removedRelations++;
         }
         //There should be no more system relations to remove

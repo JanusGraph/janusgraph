@@ -51,36 +51,36 @@ public class HadoopConfiguration implements WriteConfiguration {
     }
 
     @Override
-    public <O> O get(String key, Class<O> datatype) {
+    public <O> O get(String key, Class<O> dataType) {
 
         final String internalKey = getInternalKey(key);
 
         if (null == config.get(internalKey))
             return null;
 
-        if (datatype.isArray()) {
-            Preconditions.checkArgument(datatype.getComponentType()==String.class,"Only string arrays are supported: %s",datatype);
+        if (dataType.isArray()) {
+            Preconditions.checkArgument(dataType.getComponentType()==String.class,"Only string arrays are supported: %s",dataType);
             return (O)config.getStrings(internalKey);
-        } else if (Number.class.isAssignableFrom(datatype)) {
+        } else if (Number.class.isAssignableFrom(dataType)) {
             String s = config.get(internalKey);
-            return constructFromStringArgument(datatype, s);
-        } else if (datatype==String.class) {
+            return constructFromStringArgument(dataType, s);
+        } else if (dataType==String.class) {
             return (O)config.get(internalKey);
-        } else if (datatype==Boolean.class) {
+        } else if (dataType==Boolean.class) {
             return (O)Boolean.valueOf(config.get(internalKey));
-        } else if (datatype.isEnum()) {
-            O[] constants = datatype.getEnumConstants();
+        } else if (dataType.isEnum()) {
+            O[] constants = dataType.getEnumConstants();
             Preconditions.checkState(null != constants && 0 < constants.length, "Zero-length or undefined enum");
             String estr = config.get(internalKey);
             for (O c : constants)
                 if (c.toString().equals(estr))
                     return c;
-            throw new IllegalArgumentException("No match for string \"" + estr + "\" in enum " + datatype);
-        } else if (datatype==Object.class) {
+            throw new IllegalArgumentException("No match for string \"" + estr + "\" in enum " + dataType);
+        } else if (dataType==Object.class) {
             // Return String when an Object is requested
             // Object.class must be supported for the sake of AbstractConfiguration's getSubset impl
             return (O)config.get(internalKey);
-        } else if (Duration.class.isAssignableFrom(datatype)) {
+        } else if (Duration.class.isAssignableFrom(dataType)) {
             // This is a conceptual leak; the config layer should ideally only handle standard library types
             String s = config.get(internalKey);
             String[] comps = s.split("\\s");
@@ -94,7 +94,7 @@ public class HadoopConfiguration implements WriteConfiguration {
                 throw new IllegalArgumentException("Cannot parse time duration from: " + s);
             }
             return (O) Duration.of(Long.valueOf(comps[0]), unit);
-        } else throw new IllegalArgumentException("Unsupported data type: " + datatype);
+        } else throw new IllegalArgumentException("Unsupported data type: " + dataType);
     }
 
     @Override
@@ -139,26 +139,26 @@ public class HadoopConfiguration implements WriteConfiguration {
 
         final String internalKey = getInternalKey(key);
 
-        Class<?> datatype = value.getClass();
+        Class<?> dataType = value.getClass();
 
-        if (datatype.isArray()) {
-            Preconditions.checkArgument(datatype.getComponentType()==String.class,"Only string arrays are supported: %s",datatype);
+        if (dataType.isArray()) {
+            Preconditions.checkArgument(dataType.getComponentType()==String.class,"Only string arrays are supported: %s",dataType);
             config.setStrings(internalKey, (String[])value);
-        } else if (Number.class.isAssignableFrom(datatype)) {
+        } else if (Number.class.isAssignableFrom(dataType)) {
             config.set(internalKey, value.toString());
-        } else if (datatype==String.class) {
+        } else if (dataType==String.class) {
             config.set(internalKey, value.toString());
-        } else if (datatype==Boolean.class) {
+        } else if (dataType==Boolean.class) {
             config.setBoolean(internalKey, (Boolean)value);
-        } else if (datatype.isEnum()) {
+        } else if (dataType.isEnum()) {
             config.set(internalKey, value.toString());
-        } else if (datatype==Object.class) {
+        } else if (dataType==Object.class) {
             config.set(internalKey, value.toString());
-        } else if (Duration.class.isAssignableFrom(datatype)) {
+        } else if (Duration.class.isAssignableFrom(dataType)) {
             // This is a conceptual leak; the config layer should ideally only handle standard library types
             String millis = String.valueOf(((Duration)value).toMillis());
             config.set(internalKey, millis);
-        } else throw new IllegalArgumentException("Unsupported data type: " + datatype);
+        } else throw new IllegalArgumentException("Unsupported data type: " + dataType);
     }
 
     @Override
@@ -171,14 +171,14 @@ public class HadoopConfiguration implements WriteConfiguration {
         return new HadoopConfiguration(new Configuration(config), prefix);
     }
 
-    private <O> O constructFromStringArgument(Class<O> datatype, String arg) {
+    private <O> O constructFromStringArgument(Class<O> dataType, String arg) {
         try {
-            Constructor<O> ctor = datatype.getConstructor(String.class);
+            Constructor<O> ctor = dataType.getConstructor(String.class);
             return ctor.newInstance(arg);
         // ReflectiveOperationException is narrower and more appropriate than Exception, but only @since 1.7
         //} catch (ReflectiveOperationException e) {
         } catch (Exception e) {
-            log.error("Failed to parse configuration string \"{}\" into type {} due to the following reflection exception", arg, datatype, e);
+            log.error("Failed to parse configuration string \"{}\" into type {} due to the following reflection exception", arg, dataType, e);
             throw new RuntimeException(e);
         }
     }

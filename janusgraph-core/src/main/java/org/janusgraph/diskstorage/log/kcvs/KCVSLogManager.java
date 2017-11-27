@@ -179,8 +179,8 @@ public class KCVSLogManager implements LogManager {
                 try {
                     List<PartitionIDRange> partitionRanges = PartitionIDRange.getIDRanges(partitionBitWidth,
                             storeManager.getLocalKeyPartition());
-                    for (PartitionIDRange idrange : partitionRanges) {
-                        for (int p : idrange.getAllContainedIDs()) localPartitions.add(p);
+                    for (PartitionIDRange idRange : partitionRanges) {
+                        for (int p : idRange.getAllContainedIDs()) localPartitions.add(p);
                     }
                 } catch (Throwable e) {
                     log.error("Could not process local id partitions",e);

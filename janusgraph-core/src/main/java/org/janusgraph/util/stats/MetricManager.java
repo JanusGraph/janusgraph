@@ -171,9 +171,9 @@ public enum MetricManager {
         }
 
         if (null != agentId) {
-            List<MBeanServer> servs = MBeanServerFactory.findMBeanServer(agentId);
-            if (null != servs && 1 == servs.size()) {
-                b.registerWith(servs.get(0));
+            List<MBeanServer> servers = MBeanServerFactory.findMBeanServer(agentId);
+            if (null != servers && 1 == servers.size()) {
+                b.registerWith(servers.get(0));
             } else {
                 log.error("Metrics Slf4jReporter agentId {} does not resolve to a single MBeanServer", agentId);
             }
@@ -270,7 +270,7 @@ public enum MetricManager {
      *            override this machine's IP/hostname as it appears on the
      *            Ganglia server
      * @param reportInterval
-     *            titme to wait before sending data to the ganglia
+     *            time to wait before sending data to the ganglia
      *            unicast host or multicast group
      * @throws IOException
      *             when a {@link GMetric} can't be instantiated using the

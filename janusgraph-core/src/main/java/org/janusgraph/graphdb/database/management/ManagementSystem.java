@@ -131,7 +131,7 @@ public class ManagementSystem implements JanusGraphManagement {
 
     private final StandardJanusGraph graph;
     private final Log sysLog;
-    private final ManagementLogger mgmtLogger;
+    private final ManagementLogger managementLogger;
 
     private final KCVSConfiguration baseConfig;
     private final TransactionalConfiguration transactionalConfig;
@@ -149,12 +149,12 @@ public class ManagementSystem implements JanusGraphManagement {
     private boolean isOpen;
 
     public ManagementSystem(StandardJanusGraph graph, KCVSConfiguration config, Log sysLog,
-                            ManagementLogger mgmtLogger, SchemaCache schemaCache) {
-        Preconditions.checkArgument(config != null && graph != null && sysLog != null && mgmtLogger != null);
+                            ManagementLogger managementLogger, SchemaCache schemaCache) {
+        Preconditions.checkArgument(config != null && graph != null && sysLog != null && managementLogger != null);
         this.graph = graph;
         this.baseConfig = config;
         this.sysLog = sysLog;
-        this.mgmtLogger = mgmtLogger;
+        this.managementLogger = managementLogger;
         this.schemaCache = schemaCache;
         this.transactionalConfig = new TransactionalConfiguration(baseConfig);
         this.modifyConfig = new ModifiableConfiguration(ROOT_NS,
@@ -238,7 +238,7 @@ public class ManagementSystem implements JanusGraphManagement {
 
         //Communicate schema changes
         if (!updatedTypes.isEmpty()) {
-            mgmtLogger.sendCacheEviction(updatedTypes, updatedTypeTriggers, getOpenInstancesInternal());
+            managementLogger.sendCacheEviction(updatedTypes, updatedTypeTriggers, getOpenInstancesInternal());
             for (JanusGraphSchemaVertex schemaVertex : updatedTypes) {
                 schemaCache.expireSchemaElement(schemaVertex.longId());
             }
@@ -690,9 +690,9 @@ public class ManagementSystem implements JanusGraphManagement {
                 }
             } else {
                 keySubset = Sets.newHashSet();
-                MixedIndexType cindexType = (MixedIndexType) indexType;
+                MixedIndexType mixedIndexType = (MixedIndexType) indexType;
                 Set<SchemaStatus> applicableStatus = updateAction.getApplicableStatus();
-                for (ParameterIndexField field : cindexType.getFieldKeys()) {
+                for (ParameterIndexField field : mixedIndexType.getFieldKeys()) {
                     if (applicableStatus.contains(field.getStatus()))
                         keySubset.add((PropertyKeyVertex) field.getFieldKey());
                 }
@@ -742,8 +742,8 @@ public class ManagementSystem implements JanusGraphManagement {
                 if (index instanceof RelationTypeIndex) {
                     builder = graph.getBackend().buildEdgeScanJob();
                 } else {
-                    JanusGraphIndex gindex = (JanusGraphIndex) index;
-                    if (gindex.isMixedIndex())
+                    JanusGraphIndex graphIndex = (JanusGraphIndex) index;
+                    if (graphIndex.isMixedIndex())
                         throw new UnsupportedOperationException("External mixed indexes must be removed in the indexing system directly.");
                     builder = graph.getBackend().buildGraphIndexScanJob();
                 }
@@ -820,17 +820,17 @@ public class ManagementSystem implements JanusGraphManagement {
 
         @Override
         public Boolean call() throws Exception {
-            ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
+            ManagementSystem management = (ManagementSystem) graph.openManagement();
             try {
-                JanusGraphVertex vertex = mgmt.transaction.getVertex(schemaVertexId);
+                JanusGraphVertex vertex = management.transaction.getVertex(schemaVertexId);
                 Preconditions.checkArgument(vertex != null && vertex instanceof JanusGraphSchemaVertex);
                 JanusGraphSchemaVertex schemaVertex = (JanusGraphSchemaVertex) vertex;
 
                 Set<PropertyKeyVertex> keys = Sets.newHashSet();
-                for (Long keyId : propertyKeys) keys.add((PropertyKeyVertex) mgmt.transaction.getVertex(keyId));
-                mgmt.setStatus(schemaVertex, newStatus, keys);
-                mgmt.updatedTypes.addAll(keys);
-                mgmt.updatedTypes.add(schemaVertex);
+                for (Long keyId : propertyKeys) keys.add((PropertyKeyVertex) management.transaction.getVertex(keyId));
+                management.setStatus(schemaVertex, newStatus, keys);
+                management.updatedTypes.addAll(keys);
+                management.updatedTypes.add(schemaVertex);
                 if (log.isInfoEnabled()) {
                     Set<String> propNames = Sets.newHashSet();
                     for (PropertyKeyVertex v : keys) {
@@ -849,10 +849,10 @@ public class ManagementSystem implements JanusGraphManagement {
                     }
                     log.info("Set status {} on schema element {} with property keys {}", newStatus, schemaName, propNames);
                 }
-                mgmt.commit();
+                management.commit();
                 return true;
             } catch (RuntimeException e) {
-                mgmt.rollback();
+                management.rollback();
                 throw e;
             }
         }
@@ -961,9 +961,9 @@ public class ManagementSystem implements JanusGraphManagement {
             hashcode = new HashCodeBuilder().append(indexName).append(relationTypeName).toHashCode();
         }
 
-        private Index retrieve(ManagementSystem mgmt) {
-            if (relationTypeName == null) return mgmt.getGraphIndex(indexName);
-            else return mgmt.getRelationIndex(mgmt.getRelationType(relationTypeName), indexName);
+        private Index retrieve(ManagementSystem management) {
+            if (relationTypeName == null) return management.getGraphIndex(indexName);
+            else return management.getRelationIndex(management.getRelationType(relationTypeName), indexName);
         }
 
         @Override
@@ -997,12 +997,12 @@ public class ManagementSystem implements JanusGraphManagement {
                 try {
                     if (metrics.get(ScanMetrics.Metric.FAILURE) == 0) {
                         if (action != null) {
-                            ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
+                            ManagementSystem management = (ManagementSystem) graph.openManagement();
                             try {
-                                Index index = retrieve(mgmt);
-                                mgmt.updateIndex(index, action);
+                                Index index = retrieve(management);
+                                management.updateIndex(index, action);
                             } finally {
-                                mgmt.commit();
+                                management.commit();
                             }
                         }
                         LOGGER.info("Index update job successful for [{}]", IndexIdentifier.this.toString());

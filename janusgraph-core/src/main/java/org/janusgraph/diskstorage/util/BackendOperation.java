@@ -43,8 +43,7 @@ public class BackendOperation {
     private static final Duration BASE_REATTEMPT_TIME= Duration.ofMillis(50);
     private static final double PERTURBATION_PERCENTAGE = 0.2;
 
-
-    private static Duration pertubateTime(Duration duration) {
+    private static Duration pertubTime(Duration duration) {
         Duration newDuration = duration.dividedBy((int)(2.0 / (1 + (random.nextDouble() * 2 - 1.0) * PERTURBATION_PERCENTAGE)));
         assert !duration.isZero() : duration;
         return newDuration;
@@ -62,7 +61,7 @@ public class BackendOperation {
     public static <V> V executeDirect(Callable<V> exe, Duration totalWaitTime) throws BackendException {
         Preconditions.checkArgument(!totalWaitTime.isZero(),"Need to specify a positive waitTime: %s",totalWaitTime);
         long maxTime = System.currentTimeMillis()+totalWaitTime.toMillis();
-        Duration waitTime = pertubateTime(BASE_REATTEMPT_TIME);
+        Duration waitTime = pertubTime(BASE_REATTEMPT_TIME);
         BackendException lastException;
         while (true) {
             try {
@@ -96,7 +95,7 @@ public class BackendOperation {
             } else {
                 break;
             }
-            waitTime = pertubateTime(waitTime.multipliedBy(2));
+            waitTime = pertubTime(waitTime.multipliedBy(2));
         }
         throw new TemporaryBackendException("Could not successfully complete backend operation due to repeated temporary exceptions after "+totalWaitTime,lastException);
     }

@@ -92,7 +92,7 @@ public class CassandraBinaryInputFormat extends AbstractBinaryInputFormat {
                 mrConf.get(JanusGraphHadoopConfiguration.COLUMN_FAMILY_NAME), wideRows);
         log.debug("Set keyspace: {}", janusgraphConf.get(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE));
 
-        // Set the column slice bounds via Faunus's vertex query filter
+        // Set the column slice bounds via Faunus' vertex query filter
         final SlicePredicate predicate = new SlicePredicate();
         final int rangeBatchSize = config.getInt(RANGE_BATCH_SIZE_CONFIG, Integer.MAX_VALUE);
         predicate.setSlice_range(getSliceRange(JanusGraphHadoopSetupCommon.DEFAULT_SLICE_QUERY, rangeBatchSize)); // TODO stop slicing the whole row

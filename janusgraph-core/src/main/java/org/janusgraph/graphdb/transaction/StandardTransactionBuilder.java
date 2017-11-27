@@ -191,7 +191,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public void setCommitTime(Instant time) {
-        throw new UnsupportedOperationException("Use setCommitTime(lnog,TimeUnit)");
+        throw new UnsupportedOperationException("Use setCommitTime(long,TimeUnit)");
     }
 
     @Override

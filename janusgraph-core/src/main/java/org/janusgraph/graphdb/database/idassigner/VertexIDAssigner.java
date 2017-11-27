@@ -205,13 +205,13 @@ public class VertexIDAssigner implements AutoCloseable {
                         if (isPartitionedAt(relation, pos)) {
                             InternalVertex incident = relation.getVertex(pos);
                             long newPartition;
-                            int otherpos = (pos+1)%2;
+                            int otherPosition = (pos+1)%2;
                             if (((InternalRelationType)relation.getType()).multiplicity().isUnique(EdgeDirection.fromPosition(pos))) {
                                 //If the relation is unique in the direction, we assign it to the canonical vertex...
                                 newPartition = idManager.getPartitionId(idManager.getCanonicalVertexId(incident.longId()));
-                            } else if (!isPartitionedAt(relation,otherpos)) {
+                            } else if (!isPartitionedAt(relation,otherPosition)) {
                                 //...else, we assign it to the partition of the non-partitioned vertex...
-                                newPartition = getPartitionID(relation.getVertex(otherpos));
+                                newPartition = getPartitionID(relation.getVertex(otherPosition));
                             } else {
                                 //...and if such does not exists (i.e. both end vertices are partitioned) we use the hash of the relation id
                                 newPartition = idManager.getPartitionHashForId(relation.longId());
@@ -262,9 +262,9 @@ public class VertexIDAssigner implements AutoCloseable {
             for (int attempt = 0; attempt < MAX_PARTITION_RENEW_ATTEMPTS && (assignments != null && !assignments.isEmpty()); attempt++) {
                 placementStrategy.getPartitions(assignments);
                 Map<InternalVertex, PartitionAssignment> leftOvers = null;
-                Iterator<Map.Entry<InternalVertex, PartitionAssignment>> iter = assignments.entrySet().iterator();
-                while (iter.hasNext()) {
-                    Map.Entry<InternalVertex, PartitionAssignment> entry = iter.next();
+                Iterator<Map.Entry<InternalVertex, PartitionAssignment>> iterator = assignments.entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Map.Entry<InternalVertex, PartitionAssignment> entry = iterator.next();
                     try {
                         assignID(entry.getKey(), entry.getValue().getPartitionID(), getVertexIDType(entry.getKey()));
                         Preconditions.checkArgument(entry.getKey().hasId());
@@ -275,7 +275,7 @@ public class VertexIDAssigner implements AutoCloseable {
                     }
                 }
                 if (leftOvers != null) {
-                    while (iter.hasNext()) leftOvers.put(iter.next().getKey(), PartitionAssignment.EMPTY);
+                    while (iterator.hasNext()) leftOvers.put(iterator.next().getKey(), PartitionAssignment.EMPTY);
                     log.debug("Exhausted ID Pool in bulk assignment. Left-over vertices {}", leftOvers.size());
                 }
                 assignments = leftOvers;
@@ -359,10 +359,10 @@ public class VertexIDAssigner implements AutoCloseable {
         element.setId(elementId);
     }
 
-    private static IDManager.VertexIDType getVertexIDType(VertexLabel vlabel) {
-        if (vlabel.isPartitioned()) {
+    private static IDManager.VertexIDType getVertexIDType(VertexLabel vertexLabel) {
+        if (vertexLabel.isPartitioned()) {
             return IDManager.VertexIDType.PartitionedVertex;
-        } else if (vlabel.isStatic()) {
+        } else if (vertexLabel.isStatic()) {
             return IDManager.VertexIDType.UnmodifiableVertex;
         } else {
             return IDManager.VertexIDType.NormalVertex;

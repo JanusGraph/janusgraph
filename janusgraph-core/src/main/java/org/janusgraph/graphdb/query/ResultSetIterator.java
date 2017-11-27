@@ -27,7 +27,7 @@ import java.util.NoSuchElementException;
  */
 public class ResultSetIterator<R extends JanusGraphElement> implements Iterator<R> {
 
-    private final Iterator<R> iter;
+    private final Iterator<R> iterator;
     private final int limit;
 
     private R current;
@@ -36,7 +36,7 @@ public class ResultSetIterator<R extends JanusGraphElement> implements Iterator<
 
 
     public ResultSetIterator(Iterator<R> inner, int limit) {
-        this.iter = inner;
+        this.iterator = inner;
         this.limit = limit;
         count = 0;
 
@@ -51,8 +51,8 @@ public class ResultSetIterator<R extends JanusGraphElement> implements Iterator<
 
     private R nextInternal() {
         R r = null;
-        if (count < limit && iter.hasNext()) {
-            r = iter.next();
+        if (count < limit && iterator.hasNext()) {
+            r = iterator.next();
         }
         return r;
     }

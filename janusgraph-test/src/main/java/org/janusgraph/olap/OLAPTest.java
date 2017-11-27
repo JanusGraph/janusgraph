@@ -83,9 +83,9 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         JanusGraphVertex[] vs = new JanusGraphVertex[numV];
         for (int i=0;i<numV;i++) {
             vs[i] = tx.addVertex("uid",i+1);
-            int numVals = random.nextInt(5)+1;
-            vs[i].property(VertexProperty.Cardinality.single, "numvals", numVals);
-            for (int j=0;j<numVals;j++) {
+            int numberOfValues = random.nextInt(5)+1;
+            vs[i].property(VertexProperty.Cardinality.single, "numvals", numberOfValues);
+            for (int j=0;j<numberOfValues;j++) {
                 vs[i].property("values",random.nextInt(100));
             }
         }

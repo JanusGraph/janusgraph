@@ -77,9 +77,9 @@ public class RandomRemovalListTest {
 
         long sum = 0;
         int numReturned = 0;
-        Iterator<Integer> iter = list.iterator();
-        while (iter.hasNext()) {
-            sum += iter.next();
+        Iterator<Integer> iterator = list.iterator();
+        while (iterator.hasNext()) {
+            sum += iterator.next();
             numReturned++;
         }
         assertEquals(sum, (max + 1) * max / 2);
@@ -89,7 +89,7 @@ public class RandomRemovalListTest {
     //@Test
     public void benchmark() {
         for (int i = 10; i < 20; i = i + 1) {
-            //RandomRemovalList.numTriesBeforeCompactification=i;
+            //RandomRemovalList.numTriesBeforeCompaction=i;
             long before = System.currentTimeMillis();
             int compact = runIndividual();
             long after = System.currentTimeMillis();

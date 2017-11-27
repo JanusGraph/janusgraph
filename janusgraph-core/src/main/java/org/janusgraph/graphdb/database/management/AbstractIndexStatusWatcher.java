@@ -61,7 +61,7 @@ public abstract class AbstractIndexStatusWatcher<R, S extends AbstractIndexStatu
     }
 
     /**
-     * Set the maximum amount of wallclock time that {@link #call()} will
+     * Set the maximum amount of wall clock time that {@link #call()} will
      * wait for the index to reach the target status.  If the index does
      * not reach the target state in this interval, then {@link #call()}
      * will return a report value indicating failure.

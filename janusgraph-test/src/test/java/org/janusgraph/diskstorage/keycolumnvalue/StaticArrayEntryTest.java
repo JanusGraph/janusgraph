@@ -166,10 +166,10 @@ public class StaticArrayEntryTest {
                 num++;
             }
             assertEquals(entries.size(),num);
-            Iterator<Entry> iter = el[i].reuseIterator();
+            Iterator<Entry> iterator = el[i].reuseIterator();
             num=0;
-            while (iter.hasNext()) {
-                Entry e = iter.next();
+            while (iterator.hasNext()) {
+                Entry e = iterator.next();
                 checkEntry(e, entries);
                 assertFalse(e.hasMetaData());
                 assertTrue(e.getMetaData().isEmpty());

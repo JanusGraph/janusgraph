@@ -37,18 +37,18 @@ public class AbstractLongListUtil {
     }
 
     public static LongArrayList mergeSort(LongArrayList a, LongArrayList b) {
-        int posa=0, posb=0;
+        int positionA=0, positionB=0;
         LongArrayList result = new LongArrayList(a.size()+b.size());
-        while (posa<a.size() || posb<b.size()) {
+        while (positionA<a.size() || positionB<b.size()) {
             long next;
-            if (posa>=a.size()) {
-                next=b.get(posb++);
-            } else if (posb>=b.size()) {
-                next=a.get(posa++);
-            } else if (a.get(posa)<=b.get(posb)) {
-                next=a.get(posa++);
+            if (positionA>=a.size()) {
+                next=b.get(positionB++);
+            } else if (positionB>=b.size()) {
+                next=a.get(positionA++);
+            } else if (a.get(positionA)<=b.get(positionB)) {
+                next=a.get(positionA++);
             } else {
-                next=b.get(posb++);
+                next=b.get(positionB++);
             }
             Preconditions.checkArgument(result.isEmpty() || result.get(result.size()-1)<=next,
                     "The input lists are not sorted");

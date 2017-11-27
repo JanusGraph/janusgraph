@@ -105,10 +105,10 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
         // Read the new edge using the inputformat
         Graph g = getGraph();
         GraphTraversalSource t = g.traversal(GraphTraversalSource.computer(SparkGraphComputer.class));
-        Iterator<Object> edgeIdIter = t.V().has("name", "sky").bothE().id();
-        assertNotNull(edgeIdIter);
-        assertTrue(edgeIdIter.hasNext());
-        Set<Object> edges = Sets.newHashSet(edgeIdIter);
+        Iterator<Object> edgeIdIterator = t.V().has("name", "sky").bothE().id();
+        assertNotNull(edgeIdIterator);
+        assertTrue(edgeIdIterator.hasNext());
+        Set<Object> edges = Sets.newHashSet(edgeIdIterator);
         assertEquals(2, edges.size());
     }
 
@@ -116,14 +116,14 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
     public void testGeoshapeGetValues() throws Exception {
         GraphOfTheGodsFactory.load(graph, null, true);
 
-        // Read geoshape using the inputformat
+        // Read geoshape using the input format
         Graph g = getGraph();
         GraphTraversalSource t = g.traversal(GraphTraversalSource.computer(SparkGraphComputer.class));
-        Iterator<Object> geoIter = t.E().values("place");
-        assertNotNull(geoIter);
-        assertTrue(geoIter.hasNext());
-        Set<Object> geos = Sets.newHashSet(geoIter);
-        assertEquals(3, geos.size());
+        Iterator<Object> geoIterator = t.E().values("place");
+        assertNotNull(geoIterator);
+        assertTrue(geoIterator.hasNext());
+        Set<Object> geoShapes = Sets.newHashSet(geoIterator);
+        assertEquals(3, geoShapes.size());
     }
 
     abstract protected Graph getGraph() throws IOException, ConfigurationException;

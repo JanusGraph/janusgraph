@@ -86,7 +86,7 @@ import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
  * <dd>{@link KeyColumn#getKey()} followed by {@link KeyColumn#getColumn()}.</dd>
  * <dt>column</dt>
  * <dd>the approximate current timestamp in nanoseconds followed by this
- * process's {@code rid} (an opaque identifier which uniquely identifie
+ * process's {@code rid} (an opaque identifier which uniquely identify
  * this process either globally or at least within the JanusGraph cluster)</dd>
  * <dt>value</dt>
  * <dd>the single byte 0; this is unused but reserved for future use</dd>
@@ -106,7 +106,7 @@ import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
  * <p/>
  * <li>Discard any columns with timestamps older than {@code lockExpire}.</li>
  * <p/>
- * <li>If our column is either the first column read or is preceeded only by
+ * <li>If our column is either the first column read or is preceded only by
  * columns containing our own {@code rid}, then we hold the lock.  Otherwise,
  * another process holds the lock and we have failed to acquire it.</li>
  * <p/>
@@ -426,7 +426,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         List<Entry> claimEntries = getSliceWithRetries(ksq, tx);
 
         // Extract timestamp and rid from the column in each returned Entry...
-        Iterable<TimestampRid> iter = Iterables.transform(claimEntries, new Function<Entry, TimestampRid>() {
+        Iterable<TimestampRid> iterable = Iterables.transform(claimEntries, new Function<Entry, TimestampRid>() {
             @Override
             public TimestampRid apply(Entry e) {
                 return serializer.fromLockColumn(e.getColumnAs(StaticBuffer.STATIC_FACTORY), times);
@@ -434,8 +434,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         });
         // ...and then filter out the TimestampRid objects with expired timestamps
         // (This doesn't use Iterables.filter and Predicate so that we can throw a checked exception if necessary)
-        ArrayList<TimestampRid> unexpiredTRs = new ArrayList<TimestampRid>(Iterables.size(iter));
-        for (TimestampRid tr : iter) {
+        ArrayList<TimestampRid> unexpiredTRs = new ArrayList<TimestampRid>(Iterables.size(iterable));
+        for (TimestampRid tr : iterable) {
             final Instant cutoffTime = now.minus(lockExpire);
             if (tr.getTimestamp().isBefore(cutoffTime)) {
                 log.warn("Discarded expired claim on {} with timestamp {}", kc, tr.getTimestamp());
@@ -532,11 +532,11 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
     @Override
     protected void deleteSingleLock(KeyColumn kc, ConsistentKeyLockStatus ls, StoreTransaction tx) {
-        List<StaticBuffer> dels = ImmutableList.of(serializer.toLockCol(ls.getWriteTimestamp(), rid, times));
+        List<StaticBuffer> deletions = ImmutableList.of(serializer.toLockCol(ls.getWriteTimestamp(), rid, times));
         for (int i = 0; i < lockRetryCount; i++) {
             try {
                 StoreTransaction newTx = overrideTimestamp(tx, times.getTime());
-                store.mutate(serializer.toLockKey(kc.getKey(), kc.getColumn()), ImmutableList.<Entry>of(), dels, newTx);
+                store.mutate(serializer.toLockKey(kc.getKey(), kc.getColumn()), ImmutableList.<Entry>of(), deletions, newTx);
                 return;
             } catch (TemporaryBackendException e) {
                 log.warn("Temporary storage exception while deleting lock", e);

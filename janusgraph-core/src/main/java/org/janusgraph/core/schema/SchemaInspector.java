@@ -76,7 +76,7 @@ public interface SchemaInspector {
      *
      * @param name name of the property key to return
      * @param value the value of the property key. This param is not used by the default
-     * implementaion
+     * implementation
      * @return the property key with the given name
      * @throws IllegalArgumentException if a property key with the given name does not exist or if the
      *                                  type with the given name is not a property key

@@ -193,7 +193,7 @@ public class ConfigurationPrinter {
         }
         return "[role=\"tss-config-table\",cols=\"" + colWidths + "\",options=\"header\",width=\"100%\"]\n" +
                 "|=====\n" +
-                "| " + colNames; // no terminal newline reqd
+                "| " + colNames; // no terminal newline required
     }
 
     @SuppressWarnings("unchecked")

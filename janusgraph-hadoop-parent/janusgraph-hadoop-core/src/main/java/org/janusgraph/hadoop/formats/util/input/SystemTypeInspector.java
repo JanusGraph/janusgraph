@@ -19,12 +19,12 @@ package org.janusgraph.hadoop.formats.util.input;
  */
 public interface SystemTypeInspector {
 
-    public boolean isSystemType(long typeid);
+    public boolean isSystemType(long typeId);
 
-    public boolean isVertexExistsSystemType(long typeid);
+    public boolean isVertexExistsSystemType(long typeId);
 
-    public boolean isVertexLabelSystemType(long typeid);
+    public boolean isVertexLabelSystemType(long typeId);
 
-    public boolean isTypeSystemType(long typeid);
+    public boolean isTypeSystemType(long typeId);
 
 }

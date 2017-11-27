@@ -96,7 +96,7 @@ public final class ObjectSizer {
         }
     };
 
-    public static Factory stringConcurrenthashmap = new Factory() {
+    public static Factory stringConcurrentHashMap = new Factory() {
         @Override
         public Object newInstance() {
             ConcurrentHashMap<String, Boolean> set = new ConcurrentHashMap<String, Boolean>(1, 1);

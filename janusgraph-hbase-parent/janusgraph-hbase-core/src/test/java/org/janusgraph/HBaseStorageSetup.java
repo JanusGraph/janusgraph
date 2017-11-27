@@ -73,7 +73,7 @@ public class HBaseStorageSetup {
         return getDirForHBaseVersion(hv, "conf");
     }
 
-    public static String getDirForHBaseVersion(String hv, String lastSubdir) {
+    public static String getDirForHBaseVersion(String hv, String lastSubdirectory) {
         Matcher m = HBASE_SUPPORTED_VERSION_PATTERN.matcher(hv);
         if (m.matches()) {
             String majorDotMinor = m.group(1);
@@ -81,8 +81,8 @@ public class HBaseStorageSetup {
                 // All HBase 1.x maps to 10
                 majorDotMinor = "1.0";
             }
-            String result = String.format("%s%sjanusgraph-hbase-%s/%s/", HBASE_PARENT_DIR, File.separator, majorDotMinor.replace(".", ""), lastSubdir);
-            log.debug("Built {} path for HBase version {}: {}", lastSubdir, hv, result);
+            String result = String.format("%s%sjanusgraph-hbase-%s/%s/", HBASE_PARENT_DIR, File.separator, majorDotMinor.replace(".", ""), lastSubdirectory);
+            log.debug("Built {} path for HBase version {}: {}", lastSubdirectory, hv, result);
             return result;
         } else {
             throw new RuntimeException("Unsupported HBase test version " + hv + " does not match pattern " + HBASE_SUPPORTED_VERSION_PATTERN);

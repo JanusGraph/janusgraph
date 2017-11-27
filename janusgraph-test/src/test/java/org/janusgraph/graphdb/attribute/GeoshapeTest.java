@@ -133,7 +133,7 @@ public class GeoshapeTest {
 
 
     @Test(expected = IllegalArgumentException.class)
-    public void testGeoJsonPointUnparseable() throws IOException {
+    public void testGeoJsonPointNotParseable() throws IOException {
         Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
         Map json = new ObjectMapper().readValue("{\n" +
                 "  \"type\": \"Feature\",\n" +

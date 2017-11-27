@@ -57,7 +57,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
     /**
      * Cannot currently throw exception when removed since internal logic relies on access to the edge
-     * beyond its removal. TODO: re-concile with access validation logic
+     * beyond its removal. TODO: reconcile with access validation logic
      */
     protected final void verifyAccess() {
         return;
@@ -116,10 +116,10 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     public <V> Property<V> property(final String key, final V value) {
         verifyAccess();
 
-        PropertyKey pkey = tx().getOrCreatePropertyKey(key);
-        Object normalizedValue = tx().verifyAttribute(pkey,value);
-        it().setPropertyDirect(pkey,normalizedValue);
-        return new SimpleJanusGraphProperty<V>(this,pkey,value);
+        PropertyKey propertyKey = tx().getOrCreatePropertyKey(key);
+        Object normalizedValue = tx().verifyAttribute(propertyKey,value);
+        it().setPropertyDirect(propertyKey,normalizedValue);
+        return new SimpleJanusGraphProperty<V>(this,propertyKey,value);
     }
 
     @Override

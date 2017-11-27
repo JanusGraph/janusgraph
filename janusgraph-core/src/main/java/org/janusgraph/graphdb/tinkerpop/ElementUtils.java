@@ -62,7 +62,7 @@ public class ElementUtils {
         return null;
     }
 
-    public static void verifyArgsMustBeEitherIdorElement(Object... ids) {
+    public static void verifyArgsMustBeEitherIdOrElement(Object... ids) {
         assert ids.length>0;
         int numElements = 0;
         for (int i = 0; i < ids.length; i++) {

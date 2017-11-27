@@ -274,7 +274,7 @@ public class CqlBridgeRecordReader extends RecordReader<StaticBuffer, Iterable<E
             if (! rowIterator.hasNext()) {
                 return null; // null means no more data
             }
-            Map<StaticArrayBuffer, Map<StaticBuffer, StaticBuffer>> kcvs = new HashMap<>(); // key -> (column1 -> value)
+            Map<StaticArrayBuffer, Map<StaticBuffer, StaticBuffer>> keyColumnValues = new HashMap<>(); // key -> (column1 -> value)
             Row row;
             if (previousRow == null) {
                 row = rowIterator.next(); // just the first time, should succeed
@@ -286,7 +286,7 @@ public class CqlBridgeRecordReader extends RecordReader<StaticBuffer, Iterable<E
             StaticBuffer value = StaticArrayBuffer.of(row.getBytesUnsafe(VALUE));
             Map<StaticBuffer, StaticBuffer> cvs = new HashMap<>();
             cvs.put(column1, value);
-            kcvs.put(key, cvs);
+            keyColumnValues.put(key, cvs);
             while (rowIterator.hasNext()) {
                 Row nextRow = rowIterator.next();
                 StaticArrayBuffer nextKey = StaticArrayBuffer.of(nextRow.getBytesUnsafe(KEY));
@@ -299,7 +299,7 @@ public class CqlBridgeRecordReader extends RecordReader<StaticBuffer, Iterable<E
                 cvs.put(nextColumn, nextValue);
                 totalRead++;
             }
-            return kcvs;
+            return keyColumnValues;
         }
     }
     /**

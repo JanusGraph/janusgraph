@@ -102,12 +102,12 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
     @Test
     public void testCustomCFCompressor() throws BackendException {
 
-        final String cname = "DeflateCompressor";
+        final String compressor = "DeflateCompressor";
         final int ckb = 128;
         final String cf = TEST_CF_NAME + "_gzip";
 
         ModifiableConfiguration config = getBaseStorageConfiguration();
-        config.set(AbstractCassandraStoreManager.CF_COMPRESSION_TYPE,cname);
+        config.set(AbstractCassandraStoreManager.CF_COMPRESSION_TYPE,compressor);
         config.set(AbstractCassandraStoreManager.CF_COMPRESSION_BLOCK_SIZE,ckb);
 
         AbstractCassandraStoreManager mgr = openStorageManager(config);
@@ -118,7 +118,7 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
         final Map<String, String> expected = ImmutableMap
                 .<String, String> builder()
                 .put("sstable_compression",
-                        DEFAULT_COMPRESSOR_PACKAGE + "." + cname)
+                        DEFAULT_COMPRESSOR_PACKAGE + "." + compressor)
                 .put("chunk_length_kb", String.valueOf(ckb)).build();
 
         assertEquals(expected, mgr.getCompressionOptions(cf));

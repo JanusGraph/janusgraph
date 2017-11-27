@@ -63,7 +63,7 @@ public abstract class IndexUpdateJob {
 
 
     protected StandardJanusGraph graph;
-    protected ManagementSystem mgmt = null;
+    protected ManagementSystem managementSystem = null;
     protected StandardJanusGraphTx writeTx;
     protected Index index;
     protected RelationType indexRelationType;
@@ -101,14 +101,14 @@ public abstract class IndexUpdateJob {
         }
 
         try {
-            this.mgmt = (ManagementSystem)graph.openManagement();
+            this.managementSystem = (ManagementSystem)graph.openManagement();
 
             if (isGlobalGraphIndex()) {
-                index = mgmt.getGraphIndex(indexName);
+                index = managementSystem.getGraphIndex(indexName);
             } else {
-                indexRelationType = mgmt.getRelationType(indexRelationTypeName);
+                indexRelationType = managementSystem.getRelationType(indexRelationTypeName);
                 Preconditions.checkArgument(indexRelationType!=null,"Could not find relation type: %s", indexRelationTypeName);
-                index = mgmt.getRelationIndex(indexRelationType,indexName);
+                index = managementSystem.getRelationIndex(indexRelationType,indexName);
             }
             Preconditions.checkArgument(index!=null,"Could not find index: %s [%s]",indexName,indexRelationTypeName);
             log.info("Found index {}", indexName);
@@ -118,8 +118,8 @@ public abstract class IndexUpdateJob {
             txb.commitTime(jobStartTime);
             writeTx = (StandardJanusGraphTx)txb.start();
         } catch (final Exception e) {
-            if (null != mgmt && mgmt.isOpen())
-                mgmt.rollback();
+            if (null != managementSystem && managementSystem.isOpen())
+                managementSystem.rollback();
             if (writeTx!=null && writeTx.isOpen())
                 writeTx.rollback();
             metrics.incrementCustom(FAILED_TX);
@@ -129,8 +129,8 @@ public abstract class IndexUpdateJob {
 
     public void workerIterationEnd(ScanMetrics metrics) {
         try {
-            if (null != mgmt && mgmt.isOpen())
-                mgmt.commit();
+            if (null != managementSystem && managementSystem.isOpen())
+                managementSystem.commit();
             if (writeTx!=null && writeTx.isOpen())
                 writeTx.commit();
             metrics.incrementCustom(SUCCESS_TX);

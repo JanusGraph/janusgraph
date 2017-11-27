@@ -112,8 +112,8 @@ public abstract class AbstractJanusGraphAssemblyIT {
         command(new File(dir), "expect", expectScript);
     }
 
-    protected static void unzip(String dir, String zipfile) throws IOException, InterruptedException {
-        command(new File(dir), "unzip", "-q", zipfile);
+    protected static void unzip(String dir, String zipFile) throws IOException, InterruptedException {
+        command(new File(dir), "unzip", "-q", zipFile);
     }
 
     protected static void command(File dir, String... command) throws IOException, InterruptedException {
