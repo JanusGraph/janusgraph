@@ -76,7 +76,7 @@ public class LocalLockMediator<T> {
      * <p/>
      * For any particular key-column, whatever value of {@code requestor} is
      * passed to this method must also be passed to the associated later call to
-     * {@link #unlock(KeyColumn, ExpectedValueCheckingTransaction)}.
+     * {@link #unlock(KeyColumn, T)}.
      * <p/>
      * If some requestor {@code r} calls this method on a KeyColumn {@code k}
      * and this method returns true, then subsequent calls to this method by

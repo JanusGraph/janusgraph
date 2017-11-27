@@ -164,7 +164,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
         }
 
         /**
-         * Retrieve the mediator associated with {@code name} via {@link LocalLockMediators#get(String)}.
+         * Retrieve the mediator associated with {@code name} via {@link LocalLockMediators#get(String, TimestampProvider)}.
          *
          * @param name the mediator name
          * @return this builder
