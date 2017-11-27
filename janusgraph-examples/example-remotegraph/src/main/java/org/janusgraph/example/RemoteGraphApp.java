@@ -185,7 +185,7 @@ public class RemoteGraphApp extends JanusGraphApp {
         final ResultSet resultSet = client.submit(req);
         // drain the results completely
         Stream<Result> futureList = resultSet.stream();
-        futureList.map(result -> result.toString()).forEach(LOGGER::info);
+        futureList.map(Result::toString).forEach(LOGGER::info);
     }
 
     public static void main(String[] args) {

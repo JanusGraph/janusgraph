@@ -129,7 +129,7 @@ public abstract class JanusGraphIoTest extends JanusGraphBaseTest {
 
     private void addGeoshape(Function<Geoshape,Geoshape> makeGeoshape) {
         JanusGraphTransaction tx = graph.newTransaction();
-        graph.traversal().E().has("place").toList().stream().forEach(e-> {
+        graph.traversal().E().has("place").toList().forEach(e-> {
             Geoshape place = (Geoshape) e.property("place").value();
             e.property("shape", makeGeoshape.apply(place));
         });
@@ -137,7 +137,7 @@ public abstract class JanusGraphIoTest extends JanusGraphBaseTest {
     }
 
     private void assertGeoshape(Function<Geoshape,Geoshape> makeGeoshape) {
-        graph.traversal().E().has("place").toList().stream().forEach(e-> {
+        graph.traversal().E().has("place").toList().forEach(e-> {
             assertTrue(e.property("shape").isPresent());
             Geoshape place = (Geoshape) e.property("place").value();
             Geoshape expected = makeGeoshape.apply(place);

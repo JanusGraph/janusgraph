@@ -206,15 +206,11 @@ public class RestClientSetup {
         }
 
         // will execute the chain of individual callbacks
-        return new HttpClientConfigCallback() {
-
-            @Override
-            public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
-                for(HttpClientConfigCallback cb: callbackList) {
-                    cb.customizeHttpClient(httpClientBuilder);
-                }
-                return httpClientBuilder;
+        return httpClientBuilder -> {
+            for(HttpClientConfigCallback cb: callbackList) {
+                cb.customizeHttpClient(httpClientBuilder);
             }
+            return httpClientBuilder;
         };
     }
 

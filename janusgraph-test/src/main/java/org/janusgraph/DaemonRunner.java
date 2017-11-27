@@ -90,11 +90,7 @@ public abstract class DaemonRunner<S> {
             log.debug("Daemon killer hook already registered: {}", killerHook);
             return;
         }
-        killerHook = new Thread() {
-            public void run() {
-                killAndUnregisterHook(stat);
-            }
-        };
+        killerHook = new Thread(() -> killAndUnregisterHook(stat));
         Runtime.getRuntime().addShutdownHook(killerHook);
         log.debug("Registered daemon killer hook: {}", killerHook);
     }

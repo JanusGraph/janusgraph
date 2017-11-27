@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.cql;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.PROTOCOL_VERSION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_LOCATION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_PASSWORD;

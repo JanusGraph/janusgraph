@@ -202,12 +202,7 @@ public class TestBed {
 
         System.exit(0);
 
-        final ScheduledExecutorService exe = new ScheduledThreadPoolExecutor(1,new RejectedExecutionHandler() {
-            @Override
-            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                r.run();
-            }
-        });
+        final ScheduledExecutorService exe = new ScheduledThreadPoolExecutor(1, (r, executor) -> r.run());
         ScheduledFuture future = exe.scheduleWithFixedDelay(new Runnable() {
             AtomicInteger atomicInt = new AtomicInteger(0);
 
