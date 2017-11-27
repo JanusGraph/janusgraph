@@ -137,7 +137,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         final List<Entry> additions;
         final List<StaticBuffer> deletions;
         if (value!=null) { //Addition
-            additions = new ArrayList<Entry>(1);
+            additions = new ArrayList<>(1);
             deletions = KeyColumnValueStore.NO_DELETIONS;
             StaticBuffer val = object2StaticBuffer(value);
             additions.add(StaticArrayEntry.of(column, val));

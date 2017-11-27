@@ -286,7 +286,7 @@ public enum Text implements JanusGraphPredicate {
     private static final int MIN_TOKEN_LENGTH = 1;
 
     public static List<String> tokenize(String str) {
-        ArrayList<String> tokens = new ArrayList<String>();
+        final ArrayList<String> tokens = new ArrayList<>();
         int previous = 0;
         for (int p = 0; p < str.length(); p++) {
             if (!Character.isLetterOrDigit(str.charAt(p))) {

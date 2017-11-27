@@ -433,13 +433,13 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     public List<EntryList> edgeMultiQuery(LongArrayList vertexIdsAsLongs, SliceQuery query, BackendTransaction tx) {
         Preconditions.checkArgument(vertexIdsAsLongs != null && !vertexIdsAsLongs.isEmpty());
-        List<StaticBuffer> vertexIds = new ArrayList<StaticBuffer>(vertexIdsAsLongs.size());
+        final List<StaticBuffer> vertexIds = new ArrayList<>(vertexIdsAsLongs.size());
         for (int i = 0; i < vertexIdsAsLongs.size(); i++) {
             Preconditions.checkArgument(vertexIdsAsLongs.get(i) > 0);
             vertexIds.add(idManager.getKey(vertexIdsAsLongs.get(i)));
         }
-        Map<StaticBuffer,EntryList> result = tx.edgeStoreMultiQuery(vertexIds, query);
-        List<EntryList> resultList = new ArrayList<EntryList>(result.size());
+        final Map<StaticBuffer,EntryList> result = tx.edgeStoreMultiQuery(vertexIds, query);
+        final List<EntryList> resultList = new ArrayList<>(result.size());
         for (StaticBuffer v : vertexIds) resultList.add(result.get(v));
         return resultList;
     }
@@ -576,11 +576,11 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         //5) Add relation mutations
         for (Long vertexId : mutations.keySet()) {
             Preconditions.checkArgument(vertexId > 0, "Vertex has no id: %s", vertexId);
-            List<InternalRelation> edges = mutations.get(vertexId);
-            List<Entry> additions = new ArrayList<Entry>(edges.size());
-            List<Entry> deletions = new ArrayList<Entry>(Math.max(10, edges.size() / 10));
-            for (InternalRelation edge : edges) {
-                InternalRelationType baseType = (InternalRelationType) edge.getType();
+            final List<InternalRelation> edges = mutations.get(vertexId);
+            final List<Entry> additions = new ArrayList<>(edges.size());
+            final List<Entry> deletions = new ArrayList<>(Math.max(10, edges.size() / 10));
+            for (final InternalRelation edge : edges) {
+                final InternalRelationType baseType = (InternalRelationType) edge.getType();
                 assert baseType.getBaseType()==null;
 
                 for (InternalRelationType type : baseType.getRelationIndexes()) {

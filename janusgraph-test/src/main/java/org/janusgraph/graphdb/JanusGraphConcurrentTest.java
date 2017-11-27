@@ -252,7 +252,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
                     JanusGraphTransaction tx = graph.newTransaction();
                     try {
                         for (int i = 0; i < batchR; i++) {
-                            Set<Vertex> vs = new HashSet<Vertex>();
+                            final Set<Vertex> vs = new HashSet<>();
                             Iterable<JanusGraphVertex> vertices = tx.query().has("k",random.nextInt(maxK)).has("q",random.nextInt(maxQ)).vertices();
                             for (JanusGraphVertex v : vertices) {
                                 if (!vs.add(v)) {
@@ -322,7 +322,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
         newTx();
         log.info("Querying vertex property indices");
         // Execute runnables
-        Collection<Future<?>> futures = new ArrayList<Future<?>>(TASK_COUNT);
+        final Collection<Future<?>> futures = new ArrayList<>(TASK_COUNT);
         for (int i = 0; i < TASK_COUNT; i++) {
             futures.add(executor.submit(new VertexPropertyQuerier(propCount, vertexCount)));
         }

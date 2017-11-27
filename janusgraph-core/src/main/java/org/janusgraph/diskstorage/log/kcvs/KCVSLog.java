@@ -95,7 +95,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                     "visible in the storage backend in this amount of time, a log reader might miss the message.",
             ConfigOption.Type.MASKABLE, Duration.ofMillis(500L));
 
-    public static final ConfigOption<Boolean> LOG_KEY_CONSISTENT = new ConfigOption<Boolean>(LOG_NS,"key-consistent",
+    public static final ConfigOption<Boolean> LOG_KEY_CONSISTENT = new ConfigOption<>(LOG_NS, "key-consistent",
             "Whether to require consistency for log reading and writing messages to the storage backend",
             ConfigOption.Type.MASKABLE, false);
 
@@ -255,7 +255,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         maxReadTime = config.get(LOG_MAX_READ_TIME);
 
         if (MIN_DELIVERY_DELAY.compareTo(maxSendDelay) <= 0) { // No need to locally queue messages since they will be sent immediately
-            outgoingMsg = new ArrayBlockingQueue<MessageEnvelope>(sendBatchSize*BATCH_SIZE_MULTIPLIER);
+            outgoingMsg = new ArrayBlockingQueue<>(sendBatchSize * BATCH_SIZE_MULTIPLIER);
             sendThread = new SendThread();
             sendThread.start();
         } else {
@@ -269,7 +269,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
         this.numMsgCounter = new AtomicLong(readSetting(manager.senderId, MESSAGE_COUNTER_COLUMN, 0));
         this.numBucketCounter = new AtomicLong(0);
-        this.readers = new ArrayList<MessageReader>();
+        this.readers = new ArrayList<>();
         this.isOpen = true;
     }
 
@@ -479,7 +479,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                         log.debug("Preparing to write {} to storage with column/timestamp {}", env, times.getTime(ts));
                     }
 
-                    Map<StaticBuffer,KCVMutation> muts = new HashMap<StaticBuffer, KCVMutation>(mutations.keySet().size());
+                    final Map<StaticBuffer,KCVMutation> muts = new HashMap<>(mutations.keySet().size());
                     for (StaticBuffer key : mutations.keySet()) {
                         muts.put(key,new KCVMutation(mutations.get(key),KeyColumnValueStore.NO_DELETIONS));
                         log.debug("Built mutation on key {} with {} additions", key, mutations.get(key).size());
@@ -515,7 +515,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
         public SendThread() {
             super("KCVSLogSend"+name, false);
-            toSend = new ArrayList<MessageEnvelope>(sendBatchSize*3/2);
+            toSend = new ArrayList<>(sendBatchSize * 3 / 2);
         }
 
         private Duration timeSinceFirstMsg() {

@@ -124,7 +124,7 @@ public class StaticArrayEntryTest {
 
     @Test
     public void testEntryList() {
-        Map<Integer,Long> entries = new HashMap<Integer,Long>();
+        final Map<Integer,Long> entries = new HashMap<>();
         for (int i=0;i<50;i++) entries.put(i*2+7,Math.round(Math.random()/2*Long.MAX_VALUE));
 
         EntryList[] el = new EntryList[7];
@@ -185,7 +185,7 @@ public class StaticArrayEntryTest {
      */
     @Test
     public void testEntryListWithMetaSchema() {
-        Map<Integer,Long> entries = new HashMap<Integer,Long>();
+        final Map<Integer,Long> entries = new HashMap<>();
         for (int i=0;i<50;i++) entries.put(i*2+7,Math.round(Math.random()/2*Long.MAX_VALUE));
 
         EntryList[] el = new EntryList[7];

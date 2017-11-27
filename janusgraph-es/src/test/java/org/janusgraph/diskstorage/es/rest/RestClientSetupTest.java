@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.es.rest;
 
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
@@ -563,13 +562,13 @@ public class RestClientSetupTest {
 
     public static class TestCustomAuthenticator implements RestClientAuthenticator {
 
-        private static final Map<String, TestCustomAuthenticator> instanceMap = new HashMap<String, TestCustomAuthenticator>();
+        private static final Map<String, TestCustomAuthenticator> instanceMap = new HashMap<>();
 
-        private String[] args;
+        final private String[] args;
 
-        private List<Builder> customizeRequestConfigHistory = new LinkedList<Builder>();
-        private List<HttpAsyncClientBuilder> customizeHttpClientHistory = new LinkedList<HttpAsyncClientBuilder>();
-        private int numInitCalls;
+        final private List<Builder> customizeRequestConfigHistory = new LinkedList<>();
+        final private List<HttpAsyncClientBuilder> customizeHttpClientHistory = new LinkedList<>();
+        private int numInitCalls = 0;
 
         public TestCustomAuthenticator(String[] args) {
             this.args = args;

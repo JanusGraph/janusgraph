@@ -41,7 +41,7 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
      * Implementation note: for Cassandra, namespace is usually a column
      * family name.
      */
-    private final ConcurrentHashMap<String, LocalLockMediator<?>> mediators = new ConcurrentHashMap<String, LocalLockMediator<?>>();
+    private final ConcurrentHashMap<String, LocalLockMediator<?>> mediators = new ConcurrentHashMap<>();
 
     @Override
     public <T> LocalLockMediator<T> get(String namespace, TimestampProvider times) {
@@ -52,9 +52,9 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
         LocalLockMediator<T> m = (LocalLockMediator<T>)mediators.get(namespace);
 
         if (null == m) {
-            m = new LocalLockMediator<T>(namespace, times);
+            m = new LocalLockMediator<>(namespace, times);
             @SuppressWarnings("unchecked")
-            LocalLockMediator<T> old = (LocalLockMediator<T>)mediators.putIfAbsent(namespace, m);
+            final LocalLockMediator<T> old = (LocalLockMediator<T>)mediators.putIfAbsent(namespace, m);
             if (null != old)
                 m = old;
             else

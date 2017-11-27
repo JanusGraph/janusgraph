@@ -82,10 +82,8 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
 
         this.entryGetter = new AstyanaxGetter(storeManager.getMetaDataSchema(columnFamilyName));
 
-        this.columnFamily = new ColumnFamily<ByteBuffer, ByteBuffer>(
-                this.columnFamilyName,
-                ByteBufferSerializer.get(),
-                ByteBufferSerializer.get());
+        this.columnFamily = new ColumnFamily<>(this.columnFamilyName, ByteBufferSerializer.get(),
+            ByteBufferSerializer.get());
 
     }
 
@@ -162,7 +160,7 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         final Rows<ByteBuffer,ByteBuffer> rows = r.getResult();
-        final Map<StaticBuffer, EntryList> result = new HashMap<StaticBuffer, EntryList>(rows.size());
+        final Map<StaticBuffer, EntryList> result = new HashMap<>(rows.size());
 
         for (Row<ByteBuffer, ByteBuffer> row : rows) {
             assert !result.containsKey(row.getKey());

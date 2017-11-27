@@ -105,7 +105,7 @@ public class PartitionedVertexProgramExecutor<M> {
                 PreloadedVertex v = (PreloadedVertex)vertex;
                 v.setAccessCheck(PreloadedVertex.OPENSTAR_CHECK);
                 v.addToQueryCache(VertexProgramScanJob.SYSTEM_PROPS_QUERY,preloaded);
-                VertexMemoryHandler.Partition<M> vh = new VertexMemoryHandler.Partition<M>(vertexMemory,v);
+                final VertexMemoryHandler.Partition<M> vh = new VertexMemoryHandler.Partition<>(vertexMemory, v);
                 v.setPropertyMixing(vh);
                 vertexProgram.execute(v,vh,memory);
                 metrics.incrementCustom(PARTITION_VERTEX_POSTSUCCESS);

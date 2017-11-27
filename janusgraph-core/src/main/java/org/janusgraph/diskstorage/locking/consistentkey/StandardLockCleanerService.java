@@ -102,6 +102,6 @@ public class StandardLockCleanerService implements LockCleanerService {
     }
 
     private static ExecutorService getDefaultExecutor() {
-        return new ThreadPoolExecutor(0, 1, KEEPALIVE_TIME, KEEPALIVE_UNIT, new LinkedBlockingQueue<Runnable>(), THREAD_FACTORY);
+        return new ThreadPoolExecutor(0, 1, KEEPALIVE_TIME, KEEPALIVE_UNIT, new LinkedBlockingQueue<>(), THREAD_FACTORY);
     }
 }

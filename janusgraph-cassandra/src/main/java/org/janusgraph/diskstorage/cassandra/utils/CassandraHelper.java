@@ -16,6 +16,7 @@ package org.janusgraph.diskstorage.cassandra.utils;
 
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -38,11 +39,9 @@ import javax.annotation.Nullable;
 public class CassandraHelper {
 
     public static List<ByteBuffer> convert(List<StaticBuffer> keys) {
-        List<ByteBuffer> requestKeys = new ArrayList<ByteBuffer>(keys.size());
-        for (int i = 0; i < keys.size(); i++) {
-            requestKeys.add(keys.get(i).asByteBuffer());
-        }
-        return requestKeys;
+        return keys.stream()
+            .map(StaticBuffer::asByteBuffer)
+            .collect(Collectors.toCollection(() -> new ArrayList<>(keys.size())));
     }
 
     /**
@@ -60,12 +59,8 @@ public class CassandraHelper {
     public static<E> EntryList makeEntryList(final Iterable<E> entries,
                                              final StaticArrayEntry.GetColVal<E,ByteBuffer> getter,
                                              final StaticBuffer lastColumn, final int limit) {
-        return StaticArrayEntryList.ofByteBuffer(new Iterable<E>() {
-            @Override
-            public Iterator<E> iterator() {
-                return Iterators.filter(entries.iterator(),new FilterResultColumns<E>(lastColumn,limit,getter));
-            }
-        },getter);
+        return StaticArrayEntryList.ofByteBuffer(() -> Iterators.filter(
+            entries.iterator(), new FilterResultColumns<>(lastColumn, limit, getter)), getter);
     }
 
     private static class FilterResultColumns<E> implements Predicate<E> {
@@ -95,8 +90,7 @@ public class CassandraHelper {
     public static<E> Iterator<Entry> makeEntryIterator(final Iterable<E> entries,
                                              final StaticArrayEntry.GetColVal<E,ByteBuffer> getter,
                                              final StaticBuffer lastColumn, final int limit) {
-        return Iterators.transform(Iterators.filter(entries.iterator(),
-                new FilterResultColumns<E>(lastColumn, limit, getter)), new Function<E, Entry>() {
+        return Iterators.transform(Iterators.filter(entries.iterator(), new FilterResultColumns<>(lastColumn, limit, getter)), new Function<E, Entry>() {
             @Nullable
             @Override
             public Entry apply(@Nullable E e) {

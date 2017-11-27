@@ -33,11 +33,11 @@ public class ObjectAccumulator<K extends Object> {
     private HashMap<K, Counter> countMap;
 
     public ObjectAccumulator() {
-        countMap = new HashMap<K, Counter>();
+        countMap = new HashMap<>();
     }
 
     public ObjectAccumulator(int initialSize) {
-        countMap = new HashMap<K, Counter>(initialSize);
+        countMap = new HashMap<>(initialSize);
     }
 
     /**

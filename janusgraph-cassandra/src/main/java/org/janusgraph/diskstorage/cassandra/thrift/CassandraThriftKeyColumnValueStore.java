@@ -23,7 +23,6 @@ import com.google.common.collect.Iterables;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.cassandra.thrift.thriftpool.CTConnection;
 import org.janusgraph.diskstorage.cassandra.thrift.thriftpool.CTConnectionPool;
-import org.janusgraph.diskstorage.cassandra.utils.CassandraHelper;
 import org.janusgraph.diskstorage.keycolumnvalue.*;
 import org.janusgraph.diskstorage.util.*;
 import org.apache.cassandra.dht.*;
@@ -39,8 +38,12 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.janusgraph.diskstorage.cassandra.CassandraTransaction.getTx;
+import static org.janusgraph.diskstorage.cassandra.utils.CassandraHelper.convert;
+import static org.janusgraph.diskstorage.cassandra.utils.CassandraHelper.makeEntryIterator;
+import static org.janusgraph.diskstorage.cassandra.utils.CassandraHelper.makeEntryList;
 
 /**
  * A JanusGraph {@code KeyColumnValueStore} backed by Cassandra.
@@ -140,7 +143,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         try {
             conn = pool.borrowObject(keyspace);
             Cassandra.Client client = conn.getClient();
-            Map<ByteBuffer, List<ColumnOrSuperColumn>> rows = client.multiget_slice(CassandraHelper.convert(keys),
+            final Map<ByteBuffer, List<ColumnOrSuperColumn>> rows = client.multiget_slice(convert(keys),
                     parent,
                     predicate,
                     consistency);
@@ -150,14 +153,8 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 			 * However, "result" could also be up to two elements smaller than
 			 * rows.size(), depending on startInclusive and endInclusive
 			 */
-            Map<StaticBuffer, EntryList> results = new HashMap<StaticBuffer, EntryList>();
-
-            for (final Map.Entry<ByteBuffer, List<ColumnOrSuperColumn>> entry : rows.entrySet()) {
-                results.put(StaticArrayBuffer.of(entry.getKey()),
-                        CassandraHelper.makeEntryList(entry.getValue(), entryGetter, query.getSliceEnd(), query.getLimit()));
-            }
-
-            return results;
+            return rows.entrySet().stream().collect(Collectors.toMap(e -> StaticArrayBuffer.of(e.getKey()),
+                    e -> makeEntryList(e.getValue(), entryGetter, query.getSliceEnd(), query.getLimit())));
         } catch (Exception e) {
             throw convertException(e);
         } finally {
@@ -454,10 +451,8 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             ensureOpen();
 
             return new RecordIterator<Entry>() {
-                final Iterator<Entry> columns =
-                        CassandraHelper.makeEntryIterator(mostRecentRow.getColumns(),
-                                entryGetter, columnSlice.getSliceEnd(),
-                                columnSlice.getLimit());
+                final Iterator<Entry> columns = makeEntryIterator(mostRecentRow.getColumns(),
+                                entryGetter, columnSlice.getSliceEnd(), columnSlice.getLimit());
 
                 @Override
                 public boolean hasNext() {

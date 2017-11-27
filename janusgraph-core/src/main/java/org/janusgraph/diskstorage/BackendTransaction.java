@@ -135,7 +135,7 @@ public class BackendTransaction implements LoggableTransaction {
     }
 
     public Map<String,Throwable> commitIndexes() {
-        Map<String,Throwable> exceptions = new HashMap<String, Throwable>(indexTx.size());
+        final Map<String,Throwable> exceptions = new HashMap<>(indexTx.size());
         for (Map.Entry<String,IndexTransaction> indexTransactionEntry : indexTx.entrySet()) {
             try {
                 indexTransactionEntry.getValue().commit();
@@ -295,7 +295,7 @@ public class BackendTransaction implements LoggableTransaction {
                 }
             });
         } else {
-            final Map<StaticBuffer,EntryList> results = new HashMap<StaticBuffer,EntryList>(keys.size());
+            final Map<StaticBuffer,EntryList> results = new HashMap<>(keys.size());
             if (threadPool == null || keys.size() < MIN_TASKS_TO_PARALLELIZE) {
                 for (StaticBuffer key : keys) {
                     results.put(key,edgeStoreQuery(new KeySliceQuery(key, query)));

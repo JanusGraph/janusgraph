@@ -132,8 +132,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     private final ExecutorService threadPool;
 
     private final Function<String, Locker> lockerCreator;
-    private final ConcurrentHashMap<String, Locker> lockers =
-            new ConcurrentHashMap<String, Locker>();
+    private final ConcurrentHashMap<String, Locker> lockers = new ConcurrentHashMap<>();
 
     private final Configuration configuration;
 
@@ -532,7 +531,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         CacheTransaction cacheTx = new CacheTransaction(tx, storeManagerLocking, bufferSize, maxWriteTime, configuration.hasEnabledBatchLoading());
 
         // Index transactions
-        Map<String, IndexTransaction> indexTx = new HashMap<String, IndexTransaction>(indexes.size());
+        final Map<String, IndexTransaction> indexTx = new HashMap<>(indexes.size());
         for (Map.Entry<String, IndexProvider> entry : indexes.entrySet()) {
             indexTx.put(entry.getKey(), new IndexTransaction(entry.getValue(), indexKeyRetriever.get(entry.getKey()), configuration, maxWriteTime));
         }
@@ -603,8 +602,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     private static final ImmutableMap<StandardStoreManager, ConfigOption<?>> STORE_SHORTHAND_OPTIONS;
 
     static {
-        Map<StandardStoreManager, ConfigOption<?>> m =
-                new HashMap<StandardStoreManager, ConfigOption<?>>();
+        final Map<StandardStoreManager, ConfigOption<?>> m = new HashMap<>();
 
         m.put(StandardStoreManager.BDB_JE, STORAGE_DIRECTORY);
         m.put(StandardStoreManager.CASSANDRA_ASTYANAX, STORAGE_HOSTS);

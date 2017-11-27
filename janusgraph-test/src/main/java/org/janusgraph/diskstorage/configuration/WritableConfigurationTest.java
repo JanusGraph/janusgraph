@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.time.Duration;
 import java.util.Arrays;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

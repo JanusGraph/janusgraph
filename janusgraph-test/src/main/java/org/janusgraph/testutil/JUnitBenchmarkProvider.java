@@ -182,7 +182,7 @@ public class JUnitBenchmarkProvider {
     }
 
     private static IResultsConsumer[] getConsumersUnsafe(IResultsConsumer... additional) throws IOException {
-        List<IResultsConsumer> consumers = new ArrayList<IResultsConsumer>();
+        final List<IResultsConsumer> consumers = new ArrayList<>();
         consumers.add(new XMLConsumer(new File("jub." + Math.abs(System.nanoTime()) + ".xml")));
         consumers.add(new WriterConsumer()); // defaults to System.out
         consumers.add(new CsvConsumer("target/jub.csv"));
@@ -215,7 +215,7 @@ public class JUnitBenchmarkProvider {
         String line;
         int ln = 0;
         final int tokensPerLine = 2;
-        final ImmutableMap.Builder<String, Integer> builder = new ImmutableMap.Builder<String, Integer>();
+        final ImmutableMap.Builder<String, Integer> builder = new ImmutableMap.Builder<>();
 
         while (null != (line = reader.readLine())) {
             ln++;
@@ -348,7 +348,7 @@ public class JUnitBenchmarkProvider {
             Collection<Annotation> annotations = description.getAnnotations();
             final int rounds = getRoundsForFullMethodName(clazz.getCanonicalName() + "." + mname);
 
-            List<Annotation> modifiedAnnotations = new ArrayList<Annotation>(annotations.size());
+            final List<Annotation> modifiedAnnotations = new ArrayList<>(annotations.size());
 
             boolean hit = false;
 

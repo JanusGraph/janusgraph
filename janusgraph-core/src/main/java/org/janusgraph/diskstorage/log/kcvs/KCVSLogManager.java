@@ -53,7 +53,7 @@ public class KCVSLogManager implements LogManager {
     private static final Logger log =
             LoggerFactory.getLogger(KCVSLogManager.class);
 
-    public static final ConfigOption<Boolean> LOG_FIXED_PARTITION = new ConfigOption<Boolean>(LOG_NS,"fixed-partition",
+    public static final ConfigOption<Boolean> LOG_FIXED_PARTITION = new ConfigOption<>(LOG_NS,"fixed-partition",
             "Whether all log entries are written to one fixed partition even if the backend store is partitioned." +
                     "This can cause imbalanced loads and should only be used on low volume logs",
             ConfigOption.Type.GLOBAL_OFFLINE, false);
@@ -148,7 +148,7 @@ public class KCVSLogManager implements LogManager {
 
         this.storeManager = storeManager;
         this.configuration = config;
-        openLogs = new HashMap<String, KCVSLog>();
+        openLogs = new HashMap<>();
 
         this.senderId=config.get(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID);
         Preconditions.checkNotNull(senderId);
@@ -170,7 +170,7 @@ public class KCVSLogManager implements LogManager {
             for (int i=0;i<numPartitions;i++) writePartitions[i]=i;
             if (storeManager.getFeatures().hasLocalKeyPartition()) {
                 //Write only to local partitions
-                List<Integer> localPartitions = new ArrayList<Integer>();
+                final List<Integer> localPartitions = new ArrayList<>();
                 try {
                     List<PartitionIDRange> partitionRanges = PartitionIDRange.getIDRanges(partitionBitWidth,
                             storeManager.getLocalKeyPartition());

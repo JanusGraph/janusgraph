@@ -142,7 +142,7 @@ public class ConfigurationPrinter {
 
     private String getTableLineForOption(ConfigOption o, String prefix) {
 
-        List<String> colData = new ArrayList<String>(10);
+        final List<String> colData = new ArrayList<>(10);
         String name = prefix + o.getName();
         if (o.isDeprecated()) {
             ConfigOption<?> successor = o.getDeprecationReplacement();
@@ -188,7 +188,7 @@ public class ConfigurationPrinter {
 
     @SuppressWarnings("unchecked")
     private <E> List<E> getSortedChildren(ConfigNamespace n, Function<ConfigElement, Boolean> predicate) {
-        List<ConfigElement> sortedElements = new ArrayList<ConfigElement>();
+        final List<ConfigElement> sortedElements = new ArrayList<>();
 
         for (ConfigElement e : n.getChildren()) {
             if (predicate.apply(e)) {

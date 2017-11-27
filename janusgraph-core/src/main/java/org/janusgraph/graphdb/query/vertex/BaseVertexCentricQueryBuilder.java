@@ -115,8 +115,8 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
         } else {
             Preconditions.checkArgument(rel.isValidCondition(value), "Invalid condition provided: " + value);
         }
-        if (constraints == NO_CONSTRAINTS) constraints = new ArrayList<PredicateCondition<String, JanusGraphRelation>>(5);
-        constraints.add(new PredicateCondition<String, JanusGraphRelation>(type, rel, value));
+        if (constraints == NO_CONSTRAINTS) constraints = new ArrayList<>(5);
+        constraints.add(new PredicateCondition<>(type, rel, value));
         return getThis();
     }
 

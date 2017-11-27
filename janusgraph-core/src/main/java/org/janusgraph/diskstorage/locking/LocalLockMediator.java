@@ -60,7 +60,7 @@ public class LocalLockMediator<T> {
      * according to {@link AuditRecord#expires}, in which case the lock should
      * be considered invalid.
      */
-    private final ConcurrentHashMap<KeyColumn, AuditRecord<T>> locks = new ConcurrentHashMap<KeyColumn, AuditRecord<T>>();
+    private final ConcurrentHashMap<KeyColumn, AuditRecord<T>> locks = new ConcurrentHashMap<>();
 
     public LocalLockMediator(String name, TimestampProvider times) {
         this.name = name;
@@ -105,8 +105,8 @@ public class LocalLockMediator<T> {
         final StackTraceElement[] acquiredAt = log.isTraceEnabled() ?
                 new Throwable("Lock acquisition by " + requester).getStackTrace() : null;
 
-        AuditRecord<T> audit = new AuditRecord<T>(requester, expires, acquiredAt);
-        AuditRecord<T> inMap = locks.putIfAbsent(kc, audit);
+        final AuditRecord<T> audit = new AuditRecord<>(requester, expires, acquiredAt);
+        final AuditRecord<T> inMap = locks.putIfAbsent(kc, audit);
 
         boolean success = false;
 
@@ -168,9 +168,9 @@ public class LocalLockMediator<T> {
             return false;
         }
 
-        AuditRecord<T> unlocker = new AuditRecord<T>(requester, null, null);
+        final AuditRecord<T> unlocker = new AuditRecord<>(requester, null, null);
 
-        AuditRecord<T> holder = locks.get(kc);
+        final AuditRecord<T> holder = locks.get(kc);
 
         if (!holder.equals(unlocker)) {
             log.error("Local unlock of {} by {} failed: it is held by {}",

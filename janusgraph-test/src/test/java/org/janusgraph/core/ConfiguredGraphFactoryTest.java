@@ -26,14 +26,10 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ST
 
 import org.apache.tinkerpop.gremlin.server.Settings;
 import org.apache.commons.configuration.MapConfiguration;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
 
-import com.google.common.collect.Iterators;
 import java.util.Map;
 import java.util.HashMap;
-import java.io.IOException;
-import java.io.File;
+
 import org.junit.Test;
 import org.junit.After;
 import org.junit.Rule;
@@ -45,7 +41,7 @@ public class ConfiguredGraphFactoryTest {
     private static final JanusGraphManager gm;
     static {
         gm = new JanusGraphManager(new Settings());
-        final Map<String, Object> map = new HashMap<String, Object>();
+        final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         final MapConfiguration config = new MapConfiguration(map);
         final StandardJanusGraph graph = new StandardJanusGraph(new GraphDatabaseConfiguration(new CommonsConfiguration(config)));
@@ -70,7 +66,7 @@ public class ConfiguredGraphFactoryTest {
     @Test
     public void shouldOpenGraphUsingConfiguration() throws InterruptedException, BackendException, Exception {
         try {
-            final Map<String, Object> map = new HashMap<String, Object>();
+            final Map<String, Object> map = new HashMap<>();
             map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
             map.put(GRAPH_NAME.toStringWithoutRoot(), "graph1");
             ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
@@ -85,7 +81,7 @@ public class ConfiguredGraphFactoryTest {
     @Test
     public void graphConfigurationShouldBeWhatWeExpect() throws InterruptedException, BackendException, Exception {
         try {
-            final Map<String, Object> map = new HashMap<String, Object>();
+            final Map<String, Object> map = new HashMap<>();
             map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
             map.put(GRAPH_NAME.toStringWithoutRoot(), "graph1");
             ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
@@ -102,7 +98,7 @@ public class ConfiguredGraphFactoryTest {
     @Test
     public void shouldCreateAndGetGraphUsingTemplateConfiguration() throws InterruptedException, BackendException, Exception {
         try {
-            final Map<String, Object> map = new HashMap<String, Object>();
+            final Map<String, Object> map = new HashMap<>();
             map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
             ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
             final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.create("graph1");
@@ -121,7 +117,7 @@ public class ConfiguredGraphFactoryTest {
         throws InterruptedException, BackendException, Exception {
 
         try {
-            final Map<String, Object> map = new HashMap<String, Object>();
+            final Map<String, Object> map = new HashMap<>();
             map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
             ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
             final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.create("graph1");
@@ -156,7 +152,7 @@ public class ConfiguredGraphFactoryTest {
 
     @Test
     public void shouldFailToOpenNewGraphAfterRemoveConfiguration() {
-        final Map<String, Object> map = new HashMap<String, Object>();
+        final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         map.put(GRAPH_NAME.toStringWithoutRoot(), "graph1");
         ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
@@ -169,7 +165,7 @@ public class ConfiguredGraphFactoryTest {
 
     @Test
     public void shouldFailToCreateGraphAfterRemoveTemplateConfiguration() {
-        final Map<String, Object> map = new HashMap<String, Object>();
+        final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
         ConfiguredGraphFactory.removeTemplateConfiguration();
@@ -182,7 +178,7 @@ public class ConfiguredGraphFactoryTest {
 
     @Test
     public void shouldFailToOpenGraphAfterRemoveConfiguration() {
-        final Map<String, Object> map = new HashMap<String, Object>();
+        final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         map.put(GRAPH_NAME.toStringWithoutRoot(), "graph1");
         ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
@@ -196,7 +192,7 @@ public class ConfiguredGraphFactoryTest {
     @Test
     public void updateConfigurationShouldOnlyUpdateForGraphAfterWeCloseAndReOpen() throws InterruptedException, BackendException, Exception {
         try {
-            final Map<String, Object> map = new HashMap<String, Object>();
+            final Map<String, Object> map = new HashMap<>();
             map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
             map.put(GRAPH_NAME.toStringWithoutRoot(), "graph1");
             ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
@@ -225,7 +221,7 @@ public class ConfiguredGraphFactoryTest {
     @Test
     public void shouldCreateTwoGraphsUsingSameTemplateConfiguration() throws InterruptedException, BackendException, Exception {
         try {
-            final Map<String, Object> map = new HashMap<String, Object>();
+            final Map<String, Object> map = new HashMap<>();
             map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
             ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
             final StandardJanusGraph graph1 = (StandardJanusGraph) ConfiguredGraphFactory.create("graph1");
@@ -247,7 +243,7 @@ public class ConfiguredGraphFactoryTest {
     @Test
     public void ensureCallingGraphCloseResultsInNewGraphReferenceOnNextCallToOpen() throws Exception {
         try {
-            final Map<String, Object> map = new HashMap<String, Object>();
+            final Map<String, Object> map = new HashMap<>();
             map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
             ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
             final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.create("graph1");

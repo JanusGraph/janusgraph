@@ -113,7 +113,7 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
     }
 
     public static <K, E extends JanusGraphElement> PredicateCondition<K, E> of(K key, JanusGraphPredicate janusgraphPredicate, Object condition) {
-        return new PredicateCondition<K, E>(key, janusgraphPredicate, condition);
+        return new PredicateCondition<>(key, janusgraphPredicate, condition);
     }
 
 }

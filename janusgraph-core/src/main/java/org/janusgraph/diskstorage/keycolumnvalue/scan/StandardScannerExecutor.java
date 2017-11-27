@@ -86,7 +86,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
     }
 
     private DataPuller addDataPuller(SliceQuery sq, StoreTransaction stx) throws BackendException {
-        BlockingQueue<SliceResult> queue = new LinkedBlockingQueue<SliceResult>(QUEUE_SIZE);
+        final BlockingQueue<SliceResult> queue = new LinkedBlockingQueue<>(QUEUE_SIZE);
         dataQueues.add(queue);
 
         DataPuller dp = new DataPuller(sq, queue,
@@ -113,7 +113,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
                 Preconditions.checkArgument(end.equals(BufferUtil.oneBuffer(end.length())),
                         "Expected end of first query to be all 1s: %s",end);
             }
-            dataQueues = new ArrayList<BlockingQueue<SliceResult>>(numQueries);
+            dataQueues = new ArrayList<>(numQueries);
             pullThreads = new DataPuller[numQueries];
 
             for (int pos=0;pos<numQueries;pos++) {

@@ -139,7 +139,7 @@ public abstract class AbstractDistCacheConfigurer {
     }
 
     private static Conf configureByClasspath(String mapReduceJarFilename) {
-        List<Path> paths = new LinkedList<Path>();
+        final List<Path> paths = new LinkedList<>();
         final String classpath = System.getProperty("java.class.path");
         final String mrj = mapReduceJarFilename.toLowerCase();
         String mapReduceJarPath = null;

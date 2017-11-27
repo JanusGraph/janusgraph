@@ -35,7 +35,7 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
     private static final Logger log = LoggerFactory.getLogger(BerkeleyJETx.class);
 
     private volatile Transaction tx;
-    private final List<Cursor> openCursors = new ArrayList<Cursor>();
+    private final List<Cursor> openCursors = new ArrayList<>();
     private final LockMode lm;
 
     public BerkeleyJETx(Transaction t, LockMode lockMode, BaseTransactionConfig config) {

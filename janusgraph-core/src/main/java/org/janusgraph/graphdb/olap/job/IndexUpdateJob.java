@@ -48,12 +48,12 @@ public abstract class IndexUpdateJob {
 
     public static ConfigNamespace INDEX_JOB_NS = new ConfigNamespace(GraphDatabaseConfiguration.JOB_NS,"index","Configuration options relating to index jobs");
 
-    public static final ConfigOption<String> INDEX_NAME = new ConfigOption<String>(INDEX_JOB_NS,"index-name",
+    public static final ConfigOption<String> INDEX_NAME = new ConfigOption<>(INDEX_JOB_NS,"index-name",
             "The name of the index to be repaired. For vertex-centric indexes this is the name of " +
                     "the edge label or property key on which the index is installed.",
             ConfigOption.Type.LOCAL, String.class);
 
-    public static final ConfigOption<String> INDEX_RELATION_TYPE = new ConfigOption<String>(INDEX_JOB_NS,"relation-type",
+    public static final ConfigOption<String> INDEX_RELATION_TYPE = new ConfigOption<>(INDEX_JOB_NS,"relation-type",
             "For a vertex-centric index, this is the name of the index associated with the " +
                     "relation type configured under index-name. This should remain empty for global graph indexes.",
             ConfigOption.Type.LOCAL, "", Objects::nonNull);

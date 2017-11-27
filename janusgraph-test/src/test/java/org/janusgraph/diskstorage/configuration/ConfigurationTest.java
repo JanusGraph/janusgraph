@@ -37,26 +37,26 @@ public class ConfigurationTest {
         ConfigNamespace indexes = new ConfigNamespace(root,"indexes","Index definitions",true);
         ConfigNamespace storage = new ConfigNamespace(root,"storage","Storage definitions");
         ConfigNamespace special = new ConfigNamespace(storage,"special","Special storage definitions");
-        ConfigOption<String[]> hostnames = new ConfigOption<String[]>(storage,"hostname","Storage backend hostname",
+        ConfigOption<String[]> hostnames = new ConfigOption<>(storage, "hostname", "Storage backend hostname",
                 ConfigOption.Type.LOCAL, String[].class);
-        ConfigOption<Boolean> partition = new ConfigOption<Boolean>(storage,"partition","whether to enable partition",
+        ConfigOption<Boolean> partition = new ConfigOption<>(storage, "partition", "whether to enable partition",
                 ConfigOption.Type.MASKABLE, false);
-        ConfigOption<Long> locktime = new ConfigOption<Long>(storage,"locktime","how long to lock",
+        ConfigOption<Long> locktime = new ConfigOption<>(storage,"locktime","how long to lock",
                 ConfigOption.Type.FIXED, 500L);
-        ConfigOption<Byte> bits = new ConfigOption<Byte>(storage,"bits","number of unique bits",
+        ConfigOption<Byte> bits = new ConfigOption<>(storage,"bits","number of unique bits",
                 ConfigOption.Type.GLOBAL_OFFLINE, (byte)8);
-        ConfigOption<Short> retry = new ConfigOption<Short>(special,"retry","retry wait time",
+        ConfigOption<Short> retry = new ConfigOption<>(special,"retry","retry wait time",
                 ConfigOption.Type.GLOBAL, (short)200);
-        ConfigOption<Double> bar = new ConfigOption<Double>(special,"bar","bar",
+        ConfigOption<Double> bar = new ConfigOption<>(special,"bar","bar",
                 ConfigOption.Type.GLOBAL, 1.5d);
-        ConfigOption<Integer> bim = new ConfigOption<Integer>(special,"bim","bim",
+        ConfigOption<Integer> bim = new ConfigOption<>(special, "bim", "bim",
                 ConfigOption.Type.MASKABLE, Integer.class);
 
-        ConfigOption<String> indexback = new ConfigOption<String>(indexes,"name","index name",
+        ConfigOption<String> indexback = new ConfigOption<>(indexes, "name", "index name",
                 ConfigOption.Type.MASKABLE, String.class);
-        ConfigOption<Integer> ping = new ConfigOption<Integer>(indexes,"ping","ping time",
+        ConfigOption<Integer> ping = new ConfigOption<>(indexes, "ping", "ping time",
                 ConfigOption.Type.LOCAL, 100);
-        ConfigOption<Boolean> presort = new ConfigOption<Boolean>(indexes,"presort","presort result set",
+        ConfigOption<Boolean> presort = new ConfigOption<>(indexes, "presort", "presort result set",
                 ConfigOption.Type.LOCAL, false);
 
         //Local configuration

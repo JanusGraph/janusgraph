@@ -34,35 +34,35 @@ public final class ObjectSizer {
     public static Factory emptyConcurrentHashMap = new Factory() {
         @Override
         public Object newInstance() {
-            return fill(new ConcurrentHashMap<Integer, Integer>(5, 0.75f, 2), 20);
+            return fill(new ConcurrentHashMap<>(5, 0.75f, 2), 20);
         }
     };
 
     public static Factory emptyHashMap = new Factory() {
         @Override
         public Object newInstance() {
-            return fill(new HashMap<Integer, Integer>(10, 0.75f), 8);
+            return fill(new HashMap<>(10, 0.75f), 8);
         }
     };
 
     public static Factory emptyConcurrentSkipListMap = new Factory() {
         @Override
         public Object newInstance() {
-            return fill(new ConcurrentSkipListMap<Integer, Integer>(), 20);
+            return fill(new ConcurrentSkipListMap<>(), 20);
         }
     };
 
     public static Factory emptyArrayList = new Factory() {
         @Override
         public Object newInstance() {
-            return fill(new ArrayList<Integer>(5), 8);
+            return fill(new ArrayList<>(5), 8);
         }
     };
 
     public static Factory emptyArrayQueue = new Factory() {
         @Override
         public Object newInstance() {
-            return fill(new ArrayBlockingQueue<Integer>(10), 20);
+            return fill(new ArrayBlockingQueue<>(10), 20);
         }
     };
 
@@ -81,7 +81,7 @@ public final class ObjectSizer {
     public static Factory emptyCopyArrayList = new Factory() {
         @Override
         public Object newInstance() {
-            return fill(new CopyOnWriteArrayList<Integer>(), 20);
+            return fill(new CopyOnWriteArrayList<>(), 20);
         }
     };
 
@@ -89,7 +89,7 @@ public final class ObjectSizer {
     public static Factory stringConcurrentSet = new Factory() {
         @Override
         public Object newInstance() {
-            ConcurrentSkipListSet<String> set = new ConcurrentSkipListSet<String>();
+            final ConcurrentSkipListSet<String> set = new ConcurrentSkipListSet<>();
             int size = 100;
             for (int i = 0; i < size; i++) set.add("String" + i);
             return set;
@@ -99,7 +99,7 @@ public final class ObjectSizer {
     public static Factory stringConcurrentHashMap = new Factory() {
         @Override
         public Object newInstance() {
-            ConcurrentHashMap<String, Boolean> set = new ConcurrentHashMap<String, Boolean>(1, 1);
+            final ConcurrentHashMap<String, Boolean> set = new ConcurrentHashMap<>(1, 1);
             int size = 1000;
             for (int i = 0; i < size; i++) set.put("String" + i, Boolean.TRUE);
             return set;
@@ -109,7 +109,7 @@ public final class ObjectSizer {
     public static Factory emptyConcurrentSkipList = new Factory() {
         @Override
         public Object newInstance() {
-            ConcurrentSkipListMap<String, String> map = new ConcurrentSkipListMap<String, String>();
+            final ConcurrentSkipListMap<String, String> map = new ConcurrentSkipListMap<>();
             return map;
         }
     };
@@ -118,7 +118,7 @@ public final class ObjectSizer {
         @Override
         public Object newInstance() {
             int size = 10000;
-            Cache<String,Long> cache = CacheBuilder.newBuilder()
+            final Cache<String,Long> cache = CacheBuilder.newBuilder()
                     .concurrencyLevel(2).initialCapacity(16*3)
                     .maximumSize(10000).build();
 //            for (int i=0;i<size;i++) {

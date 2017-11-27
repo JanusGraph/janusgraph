@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -37,7 +36,6 @@ import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.StreamSupport;
 
@@ -81,7 +79,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         Preconditions.checkNotNull(serializer);
         this.tx = tx;
         this.serializer = serializer;
-        this.constraints = new ArrayList<PredicateCondition<String, JanusGraphElement>>(5);
+        this.constraints = new ArrayList<>(5);
     }
 
     /* ---------------------------------------------------------------
@@ -100,7 +98,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(predicate);
         Preconditions.checkArgument(predicate.isValidCondition(condition), "Invalid condition: %s", condition);
-        constraints.add(new PredicateCondition<String, JanusGraphElement>(key, predicate, condition));
+        constraints.add(new PredicateCondition<>(key, predicate, condition));
         return this;
     }
 
@@ -163,19 +161,19 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     @Override
     public Iterable<JanusGraphVertex> vertices() {
         GraphCentricQuery query = constructQuery(ElementCategory.VERTEX);
-        return Iterables.filter(new QueryProcessor<GraphCentricQuery, JanusGraphElement, JointIndexQuery>(query, tx.elementProcessor), JanusGraphVertex.class);
+        return Iterables.filter(new QueryProcessor<>(query, tx.elementProcessor), JanusGraphVertex.class);
     }
 
     @Override
     public Iterable<JanusGraphEdge> edges() {
         GraphCentricQuery query = constructQuery(ElementCategory.EDGE);
-        return Iterables.filter(new QueryProcessor<GraphCentricQuery, JanusGraphElement, JointIndexQuery>(query, tx.elementProcessor), JanusGraphEdge.class);
+        return Iterables.filter(new QueryProcessor<>(query, tx.elementProcessor), JanusGraphEdge.class);
     }
 
     @Override
     public Iterable<JanusGraphVertexProperty> properties() {
         GraphCentricQuery query = constructQuery(ElementCategory.PROPERTY);
-        return Iterables.filter(new QueryProcessor<GraphCentricQuery, JanusGraphElement, JointIndexQuery>(query, tx.elementProcessor), JanusGraphVertexProperty.class);
+        return Iterables.filter(new QueryProcessor<>(query, tx.elementProcessor), JanusGraphVertexProperty.class);
     }
 
 
@@ -321,9 +319,9 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             }
             indexLimit = Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, coveredClauses.size(), indexLimit));
             jointQuery.setLimit(indexLimit);
-            query = new BackendQueryHolder<JointIndexQuery>(jointQuery, coveredClauses.size()==conditions.numChildren(), isSorted);
+            query = new BackendQueryHolder<>(jointQuery, coveredClauses.size() == conditions.numChildren(), isSorted);
         } else {
-            query = new BackendQueryHolder<JointIndexQuery>(new JointIndexQuery(), false, isSorted);
+            query = new BackendQueryHolder<>(new JointIndexQuery(), false, isSorted);
         }
         return new GraphCentricQuery(resultType, conditions, orders, query, limit);
     }
@@ -341,8 +339,8 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         if (index.getStatus()!= SchemaStatus.ENABLED) return null;
         IndexField[] fields = index.getFieldKeys();
         Object[] indexValues = new Object[fields.length];
-        Set<Condition> coveredClauses = new HashSet<Condition>(fields.length);
-        List<Object[]> indexCovers = new ArrayList<Object[]>(4);
+        final Set<Condition> coveredClauses = new HashSet<>(fields.length);
+        final List<Object[]> indexCovers = new ArrayList<>(4);
 
         constructIndexCover(indexValues,0,fields,condition,indexCovers,coveredClauses);
         if (!indexCovers.isEmpty()) {
@@ -394,7 +392,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
                                                            final IndexSerializer indexInfo, final Set<Condition> covered) {
         assert QueryUtil.isQueryNormalForm(condition);
         assert condition instanceof And;
-        And<JanusGraphElement> subCondition = new And<JanusGraphElement>(condition.numChildren());
+        final And<JanusGraphElement> subCondition = new And<>(condition.numChildren());
         for (Condition<JanusGraphElement> subClause : condition.getChildren()) {
             if (coversAll(index,subClause,indexInfo)) {
                 subCondition.add(subClause);

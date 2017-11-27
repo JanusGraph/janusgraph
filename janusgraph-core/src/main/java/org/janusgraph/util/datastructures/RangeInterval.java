@@ -92,7 +92,7 @@ public class RangeInterval<T> implements Interval<T> {
 
     @Override
     public Collection<T> getPoints() {
-        Set<T> set = new HashSet<T>(2);
+        final Set<T> set = new HashSet<>(2);
         if (start!=null) set.add(start);
         if (end!=null) set.add(end);
         return set;
@@ -114,9 +114,9 @@ public class RangeInterval<T> implements Interval<T> {
             return other.intersect(this);
         } else if (other instanceof RangeInterval) {
             final RangeInterval<T> rint = (RangeInterval)other;
-            Map.Entry<T,Boolean> newStart = comparePoints(start,startInclusive,rint.start,rint.startInclusive,true);
-            Map.Entry<T,Boolean> newEnd = comparePoints(end,endInclusive,rint.end,rint.endInclusive,false);
-            RangeInterval<T> result = new RangeInterval<T>(newStart.getKey(),newEnd.getKey());
+            final Map.Entry<T,Boolean> newStart = comparePoints(start,startInclusive,rint.start,rint.startInclusive,true);
+            final Map.Entry<T,Boolean> newEnd = comparePoints(end,endInclusive,rint.end,rint.endInclusive,false);
+            final RangeInterval<T> result = new RangeInterval<>(newStart.getKey(), newEnd.getKey());
             result.setStartInclusive(newStart.getValue());
             result.setEndInclusive(newEnd.getValue());
             return result;
@@ -124,15 +124,15 @@ public class RangeInterval<T> implements Interval<T> {
     }
 
     private Map.Entry<T,Boolean> comparePoints(T one, boolean oneIncl, T two, boolean twoIncl, boolean chooseBigger) {
-        if (one==null) return new AbstractMap.SimpleImmutableEntry<T, Boolean>(two,twoIncl);
-        if (two==null) return new AbstractMap.SimpleImmutableEntry<T, Boolean>(one,oneIncl);
+        if (one==null) return new AbstractMap.SimpleImmutableEntry<>(two, twoIncl);
+        if (two==null) return new AbstractMap.SimpleImmutableEntry<>(one, oneIncl);
         int c = ((Comparable)one).compareTo(two);
         if (c==0) {
-            return new AbstractMap.SimpleImmutableEntry<T, Boolean>(one, oneIncl & twoIncl);
+            return new AbstractMap.SimpleImmutableEntry<>(one, oneIncl & twoIncl);
         } else if ((c>0 && chooseBigger) || (c<0  && !chooseBigger)) {
-            return new AbstractMap.SimpleImmutableEntry<T, Boolean>(one,oneIncl);
+            return new AbstractMap.SimpleImmutableEntry<>(one, oneIncl);
         } else {
-            return new AbstractMap.SimpleImmutableEntry<T, Boolean>(two,twoIncl);
+            return new AbstractMap.SimpleImmutableEntry<>(two, twoIncl);
         }
     }
 

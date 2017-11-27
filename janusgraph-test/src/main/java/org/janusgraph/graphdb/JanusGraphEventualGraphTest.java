@@ -22,7 +22,6 @@ import org.janusgraph.core.attribute.Cmp;
 
 
 import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.diskstorage.util.TestLockerManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
@@ -42,7 +41,6 @@ import java.util.Iterator;
 
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

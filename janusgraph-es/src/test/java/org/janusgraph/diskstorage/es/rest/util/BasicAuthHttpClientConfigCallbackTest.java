@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.es.rest.util;
 
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
 
 import org.apache.http.auth.AuthScope;

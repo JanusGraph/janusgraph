@@ -35,7 +35,7 @@ public class MockIDAuthority implements IDAuthority {
 
     private static final int BLOCK_SIZE_LIMIT = Integer.MAX_VALUE;
 
-    private final ConcurrentHashMap<Long, AtomicLong> ids = new ConcurrentHashMap<Long, AtomicLong>();
+    private final ConcurrentHashMap<Long, AtomicLong> ids = new ConcurrentHashMap<>();
     private IDBlockSizer blockSizer;
     private final int blockSizeLimit;
     private final int delayAcquisitionMS;
