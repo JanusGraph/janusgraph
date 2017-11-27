@@ -79,8 +79,6 @@ import org.apache.tinkerpop.gremlin.structure.*;
 
 import org.apache.commons.lang.StringUtils;
 import org.cliffc.high_scale_lib.NonBlockingHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
@@ -92,13 +90,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
+@Slf4j
 public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implements TypeInspector, SchemaInspector, VertexFactory {
-
-    private static final Logger log = LoggerFactory.getLogger(StandardJanusGraphTx.class);
 
     private static final Map<Long, InternalRelation> EMPTY_DELETED_RELATIONS = ImmutableMap.of();
     private static final ConcurrentMap<LockTuple, TransactionLock> UNINITIALIZED_LOCKS = null;
@@ -111,13 +110,17 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
      */
     private static final long MIN_VERTEX_CACHE_SIZE = 100L;
 
-
+    @Getter
     private final StandardJanusGraph graph;
-    private final TransactionConfiguration config;
+    @Getter
+    private final TransactionConfiguration configuration;
     private final IDManager idManager;
+    @Getter
     private final IDManager idInspector;
     private final AttributeHandler attributeHandler;
+    @Getter
     private BackendTransaction txHandle;
+    @Getter
     private final EdgeSerializer edgeSerializer;
     private final IndexSerializer indexSerializer;
 
@@ -195,7 +198,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         Preconditions.checkNotNull(config);
         this.graph = graph;
         this.times = graph.getConfiguration().getTimestampProvider();
-        this.config = config;
+        this.configuration = config;
         this.idManager = graph.getIDManager();
         this.idInspector = idManager;
 //        this.idInspector = idManager.getIdInspector();
@@ -276,7 +279,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
      */
 
     private void verifyWriteAccess(JanusGraphVertex... vertices) {
-        if (config.isReadOnly())
+        if (configuration.isReadOnly())
             throw new ReadOnlyTransactionException("Cannot create new entities in read-only transaction");
         for (JanusGraphVertex v : vertices) {
             if (v.hasId() && idInspector.isUnmodifiableVertex(v.longId()) && !v.isNew())
@@ -307,30 +310,9 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     public StandardJanusGraphTx getNextTx() {
         Preconditions.checkArgument(isClosed());
-        if (!config.isThreadBound())
+        if (!configuration.isThreadBound())
             throw new IllegalStateException("Cannot access element because its enclosing transaction is closed and unbound");
         else return (StandardJanusGraphTx) graph.getCurrentThreadTx();
-    }
-
-    public TransactionConfiguration getConfiguration() {
-        return config;
-    }
-
-    @Override
-    public StandardJanusGraph getGraph() {
-        return graph;
-    }
-
-    public BackendTransaction getTxHandle() {
-        return txHandle;
-    }
-
-    public EdgeSerializer getEdgeSerializer() {
-        return edgeSerializer;
-    }
-
-    public IDManager getIdInspector() {
-        return idInspector;
     }
 
     public boolean isPartitionedVertex(JanusGraphVertex vertex) {
@@ -352,10 +334,10 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     public InternalVertex[] getAllRepresentatives(JanusGraphVertex partitionedVertex, boolean restrict2Partitions) {
         Preconditions.checkArgument(isPartitionedVertex(partitionedVertex));
         long[] ids;
-        if (!restrict2Partitions || !config.hasRestrictedPartitions()) {
+        if (!restrict2Partitions || !configuration.hasRestrictedPartitions()) {
             ids = idManager.getPartitionedVertexRepresentatives(partitionedVertex.longId());
         } else {
-            int[] restrictedParititions = config.getRestrictedPartitions();
+            int[] restrictedParititions = configuration.getRestrictedPartitions();
             ids = new long[restrictedParititions.length];
             for (int i=0;i<ids.length;i++) {
                 ids[i]=idManager.getPartitionedVertexId(partitionedVertex.longId(),restrictedParititions[i]);
@@ -383,8 +365,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     @Override
     public JanusGraphVertex getVertex(long vertexid) {
         verifyOpen();
-        if (null != config.getGroupName()) {
-            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVertexByID").inc();
+        if (null != configuration.getGroupName()) {
+            MetricManager.INSTANCE.getCounter(configuration.getGroupName(), "db", "getVertexByID").inc();
         }
         if (!isValidVertexId(vertexid)) return null;
         //Make canonical partitioned vertex id
@@ -400,8 +382,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         verifyOpen();
         if (ids==null || ids.length==0) return (Iterable)getInternalVertices();
 
-        if (null != config.getGroupName()) {
-            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVerticesByID").inc();
+        if (null != configuration.getGroupName()) {
+            MetricManager.INSTANCE.getCounter(configuration.getGroupName(), "db", "getVerticesByID").inc();
         }
         List<JanusGraphVertex> result = new ArrayList<JanusGraphVertex>(ids.length);
         LongArrayList vids = new LongArrayList(ids.length);
@@ -515,11 +497,11 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         Preconditions.checkArgument(vertexId != null || !graph.getConfiguration().allowVertexIdSetting(), "Must provide vertex id");
         Preconditions.checkArgument(vertexId == null || IDManager.VertexIDType.NormalVertex.is(vertexId), "Not a valid vertex id: %s", vertexId);
         Preconditions.checkArgument(vertexId == null || ((InternalVertexLabel)label).hasDefaultConfiguration(), "Cannot only use default vertex labels: %s",label);
-        Preconditions.checkArgument(vertexId == null || !config.hasVerifyExternalVertexExistence() || !containsVertex(vertexId), "Vertex with given id already exists: %s", vertexId);
+        Preconditions.checkArgument(vertexId == null || !configuration.hasVerifyExternalVertexExistence() || !containsVertex(vertexId), "Vertex with given id already exists: %s", vertexId);
         StandardVertex vertex = new StandardVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.NormalVertex, temporaryIds.nextID()), ElementLifeCycle.New);
         if (vertexId != null) {
             vertex.setId(vertexId);
-        } else if (config.hasAssignIDsImmediately() || label.isPartitioned()) {
+        } else if (configuration.hasAssignIDsImmediately() || label.isPartitioned()) {
             graph.assignID(vertex,label);
         }
         addProperty(vertex, BaseKey.VertexExists, Boolean.TRUE);
@@ -617,7 +599,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         } else {
             Preconditions.checkArgument(relation.isLoaded());
             if (deletedRelations == EMPTY_DELETED_RELATIONS) {
-                if (config.isSingleThreaded()) {
+                if (configuration.isSingleThreaded()) {
                     deletedRelations = new HashMap<Long, InternalRelation>();
                 } else {
                     synchronized (this) {
@@ -639,9 +621,9 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     }
 
     private TransactionLock getLock(final LockTuple la) {
-        if (config.isSingleThreaded()) return FakeLock.INSTANCE;
+        if (configuration.isSingleThreaded()) return FakeLock.INSTANCE;
         if (uniqueLocks == UNINITIALIZED_LOCKS) {
-            Preconditions.checkArgument(!config.isSingleThreaded());
+            Preconditions.checkArgument(!configuration.isSingleThreaded());
             synchronized (this) {
                 if (uniqueLocks == UNINITIALIZED_LOCKS)
                     uniqueLocks = new ConcurrentHashMap<LockTuple, TransactionLock>();
@@ -656,7 +638,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     private TransactionLock getUniquenessLock(final JanusGraphVertex out, final InternalRelationType type, final Object in) {
         Multiplicity multiplicity = type.multiplicity();
         TransactionLock uniqueLock = FakeLock.INSTANCE;
-        if (config.hasVerifyUniqueness() && multiplicity.isConstrained()) {
+        if (configuration.hasVerifyUniqueness() && multiplicity.isConstrained()) {
             uniqueLock = null;
             if (multiplicity==Multiplicity.SIMPLE) {
                 uniqueLock = getLock(out, type, in);
@@ -685,7 +667,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         uniqueLock.lock(LOCK_TIMEOUT);
         try {
             //Check uniqueness
-            if (config.hasVerifyUniqueness()) {
+            if (configuration.hasVerifyUniqueness()) {
                 if (multiplicity==Multiplicity.SIMPLE) {
                     if (!Iterables.isEmpty(query(outVertex).type(label).direction(Direction.OUT).adjacent(inVertex).edges()))
                             throw new SchemaViolationException("An edge with the given label already exists between the pair of vertices and the label [%s] is simple", label.name());
@@ -700,7 +682,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                 }
             }
             StandardEdge edge = new StandardEdge(IDManager.getTemporaryRelationID(temporaryIds.nextID()), label, (InternalVertex) outVertex, (InternalVertex) inVertex, ElementLifeCycle.New);
-            if (config.hasAssignIDsImmediately()) graph.assignID(edge);
+            if (configuration.hasAssignIDsImmediately()) graph.assignID(edge);
             connectRelation(edge);
             return edge;
         } finally {
@@ -776,7 +758,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                    3) the cardinalities match (if we overwrite a set with single, we need to read all other values to delete)
                 */
 
-                if ( (!config.hasVerifyUniqueness() || ((InternalRelationType)key).getConsistencyModifier()!=ConsistencyModifier.LOCK) &&
+                if ( (!configuration.hasVerifyUniqueness() || ((InternalRelationType)key).getConsistencyModifier()!=ConsistencyModifier.LOCK) &&
                         !TypeUtil.hasAnyIndex(key) && cardi==cardinality.convert()) {
                     //Only delete in-memory so as to not trigger a read from the database which isn't necessary because we will overwrite blindly
                     ((InternalVertex) vertex).getAddedRelations(p -> p.getType().equals(key)).forEach(propertyRemover);
@@ -786,7 +768,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             }
 
             //Check index uniqueness
-            if (config.hasVerifyUniqueness()) {
+            if (configuration.hasVerifyUniqueness()) {
                 //Check all unique indexes
                 for (IndexLockTuple lockTuple : uniqueIndexTuples) {
                     if (!Iterables.isEmpty(IndexHelper.getQueryResults(lockTuple.getIndex(), lockTuple.getAll(), this)))
@@ -794,7 +776,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                 }
             }
             StandardVertexProperty prop = new StandardVertexProperty(IDManager.getTemporaryRelationID(temporaryIds.nextID()), key, (InternalVertex) vertex, normalizedValue, ElementLifeCycle.New);
-            if (config.hasAssignIDsImmediately()) graph.assignID(prop);
+            if (configuration.hasAssignIDsImmediately()) graph.assignID(prop);
             connectRelation(prop);
             return prop;
         } finally {
@@ -809,8 +791,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         verifyOpen();
         if (ids==null || ids.length==0) return new VertexCentricEdgeIterable(getInternalVertices(),RelationCategory.EDGE);
 
-        if (null != config.getGroupName()) {
-            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getEdgesByID").inc();
+        if (null != configuration.getGroupName()) {
+            MetricManager.INSTANCE.getCounter(configuration.getGroupName(), "db", "getEdgesByID").inc();
         }
         List<JanusGraphEdge> result = new ArrayList<>(ids.length);
         for (RelationIdentifier id : ids) {
@@ -933,7 +915,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     public PropertyKey getOrCreatePropertyKey(String name, Object value) {
         RelationType et = getRelationType(name);
         if (et == null) {
-            return config.getAutoSchemaMaker().makePropertyKey(makePropertyKey(name), value);
+            return configuration.getAutoSchemaMaker().makePropertyKey(makePropertyKey(name), value);
         } else if (et.isPropertyKey()) {
             return (PropertyKey) et;
         } else
@@ -944,7 +926,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     public PropertyKey getOrCreatePropertyKey(String name) {
         RelationType et = getRelationType(name);
         if (et == null) {
-            return config.getAutoSchemaMaker().makePropertyKey(makePropertyKey(name));
+            return configuration.getAutoSchemaMaker().makePropertyKey(makePropertyKey(name));
         } else if (et.isPropertyKey()) {
             return (PropertyKey) et;
         } else
@@ -962,7 +944,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     public EdgeLabel getOrCreateEdgeLabel(String name) {
         RelationType et = getRelationType(name);
         if (et == null) {
-            return config.getAutoSchemaMaker().makeEdgeLabel(makeEdgeLabel(name));
+            return configuration.getAutoSchemaMaker().makeEdgeLabel(makeEdgeLabel(name));
         } else if (et.isEdgeLabel()) {
             return (EdgeLabel) et;
         } else
@@ -1009,7 +991,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     public VertexLabel getOrCreateVertexLabel(String name) {
         VertexLabel vlabel = getVertexLabel(name);
         if (vlabel==null) {
-            vlabel = config.getAutoSchemaMaker().makeVertexLabel(makeVertexLabel(name));
+            vlabel = configuration.getAutoSchemaMaker().makeVertexLabel(makeVertexLabel(name));
         }
         return vlabel;
     }
@@ -1280,7 +1262,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                 iter = new SubqueryIterator(indexQuery.getQuery(0), indexSerializer, txHandle, indexCache, indexQuery.getLimit(), getConversionFunction(query.getResultType()),
                         retrievals.isEmpty() ? null: QueryUtil.processIntersectingRetrievals(retrievals, indexQuery.getLimit()));
             } else {
-                if (config.hasForceIndexUsage()) throw new JanusGraphException("Could not find a suitable index to answer graph query and graph scans are disabled: " + query);
+                if (configuration.hasForceIndexUsage()) throw new JanusGraphException("Could not find a suitable index to answer graph query and graph scans are disabled: " + query);
                 log.warn("Query requires iterating over all vertices [{}]. For better performance, use indexes", query.getCondition());
 
                 QueryProfiler sub = profiler.addNested("scan");
@@ -1366,8 +1348,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     public synchronized void commit() {
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
         boolean success = false;
-        if (null != config.getGroupName()) {
-            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "commit").inc();
+        if (null != configuration.getGroupName()) {
+            MetricManager.INSTANCE.getCounter(configuration.getGroupName(), "tx", "commit").inc();
         }
         try {
             if (hasModifications()) {
@@ -1385,8 +1367,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             throw new JanusGraphException("Could not commit transaction due to exception during persistence", e);
         } finally {
             releaseTransaction();
-            if (null != config.getGroupName() && !success) {
-                MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "commit.exceptions").inc();
+            if (null != configuration.getGroupName() && !success) {
+                MetricManager.INSTANCE.getCounter(configuration.getGroupName(), "tx", "commit.exceptions").inc();
             }
         }
     }
@@ -1395,8 +1377,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     public synchronized void rollback() {
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
         boolean success = false;
-        if (null != config.getGroupName()) {
-            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "rollback").inc();
+        if (null != configuration.getGroupName()) {
+            MetricManager.INSTANCE.getCounter(configuration.getGroupName(), "tx", "rollback").inc();
         }
         try {
             txHandle.rollback();
@@ -1405,8 +1387,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             throw new JanusGraphException("Could not rollback transaction due to exception", e);
         } finally {
             releaseTransaction();
-            if (null != config.getGroupName() && !success) {
-                MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "rollback.exceptions").inc();
+            if (null != configuration.getGroupName() && !success) {
+                MetricManager.INSTANCE.getCounter(configuration.getGroupName(), "tx", "rollback.exceptions").inc();
             }
         }
     }

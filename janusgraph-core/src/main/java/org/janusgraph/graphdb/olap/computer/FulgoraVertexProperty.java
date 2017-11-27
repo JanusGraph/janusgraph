@@ -25,6 +25,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import lombok.Getter;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -34,6 +36,7 @@ public class FulgoraVertexProperty<V> implements JanusGraphVertexProperty<V> {
     private final JanusGraphVertex vertex;
     private final String key;
     private final V value;
+    @Getter
     private boolean isRemoved = false;
 
     public FulgoraVertexProperty(VertexMemoryHandler mixinParent, JanusGraphVertex vertex, String key, V value) {
@@ -97,11 +100,6 @@ public class FulgoraVertexProperty<V> implements JanusGraphVertexProperty<V> {
     @Override
     public boolean isLoaded() {
         return false;
-    }
-
-    @Override
-    public boolean isRemoved() {
-        return isRemoved;
     }
 
     @Override

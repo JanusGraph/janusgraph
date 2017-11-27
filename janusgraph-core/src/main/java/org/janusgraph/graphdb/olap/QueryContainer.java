@@ -34,6 +34,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import lombok.Getter;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -42,7 +44,8 @@ public class QueryContainer {
     public static final int DEFAULT_HARD_QUERY_LIMIT = 100000;
     public static final String QUERY_NAME_PREFIX = "query$";
 
-    private final StandardJanusGraphTx tx;
+    @Getter
+    private final StandardJanusGraphTx transaction;
     private int hardQueryLimit;
 
     private Set<Query> queries;
@@ -50,14 +53,10 @@ public class QueryContainer {
 
     public QueryContainer(StandardJanusGraphTx tx) {
         Preconditions.checkArgument(tx != null);
-        this.tx = tx;
+        this.transaction = tx;
         queries = new HashSet<>(6);
         inverseQueries = HashMultimap.create();
         hardQueryLimit = DEFAULT_HARD_QUERY_LIMIT;
-    }
-
-    public JanusGraphTransaction getTransaction() {
-        return tx;
     }
 
     public QueryBuilder addQuery() {
@@ -116,7 +115,7 @@ public class QueryContainer {
 //        private String name = null;
 
         private QueryBuilder() {
-            super(QueryContainer.this.tx);
+            super(QueryContainer.this.transaction);
         }
 
         private Query relations(RelationCategory returnType) {

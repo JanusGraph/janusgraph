@@ -26,6 +26,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import lombok.Getter;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -34,14 +36,15 @@ public class StandardVertexProperty extends AbstractVertexProperty implements St
 
     public StandardVertexProperty(long id, PropertyKey type, InternalVertex vertex, Object value, byte lifecycle) {
         super(id, type, vertex, value);
-        this.lifecycle = lifecycle;
+        this.lifeCycle = lifecycle;
     }
 
     //############## SAME CODE AS StandardEdge #############################
 
     private static final Map<PropertyKey, Object> EMPTY_PROPERTIES = ImmutableMap.of();
 
-    private byte lifecycle;
+    @Getter
+    private byte lifeCycle;
     private long previousID = 0;
     private volatile Map<PropertyKey, Object> properties = EMPTY_PROPERTIES;
 
@@ -92,15 +95,10 @@ public class StandardVertexProperty extends AbstractVertexProperty implements St
     }
 
     @Override
-    public byte getLifeCycle() {
-        return lifecycle;
-    }
-
-    @Override
     public synchronized void remove() {
-        if (!ElementLifeCycle.isRemoved(lifecycle)) {
+        if (!ElementLifeCycle.isRemoved(lifeCycle)) {
             tx().removeRelation(this);
-            lifecycle = ElementLifeCycle.update(lifecycle, ElementLifeCycle.Event.REMOVED);
+            lifeCycle = ElementLifeCycle.update(lifeCycle, ElementLifeCycle.Event.REMOVED);
         } //else throw InvalidElementException.removedException(this);
     }
 

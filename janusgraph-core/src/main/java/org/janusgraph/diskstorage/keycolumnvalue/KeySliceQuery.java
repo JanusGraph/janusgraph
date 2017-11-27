@@ -18,6 +18,8 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
+import lombok.Getter;
+
 /**
  * Extends {@link SliceQuery} by a key that identifies the location of the slice in the key-ring.
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -25,6 +27,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 
 public class KeySliceQuery extends SliceQuery {
 
+    @Getter
     private final StaticBuffer key;
 
     public KeySliceQuery(StaticBuffer key, StaticBuffer sliceStart, StaticBuffer sliceEnd) {
@@ -37,14 +40,6 @@ public class KeySliceQuery extends SliceQuery {
         super(query);
         Preconditions.checkNotNull(key);
         this.key=key;
-    }
-
-    /**
-     *
-     * @return the key of this query
-     */
-    public StaticBuffer getKey() {
-        return key;
     }
 
     @Override

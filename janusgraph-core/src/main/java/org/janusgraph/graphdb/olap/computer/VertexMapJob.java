@@ -30,21 +30,21 @@ import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.janusgraph.util.datastructures.Retriever;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.util.List;
 import java.util.Map;
 
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@Slf4j
 public class VertexMapJob implements VertexScanJob {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(VertexMapJob.class);
-
 
     public static final PreloadedVertex.AccessCheck MAPREDUCE_CHECK = new PreloadedVertex.AccessCheck() {
         @Override
@@ -69,18 +69,11 @@ public class VertexMapJob implements VertexScanJob {
     };
 
     private final IDManager idManager;
-    private final Map<MapReduce, FulgoraMapEmitter> mapJobs;
     private final FulgoraVertexMemory vertexMemory;
+    private final Map<MapReduce, FulgoraMapEmitter> mapJobs;
 
     public static final String MAP_JOB_SUCCESS = "map-success";
     public static final String MAP_JOB_FAILURE = "map-fail";
-
-    private VertexMapJob(IDManager idManager, FulgoraVertexMemory vertexMemory,
-                         Map<MapReduce, FulgoraMapEmitter> mapJobs) {
-        this.mapJobs = mapJobs;
-        this.vertexMemory = vertexMemory;
-        this.idManager = idManager;
-    }
 
     @Override
     public VertexMapJob clone() {

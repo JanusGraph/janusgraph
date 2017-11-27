@@ -17,29 +17,23 @@ package org.janusgraph.graphdb.schema;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang.StringUtils;
 
+import lombok.Getter;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@Getter
 public class SchemaElementDefinition {
 
     private final String name;
-    private final long id;
+    private final long longId;
 
 
     public SchemaElementDefinition(String name, long id) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         this.name = name;
-        this.id = id;
+        this.longId = id;
     }
-
-    public String getName() {
-        return name;
-    }
-
-    public long getLongId() {
-        return id;
-    }
-
 
     @Override
     public int hashCode() {

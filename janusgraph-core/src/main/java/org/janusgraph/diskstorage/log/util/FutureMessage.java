@@ -14,9 +14,12 @@
 
 package org.janusgraph.diskstorage.log.util;
 
-import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractFuture;
 import org.janusgraph.diskstorage.log.Message;
+
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Implementation of a {@link java.util.concurrent.Future} for {@link Message}s that
@@ -26,22 +29,15 @@ import org.janusgraph.diskstorage.log.Message;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@RequiredArgsConstructor
 public class FutureMessage<M extends Message> extends AbstractFuture<Message> {
 
-    private final M message;
-
-    public FutureMessage(M message) {
-        Preconditions.checkNotNull(message);
-        this.message = message;
-    }
-
     /**
-     * Returns the actual message that was added to the log
-     * @return
+     * The actual message that was added to the log
      */
-    public M getMessage() {
-        return message;
-    }
+    @NonNull
+    @Getter
+    private final M message;
 
     /**
      * This method should be called by {@link org.janusgraph.diskstorage.log.Log} implementations when the message was successfully

@@ -51,6 +51,8 @@ import org.janusgraph.util.system.NetworkUtil;
 
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,8 +71,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.ClassUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -92,11 +92,8 @@ import org.janusgraph.util.stats.MetricManager;
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
+@Slf4j
 public class GraphDatabaseConfiguration {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(GraphDatabaseConfiguration.class);
-
 
     public static ConfigNamespace ROOT_NS = new ConfigNamespace(null,"root","Root Configuration Namespace for the JanusGraph Graph Database");
 
@@ -1222,24 +1219,33 @@ public class GraphDatabaseConfiguration {
     public static final String USER_CONFIGURATION_IDENTIFIER = "userconfig";
     private static final String INCOMPATIBLE_VERSION_EXCEPTION = "StorageBackend version is incompatible with current JanusGraph version: storage [%1s] vs. runtime [%2s]";
 
+    @Getter
     private final Configuration configuration;
     private final ReadConfiguration configurationAtOpen;
+    @Getter
     private String uniqueGraphId;
     private ModifiableConfiguration localConfiguration;
 
-    private boolean readOnly;
+    @Getter
+    private boolean isReadOnly;
     private boolean flushIDs;
     private boolean forceIndexUsage;
-    private boolean batchLoading;
+    @Getter
+    private boolean isBatchLoading;
+    @Getter
     private int txVertexCacheSize;
+    @Getter
     private int txDirtyVertexSize;
+    @Getter
     private DefaultSchemaMaker defaultSchemaMaker;
     private Boolean propertyPrefetching;
     private boolean adjustQueryLimit;
     private Boolean useMultiQuery;
     private boolean allowVertexIdSetting;
     private boolean logTransactions;
+    @Getter
     private String metricsPrefix;
+    @Getter
     private String unknownIndexKeyName;
 
     private StoreFeatures storeFeatures = null;
@@ -1518,23 +1524,23 @@ public class GraphDatabaseConfiguration {
     }
 
     private void preLoadConfiguration() {
-        readOnly = configuration.get(STORAGE_READONLY);
+        isReadOnly = configuration.get(STORAGE_READONLY);
         flushIDs = configuration.get(IDS_FLUSH);
         forceIndexUsage = configuration.get(FORCE_INDEX_USAGE);
-        batchLoading = configuration.get(STORAGE_BATCH);
+        isBatchLoading = configuration.get(STORAGE_BATCH);
         String autoTypeMakerName = configuration.get(AUTO_TYPE);
         if (preregisteredAutoType.containsKey(autoTypeMakerName))
             defaultSchemaMaker = preregisteredAutoType.get(autoTypeMakerName);
         else defaultSchemaMaker = ConfigurationUtil.instantiate(autoTypeMakerName);
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
-        if (batchLoading) defaultSchemaMaker = DisableDefaultSchemaMaker.INSTANCE;
+        if (isBatchLoading) defaultSchemaMaker = DisableDefaultSchemaMaker.INSTANCE;
 
         txVertexCacheSize = configuration.get(TX_CACHE_SIZE);
         //Check for explicit dirty vertex cache size first, then fall back on batch-loading-dependent default
         if (configuration.has(TX_DIRTY_SIZE)) {
             txDirtyVertexSize = configuration.get(TX_DIRTY_SIZE);
         } else {
-            txDirtyVertexSize = batchLoading ?
+            txDirtyVertexSize = isBatchLoading ?
                     TX_DIRTY_SIZE_DEFAULT_WITH_BATCH :
                     TX_DIRTY_SIZE_DEFAULT_WITHOUT_BATCH;
         }
@@ -1635,40 +1641,12 @@ public class GraphDatabaseConfiguration {
         }
     }
 
-    public boolean isReadOnly() {
-        return readOnly;
-    }
-
     public boolean hasFlushIDs() {
         return flushIDs;
     }
 
     public boolean hasForceIndexUsage() {
         return forceIndexUsage;
-    }
-
-    public int getTxVertexCacheSize() {
-        return txVertexCacheSize;
-    }
-
-    public int getTxDirtyVertexSize() {
-        return txDirtyVertexSize;
-    }
-
-    public boolean isBatchLoading() {
-        return batchLoading;
-    }
-
-    public String getUniqueGraphId() {
-        return uniqueGraphId;
-    }
-
-    public String getMetricsPrefix() {
-        return metricsPrefix;
-    }
-
-    public DefaultSchemaMaker getDefaultSchemaMaker() {
-        return defaultSchemaMaker;
     }
 
     public boolean allowVertexIdSetting() {
@@ -1697,10 +1675,6 @@ public class GraphDatabaseConfiguration {
 
     public boolean adjustQueryLimit() {
         return adjustQueryLimit;
-    }
-
-    public String getUnknownIndexKeyName() {
-        return unknownIndexKeyName;
     }
 
     public boolean hasLogTransactions() {
@@ -1767,10 +1741,6 @@ public class GraphDatabaseConfiguration {
         } else {
             return clazzname + ":" + Arrays.toString(configuration.get(STORAGE_HOSTS));
         }
-    }
-
-    public Configuration getConfiguration() {
-        return configuration;
     }
 
     public Backend getBackend() {

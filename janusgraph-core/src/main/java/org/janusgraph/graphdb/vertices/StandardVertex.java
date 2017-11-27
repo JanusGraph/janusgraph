@@ -27,22 +27,25 @@ import org.janusgraph.graphdb.transaction.addedrelations.SimpleAddedRelations;
 import org.janusgraph.util.datastructures.Retriever;
 import java.util.List;
 
+import lombok.Getter;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class StandardVertex extends AbstractVertex {
 
-    private byte lifecycle;
+    @Getter
+    private byte lifeCycle;
     private volatile AddedRelationsContainer addedRelations=AddedRelationsContainer.EMPTY;
 
     public StandardVertex(final StandardJanusGraphTx tx, final long id, byte lifecycle) {
         super(tx, id);
-        this.lifecycle=lifecycle;
+        this.lifeCycle=lifecycle;
     }
 
     public synchronized final void updateLifeCycle(ElementLifeCycle.Event event) {
-        this.lifecycle = ElementLifeCycle.update(lifecycle,event);
+        this.lifeCycle = ElementLifeCycle.update(lifeCycle,event);
     }
 
     @Override
@@ -88,22 +91,17 @@ public class StandardVertex extends AbstractVertex {
 
     @Override
     public boolean hasRemovedRelations() {
-        return ElementLifeCycle.hasRemovedRelations(lifecycle);
+        return ElementLifeCycle.hasRemovedRelations(lifeCycle);
     }
 
     @Override
     public boolean hasAddedRelations() {
-        return ElementLifeCycle.hasAddedRelations(lifecycle);
+        return ElementLifeCycle.hasAddedRelations(lifeCycle);
     }
 
     @Override
     public synchronized void remove() {
         super.remove();
         ((StandardVertex)it()).updateLifeCycle(ElementLifeCycle.Event.REMOVED);
-    }
-
-    @Override
-    public byte getLifeCycle() {
-        return lifecycle;
     }
 }

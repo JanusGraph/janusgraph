@@ -16,13 +16,12 @@ package org.janusgraph.diskstorage.util;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
+@RequiredArgsConstructor
 public class UncaughtExceptionLogger implements UncaughtExceptionHandler {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(UncaughtExceptionHandler.class);
 
     /*
      * I don't like duplicating a subset of org.slf4j.Level, but the slf4j API
@@ -59,10 +58,6 @@ public class UncaughtExceptionLogger implements UncaughtExceptionHandler {
 
     private final UELevel level;
 
-    public UncaughtExceptionLogger(UELevel level) {
-        this.level = level;
-    }
-
     @Override
     public void uncaughtException(Thread t, Throwable e) {
         level.dispatch(String.format("Uncaught exception in thread " + t), e);
@@ -70,5 +65,5 @@ public class UncaughtExceptionLogger implements UncaughtExceptionHandler {
 }
 
 interface UELogLevel {
-    public void dispatch(String message, Throwable t);
+    void dispatch(String message, Throwable t);
 }

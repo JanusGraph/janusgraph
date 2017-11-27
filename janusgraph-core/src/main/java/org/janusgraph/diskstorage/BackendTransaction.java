@@ -28,8 +28,6 @@ import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
 import org.janusgraph.diskstorage.log.kcvs.ExternalCachePersistor;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.JanusGraphException;
@@ -42,11 +40,15 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import org.janusgraph.diskstorage.util.BackendOperation;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
+
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Bundles all storage/index transactions and provides a proxy for some of their
@@ -55,11 +57,9 @@ import org.janusgraph.graphdb.database.serialize.DataOutput;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
+@Slf4j
+@RequiredArgsConstructor
 public class BackendTransaction implements LoggableTransaction {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(BackendTransaction.class);
 
     public static final int MIN_TASKS_TO_PARALLELIZE = 2;
 
@@ -67,8 +67,10 @@ public class BackendTransaction implements LoggableTransaction {
     public static final StaticBuffer EDGESTORE_MIN_KEY = BufferUtil.zeroBuffer(8);
     public static final StaticBuffer EDGESTORE_MAX_KEY = BufferUtil.oneBuffer(8);
 
-    private final CacheTransaction storeTx;
-    private final BaseTransactionConfig txConfig;
+    @Getter
+    private final CacheTransaction storeTransaction;
+    @Getter
+    private final BaseTransactionConfig baseTransactionConfig;
     private final StoreFeatures storeFeatures;
 
     private final KCVSCache edgeStore;
@@ -76,43 +78,18 @@ public class BackendTransaction implements LoggableTransaction {
     private final KCVSCache txLogStore;
 
     private final Duration maxReadTime;
-
-    private final Executor threadPool;
-
     private final Map<String, IndexTransaction> indexTx;
+    private final Executor threadPool;
 
     private boolean acquiredLock = false;
     private boolean cacheEnabled = true;
-
-    public BackendTransaction(CacheTransaction storeTx, BaseTransactionConfig txConfig,
-                              StoreFeatures features, KCVSCache edgeStore, KCVSCache indexStore,
-                              KCVSCache txLogStore, Duration maxReadTime,
-                              Map<String, IndexTransaction> indexTx, Executor threadPool) {
-        this.storeTx = storeTx;
-        this.txConfig = txConfig;
-        this.storeFeatures = features;
-        this.edgeStore = edgeStore;
-        this.indexStore = indexStore;
-        this.txLogStore = txLogStore;
-        this.maxReadTime = maxReadTime;
-        this.indexTx = indexTx;
-        this.threadPool = threadPool;
-    }
 
     public boolean hasAcquiredLock() {
         return acquiredLock;
     }
 
-    public StoreTransaction getStoreTransaction() {
-        return storeTx;
-    }
-
     public ExternalCachePersistor getTxLogPersistor() {
-        return new ExternalCachePersistor(txLogStore,storeTx);
-    }
-
-    public BaseTransactionConfig getBaseTransactionConfig() {
-        return txConfig;
+        return new ExternalCachePersistor(txLogStore, storeTransaction);
     }
 
     public IndexTransaction getIndexTransaction(String index) {
@@ -131,7 +108,7 @@ public class BackendTransaction implements LoggableTransaction {
     }
 
     public void commitStorage() throws BackendException {
-        storeTx.commit();
+        storeTransaction.commit();
     }
 
     public Map<String,Throwable> commitIndexes() {
@@ -148,7 +125,7 @@ public class BackendTransaction implements LoggableTransaction {
 
     @Override
     public void commit() throws BackendException {
-        storeTx.commit();
+        storeTransaction.commit();
         for (IndexTransaction itx : indexTx.values()) itx.commit();
     }
 
@@ -167,7 +144,7 @@ public class BackendTransaction implements LoggableTransaction {
                 excep = e;
             }
         }
-        storeTx.rollback();
+        storeTransaction.rollback();
         if (excep!=null) { //throw any encountered index transaction rollback exceptions
             if (excep instanceof BackendException) throw (BackendException)excep;
             else throw new PermanentBackendException("Unexpected exception",excep);
@@ -178,7 +155,7 @@ public class BackendTransaction implements LoggableTransaction {
     @Override
     public void logMutations(DataOutput out) {
         //Write
-        storeTx.logMutations(out);
+        storeTransaction.logMutations(out);
         for (Map.Entry<String, IndexTransaction> itx : indexTx.entrySet()) {
             out.writeObjectNotNull(itx.getKey());
             itx.getValue().logMutations(out);
@@ -198,7 +175,7 @@ public class BackendTransaction implements LoggableTransaction {
      * @param deletions List of columns to be removed
      */
     public void mutateEdges(StaticBuffer key, List<Entry> additions, List<Entry> deletions) throws BackendException {
-        edgeStore.mutateEntries(key, additions, deletions, storeTx);
+        edgeStore.mutateEntries(key, additions, deletions, storeTransaction);
     }
 
     /**
@@ -210,7 +187,7 @@ public class BackendTransaction implements LoggableTransaction {
      * @param deletions List of columns to be removed
      */
     public void mutateIndex(StaticBuffer key, List<Entry> additions, List<Entry> deletions) throws BackendException {
-        indexStore.mutateEntries(key, additions, deletions, storeTx);
+        indexStore.mutateEntries(key, additions, deletions, storeTransaction);
     }
 
     /**
@@ -229,12 +206,12 @@ public class BackendTransaction implements LoggableTransaction {
      */
     public void acquireEdgeLock(StaticBuffer key, StaticBuffer column) throws BackendException {
         acquiredLock = true;
-        edgeStore.acquireLock(key, column, null, storeTx);
+        edgeStore.acquireLock(key, column, null, storeTransaction);
     }
 
     public void acquireEdgeLock(StaticBuffer key, Entry entry) throws BackendException {
         acquiredLock = true;
-        edgeStore.acquireLock(key, entry.getColumnAs(StaticBuffer.STATIC_FACTORY), entry.getValueAs(StaticBuffer.STATIC_FACTORY), storeTx);
+        edgeStore.acquireLock(key, entry.getColumnAs(StaticBuffer.STATIC_FACTORY), entry.getValueAs(StaticBuffer.STATIC_FACTORY), storeTransaction);
     }
 
     /**
@@ -253,12 +230,12 @@ public class BackendTransaction implements LoggableTransaction {
      */
     public void acquireIndexLock(StaticBuffer key, StaticBuffer column) throws BackendException {
         acquiredLock = true;
-        indexStore.acquireLock(key, column, null, storeTx);
+        indexStore.acquireLock(key, column, null, storeTransaction);
     }
 
     public void acquireIndexLock(StaticBuffer key, Entry entry) throws BackendException {
         acquiredLock = true;
-        indexStore.acquireLock(key, entry.getColumnAs(StaticBuffer.STATIC_FACTORY), entry.getValueAs(StaticBuffer.STATIC_FACTORY), storeTx);
+        indexStore.acquireLock(key, entry.getColumnAs(StaticBuffer.STATIC_FACTORY), entry.getValueAs(StaticBuffer.STATIC_FACTORY), storeTransaction);
     }
 
     /* ###################################################
@@ -269,8 +246,8 @@ public class BackendTransaction implements LoggableTransaction {
         return executeRead(new Callable<EntryList>() {
             @Override
             public EntryList call() throws Exception {
-                return cacheEnabled?edgeStore.getSlice(query, storeTx):
-                                    edgeStore.getSliceNoCache(query,storeTx);
+                return cacheEnabled?edgeStore.getSlice(query, storeTransaction):
+                                    edgeStore.getSliceNoCache(query, storeTransaction);
             }
 
             @Override
@@ -285,8 +262,8 @@ public class BackendTransaction implements LoggableTransaction {
             return executeRead(new Callable<Map<StaticBuffer,EntryList>>() {
                 @Override
                 public Map<StaticBuffer,EntryList> call() throws Exception {
-                    return cacheEnabled?edgeStore.getSlice(keys, query, storeTx):
-                                        edgeStore.getSliceNoCache(keys, query, storeTx);
+                    return cacheEnabled?edgeStore.getSlice(keys, query, storeTransaction):
+                                        edgeStore.getSliceNoCache(keys, query, storeTransaction);
                 }
 
                 @Override
@@ -325,6 +302,7 @@ public class BackendTransaction implements LoggableTransaction {
         }
     }
 
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     private class SliceQueryRunner implements Runnable {
 
         final KeySliceQuery kq;
@@ -332,15 +310,6 @@ public class BackendTransaction implements LoggableTransaction {
         final AtomicInteger failureCount;
         final Object[] resultArray;
         final int resultPosition;
-
-        private SliceQueryRunner(KeySliceQuery kq, CountDownLatch doneSignal, AtomicInteger failureCount,
-                                 Object[] resultArray, int resultPosition) {
-            this.kq = kq;
-            this.doneSignal = doneSignal;
-            this.failureCount = failureCount;
-            this.resultArray = resultArray;
-            this.resultPosition = resultPosition;
-        }
 
         @Override
         public void run() {
@@ -365,8 +334,8 @@ public class BackendTransaction implements LoggableTransaction {
             @Override
             public KeyIterator call() throws Exception {
                 return (storeFeatures.isKeyOrdered())
-                        ? edgeStore.getKeys(new KeyRangeQuery(EDGESTORE_MIN_KEY, EDGESTORE_MAX_KEY, sliceQuery), storeTx)
-                        : edgeStore.getKeys(sliceQuery, storeTx);
+                        ? edgeStore.getKeys(new KeyRangeQuery(EDGESTORE_MIN_KEY, EDGESTORE_MAX_KEY, sliceQuery), storeTransaction)
+                        : edgeStore.getKeys(sliceQuery, storeTransaction);
             }
 
             @Override
@@ -382,7 +351,7 @@ public class BackendTransaction implements LoggableTransaction {
         return executeRead(new Callable<KeyIterator>() {
             @Override
             public KeyIterator call() throws Exception {
-                return edgeStore.getKeys(range, storeTx);
+                return edgeStore.getKeys(range, storeTransaction);
             }
 
             @Override
@@ -396,8 +365,8 @@ public class BackendTransaction implements LoggableTransaction {
         return executeRead(new Callable<EntryList>() {
             @Override
             public EntryList call() throws Exception {
-                return cacheEnabled?indexStore.getSlice(query, storeTx):
-                                    indexStore.getSliceNoCache(query, storeTx);
+                return cacheEnabled?indexStore.getSlice(query, storeTransaction):
+                                    indexStore.getSliceNoCache(query, storeTransaction);
             }
 
             @Override
@@ -439,14 +408,10 @@ public class BackendTransaction implements LoggableTransaction {
         });
     }
 
+    @RequiredArgsConstructor
     private class TotalsCallable implements Callable<Long> {
     	final private RawQuery query;
     	final private IndexTransaction indexTx;
-    	
-    	public TotalsCallable(final RawQuery query, final IndexTransaction indexTx) {
-    		this.query = query;
-    		this.indexTx = indexTx;
-    	}
     	
         @Override
         public Long call() throws Exception {

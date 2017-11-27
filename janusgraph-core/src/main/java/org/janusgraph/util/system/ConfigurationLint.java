@@ -21,17 +21,17 @@ import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
 
-public class ConfigurationLint {
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
-    private static final Logger log =
-            LoggerFactory.getLogger(ConfigurationLint.class);
+@Slf4j
+public class ConfigurationLint {
 
     public static void main(String args[]) throws IOException {
         if (1 != args.length) {
@@ -42,12 +42,12 @@ public class ConfigurationLint {
 
         log.info("Checking " + LoggerUtil.sanitizeAndLaunder(args[0]));
         Status s = validate(args[0]);
-        if (0 == s.errors) {
+        if (0 == s.getErrorSettingCount()) {
             log.info(s.toString());
         } else {
             log.warn(s.toString());
         }
-        System.exit(Math.min(s.errors, 127));
+        System.exit(Math.min(s.getErrorSettingCount(), 127));
     }
 
     public static Status validate(String filename) throws IOException {
@@ -111,28 +111,17 @@ public class ConfigurationLint {
         return new Status(totalKeys, totalKeys - keysVerified);
     }
 
+    @RequiredArgsConstructor
+    @Getter
     public static class Status {
-        private final int total;
-        private final int errors;
-
-        public Status(int total, int errors) {
-            this.total = total;
-            this.errors = errors;
-        }
-
-        public int getTotalSettingCount() {
-            return total;
-        }
-
-        public int getErrorSettingCount() {
-            return errors;
-        }
+        private final int totalSettingCount;
+        private final int errorSettingCount;
 
         public String toString() {
-            if (0 == errors) {
-                return String.format("[ConfigurationLint.Status: OK: %d settings validated]", total);
+            if (0 == errorSettingCount) {
+                return String.format("[ConfigurationLint.Status: OK: %d settings validated]", totalSettingCount);
             } else {
-                return String.format("[ConfigurationLint.Status: WARNING: %d settings failed to validate out of %d total]", errors, total);
+                return String.format("[ConfigurationLint.Status: WARNING: %d settings failed to validate out of %d total]", errorSettingCount, totalSettingCount);
             }
         }
     }

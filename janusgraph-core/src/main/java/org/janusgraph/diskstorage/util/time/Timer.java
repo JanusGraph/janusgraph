@@ -19,6 +19,8 @@ import java.time.Instant;
 import java.time.temporal.TemporalUnit;
 import com.google.common.base.Preconditions;
 
+import lombok.RequiredArgsConstructor;
+
 /**
  * A utility to measure time durations.
  * </p>
@@ -30,15 +32,12 @@ import com.google.common.base.Preconditions;
  * <li>can only be started and stopped once</li>
  * </ul>
  */
+@RequiredArgsConstructor
 public class Timer {
 
     private final TimestampProvider times;
     private Instant start;
     private Instant stop;
-
-    public Timer(final TimestampProvider times) {
-        this.times = times;
-    }
 
     public Timer start() {
         Preconditions.checkState(null == start, "Timer can only be started once");

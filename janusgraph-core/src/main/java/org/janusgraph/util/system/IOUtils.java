@@ -14,19 +14,17 @@
 
 package org.janusgraph.util.system;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.Closeable;
 import java.io.File;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * IO Utility class
  *
  */
+@Slf4j
 public class IOUtils {
-    private static final Logger logger = LoggerFactory.getLogger(IOUtils.class);
-
     static public boolean deleteFromDirectory(File path) {
         return deleteDirectory(path, false);
     }
@@ -52,7 +50,7 @@ public class IOUtils {
             if (c != null)
                 c.close();
         } catch (Exception e) {
-            logger.warn("Failed closing " + c, e);
+            log.warn("Failed closing " + c, e);
         }
     }
 
@@ -62,7 +60,7 @@ public class IOUtils {
             if (c != null)
                 c.close();
         } catch (Exception e) {
-            logger.warn("Failed closing " + c, e);
+            log.warn("Failed closing " + c, e);
         }
     }
 }

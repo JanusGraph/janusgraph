@@ -19,6 +19,8 @@ import com.google.common.base.Predicates;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.graphdb.query.BaseQuery;
 
+import lombok.Getter;
+
 /**
  * A query against a {@link OrderedKeyValueStore}. Retrieves all the results that lie between start (inclusive) and
  * end (exclusive) which satisfy the filter. Returns up to the specified limit number of key-value pairs {@link KeyValueEntry}.
@@ -27,7 +29,9 @@ import org.janusgraph.graphdb.query.BaseQuery;
  */
 public class KVQuery extends BaseQuery {
 
+    @Getter
     private final StaticBuffer start;
+    @Getter
     private final StaticBuffer end;
     private final Predicate<StaticBuffer> keyFilter;
 
@@ -44,14 +48,6 @@ public class KVQuery extends BaseQuery {
         this.start = start;
         this.end = end;
         this.keyFilter = keyFilter;
-    }
-
-    public StaticBuffer getStart() {
-        return start;
-    }
-
-    public StaticBuffer getEnd() {
-        return end;
     }
 
     public KeySelector getKeySelector() {

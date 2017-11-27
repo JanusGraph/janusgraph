@@ -42,14 +42,13 @@ import org.apache.commons.lang.StringUtils;
 import org.janusgraph.util.system.IOUtils;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 import java.util.Set;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * JanusGraphFactory is used to open or instantiate a JanusGraph graph database.
@@ -57,11 +56,9 @@ import java.util.Set;
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  * @see JanusGraph
  */
-
+@Slf4j
 public class JanusGraphFactory {
 
-    private static final Logger log =
-            LoggerFactory.getLogger(JanusGraphFactory.class);
     /**
      * Opens a {@link JanusGraph} database.
      * <p/>

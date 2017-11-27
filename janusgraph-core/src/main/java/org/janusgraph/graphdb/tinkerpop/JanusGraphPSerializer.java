@@ -28,8 +28,8 @@ import org.apache.tinkerpop.shaded.kryo.io.Input;
 import org.apache.tinkerpop.shaded.kryo.io.Output;
 import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Text;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Serialize Janus Graph Predicates.
@@ -39,9 +39,8 @@ import org.slf4j.LoggerFactory;
  * are added.
  *
  */
+@Slf4j
 public class JanusGraphPSerializer extends Serializer<P> {
-
-    private static final Logger log = LoggerFactory.getLogger(JanusGraphPSerializer.class);
 
     @Override
     public void write(Kryo kryo, Output output, P p) {

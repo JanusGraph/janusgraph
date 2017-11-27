@@ -39,8 +39,6 @@ import org.janusgraph.graphdb.types.TypeInspector;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.janusgraph.util.datastructures.Interval;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -54,9 +52,6 @@ import static org.janusgraph.graphdb.database.idhandling.IDHandler.getBounds;
  */
 
 public class EdgeSerializer implements RelationReader {
-    @SuppressWarnings("unused")
-    private static final Logger logger = LoggerFactory.getLogger(EdgeSerializer.class);
-
 
     private static final int DEFAULT_COLUMN_CAPACITY = 60;
     private static final int DEFAULT_CAPACITY = 128;

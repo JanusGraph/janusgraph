@@ -18,6 +18,9 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
+import lombok.Getter;
+import lombok.NonNull;
+
 /**
  * Extends a {@link SliceQuery} to express a range for columns and a range for
  * keys. Selects each key on the interval
@@ -33,34 +36,24 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 
 public class KeyRangeQuery extends SliceQuery {
 
+    @NonNull
+    @Getter
     private final StaticBuffer keyStart;
+    @NonNull
+    @Getter
     private final StaticBuffer keyEnd;
 
 
     public KeyRangeQuery(StaticBuffer keyStart, StaticBuffer keyEnd, StaticBuffer sliceStart, StaticBuffer sliceEnd) {
         super(sliceStart, sliceEnd);
-        Preconditions.checkNotNull(keyStart);
-        Preconditions.checkNotNull(keyEnd);
         this.keyStart=keyStart;
         this.keyEnd = keyEnd;
     }
 
     public KeyRangeQuery(StaticBuffer keyStart, StaticBuffer keyEnd, SliceQuery query) {
         super(query);
-        Preconditions.checkNotNull(keyStart);
-        Preconditions.checkNotNull(keyEnd);
         this.keyStart=keyStart;
         this.keyEnd = keyEnd;
-    }
-
-
-
-    public StaticBuffer getKeyStart() {
-        return keyStart;
-    }
-
-    public StaticBuffer getKeyEnd() {
-        return keyEnd;
     }
 
     @Override

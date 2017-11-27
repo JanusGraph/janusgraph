@@ -20,20 +20,16 @@ import org.janusgraph.diskstorage.util.time.TimestampProvider;
 
 import java.time.Instant;
 
+import lombok.AllArgsConstructor;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@AllArgsConstructor
 public class ReadMarker {
 
     private final String identifier;
     private Instant startTime;
-
-
-
-    private ReadMarker(String identifier, Instant startTime) {
-        this.identifier = identifier;
-        this.startTime = startTime;
-    }
 
     /**
      * Whether this read marker has a configured identifier
@@ -116,7 +112,7 @@ public class ReadMarker {
     }
 
     /**
-     * Like {@link #fromIdentifierOrTime(String, long, java.util.concurrent.TimeUnit)} but uses the current time point
+     * Like {@link #fromIdentifierOrTime(String, java.time.Instant)} but uses the current time point
      * as the starting timestamp if the log has no record of the id.
      *
      * @param id

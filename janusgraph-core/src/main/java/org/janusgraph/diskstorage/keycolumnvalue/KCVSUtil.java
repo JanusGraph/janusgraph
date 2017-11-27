@@ -19,23 +19,20 @@ import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.util.BufferUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Contains static utility methods for operating on {@link KeyColumnValueStore}.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
+@Slf4j
 public class KCVSUtil {
-
-    private static final Logger log = LoggerFactory.getLogger(KeyColumnValueStore.class);
-
 
     /**
      * Retrieves the value for the specified column and key under the given transaction

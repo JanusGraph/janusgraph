@@ -19,20 +19,21 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+
 /**
  * Abstract implementation of {@link StoreTransaction} to be used as the basis for more specific implementations.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
+@RequiredArgsConstructor
 public abstract class AbstractStoreTransaction implements StoreTransaction {
 
-    private final BaseTransactionConfig config;
-
-    public AbstractStoreTransaction(BaseTransactionConfig config) {
-        Preconditions.checkNotNull(config);
-        this.config = config;
-    }
+    @NonNull
+    @Getter
+    private final BaseTransactionConfig configuration;
 
     @Override
     public void commit() throws BackendException {
@@ -40,11 +41,6 @@ public abstract class AbstractStoreTransaction implements StoreTransaction {
 
     @Override
     public void rollback() throws BackendException {
-    }
-
-    @Override
-    public BaseTransactionConfig getConfiguration() {
-        return config;
     }
 
 }

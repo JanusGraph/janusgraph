@@ -21,6 +21,8 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 
+import lombok.Getter;
+
 /**
  * Handles the allocation of ids based on the type of element
  * Responsible for the bit-wise pattern of JanusGraph's internal id scheme.
@@ -404,9 +406,12 @@ public class IDManager {
 
     private final long partitionBits;
     private final long partitionOffset;
-    private final long partitionIDBound;
+    @Getter
+    private final long partitionBound;
 
+    @Getter
     private final long relationCountBound;
+    @Getter
     private final long vertexCountBound;
 
 
@@ -416,7 +421,7 @@ public class IDManager {
                 "Partition bits can be at most %s bits", MAX_PARTITION_BITS);
         this.partitionBits = partitionBits;
 
-        partitionIDBound = (1l << (partitionBits));
+        partitionBound = (1l << (partitionBits));
 
         relationCountBound = partitionBits==0?Long.MAX_VALUE:(1l << (TOTAL_BITS - partitionBits));
         assert VertexIDType.NormalVertex.offset()>0;
@@ -430,10 +435,6 @@ public class IDManager {
         this(DEFAULT_PARTITION_BITS);
     }
 
-    public long getPartitionBound() {
-        return partitionIDBound;
-    }
-
     /* ########################################################
                    User Relations and Vertices
        ########################################################  */
@@ -443,7 +444,7 @@ public class IDManager {
      */
 
     private long constructId(long count, long partition, VertexIDType type) {
-        Preconditions.checkArgument(partition<partitionIDBound && partition>=0,"Invalid partition: %s",partition);
+        Preconditions.checkArgument(partition<partitionBound && partition>=0,"Invalid partition: %s",partition);
         Preconditions.checkArgument(count>=0);
         Preconditions.checkArgument(VariableLong.unsignedBitLength(count)+partitionBits+
                 (type==null?0:type.offset())<=TOTAL_BITS);
@@ -472,7 +473,7 @@ public class IDManager {
     public long getPartitionId(long vertexid) {
         if (VertexIDType.Schema.is(vertexid)) return SCHEMA_PARTITION;
         assert isUserVertexId(vertexid) && getUserVertexIDType(vertexid)!=null;
-        long partition = (vertexid>>>USERVERTEX_PADDING_BITWIDTH) & (partitionIDBound-1);
+        long partition = (vertexid>>>USERVERTEX_PADDING_BITWIDTH) & (partitionBound-1);
         assert partition>=0;
         return partition;
     }
@@ -528,10 +529,10 @@ public class IDManager {
         long result = 0;
         int offset = 0;
         while (offset<Long.SIZE) {
-            result = result ^ ((id>>>offset) & (partitionIDBound-1));
+            result = result ^ ((id>>>offset) & (partitionBound-1));
             offset+=partitionBits;
         }
-        assert result>=0 && result<partitionIDBound;
+        assert result>=0 && result<partitionBound;
         return result;
     }
 
@@ -596,14 +597,6 @@ public class IDManager {
 
     public boolean isPartitionedVertex(long id) {
         return isUserVertexId(id) && VertexIDType.PartitionedVertex.is(id);
-    }
-
-    public long getRelationCountBound() {
-        return relationCountBound;
-    }
-
-    public long getVertexCountBound() {
-        return vertexCountBound;
     }
 
     /*

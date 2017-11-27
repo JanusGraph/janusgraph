@@ -16,9 +16,12 @@ package org.janusgraph.graphdb.types;
 
 import com.google.common.base.Preconditions;
 
+import lombok.Getter;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@Getter
 public class TypeDefinitionDescription {
 
     private TypeDefinitionCategory category;
@@ -40,11 +43,4 @@ public class TypeDefinitionDescription {
         return new TypeDefinitionDescription(category,null);
     }
 
-    public TypeDefinitionCategory getCategory() {
-        return category;
-    }
-
-    public Object getModifier() {
-        return modifier;
-    }
 }

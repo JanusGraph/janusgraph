@@ -27,39 +27,37 @@ import org.janusgraph.graphdb.types.IndexField;
 import org.janusgraph.graphdb.types.IndexType;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@RequiredArgsConstructor
 public class JanusGraphIndexWrapper implements JanusGraphIndex {
 
-    private final IndexType index;
-
-    public JanusGraphIndexWrapper(IndexType index) {
-        this.index = index;
-    }
-
-    IndexType getBaseIndex() {
-        return index;
-    }
+    @Getter(AccessLevel.PACKAGE)
+    private final IndexType baseIndex;
 
     @Override
     public String name() {
-        return index.getName();
+        return baseIndex.getName();
     }
 
     @Override
     public String getBackingIndex() {
-        return index.getBackingIndexName();
+        return baseIndex.getBackingIndexName();
     }
 
     @Override
     public Class<? extends Element> getIndexedElement() {
-        return index.getElement().getElementType();
+        return baseIndex.getElement().getElementType();
     }
 
     @Override
     public PropertyKey[] getFieldKeys() {
-        IndexField[] fields = index.getFieldKeys();
+        IndexField[] fields = baseIndex.getFieldKeys();
         PropertyKey[] keys = new PropertyKey[fields.length];
         for (int i = 0; i < fields.length; i++) {
             keys[i]=fields[i].getFieldKey();
@@ -69,31 +67,31 @@ public class JanusGraphIndexWrapper implements JanusGraphIndex {
 
     @Override
     public Parameter[] getParametersFor(PropertyKey key) {
-        if (index.isCompositeIndex()) return new Parameter[0];
-        return ((MixedIndexType)index).getField(key).getParameters();
+        if (baseIndex.isCompositeIndex()) return new Parameter[0];
+        return ((MixedIndexType)baseIndex).getField(key).getParameters();
     }
 
     @Override
     public boolean isUnique() {
-        if (index.isMixedIndex()) return false;
-        return ((CompositeIndexType)index).getCardinality()== Cardinality.SINGLE;
+        if (baseIndex.isMixedIndex()) return false;
+        return ((CompositeIndexType)baseIndex).getCardinality()== Cardinality.SINGLE;
     }
 
     @Override
     public SchemaStatus getIndexStatus(PropertyKey key) {
         Preconditions.checkArgument(Sets.newHashSet(getFieldKeys()).contains(key),"Provided key is not part of this index: %s",key);
-        if (index.isCompositeIndex()) return ((CompositeIndexType)index).getStatus();
-        else return ((MixedIndexType)index).getField(key).getStatus();
+        if (baseIndex.isCompositeIndex()) return ((CompositeIndexType)baseIndex).getStatus();
+        else return ((MixedIndexType)baseIndex).getField(key).getStatus();
     }
 
     @Override
     public boolean isCompositeIndex() {
-        return index.isCompositeIndex();
+        return baseIndex.isCompositeIndex();
     }
 
     @Override
     public boolean isMixedIndex() {
-        return index.isMixedIndex();
+        return baseIndex.isMixedIndex();
     }
 
     @Override

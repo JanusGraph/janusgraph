@@ -22,19 +22,16 @@ import org.janusgraph.graphdb.internal.InternalVertex;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import lombok.RequiredArgsConstructor;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
+@RequiredArgsConstructor
 public class VertexIterable implements Iterable<InternalVertex> {
 
-    private final StandardJanusGraphTx tx;
     private final StandardJanusGraph graph;
-
-    public VertexIterable(final StandardJanusGraph graph, final StandardJanusGraphTx tx) {
-        this.graph = graph;
-        this.tx = tx;
-    }
+    private final StandardJanusGraphTx tx;
 
     @Override
     public Iterator<InternalVertex> iterator() {

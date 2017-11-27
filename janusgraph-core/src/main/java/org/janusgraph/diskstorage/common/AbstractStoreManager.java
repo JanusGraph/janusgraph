@@ -26,6 +26,8 @@ import java.util.List;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
+import lombok.Getter;
+
 /**
  * Abstract Store Manager used as the basis for concrete StoreManager implementations.
  * Simplifies common configuration management.
@@ -37,6 +39,7 @@ public abstract class AbstractStoreManager implements StoreManager {
 
     protected final boolean transactional;
     protected final boolean batchLoading;
+    @Getter
     protected final Configuration storageConfig;
 
     public AbstractStoreManager(Configuration storageConfig) {
@@ -47,10 +50,6 @@ public abstract class AbstractStoreManager implements StoreManager {
         }
         this.transactional = transactional;
         this.storageConfig = storageConfig;
-    }
-
-    public Configuration getStorageConfig() {
-        return storageConfig;
     }
 
     public EntryMetaData[] getMetaDataSchema(String storeName) {

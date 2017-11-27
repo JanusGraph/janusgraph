@@ -19,11 +19,15 @@ import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
+import lombok.Getter;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class PropertyKeyDefinition extends RelationTypeDefinition {
 
+
+    @Getter
     private final Class<?> dataType;
 
     public PropertyKeyDefinition(String name, long id, Cardinality cardinality, Class dataType) {
@@ -37,10 +41,6 @@ public class PropertyKeyDefinition extends RelationTypeDefinition {
 
     public PropertyKeyDefinition(PropertyKey key) {
         this(key.name(),key.longId(),key.cardinality(),key.dataType());
-    }
-
-    public Class<?> getDataType() {
-        return dataType;
     }
 
     @Override

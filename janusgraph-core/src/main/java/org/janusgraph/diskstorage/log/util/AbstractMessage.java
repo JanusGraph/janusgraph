@@ -14,14 +14,16 @@
 
 package org.janusgraph.diskstorage.log.util;
 
-import com.google.common.base.Preconditions;
-
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.log.Message;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.time.Instant;
+
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Abstract implementation of {@link org.janusgraph.diskstorage.log.Message} which exposes the timestamp, sender, and payload
@@ -30,34 +32,19 @@ import java.time.Instant;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@RequiredArgsConstructor
 public abstract class AbstractMessage implements Message {
 
     private static final int MAX_PAYLOAD_STR_LENGTH = 400;
 
+    @NonNull
+    @Getter
     private final StaticBuffer content;
+    @Getter
     private final Instant timestamp;
+    @NonNull
+    @Getter
     private final String senderId;
-
-    protected AbstractMessage(StaticBuffer content, Instant timestamp, String senderId) {
-        Preconditions.checkArgument(content !=null && senderId!=null);
-        this.content = content;
-        this.timestamp = timestamp;
-        this.senderId = senderId;
-    }
-
-    @Override
-    public String getSenderId() {
-        return senderId;
-    }
-
-    public Instant getTimestamp() {
-        return timestamp;
-    }
-
-    @Override
-    public StaticBuffer getContent() {
-        return content;
-    }
 
     @Override
     public String toString() {

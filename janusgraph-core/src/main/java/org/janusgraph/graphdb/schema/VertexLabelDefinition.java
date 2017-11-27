@@ -16,9 +16,12 @@ package org.janusgraph.graphdb.schema;
 
 import org.janusgraph.core.VertexLabel;
 
+import lombok.Getter;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@Getter
 public class VertexLabelDefinition extends SchemaElementDefinition {
 
     private final boolean isPartitioned;
@@ -32,14 +35,6 @@ public class VertexLabelDefinition extends SchemaElementDefinition {
 
     public VertexLabelDefinition(VertexLabel vl) {
         this(vl.name(),vl.longId(),vl.isPartitioned(),vl.isStatic());
-    }
-
-    public boolean isStatic() {
-        return isStatic;
-    }
-
-    public boolean isPartitioned() {
-        return isPartitioned;
     }
 
     public boolean hasDefaultConfiguration() {

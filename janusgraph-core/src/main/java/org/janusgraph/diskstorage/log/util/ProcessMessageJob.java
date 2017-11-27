@@ -14,11 +14,12 @@
 
 package org.janusgraph.diskstorage.log.util;
 
-import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.log.Message;
 import org.janusgraph.diskstorage.log.MessageReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Helper class for processing read messages with the registered message readers.
@@ -26,18 +27,14 @@ import org.slf4j.LoggerFactory;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@Slf4j
+@RequiredArgsConstructor
 public class ProcessMessageJob implements Runnable {
 
-    private static final Logger log = LoggerFactory.getLogger(ProcessMessageJob.class);
-
+    @NonNull
     private final Message message;
+    @NonNull
     private final MessageReader reader;
-
-    public ProcessMessageJob(final Message message, final MessageReader reader) {
-        Preconditions.checkArgument(message!=null && reader!=null);
-        this.message = message;
-        this.reader = reader;
-    }
 
     @Override
     public void run() {

@@ -276,7 +276,7 @@ public class QueryUtil {
 
     public interface IndexCall<R> {
 
-        public Collection<R> call(int limit);
+        Collection<R> call(int limit);
 
     }
 

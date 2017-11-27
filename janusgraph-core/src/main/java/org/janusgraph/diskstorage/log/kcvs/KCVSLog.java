@@ -34,15 +34,14 @@ import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.util.system.BackgroundThread;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Implementation of {@link Log} wrapped around a {@link KeyColumnValueStore}. Each message is written as a column-value pair ({@link Entry})
@@ -76,9 +75,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 @PreInitializeConfigOptions
+@Slf4j
 public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
-
-    private static final Logger log = LoggerFactory.getLogger(KCVSLog.class);
 
     //########## Configuration Options #############
 

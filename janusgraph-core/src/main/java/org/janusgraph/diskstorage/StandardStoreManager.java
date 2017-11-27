@@ -19,6 +19,8 @@ import com.google.common.collect.ImmutableMap;
 
 import java.util.*;
 
+import lombok.Getter;
+
 /**
  * This enum is only intended for use by JanusGraph internals.
  * It is subject to backwards-incompatible change.
@@ -32,7 +34,9 @@ public enum StandardStoreManager {
     HBASE("org.janusgraph.diskstorage.hbase.HBaseStoreManager", "hbase"),
     IN_MEMORY("org.janusgraph.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager", "inmemory");
 
+    @Getter
     private final String managerClass;
+    @Getter
     private final ImmutableList<String> shorthands;
 
     StandardStoreManager(String managerClass, ImmutableList<String> shorthands) {
@@ -42,14 +46,6 @@ public enum StandardStoreManager {
 
     StandardStoreManager(String managerClass, String shorthand) {
         this(managerClass, ImmutableList.of(shorthand));
-    }
-
-    public List<String> getShorthands() {
-        return shorthands;
-    }
-
-    public String getManagerClass() {
-        return managerClass;
     }
 
     private static final ImmutableList<String> ALL_SHORTHANDS;

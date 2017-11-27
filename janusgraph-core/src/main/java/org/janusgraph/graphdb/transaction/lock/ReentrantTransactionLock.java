@@ -16,24 +16,19 @@ package org.janusgraph.graphdb.transaction.lock;
 
 import org.janusgraph.core.JanusGraphException;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@Slf4j
 public class ReentrantTransactionLock extends ReentrantLock implements TransactionLock {
 
     private static final long serialVersionUID = -1533050153710486569L;
-
-
-
-    private static final Logger log = LoggerFactory.getLogger(ReentrantTransactionLock.class);
 
     @Override
     public void lock(Duration timeout) {

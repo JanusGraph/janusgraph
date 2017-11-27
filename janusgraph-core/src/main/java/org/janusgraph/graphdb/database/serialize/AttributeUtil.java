@@ -17,17 +17,14 @@ package org.janusgraph.graphdb.database.serialize;
 import org.janusgraph.core.PropertyKey;
 
 import org.janusgraph.core.attribute.Geoshape;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
+@Slf4j
 public class AttributeUtil {
-
-    private static final Logger log = LoggerFactory.getLogger(AttributeUtil.class);
-
 
     public static final boolean isWholeNumber(Number n) {
         return isWholeNumber(n.getClass());

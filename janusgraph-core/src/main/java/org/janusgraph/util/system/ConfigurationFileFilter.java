@@ -20,8 +20,6 @@ import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.lang.WordUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.LinkedList;
@@ -29,12 +27,12 @@ import java.util.Queue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class ConfigurationFileFilter {
 
     private static final Pattern REPLACEMENT_PATTERN = Pattern.compile("^#JANUSGRAPHCFG\\{((.+)=(.*))\\}$");
-
-    private static final Logger log =
-            LoggerFactory.getLogger(ConfigurationFileFilter.class);
 
     private static final int WRAP_COLUMNS = 72;
 

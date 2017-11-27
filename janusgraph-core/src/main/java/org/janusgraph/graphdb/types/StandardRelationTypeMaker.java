@@ -31,17 +31,22 @@ import java.util.*;
 
 import static org.janusgraph.graphdb.types.TypeDefinitionCategory.*;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+
 public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 
     protected final StandardJanusGraphTx tx;
     protected final IndexSerializer indexSerializer;
     protected final AttributeHandler attributeHandler;
 
+    @Getter
     private String name;
     private boolean isInvisible;
     private List<PropertyKey> sortKey;
     private Order sortOrder;
     private List<PropertyKey> signature;
+    @Getter(AccessLevel.PROTECTED)
     private Multiplicity multiplicity;
     private SchemaStatus status = SchemaStatus.ENABLED;
 
@@ -64,17 +69,8 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
         multiplicity = Multiplicity.MULTI;
     }
 
-
-    public String getName() {
-        return this.name;
-    }
-
     protected boolean hasSortKey() {
         return !sortKey.isEmpty();
-    }
-
-    protected Multiplicity getMultiplicity() {
-        return multiplicity;
     }
 
     abstract JanusGraphSchemaCategory getSchemaCategory();

@@ -24,8 +24,6 @@ import org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.database.serialize.StandardSerializer;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
@@ -36,9 +34,13 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Set;
 
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@Slf4j
 public class ConfigOption<O> extends ConfigElement {
 
     public enum Type {
@@ -67,9 +69,6 @@ public class ConfigOption<O> extends ConfigElement {
          */
         LOCAL;
     }
-
-    private static final Logger log =
-            LoggerFactory.getLogger(ConfigOption.class);
 
     private static final EnumSet<Type> managedTypes = EnumSet.of(Type.FIXED, Type.GLOBAL_OFFLINE, Type.GLOBAL);
 
@@ -111,12 +110,16 @@ public class ConfigOption<O> extends ConfigElement {
         ACCEPTED_DATATYPES_STRING = Joiner.on(", ").join(ACCEPTED_DATATYPES);
     }
 
+    @Getter
     private final Type type;
+    @Getter
     private final Class<O> datatype;
+    @Getter
     private final O defaultValue;
     private final Predicate<O> verificationFct;
     private boolean isHidden = false;
-    private ConfigOption<?> supersededBy;
+    @Getter
+    private ConfigOption<?> deprecationReplacement;
 
     public ConfigOption(ConfigNamespace parent, String name, String description, Type type, O defaultValue) {
         this(parent,name,description,type,defaultValue, disallowEmpty((Class<O>) defaultValue.getClass()));
@@ -142,7 +145,7 @@ public class ConfigOption<O> extends ConfigElement {
         this(parent, name, description, type, datatype, defaultValue, verificationFct, null);
     }
 
-    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> datatype, O defaultValue, Predicate<O> verificationFct, ConfigOption<?> supersededBy) {
+    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> datatype, O defaultValue, Predicate<O> verificationFct, ConfigOption<?> deprecationReplacement) {
         super(parent, name, description);
         Preconditions.checkNotNull(type);
         Preconditions.checkNotNull(datatype);
@@ -151,7 +154,7 @@ public class ConfigOption<O> extends ConfigElement {
         this.datatype = datatype;
         this.defaultValue = defaultValue;
         this.verificationFct = verificationFct;
-        this.supersededBy = supersededBy;
+        this.deprecationReplacement = deprecationReplacement;
         // This constructor tends to get called by static initializers, so log before throwing the IAE
         if (!ACCEPTED_DATATYPES.contains(datatype)) {
             String msg = String.format("Datatype %s is not one of %s", datatype, ACCEPTED_DATATYPES_STRING);
@@ -167,18 +170,6 @@ public class ConfigOption<O> extends ConfigElement {
 
     public boolean isHidden() {
         return isHidden;
-    }
-
-    public Type getType() {
-        return type;
-    }
-
-    public Class<O> getDatatype() {
-        return datatype;
-    }
-
-    public O getDefaultValue() {
-        return defaultValue;
     }
 
     public boolean isFixed() {
@@ -210,11 +201,7 @@ public class ConfigOption<O> extends ConfigElement {
     }
 
     public boolean isDeprecated() {
-        return null != supersededBy;
-    }
-
-    public ConfigOption<?> getDeprecationReplacement() {
-        return supersededBy;
+        return null != deprecationReplacement;
     }
 
     @Override

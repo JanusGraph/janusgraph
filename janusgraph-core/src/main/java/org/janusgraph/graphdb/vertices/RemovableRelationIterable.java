@@ -19,14 +19,13 @@ import org.janusgraph.graphdb.internal.InternalRelation;
 
 import java.util.Iterator;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 public class RemovableRelationIterable<O extends JanusGraphRelation>
         implements Iterable<O> {
 
     private final Iterable<InternalRelation> iterable;
-
-    public RemovableRelationIterable(Iterable<InternalRelation> iter) {
-        iterable = iter;
-    }
 
     @Override
     public Iterator<O> iterator() {

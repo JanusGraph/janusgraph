@@ -121,6 +121,7 @@
         <test.excluded.groups>org.janusgraph.testcategory.MemoryTests,org.janusgraph.testcategory.PerformanceTests,org.janusgraph.testcategory.BrittleTests</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <cassandra-driver.version>3.1.4</cassandra-driver.version>
+        <lombok.version>1.16.18</lombok.version>
     </properties>
     <modules>
         <module>janusgraph-codepipelines-ci</module>

@@ -13,7 +13,6 @@
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
         <aws.sdk.version>2.0.0-preview-1</aws.sdk.version>
-        <lombok.version>1.16.16</lombok.version>
     </properties>
 
     <dependencies>

@@ -40,6 +40,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import lombok.Getter;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -187,29 +189,26 @@ public class VertexJobConverter implements ScanJob {
     public static class GraphProvider {
 
         private StandardJanusGraph graph=null;
-        private boolean provided=false;
+        @Getter
+        private boolean isProvided=false;
 
         public void setGraph(JanusGraph graph) {
             Preconditions.checkArgument(graph!=null && graph.isOpen(),"Need to provide open graph");
             this.graph = (StandardJanusGraph)graph;
-            provided = true;
+            isProvided = true;
         }
 
         public void initializeGraph(Configuration config) {
-            if (!provided) {
+            if (!isProvided) {
                 this.graph = (StandardJanusGraph) JanusGraphFactory.open((BasicConfiguration) config);
             }
         }
 
         public void close() {
-            if (!provided && null != graph && graph.isOpen()) {
+            if (!isProvided && null != graph && graph.isOpen()) {
                 graph.close();
                 graph=null;
             }
-        }
-
-        public boolean isProvided() {
-            return provided;
         }
 
         public final StandardJanusGraph get() {
