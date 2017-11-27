@@ -34,7 +34,7 @@ public interface KeyValueStoreManager extends StoreManager {
      * @throws org.janusgraph.diskstorage.BackendException
      *
      */
-    public KeyValueStore openDatabase(String name) throws BackendException;
+    KeyValueStore openDatabase(String name) throws BackendException;
 
 
 

@@ -37,7 +37,7 @@ public interface OrderedKeyValueStore extends KeyValueStore {
      * @param txh
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh) throws BackendException;
+    void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh) throws BackendException;
 
     /**
      * Returns a list of all Key-value pairs ({@link KeyValueEntry} where the keys satisfy the given {@link KVQuery}.
@@ -51,7 +51,7 @@ public interface OrderedKeyValueStore extends KeyValueStore {
      * @return
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    public RecordIterator<KeyValueEntry> getSlice(KVQuery query, StoreTransaction txh) throws BackendException;
+    RecordIterator<KeyValueEntry> getSlice(KVQuery query, StoreTransaction txh) throws BackendException;
 
 
     /**
@@ -67,6 +67,6 @@ public interface OrderedKeyValueStore extends KeyValueStore {
      * @return
      * @throws BackendException
      */
-    public Map<KVQuery,RecordIterator<KeyValueEntry>> getSlices(List<KVQuery> queries, StoreTransaction txh) throws BackendException;
+    Map<KVQuery,RecordIterator<KeyValueEntry>> getSlices(List<KVQuery> queries, StoreTransaction txh) throws BackendException;
 
 }

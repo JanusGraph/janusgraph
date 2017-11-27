@@ -45,7 +45,7 @@ public interface IndexProvider extends IndexInformation {
      * @param tx enclosing transaction
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws BackendException;
+    void register(String store, String key, KeyInformation information, BaseTransaction tx) throws BackendException;
 
     /**
      * Mutates the index (adds and removes fields or entire documents)
@@ -57,7 +57,7 @@ public interface IndexProvider extends IndexInformation {
      * @throws org.janusgraph.diskstorage.BackendException
      * @see IndexMutation
      */
-    public void mutate(Map<String,Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
+    void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
 
 
     /**
@@ -71,7 +71,7 @@ public interface IndexProvider extends IndexInformation {
      * @param tx Enclosing transaction
      * @throws BackendException
      */
-    public void restore(Map<String,Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
+    void restore(Map<String, Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
 
 
     /**
@@ -84,7 +84,7 @@ public interface IndexProvider extends IndexInformation {
      * @throws org.janusgraph.diskstorage.BackendException
      * @see IndexQuery
      */
-    public Stream<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
+    Stream<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
 
 
     /**
@@ -97,7 +97,7 @@ public interface IndexProvider extends IndexInformation {
      * @throws org.janusgraph.diskstorage.BackendException
      * @see RawQuery
      */
-    public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
+    Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
 
     /**
      * Executes the given raw query against the index and returns the total hits. e.g. limit=0
@@ -109,32 +109,32 @@ public interface IndexProvider extends IndexInformation {
      * @throws org.janusgraph.diskstorage.BackendException
      * @see RawQuery
      */
-    public Long totals(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
+    Long totals(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
 
     /**
      * Returns a transaction handle for a new index transaction.
      *
      * @return New Transaction Handle
      */
-    public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws BackendException;
+    BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws BackendException;
 
     /**
      * Closes the index
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    public void close() throws BackendException;
+    void close() throws BackendException;
 
     /**
      * Clears the index and removes all entries in all stores.
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    public void clearStorage() throws BackendException;
+    void clearStorage() throws BackendException;
 
     /**
      * Checks whether the index exists.
      * @return Flag indicating whether index exists
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    public boolean exists() throws BackendException;
+    boolean exists() throws BackendException;
 
 }

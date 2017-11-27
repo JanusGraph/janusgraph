@@ -127,15 +127,15 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
         return new StaticArrayEntry(data,valuePos);
     }
 
-    public static interface GetColVal<E,D> {
+    public interface GetColVal<E,D> {
 
-        public D getColumn(E element);
+        D getColumn(E element);
 
-        public D getValue(E element);
+        D getValue(E element);
 
-        public EntryMetaData[] getMetaSchema(E element);
+        EntryMetaData[] getMetaSchema(E element);
 
-        public Object getMetaData(E element, EntryMetaData meta);
+        Object getMetaData(E element, EntryMetaData meta);
 
     }
 
@@ -167,16 +167,16 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
 
     };
 
-    public static interface DataHandler<D> {
+    public interface DataHandler<D> {
 
-        public int getSize(D data);
+        int getSize(D data);
 
-        public void copy(D data, byte[] dest, int destOffset);
+        void copy(D data, byte[] dest, int destOffset);
 
     }
 
 
-    static enum ByteArrayHandler implements DataHandler<byte[]> {
+    enum ByteArrayHandler implements DataHandler<byte[]> {
 
         INSTANCE;
 
@@ -191,7 +191,7 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
         }
     }
 
-    static enum ByteBufferHandler implements DataHandler<ByteBuffer> {
+    enum ByteBufferHandler implements DataHandler<ByteBuffer> {
 
         INSTANCE;
 
@@ -212,7 +212,7 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
         }
     }
 
-    static enum StaticBufferHandler implements DataHandler<StaticBuffer> {
+    enum StaticBufferHandler implements DataHandler<StaticBuffer> {
 
         INSTANCE;
 

@@ -169,17 +169,17 @@ public class BackendOperation {
     }
 
 
-    public static interface Transactional<R> {
+    public interface Transactional<R> {
 
-        public R call(StoreTransaction txh) throws BackendException;
+        R call(StoreTransaction txh) throws BackendException;
 
     }
 
-    public static interface TransactionalProvider {
+    public interface TransactionalProvider {
 
-        public StoreTransaction openTx() throws BackendException;
+        StoreTransaction openTx() throws BackendException;
 
-        public void close() throws BackendException;
+        void close() throws BackendException;
 
     }
 

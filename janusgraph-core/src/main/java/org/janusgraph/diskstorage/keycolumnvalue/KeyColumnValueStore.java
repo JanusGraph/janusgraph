@@ -38,8 +38,8 @@ import java.util.Map;
  */
 public interface KeyColumnValueStore {
 
-    public static final List<Entry> NO_ADDITIONS = ImmutableList.of();
-    public static final List<StaticBuffer> NO_DELETIONS = ImmutableList.of();
+    List<Entry> NO_ADDITIONS = ImmutableList.of();
+    List<StaticBuffer> NO_DELETIONS = ImmutableList.of();
 
     /**
      * Retrieves the list of entries (i.e. column-value pairs) for a specified query.
@@ -50,7 +50,7 @@ public interface KeyColumnValueStore {
      * @throws org.janusgraph.diskstorage.BackendException when columnEnd < columnStart
      * @see KeySliceQuery
      */
-    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException;
+    EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException;
 
     /**
      * Retrieves the list of entries (i.e. column-value pairs) as specified by the given {@link SliceQuery} for all
@@ -62,7 +62,7 @@ public interface KeyColumnValueStore {
      * @return The result of the query for each of the given keys as a map from the key to the list of result entries.
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException;
+    Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException;
 
     /**
      * Verifies acquisition of locks {@code txh} from previous calls to
@@ -90,7 +90,7 @@ public interface KeyColumnValueStore {
      *                          {@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      *                          has failed
      */
-    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException;
+    void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException;
 
     /**
      * Attempts to claim a lock on the value at the specified {@code key} and
@@ -144,7 +144,7 @@ public interface KeyColumnValueStore {
      *             the lock could not be acquired due to contention with other
      *             transactions or a locking-specific storage problem
      */
-    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException;
+    void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException;
 
     /**
      * Returns a {@link KeyIterator} over all keys that fall within the key-range specified by the given query and have one or more columns matching the column-range.
@@ -157,7 +157,7 @@ public interface KeyColumnValueStore {
      * @return
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws BackendException;
+    KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws BackendException;
 
     /**
      * Returns a {@link KeyIterator} over all keys in the store that have one or more columns matching the column-range. Calling {@link KeyIterator#getEntries()}
@@ -170,7 +170,7 @@ public interface KeyColumnValueStore {
      * @return
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws BackendException;
+    KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws BackendException;
     // like current getKeys if column-slice is such that it queries for vertex state property
 
     /**
@@ -179,14 +179,14 @@ public interface KeyColumnValueStore {
      * @return store name
      * @see KeyColumnValueStoreManager#openDatabase(String)
      */
-    public String getName();
+    String getName();
 
     /**
      * Closes this store
      *
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    public void close() throws BackendException;
+    void close() throws BackendException;
 
 
 }

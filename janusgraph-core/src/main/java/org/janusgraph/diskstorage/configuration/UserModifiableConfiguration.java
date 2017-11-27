@@ -172,7 +172,7 @@ public class UserModifiableConfiguration implements JanusGraphConfiguration {
          * Otherwise just returns.
          * @param option
          */
-        public void verifyModification(ConfigOption option);
+        void verifyModification(ConfigOption option);
 
     }
 

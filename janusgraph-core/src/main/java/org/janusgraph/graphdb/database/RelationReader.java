@@ -23,6 +23,6 @@ import org.janusgraph.graphdb.types.TypeInspector;
  */
 public interface RelationReader {
 
-    public RelationCache parseRelation(Entry data, boolean parseHeaderOnly, TypeInspector tx);
+    RelationCache parseRelation(Entry data, boolean parseHeaderOnly, TypeInspector tx);
 
 }

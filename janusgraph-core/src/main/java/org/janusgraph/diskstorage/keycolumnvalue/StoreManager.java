@@ -32,12 +32,12 @@ public interface StoreManager {
      *
      * @return New Transaction Handle
      */
-    public StoreTransaction beginTransaction(BaseTransactionConfig config) throws BackendException;
+    StoreTransaction beginTransaction(BaseTransactionConfig config) throws BackendException;
 
     /**
      * Closes the Storage Manager and all databases that have been opened.
      */
-    public void close() throws BackendException;
+    void close() throws BackendException;
 
 
     /**
@@ -45,14 +45,14 @@ public interface StoreManager {
      * <p/>
      * ATTENTION: Invoking this method will delete ALL your data!!
      */
-    public void clearStorage() throws BackendException;
+    void clearStorage() throws BackendException;
 
     /**
      * Check whether database exists in this storage manager.
      * @return Flag indicating whether database exists
      * @throws BackendException
      */
-    public boolean exists() throws BackendException;
+    boolean exists() throws BackendException;
 
     /**
      * Returns the features supported by this storage manager
@@ -60,7 +60,7 @@ public interface StoreManager {
      * @return The supported features of this storage manager
      * @see StoreFeatures
      */
-    public StoreFeatures getFeatures();
+    StoreFeatures getFeatures();
 
     /**
      * Return an identifier for the StoreManager. Two managers with the same
@@ -77,7 +77,7 @@ public interface StoreManager {
      *
      * @return Name for this StoreManager
      */
-    public String getName();
+    String getName();
 
     /**
      * Returns {@code KeyRange}s locally hosted on this machine. The start of
@@ -89,6 +89,6 @@ public interface StoreManager {
      *             if the underlying store does not support this operation.
      *             Check {@link StoreFeatures#hasLocalKeyPartition()} first.
      */
-    public List<KeyRange> getLocalKeyPartition() throws BackendException;
+    List<KeyRange> getLocalKeyPartition() throws BackendException;
 
 }

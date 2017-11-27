@@ -21,11 +21,11 @@ import org.janusgraph.core.attribute.AttributeSerializer;
  */
 public interface AttributeHandler {
 
-    public <T> void registerClass(int registrationNo, Class<T> type, AttributeSerializer<T> attributeHandler);
+    <T> void registerClass(int registrationNo, Class<T> type, AttributeSerializer<T> attributeHandler);
 
-    public boolean validDataType(Class datatype);
+    boolean validDataType(Class datatype);
 
-    public<V> void verifyAttribute(Class<V> datatype, Object value);
+    <V> void verifyAttribute(Class<V> datatype, Object value);
 
     /**
      * Converts the given (not-null) value to the this datatype V.
@@ -35,8 +35,8 @@ public interface AttributeHandler {
      * @param value to convert
      * @return converted to expected datatype
      */
-    public<V> V convert(Class<V> datatype, Object value);
+    <V> V convert(Class<V> datatype, Object value);
 
-    public boolean isOrderPreservingDatatype(Class<?> datatype);
+    boolean isOrderPreservingDatatype(Class<?> datatype);
 
 }

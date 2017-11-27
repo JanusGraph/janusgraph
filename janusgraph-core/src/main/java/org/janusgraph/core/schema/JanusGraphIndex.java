@@ -33,7 +33,7 @@ public interface JanusGraphIndex extends Index {
      * Returns the name of the index
      * @return
      */
-    public String name();
+    String name();
 
     /**
      * Returns the name of the backing index. For composite indexes this returns a default name.
@@ -41,14 +41,14 @@ public interface JanusGraphIndex extends Index {
      *
      * @return
      */
-    public String getBackingIndex();
+    String getBackingIndex();
 
     /**
      * Returns which element type is being indexed by this index (vertex, edge, or property)
      *
      * @return
      */
-    public Class<? extends Element> getIndexedElement();
+    Class<? extends Element> getIndexedElement();
 
     /**
      * Returns the indexed keys of this index. If the returned array contains more than one element, its a
@@ -56,7 +56,7 @@ public interface JanusGraphIndex extends Index {
      *
      * @return
      */
-    public PropertyKey[] getFieldKeys();
+    PropertyKey[] getFieldKeys();
 
     /**
      * Returns the parameters associated with an indexed key of this index. Parameters modify the indexing
@@ -65,7 +65,7 @@ public interface JanusGraphIndex extends Index {
      * @param key
      * @return
      */
-    public Parameter[] getParametersFor(PropertyKey key);
+    Parameter[] getParametersFor(PropertyKey key);
 
     /**
      * Whether this is a unique index, i.e. values are uniquely associated with at most one element in the graph (for
@@ -73,7 +73,7 @@ public interface JanusGraphIndex extends Index {
      *
      * @return
      */
-    public boolean isUnique();
+    boolean isUnique();
 
     /**
      * Returns the status of this index with respect to the provided {@link PropertyKey}.
@@ -82,19 +82,19 @@ public interface JanusGraphIndex extends Index {
      *
      * @return
      */
-    public SchemaStatus getIndexStatus(PropertyKey key);
+    SchemaStatus getIndexStatus(PropertyKey key);
 
     /**
      * Whether this is a composite index
      * @return
      */
-    public boolean isCompositeIndex();
+    boolean isCompositeIndex();
 
     /**
      * Whether this is a mixed index
      * @return
      */
-    public boolean isMixedIndex();
+    boolean isMixedIndex();
 
 
 }

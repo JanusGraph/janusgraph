@@ -30,5 +30,5 @@ public interface LockStatus {
      *
      * @return The expiration instant of this lock
      */
-    public Instant getExpirationTimestamp();
+    Instant getExpirationTimestamp();
 }

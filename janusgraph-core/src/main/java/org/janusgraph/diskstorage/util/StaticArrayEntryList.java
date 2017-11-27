@@ -504,17 +504,17 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         }
     }
 
-    public static interface MetaDataSerializer<V> {
+    public interface MetaDataSerializer<V> {
 
         int getByteLength(V value);
 
-        public void write(byte[] data, int startPos, V value);
+        void write(byte[] data, int startPos, V value);
 
-        public V read(byte[] data, int startPos);
+        V read(byte[] data, int startPos);
 
     }
 
-    private static enum IntSerializer implements MetaDataSerializer<Integer> {
+    private enum IntSerializer implements MetaDataSerializer<Integer> {
 
         INSTANCE;
 
@@ -537,7 +537,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         }
     }
       
-    private static enum LongSerializer implements MetaDataSerializer<Long> {
+    private enum LongSerializer implements MetaDataSerializer<Long> {
 
         INSTANCE;
 
@@ -560,7 +560,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         }
     }
 
-    private static enum ASCIIStringSerializer implements MetaDataSerializer<String> {
+    private enum ASCIIStringSerializer implements MetaDataSerializer<String> {
 
         INSTANCE;
 
