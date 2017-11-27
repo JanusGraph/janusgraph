@@ -38,7 +38,7 @@ public interface RelationTypeMaker {
      *
      * @return
      */
-    public String getName();
+    String getName();
 
     /**
      * Configures the signature of this relation type.
@@ -57,12 +57,12 @@ public interface RelationTypeMaker {
      * @param keys PropertyKey composing the signature for the configured relation type. The order is irrelevant.
      * @return this RelationTypeMaker
      */
-    public RelationTypeMaker signature(PropertyKey... keys);
+    RelationTypeMaker signature(PropertyKey... keys);
 
     /**
      * Builds the configured relation type
      *
      * @return the configured {@link RelationType}
      */
-    public RelationType make();
+    RelationType make();
 }

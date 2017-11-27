@@ -36,6 +36,6 @@ public interface KeyIterator extends RecordIterator<StaticBuffer> {
      *
      * @return
      */
-    public RecordIterator<Entry> getEntries();
+    RecordIterator<Entry> getEntries();
 
 }

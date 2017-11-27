@@ -102,7 +102,7 @@ public interface JanusGraphElement extends Element, Idfiable, Removable {
      * @param value the object value
      */
     @Override
-    public<V> Property<V> property(String key, V value);
+    <V> Property<V> property(String key, V value);
 
     /**
      * Retrieves the value associated with the given key on this element and casts it to the specified type.

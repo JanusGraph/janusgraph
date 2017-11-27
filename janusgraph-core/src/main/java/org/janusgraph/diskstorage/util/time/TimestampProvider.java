@@ -31,14 +31,14 @@ public interface TimestampProvider {
      *
      * @return
      */
-    public Instant getTime();
+    Instant getTime();
 
     /**
      * Returns the given time as a {@link Instant} based off of this timestamp providers units
      * @param sinceEpoch
      * @return
      */
-    public Instant getTime(long sinceEpoch);
+    Instant getTime(long sinceEpoch);
 
     /**
      * Return the units of {@link #getTime()}. This method's return value must
@@ -47,7 +47,7 @@ public interface TimestampProvider {
      *
      * @return this instance's time unit
      */
-    public ChronoUnit getUnit();
+    ChronoUnit getUnit();
 
     /**
      * Block until the current time as returned by {@link #getTime()} is greater
@@ -59,7 +59,7 @@ public interface TimestampProvider {
      * @throws InterruptedException
      *             if externally interrupted
      */
-    public Instant sleepPast(Instant futureTime) throws InterruptedException;
+    Instant sleepPast(Instant futureTime) throws InterruptedException;
 
     /**
      * Sleep for the given duration of time.
@@ -67,14 +67,14 @@ public interface TimestampProvider {
      * @param duration
      * @throws InterruptedException
      */
-    public void sleepFor(Duration duration) throws InterruptedException;
+    void sleepFor(Duration duration) throws InterruptedException;
 
     /**
      * Returns a {@link Timer} based on this timestamp provider
      *
      * @return
      */
-    public Timer getTimer();
+    Timer getTimer();
 
 
     /**

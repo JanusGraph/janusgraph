@@ -38,12 +38,12 @@ public interface PropertyKey extends RelationType {
      *
      * @return Data type for this property key.
      */
-    public Class<?> dataType();
+    Class<?> dataType();
 
     /**
      * The {@link Cardinality} of this property key.
      * @return
      */
-    public Cardinality cardinality();
+    Cardinality cardinality();
 
 }

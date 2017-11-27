@@ -30,14 +30,14 @@ public interface IndexInformation {
      * @param janusgraphPredicate
      * @return
      */
-    public boolean supports(KeyInformation information, JanusGraphPredicate janusgraphPredicate);
+    boolean supports(KeyInformation information, JanusGraphPredicate janusgraphPredicate);
 
     /**
      * Whether the index supports indexing a key with the given information
      * @param information
      * @return
      */
-    public boolean supports(KeyInformation information);
+    boolean supports(KeyInformation information);
 
 
     /**
@@ -51,12 +51,12 @@ public interface IndexInformation {
      * @param information
      * @return
      */
-    public String mapKey2Field(String key, KeyInformation information);
+    String mapKey2Field(String key, KeyInformation information);
 
     /**
      * The features of this index
      * @return
      */
-    public IndexFeatures getFeatures();
+    IndexFeatures getFeatures();
 
 }

@@ -20,5 +20,5 @@ import java.util.concurrent.Callable;
 public interface IOCallable<T> extends Callable<T> {
 
     @Override
-    public T call() throws IOException;
+    T call() throws IOException;
 }

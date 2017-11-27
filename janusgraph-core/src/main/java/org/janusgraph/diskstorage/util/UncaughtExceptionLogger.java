@@ -29,7 +29,7 @@ public class UncaughtExceptionLogger implements UncaughtExceptionHandler {
      * as of 1.7.5 provides no general Logger.log(Level, String, Object...)
      * method. I can't seem to metaprogram around this.
      */
-    public static enum UELevel implements UELogLevel {
+    public enum UELevel implements UELogLevel {
         TRACE {
             public void dispatch(String message, Throwable t) {
                 log.trace(message, t);
@@ -70,5 +70,5 @@ public class UncaughtExceptionLogger implements UncaughtExceptionHandler {
 }
 
 interface UELogLevel {
-    public void dispatch(String message, Throwable t);
+    void dispatch(String message, Throwable t);
 }

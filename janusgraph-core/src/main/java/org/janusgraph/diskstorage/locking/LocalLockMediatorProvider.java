@@ -40,6 +40,6 @@ public interface LocalLockMediatorProvider {
      * @author Dan LaRocque <dalaro@hopcount.org>
      * @see LocalLockMediator
      */
-    public <T> LocalLockMediator<T> get(String namespace, TimestampProvider times);
+    <T> LocalLockMediator<T> get(String namespace, TimestampProvider times);
 
 }

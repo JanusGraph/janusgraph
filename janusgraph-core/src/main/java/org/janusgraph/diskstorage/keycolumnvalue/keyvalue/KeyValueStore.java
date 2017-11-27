@@ -33,7 +33,7 @@ public interface KeyValueStore {
      * @param txh
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    public void delete(StaticBuffer key, StoreTransaction txh) throws BackendException;
+    void delete(StaticBuffer key, StoreTransaction txh) throws BackendException;
 
     /**
      * Returns the value associated with the given key.
@@ -43,7 +43,7 @@ public interface KeyValueStore {
      * @return
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    public StaticBuffer get(StaticBuffer key, StoreTransaction txh) throws BackendException;
+    StaticBuffer get(StaticBuffer key, StoreTransaction txh) throws BackendException;
 
     /**
      * Returns true iff the store contains the given key, else false
@@ -53,7 +53,7 @@ public interface KeyValueStore {
      * @return
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws BackendException;
+    boolean containsKey(StaticBuffer key, StoreTransaction txh) throws BackendException;
 
 
     /**
@@ -64,20 +64,20 @@ public interface KeyValueStore {
      * @param txh
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    public void acquireLock(StaticBuffer key, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException;
+    void acquireLock(StaticBuffer key, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException;
 
     /**
      * Returns the name of this store
      *
      * @return
      */
-    public String getName();
+    String getName();
 
     /**
      * Closes this store and releases its resources.
      *
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    public void close() throws BackendException;
+    void close() throws BackendException;
 
 }

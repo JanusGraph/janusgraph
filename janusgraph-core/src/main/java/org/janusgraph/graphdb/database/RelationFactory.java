@@ -23,18 +23,18 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 
 public interface RelationFactory {
 
-    public long getVertexID();
+    long getVertexID();
 
-    public void setDirection(Direction dir);
+    void setDirection(Direction dir);
 
-    public void setType(RelationType type);
+    void setType(RelationType type);
 
-    public void setRelationID(long relationID);
+    void setRelationID(long relationID);
 
-    public void setOtherVertexID(long vertexId);
+    void setOtherVertexID(long vertexId);
 
-    public void setValue(Object value);
+    void setValue(Object value);
 
-    public void addProperty(RelationType type, Object value);
+    void addProperty(RelationType type, Object value);
 
 }
