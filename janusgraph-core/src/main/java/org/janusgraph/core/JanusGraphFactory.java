@@ -401,9 +401,9 @@ public class JanusGraphFactory {
         return getAbsolutePath(new File(System.getProperty("user.dir")), file);
     }
 
-    private static String getAbsolutePath(final File configParent, String file) {
-        File storedir = new File(file);
-        if (!storedir.isAbsolute()) {
+    private static String getAbsolutePath(final File configParent, final String file) {
+        final File storeDirectory = new File(file);
+        if (!storeDirectory.isAbsolute()) {
             String newFile = configParent.getAbsolutePath() + File.separator + file;
             log.debug("Overwrote relative path: was {}, now {}", sanitizeAndLaunder(file), sanitizeAndLaunder(newFile));
             return newFile;

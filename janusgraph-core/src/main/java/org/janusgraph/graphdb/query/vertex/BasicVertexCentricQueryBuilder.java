@@ -91,8 +91,8 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     }
 
     @Override
-    public JanusGraphVertex getVertex(long vertexid) {
-        return tx.getVertex(vertexid);
+    public JanusGraphVertex getVertex(long vertexId) {
+        return tx.getVertex(vertexId);
     }
 
     /* ---------------------------------------------------------------
@@ -287,9 +287,9 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                 Iterable<JanusGraphRelation> merge = null;
 
                 for (InternalVertex rep : representatives) {
-                    Iterable<JanusGraphRelation> iter = executeIndividualRelations(rep,baseQuery);
-                    if (merge==null) merge = iter;
-                    else merge = ResultMergeSortIterator.mergeSort(merge,iter,(Comparator)orders,false);
+                    Iterable<JanusGraphRelation> iterable = executeIndividualRelations(rep,baseQuery);
+                    if (merge==null) merge = iterable;
+                    else merge = ResultMergeSortIterator.mergeSort(merge,iterable,(Comparator)orders,false);
                 }
                 return ResultSetIterator.wrap(merge,baseQuery.getLimit());
             } else vertex = tx.getCanonicalVertex(vertex);
@@ -313,9 +313,9 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                 Iterable<JanusGraphVertex> merge = null;
 
                 for (InternalVertex rep : representatives) {
-                    Iterable<JanusGraphVertex> iter = executeIndividualVertices(rep,baseQuery);
-                    if (merge==null) merge = iter;
-                    else merge = ResultMergeSortIterator.mergeSort(merge,iter,VertexArrayList.VERTEX_ID_COMPARATOR,false);
+                    Iterable<JanusGraphVertex> iterable = executeIndividualVertices(rep,baseQuery);
+                    if (merge==null) merge = iterable;
+                    else merge = ResultMergeSortIterator.mergeSort(merge,iterable,VertexArrayList.VERTEX_ID_COMPARATOR,false);
                 }
                 return ResultSetIterator.wrap(merge,baseQuery.getLimit());
             } else vertex = tx.getCanonicalVertex(vertex);
@@ -340,9 +340,9 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
                 for (InternalVertex rep : representatives) {
                     if (merge!=null && merge.size()>=baseQuery.getLimit()) break;
-                    VertexList vlist = executeIndividualVertexIds(rep,baseQuery);
-                    if (merge==null) merge = (VertexListInternal)vlist;
-                    else merge.addAll(vlist);
+                    VertexList vertexList = executeIndividualVertexIds(rep,baseQuery);
+                    if (merge==null) merge = (VertexListInternal)vertexList;
+                    else merge.addAll(vertexList);
                 }
                 if (merge != null && merge.size()>baseQuery.getLimit()) merge = (VertexListInternal)merge.subList(0,baseQuery.getLimit());
                 return merge;
@@ -378,15 +378,15 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         Condition<JanusGraphRelation> condition = baseQuery.getCondition();
         if (!baseQuery.isEmpty()) {
             //Add adjacent-vertex and direction related conditions; copy conditions to so that baseQuery does not change
-            And<JanusGraphRelation> newcond = new And<JanusGraphRelation>();
-            if (condition instanceof And) newcond.addAll((And) condition);
-            else newcond.add(condition);
+            And<JanusGraphRelation> newCondition = new And<JanusGraphRelation>();
+            if (condition instanceof And) newCondition.addAll((And) condition);
+            else newCondition.add(condition);
 
-            newcond.add(new DirectionCondition<JanusGraphRelation>(vertex,dir));
+            newCondition.add(new DirectionCondition<JanusGraphRelation>(vertex,dir));
             if (adjacentVertex != null)
-                newcond.add(new IncidenceCondition<JanusGraphRelation>(vertex,adjacentVertex));
+                newCondition.add(new IncidenceCondition<JanusGraphRelation>(vertex,adjacentVertex));
 
-            condition = newcond;
+            condition = newCondition;
         }
         VertexCentricQuery query = new VertexCentricQuery(vertex, condition, baseQuery.getDirection(), baseQuery.getQueries(),baseQuery.getOrders(), baseQuery.getLimit());
         Preconditions.checkArgument(!queryOnlyLoaded || query.isSimple(),"Query-only-loaded only works on simple queries");

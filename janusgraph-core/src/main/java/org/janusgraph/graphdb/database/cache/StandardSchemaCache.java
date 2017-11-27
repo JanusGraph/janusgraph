@@ -123,7 +123,7 @@ public class StandardSchemaCache implements SchemaCache {
         int edgeDir = EdgeDirection.position(dir);
         assert edgeDir==0 || edgeDir==1;
 
-        long typeid = (schemaId >>> SCHEMAID_BACK_SHIFT);
+        long typeId = (schemaId >>> SCHEMAID_BACK_SHIFT);
         int systemTypeId;
         if (type== BaseLabel.SchemaDefinitionEdge) systemTypeId=0;
         else if (type== BaseKey.SchemaName) systemTypeId=1;
@@ -133,7 +133,7 @@ public class StandardSchemaCache implements SchemaCache {
 
         //Ensure that there is enough padding
         assert (systemTypeId<(1<<2));
-        return (((typeid<<2)+systemTypeId)<<1)+edgeDir;
+        return (((typeId<<2)+systemTypeId)<<1)+edgeDir;
     }
 
     @Override
@@ -186,26 +186,26 @@ public class StandardSchemaCache implements SchemaCache {
     @Override
     public void expireSchemaElement(final long schemaId) {
         //1) expire relations
-        final long cuttypeid = (schemaId >>> SCHEMAID_BACK_SHIFT);
+        final long cutTypeId = (schemaId >>> SCHEMAID_BACK_SHIFT);
         ConcurrentMap<Long,EntryList> types = schemaRelations;
         if (types!=null) {
             Iterator<Long> keys = types.keySet().iterator();
             while (keys.hasNext()) {
                 long key = keys.next();
-                if ((key>>>SCHEMAID_TOTALFORW_SHIFT)==cuttypeid) keys.remove();
+                if ((key>>>SCHEMAID_TOTALFORW_SHIFT)==cutTypeId) keys.remove();
             }
         }
         Iterator<Long> keys = schemaRelationsBackup.asMap().keySet().iterator();
         while (keys.hasNext()) {
             long key = keys.next();
-            if ((key>>>SCHEMAID_TOTALFORW_SHIFT)==cuttypeid) schemaRelationsBackup.invalidate(key);
+            if ((key>>>SCHEMAID_TOTALFORW_SHIFT)==cutTypeId) schemaRelationsBackup.invalidate(key);
         }
         //2) expire names
         ConcurrentMap<String,Long> names = typeNames;
         if (names!=null) {
-            for (Iterator<Map.Entry<String, Long>> iter = names.entrySet().iterator(); iter.hasNext(); ) {
-                Map.Entry<String, Long> next = iter.next();
-                if (next.getValue().equals(schemaId)) iter.remove();
+            for (Iterator<Map.Entry<String, Long>> iterator = names.entrySet().iterator(); iterator.hasNext(); ) {
+                Map.Entry<String, Long> next = iterator.next();
+                if (next.getValue().equals(schemaId)) iterator.remove();
             }
         }
         for (Map.Entry<String,Long> entry : typeNamesBackup.asMap().entrySet()) {

@@ -47,13 +47,13 @@ public class ConditionUtil {
         } else if (condition instanceof Not) {
             return Not.of(transformation(((Not) condition).getChild(), transformation));
         } else if (condition instanceof And) {
-            And<E> newand = new And<E>(condition.numChildren());
-            for (Condition<E> child : condition.getChildren()) newand.add(transformation(child, transformation));
-            return newand;
+            And<E> newAnd = new And<E>(condition.numChildren());
+            for (Condition<E> child : condition.getChildren()) newAnd.add(transformation(child, transformation));
+            return newAnd;
         } else if (condition instanceof Or) {
-            Or<E> newor = new Or<E>(condition.numChildren());
-            for (Condition<E> child : condition.getChildren()) newor.add(transformation(child, transformation));
-            return newor;
+            Or<E> newOr = new Or<E>(condition.numChildren());
+            for (Condition<E> child : condition.getChildren()) newOr.add(transformation(child, transformation));
+            return newOr;
         } else throw new IllegalArgumentException("Unexpected condition type: " + condition);
     }
 

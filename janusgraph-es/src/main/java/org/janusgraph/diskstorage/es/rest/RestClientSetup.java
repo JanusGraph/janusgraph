@@ -61,12 +61,12 @@ public class RestClientSetup {
         final int defaultPort = config.has(INDEX_PORT) ? config.get(INDEX_PORT) : ElasticSearchIndex.HOST_PORT_DEFAULT;
         final String httpScheme = config.get(ElasticSearchIndex.SSL_ENABLED).booleanValue() ? "https" : "http";
         for (String host : config.get(INDEX_HOSTS)) {
-            String[] hostparts = host.split(":");
-            String hostname = hostparts[0];
-            int hostport = defaultPort;
-            if (hostparts.length == 2) hostport = Integer.parseInt(hostparts[1]);
-            log.debug("Configured remote host: {} : {}", hostname, hostport);
-            hosts.add(new HttpHost(hostname, hostport, httpScheme));
+            String[] hostStringParts = host.split(":");
+            String hostname = hostStringParts[0];
+            int hostPort = defaultPort;
+            if (hostStringParts.length == 2) hostPort = Integer.parseInt(hostStringParts[1]);
+            log.debug("Configured remote host: {} : {}", hostname, hostPort);
+            hosts.add(new HttpHost(hostname, hostPort, httpScheme));
         }
         final RestClient rc = getRestClient(hosts.toArray(new HttpHost[hosts.size()]), config);
 
@@ -218,10 +218,10 @@ public class RestClientSetup {
         return SSLConfigurationCallback.Builder.create();
     }
 
-    protected RestClientAuthenticator getCustomAuthenticator(String authClassName, String[] authClassConstructurArgList) {
+    protected RestClientAuthenticator getCustomAuthenticator(String authClassName, String[] authClassConstructorArgList) {
         Preconditions.checkArgument(StringUtils.isNotEmpty(authClassName),
                 "Custom authenticator class name cannot be empty");
-        Preconditions.checkNotNull(authClassConstructurArgList,
+        Preconditions.checkNotNull(authClassConstructorArgList,
                 "Custom authenticator class constructor argument list cannot be null");
 
         final RestClientAuthenticator authenticator;
@@ -232,10 +232,10 @@ public class RestClientSetup {
                     + authClassName + " must be a subclass of " + RestClientAuthenticator.class.getName());
             @SuppressWarnings("unchecked")
             final Constructor<RestClientAuthenticator> ctr = ((Class<RestClientAuthenticator>)c).getConstructor(String[].class);
-            authenticator = ctr.newInstance((Object)authClassConstructurArgList);
+            authenticator = ctr.newInstance((Object)authClassConstructorArgList);
         } catch (Exception e) {
             log.error("Unable to instantiate the custom authenticator {} with constructor arguments \"{}\"",
-                    authClassName, authClassConstructurArgList, e);
+                    authClassName, authClassConstructorArgList, e);
             throw new RuntimeException("Unable to instantiate the custom authenticator", e);
         }
 
@@ -243,7 +243,7 @@ public class RestClientSetup {
             authenticator.init();
         } catch (IOException e) {
             log.error("Unable to initialize the custom authenticator {} with constructor arguments \"{}\"",
-                    authClassName, authClassConstructurArgList, e);
+                    authClassName, authClassConstructorArgList, e);
             throw new RuntimeException("Unable to initialize the custom authenticator", e);
         }
 

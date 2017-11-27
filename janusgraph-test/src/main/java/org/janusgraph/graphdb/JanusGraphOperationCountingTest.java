@@ -76,11 +76,11 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
     @Override
     public WriteConfiguration getConfiguration() {
         WriteConfiguration config = getBaseConfiguration();
-        ModifiableConfiguration mconf = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.NONE);
-        mconf.set(BASIC_METRICS,true);
-        mconf.set(METRICS_MERGE_STORES,false);
-        mconf.set(PROPERTY_PREFETCHING,false);
-        mconf.set(DB_CACHE, false);
+        ModifiableConfiguration modifiableConfiguration = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.NONE);
+        modifiableConfiguration.set(BASIC_METRICS,true);
+        modifiableConfiguration.set(METRICS_MERGE_STORES,false);
+        modifiableConfiguration.set(PROPERTY_PREFETCHING,false);
+        modifiableConfiguration.set(DB_CACHE, false);
         return config;
     }
 
@@ -171,19 +171,19 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
             assertFalse(person.isPartitioned());
             assertEquals(Integer.class,uid.dataType());
             //Retrieving in and out relations for the relation types...
-            InternalRelationType namei = (InternalRelationType)name;
-            InternalRelationType knowsi = (InternalRelationType)knows;
-            InternalRelationType uidi = (InternalRelationType)uid;
-            assertNull(namei.getBaseType());
-            assertNull(knowsi.getBaseType());
-            IndexType index = Iterables.getOnlyElement(uidi.getKeyIndexes());
+            InternalRelationType nameInternal = (InternalRelationType)name;
+            InternalRelationType knowsInternal = (InternalRelationType)knows;
+            InternalRelationType uidInternal = (InternalRelationType)uid;
+            assertNull(nameInternal.getBaseType());
+            assertNull(knowsInternal.getBaseType());
+            IndexType index = Iterables.getOnlyElement(uidInternal.getKeyIndexes());
             assertEquals(1,index.getFieldKeys().length);
             assertEquals(ElementCategory.VERTEX,index.getElement());
             assertEquals(ConsistencyModifier.LOCK,((CompositeIndexType)index).getConsistencyModifier());
-            assertEquals(1, Iterables.size(uidi.getRelationIndexes()));
-            assertEquals(1, Iterables.size(namei.getRelationIndexes()));
-            assertEquals(namei, Iterables.getOnlyElement(namei.getRelationIndexes()));
-            assertEquals(knowsi, Iterables.getOnlyElement(knowsi.getRelationIndexes()));
+            assertEquals(1, Iterables.size(uidInternal.getRelationIndexes()));
+            assertEquals(1, Iterables.size(nameInternal.getRelationIndexes()));
+            assertEquals(nameInternal, Iterables.getOnlyElement(nameInternal.getRelationIndexes()));
+            assertEquals(knowsInternal, Iterables.getOnlyElement(knowsInternal.getRelationIndexes()));
             //.. and vertex labels
             assertEquals(0,((InternalVertexLabel)person).getTTL());
 
@@ -474,11 +474,11 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         finishSchema();
 
         final int numV = 100;
-        final long[] vids = new long[numV];
+        final long[] vertexIds = new long[numV];
         for (int i=0;i<numV;i++) {
             JanusGraphVertex v = graph.addVertex(prop,0);
             graph.tx().commit();
-            vids[i]=getId(v);
+            vertexIds[i]=getId(v);
         }
         clopen(newConfig);
         resetEdgeCacheCounts();
@@ -500,8 +500,8 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
             public void run() {
                 int reads = 0;
                 while (reads<numReads) {
-                    final int pos = random.nextInt(vids.length);
-                    long vid = vids[pos];
+                    final int pos = random.nextInt(vertexIds.length);
+                    long vid = vertexIds[pos];
                     JanusGraphVertex v = getV(graph,vid);
                     assertNotNull(v);
                     boolean postCommit = postcommit[pos].get();
@@ -527,7 +527,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
             public void run() {
                 for (int i=0;i<numV;i++) {
                     try {
-                        JanusGraphVertex v = getV(graph,vids[i]);
+                        JanusGraphVertex v = getV(graph,vertexIds[i]);
                         v.property(VertexProperty.Cardinality.single, prop, 1);
                         precommit[i].set(true);
                         graph.tx().commit();
@@ -596,7 +596,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
 
         clopen(newConfig);
 
-        double timecoldglobal=0, timewarmglobal=0,timehotglobal=0;
+        double timeColdGlobal=0, timeWarmGlobal=0, timeHotGlobal=0;
 
         int outerRepeat = 20;
         int measurements = 10;
@@ -604,35 +604,35 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         int innerRepeat = 2;
         for (int c=0;c<outerRepeat;c++) {
 
-            double timecold = testAllVertices(vertexId,numV);
+            double timeCold = testAllVertices(vertexId,numV);
 
-            double timewarm = 0;
-            double timehot = 0;
+            double timeWarm = 0;
+            double timeHot = 0;
             for (int i = 0;i<innerRepeat;i++) {
                 graph.tx().commit();
-                timewarm += testAllVertices(vertexId,numV);
+                timeWarm += testAllVertices(vertexId,numV);
                 for (int j=0;j<innerRepeat;j++) {
-                    timehot += testAllVertices(vertexId,numV);
+                    timeHot += testAllVertices(vertexId,numV);
                 }
             }
-            timewarm = timewarm / innerRepeat;
-            timehot = timehot / (innerRepeat*innerRepeat);
+            timeWarm = timeWarm / innerRepeat;
+            timeHot = timeHot / (innerRepeat*innerRepeat);
 
             if (c>=(outerRepeat-measurements)) {
-                timecoldglobal += timecold;
-                timewarmglobal += timewarm;
-                timehotglobal  += timehot;
+                timeColdGlobal += timeCold;
+                timeWarmGlobal += timeWarm;
+                timeHotGlobal  += timeHot;
             }
-//            System.out.println(timecold + "\t" + timewarm + "\t" + timehot);
+//            System.out.println(timeCold + "\t" + timeWarm + "\t" + timeHot);
             clopen(newConfig);
         }
-        timecoldglobal = timecoldglobal/measurements;
-        timewarmglobal = timewarmglobal/measurements;
-        timehotglobal = timehotglobal/measurements;
+        timeColdGlobal = timeColdGlobal/measurements;
+        timeWarmGlobal = timeWarmGlobal/measurements;
+        timeHotGlobal = timeHotGlobal/measurements;
 
-        System.out.println(round(timecoldglobal) + "\t" + round(timewarmglobal) + "\t" + round(timehotglobal));
-        assertTrue(timecoldglobal + " vs " + timewarmglobal, timecoldglobal>timewarmglobal*2);
-        //assertTrue(timewarmglobal + " vs " + timehotglobal, timewarmglobal>timehotglobal); Sometimes, this is not true
+        System.out.println(round(timeColdGlobal) + "\t" + round(timeWarmGlobal) + "\t" + round(timeHotGlobal));
+        assertTrue(timeColdGlobal + " vs " + timeWarmGlobal, timeColdGlobal>timeWarmGlobal*2);
+        //assertTrue(timeWarmGlobal + " vs " + timeHotGlobal, timeWarmGlobal>timeHotGlobal); Sometimes, this is not true
     }
 
     private double testAllVertices(long vid, int numV) {

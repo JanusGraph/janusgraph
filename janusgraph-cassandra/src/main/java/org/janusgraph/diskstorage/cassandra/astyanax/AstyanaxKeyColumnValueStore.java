@@ -119,7 +119,7 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
     public Map<StaticBuffer, EntryList> getNamesSlice(List<StaticBuffer> keys,
                                                       SliceQuery query, StoreTransaction txh) throws BackendException {
         /*
-         * RowQuery<K,C> should be parameterized as
+         * RowQuery<K,C> should be parametrized as
          * RowQuery<ByteBuffer,ByteBuffer>. However, this causes the following
          * compilation error when attempting to call withColumnRange on a
          * RowQuery<ByteBuffer,ByteBuffer> instance:
@@ -215,7 +215,7 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
                 // Reset the incremented position to avoid leaking mutations up the
                 // stack to callers - sliceStart.array() in fact refers to a column name
                 // that will be later read to deserialize an edge (since we assigned it
-                // via dereferencing a column from the previous query).
+                // via de-referencing a column from the previous query).
                 sliceStart.array()[position]--;
 
                 pageColumns = pageResult.getResult();
@@ -348,7 +348,7 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
                 false,
                 query.getLimit());
 
-        // Omit final the query's keyend from the result, if present in result
+        // Omit final the query's key end from the result, if present in result
         final Rows<ByteBuffer, ByteBuffer> r;
         try {
             r = ((OperationResult<Rows<ByteBuffer, ByteBuffer>>) rowSlice.execute()).getResult();
@@ -392,8 +392,8 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
         private final SliceQuery sliceQuery;
         private boolean isClosed;
 
-        public RowIterator(Iterator<Row<ByteBuffer, ByteBuffer>> rowIter, SliceQuery sliceQuery) {
-            this.rows = Iterators.filter(rowIter, new KeyIterationPredicate());
+        public RowIterator(Iterator<Row<ByteBuffer, ByteBuffer>> rowIterator, SliceQuery sliceQuery) {
+            this.rows = Iterators.filter(rowIterator, new KeyIterationPredicate());
             this.sliceQuery = sliceQuery;
         }
 

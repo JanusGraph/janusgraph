@@ -52,13 +52,12 @@ public interface IndexProvider extends IndexInformation {
      *
      * @param mutations Updates to the index. First map contains all the mutations for each store. The inner map contains
      *                  all changes for each document in an {@link IndexMutation}.
-     * @param informations Information on the keys used in the mutation accessible through {@link KeyInformation.IndexRetriever}.
+     * @param information Information on the keys used in the mutation accessible through {@link KeyInformation.IndexRetriever}.
      * @param tx Enclosing transaction
      * @throws org.janusgraph.diskstorage.BackendException
      * @see IndexMutation
      */
-    void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
-
+    void mutate(Map<String,Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException;
 
     /**
      * Restores the index to the state of the primary data store as given in the {@code documents} variable. When this method returns, the index records
@@ -67,49 +66,47 @@ public interface IndexProvider extends IndexInformation {
      *
      * @param documents The outer map maps stores to documents, the inner contains the documents mapping document ids to the document content which is a
      *                  list of {@link IndexEntry}. If that list is empty, that means this document should not exist and ought to be deleted.
-     * @param informations Information on the keys used in the mutation accessible through {@link KeyInformation.IndexRetriever}.
+     * @param information Information on the keys used in the mutation accessible through {@link KeyInformation.IndexRetriever}.
      * @param tx Enclosing transaction
      * @throws BackendException
      */
-    void restore(Map<String, Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
-
+    void restore(Map<String,Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException;
 
     /**
      * Executes the given query against the index.
      *
      * @param query Query to execute
-     * @param informations Information on the keys used in the query accessible through {@link KeyInformation.IndexRetriever}.
+     * @param information Information on the keys used in the query accessible through {@link KeyInformation.IndexRetriever}.
      * @param tx Enclosing transaction
      * @return The ids of all matching documents
      * @throws org.janusgraph.diskstorage.BackendException
      * @see IndexQuery
      */
-    Stream<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
-
+    Stream<String> query(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException;
 
     /**
      * Executes the given raw query against the index
      *
      * @param query Query to execute
-     * @param informations Information on the keys used in the query accessible through {@link KeyInformation.IndexRetriever}.
+     * @param information Information on the keys used in the query accessible through {@link KeyInformation.IndexRetriever}.
      * @param tx Enclosing transaction
      * @return Results objects for all matching documents (i.e. document id and score)
      * @throws org.janusgraph.diskstorage.BackendException
      * @see RawQuery
      */
-    Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
+    Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException;
 
     /**
      * Executes the given raw query against the index and returns the total hits. e.g. limit=0
      *
      * @param query Query to execute
-     * @param informations Information on the keys used in the query accessible through {@link KeyInformation.IndexRetriever}.
+     * @param information Information on the keys used in the query accessible through {@link KeyInformation.IndexRetriever}.
      * @param tx Enclosing transaction
      * @return Long total hits for query
      * @throws org.janusgraph.diskstorage.BackendException
      * @see RawQuery
      */
-    Long totals(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
+    Long totals(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException;
 
     /**
      * Returns a transaction handle for a new index transaction.

@@ -85,7 +85,7 @@
         </dependency>
 
         <!-- Override Jackson versions in our transitive dependencies.
-             Without these deps, janusgraph-all users can end up with
+             Without these dependencies, janusgraph-all users can end up with
              1.9 + 1.8 jars together, and this leads to linkage errors.
              It might be a better idea to dependencyManagement imports if your Maven version supports it:
              http://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Importing_Dependencies -->

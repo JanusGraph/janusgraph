@@ -263,7 +263,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
         });
 
         // Extract values from remaining Entry instances
-        Iterable<StaticBuffer> actualVals = Iterables.transform(actualEntries, new Function<Entry, StaticBuffer>() {
+        Iterable<StaticBuffer> actualValues = Iterables.transform(actualEntries, new Function<Entry, StaticBuffer>() {
             @Override
             public StaticBuffer apply(Entry e) {
                 StaticBuffer actualCol = e.getColumnAs(StaticBuffer.STATIC_FACTORY);
@@ -275,18 +275,18 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
             }
         });
 
-        final Iterable<StaticBuffer> expectedVals;
+        final Iterable<StaticBuffer> expectedValues;
 
         if (null == ev) {
-            expectedVals = ImmutableList.<StaticBuffer>of();
+            expectedValues = ImmutableList.<StaticBuffer>of();
         } else {
-            expectedVals = ImmutableList.<StaticBuffer>of(ev);
+            expectedValues = ImmutableList.<StaticBuffer>of(ev);
         }
 
-        if (!Iterables.elementsEqual(expectedVals, actualVals)) {
+        if (!Iterables.elementsEqual(expectedValues, actualValues)) {
             throw new PermanentLockingException(
                     "Expected value mismatch for " + kc + ": expected="
-                            + expectedVals + " vs actual=" + actualVals + " (store=" + store.getName() + ")");
+                            + expectedValues + " vs actual=" + actualValues + " (store=" + store.getName() + ")");
         }
     }
 

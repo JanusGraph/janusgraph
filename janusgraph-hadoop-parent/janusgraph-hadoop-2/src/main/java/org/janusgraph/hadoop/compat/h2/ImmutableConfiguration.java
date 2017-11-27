@@ -282,12 +282,12 @@ public class ImmutableConfiguration extends Configuration {
     }
 
     @Override
-    public void setSocketAddr(String name, InetSocketAddress addr) {
+    public void setSocketAddr(String name, InetSocketAddress address) {
         throw new UnsupportedOperationException("This configuration instance is immutable");
     }
 
     @Override
-    public InetSocketAddress updateConnectAddr(String name, InetSocketAddress addr) {
+    public InetSocketAddress updateConnectAddr(String name, InetSocketAddress address) {
         throw new UnsupportedOperationException("This configuration instance is immutable");
     }
 
@@ -403,7 +403,7 @@ public class ImmutableConfiguration extends Configuration {
     }
 
     @Override
-    public void setQuietMode(boolean quietmode) {
+    public void setQuietMode(boolean quietMode) {
         throw new UnsupportedOperationException("This configuration instance is immutable");
     }
 

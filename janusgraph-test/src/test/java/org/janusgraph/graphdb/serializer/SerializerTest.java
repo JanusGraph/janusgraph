@@ -264,7 +264,7 @@ public class SerializerTest extends SerializerTestCommon {
     public void testStringCompression() {
         //ASCII encoding
         for (int t = 0; t < 100; t++) {
-            String x = getRandomString(StringSerializer.TEXT_COMRPESSION_THRESHOLD-1,ASCII_VALUE);
+            String x = getRandomString(StringSerializer.TEXT_COMPRESSION_THRESHOLD -1,ASCII_VALUE);
             assertEquals(x.length()+1, getStringBuffer(x).length());
         }
 
@@ -276,7 +276,7 @@ public class SerializerTest extends SerializerTestCommon {
 //                "A man entered who could hardly have been less than six feet six inches in height, with the chest and limbs of a Hercules. His dress was rich with a richness which would, in England"
 //        };
 //        for (String text : texts) {
-//            assertTrue(text.length()> StringSerializer.TEXT_COMRPESSION_THRESHOLD);
+//            assertTrue(text.length()> StringSerializer.TEXT_COMPRESSION_THRESHOLD);
 //            StaticBuffer s = getStringBuffer(text);
 ////            System.out.println(String.format("String length [%s] -> byte size [%s]",text.length(),s.length()));
 //            assertTrue(text.length()>s.length()); //Test that actual compression is happening
@@ -447,7 +447,7 @@ public class SerializerTest extends SerializerTestCommon {
         @Override
         public String newInstance() {
             if (random.nextDouble()>0.1) {
-                return getRandomString(StringSerializer.TEXT_COMRPESSION_THRESHOLD*2,
+                return getRandomString(StringSerializer.TEXT_COMPRESSION_THRESHOLD *2,
                         random.nextDouble()>0.5?ASCII_VALUE:MAX_CHAR_VALUE);
             } else {
                 return getRandomString(StringSerializer.LONG_COMPRESSION_THRESHOLD*4,

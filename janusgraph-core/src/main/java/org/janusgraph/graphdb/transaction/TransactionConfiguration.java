@@ -171,7 +171,7 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
     int[] getRestrictedPartitions();
 
     /**
-     * Returns true of the queryied partitions should be restricted in this transaction
+     * Returns true if the queried partitions should be restricted in this transaction
      */
     boolean hasRestrictedPartitions();
 

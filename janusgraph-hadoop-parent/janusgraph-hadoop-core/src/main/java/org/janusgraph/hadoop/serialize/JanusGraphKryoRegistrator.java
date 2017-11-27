@@ -62,9 +62,8 @@ public class JanusGraphKryoRegistrator implements KryoRegistrator {
             try (InputStream inputStream = new ByteArrayInputStream(input.readBytes(length))) {
                 return Geoshape.GeoshapeBinarySerializer.read(inputStream);
             } catch (IOException e) {
-                throw new RuntimeException("I/O exception reding geoshape");
+                throw new RuntimeException("I/O exception reading geoshape");
             }
         }
     }
-
 }

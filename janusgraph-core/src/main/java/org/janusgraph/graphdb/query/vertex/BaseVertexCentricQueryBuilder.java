@@ -85,7 +85,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
 
     protected abstract Q getThis();
 
-    protected abstract JanusGraphVertex getVertex(long vertexid);
+    protected abstract JanusGraphVertex getVertex(long vertexId);
 
 
     /* ---------------------------------------------------------------

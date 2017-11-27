@@ -9,21 +9,21 @@ public class TestContainerTwo {
     public static class TraversalAlpha {
         @Test
         public void testOne() {
-            //noop
+            //no-op
         }
         @Test
         public void testTwo() {
-            //noop
+            //no-op
         }
     }
     public static class TraversalBeta {
         @Test
         public void testOne() {
-            //noop
+            //no-op
         }
         @Test
         public void testTwo() {
-            //noop
+            //no-op
         }
     }
 }

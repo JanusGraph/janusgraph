@@ -316,7 +316,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
         // Initial lock acquisition by tx[0][0]
         store[0].acquireLock(k, k, null, tx[0][0]);
 
-        // Repeat lock acquistion until just before expiration
+        // Repeat lock acquisition until just before expiration
         for (int i = 0; i <= steps; i++) {
             if (targetMS <= System.currentTimeMillis()) {
                 break;
@@ -343,7 +343,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
     public void parallelNoncontendedLockStressTest() throws BackendException, InterruptedException {
         final Executor stressPool = Executors.newFixedThreadPool(CONCURRENCY);
         final CountDownLatch stressComplete = new CountDownLatch(CONCURRENCY);
-        final long maxWalltimeAllowedMS = 90 * 1000L;
+        final long maxWallTimeAllowedMilliseconds = 90 * 1000L;
         final int lockOperationsPerThread = 100;
         final LockStressor[] ls = new LockStressor[CONCURRENCY];
 
@@ -354,7 +354,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
         }
 
         Assert.assertTrue("Timeout exceeded",
-                stressComplete.await(maxWalltimeAllowedMS, TimeUnit.MILLISECONDS));
+                stressComplete.await(maxWallTimeAllowedMilliseconds, TimeUnit.MILLISECONDS));
         // All runnables submitted to the executor are done
 
         for (int i = 0; i < CONCURRENCY; i++) {
@@ -428,7 +428,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
         verify(mockLocker);
     }
 
-    private void tryWrites(KeyColumnValueStore store1, KeyColumnValueStoreManager checkmgr,
+    private void tryWrites(KeyColumnValueStore store1, KeyColumnValueStoreManager keyColumnValueStoreManager,
                            StoreTransaction tx1, KeyColumnValueStore store2,
                            StoreTransaction tx2) throws BackendException {
         Assert.assertNull(KCVSUtil.get(store1, k, c1, tx1));
@@ -444,10 +444,10 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
         if (tx2 != tx1)
             tx2.commit();
 
-        StoreTransaction checktx = newTransaction(checkmgr);
-        Assert.assertEquals(v1, KCVSUtil.get(store1, k, c1, checktx));
-        Assert.assertEquals(v2, KCVSUtil.get(store2, k, c2, checktx));
-        checktx.commit();
+        StoreTransaction transaction = newTransaction(keyColumnValueStoreManager);
+        Assert.assertEquals(v1, KCVSUtil.get(store1, k, c1, transaction));
+        Assert.assertEquals(v2, KCVSUtil.get(store2, k, c2, transaction));
+        transaction.commit();
     }
 
     private void tryLocks(KeyColumnValueStore s1,

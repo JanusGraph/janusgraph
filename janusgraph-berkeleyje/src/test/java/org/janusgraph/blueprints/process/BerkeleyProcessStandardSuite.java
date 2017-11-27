@@ -28,8 +28,8 @@ import java.lang.reflect.Field;
  */
 public class BerkeleyProcessStandardSuite extends ProcessStandardSuite {
 
-    public BerkeleyProcessStandardSuite(final Class<?> klass, final RunnerBuilder builder) throws InitializationError {
-        super(klass, builder, getTestList());
+    public BerkeleyProcessStandardSuite(final Class<?> classToTest, final RunnerBuilder builder) throws InitializationError {
+        super(classToTest, builder, getTestList());
     }
 
     private static final Class<?>[] getTestList() throws InitializationError {

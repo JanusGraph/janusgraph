@@ -158,7 +158,7 @@ public final class RelationIdentifier implements Serializable {
             throw new IllegalArgumentException("Invalid RelationIdentifier: typeID does not reference a type");
 
         RelationType type = (RelationType) typeVertex;
-        Iterable<? extends JanusGraphRelation> rels;
+        Iterable<? extends JanusGraphRelation> relations;
         if (((RelationType) typeVertex).isEdgeLabel()) {
             Direction dir = Direction.OUT;
             JanusGraphVertex other = ((StandardJanusGraphTx)tx).getInternalVertex(inVertexId);
@@ -169,12 +169,12 @@ public final class RelationIdentifier implements Serializable {
                 v = tmp;
                 dir = Direction.IN;
             }
-            rels = ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types((EdgeLabel) type).direction(dir).adjacent(other).edges();
+            relations = ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types((EdgeLabel) type).direction(dir).adjacent(other).edges();
         } else {
-            rels = ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types((PropertyKey) type).properties();
+            relations = ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types((PropertyKey) type).properties();
         }
 
-        for (JanusGraphRelation r : rels) {
+        for (JanusGraphRelation r : relations) {
             //Find current or previous relation
             if (r.longId() == relationId ||
                     ((r instanceof StandardRelation) && ((StandardRelation) r).getPreviousID() == relationId)) return r;

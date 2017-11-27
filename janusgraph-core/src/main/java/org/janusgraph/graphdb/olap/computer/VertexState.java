@@ -85,9 +85,9 @@ public class VertexState<M> {
             else currentMessages = combiner.combine(message,(M)currentMessages);
         } else {
             int pos = scopeMap.get(scope);
-            Object[] msgs =  (Object[])currentMessages;
-            if (msgs[pos]==null) msgs[pos]=message;
-            else msgs[pos] = combiner.combine(message,(M)msgs[pos]);
+            Object[] messages =  (Object[])currentMessages;
+            if (messages[pos]==null) messages[pos]=message;
+            else messages[pos] = combiner.combine(message,(M)messages[pos]);
         }
     }
 

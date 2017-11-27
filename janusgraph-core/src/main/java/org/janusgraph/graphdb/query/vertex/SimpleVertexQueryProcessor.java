@@ -69,15 +69,15 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
 
     @Override
     public Iterator<Entry> iterator() {
-        Iterator<Entry> iter;
+        Iterator<Entry> iterator;
         //If there is a limit we need to wrap the basic iterator in a LimitAdjustingIterator which ensures the right number
         //of elements is returned. Otherwise we just return the basic iterator.
         if (sliceQuery.hasLimit() && sliceQuery.getLimit()!=query.getLimit()) {
-            iter = new LimitAdjustingIterator();
+            iterator = new LimitAdjustingIterator();
         } else {
-            iter = getBasicIterator();
+            iterator = getBasicIterator();
         }
-        return iter;
+        return iterator;
     }
 
     /**

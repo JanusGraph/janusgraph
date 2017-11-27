@@ -100,16 +100,16 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
         if (index instanceof RelationTypeIndex) {
             //Nothing specific to be done
         } else if (index instanceof JanusGraphIndex) {
-            JanusGraphIndex gindex = (JanusGraphIndex)index;
-            if (gindex.isMixedIndex())
+            JanusGraphIndex graphIndex = (JanusGraphIndex)index;
+            if (graphIndex.isMixedIndex())
                 throw new UnsupportedOperationException("Cannot remove mixed indexes through JanusGraph. This can " +
                         "only be accomplished in the indexing system directly.");
-            CompositeIndexType indexType = (CompositeIndexType)mgmt.getSchemaVertex(index).asIndexType();
+            CompositeIndexType indexType = (CompositeIndexType) managementSystem.getSchemaVertex(index).asIndexType();
             graphIndexId = indexType.getID();
         } else throw new UnsupportedOperationException("Unsupported index found: "+index);
 
         //Must be a relation type index or a composite graph index
-        JanusGraphSchemaVertex schemaVertex = mgmt.getSchemaVertex(index);
+        JanusGraphSchemaVertex schemaVertex = managementSystem.getSchemaVertex(index);
         SchemaStatus actualStatus = schemaVertex.getStatus();
         Preconditions.checkArgument(actualStatus==SchemaStatus.DISABLED,"The index [%s] must be disabled before it can be removed",indexName);
     }
@@ -133,7 +133,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
                 mutator.mutateIndex(key, KCVSCache.NO_ADDITIONS, deletions);
             }
         } catch (final Exception e) {
-            mgmt.rollback();
+            managementSystem.rollback();
             writeTx.rollback();
             metrics.incrementCustom(FAILED_TX);
             throw new JanusGraphException(e.getMessage(), e);

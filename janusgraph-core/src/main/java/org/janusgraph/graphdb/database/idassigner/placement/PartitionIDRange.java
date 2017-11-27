@@ -168,7 +168,7 @@ public class PartitionIDRange {
                 continue;
             }
             lowerID = lowerID%partitionIdBound; //ensure that lowerID remains within range
-            if (lowerID==upperID) { //After re-normalizing, check for interval colision
+            if (lowerID==upperID) { //After re-normalizing, check for interval collision
                 discardRange(local);
                 continue;
             }

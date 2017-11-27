@@ -453,43 +453,43 @@ public class IDManager {
         return id;
     }
 
-    private static VertexIDType getUserVertexIDType(long vertexid) {
+    private static VertexIDType getUserVertexIDType(long vertexId) {
         VertexIDType type=null;
-        if (VertexIDType.NormalVertex.is(vertexid)) type=VertexIDType.NormalVertex;
-        else if (VertexIDType.PartitionedVertex.is(vertexid)) type=VertexIDType.PartitionedVertex;
-        else if (VertexIDType.UnmodifiableVertex.is(vertexid)) type=VertexIDType.UnmodifiableVertex;
+        if (VertexIDType.NormalVertex.is(vertexId)) type=VertexIDType.NormalVertex;
+        else if (VertexIDType.PartitionedVertex.is(vertexId)) type=VertexIDType.PartitionedVertex;
+        else if (VertexIDType.UnmodifiableVertex.is(vertexId)) type=VertexIDType.UnmodifiableVertex;
         if (null == type) {
-            throw new InvalidIDException("Vertex ID " + vertexid + " has unrecognized type");
+            throw new InvalidIDException("Vertex ID " + vertexId + " has unrecognized type");
         }
         return type;
     }
 
-    public final boolean isUserVertexId(long vertexid) {
-        return (VertexIDType.NormalVertex.is(vertexid) || VertexIDType.PartitionedVertex.is(vertexid) || VertexIDType.UnmodifiableVertex.is(vertexid))
-                && ((vertexid>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH))>0);
+    public final boolean isUserVertexId(long vertexId) {
+        return (VertexIDType.NormalVertex.is(vertexId) || VertexIDType.PartitionedVertex.is(vertexId) || VertexIDType.UnmodifiableVertex.is(vertexId))
+                && ((vertexId>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH))>0);
     }
 
-    public long getPartitionId(long vertexid) {
-        if (VertexIDType.Schema.is(vertexid)) return SCHEMA_PARTITION;
-        assert isUserVertexId(vertexid) && getUserVertexIDType(vertexid)!=null;
-        long partition = (vertexid>>>USERVERTEX_PADDING_BITWIDTH) & (partitionIDBound-1);
+    public long getPartitionId(long vertexId) {
+        if (VertexIDType.Schema.is(vertexId)) return SCHEMA_PARTITION;
+        assert isUserVertexId(vertexId) && getUserVertexIDType(vertexId)!=null;
+        long partition = (vertexId>>>USERVERTEX_PADDING_BITWIDTH) & (partitionIDBound-1);
         assert partition>=0;
         return partition;
     }
 
-    public StaticBuffer getKey(long vertexid) {
-        if (VertexIDType.Schema.is(vertexid)) {
+    public StaticBuffer getKey(long vertexId) {
+        if (VertexIDType.Schema.is(vertexId)) {
             //No partition for schema vertices
-            return BufferUtil.getLongBuffer(vertexid);
+            return BufferUtil.getLongBuffer(vertexId);
         } else {
-            assert isUserVertexId(vertexid);
-            VertexIDType type = getUserVertexIDType(vertexid);
+            assert isUserVertexId(vertexId);
+            VertexIDType type = getUserVertexIDType(vertexId);
             assert type.offset()==USERVERTEX_PADDING_BITWIDTH;
-            long partition = getPartitionId(vertexid);
-            long count = vertexid>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
+            long partition = getPartitionId(vertexId);
+            long count = vertexId>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
             assert count>0;
-            long keyid = (partition<<partitionOffset) | type.addPadding(count);
-            return BufferUtil.getLongBuffer(keyid);
+            long keyId = (partition<<partitionOffset) | type.addPadding(count);
+            return BufferUtil.getLongBuffer(keyId);
         }
     }
 
@@ -668,9 +668,9 @@ public class IDManager {
     }
 
     public static long addRelationTypePadding(long id) {
-        long typeid = VertexIDType.RelationType.addPadding(id);
-        Preconditions.checkArgument(isProperRelationType(typeid));
-        return typeid;
+        long typeId = VertexIDType.RelationType.addPadding(id);
+        Preconditions.checkArgument(isProperRelationType(typeId));
+        return typeId;
     }
 
     public static boolean isSystemRelationTypeId(long id) {

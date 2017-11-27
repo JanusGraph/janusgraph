@@ -126,13 +126,13 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
     }
 
     @Override
-    public Iterator<Vertex> vertices(Object... vids) {
-        if (vids==null || vids.length==0) return (Iterator)getVertices().iterator();
-        ElementUtils.verifyArgsMustBeEitherIdorElement(vids);
-        long[] ids = new long[vids.length];
+    public Iterator<Vertex> vertices(Object... vertexIds) {
+        if (vertexIds==null || vertexIds.length==0) return (Iterator)getVertices().iterator();
+        ElementUtils.verifyArgsMustBeEitherIdOrElement(vertexIds);
+        long[] ids = new long[vertexIds.length];
         int pos = 0;
-        for (int i = 0; i < vids.length; i++) {
-            long id = ElementUtils.getVertexId(vids[i]);
+        for (int i = 0; i < vertexIds.length; i++) {
+            long id = ElementUtils.getVertexId(vertexIds[i]);
             if (id>0) ids[pos++]=id;
         }
         if (pos==0) return Collections.emptyIterator();
@@ -141,13 +141,13 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
     }
 
     @Override
-    public Iterator<Edge> edges(Object... eids) {
-        if (eids==null || eids.length==0) return (Iterator)getEdges().iterator();
-        ElementUtils.verifyArgsMustBeEitherIdorElement(eids);
-        RelationIdentifier[] ids = new RelationIdentifier[eids.length];
+    public Iterator<Edge> edges(Object... edgeIds) {
+        if (edgeIds==null || edgeIds.length==0) return (Iterator)getEdges().iterator();
+        ElementUtils.verifyArgsMustBeEitherIdOrElement(edgeIds);
+        RelationIdentifier[] ids = new RelationIdentifier[edgeIds.length];
         int pos = 0;
-        for (int i = 0; i < eids.length; i++) {
-            RelationIdentifier id = ElementUtils.getEdgeId(eids[i]);
+        for (int i = 0; i < edgeIds.length; i++) {
+            RelationIdentifier id = ElementUtils.getEdgeId(edgeIds[i]);
             if (id!=null) ids[pos++]=id;
         }
         if (pos==0) return Collections.emptyIterator();

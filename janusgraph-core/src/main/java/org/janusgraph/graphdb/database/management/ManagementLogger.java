@@ -175,10 +175,10 @@ public class ManagementLogger implements MessageReader {
             Timer t = times.getTimer().start();
             while (true) {
                 boolean txStillOpen = false;
-                Iterator<? extends JanusGraphTransaction> iter = openTx.iterator();
-                while (iter.hasNext()) {
-                    if (iter.next().isClosed()) {
-                        iter.remove();
+                Iterator<? extends JanusGraphTransaction> iterator = openTx.iterator();
+                while (iterator.hasNext()) {
+                    if (iterator.next().isClosed()) {
+                        iterator.remove();
                     } else {
                         txStillOpen = true;
                     }

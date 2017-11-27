@@ -54,8 +54,8 @@ public class Hadoop2Compat implements HadoopCompat {
 
     @Override
     public void incrementContextCounter(TaskInputOutputContext context,
-            String group, String name, long incr) {
-        context.getCounter(group, name).increment(incr);
+            String group, String name, long increment) {
+        context.getCounter(group, name).increment(increment);
     }
 
     @Override
@@ -69,8 +69,8 @@ public class Hadoop2Compat implements HadoopCompat {
     }
 
     @Override
-    public JobClasspathConfigurer newMapredJarConfigurer(String mapredJarPath) {
-        return new MapredJarConfigurer(mapredJarPath);
+    public JobClasspathConfigurer newMapredJarConfigurer(String mapReduceJarPath) {
+        return new MapredJarConfigurer(mapReduceJarPath);
     }
 
     @Override

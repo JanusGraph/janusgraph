@@ -46,27 +46,27 @@ public class VertexCentricEdgeIterable<R extends JanusGraphRelation> implements 
 
     private class EdgeIterator implements Iterator<R> {
 
-        private final Iterator<InternalVertex> vertexIter;
+        private final Iterator<InternalVertex> vertexIterator;
         private Iterator<JanusGraphRelation> currentOutEdges;
         private JanusGraphRelation nextEdge = null;
 
         public EdgeIterator() {
-            this.vertexIter = vertices.iterator();
-            if (vertexIter.hasNext()) {
-                currentOutEdges = relationCategory.executeQuery(vertexIter.next().query().direction(Direction.OUT)).iterator();
+            this.vertexIterator = vertices.iterator();
+            if (vertexIterator.hasNext()) {
+                currentOutEdges = relationCategory.executeQuery(vertexIterator.next().query().direction(Direction.OUT)).iterator();
                 getNextEdge();
             }
         }
 
         private void getNextEdge() {
-            assert vertexIter != null && currentOutEdges != null;
+            assert vertexIterator != null && currentOutEdges != null;
             nextEdge = null;
             while (nextEdge == null) {
                 if (currentOutEdges.hasNext()) {
                     nextEdge = currentOutEdges.next();
                     break;
-                } else if (vertexIter.hasNext()) {
-                    currentOutEdges = relationCategory.executeQuery(vertexIter.next().query().direction(Direction.OUT)).iterator();
+                } else if (vertexIterator.hasNext()) {
+                    currentOutEdges = relationCategory.executeQuery(vertexIterator.next().query().direction(Direction.OUT)).iterator();
                 } else break;
             }
         }

@@ -534,7 +534,7 @@ public class ConsistentKeyLockerTest {
     }
 
     /**
-     * If the checker reads its own lock column preceeded by a lock column from
+     * If the checker reads its own lock column preceded by a lock column from
      * another rid with an earlier timestamp and the timestamps on both columns
      * are unexpired, then the checker must throw a TemporaryLockingException.
      *
@@ -780,9 +780,9 @@ public class ConsistentKeyLockerTest {
         }};
         expect(lockState.getLocksForTx(defaultTx)).andReturn(expectedMap);
 
-        List<StaticBuffer> dels = ImmutableList.of(codec.toLockCol(lockStatus.getWriteTimestamp(), defaultLockRid, times));
+        List<StaticBuffer> deletions = ImmutableList.of(codec.toLockCol(lockStatus.getWriteTimestamp(), defaultLockRid, times));
         expect(times.getTime()).andReturn(currentTimeNS);
-        store.mutate(eq(defaultLockKey), eq(ImmutableList.<Entry>of()), eq(dels), eq(defaultTx));
+        store.mutate(eq(defaultLockKey), eq(ImmutableList.<Entry>of()), eq(deletions), eq(defaultTx));
         expect(mediator.unlock(defaultLockID, defaultTx)).andReturn(true);
 
         ctrl.replay();
@@ -822,9 +822,9 @@ public class ConsistentKeyLockerTest {
     }
 
     private void expectDeleteLock(KeyColumn lockID, StaticBuffer lockKey, ConsistentKeyLockStatus lockStatus, BackendException... backendFailures) throws BackendException {
-        List<StaticBuffer> dels = ImmutableList.of(codec.toLockCol(lockStatus.getWriteTimestamp(), defaultLockRid, times));
+        List<StaticBuffer> deletions = ImmutableList.of(codec.toLockCol(lockStatus.getWriteTimestamp(), defaultLockRid, times));
         expect(times.getTime()).andReturn(currentTimeNS);
-        store.mutate(eq(lockKey), eq(ImmutableList.<Entry>of()), eq(dels), eq(defaultTx));
+        store.mutate(eq(lockKey), eq(ImmutableList.<Entry>of()), eq(deletions), eq(defaultTx));
         int backendExceptionsThrown = 0;
         for (BackendException e : backendFailures) {
             expectLastCall().andThrow(e);
@@ -834,7 +834,7 @@ public class ConsistentKeyLockerTest {
             backendExceptionsThrown++;
             if (backendExceptionsThrown < maxTemporaryStorageExceptions) {
                 expect(times.getTime()).andReturn(currentTimeNS);
-                store.mutate(eq(lockKey), eq(ImmutableList.<Entry>of()), eq(dels), eq(defaultTx));
+                store.mutate(eq(lockKey), eq(ImmutableList.<Entry>of()), eq(deletions), eq(defaultTx));
             }
         }
         expect(mediator.unlock(lockID, defaultTx)).andReturn(true);
@@ -860,7 +860,7 @@ public class ConsistentKeyLockerTest {
     /**
      * If lock deletion exceeds the temporary exception retry count when trying
      * to delete a lock, it should move onto the next lock rather than returning
-     * and potentially leaving the remaining locks undeleted.
+     * and potentially leaving the remaining locks alone (not deleted).
      *
      * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
@@ -886,7 +886,7 @@ public class ConsistentKeyLockerTest {
      * , except instead of exceeding the temporary exception retry count on a
      * lock, that lock throws a single permanent exception.
      *
-     * @throws org.janusgraph.diskstorage.BackendException shoudn't happen
+     * @throws org.janusgraph.diskstorage.BackendException should not happen
      */
     @Test
     public void testDeleteLocksSkipsToNextLockOnPermanentStorageException() throws BackendException {
@@ -1048,14 +1048,14 @@ public class ConsistentKeyLockerTest {
 
         StaticBuffer k = eq(defaultLockKey);
         final List<Entry> adds = eq(Arrays.<Entry>asList(add));
-        final List<StaticBuffer> dels;
+        final List<StaticBuffer> deletions;
         if (null != del) {
-            dels = eq(Arrays.<StaticBuffer>asList(del));
+            deletions = eq(Arrays.<StaticBuffer>asList(del));
         } else {
-            dels = eq(ImmutableList.<StaticBuffer>of());
+            deletions = eq(ImmutableList.<StaticBuffer>of());
         }
 
-        store.mutate(k, adds, dels, eq(tx));
+        store.mutate(k, adds, deletions, eq(tx));
         expectLastCall().once();
 
         currentTimeNS = currentTimeNS.plus(duration, tu);
@@ -1079,13 +1079,13 @@ public class ConsistentKeyLockerTest {
 
         StaticBuffer k = eq(defaultLockKey);
         final List<Entry> adds = eq(Arrays.<Entry>asList(add));
-        final List<StaticBuffer> dels;
+        final List<StaticBuffer> deletions;
         if (null != del) {
-            dels = eq(Arrays.<StaticBuffer>asList(del));
+            deletions = eq(Arrays.<StaticBuffer>asList(del));
         } else {
-            dels = eq(ImmutableList.<StaticBuffer>of());
+            deletions = eq(ImmutableList.<StaticBuffer>of());
         }
-        store.mutate(k, adds, dels, eq(defaultTx));
+        store.mutate(k, adds, deletions, eq(defaultTx));
         expectLastCall().andThrow(t);
 
         currentTimeNS = currentTimeNS.plus(duration, tu);

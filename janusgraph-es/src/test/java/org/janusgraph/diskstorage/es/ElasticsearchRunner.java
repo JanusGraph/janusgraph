@@ -49,7 +49,7 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
 
     private static final String DEFAULT_HOME_DIR = ".";
 
-    private final String homedir;
+    private final String homeDirectory;
 
     private ElasticMajorVersion majorVersion;
 
@@ -76,7 +76,7 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
             throw new RuntimeException("Unable to find Elasticsearch version");
         }
         majorVersion = ElasticMajorVersion.parse(version);
-        this.homedir = esHome + File.separator + "target" + File.separator + "elasticsearch-" + version;
+        this.homeDirectory = esHome + File.separator + "target" + File.separator + "elasticsearch-" + version;
     }
 
     public ElasticsearchRunner() {
@@ -125,8 +125,8 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
 
     @Override
     protected ElasticsearchStatus startImpl() throws IOException {
-        File data = new File(homedir + File.separator + "data");
-        File logs = new File(homedir + File.separator + "logs");
+        File data = new File(homeDirectory + File.separator + "data");
+        File logs = new File(homeDirectory + File.separator + "logs");
 
         if (data.exists() && data.isDirectory()) {
             log.info("Deleting {}", data);
@@ -138,7 +138,7 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
             FileUtils.deleteDirectory(logs);
         }
 
-        runCommand(homedir + File.separator + "bin" + File.separator + "elasticsearch", "-d", "-p", ES_PID_FILE);
+        runCommand(homeDirectory + File.separator + "bin" + File.separator + "elasticsearch", "-d", "-p", ES_PID_FILE);
         try {
             watchLog(" started", 60L, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
@@ -158,13 +158,13 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
         long durationMS = TimeUnit.MILLISECONDS.convert(duration, unit);
         long elapsedMS;
 
-        File logFile = new File(homedir + File.separator + "logs" + File.separator + "elasticsearch.log");
+        File logFile = new File(homeDirectory + File.separator + "logs" + File.separator + "elasticsearch.log");
 
         log.info("Watching ES logfile {} for {} token", logFile, suffix);
 
         while ((elapsedMS = System.currentTimeMillis() - startMS) < durationMS) {
 
-            // Grep for a logline ending in the suffix and assume that means ES is ready
+            // Grep for a log line ending in the suffix and assume that means ES is ready
             BufferedReader br = null;
             try {
                 br = new BufferedReader(new FileReader(logFile));

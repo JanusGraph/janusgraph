@@ -107,8 +107,8 @@ public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
         JanusGraphTransaction tx2 = graph.buildTransaction().commitTime(Instant.ofEpochSecond(1000)).start();
         v1 = getV(tx2,id1);
         v2 = getV(tx2,id2);
-        for (Iterator<VertexProperty<Object>> propiter = v1.properties(name); propiter.hasNext(); ) {
-            VertexProperty prop = propiter.next();
+        for (Iterator<VertexProperty<Object>> propertyIterator = v1.properties(name); propertyIterator.hasNext(); ) {
+            VertexProperty prop = propertyIterator.next();
             if (features.hasTimestamps()) {
                 Instant t = prop.value("~timestamp");
                 assertEquals(100,t.getEpochSecond());
@@ -235,7 +235,7 @@ public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
         }
     }
 
-    public void testBatchLoadingLocking(boolean batchloading) {
+    public void testBatchLoadingLocking(boolean batchLoading) {
         PropertyKey uid = makeKey("uid",Long.class);
         JanusGraphIndex uidIndex = mgmt.buildIndex("uid",Vertex.class).unique().addKey(uid).buildCompositeIndex();
         mgmt.setConsistency(uid, ConsistencyModifier.LOCK);
@@ -245,7 +245,7 @@ public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
         finishSchema();
 
         TestLockerManager.ERROR_ON_LOCKING=true;
-        clopen(option(GraphDatabaseConfiguration.STORAGE_BATCH),batchloading,
+        clopen(option(GraphDatabaseConfiguration.STORAGE_BATCH),batchLoading,
                 option(GraphDatabaseConfiguration.LOCK_BACKEND),"test");
 
 
@@ -286,17 +286,17 @@ public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
 
         JanusGraphVertex u = tx.addVertex(), v = tx.addVertex();
         JanusGraphRelation[] rs = new JanusGraphRelation[9];
-        final int txid = 1;
-        rs[0]=sign(v.property("weight",5.0),txid);
-        rs[1]=sign(v.property("name","John"),txid);
-        rs[2]=sign(v.property("value",2),txid);
-        rs[3]=sign(v.property("valuef",2),txid);
+        final int transactionId = 1;
+        rs[0]=sign(v.property("weight",5.0),transactionId);
+        rs[1]=sign(v.property("name","John"),transactionId);
+        rs[2]=sign(v.property("value",2),transactionId);
+        rs[3]=sign(v.property("valuef",2),transactionId);
 
-        rs[6]=sign(v.addEdge("es",u),txid);
-        rs[7]=sign(v.addEdge("o2o",u),txid);
-        rs[8]=sign(v.addEdge("o2m",u),txid);
-        rs[4]=sign(v.addEdge("em",u),txid);
-        rs[5]=sign(v.addEdge("emf",u),txid);
+        rs[6]=sign(v.addEdge("es",u),transactionId);
+        rs[7]=sign(v.addEdge("o2o",u),transactionId);
+        rs[8]=sign(v.addEdge("o2m",u),transactionId);
+        rs[4]=sign(v.addEdge("em",u),transactionId);
+        rs[5]=sign(v.addEdge("emf",u),transactionId);
 
         newTx();
         long vid = getId(v), uid = getId(u);
@@ -349,40 +349,40 @@ public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
     }
 
 
-    private void processTx(JanusGraphTransaction tx, int txid, long vid, long uid) {
+    private void processTx(JanusGraphTransaction tx, int transactionId, long vid, long uid) {
         JanusGraphVertex v = getV(tx,vid);
         JanusGraphVertex u = getV(tx,uid);
         assertEquals(5.0,v.<Double>value("weight").doubleValue(),0.00001);
         VertexProperty p = getOnlyElement(v.properties("weight"));
         assertEquals(1,p.<Integer>value("sig").intValue());
-        sign(v.property("weight",6.0),txid);
+        sign(v.property("weight",6.0),transactionId);
         p = getOnlyElement(v.properties("name"));
         assertEquals(1,p.<Integer>value("sig").intValue());
         assertEquals("John",p.value());
         p.remove();
-        sign(v.property("name","Bob"),txid);
+        sign(v.property("name","Bob"),transactionId);
         for (String pkey : new String[]{"value","valuef"}) {
             p = getOnlyElement(v.properties(pkey));
             assertEquals(1,p.<Integer>value("sig").intValue());
             assertEquals(2,p.value());
-            sign((JanusGraphVertexProperty)p,txid);
+            sign((JanusGraphVertexProperty)p,transactionId);
         }
 
         Edge e = Iterables.<JanusGraphEdge>getOnlyElement(v.query().direction(OUT).labels("es").edges());
         assertEquals(1,e.<Integer>value("sig").intValue());
         e.remove();
-        sign(v.addEdge("es",u),txid);
+        sign(v.addEdge("es",u),transactionId);
         e = Iterables.<JanusGraphEdge>getOnlyElement(v.query().direction(OUT).labels("o2o").edges());
         assertEquals(1,e.<Integer>value("sig").intValue());
-        sign((JanusGraphEdge)e,txid);
+        sign((JanusGraphEdge)e,transactionId);
         e = Iterables.<JanusGraphEdge>getOnlyElement(v.query().direction(OUT).labels("o2m").edges());
         assertEquals(1,e.<Integer>value("sig").intValue());
         e.remove();
-        sign(v.addEdge("o2m",u),txid);
+        sign(v.addEdge("o2m",u),transactionId);
         for (String label : new String[]{"em","emf"}) {
             e = Iterables.<JanusGraphEdge>getOnlyElement(v.query().direction(OUT).labels(label).edges());
             assertEquals(1,e.<Integer>value("sig").intValue());
-            sign((JanusGraphEdge)e,txid);
+            sign((JanusGraphEdge)e,transactionId);
         }
     }
 

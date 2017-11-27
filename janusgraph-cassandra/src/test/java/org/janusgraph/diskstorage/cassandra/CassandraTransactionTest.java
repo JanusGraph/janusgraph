@@ -78,16 +78,16 @@ public class CassandraTransactionTest {
 
     @Test
     public void testTimestampProvider() {
-        BaseTransactionConfig txcfg = StandardBaseTransactionConfig.of(TimestampProviders.NANO);
-        CassandraTransaction ct = new CassandraTransaction(txcfg);
+        BaseTransactionConfig baseTransactionConfig = StandardBaseTransactionConfig.of(TimestampProviders.NANO);
+        CassandraTransaction ct = new CassandraTransaction(baseTransactionConfig);
         assertEquals(TimestampProviders.NANO, ct.getConfiguration().getTimestampProvider());
 
-        txcfg = StandardBaseTransactionConfig.of(TimestampProviders.MICRO);
-        ct = new CassandraTransaction(txcfg);
+        baseTransactionConfig = StandardBaseTransactionConfig.of(TimestampProviders.MICRO);
+        ct = new CassandraTransaction(baseTransactionConfig);
         assertEquals(TimestampProviders.MICRO, ct.getConfiguration().getTimestampProvider());
 
-        txcfg = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
-        ct = new CassandraTransaction(txcfg);
+        baseTransactionConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
+        ct = new CassandraTransaction(baseTransactionConfig);
         assertEquals(TimestampProviders.MILLI, ct.getConfiguration().getTimestampProvider());
     }
 }

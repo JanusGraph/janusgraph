@@ -173,8 +173,8 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
 
             while (rows.hasNext()) {
                 nextRow = rows.next();
-                List<Entry> ents = nextRow.getValue().getSlice(new KeySliceQuery(nextRow.getKey(), columnSlice), transaction);
-                if (null != ents && 0 < ents.size())
+                List<Entry> entries = nextRow.getValue().getSlice(new KeySliceQuery(nextRow.getKey(), columnSlice), transaction);
+                if (null != entries && 0 < entries.size())
                     break;
             }
 

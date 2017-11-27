@@ -62,18 +62,18 @@ public class RelationIndexStatusWatcher
         boolean timedOut;
         while (true) {
             SchemaStatus actualStatus = null;
-            JanusGraphManagement mgmt = null;
+            JanusGraphManagement management = null;
             try {
-                mgmt = g.openManagement();
-                idx = mgmt.getRelationIndex(mgmt.getRelationType(relationTypeName), relationIndexName);
+                management = g.openManagement();
+                idx = management.getRelationIndex(management.getRelationType(relationTypeName), relationIndexName);
                 actualStatus = idx.getIndexStatus();
                 LOGGER.info("Index {} (relation type {}) has status {}", relationIndexName, relationTypeName, actualStatus);
                 if (statuses.contains(actualStatus)) {
                     return new RelationIndexStatusReport(true, relationIndexName, relationTypeName, actualStatus, statuses, t.elapsed());
                 }
             } finally {
-                if (null != mgmt)
-                    mgmt.rollback(); // Let an exception here propagate up the stack
+                if (null != management)
+                    management.rollback(); // Let an exception here propagate up the stack
             }
 
             timedOut = null != timeout && 0 < t.elapsed().compareTo(timeout);

@@ -709,13 +709,13 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         try { // Create our table, if necessary
             adm = getAdminInterface();
             /*
-             * Some HBase versions/impls respond badly to attempts to create a
+             * Some HBase versions / implementations respond badly to attempts to create a
              * table without at least one CF. See #661. Creating a CF along with
              * the table avoids HBase carping.
              */
             if (adm.tableExists(tableName)) {
                 desc = adm.getTableDescriptor(tableName);
-                // Check and warn if long and short cf names are mixedly used for the same table.
+                // Check and warn if long and short cf names are interchangeably used for the same table.
                 if (shortCfNames && initialCFName.equals(shortCfNameMap.get(SYSTEM_PROPERTIES_STORE_NAME))) {
                     String longCFName = shortCfNameMap.inverse().get(initialCFName);
                     if (desc.getFamily(Bytes.toBytes(longCFName)) != null) {
@@ -747,10 +747,10 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private HTableDescriptor createTable(String tableName, String cfName, int ttlInSeconds, AdminMask adm) throws IOException {
         HTableDescriptor desc = compat.newTableDescriptor(tableName);
 
-        HColumnDescriptor cdesc = new HColumnDescriptor(cfName);
-        setCFOptions(cdesc, ttlInSeconds);
+        HColumnDescriptor columnDescriptor = new HColumnDescriptor(cfName);
+        setCFOptions(columnDescriptor, ttlInSeconds);
 
-        compat.addColumnFamilyToTableDescriptor(desc, cdesc);
+        compat.addColumnFamilyToTableDescriptor(desc, columnDescriptor);
 
         int count; // total regions to create
         String src;
@@ -827,11 +827,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 }
 
                 try {
-                    HColumnDescriptor cdesc = new HColumnDescriptor(columnFamily);
+                    HColumnDescriptor columnDescriptor = new HColumnDescriptor(columnFamily);
 
-                    setCFOptions(cdesc, ttlInSeconds);
+                    setCFOptions(columnDescriptor, ttlInSeconds);
 
-                    adm.addColumn(tableName, cdesc);
+                    adm.addColumn(tableName, columnDescriptor);
 
                     try {
                         logger.debug("Added HBase ColumnFamily {}, waiting for 1 sec. to propogate.", columnFamily);
@@ -855,12 +855,12 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
     }
 
-    private void setCFOptions(HColumnDescriptor cdesc, int ttlInSeconds) {
+    private void setCFOptions(HColumnDescriptor columnDescriptor, int ttlInSeconds) {
         if (null != compression && !compression.equals(COMPRESSION_DEFAULT))
-            compat.setCompression(cdesc, compression);
+            compat.setCompression(columnDescriptor, compression);
 
         if (ttlInSeconds > 0)
-            cdesc.setTimeToLive(ttlInSeconds);
+            columnDescriptor.setTimeToLive(ttlInSeconds);
     }
 
     /**
@@ -890,7 +890,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
                 Pair<List<Put>, Delete> commands = commandsPerKey.get(m.getKey());
 
-                // The firt time we go through the list of input <rowkey, KCVMutation>,
+                // The first time we go through the list of input <rowkey, KCVMutation>,
                 // create the holder for a particular rowkey
                 if (commands == null) {
                     commands = new Pair<>();
@@ -933,7 +933,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                             // Create a new Put
                             Put putColumnWithTtl = new Put(key, putTimestamp);
                             addColumnToPut(putColumnWithTtl, cfName, putTimestamp, e);
-                            // Convert ttl from second (JanusGraph TTL) to millisec (HBase TTL)
+                            // Convert ttl from second (JanusGraph TTL) to milliseconds (HBase TTL)
                             // @see JanusGraphManagement#setTTL(JanusGraphSchemaType, Duration)
                             // Cast Put to Mutation for backward compatibility with HBase 0.98.x
                             // HBase supports cell-level TTL for versions 0.98.6 and above.

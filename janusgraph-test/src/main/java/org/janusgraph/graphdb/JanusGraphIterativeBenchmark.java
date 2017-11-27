@@ -64,15 +64,15 @@ public abstract class JanusGraphIterativeBenchmark extends JanusGraphBaseTest {
         query.setLimit(2);
         Stopwatch watch = Stopwatch.createStarted();
         StoreTransaction txh = manager.beginTransaction(StandardBaseTransactionConfig.of(TimestampProviders.MILLI));
-        KeyIterator iter = store.getKeys(query,txh);
+        KeyIterator iterator = store.getKeys(query,txh);
         int numV = 0;
-        while(iter.hasNext()) {
-            iter.next();
-            RecordIterator<Entry> entries = iter.getEntries();
+        while(iterator.hasNext()) {
+            iterator.next();
+            RecordIterator<Entry> entries = iterator.getEntries();
             assertEquals(2, Iterators.size(entries));
             numV++;
         }
-        iter.close();
+        iterator.close();
         txh.commit();
         System.out.println("Time taken: " + watch.elapsed(TimeUnit.MILLISECONDS));
         System.out.println("Num Vertices: " + numV);

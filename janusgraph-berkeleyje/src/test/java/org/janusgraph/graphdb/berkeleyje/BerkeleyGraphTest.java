@@ -48,20 +48,20 @@ public class BerkeleyGraphTest extends JanusGraphTest {
 
     @Override
     public WriteConfiguration getConfiguration() {
-        ModifiableConfiguration mcfg = BerkeleyStorageSetup.getBerkeleyJEConfiguration();
+        ModifiableConfiguration modifiableConfiguration = BerkeleyStorageSetup.getBerkeleyJEConfiguration();
         String methodName = methodNameRule.getMethodName();
         if (methodName.equals("testConsistencyEnforcement")) {
             IsolationLevel iso = IsolationLevel.SERIALIZABLE;
             log.debug("Forcing isolation level {} for test method {}", iso, methodName);
-            mcfg.set(BerkeleyJEStoreManager.ISOLATION_LEVEL, iso.toString());
+            modifiableConfiguration.set(BerkeleyJEStoreManager.ISOLATION_LEVEL, iso.toString());
         } else {
             IsolationLevel iso = null;
-            if (mcfg.has(BerkeleyJEStoreManager.ISOLATION_LEVEL)) {
-                iso = ConfigOption.getEnumValue(mcfg.get(BerkeleyJEStoreManager.ISOLATION_LEVEL),IsolationLevel.class);
+            if (modifiableConfiguration.has(BerkeleyJEStoreManager.ISOLATION_LEVEL)) {
+                iso = ConfigOption.getEnumValue(modifiableConfiguration.get(BerkeleyJEStoreManager.ISOLATION_LEVEL),IsolationLevel.class);
             }
             log.debug("Using isolation level {} (null means adapter default) for test method {}", iso, methodName);
         }
-        return mcfg.getConfiguration();
+        return modifiableConfiguration.getConfiguration();
     }
 
     @Override

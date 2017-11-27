@@ -79,9 +79,9 @@ public interface IDPlacementStrategy {
      * after construction and when the id space is redistributed.
      * <p/>
      * Depending on the storage backend one or multiple ranges of partition ids may be given. However, this list is never
-     * emtpy.
+     * empty.
      *
-     * @param localPartitionIdRanges List of {@link PartitionIDRange}s correspondinging to the locally hosted partitions
+     * @param localPartitionIdRanges List of {@link PartitionIDRange}s corresponding to the locally hosted partitions
      */
     void setLocalPartitionBounds(List<PartitionIDRange> localPartitionIdRanges);
 

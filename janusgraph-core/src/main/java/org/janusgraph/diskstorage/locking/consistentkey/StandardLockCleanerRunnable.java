@@ -88,11 +88,11 @@ public class StandardLockCleanerRunnable implements Runnable {
             }
         }
 
-        List<StaticBuffer> dels = b.build();
+        List<StaticBuffer> deletions = b.build();
 
-        if (!dels.isEmpty()) {
-            store.mutate(lockKey, ImmutableList.<Entry>of(), dels, tx);
-            log.info("Deleted {} expired locks (before or at cutoff {})", dels.size(), cutoff);
+        if (!deletions.isEmpty()) {
+            store.mutate(lockKey, ImmutableList.<Entry>of(), deletions, tx);
+            log.info("Deleted {} expired locks (before or at cutoff {})", deletions.size(), cutoff);
         }
     }
 

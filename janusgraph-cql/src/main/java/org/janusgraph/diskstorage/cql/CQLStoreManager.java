@@ -393,7 +393,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         sleepAfterWrite(txh, commitTime);
     }
 
-    // Create an async unlogged batch per partition key
+    // Create an async un-logged batch per partition key
     private void mutateManyUnlogged(final Map<String, Map<StaticBuffer, KCVMutation>> mutations, final StoreTransaction txh) throws BackendException {
         final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
 

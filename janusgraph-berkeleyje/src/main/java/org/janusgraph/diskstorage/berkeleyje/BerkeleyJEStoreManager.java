@@ -196,26 +196,26 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
     @Override
     public void mutateMany(Map<String, KVMutation> mutations, StoreTransaction txh) throws BackendException {
-        for (Map.Entry<String,KVMutation> muts : mutations.entrySet()) {
-            BerkeleyJEKeyValueStore store = openDatabase(muts.getKey());
-            KVMutation mut = muts.getValue();
+        for (Map.Entry<String,KVMutation> mutation : mutations.entrySet()) {
+            BerkeleyJEKeyValueStore store = openDatabase(mutation.getKey());
+            KVMutation mutationValue = mutation.getValue();
 
-            if (!mut.hasAdditions() && !mut.hasDeletions()) {
-                log.debug("Empty mutation set for {}, doing nothing", muts.getKey());
+            if (!mutationValue.hasAdditions() && !mutationValue.hasDeletions()) {
+                log.debug("Empty mutation set for {}, doing nothing", mutation.getKey());
             } else {
-                log.debug("Mutating {}", muts.getKey());
+                log.debug("Mutating {}", mutation.getKey());
             }
 
-            if (mut.hasAdditions()) {
-                for (KeyValueEntry entry : mut.getAdditions()) {
+            if (mutationValue.hasAdditions()) {
+                for (KeyValueEntry entry : mutationValue.getAdditions()) {
                     store.insert(entry.getKey(),entry.getValue(),txh);
-                    log.trace("Insertion on {}: {}", muts.getKey(), entry);
+                    log.trace("Insertion on {}: {}", mutation.getKey(), entry);
                 }
             }
-            if (mut.hasDeletions()) {
-                for (StaticBuffer del : mut.getDeletions()) {
+            if (mutationValue.hasDeletions()) {
+                for (StaticBuffer del : mutationValue.getDeletions()) {
                     store.delete(del,txh);
-                    log.trace("Deletion on {}: {}", muts.getKey(), del);
+                    log.trace("Deletion on {}: {}", mutation.getKey(), del);
                 }
             }
         }

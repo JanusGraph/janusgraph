@@ -91,9 +91,9 @@ public abstract class JanusGraphIoTest extends JanusGraphBaseTest {
     @Before
     public void setup() {
         GraphOfTheGodsFactory.loadWithoutMixedIndex(graph, true);
-        JanusGraphManagement mgmt = graph.openManagement();
-        mgmt.makePropertyKey("shape").dataType(Geoshape.class).make();
-        mgmt.commit();
+        JanusGraphManagement management = graph.openManagement();
+        management.makePropertyKey("shape").dataType(Geoshape.class).make();
+        management.commit();
     }
 
     @Test

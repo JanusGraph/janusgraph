@@ -19,7 +19,7 @@ package org.janusgraph.util.system;
  */
 public class Threads {
 
-    public static boolean oneAlife(Thread[] threads) {
+    public static boolean oneAlive(Thread[] threads) {
         for (int i = 0; i < threads.length; i++) {
             if (threads[i] != null && threads[i].isAlive()) return true;
         }
@@ -44,7 +44,7 @@ public class Threads {
 
     public static boolean waitForCompletion(Thread[] threads, int maxWaitMillis, int sleepPeriodMillis) {
         long endTime = System.currentTimeMillis()+maxWaitMillis;
-        while (oneAlife(threads)) {
+        while (oneAlive(threads)) {
             long currentTime = System.currentTimeMillis();
             if (currentTime>=endTime) return false;
             try {

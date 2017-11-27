@@ -26,8 +26,8 @@ import org.janusgraph.hadoop.config.job.JobClasspathConfigurer;
 
 public class DistCacheConfigurer extends AbstractDistCacheConfigurer implements JobClasspathConfigurer {
 
-    public DistCacheConfigurer(String mapredJarFilename) {
-        super(mapredJarFilename);
+    public DistCacheConfigurer(String mapReduceJarFileName) {
+        super(mapReduceJarFileName);
     }
 
     @Override
@@ -40,16 +40,16 @@ public class DistCacheConfigurer extends AbstractDistCacheConfigurer implements 
         for (Path p : getLocalPaths()) {
             Path stagedPath = uploadFileIfNecessary(localFS, p, jobFS);
             // Calling this method decompresses the archive and makes Hadoop
-            // handle its classfiles individually.  This leads to crippling
+            // handle its class files individually.  This leads to crippling
             // overhead times (10+ seconds) even with the LocalJobRunner
             // courtesy of o.a.h.yarn.util.FSDownload.changePermissions
-            // copying and chmodding each classfile copy file individually.
+            // copying and changing the mode of each classfile copy file individually.
             //job.addArchiveToClassPath(p);
             // Just add the compressed archive instead:
             job.addFileToClassPath(stagedPath);
         }
 
-        // We don't really need to set a mapred job jar here,
+        // We don't really need to set a map reduce job jar here,
         // but doing so suppresses a warning
         String mj = getMapredJar();
         if (null != mj)

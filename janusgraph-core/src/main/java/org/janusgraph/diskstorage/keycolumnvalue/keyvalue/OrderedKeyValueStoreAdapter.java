@@ -36,7 +36,7 @@ import java.util.*;
  * An optional key length parameter can be specified if it is known and guaranteed that all keys
  * passed into and read through the {@link KeyColumnValueStore} have that length. If this length is
  * static, specifying that length will make the representation of a {@link KeyColumnValueStore} in a {@link OrderedKeyValueStore}
- * more concise and more performant.
+ * more concise and more efficient.
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
@@ -77,12 +77,12 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
             queries.add(convertQuery(new KeySliceQuery(keys.get(i),query)));
         }
         Map<KVQuery,RecordIterator<KeyValueEntry>> results = store.getSlices(queries,txh);
-        Map<StaticBuffer,EntryList> convResults = new HashMap<StaticBuffer, EntryList>(keys.size());
+        Map<StaticBuffer,EntryList> convertedResults = new HashMap<StaticBuffer, EntryList>(keys.size());
         assert queries.size()==keys.size();
         for (int i = 0; i < queries.size(); i++) {
-            convResults.put(keys.get(i),convert(results.get(queries.get(i))));
+            convertedResults.put(keys.get(i),convert(results.get(queries.get(i))));
         }
-        return convResults;
+        return convertedResults;
     }
 
     @Override
@@ -96,8 +96,8 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
         }
         if (!additions.isEmpty()) {
             for (Entry entry : additions) {
-                StaticBuffer newkey = concatenate(key, entry.getColumnAs(StaticBuffer.STATIC_FACTORY));
-                store.insert(newkey, entry.getValueAs(StaticBuffer.STATIC_FACTORY), txh);
+                StaticBuffer newKey = concatenate(key, entry.getColumnAs(StaticBuffer.STATIC_FACTORY));
+                store.insert(newKey, entry.getValueAs(StaticBuffer.STATIC_FACTORY), txh);
             }
         }
     }
@@ -110,10 +110,10 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
                 concatenatePrefix(adjustToLength(keyQuery.getKeyEnd()), keyQuery.getSliceEnd()),
                 new Predicate<StaticBuffer>() {
                     @Override
-                    public boolean apply(@Nullable StaticBuffer keycolumn) {
-                        StaticBuffer key = getKey(keycolumn);
+                    public boolean apply(@Nullable StaticBuffer keyColumn) {
+                        StaticBuffer key = getKey(keyColumn);
                         return !(key.compareTo(keyQuery.getKeyStart()) < 0 || key.compareTo(keyQuery.getKeyEnd()) >= 0)
-                                && columnInRange(keycolumn, keyQuery.getSliceStart(), keyQuery.getSliceEnd());
+                                && columnInRange(keyColumn, keyQuery.getSliceStart(), keyQuery.getSliceEnd());
                     }
                 },
                 BaseQuery.NO_LIMIT); //limit will be introduced in iterator
@@ -269,8 +269,8 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
     }
 
     private boolean equalKey(StaticBuffer concat, StaticBuffer key) {
-        int keylen = getKeyLength(concat);
-        for (int i = 0; i < keylen; i++) if (concat.getByte(i) != key.getByte(i)) return false;
+        int keyLength = getKeyLength(concat);
+        for (int i = 0; i < keyLength; i++) if (concat.getByte(i) != key.getByte(i)) return false;
         return true;
     }
 
@@ -282,21 +282,21 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
     private class KeyIteratorImpl implements KeyIterator {
 
         private final KeyRangeQuery query;
-        private final RecordIterator<KeyValueEntry> iter;
+        private final RecordIterator<KeyValueEntry> iterator;
 
         private StaticBuffer currentKey = null;
-        private EntryIterator currentIter = null;
+        private EntryIterator currentIterator = null;
         private boolean currentKeyReturned = true;
         private KeyValueEntry current;
 
-        private KeyIteratorImpl(KeyRangeQuery query, RecordIterator<KeyValueEntry> iter) {
+        private KeyIteratorImpl(KeyRangeQuery query, RecordIterator<KeyValueEntry> iterator) {
             this.query = query;
-            this.iter = iter;
+            this.iterator = iterator;
         }
 
         private StaticBuffer nextKey() throws BackendException {
-            while (iter.hasNext()) {
-                current = iter.next();
+            while (iterator.hasNext()) {
+                current = iterator.next();
                 StaticBuffer key = getKey(current.getKey());
                 if (currentKey == null || !key.equals(currentKey)) {
                     return key;
@@ -307,8 +307,8 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
 
         @Override
         public RecordIterator<Entry> getEntries() {
-            Preconditions.checkNotNull(currentIter);
-            return currentIter;
+            Preconditions.checkNotNull(currentIterator);
+            return currentIterator;
         }
 
         @Override
@@ -321,10 +321,10 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
                 }
                 currentKeyReturned = false;
 
-                if (currentIter != null)
-                    currentIter.close();
+                if (currentIterator != null)
+                    currentIterator.close();
 
-                currentIter = new EntryIterator();
+                currentIterator = new EntryIterator();
             }
 
             return currentKey != null;
@@ -341,7 +341,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
 
         @Override
         public void close() throws IOException {
-            iter.close();
+            iterator.close();
         }
 
         private class EntryIterator implements RecordIterator<Entry>, Closeable {
@@ -375,7 +375,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
                     throw new NoSuchElementException();
 
                 Entry kve = getEntry(current);
-                current = iter.hasNext() ? iter.next() : null;
+                current = iterator.hasNext() ? iterator.next() : null;
                 count++;
 
                 return kve;

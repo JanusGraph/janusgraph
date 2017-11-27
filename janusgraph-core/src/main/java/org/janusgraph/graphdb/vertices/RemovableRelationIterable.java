@@ -24,8 +24,8 @@ public class RemovableRelationIterable<O extends JanusGraphRelation>
 
     private final Iterable<InternalRelation> iterable;
 
-    public RemovableRelationIterable(Iterable<InternalRelation> iter) {
-        iterable = iter;
+    public RemovableRelationIterable(Iterable<InternalRelation> iterable) {
+        this.iterable = iterable;
     }
 
     @Override

@@ -118,7 +118,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     private SchemaCache schemaCache;
 
     //Log
-    private ManagementLogger mgmtLogger;
+    private ManagementLogger managementLogger;
 
     //Shutdown hook
     private volatile ShutdownThread shutdownHook;
@@ -162,9 +162,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         }
         globalConfig.set(REGISTRATION_TIME, times.getTime(), uniqueInstanceId);
 
-        Log mgmtLog = backend.getSystemMgmtLog();
-        mgmtLogger = new ManagementLogger(this, mgmtLog, schemaCache, this.times);
-        mgmtLog.registerReader(ReadMarker.fromNow(), mgmtLogger);
+        Log managementLog = backend.getSystemMgmtLog();
+        managementLogger = new ManagementLogger(this, managementLog, schemaCache, this.times);
+        managementLog.registerReader(ReadMarker.fromNow(), managementLogger);
 
         shutdownHook = new ShutdownThread(this);
         Runtime.getRuntime().addShutdownHook(shutdownHook);
@@ -202,13 +202,13 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
         try {
             //Unregister instance
-            String uniqueid = null;
+            String uniqueId = null;
             try {
-                uniqueid = config.getUniqueGraphId();
+                uniqueId = config.getUniqueGraphId();
                 ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
-                globalConfig.remove(REGISTRATION_TIME, uniqueid);
+                globalConfig.remove(REGISTRATION_TIME, uniqueId);
             } catch (Exception e) {
-                log.warn("Unable to remove graph instance uniqueid {}", uniqueid, e);
+                log.warn("Unable to remove graph instance uniqueid {}", uniqueId, e);
             }
 
             /* Assuming a couple of properties about openTransactions:
@@ -307,7 +307,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     @Override
     public JanusGraphManagement openManagement() {
-        return new ManagementSystem(this,backend.getGlobalSystemConfig(),backend.getSystemMgmtLog(), mgmtLogger, schemaCache);
+        return new ManagementSystem(this,backend.getGlobalSystemConfig(),backend.getSystemMgmtLog(), managementLogger, schemaCache);
     }
 
     public Set<? extends JanusGraphTransaction> getOpenTransactions() {
@@ -395,28 +395,28 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                 backend.getStoreFeatures().hasUnorderedScan(),
                 "The configured storage backend does not support global graph operations - use Faunus instead");
 
-        final KeyIterator keyiter;
+        final KeyIterator keyIterator;
         if (backend.getStoreFeatures().hasUnorderedScan()) {
-            keyiter = tx.edgeStoreKeys(vertexExistenceQuery);
+            keyIterator = tx.edgeStoreKeys(vertexExistenceQuery);
         } else {
-            keyiter = tx.edgeStoreKeys(new KeyRangeQuery(IDHandler.MIN_KEY, IDHandler.MAX_KEY, vertexExistenceQuery));
+            keyIterator = tx.edgeStoreKeys(new KeyRangeQuery(IDHandler.MIN_KEY, IDHandler.MAX_KEY, vertexExistenceQuery));
         }
 
         return new RecordIterator<Long>() {
 
             @Override
             public boolean hasNext() {
-                return keyiter.hasNext();
+                return keyIterator.hasNext();
             }
 
             @Override
             public Long next() {
-                return idManager.getKeyID(keyiter.next());
+                return idManager.getKeyID(keyIterator.next());
             }
 
             @Override
             public void close() throws IOException {
-                keyiter.close();
+                keyIterator.close();
             }
 
             @Override
@@ -431,12 +431,12 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         return tx.edgeStoreQuery(new KeySliceQuery(idManager.getKey(vid), query));
     }
 
-    public List<EntryList> edgeMultiQuery(LongArrayList vids, SliceQuery query, BackendTransaction tx) {
-        Preconditions.checkArgument(vids != null && !vids.isEmpty());
-        List<StaticBuffer> vertexIds = new ArrayList<StaticBuffer>(vids.size());
-        for (int i = 0; i < vids.size(); i++) {
-            Preconditions.checkArgument(vids.get(i) > 0);
-            vertexIds.add(idManager.getKey(vids.get(i)));
+    public List<EntryList> edgeMultiQuery(LongArrayList vertexIdsAsLongs, SliceQuery query, BackendTransaction tx) {
+        Preconditions.checkArgument(vertexIdsAsLongs != null && !vertexIdsAsLongs.isEmpty());
+        List<StaticBuffer> vertexIds = new ArrayList<StaticBuffer>(vertexIdsAsLongs.size());
+        for (int i = 0; i < vertexIdsAsLongs.size(); i++) {
+            Preconditions.checkArgument(vertexIdsAsLongs.get(i) > 0);
+            vertexIds.add(idManager.getKey(vertexIdsAsLongs.get(i)));
         }
         Map<StaticBuffer,EntryList> result = tx.edgeStoreMultiQuery(vertexIds, query);
         List<EntryList> resultList = new ArrayList<EntryList>(result.size());
@@ -574,9 +574,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         }
 
         //5) Add relation mutations
-        for (Long vertexid : mutations.keySet()) {
-            Preconditions.checkArgument(vertexid > 0, "Vertex has no id: %s", vertexid);
-            List<InternalRelation> edges = mutations.get(vertexid);
+        for (Long vertexId : mutations.keySet()) {
+            Preconditions.checkArgument(vertexId > 0, "Vertex has no id: %s", vertexId);
+            List<InternalRelation> edges = mutations.get(vertexId);
             List<Entry> additions = new ArrayList<Entry>(edges.size());
             List<Entry> deletions = new ArrayList<Entry>(Math.max(10, edges.size() / 10));
             for (InternalRelation edge : edges) {
@@ -588,7 +588,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                     for (int pos = 0; pos < edge.getArity(); pos++) {
                         if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(EdgeDirection.fromPosition(pos)))
                             continue; //Directionality is not covered
-                        if (edge.getVertex(pos).longId()==vertexid) {
+                        if (edge.getVertex(pos).longId()==vertexId) {
                             StaticArrayEntry entry = edgeSerializer.writeRelation(edge, type, pos, tx);
                             if (edge.isRemoved()) {
                                 deletions.add(entry);
@@ -605,7 +605,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                 }
             }
 
-            StaticBuffer vertexKey = idManager.getKey(vertexid);
+            StaticBuffer vertexKey = idManager.getKey(vertexId);
             mutator.mutateEdges(vertexKey, additions, deletions);
         }
 
@@ -752,7 +752,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                         if (!indexFailures.isEmpty()) {
                             status = LogTxStatus.SECONDARY_FAILURE;
                             for (Map.Entry<String,Throwable> entry : indexFailures.entrySet()) {
-                                log.error("Error while commiting index mutations for transaction ["+transactionId+"] on index: " +entry.getKey(),entry.getValue());
+                                log.error("Error while committing index mutations for transaction ["+transactionId+"] on index: " +entry.getKey(),entry.getValue());
                             }
                         }
                         //3. Log transaction if configured - [FAILURE] is recorded but does not cause exception

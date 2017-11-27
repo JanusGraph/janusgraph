@@ -27,7 +27,7 @@ public interface EntryList extends List<Entry> {
      * Returns the same iterator as {@link #iterator()} with the only difference
      * that it reuses {@link Entry} objects when calling {@link java.util.Iterator#next()}.
      * Hence, this method should only be used if references to {@link Entry} objects are only
-     * kept and accesed until the next {@link java.util.Iterator#next()} call.
+     * kept and accessed until the next {@link java.util.Iterator#next()} call.
      *
      * @return
      */

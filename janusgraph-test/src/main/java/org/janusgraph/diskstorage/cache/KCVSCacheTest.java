@@ -144,9 +144,9 @@ public abstract class KCVSCacheTest {
         assertEquals(keys.size(),result.size());
         assertEquals(6,result.get(key).size());
         //Update
-        List<Entry> dels = new ArrayList<Entry>(numCols/2);
-        for (int j=1;j<=numCols;j=j+2) dels.add(getEntry(j,j));
-        cache.mutateEntries(key, KeyColumnValueStore.NO_ADDITIONS, dels, tx);
+        List<Entry> deletions = new ArrayList<Entry>(numCols/2);
+        for (int j=1;j<=numCols;j=j+2) deletions.add(getEntry(j,j));
+        cache.mutateEntries(key, KeyColumnValueStore.NO_ADDITIONS, deletions, tx);
         tx.commit();
         assertEquals(2,store.getSliceCalls());
 

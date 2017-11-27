@@ -177,8 +177,8 @@ public class QueryUtil {
                 Collection values = (Collection) value;
                 if (predicate == Contain.NOT_IN) {
                     if (values.isEmpty()) continue; //Simply ignore since trivially satisfied
-                    for (Object invalue : values)
-                        addConstraint(type, Cmp.NOT_EQUAL, invalue, conditions, tx);
+                    for (Object inValue : values)
+                        addConstraint(type, Cmp.NOT_EQUAL, inValue, conditions, tx);
                 } else {
                     Preconditions.checkArgument(predicate == Contain.IN);
                     if (values.isEmpty()) {
@@ -243,32 +243,32 @@ public class QueryUtil {
          */
         //TODO: smarter limit estimation
         int multiplier = Math.min(16, (int) Math.pow(2, retrievals.size() - 1));
-        int sublimit = Integer.MAX_VALUE;
-        if (Integer.MAX_VALUE / multiplier >= limit) sublimit = limit * multiplier;
+        int subLimit = Integer.MAX_VALUE;
+        if (Integer.MAX_VALUE / multiplier >= limit) subLimit = limit * multiplier;
         boolean exhaustedResults;
         do {
             exhaustedResults = true;
             results = null;
             for (IndexCall<R> call : retrievals) {
-                Collection<R> subresult;
+                Collection<R> subResult;
                 try {
-                    subresult = call.call(sublimit);
+                    subResult = call.call(subLimit);
                 } catch (Exception e) {
                     throw new JanusGraphException("Could not process individual retrieval call ", e);
                 }
 
-                if (subresult.size() >= sublimit) exhaustedResults = false;
+                if (subResult.size() >= subLimit) exhaustedResults = false;
                 if (results == null) {
-                    results = Lists.newArrayList(subresult);
+                    results = Lists.newArrayList(subResult);
                 } else {
-                    Set<R> subresultset = ImmutableSet.copyOf(subresult);
-                    Iterator riter = results.iterator();
-                    while (riter.hasNext()) {
-                        if (!subresultset.contains(riter.next())) riter.remove();
+                    Set<R> subResultSet = ImmutableSet.copyOf(subResult);
+                    Iterator resultIterator = results.iterator();
+                    while (resultIterator.hasNext()) {
+                        if (!subResultSet.contains(resultIterator.next())) resultIterator.remove();
                     }
                 }
             }
-            sublimit = (int) Math.min(Integer.MAX_VALUE - 1, Math.max(Math.pow(sublimit, 1.5),(sublimit+1)*2));
+            subLimit = (int) Math.min(Integer.MAX_VALUE - 1, Math.max(Math.pow(subLimit, 1.5),(subLimit+1)*2));
         } while (results != null && results.size() < limit && !exhaustedResults);
         return results;
     }

@@ -82,17 +82,17 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
         initialized = true;
         if (useMultiQuery) {
             if (!starts.hasNext()) throw FastNoSuchElementException.instance();
-            JanusGraphMultiVertexQuery mquery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
+            JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
             List<Traverser.Admin<Vertex>> vertices = new ArrayList<>();
             starts.forEachRemaining(v -> {
                 vertices.add(v);
-                mquery.addVertex(v.get());
+                multiQuery.addVertex(v.get());
             });
             starts.add(vertices.iterator());
             assert vertices.size() > 0;
-            makeQuery(mquery);
+            makeQuery(multiQuery);
 
-            multiQueryResults = (Vertex.class.isAssignableFrom(getReturnClass())) ? mquery.vertices() : mquery.edges();
+            multiQueryResults = (Vertex.class.isAssignableFrom(getReturnClass())) ? multiQuery.vertices() : multiQuery.edges();
         }
     }
 

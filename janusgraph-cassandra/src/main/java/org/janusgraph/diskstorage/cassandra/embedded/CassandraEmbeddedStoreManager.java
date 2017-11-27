@@ -141,7 +141,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     /*
      * Raw type warnings are suppressed in this method because
      * {@link StorageService#getLocalPrimaryRanges(String)} returns a raw
-     * (unparameterized) type.
+     * (not parametrized) type.
      */
     public List<KeyRange> getLocalKeyPartition() throws BackendException {
         ensureKeyspaceExists(keySpaceName);
@@ -215,14 +215,14 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         sleepAfterWrite(txh, commitTime);
     }
 
-    private void mutate(List<org.apache.cassandra.db.Mutation> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws BackendException {
+    private void mutate(List<org.apache.cassandra.db.Mutation> commands, org.apache.cassandra.db.ConsistencyLevel consistencyLevel) throws BackendException {
         try {
             schedule(DatabaseDescriptor.getRpcTimeout());
             try {
                 if (atomicBatch) {
-                    StorageProxy.mutateAtomically(cmds, clvl);
+                    StorageProxy.mutateAtomically(commands, consistencyLevel);
                 } else {
-                    StorageProxy.mutate(cmds, clvl);
+                    StorageProxy.mutate(commands, consistencyLevel);
                 }
             } catch (RequestExecutionException e) {
                 throw new TemporaryBackendException(e);
@@ -300,12 +300,12 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         ensureColumnFamilyExists(ksName, cfName, BytesType.instance);
     }
 
-    private void ensureColumnFamilyExists(String keyspaceName, String columnfamilyName, AbstractType<?> comparator) throws BackendException {
-        if (null != Schema.instance.getCFMetaData(keyspaceName, columnfamilyName))
+    private void ensureColumnFamilyExists(String keyspaceName, String columnFamilyName, AbstractType<?> comparator) throws BackendException {
+        if (null != Schema.instance.getCFMetaData(keyspaceName, columnFamilyName))
             return;
 
         // Column Family not found; create it
-        CFMetaData cfm = new CFMetaData(keyspaceName, columnfamilyName, ColumnFamilyType.Standard, CellNames.fromAbstractType(comparator, true));
+        CFMetaData cfm = new CFMetaData(keyspaceName, columnFamilyName, ColumnFamilyType.Standard, CellNames.fromAbstractType(comparator, true));
         try {
             if (storageConfig.has(COMPACTION_STRATEGY)) {
                 cfm.compactionStrategyClass(CFMetaData.createCompactionStrategy(storageConfig.get(COMPACTION_STRATEGY)));
@@ -314,13 +314,13 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
                 cfm.compactionStrategyOptions(compactionOptions);
             }
         } catch (ConfigurationException e) {
-            throw new PermanentBackendException("Failed to create column family metadata for " + keyspaceName + ":" + columnfamilyName, e);
+            throw new PermanentBackendException("Failed to create column family metadata for " + keyspaceName + ":" + columnFamilyName, e);
         }
 
         // Hard-coded caching settings
-        if (columnfamilyName.startsWith(Backend.EDGESTORE_NAME)) {
+        if (columnFamilyName.startsWith(Backend.EDGESTORE_NAME)) {
             cfm.caching(CachingOptions.KEYS_ONLY);
-        } else if (columnfamilyName.startsWith(Backend.INDEXSTORE_NAME)) {
+        } else if (columnFamilyName.startsWith(Backend.INDEXSTORE_NAME)) {
             cfm.caching(CachingOptions.ROWS_ONLY);
         }
 
@@ -334,7 +334,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
                 // CompressionParameters doesn't override toString(), so be explicit
                 log.debug("Creating CF {}: setting {}={} and {}={} on {}",
                         new Object[]{
-                                columnfamilyName,
+                                columnFamilyName,
                                 CompressionParameters.SSTABLE_COMPRESSION, compressionClass,
                                 CompressionParameters.CHUNK_LENGTH_KB, compressionChunkSizeKB,
                                 cp});
@@ -344,24 +344,24 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         } else {
             cp = new CompressionParameters(null);
             log.debug("Creating CF {}: setting {} to null to disable compression",
-                    columnfamilyName, CompressionParameters.SSTABLE_COMPRESSION);
+                    columnFamilyName, CompressionParameters.SSTABLE_COMPRESSION);
         }
         cfm.compressionParameters(cp);
 
         try {
             cfm.addDefaultIndexNames();
         } catch (ConfigurationException e) {
-            throw new PermanentBackendException("Failed to create column family metadata for " + keyspaceName + ":" + columnfamilyName, e);
+            throw new PermanentBackendException("Failed to create column family metadata for " + keyspaceName + ":" + columnFamilyName, e);
         }
         try {
             MigrationManager.announceNewColumnFamily(cfm);
-            log.info("Created CF {} in KS {}", columnfamilyName, keyspaceName);
+            log.info("Created CF {} in KS {}", columnFamilyName, keyspaceName);
         } catch (ConfigurationException e) {
-            throw new PermanentBackendException("Failed to create column family " + keyspaceName + ":" + columnfamilyName, e);
+            throw new PermanentBackendException("Failed to create column family " + keyspaceName + ":" + columnFamilyName, e);
         }
 
         /*
-         * I'm chasing a nondetermistic exception that appears only rarely on my
+         * I'm chasing a nondeterministic exception that appears only rarely on my
          * machine when executing the embedded cassandra tests. If these dummy
          * reads ever actually fail and dump a log message, it could help debug
          * the root cause.
@@ -379,7 +379,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
          *           at org.apache.cassandra.service.StorageProxy$DroppableRunnable.run(StorageProxy.java:1578)
          *           ... 3 more
          */
-        retryDummyRead(keyspaceName, columnfamilyName);
+        retryDummyRead(keyspaceName, columnFamilyName);
     }
 
     @Override

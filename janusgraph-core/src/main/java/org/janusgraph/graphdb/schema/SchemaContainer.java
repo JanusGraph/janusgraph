@@ -35,24 +35,24 @@ public class SchemaContainer implements SchemaProvider {
     public SchemaContainer(JanusGraph graph) {
         vertexLabels = Maps.newHashMap();
         relationTypes = Maps.newHashMap();
-        JanusGraphManagement mgmt = graph.openManagement();
+        JanusGraphManagement management = graph.openManagement();
 
         try {
-            for (VertexLabel vl : mgmt.getVertexLabels()) {
+            for (VertexLabel vl : management.getVertexLabels()) {
                 VertexLabelDefinition vld = new VertexLabelDefinition(vl);
                 vertexLabels.put(vld.getName(),vld);
             }
 
-            for (EdgeLabel el : mgmt.getRelationTypes(EdgeLabel.class)) {
+            for (EdgeLabel el : management.getRelationTypes(EdgeLabel.class)) {
                 EdgeLabelDefinition eld = new EdgeLabelDefinition(el);
                 relationTypes.put(eld.getName(),eld);
             }
-            for (PropertyKey pk : mgmt.getRelationTypes(PropertyKey.class)) {
+            for (PropertyKey pk : management.getRelationTypes(PropertyKey.class)) {
                 PropertyKeyDefinition pkd = new PropertyKeyDefinition(pk);
                 relationTypes.put(pkd.getName(), pkd);
             }
         } finally {
-            mgmt.rollback();
+            management.rollback();
         }
 
     }

@@ -40,8 +40,8 @@ import static org.janusgraph.util.datastructures.ByteSize.*;
 public class ExpirationKCVSCache extends KCVSCache {
 
     //Weight estimation
-    private static final int STATICARRAYBUFFER_SIZE = STATICARRAYBUFFER_RAW_SIZE + 10; // 10 = last number is average length
-    private static final int KEY_QUERY_SIZE = OBJECT_HEADER + 4 + 1 + 3 * (OBJECT_REFERENCE + STATICARRAYBUFFER_SIZE); // object_size + int + boolean + 3 static buffers
+    private static final int STATIC_ARRAY_BUFFER_SIZE = STATICARRAYBUFFER_RAW_SIZE + 10; // 10 = last number is average length
+    private static final int KEY_QUERY_SIZE = OBJECT_HEADER + 4 + 1 + 3 * (OBJECT_REFERENCE + STATIC_ARRAY_BUFFER_SIZE); // object_size + int + boolean + 3 static buffers
 
     private static final int INVALIDATE_KEY_FRACTION_PENALTY = 1000;
     private static final int PENALTY_THRESHOLD = 5;
@@ -62,7 +62,7 @@ public class ExpirationKCVSCache extends KCVSCache {
         Preconditions.checkArgument(System.currentTimeMillis()+1000l*3600*24*365*100+cacheTimeMS>0,"Cache expiration time too large, overflow may occur: %s",cacheTimeMS);
         this.cacheTimeMS = cacheTimeMS;
         int concurrencyLevel = Runtime.getRuntime().availableProcessors();
-        Preconditions.checkArgument(invalidationGracePeriodMS >=0,"Invalid expiration grace peiod: %s", invalidationGracePeriodMS);
+        Preconditions.checkArgument(invalidationGracePeriodMS >=0,"Invalid expiration grace period: %s", invalidationGracePeriodMS);
         this.invalidationGracePeriodMS = invalidationGracePeriodMS;
         CacheBuilder<KeySliceQuery,EntryList> cachebuilder = CacheBuilder.newBuilder()
                 .maximumWeight(maximumByteSize)

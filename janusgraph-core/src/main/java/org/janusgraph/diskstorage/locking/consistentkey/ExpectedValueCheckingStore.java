@@ -30,7 +30,7 @@ import org.janusgraph.diskstorage.locking.PermanentLockingException;
 import org.janusgraph.diskstorage.util.KeyColumn;
 
 /**
- * A {@link KeyColumnValueStore} wrapper intended for nontransactional stores
+ * A {@link KeyColumnValueStore} wrapper intended for non-transactional stores
  * that forwards all <b>but</b> these two methods to an encapsulated store
  * instance:
  * <p/>

@@ -253,15 +253,15 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         storeManager.mutateMany(ImmutableMap.of(columnFamily, mutations), txh);
     }
 
-    private static List<Row> read(ReadCommand cmd, org.apache.cassandra.db.ConsistencyLevel clvl) throws BackendException {
+    private static List<Row> read(ReadCommand cmd, org.apache.cassandra.db.ConsistencyLevel consistencyLevel) throws BackendException {
         ArrayList<ReadCommand> cmdHolder = new ArrayList<ReadCommand>(1);
         cmdHolder.add(cmd);
-        return read(cmdHolder, clvl);
+        return read(cmdHolder, consistencyLevel);
     }
 
-    private static List<Row> read(List<ReadCommand> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws BackendException {
+    private static List<Row> read(List<ReadCommand> commands, org.apache.cassandra.db.ConsistencyLevel consistencyLevel) throws BackendException {
         try {
-            return StorageProxy.read(cmds, clvl);
+            return StorageProxy.read(commands, consistencyLevel);
         } catch (UnavailableException e) {
             throw new TemporaryBackendException(e);
         } catch (RequestTimeoutException e) {
