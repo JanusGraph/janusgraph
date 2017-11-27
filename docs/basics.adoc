@@ -771,7 +771,7 @@ By adding the `JanusGraphIoRegistry` to the `org.apache.tinkerpop.gremlin.driver
 
 It is possible to extend Gremlin Server with other means of communication by implementing the interfaces that it provides and leverage this with JanusGraph.  See more details in the appropriate TinkerPop documentation.
 
-include::configuredgraphfactory.txt[]
+include::configuredgraphfactory.adoc[]
 
 [[indexes]]
 == Indexing for Better Performance
@@ -1417,7 +1417,7 @@ The user transaction log provides the basic infrastructure to implement triggers
 
 There are a number of configuration options to fine tune how the log processor reads from the log. Refer to the complete list of configuration options <<config-ref>> for the options under the `log` namespace. To configure the user transaction log, use the `log.user` namespace. The options listed there allow the configuration of the number of threads to be used, the number of log records read in each batch, the read interval, and whether the transaction change records should automatically expire and be removed from the log after a configurable amount of time (TTL).
 
-include::configref.txt[]
+include::configref.adoc[]
 
 [[common-questions]]
 == Common Questions

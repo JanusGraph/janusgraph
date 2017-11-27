@@ -134,7 +134,7 @@
                             <mainClass>org.janusgraph.util.system.ConfigurationPrinter</mainClass>
                             <arguments>
                                 <argument>org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS</argument>
-                                <argument>${asciidoc.output.dir}/listings/janusgraph_cfg.txt</argument>
+                                <argument>${asciidoc.output.dir}/listings/janusgraph_cfg.adoc</argument>
                                 <argument>true</argument>
                             </arguments>
                         </configuration>
@@ -155,7 +155,7 @@
                         </goals>
                         <configuration>
                             <sourceDirectory>${asciidoc.output.dir}</sourceDirectory>
-                            <sourceDocumentName>index.txt</sourceDocumentName>
+                            <sourceDocumentName>index.adoc</sourceDocumentName>
                             <outputDirectory>${docbook.output.dir}</outputDirectory>
                             <backend>docbook5</backend>
                             <doctype>book</doctype>
