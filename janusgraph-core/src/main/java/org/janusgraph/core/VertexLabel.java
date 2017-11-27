@@ -31,7 +31,7 @@ public interface VertexLabel extends JanusGraphVertex, JanusGraphSchemaType {
      *
      * @return
      */
-    public boolean isPartitioned();
+    boolean isPartitioned();
 
     /**
      * Whether vertices with this label are static, that is, immutable beyond the transaction
@@ -39,7 +39,7 @@ public interface VertexLabel extends JanusGraphVertex, JanusGraphSchemaType {
      *
      * @return
      */
-    public boolean isStatic();
+    boolean isStatic();
 
     //TTL
 

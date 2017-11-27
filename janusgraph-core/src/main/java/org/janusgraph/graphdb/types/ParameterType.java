@@ -46,7 +46,7 @@ public enum ParameterType {
     
     private final String name;
 
-    private ParameterType(String name) {
+    ParameterType(String name) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         this.name=name;
     }

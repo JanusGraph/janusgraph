@@ -43,8 +43,7 @@ public interface ScanJob extends Cloneable {
      * @param graphConfiguration configuration options for the entire graph against which this job is executed
      * @param metrics {@link org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics} for this job
      */
-    public default void workerIterationStart(Configuration jobConfiguration,
-                                             Configuration graphConfiguration, ScanMetrics metrics) {}
+    default void workerIterationStart(Configuration jobConfiguration, Configuration graphConfiguration, ScanMetrics metrics) {}
 
     /**
      * Invoked after a block of computation (i.e. multiple process() calls) is handed to this particular ScanJob.
@@ -57,7 +56,7 @@ public interface ScanJob extends Cloneable {
      *
      * @param metrics {@link org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics} for this job
      */
-    public default void workerIterationEnd(ScanMetrics metrics) {}
+    default void workerIterationEnd(ScanMetrics metrics) {}
 
     /**
      * Run this {@code ScanJob}'s computation on the supplied row-key and entries.
@@ -94,7 +93,7 @@ public interface ScanJob extends Cloneable {
      * @param entries
      * @param metrics
      */
-    public void process(StaticBuffer key, Map<SliceQuery,EntryList> entries, ScanMetrics metrics);
+    void process(StaticBuffer key, Map<SliceQuery, EntryList> entries, ScanMetrics metrics);
 
     /**
      * Returns one or more {@code SliceQuery} instances belonging to this {@code ScanJob}.
@@ -111,7 +110,7 @@ public interface ScanJob extends Cloneable {
      *
      * @return one or more queries
      */
-    public List<SliceQuery> getQueries();
+    List<SliceQuery> getQueries();
 
     /**
      * A predicate that determines whether
@@ -129,7 +128,7 @@ public interface ScanJob extends Cloneable {
      *
      * @return a threadsafe predicate for edgestore keys
      */
-    public default Predicate<StaticBuffer> getKeyFilter() {
+    default Predicate<StaticBuffer> getKeyFilter() {
         return b -> true; //No filter by default
     }
 
@@ -139,6 +138,6 @@ public interface ScanJob extends Cloneable {
      *
      * @return A clone of this {@link org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob}
      */
-    public ScanJob clone();
+    ScanJob clone();
 
 }

@@ -21,6 +21,6 @@ import org.janusgraph.diskstorage.StaticBuffer;
  */
 public interface CachableStaticBuffer extends StaticBuffer {
 
-    public int getCacheMarker();
+    int getCacheMarker();
 
 }

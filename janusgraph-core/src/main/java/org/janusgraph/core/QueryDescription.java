@@ -27,7 +27,7 @@ public interface QueryDescription {
      * @return
      */
     @Override
-    public String toString();
+    String toString();
 
     /**
      * Returns how many individual queries are combined into this query, meaning, how many
@@ -35,7 +35,7 @@ public interface QueryDescription {
      *
      * @return
      */
-    public int getNoCombinedQueries();
+    int getNoCombinedQueries();
 
     /**
      * Returns the number of sub-queries this query is comprised of. Each sub-query represents one OR clause, i.e.,
@@ -43,30 +43,30 @@ public interface QueryDescription {
      *
      * @return
      */
-    public int getNoSubQueries();
+    int getNoSubQueries();
 
     /**
      * Returns a list of all sub-queries that comprise this query
      * @return
      */
-    public List<? extends SubQuery> getSubQueries();
+    List<? extends SubQuery> getSubQueries();
 
     /**
      * Represents one sub-query of this query. Each sub-query represents one OR clause.
      */
-    public interface SubQuery {
+    interface SubQuery {
 
         /**
          * Whether this query is fitted, i.e. whether the returned results must be filtered in-memory.
          * @return
          */
-        public boolean isFitted();
+        boolean isFitted();
 
         /**
          * Whether this query respects the sort order of parent query or requires sorting in-memory.
          * @return
          */
-        public boolean isSorted();
+        boolean isSorted();
 
     }
 

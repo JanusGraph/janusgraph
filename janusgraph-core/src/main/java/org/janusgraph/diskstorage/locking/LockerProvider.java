@@ -19,6 +19,6 @@ package org.janusgraph.diskstorage.locking;
  */
 public interface LockerProvider {
 
-    public Locker getLocker(String lockerName);
+    Locker getLocker(String lockerName);
 
 }

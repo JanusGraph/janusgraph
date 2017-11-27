@@ -40,7 +40,7 @@ public interface DefaultSchemaMaker {
      * @return A new edge label
      * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
      */
-    public default EdgeLabel makeEdgeLabel(EdgeLabelMaker factory) {
+    default EdgeLabel makeEdgeLabel(EdgeLabelMaker factory) {
         return factory.directed().make();
     }
 
@@ -48,7 +48,7 @@ public interface DefaultSchemaMaker {
      *
      * @return the default cardinality of a property if created for the given key
      */
-    public Cardinality defaultPropertyCardinality(String key);
+    Cardinality defaultPropertyCardinality(String key);
 
     /**
      * Creates a new property key with default settings against the provided {@link PropertyKeyMaker}.
@@ -57,7 +57,7 @@ public interface DefaultSchemaMaker {
      * @return A new property key
      * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
      */
-    public default PropertyKey makePropertyKey(PropertyKeyMaker factory) {
+    default PropertyKey makePropertyKey(PropertyKeyMaker factory) {
         return factory.cardinality(defaultPropertyCardinality(factory.getName())).dataType(Object.class).make();
     }
 
@@ -69,7 +69,7 @@ public interface DefaultSchemaMaker {
      * @return A new property key
      * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
      */
-    public default PropertyKey makePropertyKey(PropertyKeyMaker factory, Object value) {
+    default PropertyKey makePropertyKey(PropertyKeyMaker factory, Object value) {
          return makePropertyKey(factory);
     }
 
@@ -80,7 +80,7 @@ public interface DefaultSchemaMaker {
      * @return A new vertex label
      * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
      */
-    public default VertexLabel makeVertexLabel(VertexLabelMaker factory) {
+    default VertexLabel makeVertexLabel(VertexLabelMaker factory) {
         return factory.make();
     }
 
@@ -91,7 +91,7 @@ public interface DefaultSchemaMaker {
      * ignored and an empty result set will be returned. If this method returns false, then usage of undefined types
      * in queries results in an {@link IllegalArgumentException}.
      */
-    public boolean ignoreUndefinedQueryTypes();
+    boolean ignoreUndefinedQueryTypes();
 
 
 

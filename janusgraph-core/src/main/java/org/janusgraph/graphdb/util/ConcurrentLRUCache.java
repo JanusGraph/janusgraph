@@ -608,8 +608,8 @@ public class ConcurrentLRUCache<V> {
         }
     }
 
-    public static interface EvictionListener<V> {
-        public void evictedEntry(Long key, V value);
+    public interface EvictionListener<V> {
+        void evictedEntry(Long key, V value);
     }
 
     private static class CleanupThread extends Thread {

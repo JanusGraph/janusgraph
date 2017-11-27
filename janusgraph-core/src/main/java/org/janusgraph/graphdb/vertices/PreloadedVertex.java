@@ -160,13 +160,13 @@ public class PreloadedVertex extends CacheVertex {
 
     public interface AccessCheck {
 
-        public void accessEdges();
+        void accessEdges();
 
-        public void accessProperties();
+        void accessProperties();
 
-        public void accessSetProperty();
+        void accessSetProperty();
 
-        public Retriever<SliceQuery, EntryList> retrieveSliceQuery();
+        Retriever<SliceQuery, EntryList> retrieveSliceQuery();
 
     }
 
@@ -246,11 +246,11 @@ public class PreloadedVertex extends CacheVertex {
 
     public interface PropertyMixing {
 
-        public <V> Iterator<VertexProperty<V>> properties(String... keys);
+        <V> Iterator<VertexProperty<V>> properties(String... keys);
 
-        public boolean supports(String key);
+        boolean supports(String key);
 
-        public <V> JanusGraphVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value);
+        <V> JanusGraphVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value);
 
     }
 

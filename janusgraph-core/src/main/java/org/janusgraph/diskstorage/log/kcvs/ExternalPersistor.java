@@ -22,6 +22,6 @@ import org.janusgraph.diskstorage.StaticBuffer;
  */
 public interface ExternalPersistor {
 
-    public void add(StaticBuffer key, Entry cell);
+    void add(StaticBuffer key, Entry cell);
 
 }

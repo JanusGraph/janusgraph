@@ -71,7 +71,7 @@ public class KVUtil {
         }
     }
 
-    private static enum KVEntryGetter implements StaticArrayEntry.GetColVal<KeyValueEntry,StaticBuffer> {
+    private enum KVEntryGetter implements StaticArrayEntry.GetColVal<KeyValueEntry,StaticBuffer> {
         INSTANCE;
 
         @Override

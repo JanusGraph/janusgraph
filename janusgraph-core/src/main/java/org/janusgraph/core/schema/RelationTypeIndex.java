@@ -38,7 +38,7 @@ public interface RelationTypeIndex extends Index {
      *
      * @return
      */
-    public RelationType getType();
+    RelationType getType();
 
     /**
      * Returns the sort order of this index. Index entries are sorted in this order and queries
@@ -46,28 +46,28 @@ public interface RelationTypeIndex extends Index {
      *
      * @return
      */
-    public Order getSortOrder();
+    Order getSortOrder();
 
     /**
      * Returns the (composite) sort key for this index. The composite sort key is an ordered list of {@link RelationType}s
      *
      * @return
      */
-    public RelationType[] getSortKey();
+    RelationType[] getSortKey();
 
     /**
      * Returns the direction on which this index is installed. An index may cover only one or both directions.
      *
      * @return
      */
-    public Direction getDirection();
+    Direction getDirection();
 
     /**
      * Returns the status of this index
      *
      * @return
      */
-    public SchemaStatus getIndexStatus();
+    SchemaStatus getIndexStatus();
 
 
 }

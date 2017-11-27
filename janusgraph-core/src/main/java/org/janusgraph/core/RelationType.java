@@ -44,7 +44,7 @@ public interface RelationType extends JanusGraphVertex, JanusGraphSchemaType {
      * @return true, if this relation type is a property key, else false.
      * @see PropertyKey
      */
-    public boolean isPropertyKey();
+    boolean isPropertyKey();
 
     /**
      * Checks if this relation type is an edge label
@@ -52,6 +52,6 @@ public interface RelationType extends JanusGraphVertex, JanusGraphSchemaType {
      * @return true, if this relation type is a edge label, else false.
      * @see EdgeLabel
      */
-    public boolean isEdgeLabel();
+    boolean isEdgeLabel();
 
 }

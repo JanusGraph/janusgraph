@@ -32,13 +32,13 @@ public interface LogManager {
      * @return
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    public Log openLog(String name) throws BackendException;
+    Log openLog(String name) throws BackendException;
 
     /**
      * Closes the log manager and all open logs (if they haven't already been explicitly closed)
      *
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    public void close() throws BackendException;
+    void close() throws BackendException;
 
 }
