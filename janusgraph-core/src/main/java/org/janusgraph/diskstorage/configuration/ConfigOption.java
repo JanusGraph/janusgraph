@@ -245,7 +245,7 @@ public class ConfigOption<O> extends ConfigElement {
 
     //########### HELPER METHODS ##################
 
-    public static final<E extends Enum> E getEnumValue(String str, Class<E> enumClass) {
+    public static <E extends Enum> E getEnumValue(String str, Class<E> enumClass) {
         str = str.trim();
         if (StringUtils.isBlank(str)) return null;
         for (E e : enumClass.getEnumConstants()) {
@@ -254,7 +254,7 @@ public class ConfigOption<O> extends ConfigElement {
         throw new IllegalArgumentException("Invalid enum string provided for ["+enumClass+"]: " + str);
     }
 
-    public static final<O> Predicate<O> disallowEmpty(Class<O> clazz) {
+    public static <O> Predicate<O> disallowEmpty(Class<O> clazz) {
         return new Predicate<O>() {
             @Override
             public boolean apply(@Nullable O o) {
@@ -267,7 +267,7 @@ public class ConfigOption<O> extends ConfigElement {
         };
     }
 
-    public static final Predicate<Integer> positiveInt() {
+    public static Predicate<Integer> positiveInt() {
         return new Predicate<Integer>() {
             @Override
             public boolean apply(@Nullable Integer num) {
@@ -276,7 +276,7 @@ public class ConfigOption<O> extends ConfigElement {
         };
     }
 
-    public static final Predicate<Integer> nonnegativeInt() {
+    public static Predicate<Integer> nonnegativeInt() {
         return new Predicate<Integer>() {
             @Override
             public boolean apply(@Nullable Integer num) {
@@ -285,7 +285,7 @@ public class ConfigOption<O> extends ConfigElement {
         };
     }
 
-    public static final Predicate<Long> positiveLong() {
+    public static Predicate<Long> positiveLong() {
         return new Predicate<Long>() {
             @Override
             public boolean apply(@Nullable Long num) {

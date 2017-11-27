@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
  */
 public class ConditionUtil {
 
-    public static final<E extends JanusGraphElement> Condition<E> literalTransformation(Condition<E> condition, final Function<Condition<E>,Condition<E>> transformation) {
+    public static <E extends JanusGraphElement> Condition<E> literalTransformation(Condition<E> condition, final Function<Condition<E>,Condition<E>> transformation) {
         return transformation(condition,new Function<Condition<E>, Condition<E>>() {
             @Nullable
             @Override
@@ -38,7 +38,7 @@ public class ConditionUtil {
         });
     }
 
-    public static final<E extends JanusGraphElement> Condition<E> transformation(Condition<E> condition, Function<Condition<E>,Condition<E>> transformation) {
+    public static <E extends JanusGraphElement> Condition<E> transformation(Condition<E> condition, Function<Condition<E>,Condition<E>> transformation) {
         Condition<E> transformed = transformation.apply(condition);
         if (transformed!=null) return transformed;
         //if transformed==null we go a level deeper
@@ -57,7 +57,7 @@ public class ConditionUtil {
         } else throw new IllegalArgumentException("Unexpected condition type: " + condition);
     }
 
-    public static final boolean containsType(Condition<?> condition, Condition.Type type) {
+    public static boolean containsType(Condition<?> condition, Condition.Type type) {
         if (condition.getType()==type) return true;
         else if (condition.numChildren()>0) {
             for (Condition child : condition.getChildren()) {
@@ -67,7 +67,7 @@ public class ConditionUtil {
         return false;
     }
 
-    public static final<E extends JanusGraphElement> void traversal(Condition<E> condition, Predicate<Condition<E>> evaluator) {
+    public static <E extends JanusGraphElement> void traversal(Condition<E> condition, Predicate<Condition<E>> evaluator) {
         if (!evaluator.apply(condition)) return; //Abort if the evaluator returns false
 
         if (condition.getType()== Condition.Type.LITERAL) {

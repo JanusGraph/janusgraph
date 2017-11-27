@@ -53,7 +53,7 @@ public class ResourceUnavailableException extends JanusGraphException {
         this("Attempting to access unavailable resource", cause);
     }
 
-    public static final void verifyOpen(boolean isOpen, String resourceName, String... resourceIdentifiers) {
+    public static void verifyOpen(boolean isOpen, String resourceName, String... resourceIdentifiers) {
         Preconditions.checkArgument(StringUtils.isNotBlank(resourceName));
         if (!isOpen) {
             StringBuilder msg = new StringBuilder();

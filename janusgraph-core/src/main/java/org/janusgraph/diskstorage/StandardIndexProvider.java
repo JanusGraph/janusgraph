@@ -68,11 +68,11 @@ public enum StandardIndexProvider {
         ALL_MANAGER_CLASSES = ImmutableMap.copyOf(tempClassMap);
     }
 
-    public static final List<String> getAllShorthands() {
+    public static List<String> getAllShorthands() {
         return ALL_SHORTHANDS;
     }
 
-    public static final Map<String, String> getAllProviderClasses() {
+    public static Map<String, String> getAllProviderClasses() {
         return ALL_MANAGER_CLASSES;
     }
 }

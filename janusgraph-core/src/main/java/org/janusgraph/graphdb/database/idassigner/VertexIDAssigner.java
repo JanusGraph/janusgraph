@@ -228,7 +228,7 @@ public class VertexIDAssigner implements AutoCloseable {
         throw new IDPoolExhaustedException("Could not find non-exhausted partition ID Pool after " + MAX_PARTITION_RENEW_ATTEMPTS + " attempts");
     }
 
-    private final boolean isPartitionedAt(InternalRelation relation, int position) {
+    private boolean isPartitionedAt(InternalRelation relation, int position) {
         return idManager.isPartitionedVertex(relation.getVertex(position).longId());
     }
 
@@ -289,7 +289,7 @@ public class VertexIDAssigner implements AutoCloseable {
         }
     }
 
-    private final long getPartitionID(final InternalVertex v) {
+    private long getPartitionID(final InternalVertex v) {
         long vid = v.longId();
         if (IDManager.VertexIDType.Schema.is(vid)) return IDManager.SCHEMA_PARTITION;
         else return idManager.getPartitionId(vid);

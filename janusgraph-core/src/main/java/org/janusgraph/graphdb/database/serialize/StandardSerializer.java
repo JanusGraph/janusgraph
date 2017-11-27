@@ -426,7 +426,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
             return getClass(VariableLong.readPositive(buffer));
         }
 
-        private final Class getClass(long registrationNo) {
+        private Class getClass(long registrationNo) {
             assert registrationNo<Integer.MAX_VALUE && registrationNo>=0;
             if (registrationNo==0) return null;
             return getDataType((int) registrationNo);

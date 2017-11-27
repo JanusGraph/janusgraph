@@ -259,7 +259,7 @@ public class IndexSerializer {
         }
     }
 
-    private static final IndexUpdate.Type getUpateType(InternalRelation relation) {
+    private static IndexUpdate.Type getUpateType(InternalRelation relation) {
         assert relation.isNew() || relation.isRemoved();
         return (relation.isNew()? IndexUpdate.Type.ADD : IndexUpdate.Type.DELETE);
     }
@@ -667,56 +667,56 @@ public class IndexSerializer {
                 Utility Functions
     ################################################### */
 
-    private static final MixedIndexType getMixedIndex(String indexName, StandardJanusGraphTx transaction) {
+    private static MixedIndexType getMixedIndex(String indexName, StandardJanusGraphTx transaction) {
         IndexType index = ManagementSystem.getGraphIndexDirect(indexName, transaction);
         Preconditions.checkArgument(index!=null,"Index with name [%s] is unknown or not configured properly",indexName);
         Preconditions.checkArgument(index.isMixedIndex());
         return (MixedIndexType)index;
     }
 
-    private static final String element2String(JanusGraphElement element) {
+    private static String element2String(JanusGraphElement element) {
         return element2String(element.id());
     }
 
-    private static final String element2String(Object elementId) {
+    private static String element2String(Object elementId) {
         Preconditions.checkArgument(elementId instanceof Long || elementId instanceof RelationIdentifier);
         if (elementId instanceof Long) return longID2Name((Long)elementId);
         else return ((RelationIdentifier) elementId).toString();
     }
 
-    private static final Object string2ElementId(String str) {
+    private static Object string2ElementId(String str) {
         if (str.contains(RelationIdentifier.TOSTRING_DELIMITER)) return RelationIdentifier.parse(str);
         else return name2LongID(str);
     }
 
-    private static final String key2Field(MixedIndexType index, PropertyKey key) {
+    private static String key2Field(MixedIndexType index, PropertyKey key) {
         return key2Field(index.getField(key));
     }
 
-    private static final String key2Field(ParameterIndexField field) {
+    private static String key2Field(ParameterIndexField field) {
         assert field!=null;
         return ParameterType.MAPPED_NAME.findParameter(field.getParameters(),keyID2Name(field.getFieldKey()));
     }
 
-    private static final String keyID2Name(PropertyKey key) {
+    private static String keyID2Name(PropertyKey key) {
         return longID2Name(key.longId());
     }
 
-    private static final String longID2Name(long id) {
+    private static String longID2Name(long id) {
         Preconditions.checkArgument(id > 0);
         return LongEncoding.encode(id);
     }
 
-    private static final long name2LongID(String name) {
+    private static long name2LongID(String name) {
         return LongEncoding.decode(name);
     }
 
 
-    private final StaticBuffer getIndexKey(CompositeIndexType index, RecordEntry[] record) {
+    private StaticBuffer getIndexKey(CompositeIndexType index, RecordEntry[] record) {
         return getIndexKey(index,IndexRecords.getValues(record));
     }
 
-    private final StaticBuffer getIndexKey(CompositeIndexType index, Object[] values) {
+    private StaticBuffer getIndexKey(CompositeIndexType index, Object[] values) {
         DataOutput out = serializer.getDataOutput(8*DEFAULT_OBJECT_BYTELEN + 8);
         VariableLong.writePositive(out, index.getID());
         IndexField[] fields = index.getFieldKeys();
@@ -742,7 +742,7 @@ public class IndexSerializer {
         return VariableLong.readPositive(key.asReadBuffer());
     }
 
-    private final Entry getIndexEntry(CompositeIndexType index, RecordEntry[] record, JanusGraphElement element) {
+    private Entry getIndexEntry(CompositeIndexType index, RecordEntry[] record, JanusGraphElement element) {
         DataOutput out = serializer.getDataOutput(1+8+8*record.length+4*8);
         out.putByte(FIRST_INDEX_COLUMN_BYTE);
         if (index.getCardinality()!=Cardinality.SINGLE) {
@@ -766,7 +766,7 @@ public class IndexSerializer {
         return new StaticArrayEntry(out.getStaticBuffer(),valuePosition);
     }
 
-    private static final RelationIdentifier bytebuffer2RelationId(ReadBuffer b) {
+    private static RelationIdentifier bytebuffer2RelationId(ReadBuffer b) {
         long[] relationId = new long[4];
         for (int i = 0; i < 3; i++) relationId[i] = VariableLong.readPositive(b);
         if (b.hasRemaining()) relationId[3] = VariableLong.readPositive(b);

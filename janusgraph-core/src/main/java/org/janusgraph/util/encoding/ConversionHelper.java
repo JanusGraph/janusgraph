@@ -25,7 +25,7 @@ import java.time.temporal.TemporalUnit;
  */
 public class ConversionHelper {
 
-    public static final int getTTLSeconds(Duration duration) {
+    public static int getTTLSeconds(Duration duration) {
         Preconditions.checkArgument(duration!=null && !duration.isZero(),"Must provide non-zero TTL");
         long ttlSeconds = Math.max(1,duration.getSeconds());
         assert ttlSeconds>0;
@@ -33,7 +33,7 @@ public class ConversionHelper {
         return (int)ttlSeconds;
     }
 
-    public static final int getTTLSeconds(long time, TemporalUnit unit) {
+    public static int getTTLSeconds(long time, TemporalUnit unit) {
         return getTTLSeconds(Duration.of(time,unit));
     }
 

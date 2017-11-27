@@ -397,11 +397,11 @@ public class JanusGraphFactory {
         }
     }
 
-    private static final String getAbsolutePath(String file) {
+    private static String getAbsolutePath(String file) {
         return getAbsolutePath(new File(System.getProperty("user.dir")), file);
     }
 
-    private static final String getAbsolutePath(final File configParent, String file) {
+    private static String getAbsolutePath(final File configParent, String file) {
         File storedir = new File(file);
         if (!storedir.isAbsolute()) {
             String newFile = configParent.getAbsolutePath() + File.separator + file;

@@ -57,28 +57,28 @@ public class ElementLifeCycle {
     public final static byte Removed = 6;
 
 
-    public static final boolean isModified(byte lifecycle) {
+    public static boolean isModified(byte lifecycle) {
         return lifecycle>=AddedRelations && lifecycle<=Modified;
     }
 
-    public static final boolean hasRemovedRelations(byte lifecycle) {
+    public static boolean hasRemovedRelations(byte lifecycle) {
         return lifecycle== RemovedRelations || lifecycle==Modified;
     }
 
-    public static final boolean hasAddedRelations(byte lifecycle) {
+    public static boolean hasAddedRelations(byte lifecycle) {
         return lifecycle==AddedRelations || lifecycle==Modified;
     }
 
 
-    public static final boolean isNew(byte lifecycle) {
+    public static boolean isNew(byte lifecycle) {
         return lifecycle==New;
     }
 
-    public static final boolean isLoaded(byte lifecycle) {
+    public static boolean isLoaded(byte lifecycle) {
         return lifecycle==Loaded;
     }
 
-    public static final boolean isRemoved(byte lifecycle) {
+    public static boolean isRemoved(byte lifecycle) {
         return lifecycle== Removed;
     }
 
@@ -86,7 +86,7 @@ public class ElementLifeCycle {
         return lifecycle>=New && lifecycle<=Removed;
     }
 
-    public static final byte update(final byte lifecycle, final Event event) {
+    public static byte update(final byte lifecycle, final Event event) {
         Preconditions.checkArgument(isValid(lifecycle),"Invalid element state: " + lifecycle);
         if (event==Event.REMOVED) return Removed;
         else if (lifecycle==New || lifecycle==Modified) {

@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class Maps {
 
-    public final static <K, V> V putIfAbsent(ConcurrentMap<K, V> map, K key, Factory<V> factory) {
+    public static <K, V> V putIfAbsent(ConcurrentMap<K, V> map, K key, Factory<V> factory) {
         V res = map.get(key);
         if (res != null) return res;
         else {

@@ -36,11 +36,11 @@ public class CompactMap implements Map<String,Object> {
         this.values=values;
     }
 
-    public static final CompactMap of(final String[] keys, final Object[] values) {
+    public static CompactMap of(final String[] keys, final Object[] values) {
         return new CompactMap(keys,values);
     }
 
-    private static final void checkKeys(final String[] keys) {
+    private static void checkKeys(final String[] keys) {
         if (keys==null || keys.length<1) throw new IllegalArgumentException("Invalid keys");
         for (int i=0;i<keys.length;i++) if (keys[i]==null) throw new IllegalArgumentException("Key cannot be null at position " + i);
 
@@ -58,7 +58,7 @@ public class CompactMap implements Map<String,Object> {
      * @param keys String array to deduplicate by checking against KEY_CACHE
      * @return A deduplicated version of the given keys array
      */
-    private static final String[] deduplicateKeys(String[] keys) {
+    private static String[] deduplicateKeys(String[] keys) {
         synchronized (KEY_CACHE) {
             KEY_HULL.setKeys(keys);
             KeyContainer retrieved = KEY_CACHE.get(KEY_HULL);
@@ -360,7 +360,7 @@ public class CompactMap implements Map<String,Object> {
             return Arrays.deepEquals(keys,((KeyContainer)other).keys);
         }
 
-        public static final KeyContainer of(String[] header) {
+        public static KeyContainer of(String[] header) {
             return new KeyContainer(header);
         }
 
