@@ -84,7 +84,7 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
      * This deletes all entries in the global map of namespaces to mediators
      * whose namespace key equals the argument.
      *
-     * @param prefix
+     * @param namespace
      */
     public void clear(String namespace) {
         Iterator<Entry<String, LocalLockMediator<?>>> iter = mediators.entrySet().iterator();

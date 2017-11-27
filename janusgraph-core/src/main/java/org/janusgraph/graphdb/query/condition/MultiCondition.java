@@ -14,10 +14,6 @@
 
 package org.janusgraph.graphdb.query.condition;
 
-/**
- * @author Matthias Broecheler (me@matthiasb.com)
- */
-
 import org.janusgraph.core.JanusGraphElement;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 

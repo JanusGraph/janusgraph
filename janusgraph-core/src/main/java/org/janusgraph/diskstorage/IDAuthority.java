@@ -69,7 +69,7 @@ public interface IDAuthority {
      * Sets the {@link IDBlockSizer} to be used by this IDAuthority. The IDBlockSizer specifies the block size for
      * each partition guaranteeing that the same partition will always be assigned the same block size.
      * <p/>
-     * The IDBlockSizer cannot be changed for an IDAuthority that has already been used (i.e. after invoking {@link #getIDBlock(int)}.
+     * The IDBlockSizer cannot be changed for an IDAuthority that has already been used (i.e. after invoking {@link #getIDBlock(int, int, Duration)}.
      *
      * @param sizer The IDBlockSizer to be used by this IDAuthority
      */

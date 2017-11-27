@@ -185,13 +185,13 @@ public class VertexIDAssigner implements AutoCloseable {
             }
             assert element.hasId();
 
-            /**
-             * The next block of code checks the added the relation for partitioned vertices as either end point. If such exists,
-             * we might have to assign the relation to a different representative of that partitioned vertex using the following logic:
-             * 1) Properties are always assigned to the canonical representative
-             * 2) Edges are assigned to the partition block of the non-partitioned vertex
-             *  2a) unless the edge is unique in the direction away from the partitioned vertex in which case its assigned to the canonical representative
-             *  2b) if both end vertices are partitioned, it is assigned to the partition to which the edge id hashes
+            /*
+              The next block of code checks the added the relation for partitioned vertices as either end point. If such exists,
+              we might have to assign the relation to a different representative of that partitioned vertex using the following logic:
+              1) Properties are always assigned to the canonical representative
+              2) Edges are assigned to the partition block of the non-partitioned vertex
+               2a) unless the edge is unique in the direction away from the partitioned vertex in which case its assigned to the canonical representative
+               2b) if both end vertices are partitioned, it is assigned to the partition to which the edge id hashes
              */
             //Check if we should assign a different representative of a potential partitioned vertex
             if (element instanceof InternalRelation) {
