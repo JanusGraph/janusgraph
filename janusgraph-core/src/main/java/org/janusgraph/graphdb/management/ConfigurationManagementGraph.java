@@ -84,7 +84,7 @@ public class ConfigurationManagementGraph {
             final String errMsg = "ConfigurationManagementGraph should be instantiated just once, by the JanusGraphManager.";
             throw new ConfigurationManagementGraphAlreadyInstantiatedException(errMsg);
         }
-        this.instance = this;
+        instance = this;
     }
 
     /**
