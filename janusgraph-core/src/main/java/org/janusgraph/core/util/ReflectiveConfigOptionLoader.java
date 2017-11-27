@@ -87,7 +87,7 @@ public enum ReflectiveConfigOptionLoader {
     /**
      * Reflectively load types at most once over the life of this class. This
      * method is synchronized and uses a static class field to ensure that it
-     * calls {@link #load()} only on the first invocation and does nothing
+     * calls {@link #load(LoaderConfiguration, Class)} only on the first invocation and does nothing
      * thereafter. This is the right behavior as long as the classpath doesn't
      * change in the middle of the enclosing JVM's lifetime.
      */
