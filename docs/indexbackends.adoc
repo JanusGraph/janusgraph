@@ -7,15 +7,15 @@ The choice of index backend determines which search features are supported, as w
 
 Use <<elasticsearch, Elasticsearch>> or <<solr, Solr>> when there is an expectation that JanusGraph will be distributed across multiple machines. <<lucene, Lucene>> performs better in small scale, single machine applications. It performs better in unit tests, for instance.
 
-include::searchpredicates.txt[]
+include::searchpredicates.adoc[]
 
-include::textsearch.txt[]
+include::textsearch.adoc[]
 
-include::directindex.txt[]
+include::directindex.adoc[]
 
-include::elasticsearch.txt[]
+include::elasticsearch.adoc[]
 
-include::solr.txt[]
+include::solr.adoc[]
 
-include::lucene.txt[]
+include::lucene.adoc[]
 

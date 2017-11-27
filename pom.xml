@@ -1543,7 +1543,7 @@
                                 <inherited>false</inherited>
                                 <configuration>
                                     <sourceDirectory>${asciidoc.input.dir}</sourceDirectory>
-                                    <sourceDocumentName>index.txt</sourceDocumentName>
+                                    <sourceDocumentName>index.adoc</sourceDocumentName>
                                     <outputDirectory>${docbook.output.dir}</outputDirectory>
                                     <backend>docbook5</backend>
                                     <doctype>book</doctype>

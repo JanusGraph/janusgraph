@@ -35,4 +35,4 @@ log.user.send-batch-size = 100
 
 === Configuration Namespaces and Options
 
-include::listings/janusgraph_cfg.txt[]
+include::listings/janusgraph_cfg.adoc[]
