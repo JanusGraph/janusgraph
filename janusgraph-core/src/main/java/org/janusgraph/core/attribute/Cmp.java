@@ -44,13 +44,7 @@ public enum Cmp implements JanusGraphPredicate {
             if (condition==null) {
                 return value==null;
             } else {
-                if (condition.equals(value)) {
-                    return true;
-                } else if (condition.getClass().isArray()) {
-                    return ArrayUtils.isEquals(condition, value);
-                } else {
-                    return false;
-                }
+                return condition.equals(value) || (condition.getClass().isArray() && ArrayUtils.isEquals(condition, value));
             }
         }
 
@@ -113,7 +107,7 @@ public enum Cmp implements JanusGraphPredicate {
         @Override
         public boolean test(Object value, Object condition) {
             Integer cmp = AttributeUtil.compare(value,condition);
-            return cmp!=null?cmp<0:false;
+            return cmp != null && cmp < 0;
         }
 
         @Override
@@ -143,7 +137,7 @@ public enum Cmp implements JanusGraphPredicate {
         @Override
         public boolean test(Object value, Object condition) {
             Integer cmp = AttributeUtil.compare(value,condition);
-            return cmp!=null?cmp<=0:false;
+            return cmp != null && cmp <= 0;
         }
 
         @Override
@@ -173,7 +167,7 @@ public enum Cmp implements JanusGraphPredicate {
         @Override
         public boolean test(Object value, Object condition) {
             Integer cmp = AttributeUtil.compare(value,condition);
-            return cmp!=null?cmp>0:false;
+            return cmp != null && cmp > 0;
         }
 
         @Override
@@ -203,7 +197,7 @@ public enum Cmp implements JanusGraphPredicate {
         @Override
         public boolean test(Object value, Object condition) {
             Integer cmp = AttributeUtil.compare(value,condition);
-            return cmp!=null?cmp>=0:false;
+            return cmp != null && cmp >= 0;
         }
 
         @Override

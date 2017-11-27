@@ -23,6 +23,7 @@ import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import java.util.*;
+import java.util.stream.StreamSupport;
 
 /**
  * Utility methods used in query optimization and processing.
@@ -92,35 +93,36 @@ public class QueryUtil {
      * @return
      */
     public static boolean isQueryNormalForm(Condition<?> condition) {
-        if (isQNFLiteralOrNot(condition)) return true;
-        else if (condition instanceof And) {
-            for (Condition<?> child : ((And<?>) condition).getChildren()) {
-                if (isQNFLiteralOrNot(child)) continue;
-                else if (child instanceof Or) {
-                    for (Condition<?> child2 : ((Or<?>) child).getChildren()) {
-                        if (!isQNFLiteralOrNot(child2)) return false;
-                    }
-                } else return false;
-            }
+        if (isQNFLiteralOrNot(condition)) {
             return true;
-        } else return false;
+        }
+        if (!(condition instanceof And)) {
+            return false;
+        }
+        for (final Condition<?> child : ((And<?>) condition).getChildren()) {
+            if (isQNFLiteralOrNot(child)) {
+                continue;
+            } else if (child instanceof Or) {
+                for (Condition<?> child2 : ((Or<?>) child).getChildren()) {
+                    if (!isQNFLiteralOrNot(child2)) return false;
+                }
+            } else {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean isQNFLiteralOrNot(Condition<?> condition) {
-        if (condition instanceof Not) {
-            Condition child = ((Not) condition).getChild();
-            if (!isQNFLiteral(child)) return false;
-            else if (child instanceof PredicateCondition) {
-                return !((PredicateCondition) child).getPredicate().hasNegation();
-            } else return true;
-        } else return isQNFLiteral(condition);
+        if (!(condition instanceof Not)) {
+            return isQNFLiteral(condition);
+        }
+        final Condition child = ((Not) condition).getChild();
+        return isQNFLiteral(child) && (!(child instanceof PredicateCondition) || !((PredicateCondition) child).getPredicate().hasNegation());
     }
 
     private static boolean isQNFLiteral(Condition<?> condition) {
-        if (condition.getType() != Condition.Type.LITERAL) return false;
-        if (condition instanceof PredicateCondition) {
-            return ((PredicateCondition) condition).getPredicate().isQNF();
-        } else return true;
+        return condition.getType() == Condition.Type.LITERAL && (!(condition instanceof PredicateCondition) || ((PredicateCondition) condition).getPredicate().isQNF());
     }
 
     public static <E extends JanusGraphElement> Condition<E> simplifyQNF(Condition<E> condition) {

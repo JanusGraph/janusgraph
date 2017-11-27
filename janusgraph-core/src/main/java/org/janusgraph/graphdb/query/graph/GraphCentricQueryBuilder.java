@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.stream.StreamSupport;
 
 /**
  * Builds a {@link JanusGraphQuery}, optimizes the query and compiles the result into a {@link GraphCentricQuery} which
@@ -412,27 +413,25 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     }
 
     private static boolean coversAll(final MixedIndexType index, Condition<JanusGraphElement> condition, IndexSerializer indexInfo) {
-        if (condition.getType()==Condition.Type.LITERAL) {
-            if (!(condition instanceof  PredicateCondition)) return false;
-            PredicateCondition<RelationType, JanusGraphElement> atom = (PredicateCondition) condition;
-            if (atom.getValue()==null) return false;
-
-            Preconditions.checkArgument(atom.getKey().isPropertyKey());
-            PropertyKey key = (PropertyKey) atom.getKey();
-            ParameterIndexField[] fields = index.getFieldKeys();
-            ParameterIndexField match = null;
-            for (int i = 0; i < fields.length; i++) {
-                if (fields[i].getStatus()!= SchemaStatus.ENABLED) continue;
-                if (fields[i].getFieldKey().equals(key)) match = fields[i];
-            }
-            if (match==null) return false;
-            return indexInfo.supports(index,match,atom.getPredicate());
-        } else {
-            for (Condition<JanusGraphElement> child : condition.getChildren()) {
-                if (!coversAll(index,child,indexInfo)) return false;
-            }
-            return true;
+        if (condition.getType()!=Condition.Type.LITERAL) {
+            return !StreamSupport.stream(condition.getChildren().spliterator(), false).anyMatch(child -> !coversAll(index, child, indexInfo));
         }
+        if (!(condition instanceof PredicateCondition)) {
+            return false;
+        }
+        PredicateCondition<RelationType, JanusGraphElement> atom = (PredicateCondition) condition;
+        if (atom.getValue() == null) {
+            return false;
+        }
+
+        Preconditions.checkArgument(atom.getKey().isPropertyKey());
+        final PropertyKey key = (PropertyKey) atom.getKey();
+        final ParameterIndexField[] fields = index.getFieldKeys();
+        final ParameterIndexField match = Arrays.stream(fields)
+            .filter(field -> field.getStatus() == SchemaStatus.ENABLED)
+            .filter(field -> field.getFieldKey().equals(key))
+            .findAny().orElse(null);
+        return match != null && indexInfo.supports(index, match, atom.getPredicate());
     }
 
 

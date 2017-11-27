@@ -241,8 +241,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
      * @return
      */
     protected final boolean isImplicitKeyQuery(RelationCategory returnType) {
-        if (returnType == RelationCategory.EDGE || types.length != 1 || !constraints.isEmpty()) return false;
-        return schemaInspector.getRelationType(types[0]) instanceof ImplicitKey;
+        return returnType != RelationCategory.EDGE && types.length == 1 && constraints.isEmpty() && schemaInspector.getRelationType(types[0]) instanceof ImplicitKey;
     }
 
 

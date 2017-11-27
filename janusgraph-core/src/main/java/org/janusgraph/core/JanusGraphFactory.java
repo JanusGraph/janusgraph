@@ -378,9 +378,7 @@ public class JanusGraphFactory {
             final Iterator<String> keysToMangle = Iterators.filter(configuration.getKeys(), new Predicate<String>() {
                 @Override
                 public boolean apply(String key) {
-                    if (null == key)
-                        return false;
-                    return p.matcher(key).matches();
+                    return null != key && p.matcher(key).matches();
                 }
             });
 

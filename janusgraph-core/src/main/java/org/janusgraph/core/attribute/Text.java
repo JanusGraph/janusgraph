@@ -46,9 +46,8 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean test(Object value, Object condition) {
-            this.preevaluate(value,condition);
-            if (value == null) return false;
-            return evaluateRaw(value.toString(),(String)condition);
+            this.preevaluate(value, condition);
+            return value != null && evaluateRaw(value.toString(), (String) condition);
         }
 
         @Override
@@ -82,9 +81,8 @@ public enum Text implements JanusGraphPredicate {
     CONTAINS_PREFIX {
         @Override
         public boolean test(Object value, Object condition) {
-            this.preevaluate(value,condition);
-            if (value == null) return false;
-            return evaluateRaw(value.toString(),(String)condition);
+            this.preevaluate(value, condition);
+            return value != null && evaluateRaw(value.toString(), (String) condition);
         }
 
         @Override
@@ -113,9 +111,8 @@ public enum Text implements JanusGraphPredicate {
     CONTAINS_REGEX {
         @Override
         public boolean test(Object value, Object condition) {
-            this.preevaluate(value,condition);
-            if (value == null) return false;
-            return evaluateRaw(value.toString(),(String)condition);
+            this.preevaluate(value, condition);
+            return value != null && evaluateRaw(value.toString(), (String) condition);
         }
 
         @Override
@@ -144,9 +141,8 @@ public enum Text implements JanusGraphPredicate {
     PREFIX {
         @Override
         public boolean test(Object value, Object condition) {
-            this.preevaluate(value,condition);
-            if (value==null) return false;
-            return evaluateRaw(value.toString(),(String)condition);
+            this.preevaluate(value, condition);
+            return value != null && evaluateRaw(value.toString(), (String) condition);
         }
 
         @Override
@@ -172,9 +168,8 @@ public enum Text implements JanusGraphPredicate {
     REGEX {
         @Override
         public boolean test(Object value, Object condition) {
-            this.preevaluate(value,condition);
-            if (value == null) return false;
-            return evaluateRaw(value.toString(),(String)condition);
+            this.preevaluate(value, condition);
+            return value != null && evaluateRaw(value.toString(), (String) condition);
         }
 
         public boolean evaluateRaw(String value, String regex) {
@@ -204,9 +199,7 @@ public enum Text implements JanusGraphPredicate {
         @Override
         public boolean test(Object value, Object condition) {
             this.preevaluate(value, condition);
-            if (value == null)
-                return false;
-            return evaluateRaw(value.toString(), (String) condition);
+            return value != null && evaluateRaw(value.toString(), (String) condition);
         }
 
         @Override
@@ -236,9 +229,7 @@ public enum Text implements JanusGraphPredicate {
         @Override
         public boolean test(Object value, Object condition) {
             this.preevaluate(value, condition);
-            if (value == null)
-                return false;
-            return evaluateRaw(value.toString(), (String) condition);
+            return value != null && evaluateRaw(value.toString(), (String) condition);
         }
 
         @Override
