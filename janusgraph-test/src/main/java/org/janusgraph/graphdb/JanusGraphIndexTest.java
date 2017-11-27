@@ -1033,10 +1033,10 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         // ElasticSearch and Solr have different formats for sort parameters
         String backend = readConfig.get(INDEX_BACKEND, INDEX);
         if ("elasticsearch".equals(backend)) {
-            Map<String,String> sortAsc = new HashMap<String,String>();
+            final Map<String,String> sortAsc = new HashMap<>();
             sortAsc.put("_score", "asc");
             asc_sort_p = new Parameter("sort",Arrays.asList(sortAsc));
-            Map<String,String> sortDesc = new HashMap<String,String>();
+            final Map<String,String> sortDesc = new HashMap<>();
             sortDesc.put("_score", "desc");
             desc_sort_p = new Parameter("sort",Arrays.asList(sortDesc));
         } else if ("solr".equals(backend)) {
@@ -1062,7 +1062,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         tx.commit();
 
-        List<JanusGraphVertex> vertices = new ArrayList<JanusGraphVertex>();
+        final List<JanusGraphVertex> vertices = new ArrayList<>();
         for (JanusGraphIndexQuery.Result<JanusGraphVertex> r : graph.indexQuery("store1", "v.field1:(Hello)").addParameter(asc_sort_p).vertices()) {
             vertices.add(r.getElement());
         }
@@ -1608,7 +1608,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         tx.commit();
 
-        Set<Double> scores = new HashSet<Double>();
+        final Set<Double> scores = new HashSet<>();
         for (JanusGraphIndexQuery.Result<JanusGraphVertex> r : graph.indexQuery("store1", "v.text:(Hello)").vertices()) {
             scores.add(r.getScore());
         }

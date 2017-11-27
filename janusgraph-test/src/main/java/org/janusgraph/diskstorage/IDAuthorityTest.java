@@ -69,7 +69,7 @@ public abstract class IDAuthorityTest {
 
     @Parameterized.Parameters
     public static Collection<Object[]> configs() {
-        List<Object[]> configurations = new ArrayList<Object[]>();
+        final List<Object[]> configurations = new ArrayList<>();
 
         ModifiableConfiguration c = getBasicConfig();
         configurations.add(new Object[]{c.getConfiguration()});
@@ -227,8 +227,8 @@ public abstract class IDAuthorityTest {
          * values reflect a problem in either this test or the
          * implementation-under-test.
          */
-        Set<String> uniqueIds = new HashSet<String>();
-        String uidErrorMessage = "Uniqueness failure detected for config option " + UNIQUE_INSTANCE_ID.getName();
+        final Set<String> uniqueIds = new HashSet<>();
+        final String uidErrorMessage = "Uniqueness failure detected for config option " + UNIQUE_INSTANCE_ID.getName();
         for (int i = 0; i < CONCURRENCY; i++) {
             String uid = idAuthorities[i].getUniqueID();
             Assert.assertTrue(uidErrorMessage, !uniqueIds.contains(uid));
@@ -320,10 +320,10 @@ public abstract class IDAuthorityTest {
         final int targetPartition = 0;
         final int targetNamespace = 2;
 
-        final ConcurrentLinkedQueue<IDBlock> blocks = new ConcurrentLinkedQueue<IDBlock>();
+        final ConcurrentLinkedQueue<IDBlock> blocks = new ConcurrentLinkedQueue<>();
         final int blocksPerThread = 40;
         Assert.assertTrue(0 < blocksPerThread);
-        List <Future<Void>> futures = new ArrayList<Future<Void>>(CONCURRENCY);
+        final List <Future<Void>> futures = new ArrayList<>(CONCURRENCY);
 
         // Start some concurrent threads getting blocks the same ID authority and same partition in that authority
         for (int c = 0; c < CONCURRENCY; c++) {
@@ -370,16 +370,16 @@ public abstract class IDAuthorityTest {
         final int numAcquisitionsPerThreadPartition = 100;
         final IDBlockSizer blockSizer = new InnerIDBlockSizer();
         for (int i = 0; i < CONCURRENCY; i++) idAuthorities[i].setIDBlockSizer(blockSizer);
-        final List<ConcurrentLinkedQueue<IDBlock>> ids = new ArrayList<ConcurrentLinkedQueue<IDBlock>>(numPartitions);
+        final List<ConcurrentLinkedQueue<IDBlock>> ids = new ArrayList<>(numPartitions);
         for (int i = 0; i < numPartitions; i++) {
-            ids.add(new ConcurrentLinkedQueue<IDBlock>());
+            ids.add(new ConcurrentLinkedQueue<>());
         }
 
         final int maxIterations = numAcquisitionsPerThreadPartition * numPartitions * 2;
-        final Collection<Future<?>> futures = new ArrayList<Future<?>>(CONCURRENCY);
+        final Collection<Future<?>> futures = new ArrayList<>(CONCURRENCY);
         ExecutorService es = Executors.newFixedThreadPool(CONCURRENCY);
 
-        Set<String> uniqueIds = new HashSet<String>(CONCURRENCY);
+        final Set<String> uniqueIds = new HashSet<>(CONCURRENCY);
         for (int i = 0; i < CONCURRENCY; i++) {
             final IDAuthority idAuthority = idAuthorities[i];
             final IDStressor stressRunnable = new IDStressor(

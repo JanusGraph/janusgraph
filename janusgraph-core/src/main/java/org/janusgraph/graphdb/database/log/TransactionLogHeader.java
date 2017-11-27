@@ -91,7 +91,7 @@ public class TransactionLogHeader {
                 && sourceTxEntry.header.transactionId==sourceTxId.getTransactionId());
         StaticBuffer sourceContent = sourceTxEntry.content;
         Preconditions.checkArgument(sourceContent!=null && sourceContent.length()>0);
-        EnumMap<LogTxMeta, Object> meta =  new EnumMap<LogTxMeta, Object>(LogTxMeta.class);
+        final EnumMap<LogTxMeta, Object> meta = new EnumMap<>(LogTxMeta.class);
         meta.put(LogTxMeta.SOURCE_TRANSACTION,sourceTxId);
         DataOutput out = serializeHeader(serializer, 50 + sourceContent.length(), LogTxStatus.USER_LOG, meta);
         out.putBytes(sourceContent);
@@ -120,11 +120,11 @@ public class TransactionLogHeader {
     }
 
     private DataOutput serializeHeader(Serializer serializer, int capacity, LogTxStatus status) {
-        return serializeHeader(serializer, capacity, status, new EnumMap<LogTxMeta, Object>(LogTxMeta.class));
+        return serializeHeader(serializer, capacity, status, new EnumMap<>(LogTxMeta.class));
     }
 
     private DataOutput serializeHeader(Serializer serializer, int capacity, LogTxStatus status, TransactionConfiguration txConfig) {
-        EnumMap<LogTxMeta,Object> metaMap = new EnumMap<LogTxMeta, Object>(LogTxMeta.class);
+        final EnumMap<LogTxMeta,Object> metaMap = new EnumMap<>(LogTxMeta.class);
         if (txConfig!=null) {
             for (LogTxMeta meta : LogTxMeta.values()) {
                 Object value = meta.getValue(txConfig);
@@ -160,7 +160,7 @@ public class TransactionLogHeader {
         TransactionLogHeader header = new TransactionLogHeader(VariableLong.readPositive(read),
                 txTimestamp, times);
         LogTxStatus status = serializer.readObjectNotNull(read,LogTxStatus.class);
-        EnumMap<LogTxMeta,Object> metadata = new EnumMap<LogTxMeta, Object>(LogTxMeta.class);
+        final EnumMap<LogTxMeta,Object> metadata = new EnumMap<>(LogTxMeta.class);
         int metaSize = VariableLong.unsignedByte(read.getByte());
         for (int i=0;i<metaSize;i++) {
             LogTxMeta meta = LogTxMeta.values()[VariableLong.unsignedByte(read.getByte())];

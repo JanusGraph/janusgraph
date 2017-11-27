@@ -31,7 +31,7 @@ public class RandomRemovalListTest {
     @Test
     public void test1() {
         int max = 1000000;
-        RandomRemovalList<Integer> list = new RandomRemovalList<Integer>();
+        final RandomRemovalList<Integer> list = new RandomRemovalList<>();
         for (int i = 1; i <= max; i++) {
             list.add(i);
         }
@@ -54,7 +54,7 @@ public class RandomRemovalListTest {
 
     public int runIndividual() {
         long max = 2000000;
-        RandomRemovalList<Integer> list = new RandomRemovalList<Integer>();
+        final RandomRemovalList<Integer> list = new RandomRemovalList<>();
         for (int i = 1; i <= max; i++) {
             list.add(i);
         }
@@ -70,7 +70,7 @@ public class RandomRemovalListTest {
     @Test
     public void test3() {
         long max = 20000;
-        RandomRemovalList<Integer> list = new RandomRemovalList<Integer>();
+        final RandomRemovalList<Integer> list = new RandomRemovalList<>();
         for (int i = 1; i <= max; i++) {
             list.add(i);
         }

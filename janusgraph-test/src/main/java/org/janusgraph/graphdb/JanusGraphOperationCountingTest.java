@@ -38,7 +38,6 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.janusgraph.graphdb.database.cache.MetricInstrumentedSchemaCache.*;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelationType;
@@ -393,7 +392,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
     private String metricsPrefix;
 
     public void verifyStoreMetrics(String storeName) {
-        verifyStoreMetrics(storeName, new HashMap<String, Long>(0));
+        verifyStoreMetrics(storeName, new HashMap<>(0));
     }
 
     public void verifyStoreMetrics(String storeName, Map<String, Long> operationCounts) {

@@ -36,7 +36,7 @@ public abstract class AbstractIndexStatusWatcher<R, S extends AbstractIndexStatu
 
     public AbstractIndexStatusWatcher(JanusGraph g) {
         this.g = g;
-        this.statuses = new ArrayList<SchemaStatus>();
+        this.statuses = new ArrayList<>();
         this.statuses.add(SchemaStatus.REGISTERED);
         this.timeout = Duration.ofSeconds(60L);
         this.poll = Duration.ofMillis(500L);

@@ -80,7 +80,7 @@ public class BaseVertexCentricQuery extends BaseQuery implements ProfileObservab
      * Construct an empty query
      */
     protected BaseVertexCentricQuery() {
-        this(new FixedCondition<JanusGraphRelation>(false), Direction.BOTH, new ArrayList<BackendQueryHolder<SliceQuery>>(0),OrderList.NO_ORDER,0);
+        this(new FixedCondition<>(false), Direction.BOTH, new ArrayList<>(0),OrderList.NO_ORDER,0);
     }
 
     public static BaseVertexCentricQuery emptyQuery() {

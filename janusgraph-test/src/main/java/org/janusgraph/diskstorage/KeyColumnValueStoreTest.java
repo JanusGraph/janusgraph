@@ -148,7 +148,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         val.put((byte) -1);
         StaticBuffer staticVal = StaticArrayBuffer.of(val);
 
-        List<Entry> rowAdditions = new ArrayList<Entry>(dimension);
+        final List<Entry> rowAdditions = new ArrayList<>(dimension);
 
         for (int k = 0; k < dimension; k++) {
 
@@ -173,10 +173,10 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     public Set<KeyColumn> deleteValues(int every) throws BackendException {
-        Set<KeyColumn> removed = new HashSet<KeyColumn>();
+        final Set<KeyColumn> removed = new HashSet<>();
         int counter = 0;
         for (int i = 0; i < numKeys; i++) {
-            List<StaticBuffer> deletions = new ArrayList<StaticBuffer>();
+            final List<StaticBuffer> deletions = new ArrayList<>();
             for (int j = 0; j < numColumns; j++) {
                 counter++;
                 if (counter % every == 0) {
@@ -191,11 +191,11 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     public Set<Integer> deleteKeys(int every) throws BackendException {
-        Set<Integer> removed = new HashSet<Integer>();
+        final Set<Integer> removed = new HashSet<>();
         for (int i = 0; i < numKeys; i++) {
             if (i % every == 0) {
                 removed.add(i);
-                List<StaticBuffer> deletions = new ArrayList<StaticBuffer>();
+                final List<StaticBuffer> deletions = new ArrayList<>();
                 for (int j = 0; j < numColumns; j++) {
                     deletions.add(KeyValueStoreUtil.getBuffer(j));
                 }
@@ -216,7 +216,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     public void checkValueExistence(String[][] values) throws BackendException {
-        checkValueExistence(values, new HashSet<KeyColumn>());
+        checkValueExistence(values, new HashSet<>());
     }
 
     public void checkValueExistence(String[][] values, Set<KeyColumn> removed) throws BackendException {
@@ -233,7 +233,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     public void checkValues(String[][] values) throws BackendException {
-        checkValues(values, new HashSet<KeyColumn>());
+        checkValues(values, new HashSet<>());
     }
 
     public void checkValues(String[][] values, Set<KeyColumn> removed) throws BackendException {
@@ -550,7 +550,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
             if (manager.getFeatures().hasUnorderedScan()) {
 
-                Collection<StaticBuffer> expected = new HashSet<StaticBuffer>(size);
+                final Collection<StaticBuffer> expected = new HashSet<>(size);
 
                 for (int start = midpoint; start >= offset - step; start -= step) {
                     for (int end = midpoint + 1; end <= upper + step; end += step) {
@@ -582,7 +582,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
             } else if (manager.getFeatures().hasOrderedScan()) {
 
-                Collection<StaticBuffer> expected = new ArrayList<StaticBuffer>(size);
+                final Collection<StaticBuffer> expected = new ArrayList<>(size);
 
                 for (int start = midpoint; start >= offset - step; start -= step) {
                     for (int end = midpoint + 1; end <= upper + step; end += step) {
@@ -837,7 +837,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
         final int cols = 1024;
 
-        List<Entry> entries = new LinkedList<Entry>();
+        final List<Entry> entries = new LinkedList<>();
         for (int i = 0; i < cols; i++) {
             StaticBuffer col = KeyColumnValueStoreUtil.longToByteBuffer(i);
             entries.add(StaticArrayEntry.of(col, col));
@@ -953,7 +953,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         tx.commit();
         tx = startTx();
 
-        List<StaticBuffer> keys = new ArrayList<StaticBuffer>(100);
+        final List<StaticBuffer> keys = new ArrayList<>(100);
 
         for (int i = 1; i <= 100; i++) {
             keys.add(KeyColumnValueStoreUtil.longToByteBuffer(i));
@@ -1030,7 +1030,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         StaticBuffer key = KeyColumnValueStoreUtil.longToByteBuffer(0);
 
         int ttls[] = new int[]{0, 1, 2};
-        List<Entry> additions = new LinkedList<Entry>();
+        final List<Entry> additions = new LinkedList<>();
         for (int i = 0; i < ttls.length; i++) {
             StaticBuffer col = KeyColumnValueStoreUtil.longToByteBuffer(i);
             StaticArrayEntry entry = (StaticArrayEntry) StaticArrayEntry.of(col, col);
@@ -1147,7 +1147,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
         int count = 0;
         int expectedNumKeys = (int) (endKey - startKey);
-        List<StaticBuffer> existingKeys = new ArrayList<StaticBuffer>(expectedNumKeys);
+        final List<StaticBuffer> existingKeys = new ArrayList<>(expectedNumKeys);
 
         for (int i = (int) (startKey == 0 ? 1 : startKey); i <= endKey; i++) {
             existingKeys.add(KeyColumnValueStoreUtil.longToByteBuffer(i));

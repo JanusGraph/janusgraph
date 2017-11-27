@@ -61,7 +61,7 @@ public class ExpirationKCVSCache extends KCVSCache {
         Preconditions.checkArgument(cacheTimeMS > 0, "Cache expiration must be positive: %s", cacheTimeMS);
         Preconditions.checkArgument(System.currentTimeMillis()+1000L*3600*24*365*100+cacheTimeMS>0,"Cache expiration time too large, overflow may occur: %s",cacheTimeMS);
         this.cacheTimeMS = cacheTimeMS;
-        int concurrencyLevel = Runtime.getRuntime().availableProcessors();
+        final int concurrencyLevel = Runtime.getRuntime().availableProcessors();
         Preconditions.checkArgument(invalidationGracePeriodMS >=0,"Invalid expiration grace period: %s", invalidationGracePeriodMS);
         this.invalidationGracePeriodMS = invalidationGracePeriodMS;
         CacheBuilder<KeySliceQuery,EntryList> cachebuilder = CacheBuilder.newBuilder()
@@ -72,7 +72,7 @@ public class ExpirationKCVSCache extends KCVSCache {
                 .weigher((keySliceQuery, entries) -> GUAVA_CACHE_ENTRY_SIZE + KEY_QUERY_SIZE + entries.getByteSize());
 
         cache = cachebuilder.build();
-        expiredKeys = new ConcurrentHashMap<StaticBuffer, Long>(50,0.75f,concurrencyLevel);
+        expiredKeys = new ConcurrentHashMap<>(50, 0.75f, concurrencyLevel);
         penaltyCountdown = new CountDownLatch(PENALTY_THRESHOLD);
 
         cleanupThread = new CleanupThread();
@@ -101,13 +101,13 @@ public class ExpirationKCVSCache extends KCVSCache {
 
     @Override
     public Map<StaticBuffer,EntryList> getSlice(final List<StaticBuffer> keys, final SliceQuery query, final StoreTransaction txh) throws BackendException {
-        Map<StaticBuffer,EntryList> results = new HashMap<StaticBuffer, EntryList>(keys.size());
-        List<StaticBuffer> remainingKeys = new ArrayList<StaticBuffer>(keys.size());
+        final Map<StaticBuffer,EntryList> results = new HashMap<>(keys.size());
+        final List<StaticBuffer> remainingKeys = new ArrayList<>(keys.size());
         KeySliceQuery[] ksqs = new KeySliceQuery[keys.size()];
         incActionBy(keys.size(), CacheMetricsAction.RETRIEVAL,txh);
         //Find all cached queries
         for (int i=0;i<keys.size();i++) {
-            StaticBuffer key = keys.get(i);
+            final StaticBuffer key = keys.get(i);
             ksqs[i] = new KeySliceQuery(key,query);
             EntryList result = null;
             if (!isExpired(ksqs[i])) result = cache.getIfPresent(ksqs[i]);
@@ -198,7 +198,7 @@ public class ExpirationKCVSCache extends KCVSCache {
                     else throw new RuntimeException("Cleanup thread got interrupted",e);
                 }
                 //Do clean up work by invalidating all entries for expired keys
-                HashMap<StaticBuffer,Long> expiredKeysCopy = new HashMap<StaticBuffer,Long>(expiredKeys.size());
+                final Map<StaticBuffer,Long> expiredKeysCopy = new HashMap<>(expiredKeys.size());
                 for (Map.Entry<StaticBuffer,Long> expKey : expiredKeys.entrySet()) {
                     if (isBeyondExpirationTime(expKey.getValue()))
                         expiredKeys.remove(expKey.getKey(), expKey.getValue());

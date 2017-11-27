@@ -80,9 +80,9 @@ public class TestByteBuffer {
     }
 
     private static long testByte() {
-        LongObjectMap<ConcurrentSkipListSet<ByteEntry>> tx = new LongObjectHashMap<ConcurrentSkipListSet<ByteEntry>>(NUM);
+        final LongObjectMap<ConcurrentSkipListSet<ByteEntry>> tx = new LongObjectHashMap<>(NUM);
         for (int i = 0; i < NUM; i++) {
-            tx.put(i, new ConcurrentSkipListSet<ByteEntry>());
+            tx.put(i, new ConcurrentSkipListSet<>());
         }
         for (int i = 0; i < NUM; i++) {
             for (int j = 0; j < NUM; j++) {
@@ -131,12 +131,7 @@ public class TestByteBuffer {
 
     static class EdgeVertex extends Vertex {
 
-        private SortedSet<Edge> outEdges = new ConcurrentSkipListSet<Edge>(new Comparator<Edge>() {
-            @Override
-            public int compare(Edge e1, Edge e2) {
-                return e1.getEnd().compareTo(e2.getEnd());
-            }
-        });
+        private SortedSet<Edge> outEdges = new ConcurrentSkipListSet<>(Comparator.comparing(Edge::getEnd));
 
         EdgeVertex(long id) {
             super(id);
@@ -196,7 +191,7 @@ public class TestByteBuffer {
         private final Vertex start;
         private final Vertex end;
         private final String label;
-        private final Map<String, Object> properties = new HashMap<String, Object>();
+        private final Map<String, Object> properties = new HashMap<>();
 
         Edge(Vertex start, String label, Vertex end) {
             this.label = label;

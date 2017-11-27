@@ -60,7 +60,7 @@ public class ConfigurationFileFilter {
             outputContextDir.mkdirs(); // may fail if path exists as a file
         }
 
-        Queue<InputRecord> dirQueue = new LinkedList<InputRecord>();
+        final Queue<InputRecord> dirQueue = new LinkedList<>();
         dirQueue.add(new InputRecord(inputContextDir, File.separator));
         int parseErrors = 0;
         int visitedDirs = 0;

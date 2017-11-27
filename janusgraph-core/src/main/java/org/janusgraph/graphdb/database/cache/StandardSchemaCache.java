@@ -76,13 +76,13 @@ public class StandardSchemaCache implements SchemaCache {
         typeNamesBackup = CacheBuilder.newBuilder()
                 .concurrencyLevel(CONCURRENCY_LEVEL).initialCapacity(INITIAL_CACHE_SIZE)
                 .maximumSize(maxCachedTypes).build();
-        typeNames = new ConcurrentHashMap<String, Long>(INITIAL_CAPACITY,0.75f,CONCURRENCY_LEVEL);
+        typeNames = new ConcurrentHashMap<>(INITIAL_CAPACITY, 0.75f, CONCURRENCY_LEVEL);
 
         schemaRelationsBackup = CacheBuilder.newBuilder()
                 .concurrencyLevel(CONCURRENCY_LEVEL).initialCapacity(INITIAL_CACHE_SIZE *CACHE_RELATION_MULTIPLIER)
                 .maximumSize(maxCachedRelations).build();
 //        typeRelations = new ConcurrentHashMap<Long, EntryList>(INITIAL_CAPACITY*CACHE_RELATION_MULTIPLIER,0.75f,CONCURRENCY_LEVEL);
-        schemaRelations = new NonBlockingHashMapLong<EntryList>(INITIAL_CAPACITY*CACHE_RELATION_MULTIPLIER); //TODO: Is this data structure safe or should we go with ConcurrentHashMap (line above)?
+        schemaRelations = new NonBlockingHashMapLong<>(INITIAL_CAPACITY * CACHE_RELATION_MULTIPLIER); //TODO: Is this data structure safe or should we go with ConcurrentHashMap (line above)?
     }
 
 

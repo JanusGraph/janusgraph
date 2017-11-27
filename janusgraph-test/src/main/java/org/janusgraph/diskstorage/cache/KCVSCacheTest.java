@@ -86,7 +86,7 @@ public abstract class KCVSCacheTest {
         StoreTransaction tx = getStoreTx();
         try {
             for (int i=1;i<=numKeys;i++) {
-                List<Entry> adds = new ArrayList<Entry>(numCols);
+                final List<Entry> adds = new ArrayList<>(numCols);
                 for (int j=1;j<=numCols;j++) adds.add(getEntry(j,j));
                 store.mutate(BufferUtil.getIntBuffer(i),adds,KeyColumnValueStore.NO_DELETIONS,tx);
             }
@@ -117,7 +117,7 @@ public abstract class KCVSCacheTest {
                 assertEquals(3,cache.getSlice(getQuery(i,2,5),tx).size());
             }
             //Multi-query
-            List<StaticBuffer> keys = new ArrayList<StaticBuffer>();
+            final List<StaticBuffer> keys = new ArrayList<>();
             for (int i=10;i<10+numMulti;i++) keys.add(BufferUtil.getIntBuffer(i));
             Map<StaticBuffer,EntryList> result = cache.getSlice(keys,getQuery(4,9),tx);
             assertEquals(keys.size(),result.size());
@@ -132,7 +132,7 @@ public abstract class KCVSCacheTest {
 
         //Check invalidation
         StaticBuffer key = BufferUtil.getIntBuffer(23);
-        List<StaticBuffer> keys = new ArrayList<StaticBuffer>();
+        final List<StaticBuffer> keys = new ArrayList<>();
         keys.add(key);
         keys.add(BufferUtil.getIntBuffer(12));
         keys.add(BufferUtil.getIntBuffer(5));
@@ -144,7 +144,7 @@ public abstract class KCVSCacheTest {
         assertEquals(keys.size(),result.size());
         assertEquals(6,result.get(key).size());
         //Update
-        List<Entry> deletions = new ArrayList<Entry>(numCols/2);
+        final List<Entry> deletions = new ArrayList<>(numCols/2);
         for (int j=1;j<=numCols;j=j+2) deletions.add(getEntry(j,j));
         cache.mutateEntries(key, KeyColumnValueStore.NO_ADDITIONS, deletions, tx);
         tx.commit();

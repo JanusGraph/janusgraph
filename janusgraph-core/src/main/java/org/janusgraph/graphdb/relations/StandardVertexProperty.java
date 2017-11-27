@@ -67,7 +67,7 @@ public class StandardVertexProperty extends AbstractVertexProperty implements St
         Preconditions.checkArgument(!(key instanceof ImplicitKey), "Cannot use implicit type [%s] when setting property", key.name());
         if (properties == EMPTY_PROPERTIES) {
             if (tx().getConfiguration().isSingleThreaded()) {
-                properties = new HashMap<PropertyKey, Object>(5);
+                properties = new HashMap<>(5);
             } else {
                 synchronized (this) {
                     if (properties == EMPTY_PROPERTIES) {

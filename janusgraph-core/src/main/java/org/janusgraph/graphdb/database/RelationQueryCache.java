@@ -43,7 +43,7 @@ public class RelationQueryCache implements AutoCloseable {
         this.edgeSerializer = edgeSerializer;
         this.cache = CacheBuilder.newBuilder().maximumSize(capacity*3/2).initialCapacity(capacity)
                 .concurrencyLevel(2).build();
-        relationTypes = new EnumMap<RelationCategory, SliceQuery>(RelationCategory.class);
+        relationTypes = new EnumMap<>(RelationCategory.class);
         for (RelationCategory rt : RelationCategory.values()) {
             relationTypes.put(rt,edgeSerializer.getQuery(rt,false));
         }

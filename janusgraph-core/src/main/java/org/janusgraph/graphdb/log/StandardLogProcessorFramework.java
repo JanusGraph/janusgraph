@@ -67,7 +67,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         this.graph = graph;
         this.serializer = graph.getDataSerializer();
         this.times = graph.getConfiguration().getTimestampProvider();
-        this.processorLogs = new HashMap<String, Log>();
+        this.processorLogs = new HashMap<>();
     }
 
     private void checkOpen() {
@@ -124,7 +124,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         private Builder(String userLogName) {
             Preconditions.checkArgument(StringUtils.isNotBlank(userLogName));
             this.userLogName = userLogName;
-            this.processors = new ArrayList<ChangeProcessor>();
+            this.processors = new ArrayList<>();
         }
 
         @Override

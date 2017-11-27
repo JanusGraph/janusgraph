@@ -192,7 +192,7 @@ public abstract class LogTest {
         final int rounds = 32;
 
         StoringReader reader = new StoringReader(rounds);
-        List<StaticBuffer> expected = new ArrayList<StaticBuffer>(rounds);
+        final List<StaticBuffer> expected = new ArrayList<>(rounds);
 
         Log l = manager.openLog("fuzz");
         l.registerReader(ReadMarker.fromNow(),reader);

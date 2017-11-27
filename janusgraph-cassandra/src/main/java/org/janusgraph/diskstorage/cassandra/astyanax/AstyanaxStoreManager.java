@@ -83,7 +83,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * <p/>
      */
     public static final ConfigOption<String> CLUSTER_NAME =
-            new ConfigOption<String>(ASTYANAX_NS, "cluster-name",
+            new ConfigOption<>(ASTYANAX_NS, "cluster-name",
             "Default name for the Cassandra cluster",
             ConfigOption.Type.MASKABLE, "JanusGraph Cluster");
 
@@ -92,7 +92,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * <p/>
      */
     public static final ConfigOption<Integer> MAX_CONNECTIONS_PER_HOST =
-            new ConfigOption<Integer>(ASTYANAX_NS, "max-connections-per-host",
+            new ConfigOption<>(ASTYANAX_NS, "max-connections-per-host",
             "Maximum pooled connections per host",
             ConfigOption.Type.MASKABLE, 32);
 
@@ -101,7 +101,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * <p/>
      */
     public static final ConfigOption<Integer> MAX_CONNECTIONS =
-            new ConfigOption<Integer>(ASTYANAX_NS, "max-connections",
+            new ConfigOption<>(ASTYANAX_NS, "max-connections",
             "Maximum open connections allowed in the pool (counting all hosts)",
             ConfigOption.Type.MASKABLE, -1);
 
@@ -110,7 +110,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * <p/>
      */
     public static final ConfigOption<Integer> MAX_OPERATIONS_PER_CONNECTION =
-            new ConfigOption<Integer>(ASTYANAX_NS, "max-operations-per-connection",
+            new ConfigOption<>(ASTYANAX_NS, "max-operations-per-connection",
             "Maximum number of operations allowed per connection before the connection is closed",
             ConfigOption.Type.MASKABLE, 100 * 1000);
 
@@ -122,7 +122,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * in ordinary operation.
      */
     public static final ConfigOption<Integer> MAX_CLUSTER_CONNECTIONS_PER_HOST =
-            new ConfigOption<Integer>(ASTYANAX_NS, "max-cluster-connections-per-host",
+            new ConfigOption<>(ASTYANAX_NS, "max-cluster-connections-per-host",
             "Maximum pooled \"cluster\" connections per host",
             ConfigOption.Type.MASKABLE, 3);
 
@@ -131,7 +131,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * <p/>
      */
     public static final ConfigOption<Integer> READ_PAGE_SIZE =
-            new ConfigOption<Integer>(ASTYANAX_NS, "read-page-size",
+            new ConfigOption<>(ASTYANAX_NS, "read-page-size",
             "The page size for Cassandra read operations",
             ConfigOption.Type.MASKABLE, Integer.class, 4096);
 
@@ -141,7 +141,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * <p/>
      */
     public static final ConfigOption<String> NODE_DISCOVERY_TYPE =
-            new ConfigOption<String>(ASTYANAX_NS, "node-discovery-type",
+            new ConfigOption<>(ASTYANAX_NS, "node-discovery-type",
             "How Astyanax discovers Cassandra cluster nodes",
             ConfigOption.Type.MASKABLE, "RING_DESCRIBE");
 
@@ -150,7 +150,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * Excepts fully qualified class name which extends google.common.base.Supplier<List<Host>>.
      */
     public static final ConfigOption<String> HOST_SUPPLIER =
-            new ConfigOption<String>(ASTYANAX_NS, "host-supplier",
+            new ConfigOption<>(ASTYANAX_NS, "host-supplier",
             "Host supplier to use when discovery type is set to DISCOVERY_SERVICE or TOKEN_AWARE",
             ConfigOption.Type.MASKABLE, String.class);
 
@@ -160,7 +160,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * <p/>
      */
     public static final ConfigOption<String> CONNECTION_POOL_TYPE =
-            new ConfigOption<String>(ASTYANAX_NS, "connection-pool-type",
+            new ConfigOption<>(ASTYANAX_NS, "connection-pool-type",
             "Astyanax's connection pooler implementation",
             ConfigOption.Type.MASKABLE, "TOKEN_AWARE");
 
@@ -171,7 +171,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * uncommunicative hosts. This config option controls RetryPolicy.
      */
     public static final ConfigOption<String> RETRY_POLICY =
-            new ConfigOption<String>(ASTYANAX_NS, "retry-policy",
+            new ConfigOption<>(ASTYANAX_NS, "retry-policy",
             "Astyanax's retry policy implementation with configuration parameters",
             ConfigOption.Type.MASKABLE, "com.netflix.astyanax.retry.BoundedExponentialBackoff,100,25000,8");
 
@@ -206,7 +206,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * uncommunicative hosts. This config option controls RetryBackoffStrategy.
      */
     public static final ConfigOption<String> RETRY_BACKOFF_STRATEGY =
-            new ConfigOption<String>(ASTYANAX_NS, "retry-backoff-strategy",
+            new ConfigOption<>(ASTYANAX_NS, "retry-backoff-strategy",
             "Astyanax's retry backoff strategy with configuration parameters",
             ConfigOption.Type.MASKABLE, "com.netflix.astyanax.connectionpool.impl.FixedRetryBackoffStrategy,1000,5000");
 
@@ -222,7 +222,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * FixedRetryBackoffStrategy.
      */
     public static final ConfigOption<Integer> RETRY_DELAY_SLICE =
-            new ConfigOption<Integer>(ASTYANAX_NS, "retry-delay-slice",
+            new ConfigOption<>(ASTYANAX_NS, "retry-delay-slice",
             "Astyanax's connection pool \"retryDelaySlice\" parameter",
             ConfigOption.Type.MASKABLE, ConnectionPoolConfigurationImpl.DEFAULT_RETRY_DELAY_SLICE);
     /**
@@ -237,7 +237,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * FixedRetryBackoffStrategy.
      */
     public static final ConfigOption<Integer> RETRY_MAX_DELAY_SLICE =
-            new ConfigOption<Integer>(ASTYANAX_NS, "retry-max-delay-slice",
+            new ConfigOption<>(ASTYANAX_NS, "retry-max-delay-slice",
             "Astyanax's connection pool \"retryMaxDelaySlice\" parameter",
             ConfigOption.Type.MASKABLE, ConnectionPoolConfigurationImpl.DEFAULT_RETRY_MAX_DELAY_SLICE);
 
@@ -253,7 +253,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * FixedRetryBackoffStrategy.
      */
     public static final ConfigOption<Integer> RETRY_SUSPEND_WINDOW =
-            new ConfigOption<Integer>(ASTYANAX_NS, "retry-suspend-window",
+            new ConfigOption<>(ASTYANAX_NS, "retry-suspend-window",
             "Astyanax's connection pool \"retryMaxDelaySlice\" parameter",
             ConfigOption.Type.MASKABLE, ConnectionPoolConfigurationImpl.DEFAULT_RETRY_SUSPEND_WINDOW);
 
@@ -261,11 +261,11 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * Controls the frame size of thrift sockets created by Astyanax.
      */
     public static final ConfigOption<Integer> THRIFT_FRAME_SIZE =
-            new ConfigOption<Integer>(ASTYANAX_NS, "frame-size",
+            new ConfigOption<>(ASTYANAX_NS, "frame-size",
             "The thrift frame size in mega bytes", ConfigOption.Type.MASKABLE, 15);
 
     public static final ConfigOption<String> LOCAL_DATACENTER =
-            new ConfigOption<String>(ASTYANAX_NS, "local-datacenter",
+            new ConfigOption<>(ASTYANAX_NS, "local-datacenter",
             "The name of the local or closest Cassandra datacenter.  When set and not whitespace, " +
             "this value will be passed into ConnectionPoolConfigurationImpl.setLocalDatacenter. " +
             "When unset or set to whitespace, setLocalDatacenter will not be invoked.",
@@ -316,7 +316,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         this.keyspaceContext = getContextBuilder(config, maxConnsPerHost, "Keyspace").buildKeyspace(ThriftFamilyFactory.getInstance());
         this.keyspaceContext.start();
 
-        openStores = new HashMap<String, AstyanaxKeyColumnValueStore>(8);
+        openStores = new HashMap<>(8);
     }
 
     @Override
@@ -442,7 +442,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                     return;
                 }
                 for (final ColumnFamilyDefinition cf : keyspaceDefinition.getColumnFamilyList()) {
-                    ks.truncateColumnFamily(new ColumnFamily<Object, Object>(cf.getName(), null, null));
+                    ks.truncateColumnFamily(new ColumnFamily<>(cf.getName(), null, null));
                 }
             }
         } catch (ConnectionException e) {
@@ -480,7 +480,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                                 .setKeyspace(keySpaceName)
                                 .setComparatorType(comparator);
 
-                ImmutableMap.Builder<String, String> compressionOptions = new ImmutableMap.Builder<String, String>();
+                final ImmutableMap.Builder<String, String> compressionOptions = new ImmutableMap.Builder<>();
 
                 if (storageConfig.has(COMPACTION_STRATEGY)) {
                     cfDef.setCompactionStrategy(storageConfig.get(COMPACTION_STRATEGY));
@@ -715,5 +715,4 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         }
     }
 }
-
 

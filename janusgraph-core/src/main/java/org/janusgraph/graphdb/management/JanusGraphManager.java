@@ -42,8 +42,8 @@ public class JanusGraphManager implements GraphManager {
 
     public static final String JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG = "Gremlin Server must be configured to use the JanusGraphManager.";
 
-    private final Map<String, Graph> graphs = new ConcurrentHashMap<String, Graph>();
-    private final Map<String, TraversalSource> traversalSources = new ConcurrentHashMap<String, TraversalSource>();
+    private final Map<String, Graph> graphs = new ConcurrentHashMap<>();
+    private final Map<String, TraversalSource> traversalSources = new ConcurrentHashMap<>();
     private Settings settings = null;
     private final Object instantiateGraphLock = new Object();
 

@@ -33,7 +33,6 @@ import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.Version;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -55,8 +54,8 @@ public abstract class LuceneExample {
 
     private static final int MAX_RESULT = 10000;
 
-    private Map<String,SpatialStrategy> spatial=new HashMap<String,SpatialStrategy>();
-    private SpatialContext ctx = SpatialContext.GEO;
+    final private Map<String,SpatialStrategy> spatial= new HashMap<>();
+    final private SpatialContext ctx = SpatialContext.GEO;
 
     @Before
     public void setup() {

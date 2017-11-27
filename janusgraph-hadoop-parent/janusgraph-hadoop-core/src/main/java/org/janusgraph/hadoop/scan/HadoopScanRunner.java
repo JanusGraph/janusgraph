@@ -16,7 +16,6 @@ package org.janusgraph.hadoop.scan;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.configuration.*;
-import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.graphdb.olap.VertexScanJob;

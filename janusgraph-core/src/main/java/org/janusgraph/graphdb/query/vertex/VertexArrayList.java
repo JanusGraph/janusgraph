@@ -48,7 +48,7 @@ public class VertexArrayList implements VertexListInternal {
     public VertexArrayList(StandardJanusGraphTx tx) {
         Preconditions.checkNotNull(tx);
         this.tx=tx;
-        vertices = new ArrayList<JanusGraphVertex>();
+        vertices = new ArrayList<>();
         sorted = true;
     }
 

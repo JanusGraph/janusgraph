@@ -339,7 +339,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         int[] knowsOff = {-400, -18, 8, 232, 334};
         for (int i = 0; i < noVertices; i++) {
             JanusGraphVertex n = nodes[i];
-            nodeEdges[i] = new ArrayList<Edge>(10);
+            nodeEdges[i] = new ArrayList<>(10);
             for (int c : connectOff) {
                 Edge r = n.addEdge("connect", nodes[wrapAround(i + c, noVertices)]);
                 nodeEdges[i].add(r);
@@ -3733,7 +3733,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         Log transactionLog = openTxLog();
         Log userLog = openUserLog(userLogName);
-        final EnumMap<LogTxStatus, AtomicInteger> txMsgCounter = new EnumMap<LogTxStatus, AtomicInteger>(LogTxStatus.class);
+        final EnumMap<LogTxStatus, AtomicInteger> txMsgCounter = new EnumMap<>(LogTxStatus.class);
         for (LogTxStatus status : LogTxStatus.values()) txMsgCounter.put(status, new AtomicInteger(0));
         final AtomicInteger userLogMeta = new AtomicInteger(0);
         transactionLog.registerReader(startMarker, new MessageReader() {
@@ -3772,7 +3772,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 txMsgCounter.get(txEntry.getStatus()).incrementAndGet();
             }
         });
-        final EnumMap<Change, AtomicInteger> userChangeCounter = new EnumMap<Change, AtomicInteger>(Change.class);
+        final EnumMap<Change, AtomicInteger> userChangeCounter = new EnumMap<>(Change.class);
         for (Change change : Change.values()) userChangeCounter.put(change, new AtomicInteger(0));
         final AtomicInteger userLogMsgCounter = new AtomicInteger(0);
         userLog.registerReader(startMarker, new MessageReader() {

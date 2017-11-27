@@ -35,10 +35,6 @@ import org.janusgraph.testutil.RandomGenerator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.ShapeCollection;
-import org.locationtech.spatial4j.shape.ShapeFactory;
-import org.locationtech.spatial4j.shape.impl.PointImpl;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -110,18 +106,14 @@ public abstract class IndexProviderTest {
                 put(PHONE_SET, new StandardKeyInformation(String.class, Cardinality.SET, stringParameter));
             }
             put(DATE,new StandardKeyInformation(Instant.class, Cardinality.SINGLE));
-            put(STRING, new StandardKeyInformation(String.class, Cardinality.SINGLE, stringParameter,
-                    new Parameter<String>(ParameterType.STRING_ANALYZER.getName(), englishAnalyzerName)));
-            put(ANALYZED, new StandardKeyInformation(String.class, Cardinality.SINGLE, textParameter,
-                    new Parameter<String>(ParameterType.TEXT_ANALYZER.getName(), englishAnalyzerName)));
+            put(STRING, new StandardKeyInformation(String.class, Cardinality.SINGLE, stringParameter, new Parameter<>(ParameterType.STRING_ANALYZER.getName(), englishAnalyzerName)));
+            put(ANALYZED, new StandardKeyInformation(String.class, Cardinality.SINGLE, textParameter, new Parameter<>(ParameterType.TEXT_ANALYZER.getName(), englishAnalyzerName)));
             if(indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)){
                 put(FULL_TEXT, new StandardKeyInformation(String.class, Cardinality.SINGLE,
-                        Mapping.TEXTSTRING.asParameter(),
-                        new Parameter<String>(ParameterType.STRING_ANALYZER.getName(), englishAnalyzerName),
-                        new Parameter<String>(ParameterType.TEXT_ANALYZER.getName(), englishAnalyzerName)));
+                        Mapping.TEXTSTRING.asParameter(), new Parameter<>(ParameterType.STRING_ANALYZER.getName(), englishAnalyzerName),
+                    new Parameter<>(ParameterType.TEXT_ANALYZER.getName(), englishAnalyzerName)));
             }
-            put(KEYWORD, new StandardKeyInformation(String.class, Cardinality.SINGLE, textParameter,
-                    new Parameter<String>(ParameterType.TEXT_ANALYZER.getName(), keywordAnalyzerName)));
+            put(KEYWORD, new StandardKeyInformation(String.class, Cardinality.SINGLE, textParameter, new Parameter<>(ParameterType.TEXT_ANALYZER.getName(), keywordAnalyzerName)));
         }};
     }
 

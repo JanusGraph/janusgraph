@@ -29,9 +29,9 @@ public class ConfigurationUtil {
     private static final char CONFIGURATION_SEPARATOR = '.';
 
     public static List<String> getUniquePrefixes(Configuration config) {
-        Set<String> nameSet = new HashSet<String>();
-        List<String> names = new ArrayList<String>();
-        Iterator<String> keyIterator = config.getKeys();
+        final Set<String> nameSet = new HashSet<>();
+        final List<String> names = new ArrayList<>();
+        final Iterator<String> keyIterator = config.getKeys();
         while (keyIterator.hasNext()) {
             String key = keyIterator.next();
             int pos = key.indexOf(CONFIGURATION_SEPARATOR);

@@ -556,7 +556,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         int vertexCounter = 0;
         double computedPRSum = 0;
         correctPRSum = 0;
-        Set<Long> vertexIDs = new HashSet<Long>(numV);
+        final Set<Long> vertexIDs = new HashSet<>(numV);
         while (ranks.hasNext()) {
             final KeyValue<Long, Double> rank = ranks.next();
             final Long vertexID = rank.getKey();

@@ -37,8 +37,8 @@ public class TransactionalConfiguration implements WriteConfiguration {
     public TransactionalConfiguration(WriteConfiguration config) {
         Preconditions.checkNotNull(config);
         this.config = config;
-        this.readValues = new HashMap<String, Object>();
-        this.writtenValues = new HashMap<String, Object>();
+        this.readValues = new HashMap<>();
+        this.writtenValues = new HashMap<>();
     }
 
     @Override

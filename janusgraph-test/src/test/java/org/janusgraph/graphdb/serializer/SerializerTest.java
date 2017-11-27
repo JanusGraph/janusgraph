@@ -240,14 +240,14 @@ public class SerializerTest extends SerializerTestCommon {
 
         final String property1 = "property1";
         final String value1 = "value1";
-        HashMap<String, Object> hashMapIn = new HashMap<String, Object>();
+        final HashMap<String, Object> hashMapIn = new HashMap<>();
         hashMapIn.put(property1, value1);
         out.writeObjectNotNull(hashMapIn);
 
         ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         if (printStats) log.debug(bufferStats(b));
         
-        HashMap<String, Object> hashMapOut = serialize.readObjectNotNull(b, HashMap.class);
+        final HashMap<String, Object> hashMapOut = serialize.readObjectNotNull(b, HashMap.class);
         assertNotNull(hashMapOut);
         assertEquals(2, hashMapOut.size());
         assertEquals(value1, hashMapOut.get(property1));
@@ -313,7 +313,7 @@ public class SerializerTest extends SerializerTestCommon {
         for (int t = 0; t < 1000; t++) {
             DataOutput out = serialize.getDataOutput(128);
             int num = random.nextInt(100)+1;
-            List<SerialEntry> entries = new ArrayList<SerialEntry>(num);
+            final List<SerialEntry> entries = new ArrayList<>(num);
             for (int i = 0; i < num; i++) {
                 Map.Entry<Class,Factory> type = Iterables.get(TYPES.entrySet(),random.nextInt(TYPES.size()));
                 Object element = type.getValue().newInstance();
@@ -347,7 +347,7 @@ public class SerializerTest extends SerializerTestCommon {
     public void testSerializedOrder() {
         serialize.registerClass(1,TClass1.class, new TClass1Serializer());
 
-        Map<Class,Factory> sortTypes = new HashMap<Class, Factory>();
+        final Map<Class,Factory> sortTypes = new HashMap<>();
         for (Map.Entry<Class,Factory> entry : TYPES.entrySet()) {
             if (serialize.isOrderPreservingDatatype(entry.getKey()))
                 sortTypes.put(entry.getKey(),entry.getValue());

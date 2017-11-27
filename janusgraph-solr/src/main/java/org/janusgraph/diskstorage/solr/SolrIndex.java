@@ -139,69 +139,69 @@ public class SolrIndex implements IndexProvider {
     public static final ConfigNamespace SOLR_NS =
             new ConfigNamespace(INDEX_NS, "solr", "Solr index configuration");
 
-    public static final ConfigOption<String> SOLR_MODE = new ConfigOption<String>(SOLR_NS,"mode",
+    public static final ConfigOption<String> SOLR_MODE = new ConfigOption<>(SOLR_NS,"mode",
             "The operation mode for Solr which is either via HTTP (`http`) or using SolrCloud (`cloud`)",
             ConfigOption.Type.GLOBAL_OFFLINE, "cloud");
 
-    public static final ConfigOption<Boolean> DYNAMIC_FIELDS = new ConfigOption<Boolean>(SOLR_NS,"dyn-fields",
+    public static final ConfigOption<Boolean> DYNAMIC_FIELDS = new ConfigOption<>(SOLR_NS,"dyn-fields",
             "Whether to use dynamic fields (which appends the data type to the field name). If dynamic fields is disabled" +
                     "the user must map field names and define them explicitly in the schema.",
             ConfigOption.Type.GLOBAL_OFFLINE, true);
 
-    public static final ConfigOption<String[]> KEY_FIELD_NAMES = new ConfigOption<String[]>(SOLR_NS,"key-field-names",
+    public static final ConfigOption<String[]> KEY_FIELD_NAMES = new ConfigOption<>(SOLR_NS,"key-field-names",
             "Field name that uniquely identifies each document in Solr. Must be specified as a list of `collection=field`.",
             ConfigOption.Type.GLOBAL, String[].class);
 
-    public static final ConfigOption<String> TTL_FIELD = new ConfigOption<String>(SOLR_NS,"ttl_field",
+    public static final ConfigOption<String> TTL_FIELD = new ConfigOption<>(SOLR_NS,"ttl_field",
             "Name of the TTL field for Solr collections.",
             ConfigOption.Type.GLOBAL_OFFLINE, "ttl");
 
     /** SolrCloud Configuration */
 
-    public static final ConfigOption<String> ZOOKEEPER_URL = new ConfigOption<String>(SOLR_NS,"zookeeper-url",
+    public static final ConfigOption<String> ZOOKEEPER_URL = new ConfigOption<>(SOLR_NS,"zookeeper-url",
             "URL of the Zookeeper instance coordinating the SolrCloud cluster",
             ConfigOption.Type.MASKABLE, "localhost:2181");
 
-    public static final ConfigOption<Integer> NUM_SHARDS = new ConfigOption<Integer>(SOLR_NS,"num-shards",
+    public static final ConfigOption<Integer> NUM_SHARDS = new ConfigOption<>(SOLR_NS,"num-shards",
             "Number of shards for a collection. This applies when creating a new collection which is only supported under the SolrCloud operation mode.",
             ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
-    public static final ConfigOption<Integer> MAX_SHARDS_PER_NODE = new ConfigOption<Integer>(SOLR_NS,"max-shards-per-node",
+    public static final ConfigOption<Integer> MAX_SHARDS_PER_NODE = new ConfigOption<>(SOLR_NS,"max-shards-per-node",
             "Maximum number of shards per node. This applies when creating a new collection which is only supported under the SolrCloud operation mode.",
             ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
-    public static final ConfigOption<Integer> REPLICATION_FACTOR = new ConfigOption<Integer>(SOLR_NS,"replication-factor",
+    public static final ConfigOption<Integer> REPLICATION_FACTOR = new ConfigOption<>(SOLR_NS,"replication-factor",
             "Replication factor for a collection. This applies when creating a new collection which is only supported under the SolrCloud operation mode.",
             ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
-    public static final ConfigOption<String> SOLR_DEFAULT_CONFIG = new ConfigOption<String>(SOLR_NS,"configset",
+    public static final ConfigOption<String> SOLR_DEFAULT_CONFIG = new ConfigOption<>(SOLR_NS,"configset",
             "If specified, the same solr configSet can be reused for each new Collection that is created in SolrCloud.",
             ConfigOption.Type.MASKABLE, String.class);
 
 
     /** HTTP Configuration */
 
-    public static final ConfigOption<String[]> HTTP_URLS = new ConfigOption<String[]>(SOLR_NS,"http-urls",
+    public static final ConfigOption<String[]> HTTP_URLS = new ConfigOption<>(SOLR_NS,"http-urls",
             "List of URLs to use to connect to Solr Servers (LBHttpSolrClient is used), don't add core or collection name to the URL.",
             ConfigOption.Type.MASKABLE, new String[] { "http://localhost:8983/solr" });
 
-    public static final ConfigOption<Integer> HTTP_CONNECTION_TIMEOUT = new ConfigOption<Integer>(SOLR_NS,"http-connection-timeout",
+    public static final ConfigOption<Integer> HTTP_CONNECTION_TIMEOUT = new ConfigOption<>(SOLR_NS,"http-connection-timeout",
             "Solr HTTP connection timeout.",
             ConfigOption.Type.MASKABLE, 5000);
 
-    public static final ConfigOption<Boolean> HTTP_ALLOW_COMPRESSION = new ConfigOption<Boolean>(SOLR_NS,"http-compression",
+    public static final ConfigOption<Boolean> HTTP_ALLOW_COMPRESSION = new ConfigOption<>(SOLR_NS,"http-compression",
             "Enable/disable compression on the HTTP connections made to Solr.",
             ConfigOption.Type.MASKABLE, false);
 
-    public static final ConfigOption<Integer> HTTP_MAX_CONNECTIONS_PER_HOST = new ConfigOption<Integer>(SOLR_NS,"http-max-per-host",
+    public static final ConfigOption<Integer> HTTP_MAX_CONNECTIONS_PER_HOST = new ConfigOption<>(SOLR_NS,"http-max-per-host",
             "Maximum number of HTTP connections per Solr host.",
             ConfigOption.Type.MASKABLE, 20);
 
-    public static final ConfigOption<Integer> HTTP_GLOBAL_MAX_CONNECTIONS = new ConfigOption<Integer>(SOLR_NS,"http-max",
+    public static final ConfigOption<Integer> HTTP_GLOBAL_MAX_CONNECTIONS = new ConfigOption<>(SOLR_NS,"http-max",
             "Maximum number of HTTP connections in total to all Solr servers.",
             ConfigOption.Type.MASKABLE, 100);
 
-    public static final ConfigOption<Boolean> WAIT_SEARCHER = new ConfigOption<Boolean>(SOLR_NS, "wait-searcher",
+    public static final ConfigOption<Boolean> WAIT_SEARCHER = new ConfigOption<>(SOLR_NS, "wait-searcher",
             "When mutating - wait for the index to reflect new mutations before returning. This can have a negative impact on performance.",
             ConfigOption.Type.LOCAL, false);
 
@@ -267,7 +267,7 @@ public class SolrIndex implements IndexProvider {
     }
 
     private Map<String, String> parseKeyFieldsForCollections(Configuration config) throws BackendException {
-        final Map<String, String> keyFieldNames = new HashMap<String, String>();
+        final Map<String, String> keyFieldNames = new HashMap<>();
         final String[] collectionFieldStatements = config.has(KEY_FIELD_NAMES) ? config.get(KEY_FIELD_NAMES) : new String[0];
         for (final String collectionFieldStatement : collectionFieldStatements) {
             final String[] parts = collectionFieldStatement.trim().split("=");
@@ -341,8 +341,8 @@ public class SolrIndex implements IndexProvider {
                 final String collectionName = stores.getKey();
                 final String keyIdField = getKeyFieldId(collectionName);
 
-                final List<String> deleteIds = new ArrayList<String>();
-                final Collection<SolrInputDocument> changes = new ArrayList<SolrInputDocument>();
+                final List<String> deleteIds = new ArrayList<>();
+                final Collection<SolrInputDocument> changes = new ArrayList<>();
 
                 for (final Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
                     final String docId = entry.getKey();
@@ -357,7 +357,7 @@ public class SolrIndex implements IndexProvider {
                             logger.trace("Deleting entire document {}", docId);
                             deleteIds.add(docId);
                         } else {
-                            final List<IndexEntry> fieldDeletions = new ArrayList<IndexEntry>(mutation.getDeletions());
+                            final List<IndexEntry> fieldDeletions = new ArrayList<>(mutation.getDeletions());
                             if (mutation.hasAdditions()) {
                                 for (final IndexEntry indexEntry : mutation.getAdditions()) {
                                     fieldDeletions.remove(indexEntry);
@@ -450,8 +450,8 @@ public class SolrIndex implements IndexProvider {
             for (final Map.Entry<String, Map<String, List<IndexEntry>>> stores : documents.entrySet()) {
                 final String collectionName = stores.getKey();
 
-                final List<String> deleteIds = new ArrayList<String>();
-                final List<SolrInputDocument> newDocuments = new ArrayList<SolrInputDocument>();
+                final List<String> deleteIds = new ArrayList<>();
+                final List<SolrInputDocument> newDocuments = new ArrayList<>();
 
                 for (final Map.Entry<String, List<IndexEntry>> entry : stores.getValue().entrySet()) {
                     final String docID = entry.getKey();
@@ -490,13 +490,13 @@ public class SolrIndex implements IndexProvider {
                     break;
                 case SET:
                     if (!docs.containsKey(addition.field)) {
-                        docs.put(addition.field, new HashSet<Object>());
+                        docs.put(addition.field, new HashSet<>());
                     }
                     ((Set<Object>) docs.get(addition.field)).add(convertValue(addition.value));
                     break;
                 case LIST:
                     if (!docs.containsKey(addition.field)) {
-                        docs.put(addition.field,  new ArrayList<Object>());
+                        docs.put(addition.field,  new ArrayList<>());
                     }
                     ((List<Object>) docs.get(addition.field)).add(convertValue(addition.value));
                     break;
@@ -796,9 +796,9 @@ public class SolrIndex implements IndexProvider {
         } else if (terms.size() == 1) {
             return (key + ":(" + escapeValue(terms.get(0)) + ")");
         } else {
-            final And<JanusGraphElement> andTerms = new And<JanusGraphElement>();
+            final And<JanusGraphElement> andTerms = new And<>();
             for (final String term : terms) {
-                andTerms.add(new PredicateCondition<String, JanusGraphElement>(key, janusgraphPredicate, term));
+                andTerms.add(new PredicateCondition<>(key, janusgraphPredicate, term));
             }
             return buildQueryFilter(andTerms, information);
         }

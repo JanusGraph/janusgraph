@@ -46,7 +46,7 @@ public class CompactMap implements Map<String,Object> {
 
     }
 
-    private static final Map<KeyContainer,KeyContainer> KEY_CACHE = new HashMap<KeyContainer, KeyContainer>(100);
+    private static final Map<KeyContainer,KeyContainer> KEY_CACHE = new HashMap<>(100);
     private static final KeyContainer KEY_HULL = new KeyContainer();
 
     /**

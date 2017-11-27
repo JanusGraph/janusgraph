@@ -142,7 +142,8 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             CFMetaData cfm = Schema.instance.getCFMetaData(keyspace, columnFamily);
             IDiskAtomFilter filter = ThriftValidation.asIFilter(predicate, cfm, null);
 
-            RangeSliceCommand cmd = new RangeSliceCommand(keyspace, columnFamily, nowMillis, filter, new Bounds<RowPosition>(startPosition, endPosition), pageSize);
+            final RangeSliceCommand cmd = new RangeSliceCommand(keyspace, columnFamily, nowMillis, filter,
+                    new Bounds<>(startPosition, endPosition), pageSize);
 
             rows = StorageProxy.getRangeSlice(cmd, ConsistencyLevel.QUORUM);
         } catch (Exception e) {
@@ -254,7 +255,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     }
 
     private static List<Row> read(ReadCommand cmd, org.apache.cassandra.db.ConsistencyLevel consistencyLevel) throws BackendException {
-        ArrayList<ReadCommand> cmdHolder = new ArrayList<ReadCommand>(1);
+        final ArrayList<ReadCommand> cmdHolder = new ArrayList<>(1);
         cmdHolder.add(cmd);
         return read(cmdHolder, consistencyLevel);
     }
@@ -262,13 +263,9 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     private static List<Row> read(List<ReadCommand> commands, org.apache.cassandra.db.ConsistencyLevel consistencyLevel) throws BackendException {
         try {
             return StorageProxy.read(commands, consistencyLevel);
-        } catch (UnavailableException e) {
+        } catch (UnavailableException | IsBootstrappingException e) {
             throw new TemporaryBackendException(e);
-        } catch (RequestTimeoutException e) {
-            throw new PermanentBackendException(e);
-        } catch (IsBootstrappingException e) {
-            throw new TemporaryBackendException(e);
-        } catch (InvalidRequestException e) {
+        } catch (RequestTimeoutException | InvalidRequestException e) {
             throw new PermanentBackendException(e);
         }
     }

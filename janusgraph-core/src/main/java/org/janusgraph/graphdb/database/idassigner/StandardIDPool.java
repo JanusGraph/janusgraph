@@ -119,7 +119,7 @@ public class StandardIDPool implements IDPool {
 
         // daemon=true would probably be fine too
         exec = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>(), new ThreadFactoryBuilder()
+                new LinkedBlockingQueue<>(), new ThreadFactoryBuilder()
                         .setDaemon(false)
                         .setNameFormat("JanusGraphID(" + partition + ")("+idNamespace+")[%d]")
                         .build());

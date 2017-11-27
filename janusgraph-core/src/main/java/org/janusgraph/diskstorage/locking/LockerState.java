@@ -67,7 +67,7 @@ public class LockerState<S> {
         Map<KeyColumn, S> m = locks.get(tx);
 
         if (null == m) {
-            m = new HashMap<KeyColumn, S>();
+            m = new HashMap<>();
             final Map<KeyColumn, S> x = locks.putIfAbsent(tx, m);
             if (null != x) {
                 m = x;

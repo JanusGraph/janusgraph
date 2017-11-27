@@ -45,7 +45,7 @@ public class SimpleAddedRelations extends ArrayList<InternalRelation> implements
 
     @Override
     public List<InternalRelation> getView(Predicate<InternalRelation> filter) {
-        List<InternalRelation> result = new ArrayList<InternalRelation>();
+        final List<InternalRelation> result = new ArrayList<>();
         for (InternalRelation r : this) {
             if (filter.apply(r)) result.add(r);
         }

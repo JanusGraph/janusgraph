@@ -19,8 +19,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-import org.apache.commons.text.similarity.LevenshteinDistance;
-
 import static org.janusgraph.core.attribute.Text.*;
 
 /**

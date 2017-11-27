@@ -49,7 +49,7 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
     public InMemoryKeyColumnValueStore(final String name) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         this.name = name;
-        this.kcv = new ConcurrentSkipListMap<StaticBuffer, ColumnValueStore>();
+        this.kcv = new ConcurrentSkipListMap<>();
     }
 
     @Override

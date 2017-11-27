@@ -108,7 +108,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
         int pos = Collections.binarySearch(otherResult, sliceStart);
         if (pos < 0) pos = -pos - 1;
 
-        List<Entry> result = new ArrayList<Entry>();
+        final List<Entry> result = new ArrayList<>();
         for (; pos < otherResult.size() && result.size() < getLimit(); pos++) {
             Entry e = otherResult.get(pos);
             if (e.getColumnAs(StaticBuffer.STATIC_FACTORY).compareTo(sliceEnd) < 0) result.add(e);

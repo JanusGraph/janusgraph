@@ -121,7 +121,7 @@ public class ExpectedValueCheckingTest {
         // 2. Begin transaction
         // EVCTx begins two transactions on the backingManager: one with globalConfig and one with localConfig
         // The capture is used in the @After method to check the config
-        txConfigCapture = new Capture<BaseTransactionConfig>(CaptureType.ALL);
+        txConfigCapture = new Capture<>(CaptureType.ALL);
         inconsistentTx = ctrl.createMock(StoreTransaction.class);
         consistentTx = ctrl.createMock(StoreTransaction.class);
         expect(backingManager.beginTransaction(capture(txConfigCapture))).andReturn(inconsistentTx);

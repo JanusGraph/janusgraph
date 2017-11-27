@@ -46,8 +46,9 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
     private static final Logger log =
             LoggerFactory.getLogger(SimpleBulkPlacementStrategy.class);
 
-    public static final ConfigOption<Integer> CONCURRENT_PARTITIONS = new ConfigOption<Integer>(GraphDatabaseConfiguration.IDS_NS,
-            "num-partitions","Number of partition block to allocate for placement of vertices", ConfigOption.Type.MASKABLE,10);
+    public static final ConfigOption<Integer> CONCURRENT_PARTITIONS = new ConfigOption<>(
+            GraphDatabaseConfiguration.IDS_NS, "num-partitions",
+        "Number of partition block to allocate for placement of vertices", ConfigOption.Type.MASKABLE, 10);
 
     public static final int PARTITION_FINDING_ATTEMPTS = 1000;
 

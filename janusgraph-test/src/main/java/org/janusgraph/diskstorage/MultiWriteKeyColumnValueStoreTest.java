@@ -299,7 +299,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
         final int keyLength = 8;
         final int colLength = 16;
 
-        Map<StaticBuffer, KCVEntryMutation> result = new HashMap<StaticBuffer, KCVEntryMutation>();
+        final Map<StaticBuffer, KCVEntryMutation> result = new HashMap<>();
 
         // deletion pass
         int deletions = 0;

@@ -58,7 +58,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
 
     <V> JanusGraphVertexProperty<V> constructProperty(String key, V value) {
         assert key!=null && value!=null;
-        return new FulgoraVertexProperty<V>(this,vertex,key,value);
+        return new FulgoraVertexProperty<>(this, vertex, key, value);
     }
 
     @Override

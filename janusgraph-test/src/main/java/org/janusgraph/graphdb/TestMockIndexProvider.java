@@ -31,11 +31,11 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IN
  */
 public class TestMockIndexProvider implements IndexProvider {
 
-    public static final ConfigOption<Boolean> INDEX_MOCK_FAILADD = new ConfigOption<Boolean>(INDEX_NS,"fail-adds",
+    public static final ConfigOption<Boolean> INDEX_MOCK_FAILADD = new ConfigOption<>(INDEX_NS, "fail-adds",
             "Sets the index provider to reject adding documents. FOR TESTING ONLY",
             ConfigOption.Type.LOCAL, false).hide();
 
-    public static final ConfigOption<String> INDEX_BACKEND_PROXY = new ConfigOption<String>(INDEX_NS,"proxy-for",
+    public static final ConfigOption<String> INDEX_BACKEND_PROXY = new ConfigOption<>(INDEX_NS, "proxy-for",
             "Define the indexing backed to use for index support behind the mock proxy",
             ConfigOption.Type.GLOBAL, INDEX_BACKEND.getDefaultValue()).hide();
 

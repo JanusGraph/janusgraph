@@ -111,7 +111,7 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
     }
 
     private <E extends Element> Iterator<E> iteratorList(final Iterator<E> iterator) {
-        final List<E> list = new ArrayList<E>();
+        final List<E> list = new ArrayList<>();
         while (iterator.hasNext()) {
             final E e = iterator.next();
             if (HasContainer.testAll(e, this.hasContainers))

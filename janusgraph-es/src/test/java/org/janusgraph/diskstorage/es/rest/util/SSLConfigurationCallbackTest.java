@@ -14,7 +14,6 @@
 
 package org.janusgraph.diskstorage.es.rest.util;
 
-import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.*;
 

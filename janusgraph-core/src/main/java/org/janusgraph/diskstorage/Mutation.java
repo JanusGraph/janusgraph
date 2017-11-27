@@ -91,7 +91,7 @@ public abstract class Mutation<E,K> {
      * @param entry
      */
     public void addition(E entry) {
-        if (additions==null) additions = new ArrayList<E>();
+        if (additions==null) additions = new ArrayList<>();
         additions.add(entry);
     }
 
@@ -101,7 +101,7 @@ public abstract class Mutation<E,K> {
      * @param key
      */
     public void deletion(K key) {
-        if (deletions==null) deletions = new ArrayList<K>();
+        if (deletions==null) deletions = new ArrayList<>();
         deletions.add(key);
     }
 

@@ -18,8 +18,6 @@ package org.janusgraph.diskstorage.berkeleyje;
 import com.google.common.base.Preconditions;
 import com.sleepycat.je.*;
 import org.janusgraph.diskstorage.*;
-import org.janusgraph.diskstorage.PermanentBackendException;
-import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.common.LocalStoreManager;
 import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
@@ -54,7 +52,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
             new ConfigNamespace(GraphDatabaseConfiguration.STORAGE_NS, "berkeleyje", "BerkeleyDB JE configuration options");
 
     public static final ConfigOption<Integer> JVM_CACHE =
-            new ConfigOption<Integer>(BERKELEY_NS,"cache-percentage",
+            new ConfigOption<>(BERKELEY_NS, "cache-percentage",
             "Percentage of JVM heap reserved for BerkeleyJE's cache",
             ConfigOption.Type.MASKABLE, 65, ConfigOption.positiveInt());
 
@@ -76,7 +74,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
     public BerkeleyJEStoreManager(Configuration configuration) throws BackendException {
         super(configuration);
-        stores = new HashMap<String, BerkeleyJEKeyValueStore>();
+        stores = new HashMap<>();
 
         int cachePercentage = configuration.get(JVM_CACHE);
         initialize(cachePercentage);

@@ -17,7 +17,6 @@ package org.janusgraph.graphdb;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.janusgraph.core.*;
-import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.BackendException;
@@ -98,7 +97,7 @@ public abstract class JanusGraphBaseTest {
         this.config = getConfiguration();
         TestGraphConfigs.applyOverrides(config);
         Preconditions.checkNotNull(config);
-        logManagers = new HashMap<String,LogManager>();
+        logManagers = new HashMap<>();
         clearGraph(config);
         readConfig = new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS, config, BasicConfiguration.Restriction.NONE);
         open(config);

@@ -14,10 +14,7 @@
 
 package org.janusgraph.hadoop.formats.cassandra;
 
-import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.hadoop.formats.util.GiraphInputFormat;
-
-import static org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager.*;
 
 public class Cassandra3InputFormat extends GiraphInputFormat {
 
