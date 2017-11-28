@@ -187,7 +187,7 @@ public class GraphApp {
             LOGGER.info("reading elements");
 
             // look up vertex by name can use a composite index in JanusGraph
-            final Optional<Map<String, Object>> v = g.V().has("name", "jupiter").valueMap(true).tryNext();
+            final Optional<Map<Object, Object>> v = g.V().has("name", "jupiter").valueMap(true).tryNext();
             if (v.isPresent()) {
                 LOGGER.info(v.get().toString());
             } else {
@@ -195,7 +195,7 @@ public class GraphApp {
             }
 
             // look up an incident edge
-            final Optional<Map<String, Object>> edge = g.V().has("name", "hercules").outE("battled").as("e").inV()
+            final Optional<Map<Object, Object>> edge = g.V().has("name", "hercules").outE("battled").as("e").inV()
                     .has("name", "hydra").select("e").valueMap(true).tryNext();
             if (edge.isPresent()) {
                 LOGGER.info(edge.get().toString());
