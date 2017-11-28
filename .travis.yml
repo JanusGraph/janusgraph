@@ -76,11 +76,11 @@ matrix:
     - env: MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
 
 install:
-  - if [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] && ! [ -z "${COVERITY_ONLY:-}" ]; then
+  - if [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] && [ -n "${COVERITY_ONLY:-}" ]; then
       echo "Building all modules for Coverity analysis";
       travis_retry travis_wait \
           mvn install -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
-    elif [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] || ! [ -z "${COVERITY_ONLY:-}" ]; then
+    elif [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] || [ -n "${COVERITY_ONLY:-}" ]; then
       echo "Skipping module build on Coverity branch/job";
     else
       echo "Building janusgraph-${MODULE} and dependencies";
@@ -90,7 +90,7 @@ install:
     fi
 
 script:
-  - if [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] && ! [ -z "${COVERITY_ONLY:-}" ]; then
+  - if [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] && [ -n "${COVERITY_ONLY:-}" ]; then
       echo "Building Docker image for Coverity analysis";
       docker build -t janusgraph/analysis analysis;
       echo "Running Coverity scan";
@@ -100,7 +100,7 @@ script:
             -e COVERITY_SCAN_TOKEN="${COVERITY_SCAN_TOKEN}" \
             -e COVERITY_EMAIL="${COVERITY_EMAIL}" \
             -i janusgraph/analysis;
-    elif [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] || ! [ -z "${COVERITY_ONLY:-}" ]; then
+    elif [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] || [ -n "${COVERITY_ONLY:-}" ]; then
       echo "Skipping module tests on Coverity branch/job";
     else
       echo "Testing janusgraph-${MODULE}";
@@ -110,7 +110,7 @@ script:
 
 after_success:
   # Upload test coverage reports to Codecov
-  - if [ "${COVERITY_SCAN_BRANCH}" == 1 ] || [ -v COVERITY_ONLY ]; then
+  - if [ "${COVERITY_SCAN_BRANCH}" == 1 ] || [ -n "${COVERITY_ONLY:-}" ]; then
       echo "Skipping test coverage report upload in Coverity branch/job";
     else
       bash <(curl -s https://codecov.io/bash);
