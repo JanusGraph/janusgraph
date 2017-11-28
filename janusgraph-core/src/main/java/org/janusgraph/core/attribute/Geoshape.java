@@ -17,6 +17,9 @@ package org.janusgraph.core.attribute;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
+import org.apache.tinkerpop.shaded.jackson.core.JsonParser;
+import org.apache.tinkerpop.shaded.jackson.databind.DeserializationContext;
+import org.apache.tinkerpop.shaded.jackson.databind.deser.std.StdDeserializer;
 import org.apache.tinkerpop.shaded.kryo.KryoException;
 import org.janusgraph.diskstorage.util.ReadArrayBuffer;
 import org.locationtech.spatial4j.context.SpatialContext;
@@ -38,12 +41,9 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONUtil;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
-import org.apache.tinkerpop.shaded.jackson.core.JsonParser;
 import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
-import org.apache.tinkerpop.shaded.jackson.databind.DeserializationContext;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.apache.tinkerpop.shaded.jackson.databind.SerializerProvider;
-import org.apache.tinkerpop.shaded.jackson.databind.deser.std.StdDeserializer;
 import org.apache.tinkerpop.shaded.jackson.databind.jsontype.TypeSerializer;
 import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
 import org.apache.tinkerpop.shaded.kryo.Kryo;
@@ -164,7 +164,7 @@ public class Geoshape {
      * @return
      */
     public String toGeoJson() {
-        return GeoshapeGsonSerializerV1d0.toGeoJson(this);
+        return GeoshapeGsonSerializerV2d0.toGeoJson(this);
     }
 
     public Map<String,Object> toMap() throws IOException {

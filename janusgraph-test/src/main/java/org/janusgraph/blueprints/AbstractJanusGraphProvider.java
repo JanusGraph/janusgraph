@@ -109,14 +109,12 @@ public abstract class AbstractJanusGraphProvider extends AbstractGraphProvider {
 
     @Override
     public GraphTraversalSource traversal(final Graph graph) {
-        return GraphTraversalSource.standard().create(graph);
+        return graph.traversal();
     }
 
     @Override
     public GraphTraversalSource traversal(final Graph graph, final TraversalStrategy... strategies) {
-        final GraphTraversalSource.Builder builder = GraphTraversalSource.build().engine(StandardTraversalEngine.build());
-        Stream.of(strategies).forEach(builder::with);
-        return builder.create(graph);
+        return graph.traversal().withStrategies(strategies);
     }
 
 //    @Override

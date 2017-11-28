@@ -193,12 +193,6 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
             }
 
             @Override
-            public <R> Workload<R> submit(Function<Graph, R> graphRFunction) {
-                throw new UnsupportedOperationException("JanusGraph does not support nested transactions. " +
-                        "Call submit on a JanusGraph not an individual transaction.");
-            }
-
-            @Override
             public <G extends Graph> G createThreadedTx() {
                 throw new UnsupportedOperationException("JanusGraph does not support nested transactions.");
             }
