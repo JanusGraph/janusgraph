@@ -87,7 +87,7 @@ public class ElasticsearchStatus {
         String l = br.readLine();
 
         if (null == l || "".equals(l.trim())) {
-            throw new IOException("Empty HBase statusfile " + f);
+            throw new IOException("Empty ES statusfile " + f);
         }
 
         final int pid;
