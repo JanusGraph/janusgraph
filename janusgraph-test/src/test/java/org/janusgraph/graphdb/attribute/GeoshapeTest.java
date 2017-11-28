@@ -330,11 +330,10 @@ public class GeoshapeTest {
         assertEquals(Geoshape.point(10.5, 20.5), s.convert(json));
     }
 
-
     @Test
     public void testGeoJsonSerialization() throws IOException {
         SimpleModule module = new SimpleModule();
-        module.addSerializer(new Geoshape.GeoshapeGsonSerializerV1d0());
+        module.addSerializer(new Geoshape.GeoshapeGsonSerializerV2d0());
         final ObjectMapper om = new ObjectMapper();
         om.registerModule(module);
         JtsSpatialContext context = (JtsSpatialContext) Geoshape.getSpatialContext();

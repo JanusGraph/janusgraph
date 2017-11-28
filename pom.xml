@@ -65,9 +65,10 @@
     <properties>
         <janusgraph.compatible.versions>0.1.0,0.1.1,0.2.0</janusgraph.compatible.versions>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
-        <tinkerpop.version>3.2.6</tinkerpop.version>
+        <tinkerpop.version>3.3.0</tinkerpop.version>
         <junit.version>4.12</junit.version>
         <mrunit.version>1.1.0</mrunit.version>
+        <mockito.version>1.10.19</mockito.version>
         <cassandra.version>2.1.18</cassandra.version>
         <jamm.version>0.3.0</jamm.version>
         <metrics2.version>2.1.2</metrics2.version>
@@ -503,7 +504,7 @@
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.module</groupId>
-                <artifactId>jackson-module-scala_2.10</artifactId>
+                <artifactId>jackson-module-scala_2.11</artifactId>
                 <version>${jackson2.version}</version>
             </dependency>
             <dependency>
@@ -540,6 +541,11 @@
                 <groupId>com.google.code.findbugs</groupId>
                 <artifactId>jsr305</artifactId>
                 <version>3.0.0</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.validation</groupId>
+                <artifactId>validation-api</artifactId>
+                <version>1.1.0.Final</version>
             </dependency>
 
             <!-- Jackson 1.x -->
@@ -726,6 +732,11 @@
                 <artifactId>compress-lzf</artifactId>
                 <version>1.0.0</version>
             </dependency>
+            <dependency>
+                <groupId>net.jpountz.lz4</groupId>
+                <artifactId>lz4</artifactId>
+                <version>1.3.0</version>
+            </dependency>
 
             <dependency>
                 <groupId>net.java.dev.jets3t</groupId>
@@ -812,7 +823,12 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-all</artifactId>
-                <version>1.8.5</version>
+                <version>${mockito.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.h2database</groupId>

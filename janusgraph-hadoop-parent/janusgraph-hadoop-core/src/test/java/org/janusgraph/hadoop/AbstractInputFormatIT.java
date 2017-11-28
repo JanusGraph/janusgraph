@@ -46,7 +46,7 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
         GraphOfTheGodsFactory.load(graph, null, true);
         assertEquals(12L, (long) graph.traversal().V().count().next());
         Graph g = getGraph();
-        GraphTraversalSource t = g.traversal(GraphTraversalSource.computer(SparkGraphComputer.class));
+        GraphTraversalSource t = g.traversal().withComputer(SparkGraphComputer.class);
         assertEquals(12L, (long) t.V().count().next());
     }
 
@@ -75,7 +75,7 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
             assertEquals(Integer.toString(i), valuesOnP.get(i).toString());
         }
         Graph g = getGraph();
-        GraphTraversalSource t = g.traversal(GraphTraversalSource.computer(SparkGraphComputer.class));
+        GraphTraversalSource t = g.traversal().withComputer(SparkGraphComputer.class);
         assertEquals(numV, (long) t.V().count().next());
         propertiesOnVertex = t.V().valueMap().next();
         final Set<?> observedValuesOnP = ImmutableSet.copyOf((List)propertiesOnVertex.values().iterator().next());
@@ -104,7 +104,7 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
 
         // Read the new edge using the inputformat
         Graph g = getGraph();
-        GraphTraversalSource t = g.traversal(GraphTraversalSource.computer(SparkGraphComputer.class));
+        GraphTraversalSource t = g.traversal().withComputer(SparkGraphComputer.class);
         Iterator<Object> edgeIdIterator = t.V().has("name", "sky").bothE().id();
         assertNotNull(edgeIdIterator);
         assertTrue(edgeIdIterator.hasNext());
@@ -118,7 +118,7 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
 
         // Read geoshape using the input format
         Graph g = getGraph();
-        GraphTraversalSource t = g.traversal(GraphTraversalSource.computer(SparkGraphComputer.class));
+        GraphTraversalSource t = g.traversal().withComputer(SparkGraphComputer.class);
         Iterator<Object> geoIterator = t.E().values("place");
         assertNotNull(geoIterator);
         assertTrue(geoIterator.hasNext());

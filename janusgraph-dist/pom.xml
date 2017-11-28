@@ -80,10 +80,6 @@
             <version>${tinkerpop.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>net.jpountz.lz4</groupId>
-                    <artifactId>lz4</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>org.eclipse.jetty.orbit</groupId>
                     <artifactId>javax.servlet</artifactId>
                 </exclusion>

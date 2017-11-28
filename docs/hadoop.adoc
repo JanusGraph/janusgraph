@@ -65,8 +65,8 @@ gremlin> g.V().count()
 # Hadoop Graph Configuration
 #
 gremlin.graph=org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph
-gremlin.hadoop.graphInputFormat=org.apache.tinkerpop.gremlin.hadoop.structure.io.gryo.GryoInputFormat
-gremlin.hadoop.graphOutputFormat=org.apache.hadoop.mapreduce.lib.output.NullOutputFormat
+gremlin.hadoop.graphReader=org.apache.tinkerpop.gremlin.hadoop.structure.io.gryo.GryoInputFormat
+gremlin.hadoop.graphWriter=org.apache.hadoop.mapreduce.lib.output.NullOutputFormat
 gremlin.hadoop.inputLocation=./data/grateful-dead.kryo
 gremlin.hadoop.outputLocation=output
 gremlin.hadoop.jarsInDistributedCache=true
@@ -90,6 +90,7 @@ giraph.maxMessagesInMemory=100000
 spark.master=local[*]
 spark.executor.memory=1g
 spark.serializer=org.apache.spark.serializer.KryoSerializer
+spark.kryo.registrator=org.apache.tinkerpop.gremlin.spark.structure.io.gryo.GryoRegistrator
 ----
 
 [source, gremlin]
