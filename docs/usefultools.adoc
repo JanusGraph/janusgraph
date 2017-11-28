@@ -1,0 +1,6 @@
+[[tools-and-utilities]]
+= Useful Tools
+
+include::advblueprints.adoc[]
+
+include::generating.adoc[]
