@@ -140,7 +140,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     /**
      * Keeps track of all deleted relations in this transaction
      */
-    private Map<Long, InternalRelation> deletedRelations;
+    private volatile Map<Long, InternalRelation> deletedRelations;
 
     //######## Index Caches
     /**
@@ -160,7 +160,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
      * Transaction-local data structure for unique lock applications so that conflicting applications can be discovered
      * at the transactional level.
      */
-    private ConcurrentMap<LockTuple, TransactionLock> uniqueLocks;
+    private volatile ConcurrentMap<LockTuple, TransactionLock> uniqueLocks;
 
     //####### Other Data structures
     /**
@@ -616,17 +616,19 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             if (TypeUtil.hasSimpleInternalVertexKeyIndex(relation)) newVertexIndexEntries.remove((JanusGraphVertexProperty) relation);
         } else {
             Preconditions.checkArgument(relation.isLoaded());
-            if (deletedRelations == EMPTY_DELETED_RELATIONS) {
+            Map<Long, InternalRelation> result = deletedRelations;
+            if (result == EMPTY_DELETED_RELATIONS) {
                 if (config.isSingleThreaded()) {
-                    deletedRelations = new HashMap<Long, InternalRelation>();
+                    deletedRelations = result = new HashMap<Long, InternalRelation>();
                 } else {
                     synchronized (this) {
-                        if (deletedRelations == EMPTY_DELETED_RELATIONS)
-                            deletedRelations = new ConcurrentHashMap<Long, InternalRelation>();
+                        result = deletedRelations;
+                        if (result == EMPTY_DELETED_RELATIONS)
+                            deletedRelations = result = new ConcurrentHashMap<Long, InternalRelation>();
                     }
                 }
             }
-            deletedRelations.put(relation.longId(), relation);
+            result.put(relation.longId(), relation);
         }
     }
 
@@ -640,16 +642,18 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     private TransactionLock getLock(final LockTuple la) {
         if (config.isSingleThreaded()) return FakeLock.INSTANCE;
-        if (uniqueLocks == UNINITIALIZED_LOCKS) {
+        ConcurrentMap<LockTuple, TransactionLock> result = uniqueLocks;
+        if (result == UNINITIALIZED_LOCKS) {
             Preconditions.checkArgument(!config.isSingleThreaded());
             synchronized (this) {
-                if (uniqueLocks == UNINITIALIZED_LOCKS)
-                    uniqueLocks = new ConcurrentHashMap<LockTuple, TransactionLock>();
+                result = uniqueLocks;
+                if (result == UNINITIALIZED_LOCKS)
+                    uniqueLocks = result = new ConcurrentHashMap<LockTuple, TransactionLock>();
             }
         }
         //TODO: clean out no longer used locks from uniqueLocks when it grows to large (use ReadWriteLock to protect against race conditions)
         TransactionLock lock = new ReentrantTransactionLock();
-        TransactionLock existingLock = uniqueLocks.putIfAbsent(la, lock);
+        TransactionLock existingLock = result.putIfAbsent(la, lock);
         return (existingLock == null)?lock:existingLock;
     }
 
