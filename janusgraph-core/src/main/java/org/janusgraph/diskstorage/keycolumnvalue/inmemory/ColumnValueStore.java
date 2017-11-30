@@ -183,19 +183,21 @@ class ColumnValueStore {
         }
     }
 
-    private ReentrantLock lock = null;
+    private volatile ReentrantLock lock = null;
 
     private Lock getLock(StoreTransaction txh) {
         Boolean txOn = txh.getConfiguration().getCustomOption(STORAGE_TRANSACTIONAL);
         if (null != txOn && txOn) {
-            if (lock == null) {
+            ReentrantLock result = lock;
+            if (result == null) {
                 synchronized (this) {
-                    if (lock == null) {
-                        lock = new ReentrantLock();
+                    result = lock;
+                    if (result == null) {
+                        lock = result = new ReentrantLock();
                     }
                 }
             }
-            return lock;
+            return result;
         } else return NoLock.INSTANCE;
     }
 
