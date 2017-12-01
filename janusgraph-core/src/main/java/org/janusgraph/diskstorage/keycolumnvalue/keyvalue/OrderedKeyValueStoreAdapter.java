@@ -25,7 +25,6 @@ import org.janusgraph.graphdb.query.BaseQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
@@ -105,16 +104,12 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
 
     @Override
     public KeyIterator getKeys(final KeyRangeQuery keyQuery, final StoreTransaction txh) throws BackendException {
-        KVQuery query = new KVQuery(
+        final KVQuery query = new KVQuery(
                 concatenatePrefix(adjustToLength(keyQuery.getKeyStart()), keyQuery.getSliceStart()),
-                concatenatePrefix(adjustToLength(keyQuery.getKeyEnd()), keyQuery.getSliceEnd()),
-                new Predicate<StaticBuffer>() {
-                    @Override
-                    public boolean apply(@Nullable StaticBuffer keyColumn) {
-                        StaticBuffer key = getKey(keyColumn);
-                        return !(key.compareTo(keyQuery.getKeyStart()) < 0 || key.compareTo(keyQuery.getKeyEnd()) >= 0)
-                                && columnInRange(keyColumn, keyQuery.getSliceStart(), keyQuery.getSliceEnd());
-                    }
+                concatenatePrefix(adjustToLength(keyQuery.getKeyEnd()), keyQuery.getSliceEnd()), keycolumn -> {
+                    final StaticBuffer key = getKey(keycolumn);
+                    return !(key.compareTo(keyQuery.getKeyStart()) < 0 || key.compareTo(keyQuery.getKeyEnd()) >= 0)
+                            && columnInRange(keycolumn, keyQuery.getSliceStart(), keyQuery.getSliceEnd());
                 },
                 BaseQuery.NO_LIMIT); //limit will be introduced in iterator
 
@@ -211,12 +206,9 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
 
     final KVQuery convertQuery(final KeySliceQuery query) {
         Predicate<StaticBuffer> filter = Predicates.alwaysTrue();
-        if (!hasFixedKeyLength()) filter = new Predicate<StaticBuffer>() {
-            @Override
-            public boolean apply(@Nullable StaticBuffer keyAndColumn) {
-                return equalKey(keyAndColumn, query.getKey());
-            }
-        };
+        if (!hasFixedKeyLength()) {
+            filter = keyAndColumn -> equalKey(keyAndColumn, query.getKey());
+        }
         return new KVQuery(
                 concatenatePrefix(query.getKey(), query.getSliceStart()),
                 concatenatePrefix(query.getKey(), query.getSliceEnd()),

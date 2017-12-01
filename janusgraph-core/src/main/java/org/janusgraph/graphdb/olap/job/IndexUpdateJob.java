@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -55,7 +56,7 @@ public abstract class IndexUpdateJob {
     public static final ConfigOption<String> INDEX_RELATION_TYPE = new ConfigOption<String>(INDEX_JOB_NS,"relation-type",
             "For a vertex-centric index, this is the name of the index associated with the " +
                     "relation type configured under index-name. This should remain empty for global graph indexes.",
-            ConfigOption.Type.LOCAL, "", str -> null != str);
+            ConfigOption.Type.LOCAL, "", Objects::nonNull);
 
 
     protected String indexRelationTypeName = null;

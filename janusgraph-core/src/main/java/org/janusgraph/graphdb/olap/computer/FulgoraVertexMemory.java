@@ -56,8 +56,7 @@ public class FulgoraVertexMemory<M> {
         this.idManager = idManager;
         this.combiner = FulgoraUtil.getMessageCombiner(vertexProgram);
         this.computeKeys = vertexProgram.getVertexComputeKeys();
-        this.elementKeyMap = getIdMap(vertexProgram.getVertexComputeKeys().stream().map( k ->
-                k.getKey() ).collect(Collectors.toCollection(HashSet::new)));
+        this.elementKeyMap = getIdMap(vertexProgram.getVertexComputeKeys().stream().map(VertexComputeKey::getKey).collect(Collectors.toCollection(HashSet::new)));
         this.previousScopes = ImmutableMap.of();
     }
 
@@ -124,7 +123,7 @@ public class FulgoraVertexMemory<M> {
     }
 
     public Set<String> getMemoryKeys() {
-        return computeKeys.stream().filter(key -> inExecute || !key.isTransient()).map(key -> key.getKey()).collect(Collectors.toSet());
+        return computeKeys.stream().filter(key -> inExecute || !key.isTransient()).map(VertexComputeKey::getKey).collect(Collectors.toSet());
     }
 
     private static MessageScope normalizeScope(MessageScope scope) {
@@ -133,7 +132,7 @@ public class FulgoraVertexMemory<M> {
     }
 
     private static Iterable<MessageScope> normalizeScopes(Iterable<MessageScope> scopes) {
-        return Iterables.transform(scopes, s -> normalizeScope(s));
+        return Iterables.transform(scopes, FulgoraVertexMemory::normalizeScope);
     }
 
 
@@ -164,7 +163,7 @@ public class FulgoraVertexMemory<M> {
 
     public Map<Long,EntryList> retrievePartitionAggregates() {
         for (PartitionVertexAggregate agg : partitionVertices.values()) agg.completeIteration();
-        return Maps.transformValues(partitionVertices, s -> s.getLoadedProperties());
+        return Maps.transformValues(partitionVertices, PartitionVertexAggregate::getLoadedProperties);
     }
 
     public static <K> Map<K,Integer> getIdMap(Iterable<K> elements) {

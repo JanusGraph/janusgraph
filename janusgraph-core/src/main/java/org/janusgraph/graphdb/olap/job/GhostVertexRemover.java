@@ -102,12 +102,7 @@ public class GhostVertexRemover extends VertexJobConverter {
         Preconditions.checkArgument(vertex instanceof CacheVertex,
                 "The bounding transaction is not configured correctly");
         CacheVertex v = (CacheVertex)vertex;
-        v.loadRelations(EVERYTHING_QUERY,new Retriever<SliceQuery, EntryList>() {
-            @Override
-            public EntryList get(SliceQuery input) {
-                return everything;
-            }
-        });
+        v.loadRelations(EVERYTHING_QUERY, input -> everything);
 
         int removedRelations = 0;
         Iterator<JanusGraphRelation> iterator = v.query().noPartitionRestriction().relations().iterator();

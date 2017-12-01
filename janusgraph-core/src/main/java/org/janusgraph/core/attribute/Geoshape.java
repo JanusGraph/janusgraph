@@ -663,7 +663,7 @@ public class Geoshape {
             String geojson = toGeoJson(geoshape);
             Map json = mapReader.readValue(geojson);
             if (geoshape.getType() == Type.POINT) {
-                double[] coords = ((List<Number>) json.get(FIELD_COORDINATES)).stream().map(i -> i.doubleValue()).mapToDouble(i -> i).toArray();
+                final double[] coords = ((List<Number>) json.get(FIELD_COORDINATES)).stream().map(Number::doubleValue).mapToDouble(i -> i).toArray();
                 GraphSONUtil.writeWithType(FIELD_COORDINATES, coords, jgen, serializerProvider, typeSerializer);
             } else {
                 GraphSONUtil.writeWithType(FIELD_LABEL, json, jgen, serializerProvider, typeSerializer);
@@ -721,7 +721,7 @@ public class Geoshape {
             GraphSONUtil.writeStartObject(geoshape, jgen, typeSerializer);
             final Map json = mapReader.readValue(toGeoJson(geoshape));
             if (geoshape.getType() == Type.POINT) {
-                final double[] coordinates = ((List<Number>) json.get(FIELD_COORDINATES)).stream().mapToDouble(i -> i.doubleValue()).toArray();
+                final double[] coordinates = ((List<Number>) json.get(FIELD_COORDINATES)).stream().mapToDouble(Number::doubleValue).toArray();
                 GraphSONUtil.writeWithType(FIELD_COORDINATES, coordinates, jgen, serializerProvider, typeSerializer);
             } else {
                 GraphSONUtil.writeWithType(FIELD_LABEL, json, jgen, serializerProvider, typeSerializer);

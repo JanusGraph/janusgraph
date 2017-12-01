@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.core.JanusGraphQuery;
 import org.janusgraph.core.JanusGraphTransaction;

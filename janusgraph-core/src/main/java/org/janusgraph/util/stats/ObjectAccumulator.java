@@ -48,11 +48,7 @@ public class ObjectAccumulator<K extends Object> {
      * @return
      */
     public double incBy(K o, double inc) {
-        Counter c = countMap.get(o);
-        if (c == null) {
-            c = new Counter();
-            countMap.put(o, c);
-        }
+        final Counter c = countMap.computeIfAbsent(o, k -> new Counter());
         c.count += inc;
         return c.count;
     }

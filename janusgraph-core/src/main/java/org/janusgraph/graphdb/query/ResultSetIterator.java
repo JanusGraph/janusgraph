@@ -77,13 +77,7 @@ public class ResultSetIterator<R extends JanusGraphElement> implements Iterator<
     }
 
     public static<R extends JanusGraphElement> Iterable<R> wrap(final Iterable<R> inner, final int limit) {
-        return new Iterable<R>() {
-
-            @Override
-            public Iterator<R> iterator() {
-                return new ResultSetIterator<R>(inner.iterator(),limit);
-            }
-        };
+        return () -> new ResultSetIterator<R>(inner.iterator(),limit);
     }
 
 }

@@ -176,11 +176,8 @@ public class UserModifiableConfiguration implements JanusGraphConfiguration {
 
     }
 
-    public static final ConfigVerifier ALLOW_ALL = new ConfigVerifier() {
-        @Override
-        public void verifyModification(ConfigOption option) {
-            //Do nothing;
-        }
+    public static final ConfigVerifier ALLOW_ALL = option -> {
+        //Do nothing;
     };
 
 

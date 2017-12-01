@@ -614,13 +614,8 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             if (!this.readers.contains(reader)) this.readers.add(reader);
         }
         if (firstRegistration && !this.readers.isEmpty()) {
-            readExecutor = new ScheduledThreadPoolExecutor(numReadThreads,new RejectedExecutionHandler() {
             //Custom rejection handler so that messages are processed in-thread when executor has been closed
-                @Override
-                public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                    r.run();
-                }
-            });
+            readExecutor = new ScheduledThreadPoolExecutor(numReadThreads, (r, executor) -> r.run());
             msgPullers = new MessagePuller[manager.readPartitionIds.length*numBuckets];
             int pos = 0;
             for (int partitionId : manager.readPartitionIds) {

@@ -64,12 +64,8 @@ public class CacheEdge extends AbstractEdge {
         if (startVertex.hasAddedRelations() && startVertex.hasRemovedRelations()) {
             //Test whether this relation has been replaced
             final long id = super.longId();
-            Iterable<InternalRelation> previous = startVertex.getAddedRelations(new Predicate<InternalRelation>() {
-                @Override
-                public boolean apply(@Nullable InternalRelation internalRelation) {
-                    return (internalRelation instanceof StandardEdge) && ((StandardEdge) internalRelation).getPreviousID() == id;
-                }
-            });
+            final Iterable<InternalRelation> previous = startVertex.getAddedRelations(
+                internalRelation -> (internalRelation instanceof StandardEdge) && ((StandardEdge) internalRelation).getPreviousID() == id);
             assert Iterables.size(previous) <= 1 || (isLoop() && Iterables.size(previous) == 2);
             it = Iterables.getFirst(previous, null);
         }

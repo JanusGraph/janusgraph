@@ -31,7 +31,6 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import java.io.File;
 
 /**
  * Example Graph factory that creates a {@link JanusGraph} based on roman mythology.

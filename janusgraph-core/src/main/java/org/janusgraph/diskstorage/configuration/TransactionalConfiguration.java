@@ -70,18 +70,8 @@ public class TransactionalConfiguration implements WriteConfiguration {
     @Override
     public Iterable<String> getKeys(final String prefix) {
         return Iterables.concat(
-        Iterables.filter(writtenValues.keySet(),new Predicate<String>() {
-            @Override
-            public boolean apply(@Nullable String s) {
-                return s.startsWith(prefix);
-            }
-        }),
-        Iterables.filter(config.getKeys(prefix),new Predicate<String>() {
-            @Override
-            public boolean apply(@Nullable String s) {
-                return !writtenValues.containsKey(s);
-            }
-        }));
+        Iterables.filter(writtenValues.keySet(), s -> s.startsWith(prefix)),
+        Iterables.filter(config.getKeys(prefix), s -> !writtenValues.containsKey(s)));
     }
 
     public void commit() {

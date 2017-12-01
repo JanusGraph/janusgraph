@@ -426,12 +426,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         List<Entry> claimEntries = getSliceWithRetries(ksq, tx);
 
         // Extract timestamp and rid from the column in each returned Entry...
-        Iterable<TimestampRid> iterable = Iterables.transform(claimEntries, new Function<Entry, TimestampRid>() {
-            @Override
-            public TimestampRid apply(Entry e) {
-                return serializer.fromLockColumn(e.getColumnAs(StaticBuffer.STATIC_FACTORY), times);
-            }
-        });
+        final Iterable<TimestampRid> iterable = Iterables.transform(claimEntries, e -> serializer.fromLockColumn(e.getColumnAs(StaticBuffer.STATIC_FACTORY), times));
         // ...and then filter out the TimestampRid objects with expired timestamps
         // (This doesn't use Iterables.filter and Predicate so that we can throw a checked exception if necessary)
         ArrayList<TimestampRid> unexpiredTRs = new ArrayList<TimestampRid>(Iterables.size(iterable));
