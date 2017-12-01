@@ -53,12 +53,8 @@ public class CacheVertexProperty extends AbstractVertexProperty {
         if (startVertex.hasAddedRelations() && startVertex.hasRemovedRelations()) {
             //Test whether this relation has been replaced
             final long id = super.longId();
-            it = Iterables.getOnlyElement(startVertex.getAddedRelations(new Predicate<InternalRelation>() {
-                @Override
-                public boolean apply(@Nullable InternalRelation internalRelation) {
-                    return (internalRelation instanceof StandardVertexProperty) && ((StandardVertexProperty) internalRelation).getPreviousID() == id;
-                }
-            }), null);
+            it = Iterables.getOnlyElement(startVertex.getAddedRelations(
+                internalRelation -> (internalRelation instanceof StandardVertexProperty) && ((StandardVertexProperty) internalRelation).getPreviousID() == id), null);
         }
 
         return (it != null) ? it : super.it();

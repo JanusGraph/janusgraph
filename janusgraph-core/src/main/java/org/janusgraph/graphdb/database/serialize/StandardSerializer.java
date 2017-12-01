@@ -36,7 +36,6 @@ import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
 import org.janusgraph.graphdb.log.StandardTransactionId;
 import org.janusgraph.graphdb.types.ParameterType;
-import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.janusgraph.graphdb.types.TypeDefinitionDescription;
 

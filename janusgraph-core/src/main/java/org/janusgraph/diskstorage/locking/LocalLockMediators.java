@@ -20,8 +20,6 @@ import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -87,14 +85,6 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
      * @param namespace
      */
     public void clear(String namespace) {
-        Iterator<Entry<String, LocalLockMediator<?>>> iterator = mediators.entrySet().iterator();
-
-        while (iterator.hasNext()) {
-            Entry<String, LocalLockMediator<?>> e = iterator.next();
-
-            if (e.getKey().equals(namespace)) {
-                iterator.remove();
-            }
-        }
+        mediators.entrySet().removeIf(e -> e.getKey().equals(namespace));
     }
 }

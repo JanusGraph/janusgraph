@@ -156,7 +156,7 @@ public class FulgoraMemory implements Memory.Admin {
     }
 
     private static void attachReferenceElements(TraverserSet<Object> toProcessTraversers, Graph graph) {
-        toProcessTraversers.stream().forEach(traverser -> {
+        toProcessTraversers.forEach(traverser -> {
             Object value = traverser.get();
             if (value instanceof ReferenceVertex) {
                 Vertex vertex = ((ReferenceVertex) value).attach(Attachable.Method.get(graph));

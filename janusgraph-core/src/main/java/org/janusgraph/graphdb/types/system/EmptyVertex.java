@@ -15,7 +15,7 @@
 package org.janusgraph.graphdb.types.system;
 
 import com.google.common.base.Predicate;
-import com.google.common.collect.Iterators;
+
 import org.janusgraph.core.*;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;

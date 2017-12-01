@@ -60,7 +60,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
     static boolean validJanusGraphHas(HasContainer has) {
         if (has.getPredicate() instanceof AndP) {
             final List<? extends P<?>> predicates = ((AndP<?>) has.getPredicate()).getPredicates();
-            return !predicates.stream().filter(p->!validJanusGraphHas(new HasContainer(has.getKey(), p))).findAny().isPresent();
+            return !predicates.stream().anyMatch(p->!validJanusGraphHas(new HasContainer(has.getKey(), p)));
         } else {
             return JanusGraphPredicate.Converter.supports(has.getBiPredicate());
         }

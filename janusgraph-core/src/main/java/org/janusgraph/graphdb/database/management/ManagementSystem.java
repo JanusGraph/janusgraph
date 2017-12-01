@@ -114,6 +114,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.janusgraph.graphdb.database.management.RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
@@ -390,12 +392,7 @@ public class ManagementSystem implements JanusGraphManagement {
     @Override
     public Iterable<RelationTypeIndex> getRelationIndexes(final RelationType type) {
         Preconditions.checkArgument(type != null && type instanceof InternalRelationType, "Invalid relation type provided: %s", type);
-        return Iterables.transform(Iterables.filter(((InternalRelationType) type).getRelationIndexes(), new Predicate<InternalRelationType>() {
-            @Override
-            public boolean apply(@Nullable InternalRelationType internalRelationType) {
-                return !type.equals(internalRelationType);
-            }
-        }), new Function<InternalRelationType, RelationTypeIndex>() {
+        return Iterables.transform(Iterables.filter(((InternalRelationType) type).getRelationIndexes(), internalRelationType -> !type.equals(internalRelationType)), new Function<InternalRelationType, RelationTypeIndex>() {
             @Nullable
             @Override
             public RelationTypeIndex apply(@Nullable InternalRelationType internalType) {
@@ -427,27 +424,15 @@ public class ManagementSystem implements JanusGraphManagement {
 
     @Override
     public Iterable<JanusGraphIndex> getGraphIndexes(final Class<? extends Element> elementType) {
-        return Iterables.transform(Iterables.filter(Iterables.transform(
-                QueryUtil.getVertices(transaction, BaseKey.SchemaCategory, JanusGraphSchemaCategory.GRAPHINDEX),
-                new Function<JanusGraphVertex, IndexType>() {
-                    @Nullable
-                    @Override
-                    public IndexType apply(@Nullable JanusGraphVertex janusgraphVertex) {
-                        assert janusgraphVertex instanceof JanusGraphSchemaVertex;
-                        return ((JanusGraphSchemaVertex) janusgraphVertex).asIndexType();
-                    }
-                }), new Predicate<IndexType>() {
-            @Override
-            public boolean apply(@Nullable IndexType indexType) {
-                return indexType.getElement().subsumedBy(elementType);
-            }
-        }), new Function<IndexType, JanusGraphIndex>() {
-            @Nullable
-            @Override
-            public JanusGraphIndex apply(@Nullable IndexType indexType) {
-                return new JanusGraphIndexWrapper(indexType);
-            }
-        });
+        return StreamSupport.stream(
+            QueryUtil.getVertices(transaction, BaseKey.SchemaCategory, JanusGraphSchemaCategory.GRAPHINDEX).spliterator(), false)
+            .map(janusGraphVertex -> {
+                assert janusGraphVertex instanceof JanusGraphSchemaVertex;
+                return ((JanusGraphSchemaVertex) janusGraphVertex).asIndexType();
+            })
+            .filter(indexType -> indexType.getElement().subsumedBy(elementType))
+            .map(JanusGraphIndexWrapper::new)
+        .collect(Collectors.toList());
     }
 
     /**
@@ -1267,12 +1252,9 @@ public class ManagementSystem implements JanusGraphManagement {
         } else if (RelationType.class.equals(clazz)) {
             types = Iterables.concat(getRelationTypes(EdgeLabel.class), getRelationTypes(PropertyKey.class));
         } else throw new IllegalArgumentException("Unknown type class: " + clazz);
-        return Iterables.filter(Iterables.filter(types, clazz), new Predicate<T>() {
-            @Override
-            public boolean apply(@Nullable T t) {
-                //Filter out all relation type indexes
-                return ((InternalRelationType) t).getBaseType() == null;
-            }
+        return Iterables.filter(Iterables.filter(types, clazz), t -> {
+            //Filter out all relation type indexes
+            return ((InternalRelationType) t).getBaseType() == null;
         });
     }
 

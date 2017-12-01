@@ -35,17 +35,15 @@ public class LRUVertexCache implements VertexCache {
                 capacity + capacity / 3, // lower is capacity + 1/3
                 capacity, // acceptable watermark is capacity
                 100, true, false, // 100 items initial size + use only one thread for items cleanup
-                new ConcurrentLRUCache.EvictionListener<InternalVertex>() {
-                    @Override
-                    public void evictedEntry(Long vertexId, InternalVertex vertex) {
-                        if (vertexId == null || vertex == null)
-                            return;
+            (vertexId, vertex) -> {
+                if (vertexId == null || vertex == null) {
+                    return;
+                }
 
-                        if (vertex.isModified()) {
-                            volatileVertices.putIfAbsent(vertexId, vertex);
-                        }
-                    }
-                });
+                if (vertex.isModified()) {
+                    volatileVertices.putIfAbsent(vertexId, vertex);
+                }
+            });
 
         cache.setAlive(true); //need counters to its actually LRU
     }

@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.query;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -24,7 +23,6 @@ import org.janusgraph.core.QueryException;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 
-import javax.annotation.Nullable;
 import java.util.*;
 
 /**
@@ -90,7 +88,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
 
             if (newElements.hasNext()) {
                 final List<R> allNew = Lists.newArrayList(newElements);
-                Collections.sort(allNew, query.getSortOrder());
+                allNew.sort(query.getSortOrder());
                 iterator = new ResultMergeSortIterator<R>(allNew.iterator(), iterator, query.getSortOrder(), query.hasDuplicateResults());
             }
         } else {
@@ -107,12 +105,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
                 Iterator<R> subIterator = new LimitAdjustingIterator(subquery);
                 subIterator = getFilterIterator(subIterator, hasDeletions, !subquery.isFitted());
                 if (!allNew.isEmpty()) {
-                    subIterator = Iterators.filter(subIterator, new Predicate<R>() {
-                        @Override
-                        public boolean apply(@Nullable R r) {
-                            return !allNew.contains(r);
-                        }
-                    });
+                    subIterator = Iterators.filter(subIterator, r -> !allNew.contains(r));
                 }
                 iterators.add(subIterator);
             }
@@ -120,14 +113,11 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
                 iterator = Iterators.concat(iterators.iterator());
                 if (query.hasDuplicateResults()) { //Cache results and filter out duplicates
                     final Set<R> seenResults = new HashSet<R>();
-                    iterator = Iterators.filter(iterator, new Predicate<R>() {
-                        @Override
-                        public boolean apply(@Nullable R r) {
-                            if (seenResults.contains(r)) return false;
-                            else {
-                                seenResults.add(r);
-                                return true;
-                            }
+                    iterator = Iterators.filter(iterator, r -> {
+                        if (seenResults.contains(r)) return false;
+                        else {
+                            seenResults.add(r);
+                            return true;
                         }
                     });
                 }
@@ -140,12 +130,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
 
     private Iterator<R> getFilterIterator(final Iterator<R> iterator, final boolean filterDeletions, final boolean filterMatches) {
         if (filterDeletions || filterMatches) {
-            return Iterators.filter(iterator, new Predicate<R>() {
-                @Override
-                public boolean apply(@Nullable R r) {
-                    return (!filterDeletions || !executor.isDeleted(query, r)) && (!filterMatches || query.matches(r));
-                }
-            });
+            return Iterators.filter(iterator, r -> (!filterDeletions || !executor.isDeleted(query, r)) && (!filterMatches || query.matches(r)));
         } else {
             return iterator;
         }
@@ -210,8 +195,5 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
         }
 
     }
-
-
-
 
 }

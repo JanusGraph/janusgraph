@@ -18,17 +18,14 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import org.janusgraph.core.*;
-import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder;
 import org.janusgraph.graphdb.query.graph.MultiKeySliceQuery;
-import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.indexing.*;
-import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.HashingUtil;
@@ -163,13 +160,7 @@ public class IndexSerializer {
                         ImmutableMap.Builder<String,KeyInformation> b = ImmutableMap.builder();
                         for (ParameterIndexField field : extIndex.getFieldKeys()) b.put(key2Field(field),getKeyInformation(field));
                         final ImmutableMap<String,KeyInformation> infoMap = b.build();
-                        KeyInformation.StoreRetriever storeRetriever = new KeyInformation.StoreRetriever() {
-
-                            @Override
-                            public KeyInformation get(String key) {
-                                return infoMap.get(key);
-                            }
-                        };
+                        final KeyInformation.StoreRetriever storeRetriever = key -> infoMap.get(key);
                         indexes.put(store,storeRetriever);
                     }
                     return indexes.get(store);
@@ -362,20 +353,12 @@ public class IndexSerializer {
                 element.values(key.name()).forEachRemaining(value->entries.add(new IndexEntry(key2Field(field), value)));
             }
         }
-        Map<String,List<IndexEntry>> documents = documentsPerStore.get(index.getStoreName());
-        if (documents==null) {
-            documents = Maps.newHashMap();
-            documentsPerStore.put(index.getStoreName(),documents);
-        }
+        final Map<String, List<IndexEntry>> documents = documentsPerStore.computeIfAbsent(index.getStoreName(), k -> Maps.newHashMap());
         getDocuments(documentsPerStore,index).put(element2String(element),entries);
     }
 
     private Map<String,List<IndexEntry>> getDocuments(Map<String,Map<String,List<IndexEntry>>> documentsPerStore, MixedIndexType index) {
-        Map<String,List<IndexEntry>> documents = documentsPerStore.get(index.getStoreName());
-        if (documents==null) {
-            documents = Maps.newHashMap();
-            documentsPerStore.put(index.getStoreName(),documents);
-        }
+        final Map<String, List<IndexEntry>> documents = documentsPerStore.computeIfAbsent(index.getStoreName(), k -> Maps.newHashMap());
         return documents;
     }
 

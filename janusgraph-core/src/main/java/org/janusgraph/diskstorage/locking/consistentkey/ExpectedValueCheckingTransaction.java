@@ -14,9 +14,7 @@
 
 package org.janusgraph.diskstorage.locking.consistentkey;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
@@ -211,12 +209,8 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     }
 
     private void lockedOn(ExpectedValueCheckingStore store) {
-        Map<KeyColumn, StaticBuffer> m = expectedValuesByStore.get(store);
+        final Map<KeyColumn, StaticBuffer> m = expectedValuesByStore.computeIfAbsent(store, k -> new HashMap<KeyColumn, StaticBuffer>());
 
-        if (null == m) {
-            m = new HashMap<KeyColumn, StaticBuffer>();
-            expectedValuesByStore.put(store, m);
-        }
     }
 
     private void checkSingleExpectedValue(final KeyColumn kc,
@@ -250,37 +244,32 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
          * For example, it's possible that the slice returned columns which for
          * which kc.getColumn() is a prefix.
          */
-        actualEntries = Iterables.filter(actualEntries, new Predicate<Entry>() {
-            @Override
-            public boolean apply(Entry input) {
-                if (!input.getColumn().equals(kc.getColumn())) {
-                    log.debug("Dropping entry {} (only accepting column {})", input, kc.getColumn());
-                    return false;
-                }
-                log.debug("Accepting entry {}", input);
-                return true;
+        actualEntries = Iterables.filter(actualEntries, input -> {
+            if (!input.getColumn().equals(kc.getColumn())) {
+                log.debug("Dropping entry {} (only accepting column {})", input, kc.getColumn());
+                return false;
             }
+            log.debug("Accepting entry {}", input);
+            return true;
         });
 
         // Extract values from remaining Entry instances
-        Iterable<StaticBuffer> actualValues = Iterables.transform(actualEntries, new Function<Entry, StaticBuffer>() {
-            @Override
-            public StaticBuffer apply(Entry e) {
-                StaticBuffer actualCol = e.getColumnAs(StaticBuffer.STATIC_FACTORY);
-                assert null != actualCol;
-                assert null != kc.getColumn();
-                assert 0 >= kc.getColumn().compareTo(actualCol);
-                assert 0  > actualCol.compareTo(nextBuf);
-                return e.getValueAs(StaticBuffer.STATIC_FACTORY);
-            }
+
+        final Iterable<StaticBuffer> actualValues = Iterables.transform(actualEntries, e -> {
+            final StaticBuffer actualCol = e.getColumnAs(StaticBuffer.STATIC_FACTORY);
+            assert null != actualCol;
+            assert null != kc.getColumn();
+            assert 0 >= kc.getColumn().compareTo(actualCol);
+            assert 0  > actualCol.compareTo(nextBuf);
+            return e.getValueAs(StaticBuffer.STATIC_FACTORY);
         });
 
         final Iterable<StaticBuffer> expectedValues;
 
         if (null == ev) {
-            expectedValues = ImmutableList.<StaticBuffer>of();
+            expectedValues = ImmutableList.of();
         } else {
-            expectedValues = ImmutableList.<StaticBuffer>of(ev);
+            expectedValues = ImmutableList.of(ev);
         }
 
         if (!Iterables.elementsEqual(expectedValues, actualValues)) {

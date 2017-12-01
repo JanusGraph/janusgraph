@@ -76,12 +76,7 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
     }
 
     private IndexMutation getIndexMutation(String store, String documentId, boolean isNew, boolean isDeleted) {
-        Map<String,IndexMutation> storeMutations = mutations.get(store);
-        if (storeMutations==null) {
-            storeMutations = new HashMap<String,IndexMutation>(DEFAULT_INNER_MAP_SIZE);
-            mutations.put(store,storeMutations);
-
-        }
+        final Map<String, IndexMutation> storeMutations = mutations.computeIfAbsent(store, k -> new HashMap<String, IndexMutation>(DEFAULT_INNER_MAP_SIZE));
         IndexMutation m = storeMutations.get(documentId);
         if (m==null) {
             m = new IndexMutation(isNew,isDeleted);

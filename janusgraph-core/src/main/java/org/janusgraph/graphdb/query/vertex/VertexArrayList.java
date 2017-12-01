@@ -32,12 +32,7 @@ import java.util.*;
  */
 public class VertexArrayList implements VertexListInternal {
 
-    public static final Comparator<JanusGraphVertex> VERTEX_ID_COMPARATOR = new Comparator<JanusGraphVertex>() {
-        @Override
-        public int compare(JanusGraphVertex o1, JanusGraphVertex o2) {
-            return Long.compare(o1.longId(),o2.longId());
-        }
-    };
+    public static final Comparator<JanusGraphVertex> VERTEX_ID_COMPARATOR = (o1, o2) -> Long.compare(o1.longId(),o2.longId());
 
     private final StandardJanusGraphTx tx;
     private List<JanusGraphVertex> vertices;

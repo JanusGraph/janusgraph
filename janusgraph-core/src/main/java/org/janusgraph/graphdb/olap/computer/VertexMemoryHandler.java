@@ -131,7 +131,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
                         M msg = vertexMemory.getMessage(vertexMemory.getCanonicalId(((JanusGraphEdge) e).otherVertex(vertex).longId()), localMessageScope);
                         return msg == null ? null : edgeFct.apply(msg, e);
                     })
-                    .filter(m -> m != null);
+                    .filter(Objects::nonNull);
         }
     }
 

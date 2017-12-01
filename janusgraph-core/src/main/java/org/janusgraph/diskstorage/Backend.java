@@ -675,14 +675,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         }
     };
 
-    private final Function<String, Locker> TEST_LOCKER_CREATOR = new Function<String, Locker>() {
-
-        @Override
-        public Locker apply(String lockerName) {
-            return openManagedLocker("org.janusgraph.diskstorage.util.TestLockerManager",lockerName);
-
-        }
-    };
+    private final Function<String, Locker> TEST_LOCKER_CREATOR = lockerName -> openManagedLocker("org.janusgraph.diskstorage.util.TestLockerManager",lockerName);
 
     private final Map<String, Function<String, Locker>> REGISTERED_LOCKERS = ImmutableMap.of(
             "consistentkey", CONSISTENT_KEY_LOCKER_CREATOR,

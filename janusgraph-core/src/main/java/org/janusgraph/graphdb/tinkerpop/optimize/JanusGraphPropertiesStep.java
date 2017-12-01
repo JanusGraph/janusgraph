@@ -86,11 +86,11 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
 
         if (!starts.hasNext()) throw FastNoSuchElementException.instance();
         List<Traverser.Admin<Element>> elements = new ArrayList<>();
-        starts.forEachRemaining(v -> elements.add(v));
+        starts.forEachRemaining(elements::add);
         starts.add(elements.iterator());
         assert elements.size() > 0;
 
-        useMultiQuery = useMultiQuery && elements.stream().noneMatch(e -> !(e.get() instanceof Vertex));
+        useMultiQuery = useMultiQuery && elements.stream().allMatch(e -> e.get() instanceof Vertex);
 
         if (useMultiQuery) {
             JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();

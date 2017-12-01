@@ -219,21 +219,13 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
 
         //Compile all indexes that cover at least one of the query conditions
         final Set<IndexType> indexCandidates = new HashSet<IndexType>();
-        ConditionUtil.traversal(conditions,new Predicate<Condition<JanusGraphElement>>() {
-            @Override
-            public boolean apply(@Nullable Condition<JanusGraphElement> condition) {
-                if (condition instanceof PredicateCondition) {
-                    RelationType type = ((PredicateCondition<RelationType,JanusGraphElement>)condition).getKey();
-                    Preconditions.checkArgument(type!=null && type.isPropertyKey());
-                    Iterables.addAll(indexCandidates,Iterables.filter(((InternalRelationType) type).getKeyIndexes(), new Predicate<IndexType>() {
-                        @Override
-                        public boolean apply(@Nullable IndexType indexType) {
-                            return indexType.getElement()==resultType;
-                        }
-                    }));
-                }
-                return true;
+        ConditionUtil.traversal(conditions, condition -> {
+            if (condition instanceof PredicateCondition) {
+                final RelationType type = ((PredicateCondition<RelationType,JanusGraphElement>)condition).getKey();
+                Preconditions.checkArgument(type!=null && type.isPropertyKey());
+                Iterables.addAll(indexCandidates,Iterables.filter(((InternalRelationType) type).getKeyIndexes(), indexType -> indexType.getElement()==resultType));
             }
+            return true;
         });
 
         /*

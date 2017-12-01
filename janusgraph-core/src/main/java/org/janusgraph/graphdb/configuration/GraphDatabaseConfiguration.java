@@ -668,12 +668,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Integer> CLUSTER_MAX_PARTITIONS = new ConfigOption<Integer>(CLUSTER_NS,"max-partitions",
             "The number of virtual partition blocks created in the partitioned graph. This should be larger than the maximum expected number of nodes" +
                     "in the JanusGraph graph cluster. Must be bigger than 1 and a power of 2.",
-            ConfigOption.Type.FIXED, 32, new Predicate<Integer>() {
-        @Override
-        public boolean apply(@Nullable Integer integer) {
-            return integer!=null && integer>1 && NumberUtil.isPowerOf2(integer);
-        }
-    });
+            ConfigOption.Type.FIXED, 32, integer -> integer!=null && integer>1 && NumberUtil.isPowerOf2(integer));
 
 
 
@@ -788,12 +783,7 @@ public class GraphDatabaseConfiguration {
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_BITS = new ConfigOption<Integer>(IDAUTHORITY_NS,"conflict-avoidance-tag-bits",
             "Configures the number of bits of JanusGraph-assigned element IDs that are reserved for the conflict avoidance tag",
-            ConfigOption.Type.FIXED, 4 , new Predicate<Integer>() {
-        @Override
-        public boolean apply(@Nullable Integer uniqueIdBitWidth) {
-            return uniqueIdBitWidth>=0 && uniqueIdBitWidth<=16;
-        }
-    });
+            ConfigOption.Type.FIXED, 4 , uniqueIdBitWidth -> uniqueIdBitWidth>=0 && uniqueIdBitWidth<=16);
 
     /**
      * Unique id marker to be used by this JanusGraph instance when allocating ids. The unique id marker
@@ -908,13 +898,7 @@ public class GraphDatabaseConfiguration {
             "Sets a TTL on all log entries, meaning" +
                     "that all entries added to this log expire after the configured amount of time. Requires" +
                     "that the log implementation supports TTL.",
-            ConfigOption.Type.GLOBAL, Duration.class, new Predicate<Duration>() {
-
-        @Override
-        public boolean apply(@Nullable Duration sd) {
-            return null != sd && !sd.isZero();
-        }
-    });
+            ConfigOption.Type.GLOBAL, Duration.class, sd -> null != sd && !sd.isZero());
 
     // ############## Attributes ######################
     // ################################################
@@ -1109,12 +1093,7 @@ public class GraphDatabaseConfiguration {
      */
     public static final ConfigOption<String> GANGLIA_ADDRESSING_MODE = new ConfigOption<String>(METRICS_GANGLIA_NS,"addressing-mode",
             "Whether to communicate to Ganglia via uni- or multicast",
-            ConfigOption.Type.MASKABLE, "unicast", new Predicate<String>() {
-        @Override
-        public boolean apply(@Nullable String s) {
-            return s!=null && s.equalsIgnoreCase("unicast") || s.equalsIgnoreCase("multicast");
-        }
-    });
+            ConfigOption.Type.MASKABLE, "unicast", s -> s!=null && s.equalsIgnoreCase("unicast") || s.equalsIgnoreCase("multicast"));
 
     /**
      * The multicast TTL to set on outgoing Ganglia datagrams. This has no
@@ -1159,12 +1138,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> GANGLIA_SPOOF = new ConfigOption<String>(METRICS_GANGLIA_NS,"spoof",
             "If non-null, it must be a valid Gmetric spoof string formatted as an IP:hostname pair. " +
             "See https://github.com/ganglia/monitor-core/wiki/Gmetric-Spoofing for information about this setting.",
-            ConfigOption.Type.MASKABLE, String.class, new Predicate<String>() {
-        @Override
-        public boolean apply(@Nullable String s) {
-            return s!=null && 0 < s.indexOf(':');
-        }
-    });
+            ConfigOption.Type.MASKABLE, String.class, s -> s!=null && 0 < s.indexOf(':'));
 
     /**
      * The configuration namespace within {@link #METRICS_NS} for
@@ -1429,32 +1403,23 @@ public class GraphDatabaseConfiguration {
     }
 
     private static Map<ConfigElement.PathIdentifier, Object> getGlobalSubset(Map<ConfigElement.PathIdentifier, Object> m) {
-        return Maps.filterEntries(m, new Predicate<Map.Entry<ConfigElement.PathIdentifier, Object>>() {
-            @Override
-            public boolean apply(@Nullable Map.Entry<ConfigElement.PathIdentifier, Object> entry) {
-                assert entry.getKey().element.isOption();
-                return ((ConfigOption)entry.getKey().element).isGlobal();
-            }
+        return Maps.filterEntries(m, entry -> {
+            assert entry.getKey().element.isOption();
+            return ((ConfigOption)entry.getKey().element).isGlobal();
         });
     }
 
     private static Map<ConfigElement.PathIdentifier, Object> getLocalSubset(Map<ConfigElement.PathIdentifier, Object> m) {
-        return Maps.filterEntries(m, new Predicate<Map.Entry<ConfigElement.PathIdentifier, Object>>() {
-            @Override
-            public boolean apply(@Nullable Map.Entry<ConfigElement.PathIdentifier, Object> entry) {
-                assert entry.getKey().element.isOption();
-                return ((ConfigOption)entry.getKey().element).isLocal();
-            }
+        return Maps.filterEntries(m, entry -> {
+            assert entry.getKey().element.isOption();
+            return ((ConfigOption)entry.getKey().element).isLocal();
         });
     }
 
     private static Map<ConfigElement.PathIdentifier, Object> getManagedSubset(Map<ConfigElement.PathIdentifier, Object> m) {
-        return Maps.filterEntries(m, new Predicate<Map.Entry<ConfigElement.PathIdentifier, Object>>() {
-            @Override
-            public boolean apply(@Nullable Map.Entry<ConfigElement.PathIdentifier, Object> entry) {
-                assert entry.getKey().element.isOption();
-                return ((ConfigOption)entry.getKey().element).isManaged();
-            }
+        return Maps.filterEntries(m, entry -> {
+            assert entry.getKey().element.isOption();
+            return ((ConfigOption)entry.getKey().element).isManaged();
         });
     }
 

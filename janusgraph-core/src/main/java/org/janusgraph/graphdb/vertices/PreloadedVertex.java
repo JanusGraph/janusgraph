@@ -41,12 +41,7 @@ import java.util.List;
  */
 public class PreloadedVertex extends CacheVertex {
 
-    public static final Retriever<SliceQuery, EntryList> EMPTY_RETRIEVER = new Retriever<SliceQuery, EntryList>() {
-        @Override
-        public EntryList get(SliceQuery input) {
-            return EntryList.EMPTY_LIST;
-        }
-    };
+    public static final Retriever<SliceQuery, EntryList> EMPTY_RETRIEVER = input -> EntryList.EMPTY_LIST;
 
     private PropertyMixing mixin = NO_MIXIN;
     private AccessCheck accessCheck = DEFAULT_CHECK;
@@ -213,11 +208,8 @@ public class PreloadedVertex extends CacheVertex {
             return EXCEPTION_RETRIEVER;
         }
 
-        private final Retriever<SliceQuery,EntryList> EXCEPTION_RETRIEVER = new Retriever<SliceQuery, EntryList>() {
-            @Override
-            public EntryList get(SliceQuery input) {
-                throw new UnsupportedOperationException("Cannot access data that hasn't been preloaded.");
-            }
+        private final Retriever<SliceQuery,EntryList> EXCEPTION_RETRIEVER = input -> {
+            throw new UnsupportedOperationException("Cannot access data that hasn't been preloaded.");
         };
     };
 

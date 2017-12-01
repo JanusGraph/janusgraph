@@ -69,12 +69,7 @@ public class ExpirationKCVSCache extends KCVSCache {
                 .concurrencyLevel(concurrencyLevel)
                 .initialCapacity(1000)
                 .expireAfterWrite(cacheTimeMS, TimeUnit.MILLISECONDS)
-                .weigher(new Weigher<KeySliceQuery, EntryList>() {
-                    @Override
-                    public int weigh(KeySliceQuery keySliceQuery, EntryList entries) {
-                        return GUAVA_CACHE_ENTRY_SIZE + KEY_QUERY_SIZE + entries.getByteSize();
-                    }
-                });
+                .weigher((keySliceQuery, entries) -> GUAVA_CACHE_ENTRY_SIZE + KEY_QUERY_SIZE + entries.getByteSize());
 
         cache = cachebuilder.build();
         expiredKeys = new ConcurrentHashMap<StaticBuffer, Long>(50,0.75f,concurrencyLevel);
@@ -93,12 +88,9 @@ public class ExpirationKCVSCache extends KCVSCache {
         }
 
         try {
-            return cache.get(query,new Callable<EntryList>() {
-                @Override
-                public EntryList call() throws Exception {
-                    incActionBy(1, CacheMetricsAction.MISS,txh);
-                    return store.getSlice(query, unwrapTx(txh));
-                }
+            return cache.get(query, () -> {
+                incActionBy(1, CacheMetricsAction.MISS,txh);
+                return store.getSlice(query, unwrapTx(txh));
             });
         } catch (Exception e) {
             if (e instanceof JanusGraphException) throw (JanusGraphException)e;

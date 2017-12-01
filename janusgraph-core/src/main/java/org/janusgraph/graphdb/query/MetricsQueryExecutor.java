@@ -42,42 +42,22 @@ public class MetricsQueryExecutor<Q extends ElementQuery,R extends JanusGraphEle
 
     @Override
     public Iterator<R> getNew(final Q query) {
-        return runWithMetrics("getNew", new Function<Void, Iterator<R>>() {
-            @Override
-            public Iterator<R> apply(Void v) {
-                return qe.getNew(query);
-            }
-        });
+        return runWithMetrics("getNew", v -> qe.getNew(query));
     }
 
     @Override
     public boolean hasDeletions(final Q query) {
-        return runWithMetrics("hasDeletions", new Function<Void, Boolean>() {
-            @Override
-            public Boolean apply(Void v) {
-                return qe.hasDeletions(query);
-            }
-        });
+        return runWithMetrics("hasDeletions", v -> qe.hasDeletions(query));
     }
 
     @Override
     public boolean isDeleted(final Q query, final R result) {
-        return runWithMetrics("isDeleted", new Function<Void, Boolean>() {
-            @Override
-            public Boolean apply(Void v) {
-                return qe.isDeleted(query, result);
-            }
-        });
+        return runWithMetrics("isDeleted", v -> qe.isDeleted(query, result));
     }
 
     @Override
     public Iterator<R> execute(final Q query, final B subquery, final Object executionInfo, final QueryProfiler profiler) {
-        return runWithMetrics("execute", new Function<Void, Iterator<R>>() {
-            @Override
-            public Iterator<R> apply(Void v) {
-                return qe.execute(query, subquery, executionInfo, profiler);
-            }
-        });
+        return runWithMetrics("execute", v -> qe.execute(query, subquery, executionInfo, profiler));
     }
 
     private <T> T runWithMetrics(String opName, Function<Void,T> impl) {

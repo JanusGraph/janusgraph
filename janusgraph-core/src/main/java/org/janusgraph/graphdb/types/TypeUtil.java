@@ -18,7 +18,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.janusgraph.core.*;
-import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.graphdb.database.management.ModifierType;
 import org.janusgraph.graphdb.internal.ElementCategory;

@@ -133,21 +133,11 @@ public class ConfigurationPrinter {
     }
 
     private List<ConfigOption<?>> getSortedChildOptions(ConfigNamespace n) {
-        return getSortedChildren(n, new Function<ConfigElement, Boolean>() {
-            @Override
-            public Boolean apply(ConfigElement arg0) {
-                return arg0.isOption() && !((ConfigOption)arg0).isHidden();
-            }
-        });
+        return getSortedChildren(n, arg0 -> arg0.isOption() && !((ConfigOption)arg0).isHidden());
     }
 
     private List<ConfigNamespace> getSortedChildNamespaces(ConfigNamespace n) {
-        return getSortedChildren(n, new Function<ConfigElement, Boolean>() {
-            @Override
-            public Boolean apply(ConfigElement arg0) {
-                return arg0.isNamespace();
-            }
-        });
+        return getSortedChildren(n, arg0 -> arg0.isNamespace());
     }
 
     private String getTableLineForOption(ConfigOption o, String prefix) {
@@ -205,12 +195,7 @@ public class ConfigurationPrinter {
                 sortedElements.add(e);
             }
         }
-        Collections.sort(sortedElements, new Comparator<ConfigElement>() {
-            @Override
-            public int compare(ConfigElement o1, ConfigElement o2) {
-                return o1.getName().compareTo(o2.getName());
-            }
-        });
+        Collections.sort(sortedElements, (o1, o2) -> o1.getName().compareTo(o2.getName()));
 
         return (List<E>)sortedElements;
     }

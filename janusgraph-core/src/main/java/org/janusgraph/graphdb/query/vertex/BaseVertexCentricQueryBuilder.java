@@ -17,7 +17,6 @@ package org.janusgraph.graphdb.query.vertex;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.janusgraph.core.BaseVertexQuery;
-import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
 import org.janusgraph.core.JanusGraphRelation;

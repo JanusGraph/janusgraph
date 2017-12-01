@@ -42,19 +42,16 @@ public class GuavaVertexCache implements VertexCache {
         log.debug("Created dirty vertex map with initial size {}", initialDirtySize);
 
         cache = CacheBuilder.newBuilder().maximumSize(maxCacheSize).concurrencyLevel(concurrencyLevel)
-                .removalListener(new RemovalListener<Long, InternalVertex>() {
-                    @Override
-                    public void onRemoval(RemovalNotification<Long, InternalVertex> notification) {
-                        if (notification.getCause() == RemovalCause.EXPLICIT) { //Due to invalidation at the end
-                            assert volatileVertices.isEmpty();
-                            return;
-                        }
-                        //Should only get evicted based on size constraint or replaced through add
-                        assert (notification.getCause() == RemovalCause.SIZE || notification.getCause() == RemovalCause.REPLACED) : "Cause: " + notification.getCause();
-                        InternalVertex v = notification.getValue();
-                        if (((AbstractVertex) v).isTxOpen() && v.isModified()) {
-                            volatileVertices.putIfAbsent(notification.getKey(), v);
-                        }
+                .removalListener((RemovalListener<Long, InternalVertex>) notification -> {
+                    if (notification.getCause() == RemovalCause.EXPLICIT) { //Due to invalidation at the end
+                        assert volatileVertices.isEmpty();
+                        return;
+                    }
+                    //Should only get evicted based on size constraint or replaced through add
+                    assert (notification.getCause() == RemovalCause.SIZE || notification.getCause() == RemovalCause.REPLACED) : "Cause: " + notification.getCause();
+                    final InternalVertex v = notification.getValue();
+                    if (((AbstractVertex) v).isTxOpen() && v.isModified()) {
+                        volatileVertices.putIfAbsent(notification.getKey(), v);
                     }
                 })
                 .build();
