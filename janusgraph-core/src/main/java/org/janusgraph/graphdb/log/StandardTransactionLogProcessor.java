@@ -15,8 +15,6 @@
 package org.janusgraph.graphdb.log;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.cache.*;
 import com.google.common.collect.*;
 import org.janusgraph.core.RelationType;
@@ -53,7 +51,6 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -64,6 +61,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  *
@@ -163,9 +163,9 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         if (secFail!=null) {
             userLogFailure = secFail.userLogFailure;
             secIndexFailure = !secFail.failedIndexes.isEmpty();
-            isFailedIndex = s -> secFail.failedIndexes.contains(s);
+            isFailedIndex = secFail.failedIndexes::contains;
         } else {
-            isFailedIndex = Predicates.alwaysTrue();
+            isFailedIndex = always -> true;
         }
 
         // I) Restore external indexes
@@ -179,7 +179,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
                         final InternalRelation rel = ModificationDeserializer.parseRelation(modification,tx);
                         //Collect affected vertex indexes
                         for (final MixedIndexType index : getMixedIndexes(rel.getType())) {
-                            if (index.getElement()==ElementCategory.VERTEX && isFailedIndex.apply(index.getBackingIndexName())) {
+                            if (index.getElement()==ElementCategory.VERTEX && isFailedIndex.test(index.getBackingIndexName())) {
                                 assert rel.isProperty();
                                 indexRestores.put(index.getBackingIndexName(),
                                         new IndexRestore(rel.getVertex(0).longId(),ElementCategory.VERTEX,getIndexId(index)));
@@ -188,7 +188,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
                         //See if relation itself is affected
                         for (final RelationType relType : rel.getPropertyKeysDirect()) {
                             for (final MixedIndexType index : getMixedIndexes(relType)) {
-                                if (index.getElement().isInstance(rel) && isFailedIndex.apply(index.getBackingIndexName())) {
+                                if (index.getElement().isInstance(rel) && isFailedIndex.test(index.getBackingIndexName())) {
                                     assert rel.id() instanceof RelationIdentifier;
                                     indexRestores.put(index.getBackingIndexName(),
                                             new IndexRestore(rel.id(),ElementCategory.getByClazz(rel.getClass()),getIndexId(index)));
@@ -296,16 +296,20 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         return base.longId();
     }
 
-    private static Iterable<MixedIndexType> getMixedIndexes(RelationType type) {
-        if (!type.isPropertyKey()) return Collections.EMPTY_LIST;
-        return Iterables.filter(Iterables.filter(((InternalRelationType)type).getKeyIndexes(),MIXED_INDEX_FILTER),MixedIndexType.class);
+    private static List<MixedIndexType> getMixedIndexes(RelationType type) {
+        if (!type.isPropertyKey()) return Collections.emptyList();
+        return StreamSupport.stream(((InternalRelationType) type).getKeyIndexes().spliterator(), false)
+            .filter(MIXED_INDEX_FILTER)
+            .filter(i -> i instanceof MixedIndexType)
+            .map(MixedIndexType.class::cast)
+            .collect(Collectors.toList());
     }
 
-    private static final Predicate<IndexType> MIXED_INDEX_FILTER = indexType -> indexType.isMixedIndex();
+    private static final Predicate<IndexType> MIXED_INDEX_FILTER = IndexType::isMixedIndex;
 
     private class TxLogMessageReader implements MessageReader {
 
-        private final Callable<TxEntry> entryFactory = () -> new TxEntry();
+        private final Callable<TxEntry> entryFactory = TxEntry::new;
 
         @Override
         public void read(Message message) {

@@ -14,8 +14,9 @@
 
 package org.janusgraph.graphdb.query;
 import java.util.Iterator;
+import java.util.function.Function;
+
 import com.codahale.metrics.Timer;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;

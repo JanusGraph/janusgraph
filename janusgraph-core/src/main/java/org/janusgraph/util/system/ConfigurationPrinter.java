@@ -14,22 +14,23 @@
 
 package org.janusgraph.util.system;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.Iterables;
+import org.janusgraph.core.util.ReflectiveConfigOptionLoader;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.configuration.ConfigNamespace;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.collect.Iterables;
-
-import org.janusgraph.core.util.ReflectiveConfigOptionLoader;
-import org.janusgraph.diskstorage.configuration.ConfigElement;
-import org.janusgraph.diskstorage.configuration.ConfigNamespace;
-import org.janusgraph.diskstorage.configuration.ConfigOption;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.janusgraph.util.encoding.StringEncoding.UTF8_ENCODING;
 
@@ -137,7 +138,7 @@ public class ConfigurationPrinter {
     }
 
     private List<ConfigNamespace> getSortedChildNamespaces(ConfigNamespace n) {
-        return getSortedChildren(n, arg0 -> arg0.isNamespace());
+        return getSortedChildren(n, ConfigElement::isNamespace);
     }
 
     private String getTableLineForOption(ConfigOption o, String prefix) {
@@ -187,17 +188,11 @@ public class ConfigurationPrinter {
     }
 
     @SuppressWarnings("unchecked")
-    private <E> List<E> getSortedChildren(ConfigNamespace n, Function<ConfigElement, Boolean> predicate) {
-        List<ConfigElement> sortedElements = new ArrayList<ConfigElement>();
-
-        for (ConfigElement e : n.getChildren()) {
-            if (predicate.apply(e)) {
-                sortedElements.add(e);
-            }
-        }
-        Collections.sort(sortedElements, (o1, o2) -> o1.getName().compareTo(o2.getName()));
-
-        return (List<E>)sortedElements;
+    private <E> List<E> getSortedChildren(ConfigNamespace n, Predicate<ConfigElement> predicate) {
+        return (List<E>) StreamSupport.stream(n.getChildren().spliterator(), false)
+            .filter(predicate)
+            .sorted(Comparator.comparing(ConfigElement::getName))
+            .collect(Collectors.toList());
     }
 
     private String removeDelim(String s) {

@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.vertices;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.diskstorage.EntryList;
@@ -35,6 +34,7 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -73,7 +73,7 @@ public class PreloadedVertex extends CacheVertex {
 
     @Override
     public List<InternalRelation> getAddedRelations(Predicate<InternalRelation> query) {
-        return Collections.EMPTY_LIST;
+        return Collections.emptyList();
     }
 
     @Override

@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.log.kcvs;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.StoreMetaData;
@@ -36,7 +35,6 @@ import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.*;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -61,7 +59,7 @@ public class KCVSLogManager implements LogManager {
     public static final ConfigOption<Integer> LOG_MAX_PARTITIONS = new ConfigOption<Integer>(LOG_NS,"max-partitions",
             "The maximum number of partitions to use for logging. Setting up this many actual or virtual partitions. Must be bigger than 0" +
                     "and a power of 2.",
-            ConfigOption.Type.FIXED, Integer.class, integer -> integer!=null && integer>0 && NumberUtil.isPowerOf2(integer));
+            ConfigOption.Type.FIXED, Integer.class, integer -> integer!=null && integer > 0 && NumberUtil.isPowerOf2(integer));
 
     /**
      * If {@link #LOG_MAX_PARTITIONS} isn't set explicitly, the number of partitions is derived by taking the configured

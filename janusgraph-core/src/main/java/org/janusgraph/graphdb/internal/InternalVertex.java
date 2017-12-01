@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.internal;
 
-import com.google.common.base.Predicate;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
@@ -22,6 +21,7 @@ import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import org.janusgraph.util.datastructures.Retriever;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * Internal Vertex interface adding methods that should only be used by JanusGraph

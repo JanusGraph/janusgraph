@@ -14,17 +14,16 @@
 
 package org.janusgraph.graphdb.util;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import org.janusgraph.core.*;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.apache.tinkerpop.gremlin.structure.*;
 
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -38,13 +37,9 @@ public class ElementHelper {
             else return ImmutableList.of(value);
         } else {
             assert element instanceof JanusGraphVertex;
-            return Iterables.transform((((JanusGraphVertex) element).query()).keys(key.name()).properties(), new Function<JanusGraphVertexProperty, Object>() {
-                @Nullable
-                @Override
-                public Object apply(final JanusGraphVertexProperty janusgraphProperty) {
-                    return janusgraphProperty.value();
-                }
-            });
+            return StreamSupport.stream((((JanusGraphVertex) element).query()).keys(key.name()).properties().spliterator(), false)
+                .map(Property::value)
+                .collect(Collectors.toList());
         }
     }
 

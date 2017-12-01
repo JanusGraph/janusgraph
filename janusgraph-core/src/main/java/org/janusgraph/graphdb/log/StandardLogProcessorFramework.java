@@ -14,9 +14,7 @@
 
 package org.janusgraph.graphdb.log;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import org.janusgraph.core.JanusGraphException;
 
 import org.janusgraph.core.log.LogProcessorBuilder;
@@ -40,12 +38,12 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -183,13 +181,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
                         "Processors have already been registered for user log: %s",userLogName);
                 try {
                     Log log = graph.getBackend().getUserLog(userLogName);
-                    log.registerReaders(readMarker,Iterables.transform(processors, new Function<ChangeProcessor, MessageReader>() {
-                        @Nullable
-                        @Override
-                        public MessageReader apply(@Nullable ChangeProcessor changeProcessor) {
-                            return new MsgReaderConverter(userLogName, changeProcessor, retryAttempts);
-                        }
-                    }));
+                    log.registerReaders(readMarker, processors.stream().map(changeProcessor -> new MsgReaderConverter(userLogName, changeProcessor, retryAttempts)).collect(Collectors.toList()));
                 } catch (BackendException e) {
                     throw new JanusGraphException("Could not open user transaction log for name: "+ userLogName,e);
                 }

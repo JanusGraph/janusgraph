@@ -15,8 +15,6 @@
 package org.janusgraph.diskstorage.keycolumnvalue.keyvalue;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.keycolumnvalue.*;
 import org.janusgraph.diskstorage.util.*;
@@ -28,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * Wraps a {@link OrderedKeyValueStore} and exposes it as a {@link KeyColumnValueStore}.
@@ -106,10 +105,11 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
     public KeyIterator getKeys(final KeyRangeQuery keyQuery, final StoreTransaction txh) throws BackendException {
         final KVQuery query = new KVQuery(
                 concatenatePrefix(adjustToLength(keyQuery.getKeyStart()), keyQuery.getSliceStart()),
-                concatenatePrefix(adjustToLength(keyQuery.getKeyEnd()), keyQuery.getSliceEnd()), keycolumn -> {
-                    final StaticBuffer key = getKey(keycolumn);
-                    return !(key.compareTo(keyQuery.getKeyStart()) < 0 || key.compareTo(keyQuery.getKeyEnd()) >= 0)
-                            && columnInRange(keycolumn, keyQuery.getSliceStart(), keyQuery.getSliceEnd());
+                concatenatePrefix(adjustToLength(keyQuery.getKeyEnd()), keyQuery.getSliceEnd()),
+                keyColumn -> {
+                        final StaticBuffer key = getKey(keyColumn);
+                        return !(key.compareTo(keyQuery.getKeyStart()) < 0 || key.compareTo(keyQuery.getKeyEnd()) >= 0)
+                                && columnInRange(keyColumn, keyQuery.getSliceStart(), keyQuery.getSliceEnd());
                 },
                 BaseQuery.NO_LIMIT); //limit will be introduced in iterator
 
@@ -205,10 +205,8 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
     }
 
     final KVQuery convertQuery(final KeySliceQuery query) {
-        Predicate<StaticBuffer> filter = Predicates.alwaysTrue();
-        if (!hasFixedKeyLength()) {
-            filter = keyAndColumn -> equalKey(keyAndColumn, query.getKey());
-        }
+        Predicate<StaticBuffer> filter = always -> true;
+        if (!hasFixedKeyLength()) filter = keyAndColumn -> equalKey(keyAndColumn, query.getKey());
         return new KVQuery(
                 concatenatePrefix(query.getKey(), query.getSliceStart()),
                 concatenatePrefix(query.getKey(), query.getSliceEnd()),

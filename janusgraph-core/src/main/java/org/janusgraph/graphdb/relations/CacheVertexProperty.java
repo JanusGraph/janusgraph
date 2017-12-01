@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.relations;
 
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.PropertyKey;
@@ -26,7 +25,6 @@ import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.transaction.RelationConstructor;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,7 +52,7 @@ public class CacheVertexProperty extends AbstractVertexProperty {
             //Test whether this relation has been replaced
             final long id = super.longId();
             it = Iterables.getOnlyElement(startVertex.getAddedRelations(
-                internalRelation -> (internalRelation instanceof StandardVertexProperty) && ((StandardVertexProperty) internalRelation).getPreviousID() == id), null);
+                relation -> (relation instanceof StandardVertexProperty) && ((StandardVertexProperty) relation).getPreviousID() == id), null);
         }
 
         return (it != null) ? it : super.it();

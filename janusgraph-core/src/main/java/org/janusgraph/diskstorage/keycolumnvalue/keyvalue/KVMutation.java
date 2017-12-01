@@ -14,12 +14,10 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue.keyvalue;
 
-import com.google.common.base.Function;
-import com.google.common.base.Functions;
 import org.janusgraph.diskstorage.Mutation;
 import org.janusgraph.diskstorage.StaticBuffer;
-import javax.annotation.Nullable;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * {@link Mutation} for {@link KeyValueStore}.
@@ -36,22 +34,16 @@ public class KVMutation extends Mutation<KeyValueEntry,StaticBuffer> {
         super();
     }
 
-    private static Function<KeyValueEntry,StaticBuffer> ENTRY2KEY_FCT = new Function<KeyValueEntry, StaticBuffer>() {
-        @Nullable
-        @Override
-        public StaticBuffer apply(@Nullable KeyValueEntry keyValueEntry) {
-            return keyValueEntry.getKey();
-        }
-    };
+    private static Function<KeyValueEntry,StaticBuffer> ENTRY2KEY_FCT = KeyValueEntry::getKey;
 
     @Override
     public void consolidate() {
-        super.consolidate(ENTRY2KEY_FCT, Functions.<StaticBuffer>identity());
+        super.consolidate(ENTRY2KEY_FCT, Function.identity());
     }
 
     @Override
     public boolean isConsolidated() {
-        return super.isConsolidated(ENTRY2KEY_FCT, Functions.<StaticBuffer>identity());
+        return super.isConsolidated(ENTRY2KEY_FCT, Function.identity());
     }
 
 }

@@ -16,8 +16,6 @@ package org.janusgraph.graphdb.database;
 
 import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.*;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.ConsistencyModifier;
@@ -75,7 +73,6 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
@@ -83,6 +80,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
 
@@ -519,7 +517,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         ListMultimap<InternalVertex, InternalRelation> mutatedProperties = ArrayListMultimap.create();
         List<IndexSerializer.IndexUpdate> indexUpdates = Lists.newArrayList();
         //1) Collect deleted edges and their index updates and acquire edge locks
-        for (InternalRelation del : Iterables.filter(deletedRelations,filter)) {
+        for (InternalRelation del : Iterables.filter(deletedRelations, filter::test)) {
             Preconditions.checkArgument(del.isRemoved());
             for (int pos = 0; pos < del.getLen(); pos++) {
                 InternalVertex vertex = del.getVertex(pos);
@@ -536,7 +534,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         }
 
         //2) Collect added edges and their index updates and acquire edge locks
-        for (InternalRelation add : Iterables.filter(addedRelations,filter)) {
+        for (InternalRelation add : Iterables.filter(addedRelations, filter::test)) {
             Preconditions.checkArgument(add.isNew());
 
             for (int pos = 0; pos < add.getLen(); pos++) {
@@ -633,12 +631,12 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         return new ModificationSummary(!mutations.isEmpty(),has2iMods);
     }
 
-    private static final Predicate<InternalRelation> SCHEMA_FILTER =
-        internalRelation -> internalRelation.getType() instanceof BaseRelationType && internalRelation.getVertex(0) instanceof JanusGraphSchemaVertex;
+    private static final Predicate<InternalRelation> SCHEMA_FILTER
+        = relation -> relation.getType() instanceof BaseRelationType && relation.getVertex(0) instanceof JanusGraphSchemaVertex;
 
-    private static final Predicate<InternalRelation> NO_SCHEMA_FILTER = internalRelation -> !SCHEMA_FILTER.apply(internalRelation);
+    private static final Predicate<InternalRelation> NO_SCHEMA_FILTER = internalRelation -> !SCHEMA_FILTER.test(internalRelation);
 
-    private static final Predicate<InternalRelation> NO_FILTER = Predicates.alwaysTrue();
+    private static final Predicate<InternalRelation> NO_FILTER = always -> true;
 
     public void commit(final Collection<InternalRelation> addedRelations,
                      final Collection<InternalRelation> deletedRelations, final StandardJanusGraphTx tx) {
@@ -673,8 +671,8 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
             //3.2 Commit schema elements and their associated relations in a separate transaction if backend does not support
             //    transactional isolation
-            boolean hasSchemaElements = !Iterables.isEmpty(Iterables.filter(deletedRelations,SCHEMA_FILTER))
-                    || !Iterables.isEmpty(Iterables.filter(addedRelations,SCHEMA_FILTER));
+            boolean hasSchemaElements = !Iterables.isEmpty(Iterables.filter(deletedRelations, SCHEMA_FILTER::test))
+                    || !Iterables.isEmpty(Iterables.filter(addedRelations, SCHEMA_FILTER::test));
             Preconditions.checkArgument(!hasSchemaElements || (!tx.getConfiguration().hasEnabledBatchLoading() && acquireLocks),
                     "Attempting to create schema elements in inconsistent state");
 

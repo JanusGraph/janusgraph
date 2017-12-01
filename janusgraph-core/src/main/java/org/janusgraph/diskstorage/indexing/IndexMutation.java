@@ -14,13 +14,12 @@
 
 package org.janusgraph.diskstorage.indexing;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.diskstorage.Mutation;
 
-import javax.annotation.Nullable;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * An index mutation contains the field updates (additions and deletions) for a particular index entry.
@@ -68,13 +67,7 @@ public class IndexMutation extends Mutation<IndexEntry,IndexEntry> {
         isDeleted=false;
     }
 
-    public static final Function<IndexEntry,String> ENTRY2FIELD_FCT = new Function<IndexEntry, String>() {
-        @Nullable
-        @Override
-        public String apply(final IndexEntry indexEntry) {
-            return indexEntry.field;
-        }
-    };
+    public static final Function<IndexEntry,String> ENTRY2FIELD_FCT = indexEntry -> indexEntry.field;
 
     @Override
     public void consolidate() {

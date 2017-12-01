@@ -160,7 +160,7 @@ public class IndexSerializer {
                         ImmutableMap.Builder<String,KeyInformation> b = ImmutableMap.builder();
                         for (ParameterIndexField field : extIndex.getFieldKeys()) b.put(key2Field(field),getKeyInformation(field));
                         final ImmutableMap<String,KeyInformation> infoMap = b.build();
-                        final KeyInformation.StoreRetriever storeRetriever = key -> infoMap.get(key);
+                        final KeyInformation.StoreRetriever storeRetriever = infoMap::get;
                         indexes.put(store,storeRetriever);
                     }
                     return indexes.get(store);
@@ -541,16 +541,11 @@ public class IndexSerializer {
     }
 
     public IndexQuery getQuery(final MixedIndexType index, final Condition condition, final OrderList orders) {
-        Condition newCondition = ConditionUtil.literalTransformation(condition,
-                new Function<Condition<JanusGraphElement>, Condition<JanusGraphElement>>() {
-                    @Nullable
-                    @Override
-                    public Condition<JanusGraphElement> apply(final Condition<JanusGraphElement> condition) {
-                        Preconditions.checkArgument(condition instanceof PredicateCondition);
-                        PredicateCondition pc = (PredicateCondition) condition;
-                        PropertyKey key = (PropertyKey) pc.getKey();
-                        return new PredicateCondition<String, JanusGraphElement>(key2Field(index,key), pc.getPredicate(), pc.getValue());
-                    }
+        Condition newCondition = ConditionUtil.literalTransformation(condition, c -> {
+                    Preconditions.checkArgument(condition instanceof PredicateCondition);
+                    PredicateCondition pc = (PredicateCondition) c;
+                    PropertyKey key = (PropertyKey) pc.getKey();
+                    return new PredicateCondition<>(key2Field(index,key), pc.getPredicate(), pc.getValue());
                 });
         ImmutableList<IndexQuery.OrderEntry> newOrders = IndexQuery.NO_ORDER;
         if (!orders.isEmpty() && GraphCentricQueryBuilder.indexCoversOrder(index,orders)) {

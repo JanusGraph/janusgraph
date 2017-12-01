@@ -164,7 +164,7 @@ public class ConcurrentLRUCache<V> {
         // in this method.
         if (currentSize > upperWaterMark && !isCleaning) {
             if (newThreadForCleanup) {
-                new Thread(() -> markAndSweep()).start();
+                new Thread(this::markAndSweep).start();
             } else if (cleanupThread != null) {
                 cleanupThread.wakeThread();
             } else {

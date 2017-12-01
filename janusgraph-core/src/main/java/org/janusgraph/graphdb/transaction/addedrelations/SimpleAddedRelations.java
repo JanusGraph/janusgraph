@@ -14,12 +14,13 @@
 
 package org.janusgraph.graphdb.transaction.addedrelations;
 
-import com.google.common.base.Predicate;
 import org.janusgraph.graphdb.internal.InternalRelation;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -45,11 +46,7 @@ public class SimpleAddedRelations extends ArrayList<InternalRelation> implements
 
     @Override
     public List<InternalRelation> getView(Predicate<InternalRelation> filter) {
-        List<InternalRelation> result = new ArrayList<InternalRelation>();
-        for (InternalRelation r : this) {
-            if (filter.apply(r)) result.add(r);
-        }
-        return result;
+        return this.stream().filter(filter).collect(Collectors.toList());
     }
 
     @Override

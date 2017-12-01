@@ -18,7 +18,6 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.schema.SchemaStatus;
 
-
 import java.time.Duration;
 import java.time.temporal.TemporalUnit;
 import java.util.concurrent.Callable;

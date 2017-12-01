@@ -15,11 +15,12 @@
 package org.janusgraph.util.datastructures;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 
-import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * Utility class for interacting with {@link Iterable}.
@@ -32,31 +33,16 @@ public class IterablesUtil {
         return Collections::emptyIterator;
     }
 
-    public static final Predicate NO_FILTER = new NoFilter();
+    public static final Predicate NO_FILTER = e -> true;
 
     public static <E> Predicate<E> noFilter() {
         return (Predicate<E>)NO_FILTER;
     }
 
-    private static class NoFilter<E> implements Predicate<E> {
-
-        @Override
-        public boolean apply(@Nullable E e) {
-            return true;
-        }
-    }
-
     public static <O> Iterable<O> limitedIterable(final Iterable<O> iterable, final int limit) {
-        return Iterables.filter(iterable,new Predicate<O>() {
-
-            int count = 0;
-
-            @Override
-            public boolean apply(@Nullable O o) {
-                count++;
-                return count<=limit;
-            }
-        });
+        return StreamSupport.stream(iterable.spliterator(), false)
+            .limit(limit)
+            .collect(Collectors.toList());
     }
 
     public static int size(Iterable i) {

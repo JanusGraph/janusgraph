@@ -16,7 +16,6 @@ package org.janusgraph.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.graphdb.idmanagement.IDManager;
@@ -131,8 +130,8 @@ public class FulgoraVertexMemory<M> {
         else return scope;
     }
 
-    private static Iterable<MessageScope> normalizeScopes(Iterable<MessageScope> scopes) {
-        return Iterables.transform(scopes, FulgoraVertexMemory::normalizeScope);
+    private static List<MessageScope> normalizeScopes(Set<MessageScope> scopes) {
+        return scopes.stream().map(FulgoraVertexMemory::normalizeScope).collect(Collectors.toList());
     }
 
 

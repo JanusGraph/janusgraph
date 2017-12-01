@@ -16,7 +16,6 @@ package org.janusgraph.graphdb.transaction;
 
 import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.Weigher;
@@ -89,6 +88,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -1064,7 +1064,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     private JanusGraphRelation previous = null;
 
                     @Override
-                    public boolean apply(final InternalRelation relation) {
+                    public boolean test(final InternalRelation relation) {
                         if ((relation instanceof JanusGraphEdge) && relation.isLoop()
                                 && query.getDirection() != Direction.BOTH) {
                             if (relation.equals(previous))
@@ -1151,9 +1151,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     final Set<PropertyKey> keys = Sets.newHashSet();
                     ConditionUtil.traversal(query.getCondition(), cond -> {
                         Preconditions.checkArgument(cond.getType() != Condition.Type.LITERAL || cond instanceof PredicateCondition);
-                        if (cond instanceof PredicateCondition) {
+                        if (cond instanceof PredicateCondition)
                             keys.add(((PredicateCondition<PropertyKey, JanusGraphElement>) cond).getKey());
-                        }
                         return true;
                     });
                     Preconditions.checkArgument(!keys.isEmpty(), "Invalid query condition: %s", query.getCondition());
@@ -1178,7 +1177,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     });
                 }
 
-                return (Iterator) com.google.common.collect.Iterators.filter(vertices, vertex -> query.matches(vertex));
+                return (Iterator) com.google.common.collect.Iterators.filter(vertices, query::matches);
             } else if ( (query.getResultType() == ElementCategory.EDGE || query.getResultType()==ElementCategory.PROPERTY)
                                         && !addedRelations.isEmpty()) {
                 return (Iterator) addedRelations.getView(relation -> query.getResultType().isInstance(relation) && !relation.isInvisible() && query.matches(relation)).iterator();

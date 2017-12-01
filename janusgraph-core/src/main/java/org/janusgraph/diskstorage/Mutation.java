@@ -14,14 +14,15 @@
 
 package org.janusgraph.diskstorage;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.*;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Container for collection mutations against a data store.
@@ -150,7 +151,7 @@ public abstract class Mutation<E,K> {
      */
     public<V> void consolidate(Function<E,V> convertAdditions, Function<K,V> convertDeletions) {
         if (hasDeletions() && hasAdditions()) {
-            Set<V> adds = Sets.newHashSet(Iterables.transform(additions,convertAdditions));
+            final Set<V> adds = additions.stream().map(convertAdditions).collect(Collectors.toSet());
             deletions.removeIf(k -> adds.contains(convertDeletions.apply(k)));
         }
     }

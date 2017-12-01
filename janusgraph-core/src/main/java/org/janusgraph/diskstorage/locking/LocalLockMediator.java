@@ -18,7 +18,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.janusgraph.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import org.janusgraph.diskstorage.util.KeyColumn;
 
 import org.slf4j.Logger;
