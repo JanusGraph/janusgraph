@@ -72,11 +72,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         if (additions.isEmpty() && deletions.isEmpty()) return;
 
         KCVEntryMutation m = new KCVEntryMutation(additions, deletions);
-        Map<StaticBuffer, KCVEntryMutation> storeMutation = mutations.get(store);
-        if (storeMutation == null) {
-            storeMutation = new HashMap<StaticBuffer, KCVEntryMutation>();
-            mutations.put(store, storeMutation);
-        }
+        final Map<StaticBuffer, KCVEntryMutation> storeMutation = mutations.computeIfAbsent(store, k -> new HashMap<StaticBuffer, KCVEntryMutation>());
         KCVEntryMutation existingM = storeMutation.get(key);
         if (existingM != null) {
             existingM.merge(m);

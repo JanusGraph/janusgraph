@@ -39,7 +39,6 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.locking.TemporaryLockingException;
-import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.graphdb.database.idassigner.IDPoolExhaustedException;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 
@@ -169,12 +168,8 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
     }
 
     private long getCurrentID(final StaticBuffer partitionKey) throws BackendException {
-        List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
-            @Override
-            public List<Entry> call(StoreTransaction txh) throws BackendException {
-                return idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE).setLimit(5), txh);
-            }
-        },this,times);
+        final List<Entry> blocks = BackendOperation.execute(
+            (BackendOperation.Transactional<List<Entry>>) txh -> idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE).setLimit(5), txh),this,times);
 
         if (blocks == null) throw new TemporaryBackendException("Could not read from storage");
         long latest = BASE_ID;
@@ -262,12 +257,9 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                     Timer writeTimer = times.getTimer().start();
                     target = getBlockApplication(nextEnd, writeTimer.getStartTime());
                     final StaticBuffer finalTarget = target; // copy for the inner class
-                    BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
-                        @Override
-                        public Boolean call(StoreTransaction txh) throws BackendException {
-                            idStore.mutate(partitionKey, Arrays.asList(StaticArrayEntry.of(finalTarget)), KeyColumnValueStore.NO_DELETIONS, txh);
-                            return true;
-                        }
+                    BackendOperation.execute(txh -> {
+                        idStore.mutate(partitionKey, Arrays.asList(StaticArrayEntry.of(finalTarget)), KeyColumnValueStore.NO_DELETIONS, txh);
+                        return true;
                     },this,times);
                     writeTimer.stop();
 
@@ -287,12 +279,8 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                         sleepAndConvertInterrupts(idApplicationWaitMS.plus(waitGracePeriod));
 
                         // Read all id allocation claims on this partition, for the counter value we're claiming
-                        List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
-                            @Override
-                            public List<Entry> call(StoreTransaction txh) throws BackendException {
-                                return idStore.getSlice(new KeySliceQuery(partitionKey, slice[0], slice[1]), txh);
-                            }
-                        },this,times);
+                        final List<Entry> blocks = BackendOperation.execute(
+                            (BackendOperation.Transactional<List<Entry>>) txh -> idStore.getSlice(new KeySliceQuery(partitionKey, slice[0], slice[1]), txh),this,times);
                         if (blocks == null) throw new TemporaryBackendException("Could not read from storage");
                         if (blocks.isEmpty())
                             throw new PermanentBackendException("It seems there is a race-condition in the block application. " +
@@ -323,12 +311,9 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                         for (int attempt = 0; attempt < rollbackAttempts; attempt++) {
                             try {
                                 final StaticBuffer finalTarget = target; // copy for the inner class
-                                BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
-                                    @Override
-                                    public Boolean call(StoreTransaction txh) throws BackendException {
-                                        idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(finalTarget), txh);
-                                        return true;
-                                    }
+                                BackendOperation.execute(txh -> {
+                                    idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(finalTarget), txh);
+                                    return true;
                                 }, new BackendOperation.TransactionalProvider() { //Use normal consistency level for these non-critical delete operations
                                     @Override
                                     public StoreTransaction openTx() throws BackendException {

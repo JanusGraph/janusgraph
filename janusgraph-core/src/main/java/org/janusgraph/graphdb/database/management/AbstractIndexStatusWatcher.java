@@ -25,7 +25,6 @@ import java.util.concurrent.Callable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Arrays;
-import java.util.stream.Collectors;
 
 
 public abstract class AbstractIndexStatusWatcher<R, S extends AbstractIndexStatusWatcher<R,S>> implements Callable<R> {

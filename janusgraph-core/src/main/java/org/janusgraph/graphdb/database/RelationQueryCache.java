@@ -56,12 +56,7 @@ public class RelationQueryCache implements AutoCloseable {
     public SliceQuery getQuery(final InternalRelationType type, Direction dir) {
         CacheEntry ce;
         try {
-            ce = cache.get(type.longId(),new Callable<CacheEntry>() {
-                @Override
-                public CacheEntry call() throws Exception {
-                    return new CacheEntry(edgeSerializer,type);
-                }
-            });
+            ce = cache.get(type.longId(), () -> new CacheEntry(edgeSerializer,type));
         } catch (ExecutionException e) {
             throw new AssertionError("Should not happen: " + e.getMessage());
         }

@@ -47,9 +47,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.time.Instant;
-import java.util.Iterator;
+import java.util.*;
 import java.util.regex.Pattern;
-import java.util.Set;
+import java.util.stream.StreamSupport;
 
 /**
  * JanusGraphFactory is used to open or instantiate a JanusGraph graph database.
@@ -148,9 +148,7 @@ public class JanusGraphFactory {
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         if (null != graphName) {
             Preconditions.checkState(jgm != null, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
-            return (JanusGraph) jgm.openGraph(graphName, (gName) -> {
-                return new StandardJanusGraph(new GraphDatabaseConfiguration(configuration));
-            });
+            return (JanusGraph) jgm.openGraph(graphName, gName -> new StandardJanusGraph(new GraphDatabaseConfiguration(configuration)));
         } else {
             if (jgm != null) {
                 log.warn("You should supply \"graph.graphname\" in your .properties file configuration if you are opening " +
@@ -375,17 +373,12 @@ public class JanusGraphFactory {
                                   Pattern.quote(INDEX_CONF_FILE.getName()) +  ")"
             + ")");
 
-            final Iterator<String> keysToMangle = Iterators.filter(configuration.getKeys(), new Predicate<String>() {
-                @Override
-                public boolean apply(String key) {
-                    return null != key && p.matcher(key).matches();
-                }
-            });
+            final Iterator<String> keysToMangle = Iterators.filter(configuration.getKeys(), key -> null != key && p.matcher(key).matches());
 
             while (keysToMangle.hasNext()) {
                 String k = keysToMangle.next();
                 Preconditions.checkNotNull(k);
-                String s = configuration.getString(k);
+                final String s = configuration.getString(k);
                 Preconditions.checkArgument(StringUtils.isNotBlank(s),"Invalid Configuration: key %s has null empty value",k);
                 configuration.setProperty(k,getAbsolutePath(configParent,s));
             }

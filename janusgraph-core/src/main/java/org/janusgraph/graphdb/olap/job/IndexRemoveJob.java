@@ -122,9 +122,9 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
             final List<Entry> deletions;
             if (entries.size()==1) deletions = Iterables.getOnlyElement(entries.values());
             else {
-                int size = IteratorUtils.stream(entries.values().iterator()).map( e -> e.size()).reduce(0, (x,y) -> x+y);
+                final int size = IteratorUtils.stream(entries.values().iterator()).map(List::size).reduce(0, (x,y) -> x+y);
                 deletions = new ArrayList<>(size);
-                entries.values().forEach(e -> deletions.addAll(e));
+                entries.values().forEach(deletions::addAll);
             }
             metrics.incrementCustom(DELETED_RECORDS_COUNT,deletions.size());
             if (isRelationTypeIndex()) {

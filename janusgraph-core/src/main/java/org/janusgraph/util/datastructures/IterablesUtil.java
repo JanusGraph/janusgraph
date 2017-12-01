@@ -17,7 +17,6 @@ package org.janusgraph.util.datastructures;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -30,14 +29,7 @@ import java.util.*;
 public class IterablesUtil {
 
     public static <O> Iterable<O> emptyIterable() {
-        return new Iterable<O>() {
-
-            @Override
-            public Iterator<O> iterator() {
-                return Collections.emptyIterator();
-            }
-
-        };
+        return Collections::emptyIterator;
     }
 
     public static final Predicate NO_FILTER = new NoFilter();

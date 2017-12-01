@@ -111,19 +111,16 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
                 .concurrencyLevel(2)
                 .initialCapacity(100)
                 .expireAfterWrite(maxTxLength.toNanos(), TimeUnit.NANOSECONDS)
-                .removalListener(new RemovalListener<StandardTransactionId, TxEntry>() {
-                    @Override
-                    public void onRemoval(RemovalNotification<StandardTransactionId, TxEntry> notification) {
-                        RemovalCause cause = notification.getCause();
-                        Preconditions.checkArgument(cause == RemovalCause.EXPIRED,
-                                "Unexpected removal cause [%s] for transaction [%s]", cause, notification.getKey());
-                        TxEntry entry = notification.getValue();
-                        if (entry.status == LogTxStatus.SECONDARY_FAILURE || entry.status == LogTxStatus.PRIMARY_SUCCESS) {
-                            failureTxCounter.incrementAndGet();
-                            fixSecondaryFailure(notification.getKey(), entry);
-                        } else {
-                            successTxCounter.incrementAndGet();
-                        }
+                .removalListener((RemovalListener<StandardTransactionId, TxEntry>) notification -> {
+                    final RemovalCause cause = notification.getCause();
+                    Preconditions.checkArgument(cause == RemovalCause.EXPIRED,
+                            "Unexpected removal cause [%s] for transaction [%s]", cause, notification.getKey());
+                    final TxEntry entry = notification.getValue();
+                    if (entry.status == LogTxStatus.SECONDARY_FAILURE || entry.status == LogTxStatus.PRIMARY_SUCCESS) {
+                        failureTxCounter.incrementAndGet();
+                        fixSecondaryFailure(notification.getKey(), entry);
+                    } else {
+                        successTxCounter.incrementAndGet();
                     }
                 })
                 .build();
@@ -166,12 +163,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         if (secFail!=null) {
             userLogFailure = secFail.userLogFailure;
             secIndexFailure = !secFail.failedIndexes.isEmpty();
-            isFailedIndex = new Predicate<String>() {
-                @Override
-                public boolean apply(@Nullable String s) {
-                    return secFail.failedIndexes.contains(s);
-                }
-            };
+            isFailedIndex = s -> secFail.failedIndexes.contains(s);
         } else {
             isFailedIndex = Predicates.alwaysTrue();
         }
@@ -180,37 +172,34 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         if (secIndexFailure) {
             //1) Collect all elements (vertices and relations) and the indexes for which they need to be restored
             final SetMultimap<String,IndexRestore> indexRestores = HashMultimap.create();
-            BackendOperation.execute(new Callable<Boolean>() {
-                @Override
-                public Boolean call() throws Exception {
-                    StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.newTransaction();
-                    try {
-                        for (TransactionLogHeader.Modification modification : commitEntry.getContentAsModifications(serializer)) {
-                            InternalRelation rel = ModificationDeserializer.parseRelation(modification,tx);
-                            //Collect affected vertex indexes
-                            for (MixedIndexType index : getMixedIndexes(rel.getType())) {
-                                if (index.getElement()==ElementCategory.VERTEX && isFailedIndex.apply(index.getBackingIndexName())) {
-                                    assert rel.isProperty();
-                                    indexRestores.put(index.getBackingIndexName(),
-                                            new IndexRestore(rel.getVertex(0).longId(),ElementCategory.VERTEX,getIndexId(index)));
-                                }
+            BackendOperation.execute(() -> {
+                final StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.newTransaction();
+                try {
+                    for (final TransactionLogHeader.Modification modification : commitEntry.getContentAsModifications(serializer)) {
+                        final InternalRelation rel = ModificationDeserializer.parseRelation(modification,tx);
+                        //Collect affected vertex indexes
+                        for (final MixedIndexType index : getMixedIndexes(rel.getType())) {
+                            if (index.getElement()==ElementCategory.VERTEX && isFailedIndex.apply(index.getBackingIndexName())) {
+                                assert rel.isProperty();
+                                indexRestores.put(index.getBackingIndexName(),
+                                        new IndexRestore(rel.getVertex(0).longId(),ElementCategory.VERTEX,getIndexId(index)));
                             }
-                            //See if relation itself is affected
-                            for (RelationType relType : rel.getPropertyKeysDirect()) {
-                                for (MixedIndexType index : getMixedIndexes(relType)) {
-                                    if (index.getElement().isInstance(rel) && isFailedIndex.apply(index.getBackingIndexName())) {
-                                        assert rel.id() instanceof RelationIdentifier;
-                                        indexRestores.put(index.getBackingIndexName(),
-                                                new IndexRestore(rel.id(),ElementCategory.getByClazz(rel.getClass()),getIndexId(index)));
-                                    }
+                        }
+                        //See if relation itself is affected
+                        for (final RelationType relType : rel.getPropertyKeysDirect()) {
+                            for (final MixedIndexType index : getMixedIndexes(relType)) {
+                                if (index.getElement().isInstance(rel) && isFailedIndex.apply(index.getBackingIndexName())) {
+                                    assert rel.id() instanceof RelationIdentifier;
+                                    indexRestores.put(index.getBackingIndexName(),
+                                            new IndexRestore(rel.id(),ElementCategory.getByClazz(rel.getClass()),getIndexId(index)));
                                 }
                             }
                         }
-                    } finally {
-                        if (tx.isOpen()) tx.rollback();
                     }
-                    return true;
+                } finally {
+                    if (tx.isOpen()) tx.rollback();
                 }
+                return true;
             },readTime);
 
 
@@ -257,16 +246,13 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         if (userLogFailure && logTxIdentifier!=null) {
             TransactionLogHeader txHeader = new TransactionLogHeader(txCounter.incrementAndGet(),times.getTime(), times);
             final StaticBuffer userLogContent = txHeader.serializeUserLog(serializer,commitEntry,txId);
-            BackendOperation.execute(new Callable<Boolean>(){
-                @Override
-                public Boolean call() throws Exception {
-                    final Log userLog = graph.getBackend().getUserLog(logTxIdentifier);
-                    Future<Message> env = userLog.add(userLogContent);
-                    if (env.isDone()) {
-                        env.get();
-                    }
-                    return true;
+            BackendOperation.execute(() -> {
+                final Log userLog = graph.getBackend().getUserLog(logTxIdentifier);
+                final Future<Message> env = userLog.add(userLogContent);
+                if (env.isDone()) {
+                    env.get();
                 }
+                return true;
             },persistenceTime);
         }
 
@@ -315,21 +301,11 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         return Iterables.filter(Iterables.filter(((InternalRelationType)type).getKeyIndexes(),MIXED_INDEX_FILTER),MixedIndexType.class);
     }
 
-    private static final Predicate<IndexType> MIXED_INDEX_FILTER = new Predicate<IndexType>() {
-        @Override
-        public boolean apply(@Nullable IndexType indexType) {
-            return indexType.isMixedIndex();
-        }
-    };
+    private static final Predicate<IndexType> MIXED_INDEX_FILTER = indexType -> indexType.isMixedIndex();
 
     private class TxLogMessageReader implements MessageReader {
 
-        private final Callable<TxEntry> entryFactory = new Callable<TxEntry>() {
-            @Override
-            public TxEntry call() throws Exception {
-                return new TxEntry();
-            }
-        };
+        private final Callable<TxEntry> entryFactory = () -> new TxEntry();
 
         @Override
         public void read(Message message) {

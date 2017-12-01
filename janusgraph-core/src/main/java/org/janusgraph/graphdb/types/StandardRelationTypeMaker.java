@@ -17,7 +17,6 @@ package org.janusgraph.graphdb.types;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.janusgraph.core.*;
-import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.schema.RelationTypeMaker;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.database.IndexSerializer;

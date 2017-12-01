@@ -63,10 +63,7 @@ public class SubqueryIterator implements Iterator<JanusGraphElement>, AutoClosea
                 currentIds = new ArrayList<>();
                 profiler = QueryProfiler.startProfile(subQuery.getProfiler(), subQuery);
                 isTimerRunning = true;
-                stream = indexSerializer.query(subQuery, tx).map(r -> {
-                    currentIds.add(r);
-                    return r;
-                });
+                stream = indexSerializer.query(subQuery, tx).peek(r -> currentIds.add(r));
             } catch (final Exception e) {
                 throw new JanusGraphException("Could not call index", e.getCause());
             }

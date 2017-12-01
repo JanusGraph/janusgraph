@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import com.google.common.collect.Iterables;
 import org.janusgraph.core.BaseVertexQuery;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphMultiVertexQuery;

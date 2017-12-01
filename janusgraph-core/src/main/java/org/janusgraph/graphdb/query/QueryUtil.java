@@ -264,10 +264,7 @@ public class QueryUtil {
                     results = Lists.newArrayList(subResult);
                 } else {
                     Set<R> subResultSet = ImmutableSet.copyOf(subResult);
-                    Iterator resultIterator = results.iterator();
-                    while (resultIterator.hasNext()) {
-                        if (!subResultSet.contains(resultIterator.next())) resultIterator.remove();
-                    }
+                    results.removeIf(o -> !subResultSet.contains(o));
                 }
             }
             subLimit = (int) Math.min(Integer.MAX_VALUE - 1, Math.max(Math.pow(subLimit, 1.5),(subLimit+1)*2));

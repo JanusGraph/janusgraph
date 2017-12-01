@@ -37,7 +37,7 @@ import java.util.Map;
 public class PropertyPlacementStrategy extends SimpleBulkPlacementStrategy {
 
     public static final ConfigOption<String> PARTITION_KEY = new ConfigOption<String>(GraphDatabaseConfiguration.IDS_NS,
-            "partition-key","Partitions the graph by properties of this key", ConfigOption.Type.MASKABLE, String.class, key -> StringUtils.isNotBlank(key));
+            "partition-key","Partitions the graph by properties of this key", ConfigOption.Type.MASKABLE, String.class, StringUtils::isNotBlank);
 
 
     private String key;

@@ -56,13 +56,7 @@ public abstract class JanusGraphBlueprintsGraph implements JanusGraph {
 
     final GraphTransaction tinkerpopTxContainer = new GraphTransaction();
 
-    private ThreadLocal<JanusGraphBlueprintsTransaction> txs = new ThreadLocal<JanusGraphBlueprintsTransaction>() {
-
-        protected JanusGraphBlueprintsTransaction initialValue() {
-            return null;
-        }
-
-    };
+    private ThreadLocal<JanusGraphBlueprintsTransaction> txs = ThreadLocal.withInitial(() -> null);
 
     public abstract JanusGraphTransaction newThreadBoundTransaction();
 

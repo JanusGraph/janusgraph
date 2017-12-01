@@ -633,19 +633,10 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         return new ModificationSummary(!mutations.isEmpty(),has2iMods);
     }
 
-    private static final Predicate<InternalRelation> SCHEMA_FILTER = new Predicate<InternalRelation>() {
-        @Override
-        public boolean apply(final InternalRelation internalRelation) {
-            return internalRelation.getType() instanceof BaseRelationType && internalRelation.getVertex(0) instanceof JanusGraphSchemaVertex;
-        }
-    };
+    private static final Predicate<InternalRelation> SCHEMA_FILTER =
+        internalRelation -> internalRelation.getType() instanceof BaseRelationType && internalRelation.getVertex(0) instanceof JanusGraphSchemaVertex;
 
-    private static final Predicate<InternalRelation> NO_SCHEMA_FILTER = new Predicate<InternalRelation>() {
-        @Override
-        public boolean apply(@Nullable InternalRelation internalRelation) {
-            return !SCHEMA_FILTER.apply(internalRelation);
-        }
-    };
+    private static final Predicate<InternalRelation> NO_SCHEMA_FILTER = internalRelation -> !SCHEMA_FILTER.apply(internalRelation);
 
     private static final Predicate<InternalRelation> NO_FILTER = Predicates.alwaysTrue();
 

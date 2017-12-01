@@ -61,12 +61,7 @@ public class KCVSLogManager implements LogManager {
     public static final ConfigOption<Integer> LOG_MAX_PARTITIONS = new ConfigOption<Integer>(LOG_NS,"max-partitions",
             "The maximum number of partitions to use for logging. Setting up this many actual or virtual partitions. Must be bigger than 0" +
                     "and a power of 2.",
-            ConfigOption.Type.FIXED, Integer.class, new Predicate<Integer>() {
-        @Override
-        public boolean apply(@Nullable Integer integer) {
-            return integer!=null && integer>0 && NumberUtil.isPowerOf2(integer);
-        }
-    });
+            ConfigOption.Type.FIXED, Integer.class, integer -> integer!=null && integer>0 && NumberUtil.isPowerOf2(integer));
 
     /**
      * If {@link #LOG_MAX_PARTITIONS} isn't set explicitly, the number of partitions is derived by taking the configured

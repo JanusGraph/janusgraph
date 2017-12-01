@@ -103,13 +103,7 @@ public class PointInterval<T> implements Interval<T> {
             return new PointInterval<T>(points);
         } else if (other instanceof RangeInterval) {
             final RangeInterval<T> rint = (RangeInterval)other;
-            return new PointInterval<T>(Sets.newHashSet(Iterables.filter(points,
-                    new Predicate<T>() {
-                        @Override
-                        public boolean apply(@Nullable T t) {
-                            return rint.containsPoint(t);
-                        }
-                    })));
+            return new PointInterval<T>(Sets.newHashSet(Iterables.filter(points, t -> rint.containsPoint(t))));
         } else throw new AssertionError("Unexpected interval: " + other);
     }
 

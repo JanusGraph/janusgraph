@@ -189,11 +189,7 @@ public class StandardSchemaCache implements SchemaCache {
         final long cutTypeId = (schemaId >>> SCHEMAID_BACK_SHIFT);
         ConcurrentMap<Long,EntryList> types = schemaRelations;
         if (types!=null) {
-            Iterator<Long> keys = types.keySet().iterator();
-            while (keys.hasNext()) {
-                long key = keys.next();
-                if ((key>>>SCHEMAID_TOTALFORW_SHIFT)==cutTypeId) keys.remove();
-            }
+            types.keySet().removeIf(key -> (key >>> SCHEMAID_TOTALFORW_SHIFT) == cutTypeId);
         }
         Iterator<Long> keys = schemaRelationsBackup.asMap().keySet().iterator();
         while (keys.hasNext()) {
@@ -203,10 +199,7 @@ public class StandardSchemaCache implements SchemaCache {
         //2) expire names
         ConcurrentMap<String,Long> names = typeNames;
         if (names!=null) {
-            for (Iterator<Map.Entry<String, Long>> iterator = names.entrySet().iterator(); iterator.hasNext(); ) {
-                Map.Entry<String, Long> next = iterator.next();
-                if (next.getValue().equals(schemaId)) iterator.remove();
-            }
+            names.entrySet().removeIf(next -> next.getValue().equals(schemaId));
         }
         for (Map.Entry<String,Long> entry : typeNamesBackup.asMap().entrySet()) {
             if (entry.getValue().equals(schemaId)) typeNamesBackup.invalidate(entry.getKey());

@@ -70,36 +70,20 @@ public class MetricInstrumentedIterator implements KeyIterator {
 
     @Override
     public boolean hasNext() {
-        return MetricInstrumentedStore.runWithMetrics(p, null, M_HAS_NEXT,
-            new UncheckedCallable<Boolean>() {
-                public Boolean call() {
-                    return Boolean.valueOf(iterator.hasNext());
-                }
-            }
-        );
+        return MetricInstrumentedStore.runWithMetrics(p, null, M_HAS_NEXT, (UncheckedCallable<Boolean>) () -> Boolean.valueOf(iterator.hasNext()));
     }
 
     @Override
     public StaticBuffer next() {
-        return MetricInstrumentedStore.runWithMetrics(p, null, M_NEXT,
-            new UncheckedCallable<StaticBuffer>() {
-                public StaticBuffer call() {
-                    return iterator.next();
-                }
-            }
-        );
+        return MetricInstrumentedStore.runWithMetrics(p, null, M_NEXT, (UncheckedCallable<StaticBuffer>) () -> iterator.next());
     }
     
     @Override
     public void close() throws IOException {
-        MetricInstrumentedStore.runWithMetrics(p, null, M_CLOSE,
-            new IOCallable<Void>() {
-                public Void call() throws IOException {
-                    iterator.close();
-                    return null;
-                }
-            }
-        );
+        MetricInstrumentedStore.runWithMetrics(p, null, M_CLOSE, (IOCallable<Void>) () -> {
+            iterator.close();
+            return null;
+        });
     }
 
     @Override

@@ -32,6 +32,7 @@ import javax.annotation.Nullable;
 import java.lang.reflect.Array;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Set;
@@ -246,52 +247,44 @@ public class ConfigOption<O> extends ConfigElement {
     //########### HELPER METHODS ##################
 
     public static <E extends Enum> E getEnumValue(String str, Class<E> enumClass) {
-        str = str.trim();
-        if (StringUtils.isBlank(str)) return null;
-        for (E e : enumClass.getEnumConstants()) {
-            if (e.toString().equalsIgnoreCase(str)) return e;
+        final String trimmed = str.trim();
+        if (StringUtils.isBlank(trimmed)) {
+            return null;
         }
-        throw new IllegalArgumentException("Invalid enum string provided for ["+enumClass+"]: " + str);
+        return Arrays.stream(enumClass.getEnumConstants())
+            .filter(e -> e.toString().equalsIgnoreCase(trimmed))
+            .findAny()
+            .orElseThrow(() -> new IllegalArgumentException("Invalid enum string provided for ["+enumClass+"]: " + trimmed));
     }
 
-    public static <O> Predicate<O> disallowEmpty(Class<O> clazz) {
-        return new Predicate<O>() {
-            @Override
-            public boolean apply(@Nullable O o) {
-                if (o==null) return false;
-                if (o instanceof String) return StringUtils.isNotBlank((String)o);
-                if (o.getClass().isArray() && (Array.getLength(o)==0 || Array.get(o,0)==null)) return false;
-                if (o instanceof Collection && (((Collection)o).isEmpty() || ((Collection)o).iterator().next()==null)) return false;
-                return true;
+    public static final<O> Predicate<O> disallowEmpty(Class<O> clazz) {
+        return o -> {
+            if (o==null) {
+                return false;
             }
+            if (o instanceof String) {
+                return StringUtils.isNotBlank((String)o);
+            }
+            if (o.getClass().isArray() && (Array.getLength(o)==0 || Array.get(o,0)==null)) {
+                return false;
+            }
+            if (o instanceof Collection && (((Collection)o).isEmpty() || ((Collection)o).iterator().next()==null)) {
+                return false;
+            }
+            return true;
         };
     }
 
-    public static Predicate<Integer> positiveInt() {
-        return new Predicate<Integer>() {
-            @Override
-            public boolean apply(@Nullable Integer num) {
-                return num!=null && num>0;
-            }
-        };
+    public static final Predicate<Integer> positiveInt() {
+        return num -> num!=null && num>0;
     }
 
-    public static Predicate<Integer> nonnegativeInt() {
-        return new Predicate<Integer>() {
-            @Override
-            public boolean apply(@Nullable Integer num) {
-                return num!=null && num>=0;
-            }
-        };
+    public static final Predicate<Integer> nonnegativeInt() {
+        return num -> num!=null && num>=0;
     }
 
-    public static Predicate<Long> positiveLong() {
-        return new Predicate<Long>() {
-            @Override
-            public boolean apply(@Nullable Long num) {
-                return num!=null && num>0;
-            }
-        };
+    public static final Predicate<Long> positiveLong() {
+        return num -> num!=null && num>0;
     }
 
 

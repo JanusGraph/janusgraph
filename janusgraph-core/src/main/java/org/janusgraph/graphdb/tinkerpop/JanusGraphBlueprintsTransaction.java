@@ -30,7 +30,6 @@ import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadedTransaction;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.structure.T;
 
 import java.util.Arrays;
 import java.util.Collections;

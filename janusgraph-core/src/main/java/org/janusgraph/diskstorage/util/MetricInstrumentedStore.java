@@ -100,33 +100,25 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
 
     @Override
     public EntryList getSlice(final KeySliceQuery query, final StoreTransaction txh) throws BackendException {
-        return runWithMetrics(txh, metricsStoreName, M_GET_SLICE,
-            new StorageCallable<EntryList>() {
-                public EntryList call() throws BackendException {
-                    EntryList result = backend.getSlice(query, txh);
-                    recordSliceMetrics(txh, result);
-                    return result;
-                }
-            }
-        );
+        return runWithMetrics(txh, metricsStoreName, M_GET_SLICE, () -> {
+            final EntryList result = backend.getSlice(query, txh);
+            recordSliceMetrics(txh, result);
+            return result;
+        });
     }
 
     @Override
     public Map<StaticBuffer,EntryList> getSlice(final List<StaticBuffer> keys,
                                       final SliceQuery query,
                                       final StoreTransaction txh) throws BackendException {
-        return runWithMetrics(txh, metricsStoreName, M_GET_SLICE,
-            new StorageCallable<Map<StaticBuffer,EntryList>>() {
-                public Map<StaticBuffer,EntryList> call() throws BackendException {
-                    Map<StaticBuffer,EntryList> results = backend.getSlice(keys, query, txh);
+        return runWithMetrics(txh, metricsStoreName, M_GET_SLICE, () -> {
+            final Map<StaticBuffer,EntryList> results = backend.getSlice(keys, query, txh);
 
-                    for (EntryList result : results.values()) {
-                        recordSliceMetrics(txh, result);
-                    }
-                    return results;
-                }
+            for (final EntryList result : results.values()) {
+                recordSliceMetrics(txh, result);
             }
-        );
+            return results;
+        });
     }
 
     @Override
@@ -134,14 +126,10 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
                        final List<Entry> additions,
                        final List<StaticBuffer> deletions,
                        final StoreTransaction txh) throws BackendException {
-        runWithMetrics(txh, metricsStoreName, M_MUTATE,
-                new StorageCallable<Void>() {
-                    public Void call() throws BackendException {
-                        backend.mutate(key, additions, deletions, txh);
-                        return null;
-                    }
-                }
-        );
+        runWithMetrics(txh, metricsStoreName, M_MUTATE, (StorageCallable<Void>) () -> {
+            backend.mutate(key, additions, deletions, txh);
+            return null;
+        });
     }
 
     @Override
@@ -149,46 +137,34 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
                             final StaticBuffer column,
                             final StaticBuffer expectedValue,
                             final StoreTransaction txh) throws BackendException {
-        runWithMetrics(txh, metricsStoreName, M_ACQUIRE_LOCK,
-            new StorageCallable<Void>() {
-                public Void call() throws BackendException {
-                    backend.acquireLock(key, column, expectedValue, txh);
-                    return null;
-                }
-            }
-        );
+        runWithMetrics(txh, metricsStoreName, M_ACQUIRE_LOCK, (StorageCallable<Void>) () -> {
+            backend.acquireLock(key, column, expectedValue, txh);
+            return null;
+        });
     }
 
     @Override
     public KeyIterator getKeys(final KeyRangeQuery query, final StoreTransaction txh) throws BackendException {
-        return runWithMetrics(txh, metricsStoreName, M_GET_KEYS,
-            new StorageCallable<KeyIterator>() {
-                public KeyIterator call() throws BackendException {
-                    KeyIterator ki = backend.getKeys(query, txh);
-                    if (txh.getConfiguration().hasGroupName()) {
-                        return MetricInstrumentedIterator.of(ki,txh.getConfiguration().getGroupName(),metricsStoreName,M_GET_KEYS,M_ITERATOR);
-                    } else {
-                        return ki;
-                    }
-                }
+        return runWithMetrics(txh, metricsStoreName, M_GET_KEYS, () -> {
+            final KeyIterator ki = backend.getKeys(query, txh);
+            if (txh.getConfiguration().hasGroupName()) {
+                return MetricInstrumentedIterator.of(ki, txh.getConfiguration().getGroupName(), metricsStoreName, M_GET_KEYS, M_ITERATOR);
+            } else {
+                return ki;
             }
-        );
+        });
     }
 
     @Override
     public KeyIterator getKeys(final SliceQuery query, final StoreTransaction txh) throws BackendException {
-        return runWithMetrics(txh, metricsStoreName, M_GET_KEYS,
-            new StorageCallable<KeyIterator>() {
-                public KeyIterator call() throws BackendException {
-                    KeyIterator ki = backend.getKeys(query, txh);
-                    if (txh.getConfiguration().hasGroupName()) {
-                        return MetricInstrumentedIterator.of(ki,txh.getConfiguration().getGroupName(),metricsStoreName,M_GET_KEYS,M_ITERATOR);
-                    } else {
-                        return ki;
-                    }
-                }
+        return runWithMetrics(txh, metricsStoreName, M_GET_KEYS, () -> {
+            final KeyIterator ki = backend.getKeys(query, txh);
+            if (txh.getConfiguration().hasGroupName()) {
+                return MetricInstrumentedIterator.of(ki, txh.getConfiguration().getGroupName(), metricsStoreName, M_GET_KEYS, M_ITERATOR);
+            } else {
+                return ki;
             }
-        );
+        });
     }
 
     @Override

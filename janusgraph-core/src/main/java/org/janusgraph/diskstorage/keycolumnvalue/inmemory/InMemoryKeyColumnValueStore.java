@@ -118,12 +118,7 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
         public RowIterator(Iterator<Map.Entry<StaticBuffer, ColumnValueStore>> rows,
                            @Nullable SliceQuery columns,
                            final StoreTransaction transaction) {
-            this.rows = Iterators.filter(rows, new Predicate<Map.Entry<StaticBuffer, ColumnValueStore>>() {
-                @Override
-                public boolean apply(@Nullable Map.Entry<StaticBuffer, ColumnValueStore> entry) {
-                    return entry != null && !entry.getValue().isEmpty(transaction);
-                }
-            });
+            this.rows = Iterators.filter(rows, entry -> entry != null && !entry.getValue().isEmpty(transaction));
 
             this.columnSlice = columns;
             this.transaction = transaction;

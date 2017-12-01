@@ -49,6 +49,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 
 /**
@@ -209,13 +211,8 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
 
             @Override
             public Iterable<String> getKeys(final String prefix) {
-                return Lists.newArrayList(Iterables.filter(entries.keySet(),new Predicate<String>() {
-                    @Override
-                    public boolean apply(@Nullable String s) {
-                        assert s!=null;
-                        return StringUtils.isBlank(prefix) || s.startsWith(prefix);
-                    }
-                }));
+                final boolean prefixBlank = StringUtils.isBlank(prefix);
+                return entries.keySet().stream().filter(s -> prefixBlank || s.startsWith(prefix)).collect(Collectors.toList());
             }
 
             @Override

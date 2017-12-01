@@ -83,6 +83,6 @@ public interface StaticBuffer extends Comparable<StaticBuffer> {
 
     Factory<ByteBuffer> BB_FACTORY = (array, offset, limit) -> ByteBuffer.wrap(array, offset, limit - offset);
 
-    Factory<StaticBuffer> STATIC_FACTORY = (array, offset, limit) -> new StaticArrayBuffer(array, offset, limit);
+    Factory<StaticBuffer> STATIC_FACTORY = StaticArrayBuffer::new;
 
 }
