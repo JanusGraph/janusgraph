@@ -36,11 +36,6 @@ public class ConcurrentAddedRelations extends SimpleAddedRelations {
     }
 
     @Override
-    public synchronized boolean isEmpty() {
-        return super.isEmpty();
-    }
-
-    @Override
     public synchronized List<InternalRelation> getView(Predicate<InternalRelation> filter) {
         return super.getView(filter);
     }

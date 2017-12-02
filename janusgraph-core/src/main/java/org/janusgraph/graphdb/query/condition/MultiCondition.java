@@ -54,14 +54,6 @@ public abstract class MultiCondition<E extends JanusGraphElement> extends ArrayL
         return super.add(condition);
     }
 
-    public int size() {
-        return super.size();
-    }
-
-    public Condition<E> get(int position) {
-        return super.get(position);
-    }
-
     @Override
     public boolean hasChildren() {
         return !super.isEmpty();
