@@ -53,11 +53,6 @@ public class LongCounter implements Serializable {
     }
 
     @Override
-    public int hashCode() {
-        return super.hashCode();
-    }
-
-    @Override
     public boolean equals(Object other) {
         return this == other;
     }

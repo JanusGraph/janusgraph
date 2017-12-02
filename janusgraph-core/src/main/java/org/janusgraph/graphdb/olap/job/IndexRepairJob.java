@@ -71,16 +71,6 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
         super(indexName,indexType);
     }
 
-    @Override
-    public void workerIterationEnd(ScanMetrics metrics) {
-        super.workerIterationEnd(metrics);
-    }
-
-    @Override
-    public void workerIterationStart(final JanusGraph graph, Configuration config, ScanMetrics metrics) {
-        super.workerIterationStart(graph, config, metrics);
-    }
-
     /**
      * Check that our target index is in either the ENABLED or REGISTERED state.
      */
