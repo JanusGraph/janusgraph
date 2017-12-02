@@ -131,7 +131,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
 
     private final List<HasContainer> hasContainers;
     private int limit = BaseQuery.NO_LIMIT;
-    private List<OrderEntry> orders = new ArrayList<>();
+    private final List<OrderEntry> orders = new ArrayList<>();
 
 
     @Override

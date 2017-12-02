@@ -26,8 +26,8 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  */
 public class Parameter<V> {
 
-    private String key;
-    private V value;
+    private final String key;
+    private final V value;
 
     public Parameter(String key, V value) {
         Preconditions.checkArgument(StringUtils.isNotBlank(key),"Invalid key");

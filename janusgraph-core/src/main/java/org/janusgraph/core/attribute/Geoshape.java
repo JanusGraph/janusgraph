@@ -73,9 +73,9 @@ import java.util.stream.Collectors;
 
 public class Geoshape {
 
-    private static String FIELD_LABEL = "geometry";
-    private static String FIELD_TYPE = "type";
-    private static String FIELD_COORDINATES = "coordinates";
+    private static final String FIELD_LABEL = "geometry";
+    private static final String FIELD_TYPE = "type";
+    private static final String FIELD_COORDINATES = "coordinates";
 
     public static final GeoshapeHelper HELPER;
     static {

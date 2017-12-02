@@ -36,7 +36,7 @@ public class KVMutation extends Mutation<KeyValueEntry,StaticBuffer> {
         super();
     }
 
-    private static Function<KeyValueEntry,StaticBuffer> ENTRY2KEY_FCT = new Function<KeyValueEntry, StaticBuffer>() {
+    private static final Function<KeyValueEntry,StaticBuffer> ENTRY2KEY_FCT = new Function<KeyValueEntry, StaticBuffer>() {
         @Nullable
         @Override
         public StaticBuffer apply(@Nullable KeyValueEntry keyValueEntry) {

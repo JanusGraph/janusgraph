@@ -37,7 +37,7 @@ public class IndexFeatures {
     private final boolean supportsNanoseconds;
     private final boolean supportsCustomAnalyzer;
     private final boolean supportsGeoContains;
-    private ImmutableSet<Cardinality> supportedCardinalities;
+    private final ImmutableSet<Cardinality> supportedCardinalities;
 
     public IndexFeatures(boolean supportsDocumentTTL, Mapping defaultMap, ImmutableSet<Mapping> supportedMap,
                          String wildcardField, ImmutableSet<Cardinality> supportedCardinalities, boolean supportsNanoseconds,
@@ -92,8 +92,8 @@ public class IndexFeatures {
 
         private boolean supportsDocumentTTL = false;
         private Mapping defaultStringMapping = Mapping.TEXT;
-        private Set<Mapping> supportedMappings = Sets.newHashSet();
-        private Set<Cardinality> supportedCardinalities = Sets.newHashSet();
+        private final Set<Mapping> supportedMappings = Sets.newHashSet();
+        private final Set<Cardinality> supportedCardinalities = Sets.newHashSet();
         private String wildcardField = "*";
         private boolean supportsNanoseconds;
         private boolean supportsCustomAnalyzer;

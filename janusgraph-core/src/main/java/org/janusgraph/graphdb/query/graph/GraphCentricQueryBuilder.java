@@ -60,7 +60,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     /**
      * The constraints added to this query. None by default.
      */
-    private List<PredicateCondition<String, JanusGraphElement>> constraints;
+    private final List<PredicateCondition<String, JanusGraphElement>> constraints;
     /**
      * The order in which the elements should be returned. None by default.
      */

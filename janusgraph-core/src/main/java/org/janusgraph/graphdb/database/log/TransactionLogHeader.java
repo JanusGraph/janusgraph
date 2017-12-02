@@ -42,7 +42,7 @@ public class TransactionLogHeader {
 
     private final long transactionId;
     private final Instant txTimestamp;
-    private TimestampProvider times;
+    private final TimestampProvider times;
     private final StaticBuffer logKey;
 
     public TransactionLogHeader(long transactionId, Instant txTimestamp, TimestampProvider times) {

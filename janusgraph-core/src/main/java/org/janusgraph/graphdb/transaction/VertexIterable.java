@@ -40,7 +40,7 @@ public class VertexIterable implements Iterable<InternalVertex> {
     public Iterator<InternalVertex> iterator() {
         return new Iterator<InternalVertex>() {
 
-            RecordIterator<Long> iterator = graph.getVertexIDs(tx.getTxHandle());
+            final RecordIterator<Long> iterator = graph.getVertexIDs(tx.getTxHandle());
             InternalVertex nextVertex = nextVertex();
 
             private InternalVertex nextVertex() {

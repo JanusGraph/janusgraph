@@ -70,7 +70,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
     /**
      * The order in which the relations should be returned. None by default.
      */
-    protected OrderList orders = new OrderList();
+    protected final OrderList orders = new OrderList();
     /**
      * The limit of this query. No limit by default.
      */

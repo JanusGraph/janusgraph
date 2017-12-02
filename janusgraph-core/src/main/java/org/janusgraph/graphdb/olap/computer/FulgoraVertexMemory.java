@@ -38,7 +38,7 @@ public class FulgoraVertexMemory<M> {
 
 
 
-    private NonBlockingHashMapLong<VertexState<M>> vertexStates;
+    private final NonBlockingHashMapLong<VertexState<M>> vertexStates;
     private final IDManager idManager;
     private final Set<VertexComputeKey> computeKeys;
     private final Map<String,Integer> elementKeyMap;
@@ -47,7 +47,7 @@ public class FulgoraVertexMemory<M> {
     private Map<MessageScope,Integer> currentScopes;
     private boolean inExecute;
 
-    private NonBlockingHashMapLong<PartitionVertexAggregate<M>> partitionVertices;
+    private final NonBlockingHashMapLong<PartitionVertexAggregate<M>> partitionVertices;
 
     public FulgoraVertexMemory(int numVertices, final IDManager idManager, final VertexProgram<M> vertexProgram) {
         Preconditions.checkArgument(numVertices>=0 && vertexProgram!=null && idManager!=null);
