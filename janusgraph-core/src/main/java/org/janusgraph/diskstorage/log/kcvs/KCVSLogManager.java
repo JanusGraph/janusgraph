@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.log.kcvs;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.StoreMetaData;
@@ -36,7 +35,6 @@ import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.*;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;

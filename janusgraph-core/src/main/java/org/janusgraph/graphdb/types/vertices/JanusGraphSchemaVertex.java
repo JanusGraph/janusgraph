@@ -34,8 +34,6 @@ import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import javax.annotation.Nullable;
-
 public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource {
 
     public JanusGraphSchemaVertex(StandardJanusGraphTx tx, long id, byte lifecycle) {

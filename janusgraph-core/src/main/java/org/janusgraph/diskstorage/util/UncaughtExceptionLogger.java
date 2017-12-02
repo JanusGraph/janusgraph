@@ -54,7 +54,7 @@ public class UncaughtExceptionLogger implements UncaughtExceptionHandler {
             public void dispatch(String message, Throwable t) {
                 log.error(message, t);
             }
-        };
+        }
     }
 
     private final UELevel level;

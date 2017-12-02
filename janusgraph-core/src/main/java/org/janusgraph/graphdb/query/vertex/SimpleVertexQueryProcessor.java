@@ -28,7 +28,6 @@ import org.janusgraph.graphdb.query.BackendQueryHolder;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.RelationConstructor;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.util.datastructures.Retriever;
 
 import javax.annotation.Nullable;
 import java.util.*;

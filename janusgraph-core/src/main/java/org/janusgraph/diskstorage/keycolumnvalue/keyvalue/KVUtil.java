@@ -93,6 +93,6 @@ public class KVUtil {
         public Object getMetaData(KeyValueEntry element, EntryMetaData meta) {
             throw new UnsupportedOperationException("Unsupported meta data: " + meta);
         }
-    };
+    }
 
 }

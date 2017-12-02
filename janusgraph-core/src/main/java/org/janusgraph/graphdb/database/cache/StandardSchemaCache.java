@@ -47,7 +47,7 @@ public class StandardSchemaCache implements SchemaCache {
 //    private static final int SCHEMAID_FORW_SHIFT = 4; //Number of bits at the end to append the id of the system type
     private static final int SCHEMAID_TOTALFORW_SHIFT = 3; //Total number of bits appended - the 1 is for the 1 bit direction
     private static final int SCHEMAID_BACK_SHIFT = 2; //Number of bits to remove from end of schema id since its just the padding
-    {
+    static {
         assert IDManager.VertexIDType.Schema.removePadding(1L<<SCHEMAID_BACK_SHIFT)==1;
         assert SCHEMAID_TOTALFORW_SHIFT-SCHEMAID_BACK_SHIFT>=0;
     }
@@ -191,10 +191,8 @@ public class StandardSchemaCache implements SchemaCache {
         if (types!=null) {
             types.keySet().removeIf(key -> (key >>> SCHEMAID_TOTALFORW_SHIFT) == cutTypeId);
         }
-        Iterator<Long> keys = schemaRelationsBackup.asMap().keySet().iterator();
-        while (keys.hasNext()) {
-            long key = keys.next();
-            if ((key>>>SCHEMAID_TOTALFORW_SHIFT)==cutTypeId) schemaRelationsBackup.invalidate(key);
+        for (Long key : schemaRelationsBackup.asMap().keySet()) {
+            if ((key >>> SCHEMAID_TOTALFORW_SHIFT) == cutTypeId) schemaRelationsBackup.invalidate(key);
         }
         //2) expire names
         ConcurrentMap<String,Long> names = typeNames;

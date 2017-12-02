@@ -49,6 +49,6 @@ public class LongArraySerializer extends ArraySerializer implements AttributeSer
     @Override
     public void write(WriteBuffer buffer, long[] attribute) {
         writeLength(buffer,attribute);
-        if (attribute!=null) for (int i = 0; i < attribute.length; i++) buffer.putLong(attribute[i]);
+        if (attribute!=null) for (long anAttribute : attribute) buffer.putLong(anAttribute);
     }
 }

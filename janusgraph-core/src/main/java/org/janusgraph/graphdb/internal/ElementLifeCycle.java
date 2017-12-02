@@ -94,15 +94,27 @@ public class ElementLifeCycle {
         } else if (lifecycle== Removed) {
             throw new IllegalStateException("No event can occur on deleted vertices: " + event);
         } else if (event==Event.REMOVED_RELATION) {
-            if (lifecycle==Loaded) return RemovedRelations;
-            else if (lifecycle==AddedRelations) return Modified;
-            else if (lifecycle== RemovedRelations) return RemovedRelations;
-            else throw new IllegalStateException("Unexpected state: " + lifecycle + " - " + event);
+            switch (lifecycle) {
+                case Loaded:
+                    return RemovedRelations;
+                case AddedRelations:
+                    return Modified;
+                case RemovedRelations:
+                    return RemovedRelations;
+                default:
+                    throw new IllegalStateException("Unexpected state: " + lifecycle + " - " + event);
+            }
         } else if (event==Event.ADDED_RELATION) {
-            if (lifecycle==Loaded) return AddedRelations;
-            else if (lifecycle== RemovedRelations) return Modified;
-            else if (lifecycle==AddedRelations) return AddedRelations;
-            else throw new IllegalStateException("Unexpected state: " + lifecycle + " - " + event);
+            switch (lifecycle) {
+                case Loaded:
+                    return AddedRelations;
+                case RemovedRelations:
+                    return Modified;
+                case AddedRelations:
+                    return AddedRelations;
+                default:
+                    throw new IllegalStateException("Unexpected state: " + lifecycle + " - " + event);
+            }
         } else if (event==Event.UPDATE) {
             return Modified;
         } else throw new IllegalStateException("Unexpected state event: " + lifecycle + " - " + event);

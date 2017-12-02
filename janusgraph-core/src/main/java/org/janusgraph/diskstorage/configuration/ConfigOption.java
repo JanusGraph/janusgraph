@@ -27,8 +27,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-
 import java.lang.reflect.Array;
 import java.time.Duration;
 import java.time.Instant;
@@ -66,7 +64,7 @@ public class ConfigOption<O> extends ConfigElement {
         /**
          * These options can ONLY be provided through a local configuration file
          */
-        LOCAL;
+        LOCAL
     }
 
     private static final Logger log =

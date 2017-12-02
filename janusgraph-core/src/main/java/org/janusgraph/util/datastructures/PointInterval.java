@@ -15,11 +15,9 @@
 package org.janusgraph.util.datastructures;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.comparators.ComparableComparator;
-import javax.annotation.Nullable;
 import java.util.*;
 
 /**

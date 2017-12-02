@@ -17,6 +17,7 @@ package org.janusgraph.graphdb.query.vertex;
 import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.VertexList;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
@@ -32,7 +33,7 @@ import java.util.*;
  */
 public class VertexArrayList implements VertexListInternal {
 
-    public static final Comparator<JanusGraphVertex> VERTEX_ID_COMPARATOR = (o1, o2) -> Long.compare(o1.longId(),o2.longId());
+    public static final Comparator<JanusGraphVertex> VERTEX_ID_COMPARATOR = Comparator.comparingLong(JanusGraphElement::longId);
 
     private final StandardJanusGraphTx tx;
     private List<JanusGraphVertex> vertices;

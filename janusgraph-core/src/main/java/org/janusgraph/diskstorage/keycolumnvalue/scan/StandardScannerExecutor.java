@@ -177,8 +177,8 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
                 }
             }
 
-            for (int i=0; i<processors.length;i++) {
-                processors[i].finish();
+            for (Processor processor : processors) {
+                processor.finish();
             }
             if (!Threads.waitForCompletion(processors,TIMEOUT_MS)) log.error("Processor did not terminate in time");
 
@@ -210,9 +210,9 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
         if (!hasCompleted) {
             hasCompleted = true;
             if (pullThreads!=null) {
-                for (int i = 0; i < pullThreads.length; i++) {
-                    if (pullThreads[i].isAlive()) {
-                        pullThreads[i].interrupt();
+                for (DataPuller pullThread : pullThreads) {
+                    if (pullThread.isAlive()) {
+                        pullThread.interrupt();
                     }
                 }
             }

@@ -22,7 +22,6 @@ import org.janusgraph.graphdb.internal.RelationCategory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.EnumMap;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 /**

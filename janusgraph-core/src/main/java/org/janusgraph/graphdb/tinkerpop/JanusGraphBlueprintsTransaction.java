@@ -34,7 +34,6 @@ import org.apache.commons.configuration.Configuration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.function.Function;
 
 /**
  * Blueprints specific implementation of {@link JanusGraphTransaction}.
@@ -130,9 +129,9 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
         ElementUtils.verifyArgsMustBeEitherIdOrElement(vertexIds);
         long[] ids = new long[vertexIds.length];
         int pos = 0;
-        for (int i = 0; i < vertexIds.length; i++) {
-            long id = ElementUtils.getVertexId(vertexIds[i]);
-            if (id>0) ids[pos++]=id;
+        for (Object vertexId : vertexIds) {
+            long id = ElementUtils.getVertexId(vertexId);
+            if (id > 0) ids[pos++] = id;
         }
         if (pos==0) return Collections.emptyIterator();
         if (pos<ids.length) ids = Arrays.copyOf(ids,pos);
@@ -145,9 +144,9 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
         ElementUtils.verifyArgsMustBeEitherIdOrElement(edgeIds);
         RelationIdentifier[] ids = new RelationIdentifier[edgeIds.length];
         int pos = 0;
-        for (int i = 0; i < edgeIds.length; i++) {
-            RelationIdentifier id = ElementUtils.getEdgeId(edgeIds[i]);
-            if (id!=null) ids[pos++]=id;
+        for (Object edgeId : edgeIds) {
+            RelationIdentifier id = ElementUtils.getEdgeId(edgeId);
+            if (id != null) ids[pos++] = id;
         }
         if (pos==0) return Collections.emptyIterator();
         if (pos<ids.length) ids = Arrays.copyOf(ids,pos);

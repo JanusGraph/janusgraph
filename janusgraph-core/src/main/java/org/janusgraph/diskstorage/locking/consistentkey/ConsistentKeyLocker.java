@@ -14,7 +14,6 @@
 
 package org.janusgraph.diskstorage.locking.consistentkey;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -190,7 +189,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             NONE,
             STANDARD,
             CUSTOM
-        };
+        }
 
         private CleanerConfig cleanerConfig = CleanerConfig.NONE;
         private LockCleanerService customCleanerService;
