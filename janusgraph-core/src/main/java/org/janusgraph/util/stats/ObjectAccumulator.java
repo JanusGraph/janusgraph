@@ -28,7 +28,7 @@ import java.util.Set;
  * @author Matthias Broecheler
  */
 
-public class ObjectAccumulator<K extends Object> {
+public class ObjectAccumulator<K> {
 
     final private HashMap<K, Counter> countMap;
 

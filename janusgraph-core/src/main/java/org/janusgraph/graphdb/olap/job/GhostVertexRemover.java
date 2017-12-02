@@ -32,7 +32,6 @@ import org.janusgraph.graphdb.olap.VertexScanJob;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
 import org.janusgraph.graphdb.vertices.CacheVertex;
-import org.janusgraph.util.datastructures.Retriever;
 
 import java.time.Instant;
 import java.util.Iterator;

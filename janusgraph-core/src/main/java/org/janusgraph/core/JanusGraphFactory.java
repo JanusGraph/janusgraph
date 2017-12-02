@@ -15,7 +15,6 @@
 package org.janusgraph.core;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 
 import org.janusgraph.core.log.LogProcessorFramework;
@@ -49,7 +48,6 @@ import java.io.File;
 import java.time.Instant;
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.StreamSupport;
 
 /**
  * JanusGraphFactory is used to open or instantiate a JanusGraph graph database.

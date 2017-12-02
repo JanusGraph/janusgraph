@@ -43,9 +43,7 @@ public class IntHashSet extends IntIntHashMap implements IntSet {
 
     public boolean addAll(int[] values) {
         boolean addedAll = true;
-        for (int i = 0; i < values.length; i++) {
-            if (!add(values[i])) addedAll = false;
-        }
+        for (int value : values) if (!add(value)) addedAll = false;
         return addedAll;
     }
 
@@ -72,8 +70,8 @@ public class IntHashSet extends IntIntHashMap implements IntSet {
         if (this == other) return true;
         else if (!(other instanceof IntSet)) return false;
         IntSet oth = (IntSet) other;
-        for (int i = 0; i < values.length; i++) {
-            if (!oth.contains(values[i])) return false;
+        for (int value : values) {
+            if (!oth.contains(value)) return false;
         }
         return size() == oth.size();
     }

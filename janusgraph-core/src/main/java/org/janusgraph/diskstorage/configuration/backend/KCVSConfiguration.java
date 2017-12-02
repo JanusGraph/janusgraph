@@ -15,8 +15,6 @@
 package org.janusgraph.diskstorage.configuration.backend;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.janusgraph.core.JanusGraphException;
@@ -40,8 +38,6 @@ import org.janusgraph.graphdb.database.serialize.StandardSerializer;
 import org.janusgraph.util.system.IOUtils;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.lang.StringUtils;
-
-import javax.annotation.Nullable;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;

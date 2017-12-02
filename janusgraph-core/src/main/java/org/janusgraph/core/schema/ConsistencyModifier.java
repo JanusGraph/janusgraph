@@ -50,6 +50,6 @@ public enum ConsistencyModifier {
      * </p>
      * Note, that this potentially impacts how the data should be read.
      */
-    FORK;
+    FORK
 
 }

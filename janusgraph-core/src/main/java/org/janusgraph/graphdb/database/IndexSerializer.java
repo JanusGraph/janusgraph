@@ -176,7 +176,7 @@ public class IndexSerializer {
 
     public static class IndexUpdate<K,E> {
 
-        private enum Type { ADD, DELETE };
+        private enum Type { ADD, DELETE }
 
         private final IndexType index;
         private final Type mutationType;
@@ -298,16 +298,15 @@ public class IndexSerializer {
 
     private static int getIndexTTL(InternalVertex vertex, PropertyKey... keys) {
         int ttl = StandardJanusGraph.getTTL(vertex);
-        for (int i=0;i<keys.length;i++) {
-            PropertyKey key = keys[i];
-            int kttl = ((InternalRelationType)key).getTTL();
-            if (kttl>0 && (kttl<ttl || ttl<=0)) ttl=kttl;
+        for (PropertyKey key : keys) {
+            int kttl = ((InternalRelationType) key).getTTL();
+            if (kttl > 0 && (kttl < ttl || ttl <= 0)) ttl = kttl;
         }
         return ttl;
     }
 
     public Collection<IndexUpdate> getIndexUpdates(InternalVertex vertex, Collection<InternalRelation> updatedProperties) {
-        if (updatedProperties.isEmpty()) return Collections.EMPTY_LIST;
+        if (updatedProperties.isEmpty()) return Collections.emptyList();
         Set<IndexUpdate> updates = Sets.newHashSet();
 
         for (InternalRelation rel : updatedProperties) {
@@ -573,7 +572,7 @@ public class IndexSerializer {
         String backingIndexName = index.getBackingIndexName();
         IndexProvider indexInformation = (IndexProvider) mixedIndexes.get(backingIndexName);
 
-        StringBuffer qB = new StringBuffer(query.getQuery());
+        StringBuilder qB = new StringBuilder(query.getQuery());
         final String prefix = query.getPrefix();
         Preconditions.checkNotNull(prefix);
         //Convert query string by replacing
@@ -744,7 +743,7 @@ public class IndexSerializer {
             RelationIdentifier rid = (RelationIdentifier)element.id();
             long[] longs = rid.getLongRepresentation();
             Preconditions.checkArgument(longs.length == 3 || longs.length == 4);
-            for (int i = 0; i < longs.length; i++) VariableLong.writePositive(out, longs[i]);
+            for (long aLong : longs) VariableLong.writePositive(out, aLong);
         }
         return new StaticArrayEntry(out.getStaticBuffer(),valuePosition);
     }

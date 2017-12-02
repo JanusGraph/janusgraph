@@ -25,7 +25,6 @@ import org.janusgraph.graphdb.internal.InternalVertex;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import javax.annotation.Nullable;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Set;

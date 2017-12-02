@@ -120,7 +120,7 @@ public class PreloadedVertex extends CacheVertex {
         if (mixin == NO_MIXIN) return super.properties(keys);
         if (keys != null && keys.length > 0) {
             int count = 0;
-            for (int i = 0; i < keys.length; i++) if (mixin.supports(keys[i])) count++;
+            for (String key : keys) if (mixin.supports(key)) count++;
             if (count == 0 || !mixin.properties(keys).hasNext()) return super.properties(keys);
             else if (count == keys.length) return mixin.properties(keys);
         }

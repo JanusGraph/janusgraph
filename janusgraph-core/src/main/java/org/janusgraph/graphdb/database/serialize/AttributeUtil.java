@@ -80,7 +80,7 @@ public class AttributeUtil {
                 if (an.doubleValue()==bn.doubleValue()) {
                     // Long.compare(long,long) is only available since Java 1.7
                     //return Long.compare(an.longValue(),bn.longValue());
-                    return Long.valueOf(an.longValue()).compareTo(Long.valueOf(bn.longValue()));
+                    return Long.compare(an.longValue(), bn.longValue());
                 } else {
                     return Double.compare(an.doubleValue(),bn.doubleValue());
                 }

@@ -195,7 +195,7 @@ public class ConfigurationPrinter {
                 sortedElements.add(e);
             }
         }
-        Collections.sort(sortedElements, (o1, o2) -> o1.getName().compareTo(o2.getName()));
+        Collections.sort(sortedElements, Comparator.comparing(ConfigElement::getName));
 
         return (List<E>)sortedElements;
     }
