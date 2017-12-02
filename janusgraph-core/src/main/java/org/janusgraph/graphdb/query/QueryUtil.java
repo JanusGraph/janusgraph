@@ -23,7 +23,6 @@ import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import java.util.*;
-import java.util.stream.StreamSupport;
 
 /**
  * Utility methods used in query optimization and processing.

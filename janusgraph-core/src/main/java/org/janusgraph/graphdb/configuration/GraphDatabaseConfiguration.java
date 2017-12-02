@@ -1710,9 +1710,10 @@ public class GraphDatabaseConfiguration {
             }
             Preconditions.checkNotNull(serializer);
             RegisteredAttributeClass reg = new RegisteredAttributeClass(position, clazz, serializer);
-            for (int i = 0; i < all.size(); i++) {
-                if (all.get(i).equals(reg)) {
-                    throw new IllegalArgumentException("Duplicate attribute registration: " + all.get(i) + " and " + reg);
+            for (RegisteredAttributeClass<?> registeredAttributeClass : all) {
+                if (registeredAttributeClass.equals(reg)) {
+                    throw new IllegalArgumentException("Duplicate attribute registration: " + registeredAttributeClass
+                            + " and " + reg);
                 }
             }
             all.add(reg);

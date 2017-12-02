@@ -20,15 +20,15 @@ package org.janusgraph.util.system;
 public class Threads {
 
     public static boolean oneAlive(Thread[] threads) {
-        for (int i = 0; i < threads.length; i++) {
-            if (threads[i] != null && threads[i].isAlive()) return true;
+        for (Thread thread : threads) {
+            if (thread != null && thread.isAlive()) return true;
         }
         return false;
     }
 
     public static void terminate(Thread[] threads) {
-        for (int i = 0; i < threads.length; i++) {
-            if (threads[i] != null && threads[i].isAlive()) threads[i].interrupt();
+        for (Thread thread : threads) {
+            if (thread != null && thread.isAlive()) thread.interrupt();
         }
     }
 

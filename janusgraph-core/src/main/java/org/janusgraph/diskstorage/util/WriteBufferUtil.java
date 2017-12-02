@@ -25,7 +25,7 @@ public class WriteBufferUtil {
 
 
     public static WriteBuffer put(WriteBuffer out, byte[] bytes) {
-        for (int i=0;i<bytes.length;i++) out.putByte(bytes[i]);
+        for (byte aByte : bytes) out.putByte(aByte);
         return out;
     }
 

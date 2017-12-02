@@ -81,7 +81,7 @@ public class CommonsConfiguration implements WriteConfiguration {
         } else if (dataType==String.class) {
             return (O)config.getString(key);
         } else if (dataType==Boolean.class) {
-            return (O)new Boolean(config.getBoolean(key));
+            return (O) Boolean.valueOf(config.getBoolean(key));
         } else if (dataType.isEnum()) {
             Enum[] constants = (Enum[])dataType.getEnumConstants();
             Preconditions.checkState(null != constants && 0 < constants.length, "Zero-length or undefined enum");
@@ -101,13 +101,16 @@ public class CommonsConfiguration implements WriteConfiguration {
             } else {
                 String[] comps = o.toString().split("\\s");
                 TemporalUnit unit = null;
-                if (comps.length == 1) {
-                    //By default, times are in milli seconds
-                    unit = ChronoUnit.MILLIS;
-                } else if (comps.length == 2) {
-                    unit = Durations.parse(comps[1]);
-                } else {
-                    throw new IllegalArgumentException("Cannot parse time duration from: " + o.toString());
+                switch (comps.length) {
+                    case 1:
+                        //By default, times are in milli seconds
+                        unit = ChronoUnit.MILLIS;
+                        break;
+                    case 2:
+                        unit = Durations.parse(comps[1]);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Cannot parse time duration from: " + o.toString());
                 }
                 return (O) Duration.of(Long.valueOf(comps[0]), unit);
             }

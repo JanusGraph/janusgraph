@@ -49,6 +49,6 @@ public class DoubleArraySerializer extends ArraySerializer implements AttributeS
     @Override
     public void write(WriteBuffer buffer, double[] attribute) {
         writeLength(buffer,attribute);
-        if (attribute!=null) for (int i = 0; i < attribute.length; i++) buffer.putDouble(attribute[i]);
+        if (attribute!=null) for (double anAttribute : attribute) buffer.putDouble(anAttribute);
     }
 }

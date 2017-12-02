@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.keycolumnvalue.inmemory;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import org.janusgraph.diskstorage.BackendException;
@@ -184,7 +183,6 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
 
             currentRow = nextRow;
             nextRow = null;
-            ;
 
             return currentRow.getKey();
         }

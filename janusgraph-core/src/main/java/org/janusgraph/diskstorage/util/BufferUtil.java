@@ -47,8 +47,7 @@ public class BufferUtil {
 
     public static StaticBuffer getIntBuffer(int[] ids) {
         ByteBuffer buffer = ByteBuffer.allocate(intSize * ids.length);
-        for (int i = 0; i < ids.length; i++)
-            buffer.putInt(ids[i]);
+        for (int id : ids) buffer.putInt(id);
         byte[] arr = buffer.array();
         Preconditions.checkArgument(arr.length == intSize * ids.length);
         return StaticArrayBuffer.of(arr);

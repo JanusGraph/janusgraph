@@ -60,7 +60,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
     static boolean validJanusGraphHas(HasContainer has) {
         if (has.getPredicate() instanceof AndP) {
             final List<? extends P<?>> predicates = ((AndP<?>) has.getPredicate()).getPredicates();
-            return !predicates.stream().anyMatch(p->!validJanusGraphHas(new HasContainer(has.getKey(), p)));
+            return predicates.stream().allMatch(p-> validJanusGraphHas(new HasContainer(has.getKey(), p)));
         } else {
             return JanusGraphPredicate.Converter.supports(has.getBiPredicate());
         }
@@ -104,7 +104,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                                 .collect(Collectors.toSet()).forEach(ids::remove);
                             if (ids.isEmpty()) break;
                         } else {
-                            Arrays.stream(graphStep.getIds()).forEach(ids::add);
+                            ids.addAll(Arrays.asList(graphStep.getIds()));
                         }
                     }
                     // clear ids to allow folding in ids from next HasContainer if relevant

@@ -295,7 +295,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
 
                             if (log.isDebugEnabled()) {
                                 log.debug("Acquired ID block [{}] on partition({})-namespace({}) (my rid is {})",
-                                        new Object[]{idBlock, partition, idNamespace, new String(uid)});
+                                        new Object[]{idBlock, partition, idNamespace, uid});
                             }
 
                             success = true;

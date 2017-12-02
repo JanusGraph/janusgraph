@@ -61,9 +61,9 @@ public class ArraysUtil {
     public static long[] arrayDifference(long[] arr, long[] subset) {
         long[] res = new long[arr.length - subset.length];
         int pos = 0;
-        for (int i = 0; i < arr.length; i++) {
-            if (!Longs.contains(subset, arr[i])) {
-                res[pos] = arr[i];
+        for (long anArr : arr) {
+            if (!Longs.contains(subset, anArr)) {
+                res[pos] = anArr;
                 pos++;
             }
         }
@@ -89,8 +89,8 @@ public class ArraysUtil {
 
     public static int sum(int[] values) {
         int sum = 0;
-        for (int i = 0; i < values.length; i++) {
-            sum += values[i];
+        for (int value : values) {
+            sum += value;
         }
         return sum;
     }

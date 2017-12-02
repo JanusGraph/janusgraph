@@ -404,7 +404,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
 
     private static boolean coversAll(final MixedIndexType index, Condition<JanusGraphElement> condition, IndexSerializer indexInfo) {
         if (condition.getType()!=Condition.Type.LITERAL) {
-            return !StreamSupport.stream(condition.getChildren().spliterator(), false).anyMatch(child -> !coversAll(index, child, indexInfo));
+            return StreamSupport.stream(condition.getChildren().spliterator(), false).allMatch(child -> coversAll(index, child, indexInfo));
         }
         if (!(condition instanceof PredicateCondition)) {
             return false;

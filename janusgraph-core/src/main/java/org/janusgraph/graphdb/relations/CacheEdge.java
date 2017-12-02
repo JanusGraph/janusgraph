@@ -16,7 +16,6 @@ package org.janusgraph.graphdb.relations;
 
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.ConsistencyModifier;
@@ -29,7 +28,6 @@ import org.janusgraph.graphdb.transaction.RelationConstructor;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 

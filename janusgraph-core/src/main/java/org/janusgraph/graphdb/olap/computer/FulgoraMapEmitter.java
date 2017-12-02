@@ -56,14 +56,13 @@ public class FulgoraMapEmitter<K, V> implements MapReduce.MapEmitter<K, V> {
         if (!this.doReduce && mapReduce.getMapKeySort().isPresent()) {
             final Comparator<K> comparator = mapReduce.getMapKeySort().get();
             final List<KeyValue<K, V>> list = new ArrayList<>(this.mapQueue);
-            Collections.sort(list, Comparator.comparing(KeyValue::getKey, comparator));
+            list.sort(Comparator.comparing(KeyValue::getKey, comparator));
             this.mapQueue.clear();
             this.mapQueue.addAll(list);
         } else if (mapReduce.getMapKeySort().isPresent()) {
             final Comparator<K> comparator = mapReduce.getMapKeySort().get();
-            final List<Map.Entry<K, Queue<V>>> list = new ArrayList<>();
-            list.addAll(this.reduceMap.entrySet());
-            Collections.sort(list, Comparator.comparing(Map.Entry::getKey, comparator));
+            final List<Map.Entry<K, Queue<V>>> list = new ArrayList<>(this.reduceMap.entrySet());
+            list.sort(Comparator.comparing(Map.Entry::getKey, comparator));
             this.reduceMap = new LinkedHashMap<>();
             list.forEach(entry -> this.reduceMap.put(entry.getKey(), entry.getValue()));
         }

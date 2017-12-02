@@ -453,10 +453,19 @@ public class Geoshape {
                 int len= Array.getLength(value);
                 double[] arr = new double[len];
                 for (int i=0;i<len;i++) arr[i]=((Number)Array.get(value,i)).doubleValue();
-                if (len==2) shape= point(arr[0],arr[1]);
-                else if (len==3) shape= circle(arr[0],arr[1],arr[2]);
-                else if (len==4) shape= box(arr[0],arr[1],arr[2],arr[3]);
-                else throw new IllegalArgumentException("Expected 2-4 coordinates to create Geoshape, but given: " + value);
+                switch (len) {
+                    case 2:
+                        shape = point(arr[0], arr[1]);
+                        break;
+                    case 3:
+                        shape = circle(arr[0], arr[1], arr[2]);
+                        break;
+                    case 4:
+                        shape = box(arr[0], arr[1], arr[2], arr[3]);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Expected 2-4 coordinates to create Geoshape, but given: " + value);
+                }
                 return shape;
             } else if (value instanceof String) {
                 String[] components=null;
@@ -510,30 +519,34 @@ public class Geoshape {
             String type = (String) geometry.get("type");
             List<Object> coordinates = (List) geometry.get(FIELD_COORDINATES);
 
-            if ("Point".equals(type)) {
-                double[] parsedCoordinates = convertCollection(coordinates);
-                return point(parsedCoordinates[1], parsedCoordinates[0]);
-            } else if ("Circle".equals(type)) {
-                Number radius = (Number) geometry.get("radius");
-                if (radius == null) {
-                    throw new IllegalArgumentException("GeoJSON circles require a radius");
+            switch (type) {
+                case "Point": {
+                    double[] parsedCoordinates = convertCollection(coordinates);
+                    return point(parsedCoordinates[1], parsedCoordinates[0]);
                 }
-                double[] parsedCoordinates = convertCollection(coordinates);
-                return circle(parsedCoordinates[1], parsedCoordinates[0], radius.doubleValue());
-            } else if ("Polygon".equals(type)) {
-                // check whether this is a box
-                if (coordinates.size() == 4) {
-                    double[] p0 = convertCollection((Collection) coordinates.get(0));
-                    double[] p1 = convertCollection((Collection) coordinates.get(1));
-                    double[] p2 = convertCollection((Collection) coordinates.get(2));
-                    double[] p3 = convertCollection((Collection) coordinates.get(3));
-
-                    //This may be a clockwise or counterclockwise polygon, we have to verify that it is a box
-                    if ((p0[0] == p1[0] && p1[1] == p2[1] && p2[0] == p3[0] && p3[1] == p0[1] && p3[0] != p0[0]) ||
-                            (p0[1] == p1[1] && p1[0] == p2[0] && p2[1] == p3[1] && p3[0] == p0[0] && p3[1] != p0[1])) {
-                        return box(min(p0[1], p1[1], p2[1], p3[1]), min(p0[0], p1[0], p2[0], p3[0]), max(p0[1], p1[1], p2[1], p3[1]), max(p0[0], p1[0], p2[0], p3[0]));
+                case "Circle": {
+                    Number radius = (Number) geometry.get("radius");
+                    if (radius == null) {
+                        throw new IllegalArgumentException("GeoJSON circles require a radius");
                     }
+                    double[] parsedCoordinates = convertCollection(coordinates);
+                    return circle(parsedCoordinates[1], parsedCoordinates[0], radius.doubleValue());
                 }
+                case "Polygon":
+                    // check whether this is a box
+                    if (coordinates.size() == 4) {
+                        double[] p0 = convertCollection((Collection) coordinates.get(0));
+                        double[] p1 = convertCollection((Collection) coordinates.get(1));
+                        double[] p2 = convertCollection((Collection) coordinates.get(2));
+                        double[] p3 = convertCollection((Collection) coordinates.get(3));
+
+                        //This may be a clockwise or counterclockwise polygon, we have to verify that it is a box
+                        if ((p0[0] == p1[0] && p1[1] == p2[1] && p2[0] == p3[0] && p3[1] == p0[1] && p3[0] != p0[0]) ||
+                            (p0[1] == p1[1] && p1[0] == p2[0] && p2[1] == p3[1] && p3[0] == p0[0] && p3[1] != p0[1])) {
+                            return box(min(p0[1], p1[1], p2[1], p3[1]), min(p0[0], p1[0], p2[0], p3[0]), max(p0[1], p1[1], p2[1], p3[1]), max(p0[0], p1[0], p2[0], p3[0]));
+                        }
+                    }
+                    break;
             }
 
             String json = mapWriter.writeValueAsString(geometry);

@@ -154,7 +154,7 @@ public abstract class ConfigElement {
     public static String getPath(ConfigElement element, boolean includeRoot, String... umbrellaElements) {
         Preconditions.checkNotNull(element);
         if (umbrellaElements==null) umbrellaElements = new String[0];
-        String path = element.getName();
+        StringBuilder path = new StringBuilder(element.getName());
         int umbrellaPos = umbrellaElements.length-1;
         while (!element.isRoot() && !element.getNamespace().isRoot()) {
             ConfigNamespace parent = element.getNamespace();
@@ -162,22 +162,22 @@ public abstract class ConfigElement {
                 Preconditions.checkArgument(umbrellaPos>=0,"Missing umbrella element path for element: %s",element);
                 String umbrellaName = umbrellaElements[umbrellaPos];
                 Preconditions.checkArgument(!StringUtils.containsAny(umbrellaName,ILLEGAL_CHARS),"Invalid umbrella name provided: %s. Contains illegal chars",umbrellaName);
-                path = umbrellaName + SEPARATOR + path;
+                path.insert(0, umbrellaName + SEPARATOR);
                 umbrellaPos--;
             }
-            path = parent.getName() + SEPARATOR + path;
+            path.insert(0, parent.getName() + SEPARATOR);
             element = parent;
         }
         if (includeRoot) {
             // Assumes that roots are not umbrellas
             // If roots could be umbrellas, we might have to change the interpretation of umbrellaElements
-            path = (element.isRoot() ?
-                    element.getName() :
-                    element.getNamespace().getName()) + SEPARATOR + path;
+            path.insert(0, (element.isRoot() ?
+                element.getName() :
+                element.getNamespace().getName()) + SEPARATOR);
         }
         //Don't make this check so that we can still access more general config items
         Preconditions.checkArgument(umbrellaPos<0,"Found unused umbrella element: %s",umbrellaPos<0?null:umbrellaElements[umbrellaPos]);
-        return path;
+        return path.toString();
     }
 
     public static PathIdentifier parse(ConfigNamespace root, String path) {

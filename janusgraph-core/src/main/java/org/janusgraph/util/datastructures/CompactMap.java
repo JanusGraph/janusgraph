@@ -113,7 +113,7 @@ public class CompactMap implements Map<String,Object> {
     }
 
     @Override
-    public void putAll(Map<? extends String, ? extends Object> map) {
+    public void putAll(Map<? extends String, ?> map) {
         throw new UnsupportedOperationException("This map is immutable");
     }
 

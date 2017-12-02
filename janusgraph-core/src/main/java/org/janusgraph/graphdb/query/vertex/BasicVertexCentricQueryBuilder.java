@@ -510,23 +510,23 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                             if (!candidate.isUnidirected(Direction.BOTH) && !candidate.isUnidirected(direction)) continue;
                             if (!candidate.equals(type) && candidate.getStatus()!= SchemaStatus.ENABLED) continue;
 
-                            boolean supportsOrder = orders.isEmpty()?true:orders.getCommonOrder()==candidate.getSortOrder();
+                            boolean supportsOrder = orders.isEmpty() || orders.getCommonOrder() == candidate.getSortOrder();
                             int currentOrder = 0;
 
                             double score = 0.0;
                             PropertyKey[] extendedSortKey = getExtendedSortKey(candidate,direction,tx);
 
-                            for (int i=0;i<extendedSortKey.length;i++) {
-                                PropertyKey keyType = extendedSortKey[i];
-                                if (currentOrder<orders.size() && orders.getKey(currentOrder).equals(keyType)) currentOrder++;
+                            for (PropertyKey keyType : extendedSortKey) {
+                                if (currentOrder < orders.size() && orders.getKey(currentOrder).equals(keyType))
+                                    currentOrder++;
 
                                 Interval interval = intervalConstraints.get(keyType);
-                                if (interval==null || !interval.isPoints()) {
-                                    if (interval!=null) score+=1;
+                                if (interval == null || !interval.isPoints()) {
+                                    if (interval != null) score += 1;
                                     break;
                                 } else {
                                     assert interval.isPoints();
-                                    score+=5.0/interval.getPoints().size();
+                                    score += 5.0 / interval.getPoints().size();
                                 }
                             }
                             if (supportsOrder && currentOrder==orders.size()) score+=3;
