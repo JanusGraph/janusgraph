@@ -89,7 +89,7 @@ public class BufferUtilTest {
 
     @Test
     public void staticArrayBufferTest() {
-        long[] values = {2342342342l,2342,0,-1,-214252345234l};
+        long[] values = {2342342342L,2342,0,-1,-214252345234L};
         byte[] array = new byte[values.length*8];
         for (int i=0;i<values.length;i++) {
             StaticArrayBuffer.putLong(array,i*8,values[i]);

@@ -100,7 +100,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     public static final double EDGESTORE_CACHE_PERCENT = 0.8;
     public static final double INDEXSTORE_CACHE_PERCENT = 0.2;
 
-    private static final long ETERNAL_CACHE_EXPIRATION = 1000l*3600*24*365*200; //200 years
+    private static final long ETERNAL_CACHE_EXPIRATION = 1000L *3600*24*365*200; //200 years
 
     public static final int THREAD_POOL_SIZE_SCALE_FACTOR = 2;
 

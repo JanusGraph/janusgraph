@@ -285,7 +285,7 @@ public class VariableLongTest {
 
     @Test
     public void byteOrderPreservingPositiveBackward() {
-        long[] scalingFactors = { Long.MAX_VALUE, 1000, 1000000000l};
+        long[] scalingFactors = { Long.MAX_VALUE, 1000, 1000000000L};
         for (int t=0;t<10000000;t++) {
             StaticBuffer[] b = new StaticBuffer[2];
             long[] l = new long[2];

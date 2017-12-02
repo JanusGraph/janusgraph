@@ -55,8 +55,8 @@ public class RelationCacheTest {
         assertEquals(len, copy2.size());
         for (int i = 1; i <= len; i++) {
             assertEquals("TestValue " + i, map.get(i * 1000));
-            assertEquals("TestValue " + i, copy1.get(i * 1000l));
-            assertEquals("TestValue " + i, copy2.get(i * 1000l));
+            assertEquals("TestValue " + i, copy1.get(i * 1000L));
+            assertEquals("TestValue " + i, copy2.get(i * 1000L));
         }
 
     }
