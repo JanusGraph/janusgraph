@@ -98,7 +98,7 @@ public class GraphDatabaseConfiguration {
             LoggerFactory.getLogger(GraphDatabaseConfiguration.class);
 
 
-    public static ConfigNamespace ROOT_NS = new ConfigNamespace(null,"root","Root Configuration Namespace for the JanusGraph Graph Database");
+    public static final ConfigNamespace ROOT_NS = new ConfigNamespace(null,"root","Root Configuration Namespace for the JanusGraph Graph Database");
 
     // ########## Graph-level Config Options ##########
     // ################################################
@@ -190,7 +190,7 @@ public class GraphDatabaseConfiguration {
     // ########## OLAP Style Processing ##########
     // ################################################
 
-    public static ConfigNamespace JOB_NS = new ConfigNamespace(null,"job","Root Configuration Namespace for JanusGraph OLAP jobs");
+    public static final ConfigNamespace JOB_NS = new ConfigNamespace(null,"job","Root Configuration Namespace for JanusGraph OLAP jobs");
 
     public static final ConfigOption<Long> JOB_START_TIME = new ConfigOption<>(JOB_NS,"start-time",
             "Timestamp (ms since epoch) when the job started. Automatically set.", ConfigOption.Type.LOCAL, Long.class).hide();
@@ -1199,7 +1199,7 @@ public class GraphDatabaseConfiguration {
     private final Configuration configuration;
     private final ReadConfiguration configurationAtOpen;
     private String uniqueGraphId;
-    private ModifiableConfiguration localConfiguration;
+    private final ModifiableConfiguration localConfiguration;
 
     private boolean readOnly;
     private boolean flushIDs;

@@ -511,7 +511,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
      */
     private class SendThread extends BackgroundThread {
 
-        private List<MessageEnvelope> toSend;
+        private final List<MessageEnvelope> toSend;
 
         public SendThread() {
             super("KCVSLogSend"+name, false);

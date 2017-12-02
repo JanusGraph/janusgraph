@@ -29,8 +29,8 @@ public class RelationIndexStatusWatcher
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RelationIndexStatusWatcher.class);
 
-    private String relationIndexName;
-    private String relationTypeName;
+    private final String relationIndexName;
+    private final String relationTypeName;
 
     public RelationIndexStatusWatcher(JanusGraph g, String relationIndexName, String relationTypeName) {
         super(g);

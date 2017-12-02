@@ -43,10 +43,10 @@ public class QueryContainer {
     public static final String QUERY_NAME_PREFIX = "query$";
 
     private final StandardJanusGraphTx tx;
-    private int hardQueryLimit;
+    private final int hardQueryLimit;
 
-    private Set<Query> queries;
-    private SetMultimap<SliceQuery, Query> inverseQueries;
+    private final Set<Query> queries;
+    private final SetMultimap<SliceQuery, Query> inverseQueries;
 
     public QueryContainer(StandardJanusGraphTx tx) {
         Preconditions.checkArgument(tx != null);

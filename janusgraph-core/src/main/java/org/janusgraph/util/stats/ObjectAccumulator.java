@@ -30,7 +30,7 @@ import java.util.Set;
 
 public class ObjectAccumulator<K extends Object> {
 
-    private HashMap<K, Counter> countMap;
+    final private HashMap<K, Counter> countMap;
 
     public ObjectAccumulator() {
         countMap = new HashMap<>();

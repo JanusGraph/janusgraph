@@ -29,8 +29,8 @@ import java.util.Arrays;
 
 public abstract class AbstractIndexStatusWatcher<R, S extends AbstractIndexStatusWatcher<R,S>> implements Callable<R> {
 
-    protected JanusGraph g;
-    protected List<SchemaStatus> statuses;
+    protected final JanusGraph g;
+    protected final List<SchemaStatus> statuses;
     protected Duration timeout;
     protected Duration poll;
 

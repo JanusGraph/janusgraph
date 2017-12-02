@@ -70,20 +70,20 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
     private final Set<MapReduce> mapReduces = new HashSet<>();
 
     private final StandardJanusGraph graph;
-    private int expectedNumVertices = 10000;
+    private final int expectedNumVertices = 10000;
     private FulgoraMemory memory;
     private FulgoraVertexMemory vertexMemory;
     private boolean executed = false;
 
     private int numThreads = 1;//Math.max(1,Runtime.getRuntime().availableProcessors());
     private int readBatchSize = 10000;
-    private int writeBatchSize;
+    private final int writeBatchSize;
 
     private ResultGraph resultGraphMode = null;
     private Persist persistMode = null;
 
     private static final AtomicInteger computerCounter = new AtomicInteger(0);
-    private String name;
+    private final String name;
     private String jobId;
 
     private final GraphFilter graphFilter = new GraphFilter();

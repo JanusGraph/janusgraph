@@ -48,7 +48,7 @@ public class StandardLockCleanerRunnable implements Runnable {
     private final ConsistentKeyLockerSerializer serializer;
     private final StoreTransaction tx;
     private final Instant cutoff;
-    private TimestampProvider times;
+    private final TimestampProvider times;
 
     private static final Logger log = LoggerFactory.getLogger(StandardLockCleanerRunnable.class);
 

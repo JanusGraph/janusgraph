@@ -46,7 +46,7 @@ public abstract class IndexUpdateJob {
     protected static final String SUCCESS_TX = "success-tx";
     protected static final String FAILED_TX = "failed-tx";
 
-    public static ConfigNamespace INDEX_JOB_NS = new ConfigNamespace(GraphDatabaseConfiguration.JOB_NS,"index","Configuration options relating to index jobs");
+    public static final ConfigNamespace INDEX_JOB_NS = new ConfigNamespace(GraphDatabaseConfiguration.JOB_NS,"index","Configuration options relating to index jobs");
 
     public static final ConfigOption<String> INDEX_NAME = new ConfigOption<>(INDEX_JOB_NS,"index-name",
             "The name of the index to be repaired. For vertex-centric indexes this is the name of " +

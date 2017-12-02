@@ -45,7 +45,7 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
 
     private final List<HasContainer> hasContainers = new ArrayList<>();
     private int limit = BaseQuery.NO_LIMIT;
-    private List<OrderEntry> orders = new ArrayList<>();
+    private final List<OrderEntry> orders = new ArrayList<>();
     private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
 
 

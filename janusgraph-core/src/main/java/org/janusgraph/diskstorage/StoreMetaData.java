@@ -37,7 +37,7 @@ public interface StoreMetaData<T> {
 
         private final boolean mutable;
 
-        private Map<StoreMetaData<?>, Object> md = new HashMap<>();
+        private final Map<StoreMetaData<?>, Object> md = new HashMap<>();
 
         public Container() {
             this(true);
