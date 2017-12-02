@@ -55,7 +55,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
     }
 
     private static int getLimit(long limitAndValuePos) {
-        return (int)(limitAndValuePos>>>32l);
+        return (int)(limitAndValuePos>>> 32L);
     }
 
     private static int getValuePos(long limitAndValuePos) {
@@ -64,7 +64,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
 
     private static long getOffsetAndValue(long offset, long valuePos) {
         assert valuePos>0;
-        return (offset<<32l) + valuePos;
+        return (offset<< 32L) + valuePos;
     }
 
     private boolean hasMetaData() {

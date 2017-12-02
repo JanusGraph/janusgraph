@@ -48,7 +48,7 @@ public class SerializerTestCommon {
     }
 
     protected void objectWriteRead() {
-        TClass1 t1 = new TClass1(3245234223423433123l,0.333f);
+        TClass1 t1 = new TClass1(3245234223423433123L,0.333f);
         TClass2 t2 = new TClass2("This is a test",4234234);
         TEnum t3 = TEnum.THREE;
         TEnum t4 = TEnum.TWO;

@@ -107,7 +107,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     public static final String PINDEX = "p" + INDEX;
 
     private static final int RETRY_COUNT = 30;
-    private static final long RETRY_INTERVAL = 1000l;
+    private static final long RETRY_INTERVAL = 1000L;
 
     public final boolean supportsGeoPoint;
     public final boolean supportsNumeric;

@@ -116,7 +116,7 @@ public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
             }
             if (features.hasCellTTL()) {
                 Duration d = prop.value("~ttl");
-                assertEquals(0l, d.getSeconds());
+                assertEquals(0L, d.getSeconds());
                 assertTrue(d.isZero());
             }
         }
