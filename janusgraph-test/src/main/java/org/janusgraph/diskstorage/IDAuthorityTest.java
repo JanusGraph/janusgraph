@@ -120,7 +120,7 @@ public abstract class IDAuthorityTest {
         hasEmptyUid = uidBitWidth==0;
         blockSize = config.get(IDS_BLOCK_SIZE);
         idUpperBoundBitWidth = 30;
-        idUpperBound = 1l<<idUpperBoundBitWidth;
+        idUpperBound = 1L <<idUpperBoundBitWidth;
     }
 
     @Before
@@ -261,7 +261,7 @@ public abstract class IDAuthorityTest {
         final IDBlockSizer blockSizer = new IDBlockSizer() {
             @Override
             public long getBlockSize(int idNamespace) {
-                return ((1l<<(idUpperBoundBitWidth-uidBitWidth))-1)/chunks;
+                return ((1L <<(idUpperBoundBitWidth-uidBitWidth))-1)/chunks;
             }
 
             @Override

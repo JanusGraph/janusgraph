@@ -78,7 +78,7 @@ public class StorageSetup {
 
     public static WriteConfiguration addPermanentCache(ModifiableConfiguration conf) {
         conf.set(DB_CACHE, true);
-        conf.set(DB_CACHE_TIME,0l);
+        conf.set(DB_CACHE_TIME, 0L);
         return conf.getConfiguration();
     }
 

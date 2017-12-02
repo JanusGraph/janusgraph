@@ -48,7 +48,7 @@ public class StandardSchemaCache implements SchemaCache {
     private static final int SCHEMAID_TOTALFORW_SHIFT = 3; //Total number of bits appended - the 1 is for the 1 bit direction
     private static final int SCHEMAID_BACK_SHIFT = 2; //Number of bits to remove from end of schema id since its just the padding
     {
-        assert IDManager.VertexIDType.Schema.removePadding(1l<<SCHEMAID_BACK_SHIFT)==1;
+        assert IDManager.VertexIDType.Schema.removePadding(1L<<SCHEMAID_BACK_SHIFT)==1;
         assert SCHEMAID_TOTALFORW_SHIFT-SCHEMAID_BACK_SHIFT>=0;
     }
 

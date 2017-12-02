@@ -42,7 +42,7 @@ public class ConfigurationTest {
         ConfigOption<Boolean> partition = new ConfigOption<Boolean>(storage,"partition","whether to enable partition",
                 ConfigOption.Type.MASKABLE, false);
         ConfigOption<Long> locktime = new ConfigOption<Long>(storage,"locktime","how long to lock",
-                ConfigOption.Type.FIXED, 500l);
+                ConfigOption.Type.FIXED, 500L);
         ConfigOption<Byte> bits = new ConfigOption<Byte>(storage,"bits","number of unique bits",
                 ConfigOption.Type.GLOBAL_OFFLINE, (byte)8);
         ConfigOption<Short> retry = new ConfigOption<Short>(special,"retry","retry wait time",
@@ -76,7 +76,7 @@ public class ConfigurationTest {
         assertEquals("+ search", userconfig.get("indexes").trim());
         assertEquals("foo", userconfig.get("indexes.search.name"));
         assertEquals("100", userconfig.get("indexes.search.ping"));
-        userconfig.set("indexes.search.ping", 400l);
+        userconfig.set("indexes.search.ping", 400L);
         assertEquals("400",userconfig.get("indexes.search.ping"));
         assertFalse(config.isFrozen());
         try {

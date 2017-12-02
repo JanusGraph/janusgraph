@@ -79,7 +79,7 @@ public class IDManagementTest {
         IDManager eid = new IDManager(partitionBits);
 
         assertTrue(eid.getPartitionBound()>0);
-        assertTrue(eid.getPartitionBound()<=1l+Integer.MAX_VALUE);
+        assertTrue(eid.getPartitionBound()<= 1L +Integer.MAX_VALUE);
         assertTrue(eid.getRelationCountBound()>0);
         assertTrue(IDManager.getSchemaCountBound()>0);
         assertTrue(eid.getVertexCountBound()>0);
@@ -146,7 +146,7 @@ public class IDManagementTest {
         int partitionBits = 16;
         IDManager eid = new IDManager(partitionBits);
         int trails = 1000000;
-        assertEquals(eid.getPartitionBound(), (1l << partitionBits));
+        assertEquals(eid.getPartitionBound(), (1L << partitionBits));
 
         Serializer serializer = new StandardSerializer();
         for (int t = 0; t < trails; t++) {

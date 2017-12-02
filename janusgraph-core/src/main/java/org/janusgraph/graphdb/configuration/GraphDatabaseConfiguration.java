@@ -340,7 +340,7 @@ public class GraphDatabaseConfiguration {
             "Entries are evicted when they reach this age even if the cache has room to spare. " +
             "Set to 0 to disable expiration (cache entries live forever or until memory pressure " +
             "triggers eviction when set to 0).",
-            ConfigOption.Type.GLOBAL_OFFLINE, 10000l);
+            ConfigOption.Type.GLOBAL_OFFLINE, 10000L);
 
     /**
      * Configures the maximum number of recently-used vertices cached by a transaction. The smaller the cache size, the

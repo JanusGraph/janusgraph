@@ -216,7 +216,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         final int maxAvailableBits = (VariableLong.unsignedBitLength(idUpperBound)-1)-uniqueIdBitWidth;
         Preconditions.checkArgument(maxAvailableBits>0,"Unique id bit width [%s] is too wide for id-namespace [%s] id bound [%s]"
                                                 ,uniqueIdBitWidth,idNamespace,idUpperBound);
-        final long idBlockUpperBound = (1l<<maxAvailableBits);
+        final long idBlockUpperBound = (1L <<maxAvailableBits);
 
         final List<Integer> exhaustedUniquePIDs = new ArrayList<Integer>(randomUniqueIDLimit);
 

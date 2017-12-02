@@ -167,7 +167,7 @@ public class VariableLong {
         if (mod<=(deltaLen-1)) {
             int offset = (valueLen-mod);
             first = (byte)(first | (value >>> offset));
-            value = value & ((1l<<offset)-1);
+            value = value & ((1L <<offset)-1);
             valueLen -= mod;
         } else {
             valueLen += (7-mod);

@@ -48,7 +48,7 @@ public class FulgoraMemory implements Memory.Admin {
     public Map<String, Object> previousMap;
     public Map<String, Object> currentMap;
     private final AtomicInteger iteration = new AtomicInteger(0);
-    private final AtomicLong runtime = new AtomicLong(0l);
+    private final AtomicLong runtime = new AtomicLong(0L);
     private volatile boolean inExecute = false;
 
     public FulgoraMemory(final VertexProgram<?> vertexProgram, final Set<MapReduce> mapReducers) {

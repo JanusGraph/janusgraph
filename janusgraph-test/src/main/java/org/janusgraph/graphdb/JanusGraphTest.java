@@ -1100,7 +1100,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         v.property(VertexProperty.Cardinality.single, n(boundary), shape);
         v.property(VertexProperty.Cardinality.single, n(precise), 10.12345);
         v.property(n(any), "Hello");
-        v.property(n(any), 10l);
+        v.property(n(any), 10L);
         int[] testArray = {5, 6, 7};
         v.property(n(any), testArray);
 
@@ -1116,7 +1116,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         for (Object prop : v.query().labels("any").properties()) {
             Object value = ((JanusGraphVertexProperty<?>) prop).value();
             if (value instanceof String) assertEquals("Hello", value);
-            else if (value instanceof Long) assertEquals(10l, value);
+            else if (value instanceof Long) assertEquals(10L, value);
             else if (value.getClass().isArray()) {
                 assertTrue(Arrays.equals(testArray, (int[]) value));
             } else fail();
@@ -1138,7 +1138,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         for (Object prop : v.query().labels("any").properties()) {
             Object value = ((JanusGraphVertexProperty<?>) prop).value();
             if (value instanceof String) assertEquals("Hello", value);
-            else if (value instanceof Long) assertEquals(10l, value);
+            else if (value instanceof Long) assertEquals(10L, value);
             else if (value.getClass().isArray()) {
                 assertTrue(Arrays.equals(testArray, (int[]) value));
             } else fail();
