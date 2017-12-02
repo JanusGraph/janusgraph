@@ -62,12 +62,6 @@ public class IntHashSet extends IntIntHashMap implements IntSet {
         return all;
     }
 
-
-    @Override
-    public int size() {
-        return super.size();
-    }
-
     @Override
     public int hashCode() {
         return ArraysUtil.sum(getAll());
