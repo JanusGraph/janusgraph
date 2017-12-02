@@ -15,12 +15,11 @@
 package org.janusgraph.util.datastructures;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.comparators.ComparableComparator;
-import javax.annotation.Nullable;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -100,10 +99,10 @@ public class PointInterval<T> implements Interval<T> {
         if (other instanceof PointInterval) {
             Sets.newHashSet(points);
             points.retainAll(((PointInterval)other).points);
-            return new PointInterval<T>(points);
+            return new PointInterval<>(points);
         } else if (other instanceof RangeInterval) {
             final RangeInterval<T> rint = (RangeInterval)other;
-            return new PointInterval<T>(Sets.newHashSet(Iterables.filter(points, t -> rint.containsPoint(t))));
+            return new PointInterval<>(points.stream().filter(rint::containsPoint).collect(Collectors.toSet()));
         } else throw new AssertionError("Unexpected interval: " + other);
     }
 

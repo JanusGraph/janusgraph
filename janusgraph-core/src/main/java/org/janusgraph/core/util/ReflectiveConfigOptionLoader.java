@@ -302,9 +302,7 @@ public enum ReflectiveConfigOptionLoader {
                     Preconditions.checkNotNull(o);
                     log.debug("Initialized {}={}", f, o);
                     loadCount++;
-                } catch (IllegalArgumentException e) {
-                    log.warn("ConfigOption initialization error", e);
-                } catch (IllegalAccessException e) {
+                } catch (IllegalArgumentException | IllegalAccessException e) {
                     log.warn("ConfigOption initialization error", e);
                 }
             }

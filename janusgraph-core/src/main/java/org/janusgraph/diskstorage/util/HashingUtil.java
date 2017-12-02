@@ -34,9 +34,10 @@ public class HashingUtil {
         }
     }
 
-    private static final StaticBuffer.Factory<HashCode> SHORT_HASH_FACTORY = (array, offset, limit) -> HashUtility.SHORT.get().hashBytes(array, offset, limit);
 
-    private static final StaticBuffer.Factory<HashCode> LONG_HASH_FACTORY = (array, offset, limit) -> HashUtility.LONG.get().hashBytes(array,offset,limit);
+    private static final StaticBuffer.Factory<HashCode> SHORT_HASH_FACTORY = HashUtility.SHORT.get()::hashBytes;
+
+    private static final StaticBuffer.Factory<HashCode> LONG_HASH_FACTORY = HashUtility.LONG.get()::hashBytes;
 
     public static StaticBuffer hashPrefixKey(final HashLength hashPrefixLen, final StaticBuffer key) {
         final int prefixLen = hashPrefixLen.length();

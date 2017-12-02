@@ -34,7 +34,6 @@ import org.apache.commons.configuration.Configuration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.function.Function;
 
 /**
  * Blueprints specific implementation of {@link JanusGraphTransaction}.

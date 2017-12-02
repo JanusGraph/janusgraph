@@ -77,7 +77,7 @@ public class VertexArrayList implements VertexListInternal {
     @Override
     public void sort() {
         if (sorted) return;
-        Collections.sort(vertices,VERTEX_ID_COMPARATOR);
+        vertices.sort(VERTEX_ID_COMPARATOR);
         sorted = true;
     }
 

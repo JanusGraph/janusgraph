@@ -14,8 +14,6 @@
 
 package org.janusgraph.graphdb.types.system;
 
-import com.google.common.base.Predicate;
-
 import org.janusgraph.core.*;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
@@ -30,6 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Predicate;
 
 public class EmptyVertex implements InternalVertex {
 

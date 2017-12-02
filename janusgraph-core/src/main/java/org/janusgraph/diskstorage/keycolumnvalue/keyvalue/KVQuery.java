@@ -14,10 +14,10 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue.keyvalue;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.graphdb.query.BaseQuery;
+
+import java.util.function.Predicate;
 
 /**
  * A query against a {@link OrderedKeyValueStore}. Retrieves all the results that lie between start (inclusive) and
@@ -36,7 +36,7 @@ public class KVQuery extends BaseQuery {
     }
 
     public KVQuery(StaticBuffer start, StaticBuffer end, int limit) {
-        this(start,end, Predicates.<StaticBuffer>alwaysTrue(),limit);
+        this(start, end, always -> true, limit);
     }
 
     public KVQuery(StaticBuffer start, StaticBuffer end, Predicate<StaticBuffer> keyFilter, int limit) {
@@ -55,7 +55,7 @@ public class KVQuery extends BaseQuery {
     }
 
     public KeySelector getKeySelector() {
-        return new KeySelector(keyFilter,getLimit());
+        return new KeySelector(keyFilter, getLimit());
     }
 
 

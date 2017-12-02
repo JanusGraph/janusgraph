@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.vertices;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
@@ -26,6 +25,7 @@ import org.janusgraph.graphdb.transaction.addedrelations.ConcurrentAddedRelation
 import org.janusgraph.graphdb.transaction.addedrelations.SimpleAddedRelations;
 import org.janusgraph.util.datastructures.Retriever;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

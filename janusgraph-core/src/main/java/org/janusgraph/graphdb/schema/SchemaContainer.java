@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.schema;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.PropertyKey;
@@ -23,6 +22,7 @@ import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.schema.JanusGraphManagement;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -71,11 +71,17 @@ public class SchemaContainer implements SchemaProvider {
     }
 
     public Iterable<PropertyKeyDefinition> getPropertyKeys() {
-        return Iterables.filter(relationTypes.values(),PropertyKeyDefinition.class);
+        return relationTypes.values().stream()
+            .filter(PropertyKeyDefinition.class::isInstance)
+            .map(PropertyKeyDefinition.class::cast)
+            .collect(Collectors.toList());
     }
 
     public Iterable<EdgeLabelDefinition> getEdgeLabels() {
-        return Iterables.filter(relationTypes.values(),EdgeLabelDefinition.class);
+        return relationTypes.values().stream()
+            .filter(EdgeLabelDefinition.class::isInstance)
+            .map(EdgeLabelDefinition.class::cast)
+            .collect(Collectors.toList());
     }
 
     @Override

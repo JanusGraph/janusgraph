@@ -75,7 +75,8 @@ public class MetricInstrumentedIterator implements KeyIterator {
 
     @Override
     public StaticBuffer next() {
-        return MetricInstrumentedStore.runWithMetrics(p, null, M_NEXT, (UncheckedCallable<StaticBuffer>) () -> iterator.next());
+        return MetricInstrumentedStore.runWithMetrics(p, null, M_NEXT,
+            (UncheckedCallable<StaticBuffer>) iterator::next);
     }
     
     @Override

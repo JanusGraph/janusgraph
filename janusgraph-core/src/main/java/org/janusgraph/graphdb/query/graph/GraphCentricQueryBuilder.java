@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -37,8 +36,8 @@ import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
@@ -163,19 +162,19 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     @Override
     public Iterable<JanusGraphVertex> vertices() {
         GraphCentricQuery query = constructQuery(ElementCategory.VERTEX);
-        return Iterables.filter(new QueryProcessor<GraphCentricQuery, JanusGraphElement, JointIndexQuery>(query, tx.elementProcessor), JanusGraphVertex.class);
+        return Iterables.filter(new QueryProcessor<>(query, tx.elementProcessor), JanusGraphVertex.class);
     }
 
     @Override
     public Iterable<JanusGraphEdge> edges() {
         GraphCentricQuery query = constructQuery(ElementCategory.EDGE);
-        return Iterables.filter(new QueryProcessor<GraphCentricQuery, JanusGraphElement, JointIndexQuery>(query, tx.elementProcessor), JanusGraphEdge.class);
+        return Iterables.filter(new QueryProcessor<>(query, tx.elementProcessor), JanusGraphEdge.class);
     }
 
     @Override
     public Iterable<JanusGraphVertexProperty> properties() {
         GraphCentricQuery query = constructQuery(ElementCategory.PROPERTY);
-        return Iterables.filter(new QueryProcessor<GraphCentricQuery, JanusGraphElement, JointIndexQuery>(query, tx.elementProcessor), JanusGraphVertexProperty.class);
+        return Iterables.filter(new QueryProcessor<>(query, tx.elementProcessor), JanusGraphVertexProperty.class);
     }
 
 
@@ -218,15 +217,17 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         if (orders.isEmpty()) orders = OrderList.NO_ORDER;
 
         //Compile all indexes that cover at least one of the query conditions
-        final Set<IndexType> indexCandidates = new HashSet<IndexType>();
+        final Set<IndexType> indexCandidates = new HashSet<>();
         ConditionUtil.traversal(conditions, condition -> {
-            if (condition instanceof PredicateCondition) {
-                final RelationType type = ((PredicateCondition<RelationType,JanusGraphElement>)condition).getKey();
-                Preconditions.checkArgument(type!=null && type.isPropertyKey());
-                Iterables.addAll(indexCandidates,Iterables.filter(((InternalRelationType) type).getKeyIndexes(), indexType -> indexType.getElement()==resultType));
-            }
-            return true;
-        });
+                if (condition instanceof PredicateCondition) {
+                    RelationType type = ((PredicateCondition<RelationType,JanusGraphElement>)condition).getKey();
+                    Preconditions.checkArgument(type!=null && type.isPropertyKey());
+                    Iterables.addAll(indexCandidates, StreamSupport.stream(((InternalRelationType) type).getKeyIndexes().spliterator(), false)
+                        .filter(indexType -> indexType.getElement() == resultType)
+                        .collect(Collectors.toList()));
+                }
+                return true;
+            });
 
         /*
         Determine the best join index query to answer this query:

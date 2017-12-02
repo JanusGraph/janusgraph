@@ -16,7 +16,6 @@ package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode;
 
@@ -27,8 +26,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-
 import java.lang.reflect.Array;
 import java.time.Duration;
 import java.time.Instant;
@@ -36,6 +33,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -228,7 +226,7 @@ public class ConfigOption<O> extends ConfigElement {
             input=defaultValue;
         }
         if (input==null) {
-            Preconditions.checkState(verificationFct.apply((O) input), "Need to set configuration value: %s", this.toString());
+            Preconditions.checkState(verificationFct.test((O) input), "Need to set configuration value: %s", this.toString());
             return null;
         } else {
             return verify(input);
@@ -239,7 +237,7 @@ public class ConfigOption<O> extends ConfigElement {
         Preconditions.checkNotNull(input);
         Preconditions.checkArgument(datatype.isInstance(input),"Invalid class for configuration value [%s]. Expected [%s] but given [%s]",this.toString(),datatype,input.getClass());
         O result = (O)input;
-        Preconditions.checkArgument(verificationFct.apply(result),"Invalid configuration value for [%s]: %s",this.toString(),input);
+        Preconditions.checkArgument(verificationFct.test(result),"Invalid configuration value for [%s]: %s",this.toString(),input);
         return result;
     }
 
@@ -257,33 +255,26 @@ public class ConfigOption<O> extends ConfigElement {
             .orElseThrow(() -> new IllegalArgumentException("Invalid enum string provided for ["+enumClass+"]: " + trimmed));
     }
 
-    public static final<O> Predicate<O> disallowEmpty(Class<O> clazz) {
+    public static <O> Predicate<O> disallowEmpty(Class<O> clazz) {
         return o -> {
-            if (o==null) {
+            if (o == null) return false;
+            if (o instanceof String) return StringUtils.isNotBlank((String) o);
+            if (o.getClass().isArray() && (Array.getLength(o) == 0 || Array.get(o, 0) == null)) return false;
+            if (o instanceof Collection && (((Collection) o).isEmpty() || ((Collection) o).iterator().next() == null))
                 return false;
-            }
-            if (o instanceof String) {
-                return StringUtils.isNotBlank((String)o);
-            }
-            if (o.getClass().isArray() && (Array.getLength(o)==0 || Array.get(o,0)==null)) {
-                return false;
-            }
-            if (o instanceof Collection && (((Collection)o).isEmpty() || ((Collection)o).iterator().next()==null)) {
-                return false;
-            }
             return true;
         };
     }
 
-    public static final Predicate<Integer> positiveInt() {
+    public static Predicate<Integer> positiveInt() {
         return num -> num!=null && num>0;
     }
 
-    public static final Predicate<Integer> nonnegativeInt() {
+    public static Predicate<Integer> nonnegativeInt() {
         return num -> num!=null && num>=0;
     }
 
-    public static final Predicate<Long> positiveLong() {
+    public static Predicate<Long> positiveLong() {
         return num -> num!=null && num>0;
     }
 

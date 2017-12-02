@@ -209,8 +209,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     }
 
     private void lockedOn(ExpectedValueCheckingStore store) {
-        final Map<KeyColumn, StaticBuffer> m = expectedValuesByStore.computeIfAbsent(store, k -> new HashMap<KeyColumn, StaticBuffer>());
-
+        final Map<KeyColumn, StaticBuffer> m = expectedValuesByStore.computeIfAbsent(store, k -> new HashMap<>());
     }
 
     private void checkSingleExpectedValue(final KeyColumn kc,

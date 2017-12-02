@@ -14,13 +14,12 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue.cache;
 
-import com.google.common.base.Function;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.Mutation;
 import org.janusgraph.diskstorage.StaticBuffer;
 
-import javax.annotation.Nullable;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -31,13 +30,7 @@ public class KCVEntryMutation extends Mutation<Entry,Entry> {
         super(additions, deletions);
     }
 
-    public static final Function<Entry,StaticBuffer> ENTRY2COLUMN_FCT = new Function<Entry, StaticBuffer>() {
-        @Nullable
-        @Override
-        public StaticBuffer apply(final Entry entry) {
-            return entry.getColumn();
-        }
-    };
+    public static final Function<Entry,StaticBuffer> ENTRY2COLUMN_FCT = Entry::getColumn;
 
     @Override
     public void consolidate() {

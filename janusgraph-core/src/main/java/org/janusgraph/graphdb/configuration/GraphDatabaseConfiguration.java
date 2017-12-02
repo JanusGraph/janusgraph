@@ -270,28 +270,24 @@ public class GraphDatabaseConfiguration {
     public static final ConfigNamespace SCHEMA_NS = new ConfigNamespace(ROOT_NS,"schema",
             "Schema related configuration options");
 
-    public static final ConfigOption<String> AUTO_TYPE = new ConfigOption<String>(SCHEMA_NS,"default",
-            "Configures the DefaultSchemaMaker to be used by this graph. If set to 'none', automatic schema creation is disabled. " +
-                    "Defaults to a blueprints compatible schema maker with MULTI edge labels and SINGLE property keys",
-            ConfigOption.Type.MASKABLE, "default" , new Predicate<String>() {
-        @Override
-        public boolean apply(@Nullable String s) {
-            if (s==null) return false;
-            if (preregisteredAutoType.containsKey(s)) return true;
-            try {
-                Class<?> clazz = ClassUtils.getClass(s);
-                return DefaultSchemaMaker.class.isAssignableFrom(clazz);
-            } catch (ClassNotFoundException e) {
-                return false;
-            }
-        }
-    });
-
     private static final Map<String, DefaultSchemaMaker> preregisteredAutoType =
             ImmutableMap.of("none", DisableDefaultSchemaMaker.INSTANCE,
                     "default", JanusGraphDefaultSchemaMaker.INSTANCE,
                     "tp3", Tp3DefaultSchemaMaker.INSTANCE);
 
+    public static final ConfigOption<String> AUTO_TYPE = new ConfigOption<String>(SCHEMA_NS,"default",
+        "Configures the DefaultSchemaMaker to be used by this graph. If set to 'none', automatic schema creation is disabled. " +
+            "Defaults to a blueprints compatible schema maker with MULTI edge labels and SINGLE property keys",
+        ConfigOption.Type.MASKABLE, "default",  s -> {
+        if (s==null) return false;
+        if (preregisteredAutoType.containsKey(s)) return true;
+        try {
+            Class<?> clazz = ClassUtils.getClass(s);
+            return DefaultSchemaMaker.class.isAssignableFrom(clazz);
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    });
 
     // ################ CACHE #######################
     // ################################################
@@ -1093,7 +1089,8 @@ public class GraphDatabaseConfiguration {
      */
     public static final ConfigOption<String> GANGLIA_ADDRESSING_MODE = new ConfigOption<String>(METRICS_GANGLIA_NS,"addressing-mode",
             "Whether to communicate to Ganglia via uni- or multicast",
-            ConfigOption.Type.MASKABLE, "unicast", s -> s!=null && s.equalsIgnoreCase("unicast") || s.equalsIgnoreCase("multicast"));
+            ConfigOption.Type.MASKABLE, "unicast",
+            s -> s!=null && s.equalsIgnoreCase("unicast") || s.equalsIgnoreCase("multicast"));
 
     /**
      * The multicast TTL to set on outgoing Ganglia datagrams. This has no

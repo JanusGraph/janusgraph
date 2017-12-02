@@ -14,9 +14,7 @@
 
 package org.janusgraph.graphdb.database.management;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -99,7 +97,6 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -392,13 +389,10 @@ public class ManagementSystem implements JanusGraphManagement {
     @Override
     public Iterable<RelationTypeIndex> getRelationIndexes(final RelationType type) {
         Preconditions.checkArgument(type != null && type instanceof InternalRelationType, "Invalid relation type provided: %s", type);
-        return Iterables.transform(Iterables.filter(((InternalRelationType) type).getRelationIndexes(), internalRelationType -> !type.equals(internalRelationType)), new Function<InternalRelationType, RelationTypeIndex>() {
-            @Nullable
-            @Override
-            public RelationTypeIndex apply(@Nullable InternalRelationType internalType) {
-                return new RelationTypeIndexWrapper(internalType);
-            }
-        });
+        return StreamSupport.stream(((InternalRelationType) type).getRelationIndexes().spliterator(), false)
+            .filter(internalRelationType -> !type.equals(internalRelationType))
+            .map(RelationTypeIndexWrapper::new)
+            .collect(Collectors.toList());
     }
 
     /* --------------
@@ -424,15 +418,14 @@ public class ManagementSystem implements JanusGraphManagement {
 
     @Override
     public Iterable<JanusGraphIndex> getGraphIndexes(final Class<? extends Element> elementType) {
-        return StreamSupport.stream(
-            QueryUtil.getVertices(transaction, BaseKey.SchemaCategory, JanusGraphSchemaCategory.GRAPHINDEX).spliterator(), false)
-            .map(janusGraphVertex -> {
-                assert janusGraphVertex instanceof JanusGraphSchemaVertex;
-                return ((JanusGraphSchemaVertex) janusGraphVertex).asIndexType();
+        return StreamSupport.stream(QueryUtil.getVertices(transaction, BaseKey.SchemaCategory, JanusGraphSchemaCategory.GRAPHINDEX).spliterator(), false)
+            .map(janusgraphVertex -> {
+                assert janusgraphVertex instanceof JanusGraphSchemaVertex;
+                return ((JanusGraphSchemaVertex) janusgraphVertex).asIndexType();
             })
             .filter(indexType -> indexType.getElement().subsumedBy(elementType))
             .map(JanusGraphIndexWrapper::new)
-        .collect(Collectors.toList());
+            .collect(Collectors.toList());
     }
 
     /**
@@ -794,13 +787,7 @@ public class ManagementSystem implements JanusGraphManagement {
             this.graph = graph;
             this.schemaVertexId = vertex.longId();
             this.newStatus = newStatus;
-            this.propertyKeys = Sets.newHashSet(Iterables.transform(keys, new Function<PropertyKey, Long>() {
-                @Nullable
-                @Override
-                public Long apply(@Nullable PropertyKey propertyKey) {
-                    return propertyKey.longId();
-                }
-            }));
+            this.propertyKeys = StreamSupport.stream(keys.spliterator(), false).map(PropertyKey::longId).collect(Collectors.toSet());
         }
 
         @Override
@@ -1280,8 +1267,11 @@ public class ManagementSystem implements JanusGraphManagement {
 
     @Override
     public Iterable<VertexLabel> getVertexLabels() {
-        return Iterables.filter(QueryUtil.getVertices(transaction, BaseKey.SchemaCategory,
-                JanusGraphSchemaCategory.VERTEXLABEL), VertexLabel.class);
+        return StreamSupport.stream(QueryUtil.getVertices(transaction, BaseKey.SchemaCategory,
+            JanusGraphSchemaCategory.VERTEXLABEL).spliterator(), false)
+            .filter(VertexLabel.class::isInstance)
+            .map(VertexLabel.class::cast)
+            .collect(Collectors.toList());
     }
 
     // ###### USERMODIFIABLECONFIGURATION PROXY #########

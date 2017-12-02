@@ -14,11 +14,9 @@
 
 package org.janusgraph.diskstorage;
 
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import org.janusgraph.core.JanusGraphConfigurationException;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.schema.JanusGraphManagement;
@@ -53,13 +51,14 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
@@ -509,13 +508,7 @@ public class Backend implements LockerProvider, AutoCloseable {
      * Returns the {@link IndexFeatures} of all configured index backends
      */
     public Map<String,IndexFeatures> getIndexFeatures() {
-        return Maps.transformValues(indexes,new Function<IndexProvider, IndexFeatures>() {
-            @Nullable
-            @Override
-            public IndexFeatures apply(@Nullable IndexProvider indexProvider) {
-                return indexProvider.getFeatures();
-            }
-        });
+        return indexes.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getFeatures()));
     }
 
     /**
@@ -675,7 +668,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         }
     };
 
-    private final Function<String, Locker> TEST_LOCKER_CREATOR = lockerName -> openManagedLocker("org.janusgraph.diskstorage.util.TestLockerManager",lockerName);
+    private final Function<String, Locker> TEST_LOCKER_CREATOR = name -> openManagedLocker("org.janusgraph.diskstorage.util.TestLockerManager", name);
 
     private final Map<String, Function<String, Locker>> REGISTERED_LOCKERS = ImmutableMap.of(
             "consistentkey", CONSISTENT_KEY_LOCKER_CREATOR,

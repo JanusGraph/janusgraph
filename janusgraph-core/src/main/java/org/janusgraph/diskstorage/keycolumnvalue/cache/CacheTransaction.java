@@ -15,8 +15,6 @@
 package org.janusgraph.diskstorage.keycolumnvalue.cache;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
@@ -31,6 +29,7 @@ import org.janusgraph.graphdb.database.serialize.DataOutput;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -72,7 +71,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         if (additions.isEmpty() && deletions.isEmpty()) return;
 
         KCVEntryMutation m = new KCVEntryMutation(additions, deletions);
-        final Map<StaticBuffer, KCVEntryMutation> storeMutation = mutations.computeIfAbsent(store, k -> new HashMap<StaticBuffer, KCVEntryMutation>());
+        final Map<StaticBuffer, KCVEntryMutation> storeMutation = mutations.computeIfAbsent(store, k -> new HashMap<>());
         KCVEntryMutation existingM = storeMutation.get(key);
         if (existingM != null) {
             existingM.merge(m);
@@ -109,7 +108,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         if (!mutation.hasDeletions())
             return new KCVMutation(mutation.getAdditions(), KeyColumnValueStore.NO_DELETIONS);
         else
-            return new KCVMutation(mutation.getAdditions(), Lists.newArrayList(Iterables.transform(mutation.getDeletions(), KCVEntryMutation.ENTRY2COLUMN_FCT)));
+            return new KCVMutation(mutation.getAdditions(), mutation.getDeletions().stream().map(KCVEntryMutation.ENTRY2COLUMN_FCT).collect(Collectors.toList()));
     }
 
     private void flushInternal() throws BackendException {

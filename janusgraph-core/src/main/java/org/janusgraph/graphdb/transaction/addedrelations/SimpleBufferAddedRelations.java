@@ -14,10 +14,11 @@
 
 package org.janusgraph.graphdb.transaction.addedrelations;
 
-import com.google.common.base.Predicate;
 import org.janusgraph.graphdb.internal.InternalRelation;
 
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -71,11 +72,8 @@ public class SimpleBufferAddedRelations implements AddedRelationsContainer {
     @Override
     public List<InternalRelation> getView(Predicate<InternalRelation> filter) {
         cleanup();
-        List<InternalRelation> result = new ArrayList<InternalRelation>();
-        for (InternalRelation r : added) {
-            if (filter.apply(r)) result.add(r);
-        }
-        return result;
+        return added.stream().filter(filter).collect(Collectors.toList());
+
     }
 
     @Override
