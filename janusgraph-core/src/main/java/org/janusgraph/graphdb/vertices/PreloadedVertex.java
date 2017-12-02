@@ -246,7 +246,7 @@ public class PreloadedVertex extends CacheVertex {
 
     }
 
-    private static PropertyMixing NO_MIXIN = new PropertyMixing() {
+    private static final PropertyMixing NO_MIXIN = new PropertyMixing() {
         @Override
         public <V> Iterator<VertexProperty<V>> properties(String... keys) {
             return Collections.emptyIterator();

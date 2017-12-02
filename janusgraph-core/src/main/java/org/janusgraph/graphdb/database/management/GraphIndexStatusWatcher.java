@@ -34,7 +34,7 @@ public class GraphIndexStatusWatcher
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphIndexStatusWatcher.class);
 
-    private String graphIndexName;
+    private final String graphIndexName;
 
     public GraphIndexStatusWatcher(JanusGraph g, String graphIndexName) {
         super(g);

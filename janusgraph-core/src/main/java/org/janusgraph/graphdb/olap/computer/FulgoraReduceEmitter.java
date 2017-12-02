@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class FulgoraReduceEmitter<OK, OV> implements MapReduce.ReduceEmitter<OK, OV> {
 
-    protected Queue<KeyValue<OK, OV>> reduceQueue = new ConcurrentLinkedQueue<>();
+    protected final Queue<KeyValue<OK, OV>> reduceQueue = new ConcurrentLinkedQueue<>();
 
     @Override
     public void emit(final OK key, final OV value) {

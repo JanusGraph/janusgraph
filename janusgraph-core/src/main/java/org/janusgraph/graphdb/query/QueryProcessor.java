@@ -177,7 +177,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
     private final class LimitAdjustingIterator extends org.janusgraph.graphdb.query.LimitAdjustingIterator<R> {
 
         private B backendQuery;
-        private QueryProfiler profiler;
+        private final QueryProfiler profiler;
         private final Object executionInfo;
 
         private LimitAdjustingIterator(BackendQueryHolder<B> backendQueryHolder) {

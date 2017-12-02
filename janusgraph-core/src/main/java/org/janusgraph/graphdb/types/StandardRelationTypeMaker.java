@@ -38,9 +38,9 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 
     private String name;
     private boolean isInvisible;
-    private List<PropertyKey> sortKey;
+    private final List<PropertyKey> sortKey;
     private Order sortOrder;
-    private List<PropertyKey> signature;
+    private final List<PropertyKey> signature;
     private Multiplicity multiplicity;
     private SchemaStatus status = SchemaStatus.ENABLED;
 

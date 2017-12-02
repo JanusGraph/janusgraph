@@ -51,7 +51,7 @@ import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
  * @since solr 1.4
  */
 public class ConcurrentLRUCache<V> {
-    private static Logger log = LoggerFactory.getLogger(ConcurrentLRUCache.class);
+    private static final Logger log = LoggerFactory.getLogger(ConcurrentLRUCache.class);
 
     private final NonBlockingHashMapLong<CacheEntry<Long, V>> map;
     private final int upperWaterMark, lowerWaterMark;
@@ -503,8 +503,8 @@ public class ConcurrentLRUCache<V> {
     }
 
     private static class CacheEntry<Long, V> implements Comparable<CacheEntry<Long, V>> {
-        Long key;
-        V value;
+        final Long key;
+        final V value;
         volatile long lastAccessed = 0;
         long lastAccessedCopy = 0;
 
@@ -563,7 +563,7 @@ public class ConcurrentLRUCache<V> {
                 nonLivePutCounter = new AtomicLong(0),
                 missCounter = new AtomicLong();
         private final AtomicInteger size = new AtomicInteger();
-        private AtomicLong evictionCounter = new AtomicLong();
+        private final AtomicLong evictionCounter = new AtomicLong();
 
         public long getCumulativeLookups() {
             return (accessCounter.get() - putCounter.get() - nonLivePutCounter.get()) + missCounter.get();
@@ -608,7 +608,7 @@ public class ConcurrentLRUCache<V> {
     }
 
     private static class CleanupThread extends Thread {
-        private WeakReference<ConcurrentLRUCache> cache;
+        private final WeakReference<ConcurrentLRUCache> cache;
 
         private boolean stop = false;
 

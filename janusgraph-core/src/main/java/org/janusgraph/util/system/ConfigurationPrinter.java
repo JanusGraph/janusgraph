@@ -45,8 +45,8 @@ public class ConfigurationPrinter {
     private static final String DELIM = "|";
     private static final String DELIM_PADDING = " ";
     private static final String TABLE_FOOTER_LINES = "|=====\n";
-    private static boolean DELIM_AT_LINE_START = true;
-    private static boolean DELIM_AT_LINE_END = false;
+    private static final boolean DELIM_AT_LINE_START = true;
+    private static final boolean DELIM_AT_LINE_END = false;
 
     private final boolean showMutability;
     private final PrintStream stream;

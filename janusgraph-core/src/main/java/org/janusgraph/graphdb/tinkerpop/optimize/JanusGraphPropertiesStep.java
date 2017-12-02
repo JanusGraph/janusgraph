@@ -152,7 +152,7 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
 
     private final List<HasContainer> hasContainers;
     private int limit = BaseQuery.NO_LIMIT;
-    private List<HasStepFolder.OrderEntry> orders = new ArrayList<>();
+    private final List<HasStepFolder.OrderEntry> orders = new ArrayList<>();
 
 
     @Override

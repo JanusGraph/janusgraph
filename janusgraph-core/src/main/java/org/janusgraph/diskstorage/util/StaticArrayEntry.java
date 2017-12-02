@@ -141,7 +141,7 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
 
     public static final EntryMetaData[] EMPTY_SCHEMA = new EntryMetaData[0];
 
-    public static GetColVal<Entry,StaticBuffer> ENTRY_GETTER = new GetColVal<Entry, StaticBuffer>() {
+    public static final GetColVal<Entry,StaticBuffer> ENTRY_GETTER = new GetColVal<Entry, StaticBuffer>() {
         @Override
         public StaticBuffer getColumn(Entry entry) {
             return entry.getColumn();

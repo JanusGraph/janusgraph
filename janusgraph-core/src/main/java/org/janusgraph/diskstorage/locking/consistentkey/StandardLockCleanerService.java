@@ -60,7 +60,7 @@ public class StandardLockCleanerService implements LockCleanerService {
 
     private final KeyColumnValueStore store;
     private final ExecutorService exec;
-    private TimestampProvider times;
+    private final TimestampProvider times;
     private final ConcurrentMap<KeyColumn, Instant> blocked;
     private final ConsistentKeyLockerSerializer serializer;
 
