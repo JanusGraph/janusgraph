@@ -27,7 +27,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
@@ -59,7 +58,7 @@ public class RestClientSetup {
 
         final List<HttpHost> hosts = new ArrayList<>();
         final int defaultPort = config.has(INDEX_PORT) ? config.get(INDEX_PORT) : ElasticSearchIndex.HOST_PORT_DEFAULT;
-        final String httpScheme = config.get(ElasticSearchIndex.SSL_ENABLED).booleanValue() ? "https" : "http";
+        final String httpScheme = config.get(ElasticSearchIndex.SSL_ENABLED) ? "https" : "http";
         for (String host : config.get(INDEX_HOSTS)) {
             String[] hostStringParts = host.split(":");
             String hostname = hostStringParts[0];
@@ -165,7 +164,7 @@ public class RestClientSetup {
             throw new IllegalArgumentException("Authentication type \"" + authType + "\" is not implemented");
         }
 
-        if (config.get(ElasticSearchIndex.SSL_ENABLED).booleanValue()) {
+        if (config.get(ElasticSearchIndex.SSL_ENABLED)) {
             // Custom SSL configuration
             final Builder sslConfCBBuilder = getSSLConfigurationCallbackBuilder();
             boolean configureSSL = false;
@@ -183,14 +182,14 @@ public class RestClientSetup {
             }
 
             if (config.has(ElasticSearchIndex.SSL_DISABLE_HOSTNAME_VERIFICATION) &&
-                    config.get(ElasticSearchIndex.SSL_DISABLE_HOSTNAME_VERIFICATION).booleanValue()) {
+                config.get(ElasticSearchIndex.SSL_DISABLE_HOSTNAME_VERIFICATION)) {
                 log.warn("SSL hostname verification is disabled, Elasticsearch HTTPS connections may not be secure");
                 sslConfCBBuilder.disableHostNameVerification();
                 configureSSL = true;
             }
 
             if (config.has(ElasticSearchIndex.SSL_ALLOW_SELF_SIGNED_CERTIFICATES) &&
-                    config.get(ElasticSearchIndex.SSL_ALLOW_SELF_SIGNED_CERTIFICATES).booleanValue()) {
+                config.get(ElasticSearchIndex.SSL_ALLOW_SELF_SIGNED_CERTIFICATES)) {
                 log.warn("Self-signed SSL certificate support is enabled, Elasticsearch HTTPS connections may not be secure");
                 sslConfCBBuilder.allowSelfSignedCertificates();
                 configureSSL = true;

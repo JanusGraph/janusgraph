@@ -72,8 +72,7 @@ public abstract class KCVSCacheTest {
     }
 
     public CacheTransaction getCacheTx() {
-        CacheTransaction cacheTx = new CacheTransaction(getStoreTx(), storeManager, 1024, MAX_WRITE_TIME, false);
-        return cacheTx;
+        return new CacheTransaction(getStoreTx(), storeManager, 1024, MAX_WRITE_TIME, false);
     }
 
     @After
@@ -98,9 +97,8 @@ public abstract class KCVSCacheTest {
 
     @Test
     public void testSmallCache() throws Exception {
-        final int numKeys = 100, numCols = 10;
+        final int numKeys = 100, numCols = 10; //numCols must be greater than or equal to 10 as it is assummed below
         final int repeats = 100, clearEvery = 20, numMulti = 10;
-        assertTrue(numCols>=10); //Assumed below
         loadStore(numKeys,numCols);
 
         //Repeatedly read from cache and clear in between

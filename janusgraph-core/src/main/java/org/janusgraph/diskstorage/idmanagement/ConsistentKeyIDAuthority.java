@@ -19,11 +19,13 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.util.*;
+import org.janusgraph.diskstorage.util.time.Timer;
 import org.janusgraph.util.stats.NumberUtil;
 import org.janusgraph.diskstorage.util.time.*;
 import org.slf4j.Logger;
@@ -258,7 +260,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                     target = getBlockApplication(nextEnd, writeTimer.getStartTime());
                     final StaticBuffer finalTarget = target; // copy for the inner class
                     BackendOperation.execute(txh -> {
-                        idStore.mutate(partitionKey, Arrays.asList(StaticArrayEntry.of(finalTarget)), KeyColumnValueStore.NO_DELETIONS, txh);
+                        idStore.mutate(partitionKey, Collections.singletonList(StaticArrayEntry.of(finalTarget)), KeyColumnValueStore.NO_DELETIONS, txh);
                         return true;
                     },this,times);
                     writeTimer.stop();
@@ -295,7 +297,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
 
                             if (log.isDebugEnabled()) {
                                 log.debug("Acquired ID block [{}] on partition({})-namespace({}) (my rid is {})",
-                                        new Object[]{idBlock, partition, idNamespace, uid});
+                                    idBlock, partition, idNamespace, uid);
                             }
 
                             success = true;
@@ -312,7 +314,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                             try {
                                 final StaticBuffer finalTarget = target; // copy for the inner class
                                 BackendOperation.execute(txh -> {
-                                    idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(finalTarget), txh);
+                                    idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Collections.singletonList(finalTarget), txh);
                                     return true;
                                 }, new BackendOperation.TransactionalProvider() { //Use normal consistency level for these non-critical delete operations
                                     @Override

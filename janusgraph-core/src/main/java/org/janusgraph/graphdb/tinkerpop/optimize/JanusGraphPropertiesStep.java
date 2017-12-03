@@ -73,9 +73,11 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     }
 
     private Iterator<E> convertIterator(Iterable<? extends JanusGraphProperty> iterable) {
-        if (getReturnType().forProperties()) return (Iterator<E>) iterable.iterator();
+        if (getReturnType().forProperties()) {
+            return (Iterator<E>) iterable.iterator();
+        }
         assert getReturnType().forValues();
-        return (Iterator<E>) Iterators.transform(iterable.iterator(), p -> ((JanusGraphProperty) p).value());
+        return (Iterator<E>) Iterators.transform(iterable.iterator(), p -> p.value());
     }
 
     @SuppressWarnings("deprecation")

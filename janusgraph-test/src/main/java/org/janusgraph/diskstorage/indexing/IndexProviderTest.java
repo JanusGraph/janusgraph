@@ -58,14 +58,15 @@ public abstract class IndexProviderTest {
     protected Map<String,KeyInformation> allKeys;
     protected KeyInformation.IndexRetriever indexRetriever;
 
-    public static final String TEXT = "text", TIME = "time", WEIGHT = "weight", LOCATION = "location", BOUNDARY = "boundary", NAME = "name", PHONE_LIST = "phone_list", PHONE_SET = "phone_set", DATE = "date", STRING="string",
-            ANALYZED="analyzed", FULL_TEXT="full_text", KEYWORD="keyword";
+    public static final String TEXT = "text", TIME = "time", WEIGHT = "weight", LOCATION = "location",
+            BOUNDARY = "boundary", NAME = "name", PHONE_LIST = "phone_list", PHONE_SET = "phone_set", DATE = "date",
+            STRING="string", ANALYZED="analyzed", FULL_TEXT="full_text", KEYWORD="keyword";
 
     public static StandardKeyInformation of(Class<?> clazz, Cardinality cardinality,  Parameter<?>... paras) {
         return new StandardKeyInformation(clazz, cardinality, paras);
     }
 
-    public static final KeyInformation.IndexRetriever getIndexRetriever(final Map<String,KeyInformation> mappings) {
+    public static KeyInformation.IndexRetriever getIndexRetriever(final Map<String,KeyInformation> mappings) {
         return new KeyInformation.IndexRetriever() {
 
             @Override
@@ -76,17 +77,12 @@ public abstract class IndexProviderTest {
 
             @Override
             public KeyInformation.StoreRetriever get(String store) {
-                return new KeyInformation.StoreRetriever() {
-                    @Override
-                    public KeyInformation get(String key) {
-                        return mappings.get(key);
-                    }
-                };
+                return mappings::get;
             }
         };
     }
 
-    public static final Map<String,KeyInformation> getMapping(final IndexFeatures indexFeatures, final String englishAnalyzerName, final String keywordAnalyzerName) {
+    public static Map<String,KeyInformation> getMapping(final IndexFeatures indexFeatures, final String englishAnalyzerName, final String keywordAnalyzerName) {
         Preconditions.checkArgument(indexFeatures.supportsStringMapping(Mapping.TEXTSTRING) ||
                 (indexFeatures.supportsStringMapping(Mapping.TEXT) && indexFeatures.supportsStringMapping(Mapping.STRING)),
                 "Index must support string and text mapping");
@@ -426,7 +422,7 @@ public abstract class IndexProviderTest {
             remove(store, "doc2", doc2, true);
             remove(store, "doc3", ImmutableMultimap.of(WEIGHT, 10.1), false);
             add(store, "doc3", ImmutableMultimap.of(TIME, 2000, TEXT, "Bob owns the world"), false);
-            remove(store, "doc1", ImmutableMultimap.of(TIME, (Object) 1001), false);
+            remove(store, "doc1", ImmutableMultimap.of(TIME, 1001), false);
             add(store, "doc1", ImmutableMultimap.of(TIME, 1005, WEIGHT, 11.1, LOCATION, Geoshape.point(-48.0, 0.0), BOUNDARY, Geoshape.circle(-48.0, 0.0, 1.0)), false);
             Geoshape multiPoint = Geoshape.geoshape(Geoshape.getShapeFactory().multiPoint().pointXY(60.0, 60.0).pointXY(120.0, 60.0).build());
             add(store, "doc5", getDocument("A Full Yes", -100, -11.2, Geoshape.point(48.0, 8.0), multiPoint, Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11"), Instant.ofEpochSecond(400)), true);
@@ -579,7 +575,7 @@ public abstract class IndexProviderTest {
         // now let's try to restore (change values on the existing doc2, delete doc1, and add a new doc)
         index.restore(new HashMap<String, Map<String, List<IndexEntry>>>() {{
             put(store1, new HashMap<String, List<IndexEntry>>() {{
-                put("restore-doc1", Collections.<IndexEntry>emptyList());
+                put("restore-doc1", Collections.emptyList());
                 put("restore-doc2", new ArrayList<IndexEntry>() {{
                     add(new IndexEntry(NAME, "not-second"));
                     add(new IndexEntry(WEIGHT, 2.1d));
@@ -731,17 +727,8 @@ public abstract class IndexProviderTest {
 
     @Test
     public void testDeleteDocumentThenDeleteField() throws Exception {
-        runConflictingTx(new TxJob() {
-            @Override
-            public void run(IndexTransaction tx) {
-                tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), true);
-            }
-        }, new TxJob() {
-             @Override
-             public void run(IndexTransaction tx) {
-                 tx.delete(defStore, defDoc, TEXT, defTextValue, false);
-             }
-         });
+        runConflictingTx(tx -> tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), true),
+            tx -> tx.delete(defStore, defDoc, TEXT, defTextValue, false));
 
         // Document must not exist
         checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),null);
@@ -749,17 +736,8 @@ public abstract class IndexProviderTest {
 
     @Test
     public void testDeleteDocumentThenModifyField() throws Exception {
-        runConflictingTx(new TxJob() {
-            @Override
-            public void run(IndexTransaction tx) {
-                tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), true);
-            }
-        }, new TxJob() {
-            @Override
-            public void run(IndexTransaction tx) {
-                tx.add(defStore, defDoc, TEXT, "the slow brown fox jumps over the lazy dog", false);
-            }
-        });
+        runConflictingTx(tx -> tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), true),
+            tx -> tx.add(defStore, defDoc, TEXT, "the slow brown fox jumps over the lazy dog", false));
 
         //2nd tx should put document back into existence
         checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),defDoc);
@@ -769,17 +747,8 @@ public abstract class IndexProviderTest {
     public void testDeleteDocumentThenAddField() throws Exception {
         final String nameValue = "jm keynes";
 
-        runConflictingTx(new TxJob() {
-                             @Override
-                             public void run(IndexTransaction tx) {
-                                 tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), true);
-                             }
-                         }, new TxJob() {
-                             @Override
-                             public void run(IndexTransaction tx) {
-                                 tx.add(defStore, defDoc, NAME, nameValue, false);
-                             }
-                         });
+        runConflictingTx(tx -> tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), true),
+            tx -> tx.add(defStore, defDoc, NAME, nameValue, false));
 
         // TEXT field should have been deleted when document was
         checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),null);
@@ -791,17 +760,8 @@ public abstract class IndexProviderTest {
     public void testAddFieldThenDeleteDoc() throws Exception {
         final String nameValue = "jm keynes";
 
-        runConflictingTx(new TxJob() {
-            @Override
-            public void run(IndexTransaction tx) {
-                tx.add(defStore, defDoc, NAME, nameValue, false);
-            }
-        }, new TxJob() {
-            @Override
-            public void run(IndexTransaction tx) {
-                tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), true);
-            }
-        });
+        runConflictingTx(tx -> tx.add(defStore, defDoc, NAME, nameValue, false),
+            tx -> tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), true));
 
         //neither should be visible
         checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),null);
@@ -811,19 +771,13 @@ public abstract class IndexProviderTest {
     @Test
     public void testConflictingAdd() throws Exception {
         final String doc2 = "docy2";
-        runConflictingTx(new TxJob() {
-                             @Override
-                             public void run(IndexTransaction tx) {
-                                 Multimap<String, Object> initialProps = ImmutableMultimap.<String, Object>of(TEXT, "sugar sugar");
-                                 add(defStore, doc2, initialProps, true);
-                             }
-                         }, new TxJob() {
-                             @Override
-                             public void run(IndexTransaction tx) {
-                                 Multimap<String, Object> initialProps = ImmutableMultimap.<String, Object>of(TEXT, "honey honey");
-                                 add(defStore, doc2, initialProps, true);
-                             }
-                         });
+        runConflictingTx(tx -> {
+            Multimap<String, Object> initialProps = ImmutableMultimap.of(TEXT, "sugar sugar");
+            add(defStore, doc2, initialProps, true);
+        }, tx -> {
+            Multimap<String, Object> initialProps = ImmutableMultimap.of(TEXT, "honey honey");
+            add(defStore, doc2, initialProps, true);
+        });
 
         //only last write should be visible
         checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),defDoc);
@@ -833,19 +787,13 @@ public abstract class IndexProviderTest {
 
     @Test
     public void testLastWriteWins() throws Exception {
-        runConflictingTx(new TxJob() {
-                             @Override
-                             public void run(IndexTransaction tx) {
-                                 tx.delete(defStore, defDoc, TEXT, defTextValue, false);
-                                 tx.add(defStore, defDoc, TEXT, "sugar sugar", false);
-                             }
-                         }, new TxJob() {
-                             @Override
-                             public void run(IndexTransaction tx) {
-                                 tx.delete(defStore, defDoc, TEXT, defTextValue, false);
-                                 tx.add(defStore, defDoc, TEXT, "honey honey", false);
-                             }
-                         });
+        runConflictingTx(tx -> {
+            tx.delete(defStore, defDoc, TEXT, defTextValue, false);
+            tx.add(defStore, defDoc, TEXT, "sugar sugar", false);
+        }, tx -> {
+            tx.delete(defStore, defDoc, TEXT, defTextValue, false);
+            tx.add(defStore, defDoc, TEXT, "honey honey", false);
+        });
 
         //only last write should be visible
         checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),null);
@@ -861,17 +809,7 @@ public abstract class IndexProviderTest {
     @Test
     public void testUpdateAddition() throws Exception {
         final String revisedText = "its a sunny day";
-        runConflictingTx(new TxJob() {
-                             @Override
-                             public void run(IndexTransaction tx) {
-                                 tx.add(defStore, defDoc, TEXT, revisedText, false);
-                             }
-                         }, new TxJob() {
-                             @Override
-                             public void run(IndexTransaction tx) {
-                                 //do nothing
-                             }
-                         });
+        runConflictingTx(tx -> tx.add(defStore, defDoc, TEXT, revisedText, false), tx -> {/*do nothing*/});
 
         // Should no longer return old text
         checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")), null);
@@ -886,17 +824,7 @@ public abstract class IndexProviderTest {
      */
     @Test
     public void testUpdateDeletion() throws Exception {
-        runConflictingTx(new TxJob() {
-                             @Override
-                             public void run(IndexTransaction tx) {
-                                 tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), false);
-                             }
-                         }, new TxJob() {
-                             @Override
-                             public void run(IndexTransaction tx) {
-                                 //do nothing
-                             }
-                         });
+        runConflictingTx(tx -> tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), false), tx -> {/*do nothing*/});
 
         // Should no longer return deleted text
         checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),null);

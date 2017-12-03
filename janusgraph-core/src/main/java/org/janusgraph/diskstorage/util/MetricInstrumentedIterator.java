@@ -70,12 +70,14 @@ public class MetricInstrumentedIterator implements KeyIterator {
 
     @Override
     public boolean hasNext() {
-        return MetricInstrumentedStore.runWithMetrics(p, null, M_HAS_NEXT, (UncheckedCallable<Boolean>) () -> Boolean.valueOf(iterator.hasNext()));
+        return MetricInstrumentedStore.runWithMetrics(p, null, M_HAS_NEXT,
+                (UncheckedCallable<Boolean>) iterator::hasNext);
     }
 
     @Override
     public StaticBuffer next() {
-        return MetricInstrumentedStore.runWithMetrics(p, null, M_NEXT, (UncheckedCallable<StaticBuffer>) () -> iterator.next());
+        return MetricInstrumentedStore.runWithMetrics(p, null, M_NEXT,
+                (UncheckedCallable<StaticBuffer>) iterator::next);
     }
     
     @Override

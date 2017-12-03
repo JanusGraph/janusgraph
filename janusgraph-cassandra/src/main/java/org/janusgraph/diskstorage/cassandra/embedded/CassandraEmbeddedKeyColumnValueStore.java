@@ -348,7 +348,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         private Iterator<Row> keys;
         private ByteBuffer lastSeenKey = null;
         private Row currentRow;
-        private int pageSize;
+        private final int pageSize;
 
         private boolean isClosed;
 
@@ -446,7 +446,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
         }
 
-        private final boolean hasNextInternal() throws BackendException {
+        private boolean hasNextInternal() throws BackendException {
             ensureOpen();
 
             if (keys == null)
@@ -480,12 +480,10 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             if (rows == null)
                 return null;
 
-            return Iterators.filter(rows.iterator(), new Predicate<Row>() {
-                @Override
-                public boolean apply(@Nullable Row row) {
-                    // The hasOnlyTombstones(x) call below ultimately calls Column.isMarkedForDelete(x)
-                    return !(row == null || row.cf == null || row.cf.isMarkedForDelete() || row.cf.hasOnlyTombstones(nowMillis));
-                }
+            return Iterators.filter(rows.iterator(), row -> {
+                // The hasOnlyTombstones(x) call below ultimately calls Column.isMarkedForDelete(x)
+                return !(row == null || row.cf == null || row.cf.isMarkedForDelete()
+                    || row.cf.hasOnlyTombstones(nowMillis));
             });
         }
 
@@ -495,12 +493,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             if (rowIterator == null)
                 return null;
 
-            return Iterators.filter(rowIterator, new Predicate<Row>() {
-                @Override
-                public boolean apply(@Nullable Row row) {
-                    return row != null && !row.key.getKey().equals(exceptKey);
-                }
-            });
+            return Iterators.filter(rowIterator, row -> row != null && !row.key.getKey().equals(exceptKey));
         }
     }
 

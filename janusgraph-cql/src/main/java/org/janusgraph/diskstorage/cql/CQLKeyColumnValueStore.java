@@ -308,8 +308,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         // To ensure that the Iterator instance is recreated, it is created
         // within the closure otherwise
         // the same iterator would be reused and would be exhausted.
-        return StaticArrayEntryList.ofStaticBuffer(() -> Iterator.ofAll(lazyList.get())
-                .<Tuple3<StaticBuffer, StaticBuffer, Row>> map(row -> Tuple.of(
+        return StaticArrayEntryList.ofStaticBuffer(() -> Iterator.ofAll(lazyList.get()).map(row -> Tuple.of(
                         StaticArrayBuffer.of(row.getBytes(COLUMN_COLUMN_NAME)),
                         StaticArrayBuffer.of(row.getBytes(VALUE_COLUMN_NAME)),
                         row)),

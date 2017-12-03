@@ -26,8 +26,8 @@ public class IntegerSerializer implements OrderPreservingSerializer<Integer> {
 
     @Override
     public Integer read(ScanBuffer buffer) {
-        long l = VariableLong.read(buffer);
-        Preconditions.checkArgument(l>=Integer.MIN_VALUE && l<=Integer.MAX_VALUE,"Invalid serialization [%s]",l);
+        final long l = VariableLong.read(buffer);
+        Preconditions.checkArgument(l >= Integer.MIN_VALUE && l <= Integer.MAX_VALUE,"Invalid serialization [%s]", l);
         return (int)l;
     }
 
@@ -38,12 +38,12 @@ public class IntegerSerializer implements OrderPreservingSerializer<Integer> {
 
     @Override
     public Integer readByteOrder(ScanBuffer buffer) {
-        return Integer.valueOf(buffer.getInt() + Integer.MIN_VALUE);
+        return buffer.getInt() + Integer.MIN_VALUE;
     }
 
     @Override
     public void writeByteOrder(WriteBuffer out, Integer attribute) {
-        out.putInt(attribute.intValue() - Integer.MIN_VALUE);
+        out.putInt(attribute - Integer.MIN_VALUE);
     }
 
     /*
@@ -55,13 +55,14 @@ public class IntegerSerializer implements OrderPreservingSerializer<Integer> {
     @Override
     public Integer convert(Object value) {
         if (value instanceof Number) {
-            double d = ((Number)value).doubleValue();
-            if (Double.isNaN(d) || Math.round(d)!=d) throw new IllegalArgumentException("Not a valid integer: " + value);
-            long l = ((Number)value).longValue();
-            if (l>=Integer.MIN_VALUE && l<=Integer.MAX_VALUE) return Integer.valueOf((int)l);
-            else throw new IllegalArgumentException("Value too large for integer: " + value);
+            final double d = ((Number) value).doubleValue();
+            Preconditions.checkArgument(!Double.isNaN(d) && Math.round(d) == d, "Not a valid integer: " + value);
+            final long l = ((Number) value).longValue();
+            Preconditions.checkArgument(l >= Integer.MIN_VALUE && l <= Integer.MAX_VALUE,
+                "Value too large for integer: " + value);
+            return (int) l;
         } else if (value instanceof String) {
-            return Integer.parseInt((String)value);
+            return Integer.parseInt((String) value);
         } else return null;
     }
 }

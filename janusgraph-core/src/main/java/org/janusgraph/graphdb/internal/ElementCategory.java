@@ -89,7 +89,7 @@ public enum ElementCategory {
         switch (this) {
             case VERTEX:
                 Preconditions.checkArgument(elementId instanceof Long);
-                return tx.getVertex(((Long) elementId).longValue());
+                return tx.getVertex((Long) elementId);
             case EDGE:
                 Preconditions.checkArgument(elementId instanceof RelationIdentifier);
                 return ((RelationIdentifier)elementId).findEdge(tx);

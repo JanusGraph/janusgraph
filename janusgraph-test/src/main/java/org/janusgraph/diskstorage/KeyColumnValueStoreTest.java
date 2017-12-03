@@ -51,12 +51,12 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     @Rule
     public TestName name = new TestName();
 
-    private Logger log = LoggerFactory.getLogger(KeyColumnValueStoreTest.class);
+    private final Logger log = LoggerFactory.getLogger(KeyColumnValueStoreTest.class);
 
-    int numKeys = 500;
-    int numColumns = 50;
+    final int numKeys = 500;
+    final int numColumns = 50;
 
-    protected String storeName = "testStore1";
+    protected final String storeName = "testStore1";
 
     public KeyColumnValueStoreManager manager;
     public StoreTransaction tx;
@@ -168,7 +168,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
                 rowAdditions.add(StaticArrayEntry.of(staticCol, staticVal));
             }
 
-            store.mutate(staticKey, rowAdditions, Collections.<StaticBuffer>emptyList(), tx);
+            store.mutate(staticKey, rowAdditions, Collections.emptyList(), tx);
         }
     }
 
@@ -263,8 +263,9 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
     //@Test
     public void compareStores() throws BackendException {
-        int keys = 1000, columns = 2000; boolean normalMode=true;
-        String[][] values = new String[keys*2][];
+        final int keys = 1000, columns = 2000;
+        final boolean normalMode=true;
+        final String[][] values = new String[keys*2][];
         for (int i = 0; i < keys*2; i++) {
             if(i%2==0) {
                 if (normalMode) {
@@ -458,8 +459,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
             return;
         }
 
-        Preconditions.checkArgument(4 <= numKeys);
-        Preconditions.checkArgument(4 <= numColumns);
+        Preconditions.checkState(4 <= numKeys && 4 <= numColumns);
 
         final long minKey = KeyValueStoreUtil.idOffset + 1;
         final long maxKey = KeyValueStoreUtil.idOffset + numKeys - 2;
@@ -541,8 +541,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
             final int midpoint = size / 2 + offset;
             final int upper = offset + size;
             final int step = 1;
-            Preconditions.checkArgument(4 <= size);
-            Preconditions.checkArgument(1 <= offset);
+            Preconditions.checkState(4 <= size && 1 <= offset);
 
             loadLowerTriangularValues(size, offset);
 
@@ -572,8 +571,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
                         Collection<StaticBuffer> actual = Sets.newHashSet(i);
 
                         // Check
-                        log.debug("Checking bounds [{}, {}) (expect {} keys)",
-                                new Object[]{startCol, endCol, expected.size()});
+                        log.debug("Checking bounds [{}, {}) (expect {} keys)", startCol, endCol, expected.size());
                         Assert.assertEquals(expected, actual);
                         i.close();
                         executed = true;
@@ -609,7 +607,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
                         Collection<StaticBuffer> actual = Lists.newArrayList(i);
 
                         log.debug("Checking bounds key:[{}, {}) & col:[{}, {}) (expect {} keys)",
-                                new Object[]{keyStart, keyEnd, startCol, endCol, expected.size()});
+                            keyStart, keyEnd, startCol, endCol, expected.size());
                         Assert.assertEquals(expected, actual);
                         i.close();
                         executed = true;
@@ -879,7 +877,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         Assert.assertEquals(entries, result);
         result = store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(1), tx);
         Assert.assertEquals(1, result.size());
-        List<Entry> firstEntrySingleton = Arrays.asList(entries.get(0));
+        final List<Entry> firstEntrySingleton = Collections.singletonList(entries.get(0));
         Assert.assertEquals(firstEntrySingleton, result);
     }
 

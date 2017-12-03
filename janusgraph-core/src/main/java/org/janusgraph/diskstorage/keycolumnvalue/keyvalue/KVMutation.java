@@ -46,12 +46,12 @@ public class KVMutation extends Mutation<KeyValueEntry,StaticBuffer> {
 
     @Override
     public void consolidate() {
-        super.consolidate(ENTRY2KEY_FCT, Functions.<StaticBuffer>identity());
+        super.consolidate(ENTRY2KEY_FCT, Functions.identity());
     }
 
     @Override
     public boolean isConsolidated() {
-        return super.isConsolidated(ENTRY2KEY_FCT, Functions.<StaticBuffer>identity());
+        return super.isConsolidated(ENTRY2KEY_FCT, Functions.identity());
     }
 
 }

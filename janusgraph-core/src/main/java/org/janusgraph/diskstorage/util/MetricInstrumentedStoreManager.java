@@ -75,10 +75,7 @@ public class MetricInstrumentedStoreManager implements KeyColumnValueStoreManage
 
         try {
             backend.mutateMany(mutations,txh);
-        } catch (BackendException e) {
-            mgr.getCounter(prefix,  managerMetricsName, M_MUTATE, M_EXCEPTIONS).inc();
-            throw e;
-        } catch (RuntimeException e) {
+        } catch (BackendException | RuntimeException e) {
             mgr.getCounter(prefix,  managerMetricsName, M_MUTATE, M_EXCEPTIONS).inc();
             throw e;
         } finally {

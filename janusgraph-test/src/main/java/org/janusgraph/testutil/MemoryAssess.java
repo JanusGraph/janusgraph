@@ -30,7 +30,7 @@ public class MemoryAssess {
         return getMemoryUse() - memStart;
     }
 
-    private static long fSLEEP_INTERVAL = 100;
+    private static final long fSLEEP_INTERVAL = 100;
 
     public static long getMemoryUse() {
         putOutTheGarbage();

@@ -53,7 +53,6 @@ import org.apache.tinkerpop.gremlin.AbstractGraphProvider;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.engine.StandardTraversalEngine;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.TransactionTest;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -65,7 +64,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -144,31 +142,37 @@ public abstract class AbstractJanusGraphProvider extends AbstractGraphProvider {
         }
 
         WriteConfiguration config = new CommonsConfiguration(configuration);
-        BasicConfiguration readConfig = new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS, config, BasicConfiguration.Restriction.NONE);
+        BasicConfiguration readConfig = new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS, config,
+            BasicConfiguration.Restriction.NONE);
         if (readConfig.has(GraphDatabaseConfiguration.STORAGE_BACKEND)) {
             JanusGraphBaseTest.clearGraph(config);
         }
     }
 
     @Override
-    public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, final LoadGraphWith.GraphData loadGraphWith) {
+    public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName,
+                                                    final LoadGraphWith.GraphData loadGraphWith) {
         ModifiableConfiguration conf = getJanusGraphConfiguration(graphName, test, testMethodName);
         conf.set(GraphDatabaseConfiguration.COMPUTER_RESULT_MODE, "persist");
         conf.set(GraphDatabaseConfiguration.AUTO_TYPE, "tp3");
         Map<String, Object> result = new HashMap<>();
-        conf.getAll().entrySet().forEach(e -> result.put(ConfigElement.getPath(e.getKey().element, e.getKey().umbrellaElements), e.getValue()));
+        conf.getAll().forEach(
+                (key, value) -> result.put(ConfigElement.getPath(key.element, key.umbrellaElements), value));
         result.put(Graph.GRAPH, JanusGraphFactory.class.getName());
         return result;
     }
 
-    public abstract ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test, String testMethodName);
+    public abstract ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test,
+                                                                       String testMethodName);
 
     @Override
-    public void loadGraphData(final Graph g, final LoadGraphWith loadGraphWith, final Class testClass, final String testName) {
+    public void loadGraphData(final Graph g, final LoadGraphWith loadGraphWith, final Class testClass,
+                              final String testName) {
         if (loadGraphWith != null) {
             this.createIndices((JanusGraph) g, loadGraphWith.value());
         } else {
-            if (TransactionTest.class.equals(testClass) && testName.equalsIgnoreCase("shouldExecuteWithCompetingThreads")) {
+            if (TransactionTest.class.equals(testClass)
+                    && testName.equalsIgnoreCase("shouldExecuteWithCompetingThreads")) {
                 JanusGraphManagement management = ((JanusGraph) g).openManagement();
                 management.makePropertyKey("blah").dataType(Double.class).make();
                 management.makePropertyKey("bloop").dataType(Integer.class).make();
@@ -186,32 +190,49 @@ public abstract class AbstractJanusGraphProvider extends AbstractGraphProvider {
             VertexLabel artist = management.makeVertexLabel("artist").make();
             VertexLabel song = management.makeVertexLabel("song").make();
 
-            PropertyKey name = management.makePropertyKey("name").cardinality(Cardinality.LIST).dataType(String.class).make();
-            PropertyKey songType = management.makePropertyKey("songType").cardinality(Cardinality.LIST).dataType(String.class).make();
-            PropertyKey performances = management.makePropertyKey("performances").cardinality(Cardinality.LIST).dataType(Integer.class).make();
+            PropertyKey name = management.makePropertyKey("name").cardinality(Cardinality.LIST)
+                    .dataType(String.class).make();
+            PropertyKey songType = management.makePropertyKey("songType").cardinality(Cardinality.LIST)
+                    .dataType(String.class).make();
+            PropertyKey performances = management.makePropertyKey("performances").cardinality(Cardinality.LIST)
+                    .dataType(Integer.class).make();
 
-            management.buildIndex("artistByName", Vertex.class).addKey(name).indexOnly(artist).buildCompositeIndex();
-            management.buildIndex("songByName", Vertex.class).addKey(name).indexOnly(song).buildCompositeIndex();
-            management.buildIndex("songByType", Vertex.class).addKey(songType).indexOnly(song).buildCompositeIndex();
-            management.buildIndex("songByPerformances", Vertex.class).addKey(performances).indexOnly(song).buildCompositeIndex();
+            management.buildIndex("artistByName", Vertex.class).addKey(name).indexOnly(artist)
+                    .buildCompositeIndex();
+            management.buildIndex("songByName", Vertex.class).addKey(name).indexOnly(song)
+                    .buildCompositeIndex();
+            management.buildIndex("songByType", Vertex.class).addKey(songType).indexOnly(song)
+                    .buildCompositeIndex();
+            management.buildIndex("songByPerformances", Vertex.class).addKey(performances).indexOnly(song)
+                    .buildCompositeIndex();
 
         } else if (graphData.equals(LoadGraphWith.GraphData.MODERN)) {
             VertexLabel person = management.makeVertexLabel("person").make();
             VertexLabel software = management.makeVertexLabel("software").make();
 
-            PropertyKey name = management.makePropertyKey("name").cardinality(Cardinality.LIST).dataType(String.class).make();
-            PropertyKey lang = management.makePropertyKey("lang").cardinality(Cardinality.LIST).dataType(String.class).make();
-            PropertyKey age = management.makePropertyKey("age").cardinality(Cardinality.LIST).dataType(Integer.class).make();
+            PropertyKey name = management.makePropertyKey("name").cardinality(Cardinality.LIST)
+                    .dataType(String.class).make();
+            PropertyKey lang = management.makePropertyKey("lang").cardinality(Cardinality.LIST)
+                    .dataType(String.class).make();
+            PropertyKey age = management.makePropertyKey("age").cardinality(Cardinality.LIST)
+                    .dataType(Integer.class).make();
 
-            management.buildIndex("personByName", Vertex.class).addKey(name).indexOnly(person).buildCompositeIndex();
-            management.buildIndex("softwareByName", Vertex.class).addKey(name).indexOnly(software).buildCompositeIndex();
-            management.buildIndex("personByAge", Vertex.class).addKey(age).indexOnly(person).buildCompositeIndex();
-            management.buildIndex("softwareByLang", Vertex.class).addKey(lang).indexOnly(software).buildCompositeIndex();
+            management.buildIndex("personByName", Vertex.class).addKey(name).indexOnly(person)
+                    .buildCompositeIndex();
+            management.buildIndex("softwareByName", Vertex.class).addKey(name).indexOnly(software)
+                    .buildCompositeIndex();
+            management.buildIndex("personByAge", Vertex.class).addKey(age).indexOnly(person)
+                    .buildCompositeIndex();
+            management.buildIndex("softwareByLang", Vertex.class).addKey(lang).indexOnly(software)
+                    .buildCompositeIndex();
 
         } else if (graphData.equals(LoadGraphWith.GraphData.CLASSIC)) {
-            PropertyKey name = management.makePropertyKey("name").cardinality(Cardinality.LIST).dataType(String.class).make();
-            PropertyKey lang = management.makePropertyKey("lang").cardinality(Cardinality.LIST).dataType(String.class).make();
-            PropertyKey age = management.makePropertyKey("age").cardinality(Cardinality.LIST).dataType(Integer.class).make();
+            PropertyKey name = management.makePropertyKey("name").cardinality(Cardinality.LIST)
+                    .dataType(String.class).make();
+            PropertyKey lang = management.makePropertyKey("lang").cardinality(Cardinality.LIST)
+                    .dataType(String.class).make();
+            PropertyKey age = management.makePropertyKey("age").cardinality(Cardinality.LIST)
+                    .dataType(Integer.class).make();
 
             management.buildIndex("byName", Vertex.class).addKey(name).buildCompositeIndex();
             management.buildIndex("byAge", Vertex.class).addKey(age).buildCompositeIndex();
@@ -224,5 +245,4 @@ public abstract class AbstractJanusGraphProvider extends AbstractGraphProvider {
         }
         management.commit();
     }
-
 }

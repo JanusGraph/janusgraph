@@ -181,7 +181,7 @@ public abstract class JanusGraphBaseTest {
     }
 
 
-    public static final TestConfigOption option(ConfigOption option, String... umbrella) {
+    public static TestConfigOption option(ConfigOption option, String... umbrella) {
         return new TestConfigOption(option,umbrella);
     }
 
@@ -307,8 +307,7 @@ public abstract class JanusGraphBaseTest {
     }
 
     public PropertyKey makeKey(String name, Class dataType) {
-        PropertyKey key = mgmt.makePropertyKey(name).dataType(dataType).cardinality(Cardinality.SINGLE).make();
-        return key;
+        return mgmt.makePropertyKey(name).dataType(dataType).cardinality(Cardinality.SINGLE).make();
     }
 
     public EdgeLabel makeLabel(String name) {
@@ -316,9 +315,7 @@ public abstract class JanusGraphBaseTest {
     }
 
     public EdgeLabel makeKeyedEdgeLabel(String name, PropertyKey sort, PropertyKey signature) {
-        EdgeLabel relType = ((StandardEdgeLabelMaker)tx.makeEdgeLabel(name)).
-                sortKey(sort).signature(signature).directed().make();
-        return relType;
+        return ((StandardEdgeLabelMaker) tx.makeEdgeLabel(name)).sortKey(sort).signature(signature).directed().make();
     }
 
     /*
@@ -350,7 +347,7 @@ public abstract class JanusGraphBaseTest {
     }
 
     public static JanusGraphVertex getVertex(JanusGraphTransaction tx, String key, Object value) {
-        return (JanusGraphVertex)getOnlyElement(tx.query().has(key,value).vertices(),null);
+        return getOnlyElement(tx.query().has(key,value).vertices(),null);
     }
 
     public static JanusGraphVertex getVertex(JanusGraphTransaction tx, PropertyKey key, Object value) {
@@ -362,11 +359,11 @@ public abstract class JanusGraphBaseTest {
     }
 
     public static JanusGraphVertex getOnlyVertex(JanusGraphQuery<?> query) {
-        return (JanusGraphVertex)getOnlyElement(query.vertices());
+        return getOnlyElement(query.vertices());
     }
 
     public static JanusGraphEdge getOnlyEdge(JanusGraphVertexQuery<?> query) {
-        return (JanusGraphEdge)getOnlyElement(query.edges());
+        return getOnlyElement(query.edges());
     }
 
     public static<E> E getOnlyElement(Iterable<E> traversal) {

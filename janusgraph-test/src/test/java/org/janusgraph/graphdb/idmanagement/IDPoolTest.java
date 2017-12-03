@@ -95,13 +95,13 @@ public class IDPoolTest {
             threads[i].start();
         }
         for (int i = 0; i < numThreads; i++) threads[i].join();
-        for (int i = 0; i < idPools.length; i++) idPools[i].close();
+        for (final StandardIDPool idPool : idPools) idPool.close();
         //Verify consecutive id assignment
         for (int i = 0; i < ids.length; i++) {
             IntSet set = ids[i];
             int max = 0;
             int[] all = set.getAll();
-            for (int j=0;j<all.length;j++) if (all[j]>max) max=all[j];
+            for (int id : all) if (id > max) max = id;
             for (int j=1;j<=max;j++) assertTrue(i+ " contains: " + j,set.contains(j));
         }
     }
@@ -229,7 +229,7 @@ public class IDPoolTest {
     }
 
     interface IDPoolFactory {
-        public StandardIDPool get(int partitionID);
+        StandardIDPool get(int partitionID);
     }
 
 }

@@ -32,7 +32,7 @@ public class BerkeleyProcessStandardSuite extends ProcessStandardSuite {
         super(classToTest, builder, getTestList());
     }
 
-    private static final Class<?>[] getTestList() throws InitializationError {
+    private static Class<?>[] getTestList() throws InitializationError {
         try {
             final Field field = ProcessStandardSuite.class.getDeclaredField("allTests");
             field.setAccessible(true);

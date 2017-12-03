@@ -27,7 +27,6 @@ import org.janusgraph.graphdb.types.system.SystemRelationType;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;

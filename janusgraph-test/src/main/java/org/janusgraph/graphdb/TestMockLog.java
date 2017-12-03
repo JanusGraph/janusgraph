@@ -59,12 +59,7 @@ public class TestMockLog implements LogManager {
 
     @Override
     public synchronized Log openLog(String name) throws BackendException {
-        TestLog log = openLogs.get(name);
-        if (log==null) {
-            log = new TestLog(name);
-            openLogs.put(name,log);
-        }
-        return log;
+        return openLogs.computeIfAbsent(name, TestLog::new);
     }
 
     @Override

@@ -35,7 +35,7 @@ public interface RestClientAuthenticator extends HttpClientConfigCallback, Reque
 
     /**
      * Initializes the authenticator. This method may perform the blocking I/O operations if needed.
-     * @throws IOException
+     * @throws IOException in case there was an exception during I/O operations.
      */
     void init() throws IOException;
 

@@ -14,14 +14,14 @@
 
 package org.janusgraph.diskstorage.configuration;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import org.janusgraph.core.util.ReflectiveConfigOptionLoader;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.junit.Test;
+
+import java.util.stream.StreamSupport;
 
 import static org.junit.Assert.*;
 
@@ -124,14 +124,14 @@ public class ConfigurationTest {
         assertEquals("foo",search.get(indexback));
         assertEquals(400,search.get(ping).intValue());
         assertEquals(100,mixed.get(ping,"find").intValue());
-        assertEquals(false,mixed.get(presort,"find").booleanValue());
+        assertEquals(false, mixed.get(presort, "find"));
         assertEquals(400,mixed.get(ping,"search").intValue());
-        assertEquals(false,mixed.get(presort,"search").booleanValue());
+        assertEquals(false, mixed.get(presort, "search"));
         assertFalse(mixed.has(bim));
         assertTrue(mixed.has(bits));
         assertEquals(5,mixed.getSubset(storage).size());
 
-        assertEquals(1.5d,mixed.get(bar).doubleValue(),0.0);
+        assertEquals(1.5d, mixed.get(bar),0.0);
         assertEquals("localhost",mixed.get(hostnames)[0]);
         assertEquals(1111,mixed.get(locktime).longValue());
 
@@ -146,21 +146,13 @@ public class ConfigurationTest {
         ReflectiveConfigOptionLoader.INSTANCE.setEnabled(false);
         ReflectiveConfigOptionLoader.INSTANCE.loadStandard(this.getClass());
 
-        assertFalse(Iterables.any(GraphDatabaseConfiguration.LOG_NS.getChildren(), new Predicate<ConfigElement>() {
-            @Override
-            public boolean apply(ConfigElement elem) {
-                return elem instanceof ConfigOption<?> && elem.getName().equals("max-write-time");
-            }
-        }));
+        assertFalse(StreamSupport.stream(GraphDatabaseConfiguration.LOG_NS.getChildren().spliterator(), false)
+            .anyMatch(elem -> elem instanceof ConfigOption<?> && elem.getName().equals("max-write-time")));
 
         ReflectiveConfigOptionLoader.INSTANCE.setEnabled(true);
         ReflectiveConfigOptionLoader.INSTANCE.loadStandard(this.getClass());
 
-        assertTrue(Iterables.any(GraphDatabaseConfiguration.LOG_NS.getChildren(), new Predicate<ConfigElement>() {
-            @Override
-            public boolean apply(ConfigElement elem) {
-                return elem instanceof ConfigOption<?> && elem.getName().equals("max-write-time");
-            }
-        }));
+        assertTrue(StreamSupport.stream(GraphDatabaseConfiguration.LOG_NS.getChildren().spliterator(), false)
+            .anyMatch(elem -> elem instanceof ConfigOption<?> && elem.getName().equals("max-write-time")));
     }
 }

@@ -75,11 +75,11 @@ public interface JanusGraphEdge extends JanusGraphRelation, Edge {
 
     @Override
     default Iterator<Vertex> vertices(Direction direction) {
-        List<Vertex> vertices;
+        final List<Vertex> vertices;
         if (direction==Direction.BOTH) {
-            vertices = ImmutableList.of((Vertex) vertex(Direction.OUT), vertex(Direction.IN));
+            vertices = ImmutableList.of(vertex(Direction.OUT), vertex(Direction.IN));
         } else {
-            vertices = ImmutableList.of((Vertex) vertex(direction));
+            vertices = ImmutableList.of(vertex(direction));
         }
         return vertices.iterator();
     }

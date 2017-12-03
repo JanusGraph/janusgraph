@@ -18,8 +18,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
-
 import static org.junit.Assert.assertEquals;
 
 
@@ -77,9 +75,8 @@ public class RandomRemovalListTest {
 
         long sum = 0;
         int numReturned = 0;
-        Iterator<Integer> iterator = list.iterator();
-        while (iterator.hasNext()) {
-            sum += iterator.next();
+        for (final Integer aList : list) {
+            sum += aList;
             numReturned++;
         }
         assertEquals(sum, (max + 1) * max / 2);

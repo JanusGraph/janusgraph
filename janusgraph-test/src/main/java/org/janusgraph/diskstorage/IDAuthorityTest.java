@@ -100,7 +100,7 @@ public abstract class IDAuthorityTest {
     public KeyColumnValueStoreManager[] manager;
     public IDAuthority[] idAuthorities;
 
-    public WriteConfiguration baseStoreConfiguration;
+    public final WriteConfiguration baseStoreConfiguration;
 
     public final int uidBitWidth;
     public final boolean hasFixedUid;
@@ -322,7 +322,6 @@ public abstract class IDAuthorityTest {
 
         final ConcurrentLinkedQueue<IDBlock> blocks = new ConcurrentLinkedQueue<>();
         final int blocksPerThread = 40;
-        Assert.assertTrue(0 < blocksPerThread);
         final List <Future<Void>> futures = new ArrayList<>(CONCURRENCY);
 
         // Start some concurrent threads getting blocks the same ID authority and same partition in that authority

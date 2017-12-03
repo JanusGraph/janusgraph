@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import com.google.common.base.Function;
@@ -137,7 +136,7 @@ public class ConfigurationPrinter {
     }
 
     private List<ConfigNamespace> getSortedChildNamespaces(ConfigNamespace n) {
-        return getSortedChildren(n, arg0 -> arg0.isNamespace());
+        return getSortedChildren(n, ConfigElement::isNamespace);
     }
 
     private String getTableLineForOption(ConfigOption o, String prefix) {
@@ -195,7 +194,7 @@ public class ConfigurationPrinter {
                 sortedElements.add(e);
             }
         }
-        Collections.sort(sortedElements, Comparator.comparing(ConfigElement::getName));
+        sortedElements.sort(Comparator.comparing(ConfigElement::getName));
 
         return (List<E>)sortedElements;
     }

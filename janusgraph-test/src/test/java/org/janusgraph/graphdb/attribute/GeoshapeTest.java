@@ -59,7 +59,7 @@ public class GeoshapeTest {
         for (int i=0;i<50;i++) {
             Geoshape point = Geoshape.point(i,i);
             Geoshape line = Geoshape.line(Arrays.asList(new double[][] {{i-1,i-1},{i,i},{i+1,i+1}}));
-            Geoshape polygon = Geoshape.polygon(Arrays.asList(new double[][] {{i-1,i-1},{i,i-1},{i+1,i-i},{i+1,i+1},{i-1,i+1},{i-1,i-1}}));
+            Geoshape polygon = Geoshape.polygon(Arrays.asList(new double[][] {{i-1,i-1},{i,i-1},{i+1,0},{i+1,i+1},{i-1,i+1},{i-1,i-1}}));
             Geoshape circle = Geoshape.circle(i,i,point.getPoint().distance(Geoshape.point(i,i).getPoint())+10);
             assertTrue(circle.intersect(point));
             assertTrue(point.intersect(circle));

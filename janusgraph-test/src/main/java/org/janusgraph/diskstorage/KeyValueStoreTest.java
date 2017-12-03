@@ -36,10 +36,10 @@ import org.janusgraph.diskstorage.util.RecordIterator;
 
 public abstract class KeyValueStoreTest extends AbstractKCVSTest {
 
-    private Logger log = LoggerFactory.getLogger(KeyValueStoreTest.class);
+    private final Logger log = LoggerFactory.getLogger(KeyValueStoreTest.class);
 
-    private int numKeys = 2000;
-    private String storeName = "testStore1";
+    private final int numKeys = 2000;
+    private final String storeName = "testStore1";
 
 
     protected OrderedKeyValueStoreManager manager;

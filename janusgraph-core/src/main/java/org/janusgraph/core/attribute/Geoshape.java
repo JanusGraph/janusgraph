@@ -711,8 +711,7 @@ public class Geoshape {
                     HashMap map = jsonParser.readValueAs(LinkedHashMap.class);
                     jsonParser.nextToken();
                     String json = mapWriter.writeValueAsString(map);
-                    Geoshape shape = new Geoshape(HELPER.getGeojsonReader().read(new StringReader(json)));
-                    return shape;
+                    return new Geoshape(HELPER.getGeojsonReader().read(new StringReader(json)));
                 } catch (ParseException e) {
                     throw new IOException("Unable to read and parse geojson", e);
                 }

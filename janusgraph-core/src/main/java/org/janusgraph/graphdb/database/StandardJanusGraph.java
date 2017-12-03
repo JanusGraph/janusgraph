@@ -380,8 +380,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                 consistentTx = StandardJanusGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(),
                         StandardJanusGraph.this, customTxOptions).groupName(GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT));
                 consistentTx.getTxHandle().disableCache();
-                EntryList result = edgeQuery(schemaId, query, consistentTx.getTxHandle());
-                return result;
+                return edgeQuery(schemaId, query, consistentTx.getTxHandle());
             } finally {
                 TXUtils.rollbackQuietly(consistentTx);
             }

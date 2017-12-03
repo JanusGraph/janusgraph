@@ -135,7 +135,8 @@ public class EdgeSerializer implements RelationReader {
                 in.movePositionTo(data.getValuePosition());
                 other = readPropertyValue(in,key);
             }
-            Preconditions.checkState(other!=null,"Encountered error in deserializer [null value returned]. Check serializer compatibility.");
+            Preconditions.checkState(other!=null,
+                "Encountered error in deserializer [null value returned]. Check serializer compatibility.");
         }
         assert other!=null;
 
@@ -177,7 +178,8 @@ public class EdgeSerializer implements RelationReader {
         return new RelationCache(dir, typeId, relationId, other, properties);
     }
 
-    private void readInlineTypes(long[] keyIds, LongObjectHashMap properties, ReadBuffer in, TypeInspector tx, InlineType inlineType) {
+    private void readInlineTypes(long[] keyIds, LongObjectHashMap properties, ReadBuffer in, TypeInspector tx,
+                                 InlineType inlineType) {
         for (long keyId : keyIds) {
             PropertyKey keyType = tx.getExistingPropertyKey(keyId);
             Object value = readInline(in, keyType, inlineType);
@@ -231,8 +233,10 @@ public class EdgeSerializer implements RelationReader {
         return writeRelation(relation, (InternalRelationType) relation.getType(), position, tx);
     }
 
-    public StaticArrayEntry writeRelation(InternalRelation relation, InternalRelationType type, int position, TypeInspector tx) {
-        assert type==relation.getType() || (type.getBaseType() != null && type.getBaseType().equals(relation.getType()));
+    public StaticArrayEntry writeRelation(InternalRelation relation, InternalRelationType type, int position,
+                                          TypeInspector tx) {
+        assert type==relation.getType() || (type.getBaseType() != null
+                && type.getBaseType().equals(relation.getType()));
         Direction dir = EdgeDirection.fromPosition(position);
         Preconditions.checkArgument(type.isUnidirected(Direction.BOTH) || type.isUnidirected(dir));
         long typeId = type.longId();
@@ -320,10 +324,9 @@ public class EdgeSerializer implements RelationReader {
         }
         assert valuePosition>0;
 
-        StaticArrayEntry entry = new StaticArrayEntry(type.getSortOrder()==Order.DESC?
-                                    out.getStaticBufferFlipBytes(keyStartPos,keyEndPos):
-                                    out.getStaticBuffer(),valuePosition);
-        return entry;
+        return new StaticArrayEntry(type.getSortOrder() == Order.DESC ?
+                                    out.getStaticBufferFlipBytes(keyStartPos, keyEndPos) :
+                                    out.getStaticBuffer(), valuePosition);
     }
 
     private enum InlineType {
@@ -340,7 +343,8 @@ public class EdgeSerializer implements RelationReader {
 
     }
 
-    private void writeInlineTypes(long[] keyIds, InternalRelation relation, DataOutput out, TypeInspector tx, InlineType inlineType) {
+    private void writeInlineTypes(long[] keyIds, InternalRelation relation, DataOutput out, TypeInspector tx,
+                                  InlineType inlineType) {
         for (long keyId : keyIds) {
             PropertyKey t = tx.getExistingPropertyKey(keyId);
             writeInline(out, t, relation.getValueDirect(t), inlineType);
@@ -411,10 +415,12 @@ public class EdgeSerializer implements RelationReader {
 
                 if (i>=sortKeyIDs.length) {
                     assert !type.multiplicity().isUnique(dir);
-                    assert (propertyKey instanceof ImplicitKey) && (propertyKey==ImplicitKey.JANUSGRAPHID || propertyKey==ImplicitKey.ADJACENT_ID);
+                    assert (propertyKey instanceof ImplicitKey)
+                            && (propertyKey==ImplicitKey.JANUSGRAPHID || propertyKey==ImplicitKey.ADJACENT_ID);
                     assert propertyKey!=ImplicitKey.ADJACENT_ID || (i==sortKeyIDs.length);
                     assert propertyKey!=ImplicitKey.JANUSGRAPHID || (!type.multiplicity().isConstrained() &&
-                                                  (i==sortKeyIDs.length && propertyKey.isPropertyKey() || i==sortKeyIDs.length+1 && propertyKey.isEdgeLabel() ));
+                                                  (i==sortKeyIDs.length && propertyKey.isPropertyKey()
+                                                      || i==sortKeyIDs.length+1 && propertyKey.isEdgeLabel() ));
                     assert colStart.getPosition()==colEnd.getPosition();
                     assert interval==null || interval.isPoints();
                     keyEndPos = colStart.getPosition();

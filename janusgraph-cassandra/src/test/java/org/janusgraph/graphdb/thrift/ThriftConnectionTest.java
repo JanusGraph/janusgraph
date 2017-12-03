@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableMap;
 
 public class ThriftConnectionTest {
-    private Logger log = LoggerFactory.getLogger(ThriftConnectionTest.class);
+    private final Logger log = LoggerFactory.getLogger(ThriftConnectionTest.class);
     private CTConnectionFactory.Config factoryConfig;
 
     @Before

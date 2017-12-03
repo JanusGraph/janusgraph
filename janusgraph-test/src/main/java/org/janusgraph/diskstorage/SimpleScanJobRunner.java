@@ -24,6 +24,6 @@ import java.util.concurrent.ExecutionException;
 @FunctionalInterface
 public interface SimpleScanJobRunner {
 
-    public ScanMetrics run(ScanJob job, Configuration jobConf, String rootNSName)
+    ScanMetrics run(ScanJob job, Configuration jobConf, String rootNSName)
             throws ExecutionException, BackendException, InterruptedException, IOException;
 }

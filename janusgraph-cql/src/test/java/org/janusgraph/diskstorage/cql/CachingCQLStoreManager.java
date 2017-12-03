@@ -15,7 +15,7 @@ public class CachingCQLStoreManager extends CQLStoreManager {
 
     private static Cluster cluster;
 
-    private static Map<String,Session> sessions = new HashMap<>();
+    private static final Map<String,Session> sessions = new HashMap<>();
 
     public CachingCQLStoreManager(final Configuration configuration) throws BackendException {
         super(configuration);

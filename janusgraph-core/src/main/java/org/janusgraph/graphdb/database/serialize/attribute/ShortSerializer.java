@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.database.serialize.attribute;
 
+import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.ScanBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
 import org.janusgraph.graphdb.database.serialize.OrderPreservingSerializer;
@@ -24,12 +25,12 @@ public class ShortSerializer implements OrderPreservingSerializer<Short>  {
 
     @Override
     public Short read(ScanBuffer buffer) {
-        return Short.valueOf((short)(buffer.getShort() + Short.MIN_VALUE));
+        return (short) (buffer.getShort() + Short.MIN_VALUE);
     }
 
     @Override
     public void write(WriteBuffer out, Short object) {
-        out.putShort((short)(object.shortValue() - Short.MIN_VALUE));
+        out.putShort((short)(object - Short.MIN_VALUE));
     }
 
     @Override
@@ -39,7 +40,7 @@ public class ShortSerializer implements OrderPreservingSerializer<Short>  {
 
     @Override
     public void writeByteOrder(WriteBuffer buffer, Short attribute) {
-        write(buffer,attribute);
+        write(buffer, attribute);
     }
 
     /*
@@ -50,13 +51,14 @@ public class ShortSerializer implements OrderPreservingSerializer<Short>  {
     @Override
     public Short convert(Object value) {
         if (value instanceof Number) {
-            double d = ((Number)value).doubleValue();
-            if (Double.isNaN(d) || Math.round(d)!=d) throw new IllegalArgumentException("Not a valid short: " + value);
-            long l = ((Number)value).longValue();
-            if (l>=Short.MIN_VALUE && l<=Short.MAX_VALUE) return Short.valueOf((short)l);
-            else throw new IllegalArgumentException("Value too large for short: " + value);
+            final double d = ((Number) value).doubleValue();
+            Preconditions.checkArgument(!Double.isNaN(d) && Math.round(d) == d, "Not a valid short: " + value);
+            final long l = ((Number) value).longValue();
+            Preconditions.checkArgument(l >= Short.MIN_VALUE && l <= Short.MAX_VALUE,
+                    "Value too large for short: " + value);
+            return (short) l;
         } else if (value instanceof String) {
-            return Short.parseShort((String)value);
+            return Short.parseShort((String) value);
         } else return null;
     }
 }

@@ -291,10 +291,10 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         final String path;
         final byte[] requestData;
         if (ElasticMajorVersion.ONE == majorVersion) {
-             path = new StringBuilder(REQUEST_SEPARATOR).append("_search").append(REQUEST_SEPARATOR).append("scroll").append(REQUEST_PARAM_BEGINNING).append("scroll=").append(scrollKeepAlive).toString();
+             path = REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll" + REQUEST_PARAM_BEGINNING + "scroll=" + scrollKeepAlive;
              requestData = scrollId.getBytes(UTF8_CHARSET);
         } else {
-            path = new StringBuilder(REQUEST_SEPARATOR).append("_search").append(REQUEST_SEPARATOR).append("scroll").toString();
+            path = REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll";
             final Map<String, Object> request = new HashMap<>();
             request.put("scroll", scrollKeepAlive);
             request.put("scroll_id", scrollId);
@@ -327,7 +327,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         final Response response = delegate.performRequest(
             method,
             path,
-            Collections.<String, String>emptyMap(),
+            Collections.emptyMap(),
             entity);
 
         if (response.getStatusLine().getStatusCode() >= 400) {

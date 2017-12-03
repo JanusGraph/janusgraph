@@ -31,11 +31,6 @@ public class BerkeleyVariableLengthKCVSTest extends KeyColumnValueStoreTest {
         return new OrderedKeyValueStoreManagerAdapter(sm);
     }
 
-    @Test
-    public void testGetKeysWithKeyRange() throws Exception {
-        super.testGetKeysWithKeyRange();
-    }
-
     @Test @Override
     public void testConcurrentGetSlice() throws ExecutionException, InterruptedException, BackendException {
 
