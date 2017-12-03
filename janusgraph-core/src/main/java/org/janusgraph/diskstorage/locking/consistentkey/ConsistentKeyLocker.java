@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
@@ -225,13 +225,14 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         }
 
         public Builder fromConfig(Configuration config) {
-            rid(new StaticArrayBuffer(config.get(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID).getBytes(UTF8_CHARSET)));
+            rid(new StaticArrayBuffer(config.get(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID)
+                .getBytes(UTF8_CHARSET)));
 
             final String llmPrefix = config.get(GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP);
 
             times(config.get(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER));
 
-            mediator(LocalLockMediators.INSTANCE.<StoreTransaction>get(llmPrefix, times));
+            mediator(LocalLockMediators.INSTANCE.get(llmPrefix, times));
 
             lockRetryCount(config.get(GraphDatabaseConfiguration.LOCK_RETRY));
 
@@ -355,7 +356,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
      * @throws Throwable if {@link WriteResult#getThrowable()} is not an instance of
      *                   {@link org.janusgraph.diskstorage.TemporaryBackendException}
      */
-    private void handleMutationFailure(KeyColumn lockID, StaticBuffer lockKey, WriteResult wr, StoreTransaction txh) throws Throwable {
+    private void handleMutationFailure(KeyColumn lockID, StaticBuffer lockKey, WriteResult wr,
+                                       StoreTransaction txh) throws Throwable {
         Throwable error = wr.getThrowable();
         if (null != error) {
             if (error instanceof TemporaryBackendException) {
@@ -370,12 +372,14 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
                 log.error("Fatal exception encountered during attempted lock write", error);
                 WriteResult dwr = tryDeleteLockOnce(lockKey, wr.getLockCol(), txh);
                 if (!dwr.isSuccessful()) {
-                    log.warn("Failed to delete lock write: abandoning potentially-unreleased lock on " + lockID, dwr.getThrowable());
+                    log.warn("Failed to delete lock write: abandoning potentially-unreleased lock on {}",
+                        lockID, dwr.getThrowable());
                 }
                 throw error;
             }
         } else {
-            log.warn("Lock write succeeded but took too long: duration {} exceeded limit {}", wr.getDuration(), lockWait);
+            log.warn("Lock write succeeded but took too long: duration {} exceeded limit {}",
+                wr.getDuration(), lockWait);
         }
     }
 
@@ -385,8 +389,9 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         StaticBuffer newLockCol = serializer.toLockCol(writeTimer.getStartTime(), rid, times);
         Entry newLockEntry = StaticArrayEntry.of(newLockCol, zeroBuf);
         try {
-            StoreTransaction newTx = overrideTimestamp(txh, writeTimer.getStartTime());
-            store.mutate(key, Arrays.asList(newLockEntry), null == del ? KeyColumnValueStore.NO_DELETIONS : Arrays.asList(del), newTx);
+            final StoreTransaction newTx = overrideTimestamp(txh, writeTimer.getStartTime());
+            store.mutate(key, Collections.singletonList(newLockEntry),
+                null == del ? KeyColumnValueStore.NO_DELETIONS : Collections.singletonList(del), newTx);
         } catch (BackendException e) {
             log.debug("Lock write attempt failed with exception", e);
             t = e;
@@ -400,8 +405,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         Throwable t = null;
         final Timer delTimer = times.getTimer().start();
         try {
-            StoreTransaction newTx = overrideTimestamp(txh, delTimer.getStartTime());
-            store.mutate(key, ImmutableList.<Entry>of(), Arrays.asList(col), newTx);
+            final StoreTransaction newTx = overrideTimestamp(txh, delTimer.getStartTime());
+            store.mutate(key, ImmutableList.of(), Collections.singletonList(col), newTx);
         } catch (BackendException e) {
             t = e;
         }
@@ -411,7 +416,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
     }
 
     @Override
-    protected void checkSingleLock(final KeyColumn kc, final ConsistentKeyLockStatus ls, final StoreTransaction tx) throws BackendException, InterruptedException {
+    protected void checkSingleLock(final KeyColumn kc, final ConsistentKeyLockStatus ls,
+                                   final StoreTransaction tx) throws BackendException, InterruptedException {
 
         if (ls.isChecked())
             return;
@@ -421,11 +427,13 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         final Instant now = times.sleepPast(ls.getWriteTimestamp().plus(lockWait));
 
         // Slice the store
-        KeySliceQuery ksq = new KeySliceQuery(serializer.toLockKey(kc.getKey(), kc.getColumn()), LOCK_COL_START, LOCK_COL_END);
+        KeySliceQuery ksq = new KeySliceQuery(serializer.toLockKey(kc.getKey(), kc.getColumn()), LOCK_COL_START,
+            LOCK_COL_END);
         List<Entry> claimEntries = getSliceWithRetries(ksq, tx);
 
         // Extract timestamp and rid from the column in each returned Entry...
-        final Iterable<TimestampRid> iterable = Iterables.transform(claimEntries, e -> serializer.fromLockColumn(e.getColumnAs(StaticBuffer.STATIC_FACTORY), times));
+        final Iterable<TimestampRid> iterable = Iterables.transform(claimEntries,
+            e -> serializer.fromLockColumn(e.getColumnAs(StaticBuffer.STATIC_FACTORY), times));
         // ...and then filter out the TimestampRid objects with expired timestamps
         // (This doesn't use Iterables.filter and Predicate so that we can throw a checked exception if necessary)
         final List<TimestampRid> unexpiredTRs = new ArrayList<>(Iterables.size(iterable));
@@ -435,12 +443,14 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
                 log.warn("Discarded expired claim on {} with timestamp {}", kc, tr.getTimestamp());
                 if (null != cleanerService)
                     cleanerService.clean(kc, cutoffTime, tx);
-                // Locks that this instance wrote that have now expired should not only log but also throw a descriptive exception
+                // Locks that this instance wrote that have now expired should not only log
+                // but also throw a descriptive exception
                 if (rid.equals(tr.getRid()) && ls.getWriteTimestamp().equals(tr.getTimestamp())) {
                     throw new ExpiredLockException("Expired lock on " + kc.toString() +
                             ": lock timestamp " + tr.getTimestamp() + " " + times.getUnit() + " is older than " +
                             ConfigElement.getPath(GraphDatabaseConfiguration.LOCK_EXPIRE) + "=" + lockExpire);
-                    // Really shouldn't refer to GDC.LOCK_EXPIRE here, but this will typically be accurate in a real use case
+                    // Really shouldn't refer to GDC.LOCK_EXPIRE here,
+                    // but this will typically be accurate in a real use case
                 }
                 continue;
             }
@@ -454,7 +464,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
     private List<Entry> getSliceWithRetries(KeySliceQuery ksq, StoreTransaction tx) throws BackendException {
 
         for (int i = 0; i < lockRetryCount; i++) {
-            // TODO either make this like writeLock so that it handles all Throwable types (and pull that logic out into a shared method) or make writeLock like this in that it only handles Temporary/PermanentSE
+            // TODO either make this like writeLock so that it handles all Throwable types (and pull that logic out
+            // into a shared method) or make writeLock like this in that it only handles Temporary/PermanentSE
             try {
                 return store.getSlice(ksq, tx);
             } catch (PermanentBackendException e) {
@@ -468,7 +479,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         throw new TemporaryBackendException("Maximum retries (" + lockRetryCount + ") exceeded while checking locks");
     }
 
-    private void checkSeniority(KeyColumn target, ConsistentKeyLockStatus ls, Iterable<TimestampRid> claimTRs) throws BackendException {
+    private void checkSeniority(KeyColumn target, ConsistentKeyLockStatus ls,
+                                Iterable<TimestampRid> claimTRs) throws BackendException {
 
         int trCount = 0;
 
@@ -488,8 +500,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             }
 
             log.warn("Skipping outdated lock on {} with our rid ({}) but mismatched timestamp (actual ts {}, expected ts {})",
-                    new Object[]{target, tr.getRid(), tr.getTimestamp(),
-                            ls.getWriteTimestamp()});
+                target, tr.getRid(), tr.getTimestamp(), ls.getWriteTimestamp());
         }
 
         /*
@@ -530,7 +541,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         for (int i = 0; i < lockRetryCount; i++) {
             try {
                 StoreTransaction newTx = overrideTimestamp(tx, times.getTime());
-                store.mutate(serializer.toLockKey(kc.getKey(), kc.getColumn()), ImmutableList.<Entry>of(), deletions, newTx);
+                store.mutate(serializer.toLockKey(kc.getKey(), kc.getColumn()), ImmutableList.of(), deletions, newTx);
                 return;
             } catch (TemporaryBackendException e) {
                 log.warn("Temporary storage exception while deleting lock", e);
@@ -542,7 +553,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         }
     }
 
-    private StoreTransaction overrideTimestamp(final StoreTransaction tx, final Instant commitTime) throws BackendException {
+    private StoreTransaction overrideTimestamp(final StoreTransaction tx,
+                                               final Instant commitTime) throws BackendException {
         StandardBaseTransactionConfig newCfg = new StandardBaseTransactionConfig.Builder(tx.getConfiguration())
                .commitTime(commitTime).build();
         return manager.beginTransaction(newCfg);

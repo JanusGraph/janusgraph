@@ -202,10 +202,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
 
         try {
             return impl.call();
-        } catch (BackendException e) {
-            mgr.getCounter(prefix, storeName, name, M_EXCEPTIONS).inc();
-            throw e;
-        } catch (RuntimeException e) {
+        } catch (BackendException | RuntimeException e) {
             mgr.getCounter(prefix, storeName, name, M_EXCEPTIONS).inc();
             throw e;
         } finally {

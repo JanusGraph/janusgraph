@@ -102,22 +102,20 @@ public abstract class JanusGraphIterativeBenchmark extends JanusGraphBaseTest {
         for (int i=0;i<numVertices/verticesPerTask;i++) {
             while (tasks.size()>=maxQueue) Thread.sleep(maxQueue);
             assert tasks.size()<maxQueue;
-            exe.submit(new Runnable() {
-                @Override
-                public void run() {
-                    JanusGraphTransaction tx = graph.newTransaction();
-                    JanusGraphVertex[] vs = new JanusGraphVertex[verticesPerTask];
-                    for (int j=0;j<verticesPerTask;j++) {
-                        vs[j]=tx.addVertex();
-                        vs[j].property(VertexProperty.Cardinality.single, "w",  random.nextInt(maxWeight));
-                    }
-                    for (int j=0;j<verticesPerTask*10;j++) {
-                        JanusGraphEdge e = vs[random.nextInt(verticesPerTask)].addEdge("l",vs[random.nextInt(verticesPerTask)]);
-                        e.property("t",random.nextInt(maxTime));
-                    }
-                    System.out.print(".");
-                    tx.commit();
+            exe.submit(() -> {
+                final JanusGraphTransaction tx = graph.newTransaction();
+                final JanusGraphVertex[] vs = new JanusGraphVertex[verticesPerTask];
+                for (int j=0;j<verticesPerTask;j++) {
+                    vs[j]=tx.addVertex();
+                    vs[j].property(VertexProperty.Cardinality.single, "w",  random.nextInt(maxWeight));
                 }
+                for (int j=0;j<verticesPerTask*10;j++) {
+                    final JanusGraphEdge e = vs[random.nextInt(verticesPerTask)]
+                        .addEdge("l",vs[random.nextInt(verticesPerTask)]);
+                    e.property("t",random.nextInt(maxTime));
+                }
+                System.out.print(".");
+                tx.commit();
             });
         }
         exe.shutdown();

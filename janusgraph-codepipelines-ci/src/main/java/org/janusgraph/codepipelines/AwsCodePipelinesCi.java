@@ -81,7 +81,7 @@ public class AwsCodePipelinesCi {
 
     private final CommandLine cmd;
 
-    private void run() throws ParseException, IOException {
+    private void run() throws IOException {
         final File file = new File(getOptionValue(PIPELINES_JSON_OPTION));
         final Region region = Region.of(getOptionValue(REGION_OPTION));
         final AwsCredentialsProvider provider = ProfileCredentialsProvider.builder()

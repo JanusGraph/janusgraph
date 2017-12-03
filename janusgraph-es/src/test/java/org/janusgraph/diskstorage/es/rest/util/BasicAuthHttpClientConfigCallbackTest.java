@@ -39,7 +39,7 @@ public class BasicAuthHttpClientConfigCallbackTest {
     private static final String HTTP_PASSWORD = "testpass";
     private static final String HTTP_REALM = "testrealm";
 
-    private HttpAsyncClientBuilder httpAsyncClientBuilderMock = PowerMockito.mock(HttpAsyncClientBuilder.class);
+    private final HttpAsyncClientBuilder httpAsyncClientBuilderMock = PowerMockito.mock(HttpAsyncClientBuilder.class);
 
     @Before
     public void setUp() throws Exception {

@@ -55,8 +55,7 @@ public class ConfigurationUtil {
         try {
             Class clazz = Class.forName(className);
             Constructor constructor = clazz.getConstructor(classes);
-            T instance = (T) constructor.newInstance(constructorArgs);
-            return instance;
+            return (T) constructor.newInstance(constructorArgs);
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("Could not find implementation class: " + className, e);
         } catch (NoSuchMethodException e) {

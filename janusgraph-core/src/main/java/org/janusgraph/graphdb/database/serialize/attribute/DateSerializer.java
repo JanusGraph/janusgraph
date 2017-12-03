@@ -27,8 +27,7 @@ public class DateSerializer implements OrderPreservingSerializer<Date> {
     @Override
     public Date read(ScanBuffer buffer) {
         long utc = ls.read(buffer);
-        Date d = new Date(utc);
-        return d;
+        return new Date(utc);
     }
 
     @Override

@@ -359,7 +359,7 @@ public abstract class LogTest {
 
     protected static class StoringReader extends LatchMessageReader {
 
-        private List<StaticBuffer> messages = new ArrayList<>(64);
+        private final List<StaticBuffer> messages = new ArrayList<>(64);
         private volatile int msgCount = 0;
 
         StoringReader(int expectedMessageCount) {

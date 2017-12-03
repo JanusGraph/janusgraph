@@ -22,7 +22,7 @@ import java.io.Serializable;
 
 public class SpecialInt implements Serializable {
 
-    private int value;
+    private final int value;
 
     public SpecialInt(int value) {
         this.value = value;

@@ -100,7 +100,7 @@ public class LuceneIndex implements IndexProvider {
      */
     public static final double DEFAULT_GEO_DIST_ERROR_PCT = 0.025;
 
-    private static Map<Geo, SpatialOperation> SPATIAL_PREDICATES = spatialPredicates();
+    private static final Map<Geo, SpatialOperation> SPATIAL_PREDICATES = spatialPredicates();
 
     private final Analyzer analyzer = new StandardAnalyzer();
 
@@ -108,7 +108,7 @@ public class LuceneIndex implements IndexProvider {
     private final ReentrantLock writerLock = new ReentrantLock();
 
     private final Map<String, SpatialStrategy> spatial = new ConcurrentHashMap<>(12);
-    private SpatialContext ctx = Geoshape.getSpatialContext();
+    private final SpatialContext ctx = Geoshape.getSpatialContext();
 
     private final String basePath;
 
@@ -156,8 +156,10 @@ public class LuceneIndex implements IndexProvider {
     private SpatialStrategy getSpatialStrategy(String key, KeyInformation ki) {
         SpatialStrategy strategy = spatial.get(key);
         Mapping mapping = Mapping.getMapping(ki);
-        int maxLevels = (int) ParameterType.INDEX_GEO_MAX_LEVELS.findParameter(ki.getParameters(), DEFAULT_GEO_MAX_LEVELS);
-        double distErrorPct = (double) ParameterType.INDEX_GEO_DIST_ERROR_PCT.findParameter(ki.getParameters(), DEFAULT_GEO_DIST_ERROR_PCT);
+        final int maxLevels = ParameterType.INDEX_GEO_MAX_LEVELS.findParameter(ki.getParameters(),
+                DEFAULT_GEO_MAX_LEVELS);
+        final double distErrorPct = ParameterType.INDEX_GEO_DIST_ERROR_PCT.findParameter(ki.getParameters(),
+                DEFAULT_GEO_DIST_ERROR_PCT);
         if (strategy == null) {
             synchronized (spatial) {
                 if (!spatial.containsKey(key)) {
@@ -183,7 +185,7 @@ public class LuceneIndex implements IndexProvider {
                 new SimpleEntry<>(Geo.CONTAINS, SpatialOperation.Contains),
                 new SimpleEntry<>(Geo.INTERSECT, SpatialOperation.Intersects),
                 new SimpleEntry<>(Geo.DISJOINT, SpatialOperation.IsDisjointTo))
-                .collect(Collectors.toMap((e) -> e.getKey(), (e) -> e.getValue())));
+                .collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue)));
     }
 
     @Override
@@ -459,7 +461,7 @@ public class LuceneIndex implements IndexProvider {
         }
     }
 
-    private static final Query numericQuery(String key, Cmp relation, Number value) {
+    private static Query numericQuery(String key, Cmp relation, Number value) {
         switch (relation) {
             case EQUAL:
                 return AttributeUtil.isWholeNumber(value) ?
@@ -496,7 +498,7 @@ public class LuceneIndex implements IndexProvider {
         }
     }
 
-    private final SearchParams convertQuery(Condition<?> condition, KeyInformation.StoreRetriever information) {
+    private SearchParams convertQuery(Condition<?> condition, KeyInformation.StoreRetriever information) {
         SearchParams params = new SearchParams();
         if (condition instanceof PredicateCondition) {
             PredicateCondition<String, ?> atom = (PredicateCondition) condition;
@@ -554,9 +556,9 @@ public class LuceneIndex implements IndexProvider {
                     throw new IllegalArgumentException("Relation is not supported for string value: " + janusgraphPredicate);
             } else if (value instanceof Geoshape) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Geo, "Relation not supported on geo types: " + janusgraphPredicate);
-                Shape shape = ((Geoshape) value).getShape();
-                SpatialOperation spatialOp = SPATIAL_PREDICATES.get((Geo) janusgraphPredicate);
-                SpatialArgs args = new SpatialArgs(spatialOp, shape);
+                final Shape shape = ((Geoshape) value).getShape();
+                final SpatialOperation spatialOp = SPATIAL_PREDICATES.get(janusgraphPredicate);
+                final SpatialArgs args = new SpatialArgs(spatialOp, shape);
                 params.addQuery(getSpatialStrategy(key, information.get(key)).makeQuery(args));
             } else if (value instanceof Date) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on date types: " + janusgraphPredicate);
@@ -566,7 +568,7 @@ public class LuceneIndex implements IndexProvider {
                 params.addQuery(numericQuery(key, (Cmp) janusgraphPredicate, ((Instant) value).toEpochMilli()));
             }else if (value instanceof Boolean) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on boolean types: " + janusgraphPredicate);
-                int intValue;
+                final int intValue;
                 switch ((Cmp)janusgraphPredicate) {
                     case EQUAL:
                         intValue = ((Boolean) value) ? 1 : 0;
@@ -667,7 +669,7 @@ public class LuceneIndex implements IndexProvider {
             // We ignore offset and limit for totals
             final TopDocs docs = searcher.search(q, 1);
             log.debug("Executed query [{}] in {} ms",q, System.currentTimeMillis() - time);
-            return new Long(docs.totalHits);
+            return docs.totalHits;
         } catch (IOException e) {
             throw new TemporaryBackendException("Could not execute Lucene query", e);
         }
@@ -829,7 +831,7 @@ public class LuceneIndex implements IndexProvider {
      * abstractions. This object's state is mutable.
      */
     private static class SearchParams {
-        private BooleanQuery.Builder qb = new BooleanQuery.Builder();
+        private final BooleanQuery.Builder qb = new BooleanQuery.Builder();
 
         private void addQuery(Query newQuery) {
             addQuery(newQuery, BooleanClause.Occur.MUST);

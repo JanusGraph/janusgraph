@@ -621,7 +621,7 @@ public class GraphDatabaseConfiguration {
      * Configuration setting key for the local lock mediator prefix
      */
     public static final ConfigOption<String> LOCK_LOCAL_MEDIATOR_GROUP =
-            new ConfigOption<String>(LOCK_NS, "local-mediator-group",
+            new ConfigOption<>(LOCK_NS, "local-mediator-group",
             "This option determines the LocalLockMediator instance used for early detection of lock contention " +
             "between concurrent JanusGraph graph instances within the same process which are connected to the same " +
             "storage backend.  JanusGraph instances that have the same value for this variable will attempt to discover " +
@@ -1677,7 +1677,7 @@ public class GraphDatabaseConfiguration {
     }
 
     public static List<RegisteredAttributeClass<?>> getRegisteredAttributeClasses(Configuration configuration) {
-        List<RegisteredAttributeClass<?>> all = new ArrayList<RegisteredAttributeClass<?>>();
+        List<RegisteredAttributeClass<?>> all = new ArrayList<>();
         for (String attributeId : configuration.getContainedNamespaces(CUSTOM_ATTRIBUTE_NS)) {
             Preconditions.checkArgument(attributeId.startsWith(ATTRIBUTE_PREFIX),"Invalid attribute definition: %s",attributeId);
             int position;
@@ -1703,9 +1703,7 @@ public class GraphDatabaseConfiguration {
                 serializer = (AttributeSerializer) serializerClass.newInstance();
             } catch (ClassNotFoundException e) {
                 throw new IllegalArgumentException("Could not find serializer class" + serializerName);
-            } catch (InstantiationException e) {
-                throw new IllegalArgumentException("Could not instantiate serializer class" + serializerName, e);
-            } catch (IllegalAccessException e) {
+            } catch (InstantiationException | IllegalAccessException e) {
                 throw new IllegalArgumentException("Could not instantiate serializer class" + serializerName, e);
             }
             Preconditions.checkNotNull(serializer);

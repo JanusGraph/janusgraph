@@ -172,7 +172,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
         public B mediatorName(String name) {
             Preconditions.checkNotNull(name);
             Preconditions.checkNotNull(times, "Timestamp provider must be set before initializing local lock mediator");
-            mediator(LocalLockMediators.INSTANCE.<StoreTransaction>get(name, times));
+            mediator(LocalLockMediators.INSTANCE.get(name, times));
             return self();
         }
 
@@ -351,16 +351,12 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
                 checkSingleLock(entry.getKey(), entry.getValue(), tx);
             }
             ok = true;
-        } catch (TemporaryLockingException tle) {
+        } catch (TemporaryLockingException | PermanentLockingException tle) {
             throw tle;
-        } catch (PermanentLockingException ple) {
-            throw ple;
         } catch (AssertionError ae) {
             throw ae; // Concession to ease testing with mocks & behavior verification
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | TemporaryBackendException e) {
             throw new TemporaryLockingException(e);
-        } catch (TemporaryBackendException tse) {
-            throw new TemporaryLockingException(tse);
         } catch (Throwable t) {
             throw new PermanentLockingException(t);
         } finally {

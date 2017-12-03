@@ -131,7 +131,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
         assert null != m;
         if (m.containsKey(lockID)) {
             log.debug("Multiple expected values for {}: keeping initial value {} and discarding later value {}",
-                    new Object[]{lockID, m.get(lockID), value});
+                lockID, m.get(lockID), value);
         } else {
             m.put(lockID, value);
             log.debug("Store expected value for {}: {}", lockID, value);
@@ -234,7 +234,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
         Iterable<Entry> actualEntries = store.getBackingStore().getSlice(ksq, strongConsistentTx);
 
         if (null == actualEntries)
-            actualEntries = ImmutableList.<Entry>of();
+            actualEntries = ImmutableList.of();
 
         /*
          * Discard any columns which do not exactly match kc.getColumn().

@@ -80,18 +80,18 @@ public class StandardLockCleanerRunnable implements Runnable {
             TimestampRid tr = serializer.fromLockColumn(lc.getColumn(), times);
             if (tr.getTimestamp().isBefore(cutoff)) {
                 log.info("Deleting expired lock on {} by rid {} with timestamp {} (before or at cutoff {})",
-                        new Object[] { target, tr.getRid(), tr.getTimestamp(), cutoff });
+                    target, tr.getRid(), tr.getTimestamp(), cutoff);
                 b.add(lc.getColumn());
             } else {
                 log.debug("Ignoring lock on {} by rid {} with timestamp {} (timestamp is after cutoff {})",
-                        new Object[] { target, tr.getRid(), tr.getTimestamp(), cutoff });
+                    target, tr.getRid(), tr.getTimestamp(), cutoff);
             }
         }
 
         List<StaticBuffer> deletions = b.build();
 
         if (!deletions.isEmpty()) {
-            store.mutate(lockKey, ImmutableList.<Entry>of(), deletions, tx);
+            store.mutate(lockKey, ImmutableList.of(), deletions, tx);
             log.info("Deleted {} expired locks (before or at cutoff {})", deletions.size(), cutoff);
         }
     }

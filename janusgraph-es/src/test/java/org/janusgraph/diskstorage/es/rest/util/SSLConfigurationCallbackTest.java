@@ -47,7 +47,7 @@ public class SSLConfigurationCallbackTest {
     @Mock
     private SSLContext sslContextMock;
 
-    private HttpAsyncClientBuilder httpAsyncClientBuilderMock = PowerMockito.mock(HttpAsyncClientBuilder.class);
+    private final HttpAsyncClientBuilder httpAsyncClientBuilderMock = PowerMockito.mock(HttpAsyncClientBuilder.class);
 
     @Before
     public void setUp() throws Exception {

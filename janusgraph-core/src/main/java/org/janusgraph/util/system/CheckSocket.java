@@ -44,7 +44,7 @@ public class CheckSocket {
         try {
             Socket s = new Socket(
                 InetAddress.getByName(args[0]),
-                Integer.valueOf(args[1]).intValue());
+                Integer.valueOf(args[1]));
             s.close();
             System.exit(0);
         } catch (Throwable t) {

@@ -79,7 +79,7 @@ public enum ParameterType {
     }
 
     public<V> Parameter<V> getParameter(V value) {
-        return new Parameter<V>(name,value);
+        return new Parameter<>(name, value);
     }
 
 

@@ -101,7 +101,7 @@ public class PointInterval<T> implements Interval<T> {
             return new PointInterval<>(points);
         } else if (other instanceof RangeInterval) {
             final RangeInterval<T> rint = (RangeInterval)other;
-            return new PointInterval<T>(Sets.newHashSet(Iterables.filter(points, t -> rint.containsPoint(t))));
+            return new PointInterval<>(Sets.newHashSet(Iterables.filter(points, rint::containsPoint)));
         } else throw new AssertionError("Unexpected interval: " + other);
     }
 

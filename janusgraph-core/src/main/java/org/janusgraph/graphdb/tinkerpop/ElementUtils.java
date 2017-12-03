@@ -41,7 +41,7 @@ public class ElementUtils {
             if (id instanceof Vertex)
                 return Long.parseLong(((Vertex) id).id().toString());
             else
-                return Long.valueOf(id.toString()).longValue();
+                return Long.valueOf(id.toString());
         } catch (NumberFormatException e) {
             return 0;
         }

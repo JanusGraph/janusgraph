@@ -517,7 +517,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         addProperty(vertex, BaseKey.VertexExists, Boolean.TRUE);
         if (label!=BaseVertexLabel.DEFAULT_VERTEXLABEL) { //Add label
             Preconditions.checkArgument(label instanceof VertexLabelVertex);
-            addEdge(vertex, (VertexLabelVertex) label, BaseLabel.VertexLabelEdge);
+            addEdge(vertex, label, BaseLabel.VertexLabelEdge);
         }
         vertexCache.add(vertex, vertex.longId());
         return vertex;
@@ -1124,11 +1124,11 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
         private PredicateCondition<PropertyKey, JanusGraphElement> getEqualityCondition(Condition<JanusGraphElement> condition) {
             if (condition instanceof PredicateCondition) {
-                PredicateCondition<PropertyKey, JanusGraphElement> pc = (PredicateCondition) condition;
+                final PredicateCondition<PropertyKey, JanusGraphElement> pc = (PredicateCondition) condition;
                 if (pc.getPredicate() == Cmp.EQUAL && TypeUtil.hasSimpleInternalVertexKeyIndex(pc.getKey())) return pc;
             } else if (condition instanceof And) {
-                for (Condition<JanusGraphElement> child : ((And<JanusGraphElement>) condition).getChildren()) {
-                    PredicateCondition<PropertyKey, JanusGraphElement> p = getEqualityCondition(child);
+                for (final Condition<JanusGraphElement> child : condition.getChildren()) {
+                    final PredicateCondition<PropertyKey, JanusGraphElement> p = getEqualityCondition(child);
                     if (p != null) return p;
                 }
             }
@@ -1178,7 +1178,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     });
                 }
 
-                return (Iterator) com.google.common.collect.Iterators.filter(vertices, vertex -> query.matches(vertex));
+                return (Iterator) com.google.common.collect.Iterators.filter(vertices, query::matches);
             } else if ( (query.getResultType() == ElementCategory.EDGE || query.getResultType()==ElementCategory.PROPERTY)
                                         && !addedRelations.isEmpty()) {
                 return (Iterator) addedRelations.getView(relation -> query.getResultType().isInstance(relation) && !relation.isInvisible() && query.matches(relation)).iterator();

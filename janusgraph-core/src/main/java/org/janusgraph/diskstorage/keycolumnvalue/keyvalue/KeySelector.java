@@ -39,7 +39,7 @@ public class KeySelector {
     }
 
     public static KeySelector of(int limit) {
-        return new KeySelector(Predicates.<StaticBuffer>alwaysTrue(), limit);
+        return new KeySelector(Predicates.alwaysTrue(), limit);
     }
 
     public boolean include(StaticBuffer key) {

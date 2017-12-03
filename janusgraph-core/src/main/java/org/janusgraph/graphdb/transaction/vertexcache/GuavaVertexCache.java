@@ -38,7 +38,7 @@ public class GuavaVertexCache implements VertexCache {
     private final Cache<Long, InternalVertex> cache;
 
     public GuavaVertexCache(final long maxCacheSize, final int concurrencyLevel, final int initialDirtySize) {
-        volatileVertices = new NonBlockingHashMapLong<InternalVertex>(initialDirtySize);
+        volatileVertices = new NonBlockingHashMapLong<>(initialDirtySize);
         log.debug("Created dirty vertex map with initial size {}", initialDirtySize);
 
         cache = CacheBuilder.newBuilder().maximumSize(maxCacheSize).concurrencyLevel(concurrencyLevel)
@@ -99,7 +99,7 @@ public class GuavaVertexCache implements VertexCache {
 
     @Override
     public List<InternalVertex> getAllNew() {
-        List<InternalVertex> vertices = new ArrayList<InternalVertex>(10);
+        final List<InternalVertex> vertices = new ArrayList<>(10);
         for (InternalVertex v : volatileVertices.values()) {
             if (v.isNew()) vertices.add(v);
         }

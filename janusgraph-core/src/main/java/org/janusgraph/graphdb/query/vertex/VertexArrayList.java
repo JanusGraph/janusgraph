@@ -78,7 +78,7 @@ public class VertexArrayList implements VertexListInternal {
     @Override
     public void sort() {
         if (sorted) return;
-        Collections.sort(vertices,VERTEX_ID_COMPARATOR);
+        vertices.sort(VERTEX_ID_COMPARATOR);
         sorted = true;
     }
 
@@ -104,7 +104,7 @@ public class VertexArrayList implements VertexListInternal {
                 ((VertexLongList)vertexlist).toVertexArrayList();
         if (sorted && other.isSorted()) {
             //Merge sort
-            vertices = (ArrayList<JanusGraphVertex>) IterablesUtil.mergeSort(vertices, other.vertices, VERTEX_ID_COMPARATOR);
+            vertices = IterablesUtil.mergeSort(vertices, other.vertices, VERTEX_ID_COMPARATOR);
         } else {
             sorted = false;
             vertices.addAll(other.vertices);

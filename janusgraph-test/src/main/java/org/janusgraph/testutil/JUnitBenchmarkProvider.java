@@ -27,6 +27,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -194,9 +195,7 @@ public class JUnitBenchmarkProvider {
             consumers.add(new TimeScaleConsumer(writer));
         }
 
-        for (IResultsConsumer c : additional) {
-            consumers.add(c);
-        }
+        consumers.addAll(Arrays.asList(additional));
 
         return consumers.toArray(new IResultsConsumer[consumers.size()]);
     }
@@ -222,7 +221,7 @@ public class JUnitBenchmarkProvider {
             String[] tokens = line.split(" ");
             if (tokensPerLine != tokens.length) {
                 log.warn("Parse error at {}:{}: required {} tokens, but found {} (skipping this line)",
-                        new Object[] { filename, ln, tokensPerLine, tokens.length });
+                    filename, ln, tokensPerLine, tokens.length);
                 continue;
             }
 
@@ -245,18 +244,16 @@ public class JUnitBenchmarkProvider {
                 scalar = Double.valueOf(rawscalar);
             } catch (Exception e) {
                 log.warn("Parse error at {}:{}: failed to convert string \"{}\" to a double (skipping this line)",
-                        new Object[] { filename, ln, rawscalar });
+                    filename, ln, rawscalar);
                 log.warn("Double parsing exception stacktrace follows", e);
                 continue;
             }
 
             if (0 > scalar) {
                 log.warn("Parse error at {}:{}: read negative method scalar {} (skipping this line)",
-                        new Object[] { filename, ln, scalar });
+                    filename, ln, scalar);
                 continue;
             }
-
-            assert null != scalar;
 
             builder.put(name, Double.valueOf(Math.ceil(scalar)).intValue());
         }
@@ -269,7 +266,7 @@ public class JUnitBenchmarkProvider {
      */
     private static class TimeScaleConsumer extends AutocloseConsumer implements Closeable {
 
-        Writer writer;
+        final Writer writer;
 
         public TimeScaleConsumer(Writer writer) {
             this.writer = writer;
@@ -362,7 +359,7 @@ public class JUnitBenchmarkProvider {
                 } else {
                     modifiedAnnotations.add(a);
                     log.debug("Kept annotation {} with annotation type {} on {}",
-                            new Object[] { a, a.annotationType(), mname });
+                        a, a.annotationType(), mname);
                 }
             }
 
@@ -370,7 +367,7 @@ public class JUnitBenchmarkProvider {
                 BenchmarkOptions opts = getDefaultBenchmarkOptions(rounds);
                 modifiedAnnotations.add(opts);
                 log.debug("Added BenchmarkOptions {} with annotation type {} to {}",
-                        new Object[] { opts, opts.annotationType(), mname });
+                    opts, opts.annotationType(), mname);
             }
 
             Description roundsAdjustedDesc =

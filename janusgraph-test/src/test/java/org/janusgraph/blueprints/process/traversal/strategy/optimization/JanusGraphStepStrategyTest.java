@@ -80,7 +80,7 @@ public class JanusGraphStepStrategyTest {
         final JanusGraphStep<Vertex, Vertex> graphStep = new JanusGraphStep<>(new GraphStep<>(traversal, Vertex.class, true));
         for (int i = 0; i < hasKeyValues.length; i = i + 2) {
             if(hasKeyValues[i].equals(T.id)) {
-                graphStep.addIds(Arrays.asList(hasKeyValues[i + 1]));
+                graphStep.addIds(Collections.singletonList(hasKeyValues[i + 1]));
             } else {
                 graphStep.addHasContainer(new HasContainer((String) hasKeyValues[i], (P) hasKeyValues[i + 1]));
             }

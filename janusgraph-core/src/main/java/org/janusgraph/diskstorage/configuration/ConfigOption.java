@@ -255,7 +255,7 @@ public class ConfigOption<O> extends ConfigElement {
             .orElseThrow(() -> new IllegalArgumentException("Invalid enum string provided for ["+enumClass+"]: " + trimmed));
     }
 
-    public static final<O> Predicate<O> disallowEmpty(Class<O> clazz) {
+    public static <O> Predicate<O> disallowEmpty(Class<O> clazz) {
         return o -> {
             if (o==null) {
                 return false;
@@ -273,15 +273,15 @@ public class ConfigOption<O> extends ConfigElement {
         };
     }
 
-    public static final Predicate<Integer> positiveInt() {
+    public static Predicate<Integer> positiveInt() {
         return num -> num!=null && num>0;
     }
 
-    public static final Predicate<Integer> nonnegativeInt() {
+    public static Predicate<Integer> nonnegativeInt() {
         return num -> num!=null && num>=0;
     }
 
-    public static final Predicate<Long> positiveLong() {
+    public static Predicate<Long> positiveLong() {
         return num -> num!=null && num>0;
     }
 

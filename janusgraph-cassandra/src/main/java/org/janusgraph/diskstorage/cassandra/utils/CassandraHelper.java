@@ -71,7 +71,8 @@ public class CassandraHelper {
         private final StaticBuffer lastColumn;
         private final StaticArrayEntry.GetColVal<E,ByteBuffer> getter;
 
-        private FilterResultColumns(StaticBuffer lastColumn, int limit, StaticArrayEntry.GetColVal<E, ByteBuffer> getter) {
+        private FilterResultColumns(StaticBuffer lastColumn, int limit,
+                                    StaticArrayEntry.GetColVal<E, ByteBuffer> getter) {
             this.limit = limit;
             this.lastColumn = lastColumn;
             this.getter = getter;
@@ -118,7 +119,8 @@ public class CassandraHelper {
         byte[] leftTokenValue = l.getTokenValue();
         byte[] rightTokenValue = r.getTokenValue();
 
-        Preconditions.checkArgument(leftTokenValue.length == rightTokenValue.length, "Tokens have unequal length");
+        Preconditions.checkArgument(leftTokenValue.length == rightTokenValue.length,
+                "Tokens have unequal length");
         int tokenLength = leftTokenValue.length;
 
         byte[][] tokens = new byte[][]{leftTokenValue, rightTokenValue};
@@ -130,8 +132,7 @@ public class CassandraHelper {
                 byte b = tokens[j][i];
                 if (carry) {
                     b++;
-                    if (b == 0) carry = true;
-                    else carry = false;
+                    carry = b == 0;
                 }
                 plusOne[j][i] = b;
             }

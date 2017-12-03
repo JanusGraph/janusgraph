@@ -132,12 +132,12 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
 
     @Override
     public Q has(String key) {
-        return has(key, Cmp.NOT_EQUAL, (Object) null);
+        return has(key, Cmp.NOT_EQUAL, null);
     }
 
     @Override
     public Q hasNot(String key) {
-        return has(key, Cmp.EQUAL, (Object) null);
+        return has(key, Cmp.EQUAL, null);
     }
 
     @Override

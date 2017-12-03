@@ -75,11 +75,11 @@ public class RestClientSetupTest {
 
     private static final int ES_PORT = 8080;
     private static final int ES_SCROLL_KA =
-            ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE.getDefaultValue().intValue() * 2;
+            ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE.getDefaultValue() * 2;
     private static final String ES_BULK_REFRESH =
-            String.valueOf(!Boolean.valueOf(ElasticSearchIndex.BULK_REFRESH.getDefaultValue()).booleanValue());
+            String.valueOf(!Boolean.valueOf(ElasticSearchIndex.BULK_REFRESH.getDefaultValue()));
 
-    private static AtomicInteger instanceCount = new AtomicInteger();
+    private static final AtomicInteger instanceCount = new AtomicInteger();
 
     @Captor
     ArgumentCaptor<HttpHost[]> hostListCaptor;

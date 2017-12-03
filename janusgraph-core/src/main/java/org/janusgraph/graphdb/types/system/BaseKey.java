@@ -103,7 +103,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
     @Override
     public Iterable<IndexType> getKeyIndexes() {
         if (index==Index.NONE) return Collections.EMPTY_LIST;
-        return ImmutableList.of((IndexType)indexDef);
+        return ImmutableList.of(indexDef);
     }
 
     private final CompositeIndexType indexDef = new CompositeIndexType() {

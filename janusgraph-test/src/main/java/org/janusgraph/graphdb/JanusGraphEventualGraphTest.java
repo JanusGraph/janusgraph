@@ -74,7 +74,7 @@ public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
         tx1.commit();
         tx2.commit();
 
-        assertEquals("v", Iterators.<String>getOnlyElement(Iterables.<JanusGraphVertex>getOnlyElement(tx.query().has("value", 11).vertices()).values("uid")));
+        assertEquals("v", Iterators.<String>getOnlyElement(Iterables.getOnlyElement(tx.query().has("value", 11).vertices()).values("uid")));
     }
 
     /**
@@ -256,7 +256,7 @@ public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
 
         for (int i=0;i<Math.min(numV,300);i++) {
             assertEquals(1, Iterables.size(graph.query().has("uid", i + 1).vertices()));
-            JanusGraphVertex v = Iterables.<JanusGraphVertex>getOnlyElement(graph.query().has("uid", i + 1).vertices());
+            JanusGraphVertex v = Iterables.getOnlyElement(graph.query().has("uid", i + 1).vertices());
             assertEquals(1, Iterables.size(v.query().direction(OUT).labels("knows").edges()));
         }
     }
@@ -310,7 +310,7 @@ public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
 
         newTx();
         v = getV(tx,vid);
-        assertEquals(6.0,v.<Double>value("weight").doubleValue(),0.00001);
+        assertEquals(6.0, v.<Double>value("weight"),0.00001);
         VertexProperty p = getOnlyElement(v.properties("weight"));
         assertEquals(wintx,p.<Integer>value("sig").intValue());
         p = getOnlyElement(v.properties("name"));
@@ -326,17 +326,17 @@ public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
             assertEquals(2,pp.value());
         }
 
-        Edge e = Iterables.<JanusGraphEdge>getOnlyElement(v.query().direction(OUT).labels("es").edges());
+        Edge e = Iterables.getOnlyElement(v.query().direction(OUT).labels("es").edges());
         assertEquals(wintx,e.<Integer>value("sig").intValue());
         assertNotEquals(rs[6].longId(),getId(e));
 
-        e = Iterables.<JanusGraphEdge>getOnlyElement(v.query().direction(OUT).labels("o2o").edges());
+        e = Iterables.getOnlyElement(v.query().direction(OUT).labels("o2o").edges());
         assertEquals(wintx,e.<Integer>value("sig").intValue());
         assertEquals(rs[7].longId(), getId(e));
-        e = Iterables.<JanusGraphEdge>getOnlyElement(v.query().direction(OUT).labels("o2m").edges());
+        e = Iterables.getOnlyElement(v.query().direction(OUT).labels("o2m").edges());
         assertEquals(wintx,e.<Integer>value("sig").intValue());
         assertNotEquals(rs[8].longId(),getId(e));
-        e = Iterables.<JanusGraphEdge>getOnlyElement(v.query().direction(OUT).labels("em").edges());
+        e = Iterables.getOnlyElement(v.query().direction(OUT).labels("em").edges());
         assertEquals(wintx,e.<Integer>value("sig").intValue());
         assertEquals(rs[4].longId(), getId(e));
         for (Object o : v.query().direction(OUT).labels("emf").edges()) {
@@ -350,7 +350,7 @@ public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
     private void processTx(JanusGraphTransaction tx, int transactionId, long vid, long uid) {
         JanusGraphVertex v = getV(tx,vid);
         JanusGraphVertex u = getV(tx,uid);
-        assertEquals(5.0,v.<Double>value("weight").doubleValue(),0.00001);
+        assertEquals(5.0, v.<Double>value("weight"),0.00001);
         VertexProperty p = getOnlyElement(v.properties("weight"));
         assertEquals(1,p.<Integer>value("sig").intValue());
         sign(v.property("weight",6.0),transactionId);
@@ -366,19 +366,19 @@ public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
             sign((JanusGraphVertexProperty)p,transactionId);
         }
 
-        Edge e = Iterables.<JanusGraphEdge>getOnlyElement(v.query().direction(OUT).labels("es").edges());
+        Edge e = Iterables.getOnlyElement(v.query().direction(OUT).labels("es").edges());
         assertEquals(1,e.<Integer>value("sig").intValue());
         e.remove();
         sign(v.addEdge("es",u),transactionId);
-        e = Iterables.<JanusGraphEdge>getOnlyElement(v.query().direction(OUT).labels("o2o").edges());
+        e = Iterables.getOnlyElement(v.query().direction(OUT).labels("o2o").edges());
         assertEquals(1,e.<Integer>value("sig").intValue());
         sign((JanusGraphEdge)e,transactionId);
-        e = Iterables.<JanusGraphEdge>getOnlyElement(v.query().direction(OUT).labels("o2m").edges());
+        e = Iterables.getOnlyElement(v.query().direction(OUT).labels("o2m").edges());
         assertEquals(1,e.<Integer>value("sig").intValue());
         e.remove();
         sign(v.addEdge("o2m",u),transactionId);
         for (String label : new String[]{"em","emf"}) {
-            e = Iterables.<JanusGraphEdge>getOnlyElement(v.query().direction(OUT).labels(label).edges());
+            e = Iterables.getOnlyElement(v.query().direction(OUT).labels(label).edges());
             assertEquals(1,e.<Integer>value("sig").intValue());
             sign((JanusGraphEdge)e,transactionId);
         }

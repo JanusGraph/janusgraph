@@ -145,8 +145,7 @@ public enum TimestampProviders implements TimestampProvider {
                 delta = 1L;
 
             if (log.isTraceEnabled()) {
-                log.trace("Sleeping: now={} targettime={} delta={} {}",
-                        new Object[] { now, futureTime, delta, unit });
+                log.trace("Sleeping: now={} targettime={} delta={} {}", now, futureTime, delta, unit);
             }
 
             Temporals.timeUnit(unit).sleep(delta);

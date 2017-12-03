@@ -110,8 +110,8 @@ public abstract class JanusGraphPerformanceMemoryTest extends JanusGraphBaseTest
             });
             writeThreads[t].start();
         }
-        for (int t = 0; t < writeThreads.length; t++) {
-            writeThreads[t].join();
+        for (final Thread writeThread : writeThreads) {
+            writeThread.join();
         }
         System.out.println("Write time for " + (rounds * commitSize * writeThreads.length) + " vertices & edges: " + (System.currentTimeMillis() - start));
 
@@ -142,8 +142,8 @@ public abstract class JanusGraphPerformanceMemoryTest extends JanusGraphBaseTest
             });
             readThreads[t].start();
         }
-        for (int t = 0; t < readThreads.length; t++) {
-            readThreads[t].join();
+        for (final Thread readThread : readThreads) {
+            readThread.join();
         }
         System.out.println("Read time for " + (trials * readThreads.length) + " vertex lookups: " + (System.currentTimeMillis() - start));
 

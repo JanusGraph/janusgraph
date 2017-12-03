@@ -36,11 +36,11 @@ public class KCVMutation extends Mutation<Entry,StaticBuffer> {
 
     @Override
     public void consolidate() {
-        super.consolidate(KCVEntryMutation.ENTRY2COLUMN_FCT, Functions.<StaticBuffer>identity());
+        super.consolidate(KCVEntryMutation.ENTRY2COLUMN_FCT, Functions.identity());
     }
 
     @Override
     public boolean isConsolidated() {
-        return super.isConsolidated(KCVEntryMutation.ENTRY2COLUMN_FCT, Functions.<StaticBuffer>identity());
+        return super.isConsolidated(KCVEntryMutation.ENTRY2COLUMN_FCT, Functions.identity());
     }
 }

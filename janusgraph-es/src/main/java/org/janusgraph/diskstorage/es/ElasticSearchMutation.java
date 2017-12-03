@@ -28,7 +28,7 @@ public class ElasticSearchMutation {
 
         UPDATE,
 
-        DELETE;
+        DELETE
 
     }
 

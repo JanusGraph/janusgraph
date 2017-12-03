@@ -160,7 +160,7 @@ public class IndexSerializer {
                         ImmutableMap.Builder<String,KeyInformation> b = ImmutableMap.builder();
                         for (ParameterIndexField field : extIndex.getFieldKeys()) b.put(key2Field(field),getKeyInformation(field));
                         final ImmutableMap<String,KeyInformation> infoMap = b.build();
-                        final KeyInformation.StoreRetriever storeRetriever = key -> infoMap.get(key);
+                        final KeyInformation.StoreRetriever storeRetriever = infoMap::get;
                         indexes.put(store,storeRetriever);
                     }
                     return indexes.get(store);
@@ -357,14 +357,13 @@ public class IndexSerializer {
     }
 
     private Map<String,List<IndexEntry>> getDocuments(Map<String,Map<String,List<IndexEntry>>> documentsPerStore, MixedIndexType index) {
-        final Map<String, List<IndexEntry>> documents = documentsPerStore.computeIfAbsent(index.getStoreName(), k -> Maps.newHashMap());
-        return documents;
+        return documentsPerStore.computeIfAbsent(index.getStoreName(), k -> Maps.newHashMap());
     }
 
     public void removeElement(Object elementId, MixedIndexType index, Map<String,Map<String,List<IndexEntry>>> documentsPerStore) {
         Preconditions.checkArgument((index.getElement()==ElementCategory.VERTEX && elementId instanceof Long) ||
                 (index.getElement().isRelation() && elementId instanceof RelationIdentifier),"Invalid element id [%s] provided for index: %s",elementId,index);
-        getDocuments(documentsPerStore,index).put(element2String(elementId),Lists.<IndexEntry>newArrayList());
+        getDocuments(documentsPerStore,index).put(element2String(elementId),Lists.newArrayList());
     }
 
     public Set<IndexUpdate<StaticBuffer,Entry>> reindexElement(JanusGraphElement element, CompositeIndexType index) {
@@ -527,7 +526,7 @@ public class IndexSerializer {
             }
             return results.stream();
         } else {
-            return tx.indexQuery(((MixedIndexType) index).getBackingIndexName(), query.getMixedQuery()).map(IndexSerializer::string2ElementId);
+            return tx.indexQuery(index.getBackingIndexName(), query.getMixedQuery()).map(IndexSerializer::string2ElementId);
         }
     }
 

@@ -36,7 +36,7 @@ public class KVQuery extends BaseQuery {
     }
 
     public KVQuery(StaticBuffer start, StaticBuffer end, int limit) {
-        this(start,end, Predicates.<StaticBuffer>alwaysTrue(),limit);
+        this(start,end, Predicates.alwaysTrue(),limit);
     }
 
     public KVQuery(StaticBuffer start, StaticBuffer end, Predicate<StaticBuffer> keyFilter, int limit) {

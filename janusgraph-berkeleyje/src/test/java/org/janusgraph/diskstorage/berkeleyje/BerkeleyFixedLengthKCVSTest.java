@@ -32,11 +32,6 @@ public class BerkeleyFixedLengthKCVSTest extends KeyColumnValueStoreTest {
         return new OrderedKeyValueStoreManagerAdapter(sm, ImmutableMap.of(storeName, 8));
     }
 
-    @Test
-    public void testGetKeysWithKeyRange() throws Exception {
-        super.testGetKeysWithKeyRange();
-    }
-
     @Test @Override
     public void testConcurrentGetSlice() throws ExecutionException, InterruptedException, BackendException {
 

@@ -71,7 +71,7 @@ public class LuceneIndexTest extends IndexProviderTest {
         return null;
     }
 
-    public static final Configuration getLocalLuceneTestConfig() {
+    public static Configuration getLocalLuceneTestConfig() {
         final String index = "lucene";
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("lucene"),index);
