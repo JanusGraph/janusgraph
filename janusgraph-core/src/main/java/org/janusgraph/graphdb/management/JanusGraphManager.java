@@ -40,7 +40,8 @@ import javax.script.Bindings;
  */
 public class JanusGraphManager implements GraphManager {
 
-    public static final String JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG = "Gremlin Server must be configured to use the JanusGraphManager.";
+    public static final String JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG
+            = "Gremlin Server must be configured to use the JanusGraphManager.";
 
     private final Map<String, Graph> graphs = new ConcurrentHashMap<>();
     private final Map<String, TraversalSource> traversalSources = new ConcurrentHashMap<>();
@@ -152,8 +153,7 @@ public class JanusGraphManager implements GraphManager {
 
     @Override
     public void rollbackAll() {
-        graphs.forEach((key, value) -> {
-            final Graph graph = value;
+        graphs.forEach((key, graph) -> {
             if (graph.tx().isOpen()) {
                 graph.tx().rollback();
             }
@@ -167,8 +167,7 @@ public class JanusGraphManager implements GraphManager {
 
     @Override
     public void commitAll() {
-        graphs.forEach((key, value) -> {
-            final Graph graph = value;
+        graphs.forEach((key, graph) -> {
             if (graph.tx().isOpen())
                 graph.tx().commit();
         });

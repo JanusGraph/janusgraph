@@ -391,7 +391,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         private final Token endToken;
         private ByteBuffer nextStartKey;
 
-        private boolean omitEndToken;
+        private final boolean omitEndToken;
 
         public AbstractBufferedRowIter(IPartitioner partitioner,
                 SliceQuery columnSlice, int pageSize, Token startToken, Token endToken, boolean omitEndToken) {

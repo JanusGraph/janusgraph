@@ -266,8 +266,8 @@ public class IDManagementTest {
     @Test
     public void testUserVertexBitWidth() {
         for (IDManager.VertexIDType type : IDManager.VertexIDType.values()) {
-            if (IDManager.VertexIDType.UserVertex.is(type.suffix()) && type.isProper())
-                assert type.offset()==IDManager.USERVERTEX_PADDING_BITWIDTH;
+            assert !IDManager.VertexIDType.UserVertex.is(type.suffix()) || !type.isProper()
+                    || type.offset() == IDManager.USERVERTEX_PADDING_BITWIDTH;
             assertTrue(type.offset()<=IDManager.MAX_PADDING_BITWIDTH);
         }
     }
@@ -288,7 +288,7 @@ public class IDManagementTest {
         assertEquals(120,r.getLowerID());
         assertEquals(140,r.getUpperID());
 
-        result = PartitionIDRange.getIDRanges(8, ImmutableList.of(getKeyRange(250<<24, 0, 0<<24, 0)));
+        result = PartitionIDRange.getIDRanges(8, ImmutableList.of(getKeyRange(250<<24, 0, 0, 0)));
         assertTrue(result.size()==1);
         r = result.get(0);
         assertEquals(250,r.getLowerID());
@@ -326,11 +326,11 @@ public class IDManagementTest {
 
 
     public String getBuffer(ReadBuffer r) {
-        String result = "";
+        final StringBuilder result = new StringBuilder();
         while (r.hasRemaining()) {
-            result += getBinary(VariableLong.unsignedByte(r.getByte()),8) + " ";
+            result.append(getBinary(VariableLong.unsignedByte(r.getByte()), 8)).append(" ");
         }
-        return result;
+        return result.toString();
     }
 
     public String getBinary(long id) {
@@ -338,11 +338,11 @@ public class IDManagementTest {
     }
 
     public String getBinary(long id, int normalizedLength) {
-        String s = Long.toBinaryString(id);
+        final StringBuilder s = new StringBuilder(Long.toBinaryString(id));
         while (s.length() < normalizedLength) {
-            s = "0" + s;
+            s.insert(0, "0");
         }
-        return s;
+        return s.toString();
     }
 
 }

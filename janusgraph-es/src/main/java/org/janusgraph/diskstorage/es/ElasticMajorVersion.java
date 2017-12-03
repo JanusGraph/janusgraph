@@ -31,7 +31,7 @@ public enum ElasticMajorVersion {
 
     static final Pattern PATTERN = Pattern.compile("(\\d+)\\.\\d+\\.\\d+.*");
 
-    int value;
+    final int value;
 
     ElasticMajorVersion(int value) {
         this.value = value;

@@ -75,7 +75,7 @@ public class TextTest {
 
         String name = "fully funny";
         //Cmp
-        assertTrue(Cmp.EQUAL.test(name.toString(), name));
+        assertTrue(Cmp.EQUAL.test(name, name));
         assertFalse(Cmp.NOT_EQUAL.test(name, name));
         assertFalse(Cmp.EQUAL.test("fullly funny", name));
         assertTrue(Cmp.NOT_EQUAL.test("fullly funny", name));

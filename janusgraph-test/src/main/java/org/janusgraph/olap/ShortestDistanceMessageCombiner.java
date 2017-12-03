@@ -16,12 +16,10 @@ package org.janusgraph.olap;
 
 import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
 
-import java.util.Optional;
-
 public class ShortestDistanceMessageCombiner implements MessageCombiner<Long> {
 
-    private static final Optional<ShortestDistanceMessageCombiner> INSTANCE = Optional.of(new
-            ShortestDistanceMessageCombiner());
+    private static final ShortestDistanceMessageCombiner INSTANCE = new
+            ShortestDistanceMessageCombiner();
 
     private ShortestDistanceMessageCombiner() {
 
@@ -32,7 +30,7 @@ public class ShortestDistanceMessageCombiner implements MessageCombiner<Long> {
         return Math.min(messageA, messageB);
     }
 
-    public static Optional<ShortestDistanceMessageCombiner> instance() {
+    public static ShortestDistanceMessageCombiner instance() {
         return INSTANCE;
     }
 }

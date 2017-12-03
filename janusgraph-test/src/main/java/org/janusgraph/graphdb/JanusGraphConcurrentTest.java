@@ -230,10 +230,10 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
 
         Thread writer = new Thread(() -> {
             while (run.get()) {
-                JanusGraphTransaction tx = graph.newTransaction();
+                final JanusGraphTransaction tx = graph.newTransaction();
                 try {
                     for (int i = 0; i < batchV; i++) {
-                        JanusGraphVertex v = tx.addVertex();
+                        final JanusGraphVertex v = tx.addVertex();
                         v.property("k", random.nextInt(maxK));
                         v.property("q", random.nextInt(maxQ));
                     }
@@ -245,28 +245,26 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
                 }
             }
         });
-        Thread reader = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (run.get()) {
-                    JanusGraphTransaction tx = graph.newTransaction();
-                    try {
-                        for (int i = 0; i < batchR; i++) {
-                            final Set<Vertex> vs = new HashSet<>();
-                            Iterable<JanusGraphVertex> vertices = tx.query().has("k",random.nextInt(maxK)).has("q",random.nextInt(maxQ)).vertices();
-                            for (JanusGraphVertex v : vertices) {
-                                if (!vs.add(v)) {
-                                    duplicates.incrementAndGet();
-                                    System.err.println("Duplicate vertex: " + v);
-                                }
+        Thread reader = new Thread(() -> {
+            while (run.get()) {
+                final JanusGraphTransaction tx = graph.newTransaction();
+                try {
+                    for (int i = 0; i < batchR; i++) {
+                        final Set<Vertex> vs = new HashSet<>();
+                        final Iterable<JanusGraphVertex> vertices
+                                = tx.query().has("k",random.nextInt(maxK)).has("q",random.nextInt(maxQ)).vertices();
+                        for (JanusGraphVertex v : vertices) {
+                            if (!vs.add(v)) {
+                                duplicates.incrementAndGet();
+                                System.err.println("Duplicate vertex: " + v);
                             }
                         }
-                        tx.commit();
-                    } catch (Throwable e) {
-                        e.printStackTrace();
-                    } finally {
-                        if (tx.isOpen()) tx.rollback();
                     }
+                    tx.commit();
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                } finally {
+                    if (tx.isOpen()) tx.rollback();
                 }
             }
         });
@@ -303,7 +301,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
 
     protected void testStandardIndexVertexPropertyReadsLogic(int numThreads) throws InterruptedException, ExecutionException {
         final int propCount = numThreads * 5;
-        final int vertexCount = 1 * 1000;
+        final int vertexCount = 1000;
         // Create props with standard indexes
         log.info("Creating types");
         for (int i = 0; i < propCount; i++) {
@@ -384,13 +382,12 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
         public void run() {
             while (true) {
                 // Make or break relType between two (possibly same) random nodes
-                JanusGraphVertex source = Iterables.<JanusGraphVertex>getOnlyElement(tx.query().has(idKey, 0).vertices());
-                JanusGraphVertex sink = Iterables.<JanusGraphVertex>getOnlyElement(tx.query().has(idKey, 1).vertices());
+                final JanusGraphVertex source = Iterables.getOnlyElement(tx.query().has(idKey, 0).vertices());
+                final JanusGraphVertex sink = Iterables.getOnlyElement(tx.query().has(idKey, 1).vertices());
                 for (Object o : source.query().direction(Direction.OUT).labels(edgeLabel).edges()) {
                     Edge r = (Edge) o;
                     if (getId(r.inVertex()) == getId(sink)) {
                         r.remove();
-                        continue;
                     }
                 }
                 source.addEdge(edgeLabel, sink);
@@ -420,7 +417,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
 
         @Override
         protected void doRun() throws Exception {
-            JanusGraphVertex v = Iterables.<JanusGraphVertex>getOnlyElement(tx.query().has(idKey, vertexId).vertices());
+            JanusGraphVertex v = Iterables.getOnlyElement(tx.query().has(idKey, vertexId).vertices());
 
             for (int i = 0; i < nodeTraversalCount; i++) {
                 assertCount(expectedEdges, v.query().labels(label2Traverse).direction(Direction.BOTH).edges());

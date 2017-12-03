@@ -275,7 +275,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     }
 
 
-    public static enum IsolationLevel {
+    public enum IsolationLevel {
         READ_UNCOMMITTED {
             @Override
             void configure(TransactionConfig cfg) {
@@ -300,7 +300,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         };
 
         abstract void configure(TransactionConfig cfg);
-    };
+    }
 
     private static class TransactionBegin extends Exception {
         private static final long serialVersionUID = 1L;

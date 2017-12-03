@@ -45,7 +45,7 @@ public abstract class AbstractESCompat {
 
     static final Map<String,Object> MATCH_ALL = ImmutableMap.of("match_all", Collections.EMPTY_MAP);
 
-    static final IndexFeatures.Builder coreFeatures() {
+    static IndexFeatures.Builder coreFeatures() {
         return new IndexFeatures.Builder()
             .setDefaultStringMapping(Mapping.TEXT)
             .supportedStringMappings(Mapping.TEXT, Mapping.TEXTSTRING, Mapping.STRING)

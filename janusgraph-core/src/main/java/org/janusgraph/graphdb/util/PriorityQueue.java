@@ -261,6 +261,6 @@ public abstract class PriorityQueue<T> {
    * @lucene.internal
    */
   protected final Object[] getHeapArray() {
-    return (Object[]) heap;
+    return heap;
   }
 }

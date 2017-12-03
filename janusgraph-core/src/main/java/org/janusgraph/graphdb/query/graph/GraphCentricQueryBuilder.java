@@ -97,7 +97,8 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     public GraphCentricQueryBuilder has(String key, JanusGraphPredicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(predicate);
-        Preconditions.checkArgument(predicate.isValidCondition(condition), "Invalid condition: %s", condition);
+        Preconditions.checkArgument(predicate.isValidCondition(condition),
+                "Invalid condition: %s", condition);
         constraints.add(new PredicateCondition<>(key, predicate, condition));
         return this;
     }
@@ -109,12 +110,12 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
 
     @Override
     public GraphCentricQueryBuilder has(String key) {
-        return has(key, Cmp.NOT_EQUAL, (Object) null);
+        return has(key, Cmp.NOT_EQUAL, null);
     }
 
     @Override
     public GraphCentricQueryBuilder hasNot(String key) {
-        return has(key, Cmp.EQUAL, (Object) null);
+        return has(key, Cmp.EQUAL, null);
     }
 
     @Override
@@ -147,7 +148,8 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         Preconditions.checkArgument(key!=null && order!=null,"Need to specify and key and an order");
         Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.dataType()),
                 "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.name(), key.dataType());
-        Preconditions.checkArgument(key.cardinality()== Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.name());
+        Preconditions.checkArgument(key.cardinality()== Cardinality.SINGLE,
+                "Ordering is undefined on multi-valued key [%s]", key.name());
         Preconditions.checkArgument(!orders.containsKey(key));
         orders.add(key, Order.convert(order));
         return this;
@@ -216,12 +218,13 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         if (orders.isEmpty()) orders = OrderList.NO_ORDER;
 
         //Compile all indexes that cover at least one of the query conditions
-        final Set<IndexType> indexCandidates = new HashSet<IndexType>();
+        final Set<IndexType> indexCandidates = new HashSet<>();
         ConditionUtil.traversal(conditions, condition -> {
             if (condition instanceof PredicateCondition) {
-                final RelationType type = ((PredicateCondition<RelationType,JanusGraphElement>)condition).getKey();
-                Preconditions.checkArgument(type!=null && type.isPropertyKey());
-                Iterables.addAll(indexCandidates,Iterables.filter(((InternalRelationType) type).getKeyIndexes(), indexType -> indexType.getElement()==resultType));
+                final RelationType type = ((PredicateCondition<RelationType,JanusGraphElement>) condition).getKey();
+                Preconditions.checkArgument(type != null && type.isPropertyKey());
+                Iterables.addAll(indexCandidates, Iterables.filter(((InternalRelationType) type).getKeyIndexes(),
+                    indexType -> indexType.getElement() == resultType));
             }
             return true;
         });
@@ -249,15 +252,18 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
                 //Check that this index actually applies in case of a schema constraint
                 if (index.hasSchemaTypeConstraint()) {
                     JanusGraphSchemaType type = index.getSchemaTypeConstraint();
-                    Map.Entry<Condition,Collection<Object>> equalCon = getEqualityConditionValues(conditions,ImplicitKey.LABEL);
+                    Map.Entry<Condition,Collection<Object>> equalCon
+                            = getEqualityConditionValues(conditions,ImplicitKey.LABEL);
                     if (equalCon==null) continue;
                     Collection<Object> labels = equalCon.getValue();
-                    assert labels.size()>=1;
+                    assert labels.size() >= 1;
                     if (labels.size()>1) {
                         log.warn("The query optimizer currently does not support multiple label constraints in query: {}",this);
                         continue;
                     }
-                    if (!type.name().equals((String)Iterables.getOnlyElement(labels))) continue;
+                    if (!type.name().equals(Iterables.getOnlyElement(labels))) {
+                        continue;
+                    }
                     subcover.add(equalCon.getKey());
                 }
 
@@ -317,9 +323,11 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             if (tx.getGraph().getConfiguration().adjustQueryLimit()) {
                 indexLimit = limit == Query.NO_LIMIT ? DEFAULT_NO_LIMIT : Math.min(MAX_BASE_LIMIT, limit);
             }
-            indexLimit = Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, coveredClauses.size(), indexLimit));
+            indexLimit = Math.min(HARD_MAX_LIMIT,
+                QueryUtil.adjustLimitForTxModifications(tx, coveredClauses.size(), indexLimit));
             jointQuery.setLimit(indexLimit);
-            query = new BackendQueryHolder<>(jointQuery, coveredClauses.size() == conditions.numChildren(), isSorted);
+            query = new BackendQueryHolder<>(jointQuery,
+                    coveredClauses.size() == conditions.numChildren(), isSorted);
         } else {
             query = new BackendQueryHolder<>(new JointIndexQuery(), false, isSorted);
         }
@@ -333,7 +341,8 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         return true;
     }
 
-    public static List<Object[]> indexCover(final CompositeIndexType index, Condition<JanusGraphElement> condition, Set<Condition> covered) {
+    public static List<Object[]> indexCover(final CompositeIndexType index, Condition<JanusGraphElement> condition,
+                                            Set<Condition> covered) {
         assert QueryUtil.isQueryNormalForm(condition);
         assert condition instanceof And;
         if (index.getStatus()!= SchemaStatus.ENABLED) return null;
@@ -370,7 +379,8 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
 
     }
 
-    private static Map.Entry<Condition,Collection<Object>> getEqualityConditionValues(Condition<JanusGraphElement> condition, RelationType type) {
+    private static Map.Entry<Condition,Collection<Object>> getEqualityConditionValues(
+            Condition<JanusGraphElement> condition, RelationType type) {
         for (Condition c : condition.getChildren()) {
             if (c instanceof Or) {
                 Map.Entry<RelationType,Collection> orEqual = QueryUtil.extractOrCondition((Or)c);
@@ -388,8 +398,10 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         return null;
     }
 
-    public static Condition<JanusGraphElement> indexCover(final MixedIndexType index, Condition<JanusGraphElement> condition,
-                                                           final IndexSerializer indexInfo, final Set<Condition> covered) {
+    public static Condition<JanusGraphElement> indexCover(final MixedIndexType index,
+                                                          Condition<JanusGraphElement> condition,
+                                                          final IndexSerializer indexInfo,
+                                                          final Set<Condition> covered) {
         assert QueryUtil.isQueryNormalForm(condition);
         assert condition instanceof And;
         final And<JanusGraphElement> subCondition = new And<>(condition.numChildren());
@@ -402,9 +414,11 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         return subCondition.isEmpty()?null:subCondition;
     }
 
-    private static boolean coversAll(final MixedIndexType index, Condition<JanusGraphElement> condition, IndexSerializer indexInfo) {
+    private static boolean coversAll(final MixedIndexType index, Condition<JanusGraphElement> condition,
+                                     IndexSerializer indexInfo) {
         if (condition.getType()!=Condition.Type.LITERAL) {
-            return StreamSupport.stream(condition.getChildren().spliterator(), false).allMatch(child -> coversAll(index, child, indexInfo));
+            return StreamSupport.stream(condition.getChildren().spliterator(), false)
+                .allMatch(child -> coversAll(index, child, indexInfo));
         }
         if (!(condition instanceof PredicateCondition)) {
             return false;

@@ -22,7 +22,7 @@ import org.junit.Assert;
 
 public class CassandraHelperTest {
 
-    private static final BytesToken ZERO = new BytesToken(new byte[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0});;
+    private static final BytesToken ZERO = new BytesToken(new byte[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0});
 
     @Test
     public void testTransformRange() {

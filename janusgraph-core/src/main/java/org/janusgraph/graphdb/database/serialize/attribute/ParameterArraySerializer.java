@@ -43,7 +43,7 @@ public class ParameterArraySerializer extends ArraySerializer implements Attribu
 
     @Override
     protected void setArray(Object array, int pos, Object value) {
-        Array.set(array, pos, ((Parameter) value));
+        Array.set(array, pos, value);
     }
 
     //############### Serialization ###################

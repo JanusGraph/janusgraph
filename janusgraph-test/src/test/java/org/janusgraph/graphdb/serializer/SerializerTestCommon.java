@@ -61,7 +61,7 @@ public class SerializerTestCommon {
 
         ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         assertEquals(t1, serialize.readObjectNotNull(b, TClass1.class));
-        assertEquals(t2, (TClass2)serialize.readClassAndObject(b));
+        assertEquals(t2, serialize.readClassAndObject(b));
         assertEquals(t3, serialize.readObject(b,TEnum.class));
         assertEquals(t4, serialize.readClassAndObject(b));
 

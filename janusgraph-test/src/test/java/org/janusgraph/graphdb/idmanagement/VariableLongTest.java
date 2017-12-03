@@ -94,7 +94,7 @@ public class VariableLongTest {
     }
 
     private interface ReadVerify {
-        public void next(ReadBuffer rb, long expected);
+        void next(ReadBuffer rb, long expected);
     }
 
 
@@ -169,11 +169,11 @@ public class VariableLongTest {
 
     public interface ReadWriteLong {
 
-        public void write(WriteBuffer out, long value);
+        void write(WriteBuffer out, long value);
 
-        public int length(long value);
+        int length(long value);
 
-        public long read(ReadBuffer in);
+        long read(ReadBuffer in);
 
     }
 

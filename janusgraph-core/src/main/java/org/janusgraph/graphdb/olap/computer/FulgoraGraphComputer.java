@@ -169,7 +169,7 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
 
         memory = new FulgoraMemory(vertexProgram, mapReduces);
 
-        return CompletableFuture.<ComputerResult>supplyAsync(() -> {
+        return CompletableFuture.supplyAsync(() -> {
             final long time = System.currentTimeMillis();
             if (null != vertexProgram) {
                 // ##### Execute vertex program

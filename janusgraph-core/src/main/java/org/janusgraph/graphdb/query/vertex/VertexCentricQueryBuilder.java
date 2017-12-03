@@ -111,7 +111,7 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
 
     @Override
     public Iterable<JanusGraphVertex> vertices() {
-        return (Iterable)execute(RelationCategory.EDGE,new VertexConstructor());
+        return execute(RelationCategory.EDGE,new VertexConstructor());
     }
 
     @Override

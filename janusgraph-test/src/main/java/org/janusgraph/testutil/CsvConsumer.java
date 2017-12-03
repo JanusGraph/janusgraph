@@ -124,7 +124,7 @@ public class CsvConsumer implements IResultsConsumer {
 
         private final String name;
 
-        private Column(String name) {
+        Column(String name) {
             this.name = name;
         }
 

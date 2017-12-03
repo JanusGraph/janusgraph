@@ -43,7 +43,7 @@ public class JanusGraphIoRegistryTest {
 
     private final Logger log = LoggerFactory.getLogger(JanusGraphIoRegistryTest.class);
 
-    private static ByteBufAllocator allocator = UnpooledByteBufAllocator.DEFAULT;
+    private static final ByteBufAllocator allocator = UnpooledByteBufAllocator.DEFAULT;
 
     /**
      * This is necessary since we replace the default TinkerPop PSerializer

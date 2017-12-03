@@ -300,7 +300,7 @@ public enum MetricManager {
         gangliaReporter.start(reportInterval.toMillis(), TimeUnit.MILLISECONDS);
 
         log.info("Configured Ganglia Metrics reporter host={} interval={} port={} addrmode={} ttl={} proto31={} uuid={} spoof={}",
-                new Object[] { groupOrHost, reportInterval, port, addressingMode, ttl, protocol31, hostUUID, spoof });
+            groupOrHost, reportInterval, port, addressingMode, ttl, protocol31, hostUUID, spoof);
     }
 
     /**
@@ -350,7 +350,7 @@ public enum MetricManager {
         graphiteReporter = b.build(graphite);
         graphiteReporter.start(reportInterval.toMillis(), TimeUnit.MILLISECONDS);
         log.info("Configured Graphite reporter host={} interval={} port={} prefix={}",
-                new Object[] { host, reportInterval, port, prefix });
+            host, reportInterval, port, prefix);
     }
 
     /**

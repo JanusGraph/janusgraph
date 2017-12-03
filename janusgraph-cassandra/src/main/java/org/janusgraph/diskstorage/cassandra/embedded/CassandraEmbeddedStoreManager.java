@@ -34,7 +34,6 @@ import org.apache.cassandra.config.KSMetaData;
 import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.ColumnFamilyType;
 import org.apache.cassandra.db.ConsistencyLevel;
-import org.apache.cassandra.db.ReadCommand;
 import org.apache.cassandra.db.SliceByNamesReadCommand;
 import org.apache.cassandra.db.composites.CellName;
 import org.apache.cassandra.db.composites.CellNames;
@@ -125,7 +124,8 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     }
 
     @Override
-    public synchronized KeyColumnValueStore openDatabase(String name, StoreMetaData.Container metaData) throws BackendException {
+    public synchronized KeyColumnValueStore openDatabase(String name, StoreMetaData.Container metaData)
+            throws BackendException {
         if (openStores.containsKey(name))
             return openStores.get(name);
 
@@ -133,7 +133,8 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         ensureKeyspaceExists(keySpaceName);
         ensureColumnFamilyExists(keySpaceName, name);
 
-        CassandraEmbeddedKeyColumnValueStore store = new CassandraEmbeddedKeyColumnValueStore(keySpaceName, name, this);
+        final CassandraEmbeddedKeyColumnValueStore store = new CassandraEmbeddedKeyColumnValueStore(keySpaceName, name,
+                this);
         openStores.put(name, store);
         return store;
     }
@@ -165,7 +166,8 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
       * provided most of the following method after transaction handling.
       */
     @Override
-    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException {
+    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh)
+            throws BackendException {
         Preconditions.checkNotNull(mutations);
 
         final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
@@ -180,11 +182,8 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
                 StaticBuffer key = janusgraphMutation.getKey();
                 KCVMutation mut = janusgraphMutation.getValue();
 
-                org.apache.cassandra.db.Mutation rm = rowMutations.get(key);
-                if (rm == null) {
-                    rm = new org.apache.cassandra.db.Mutation(keySpaceName, key.asByteBuffer());
-                    rowMutations.put(key, rm);
-                }
+                org.apache.cassandra.db.Mutation rm = rowMutations.computeIfAbsent(key,
+                    k -> new org.apache.cassandra.db.Mutation(keySpaceName, k.asByteBuffer()));
 
                 if (mut.hasAdditions()) {
                     for (Entry e : mut.getAdditions()) {
@@ -215,7 +214,8 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         sleepAfterWrite(txh, commitTime);
     }
 
-    private void mutate(List<org.apache.cassandra.db.Mutation> commands, org.apache.cassandra.db.ConsistencyLevel consistencyLevel) throws BackendException {
+    private void mutate(List<org.apache.cassandra.db.Mutation> commands,
+                        org.apache.cassandra.db.ConsistencyLevel consistencyLevel) throws BackendException {
         try {
             schedule(DatabaseDescriptor.getRpcTimeout());
             try {
@@ -275,7 +275,6 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     }
 
     private void ensureKeyspaceExists(String keyspaceName) throws BackendException {
-
         if (null != Schema.instance.getKeyspaceInstance(keyspaceName))
             return;
 
@@ -300,12 +299,14 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         ensureColumnFamilyExists(ksName, cfName, BytesType.instance);
     }
 
-    private void ensureColumnFamilyExists(String keyspaceName, String columnFamilyName, AbstractType<?> comparator) throws BackendException {
+    private void ensureColumnFamilyExists(String keyspaceName, String columnFamilyName, AbstractType<?> comparator)
+        throws BackendException {
         if (null != Schema.instance.getCFMetaData(keyspaceName, columnFamilyName))
             return;
 
         // Column Family not found; create it
-        CFMetaData cfm = new CFMetaData(keyspaceName, columnFamilyName, ColumnFamilyType.Standard, CellNames.fromAbstractType(comparator, true));
+        final CFMetaData cfm = new CFMetaData(keyspaceName, columnFamilyName, ColumnFamilyType.Standard,
+            CellNames.fromAbstractType(comparator, true));
         try {
             if (storageConfig.has(COMPACTION_STRATEGY)) {
                 cfm.compactionStrategyClass(CFMetaData.createCompactionStrategy(storageConfig.get(COMPACTION_STRATEGY)));
@@ -314,7 +315,8 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
                 cfm.compactionStrategyOptions(compactionOptions);
             }
         } catch (ConfigurationException e) {
-            throw new PermanentBackendException("Failed to create column family metadata for " + keyspaceName + ":" + columnFamilyName, e);
+            throw new PermanentBackendException("Failed to create column family metadata for " + keyspaceName + ":"
+                + columnFamilyName, e);
         }
 
         // Hard-coded caching settings
@@ -328,16 +330,12 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         final CompressionParameters cp;
         if (compressionEnabled) {
             try {
-                cp = new CompressionParameters(compressionClass,
-                        compressionChunkSizeKB * 1024,
-                        Collections.<String, String>emptyMap());
+                cp = new CompressionParameters(compressionClass, compressionChunkSizeKB * 1024,
+                        Collections.emptyMap());
                 // CompressionParameters doesn't override toString(), so be explicit
-                log.debug("Creating CF {}: setting {}={} and {}={} on {}",
-                        new Object[]{
-                                columnFamilyName,
-                                CompressionParameters.SSTABLE_COMPRESSION, compressionClass,
-                                CompressionParameters.CHUNK_LENGTH_KB, compressionChunkSizeKB,
-                                cp});
+                log.debug("Creating CF {}: setting {}={} and {}={} on {}", columnFamilyName,
+                    CompressionParameters.SSTABLE_COMPRESSION, compressionClass, CompressionParameters.CHUNK_LENGTH_KB,
+                    compressionChunkSizeKB, cp);
             } catch (ConfigurationException ce) {
                 throw new PermanentBackendException(ce);
             }
@@ -351,13 +349,15 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         try {
             cfm.addDefaultIndexNames();
         } catch (ConfigurationException e) {
-            throw new PermanentBackendException("Failed to create column family metadata for " + keyspaceName + ":" + columnFamilyName, e);
+            throw new PermanentBackendException("Failed to create column family metadata for " + keyspaceName + ":"
+                + columnFamilyName, e);
         }
         try {
             MigrationManager.announceNewColumnFamily(cfm);
             log.info("Created CF {} in KS {}", columnFamilyName, keyspaceName);
         } catch (ConfigurationException e) {
-            throw new PermanentBackendException("Failed to create column family " + keyspaceName + ":" + columnFamilyName, e);
+            throw new PermanentBackendException("Failed to create column family " + keyspaceName + ":"
+                + columnFamilyName, e);
         }
 
         /*
@@ -399,19 +399,14 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
         while (System.currentTimeMillis() < limit) {
             try {
-                SortedSet<CellName> names = new TreeSet<>(new Comparator<CellName>() {
-                    // This is a singleton set.  We need to define a comparator because SimpleDenseCellName is not
-                    // comparable, but it doesn't have to be a useful comparator
-                    @Override
-                    public int compare(CellName o1, CellName o2)
-                    {
-                        return 0;
-                    }
-                });
+                // This is a singleton set.  We need to define a comparator because SimpleDenseCellName is not
+                // comparable, but the comparator that we pass into the TreeSet constructor does not have to be useful
+                final SortedSet<CellName> names = new TreeSet<>((o1, o2) -> 0);
                 names.add(CellNames.simpleDense(ByteBufferUtil.zeroByteBuffer(1)));
                 NamesQueryFilter nqf = new NamesQueryFilter(names);
-                SliceByNamesReadCommand cmd = new SliceByNamesReadCommand(ks, ByteBufferUtil.zeroByteBuffer(1), cf, 1L, nqf);
-                StorageProxy.read(ImmutableList.<ReadCommand> of(cmd), ConsistencyLevel.QUORUM);
+                final SliceByNamesReadCommand cmd = new SliceByNamesReadCommand(ks,
+                    ByteBufferUtil.zeroByteBuffer(1), cf, 1L, nqf);
+                StorageProxy.read(ImmutableList.of(cmd), ConsistencyLevel.QUORUM);
                 log.info("Read on CF {} in KS {} succeeded", cf, ks);
                 return;
             } catch (Throwable t) {
@@ -425,6 +420,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             }
         }
 
-        throw new PermanentBackendException("Timed out while attempting to read CF " + cf + " in KS " + ks + " following creation");
+        throw new PermanentBackendException("Timed out while attempting to read CF " + cf + " in KS " + ks
+            + " following creation");
     }
 }

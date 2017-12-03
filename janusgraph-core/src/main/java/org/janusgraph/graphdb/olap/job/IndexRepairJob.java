@@ -23,7 +23,6 @@ import org.janusgraph.core.schema.*;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;

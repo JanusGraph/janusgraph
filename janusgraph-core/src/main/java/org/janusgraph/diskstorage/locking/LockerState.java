@@ -44,7 +44,7 @@ public class LockerState<S> {
     public LockerState() {
         // TODO this wild guess at the concurrency level should not be hardcoded
         this(new MapMaker().concurrencyLevel(8).weakKeys()
-                .<StoreTransaction, Map<KeyColumn, S>> makeMap());
+                .makeMap());
     }
 
     public LockerState(ConcurrentMap<StoreTransaction, Map<KeyColumn, S>> locks) {

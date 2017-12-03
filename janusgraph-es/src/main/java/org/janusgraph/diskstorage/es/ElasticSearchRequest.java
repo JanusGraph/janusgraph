@@ -29,7 +29,7 @@ public class ElasticSearchRequest {
 
     private Integer from;
 
-    private List<Map<String,RestSortInfo>> sorts;
+    private final List<Map<String,RestSortInfo>> sorts;
 
     private List<String> fields;
 

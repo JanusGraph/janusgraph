@@ -164,7 +164,7 @@ public class ConcurrentLRUCache<V> {
         // in this method.
         if (currentSize > upperWaterMark && !isCleaning) {
             if (newThreadForCleanup) {
-                new Thread(() -> markAndSweep()).start();
+                new Thread(this::markAndSweep).start();
             } else if (cleanupThread != null) {
                 cleanupThread.wakeThread();
             } else {
@@ -613,7 +613,7 @@ public class ConcurrentLRUCache<V> {
         private boolean stop = false;
 
         public CleanupThread(ConcurrentLRUCache c) {
-            cache = new WeakReference<ConcurrentLRUCache>(c);
+            cache = new WeakReference<>(c);
             this.setDaemon(true);
             this.setName("ConcurrentLRUCleaner-" + getId());
         }

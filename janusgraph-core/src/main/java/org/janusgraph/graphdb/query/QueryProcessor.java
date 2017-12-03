@@ -147,7 +147,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
             if (all.size() >= MAX_SORT_ITERATION)
                 throw new QueryException("Could not execute query since pre-sorting requires fetching more than " +
                         MAX_SORT_ITERATION + " elements. Consider rewriting the query to exploit sort orders");
-            Collections.sort(all, query.getSortOrder());
+            all.sort(query.getSortOrder());
             iterator = all.iterator();
         }
 

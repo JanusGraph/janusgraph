@@ -62,13 +62,13 @@ public class SerializerGraphConfiguration {
         JanusGraphTransaction tx = graph.newTransaction();
         JanusGraphVertex v = tx.addVertex("person");
         v.property("time", 5);
-        v.property("any", new Double(5.0));
+        v.property("any", 5.0);
         v.property("any", new TClass1(5,1.5f));
         v.property("any", TEnum.THREE);
         tx.commit();
 
         tx = graph.newTransaction();
-        v = (JanusGraphVertex) tx.query().has("time",5).vertices().iterator().next();
+        v = tx.query().has("time",5).vertices().iterator().next();
         assertEquals(5,(int)v.value("time"));
         assertEquals(3, Iterators.size(v.properties("any")));
         tx.rollback();

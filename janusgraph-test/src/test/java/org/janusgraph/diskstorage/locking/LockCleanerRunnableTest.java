@@ -33,7 +33,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.janusgraph.diskstorage.Entry;
@@ -48,7 +47,7 @@ import org.janusgraph.diskstorage.locking.consistentkey.StandardLockCleanerRunna
 public class LockCleanerRunnableTest {
 
     private IMocksControl ctrl;
-    private IMocksControl relaxedCtrl;;
+    private IMocksControl relaxedCtrl;
     private StandardLockCleanerRunnable del;
     private KeyColumnValueStore store;
     private StoreTransaction tx;
@@ -94,8 +93,8 @@ public class LockCleanerRunnableTest {
 
         store.mutate(
                 eq(key),
-                eq(ImmutableList.<Entry> of()),
-                eq(ImmutableList.<StaticBuffer> of(expiredLockCol.getColumn())),
+                eq(ImmutableList.of()),
+                eq(ImmutableList.of(expiredLockCol.getColumn())),
                 anyObject(StoreTransaction.class));
 
         ctrl.replay();
@@ -143,7 +142,7 @@ public class LockCleanerRunnableTest {
 
         store.mutate(
                 eq(key),
-                eq(ImmutableList.<Entry> of()),
+                eq(ImmutableList.of()),
                 eq(columnsOf(deletions)),
                 anyObject(StoreTransaction.class));
 
@@ -180,11 +179,6 @@ public class LockCleanerRunnableTest {
      * argument list.
      */
     private static List<StaticBuffer> columnsOf(List<Entry> l) {
-        return Lists.transform(l, new Function<Entry, StaticBuffer>() {
-            @Override
-            public StaticBuffer apply(Entry e) {
-                return e.getColumn();
-            }
-        });
+        return Lists.transform(l, Entry::getColumn);
     }
 }

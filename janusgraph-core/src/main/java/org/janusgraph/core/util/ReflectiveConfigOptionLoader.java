@@ -178,7 +178,7 @@ public enum ReflectiveConfigOptionLoader {
 
     private List<ClassLoader> getClassLoaders(LoaderConfiguration cfg, Class<?> caller) {
 
-        ImmutableList.Builder<ClassLoader> builder = ImmutableList.<ClassLoader>builder();
+        final ImmutableList.Builder<ClassLoader> builder = ImmutableList.builder();
 
         builder.addAll(cfg.preferredLoaders);
         for (ClassLoader c : cfg.preferredLoaders)
@@ -302,9 +302,7 @@ public enum ReflectiveConfigOptionLoader {
                     Preconditions.checkNotNull(o);
                     log.debug("Initialized {}={}", f, o);
                     loadCount++;
-                } catch (IllegalArgumentException e) {
-                    log.warn("ConfigOption initialization error", e);
-                } catch (IllegalAccessException e) {
+                } catch (IllegalArgumentException | IllegalAccessException e) {
                     log.warn("ConfigOption initialization error", e);
                 }
             }

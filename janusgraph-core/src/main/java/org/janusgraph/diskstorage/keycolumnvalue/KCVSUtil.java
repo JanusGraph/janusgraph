@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Contains static utility methods for operating on {@link KeyColumnValueStore}.
@@ -52,8 +51,8 @@ public class KCVSUtil {
         KeySliceQuery query = new KeySliceQuery(key, column, BufferUtil.nextBiggerBuffer(column)).setLimit(2);
         List<Entry> result = store.getSlice(query, txh);
         if (result.size() > 1)
-            log.warn("GET query returned more than 1 result: store {} | key {} | column {}", new Object[]{store.getName(),
-                    key, column});
+            log.warn("GET query returned more than 1 result: store {} | key {} | column {}", store.getName(),
+                key, column);
 
         if (result.isEmpty()) return null;
         else return result.get(0).getValueAs(StaticBuffer.STATIC_FACTORY);

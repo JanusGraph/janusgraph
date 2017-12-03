@@ -63,6 +63,7 @@ import org.janusgraph.testutil.TestGraphConfigs;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.junit.Assert;
@@ -78,6 +79,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -337,18 +339,18 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     private void checkIndexingCounts(String[] words, int numV, int originalNumV, boolean checkOrder) {
-        for (int i = 0; i < words.length; i++) {
-            int expectedSize = numV / words.length;
-            assertCount(expectedSize, tx.query().has("text", Text.CONTAINS, words[i]).vertices());
-            assertCount(expectedSize, tx.query().has("text", Text.CONTAINS, words[i]).edges());
+        for (final String word : words) {
+            final int expectedSize = numV / words.length;
+            assertCount(expectedSize, tx.query().has("text", Text.CONTAINS, word).vertices());
+            assertCount(expectedSize, tx.query().has("text", Text.CONTAINS, word).edges());
 
             //Test ordering
             if (checkOrder) {
                 for (String orderKey : new String[]{"time", "category"}) {
                     for (Order order : Order.values()) {
                         for (JanusGraphQuery traversal : ImmutableList.of(
-                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP()),
-                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP())
+                            tx.query().has("text", Text.CONTAINS, word).orderBy(orderKey, order.getTP()),
+                            tx.query().has("text", Text.CONTAINS, word).orderBy(orderKey, order.getTP())
                         )) {
                             verifyElementOrder(traversal.vertices(), orderKey, order, expectedSize);
                         }
@@ -1032,20 +1034,25 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         // ElasticSearch and Solr have different formats for sort parameters
         String backend = readConfig.get(INDEX_BACKEND, INDEX);
-        if ("elasticsearch".equals(backend)) {
-            final Map<String,String> sortAsc = new HashMap<>();
-            sortAsc.put("_score", "asc");
-            asc_sort_p = new Parameter("sort",Arrays.asList(sortAsc));
-            final Map<String,String> sortDesc = new HashMap<>();
-            sortDesc.put("_score", "desc");
-            desc_sort_p = new Parameter("sort",Arrays.asList(sortDesc));
-        } else if ("solr".equals(backend)) {
-            asc_sort_p = new Parameter("sort",new String[]{"score asc"});
-            desc_sort_p = new Parameter("sort",new String[]{"score desc"});
-        } else if ("lucene".equals(backend)) {
-            return; // Ignore for lucene
-        } else {
-            Assert.fail("Unknown index backend:" + backend);
+        switch (backend) {
+            case "elasticsearch":
+                final Map<String, String> sortAsc = new HashMap<>();
+                sortAsc.put("_score", "asc");
+                asc_sort_p = new Parameter("sort", Collections.singletonList(sortAsc));
+                final Map<String, String> sortDesc = new HashMap<>();
+                sortDesc.put("_score", "desc");
+                desc_sort_p = new Parameter("sort", Collections.singletonList(sortDesc));
+                break;
+            case "solr":
+                asc_sort_p = new Parameter("sort", new String[]{"score asc"});
+                desc_sort_p = new Parameter("sort", new String[]{"score desc"});
+                break;
+            case "lucene":
+                return; // Ignore for lucene
+
+            default:
+                Assert.fail("Unknown index backend:" + backend);
+                break;
         }
 
         final PropertyKey field1Key = mgmt.makePropertyKey("field1").dataType(String.class).make();
@@ -1107,8 +1114,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 1, new boolean[]{true, true}, "mixed");
         evaluateQuery(tx.query().has("name", Text.CONTAINS_FUZZY, "Midle"), ElementCategory.VERTEX,
                 1, new boolean[]{true, true}, "mixed");
-        for (Vertex u : tx.getVertices()) {
-            String n = u.<String>value("name");
+        for (final Vertex u : tx.getVertices()) {
+            final String n = u.value("name");
             if (n.endsWith("Don")) {
                 u.remove();
             } else if (n.endsWith("Lewis")) {
@@ -1631,7 +1638,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         tx.commit();
 
-        JanusGraphVertex r = Iterables.<JanusGraphVertex>get(graph.query().has("name", Text.CONTAINS, "hercules here").vertices(), 0);
+        final JanusGraphVertex r = Iterables.get(graph.query().has("name", Text.CONTAINS, "hercules here").vertices(), 0);
         Assert.assertEquals(r.property("name").value(), "hercules was here");
     }
 
@@ -1820,7 +1827,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
 
         //Add two properties at once to a fresh vertex
-        graph.vertices().forEachRemaining(v -> v.remove());
+        graph.vertices().forEachRemaining(Element::remove);
         v1 = graph.addVertex();
         v1.property(property, value1);
         v1.property(property, value2);

@@ -39,7 +39,7 @@ import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 
 public class LockCleanerServiceTest {
     private IMocksControl ctrl;
-    private IMocksControl relaxedCtrl;;
+    private IMocksControl relaxedCtrl;
     private KeyColumnValueStore store;
     private StoreTransaction tx;
     private ExecutorService exec;

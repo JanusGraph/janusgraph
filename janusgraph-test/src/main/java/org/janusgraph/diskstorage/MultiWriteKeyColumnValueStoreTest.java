@@ -41,13 +41,13 @@ import java.util.*;
 
 public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest {
 
-    private Logger log = LoggerFactory.getLogger(MultiWriteKeyColumnValueStoreTest.class);
+    private final Logger log = LoggerFactory.getLogger(MultiWriteKeyColumnValueStoreTest.class);
 
-    int bufferSize = 20;
+    final int bufferSize = 20;
 
-    protected String storeName1 = "testStore1";
+    protected final String storeName1 = "testStore1";
     private KCVSCache store1;
-    protected String storeName2 = "testStore2";
+    protected final String storeName2 = "testStore2";
     private KCVSCache store2;
 
 
@@ -55,7 +55,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
     public StoreTransaction tx;
 
 
-    private Random rand = new Random(10);
+    private final Random rand = new Random(10);
 
     @Before
     public void setUp() throws Exception {
@@ -155,8 +155,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
     @Test
     public void mutateManyWritesSameKeyOnMultipleCFs() throws BackendException {
 
-        final long arbitraryLong = 42;
-        assert 0 < arbitraryLong;
+        final long arbitraryLong = 42; //must be greater than 0
 
         final StaticBuffer key = KeyColumnValueStoreUtil.longToByteBuffer(arbitraryLong * arbitraryLong);
         final StaticBuffer val = KeyColumnValueStoreUtil.longToByteBuffer(arbitraryLong * arbitraryLong * arbitraryLong);
@@ -271,7 +270,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
             }
         }
 
-        log.debug("Checked absence of {} key-column-value deletions on round {} (skipped {})", new Object[]{checked, round, skipped});
+        log.debug("Checked absence of {} key-column-value deletions on round {} (skipped {})", checked, round, skipped);
 
         return checked;
     }

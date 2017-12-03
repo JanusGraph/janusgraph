@@ -170,7 +170,7 @@ public class ExpectedValueCheckingTest {
     @Test
     public void testMutateWithLockUsesConsistentTx() throws BackendException {
         final ImmutableList<Entry> adds = ImmutableList.of(StaticArrayEntry.of(DATA_COL, DATA_VAL));
-        final ImmutableList<StaticBuffer> deletions = ImmutableList.<StaticBuffer>of();
+        final ImmutableList<StaticBuffer> deletions = ImmutableList.of();
         final KeyColumn kc = new KeyColumn(LOCK_KEY, LOCK_COL);
 
         // 1. Acquire a lock
@@ -198,7 +198,7 @@ public class ExpectedValueCheckingTest {
     public void testMutateWithoutLockUsesInconsistentTx() throws BackendException {
         // Run a mutation
         final ImmutableList<Entry> adds = ImmutableList.of(StaticArrayEntry.of(DATA_COL, DATA_VAL));
-        final ImmutableList<StaticBuffer> deletions = ImmutableList.<StaticBuffer>of();
+        final ImmutableList<StaticBuffer> deletions = ImmutableList.of();
         backingStore.mutate(DATA_KEY, adds, deletions, inconsistentTx); // consistency level is unconstrained w/o locks
 
         ctrl.replay();
@@ -208,11 +208,11 @@ public class ExpectedValueCheckingTest {
     @Test
     public void testMutateManyWithLockUsesConsistentTx() throws BackendException {
         final ImmutableList<Entry> adds = ImmutableList.of(StaticArrayEntry.of(DATA_COL, DATA_VAL));
-        final ImmutableList<StaticBuffer> deletions = ImmutableList.<StaticBuffer>of();
+        final ImmutableList<StaticBuffer> deletions = ImmutableList.of();
 
         Map<String, Map<StaticBuffer, KCVMutation>> mutations =
-                ImmutableMap.<String, Map<StaticBuffer, KCVMutation>>of(STORE_NAME,
-                        ImmutableMap.<StaticBuffer, KCVMutation>of(DATA_KEY, new KCVMutation(adds, deletions)));
+                ImmutableMap.of(STORE_NAME,
+                        ImmutableMap.of(DATA_KEY, new KCVMutation(adds, deletions)));
         final KeyColumn kc = new KeyColumn(LOCK_KEY, LOCK_COL);
 
         // Acquire a lock
@@ -238,11 +238,11 @@ public class ExpectedValueCheckingTest {
     @Test
     public void testMutateManyWithoutLockUsesInconsistentTx() throws BackendException {
         final ImmutableList<Entry> adds = ImmutableList.of(StaticArrayEntry.of(DATA_COL, DATA_VAL));
-        final ImmutableList<StaticBuffer> deletions = ImmutableList.<StaticBuffer>of();
+        final ImmutableList<StaticBuffer> deletions = ImmutableList.of();
 
         Map<String, Map<StaticBuffer, KCVMutation>> mutations =
-                ImmutableMap.<String, Map<StaticBuffer, KCVMutation>>of(STORE_NAME,
-                        ImmutableMap.<StaticBuffer, KCVMutation>of(DATA_KEY, new KCVMutation(adds, deletions)));
+                ImmutableMap.of(STORE_NAME,
+                        ImmutableMap.of(DATA_KEY, new KCVMutation(adds, deletions)));
 
         // Run mutateMany
         backingManager.mutateMany(mutations, inconsistentTx); // consistency level is unconstrained w/o locks

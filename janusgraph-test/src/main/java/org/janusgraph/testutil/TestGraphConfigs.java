@@ -39,7 +39,7 @@ import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
  */
 public class TestGraphConfigs {
 
-    public static String ENV_OVERRIDE_FILE = "JANUSGRAPH_CONFIG";
+    public static final String ENV_OVERRIDE_FILE = "JANUSGRAPH_CONFIG";
 
     private static final CommonsConfiguration overrides;
 

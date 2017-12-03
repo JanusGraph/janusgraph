@@ -189,7 +189,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         assertNull(getV(tx,v3id));
         v1 = getV(tx, v1id);
         assertNotNull(v1);
-        assertEquals(v3id,((JanusGraphVertex) v1.query().direction(Direction.IN).labels("knows").vertices().iterator().next()).longId());
+        assertEquals(v3id, v1.query().direction(Direction.IN).labels("knows").vertices().iterator().next().longId());
         tx.commit();
         mgmt.commit();
 
@@ -225,7 +225,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         int totalCount = 0;
         for (Map.Entry<Long,Integer> entry : degrees.entrySet()) {
             int degree = entry.getValue();
-            JanusGraphVertex v = getV(tx, entry.getKey().longValue());
+            final JanusGraphVertex v = getV(tx, entry.getKey());
             int count = v.value("uid");
             assertEquals(count,degree);
             totalCount+= degree;
@@ -365,7 +365,6 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
 
         @Override
         public void setup(Memory memory) {
-            return;
         }
 
         @Override
@@ -386,12 +385,12 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
 
         @Override
         public Set<VertexComputeKey> getVertexComputeKeys() {
-            return new HashSet<>(Arrays.asList(VertexComputeKey.of(DEGREE, false)));
+            return new HashSet<>(Collections.singletonList(VertexComputeKey.of(DEGREE, false)));
         }
 
         @Override
         public Set<MemoryComputeKey> getMemoryComputeKeys() {
-            return new HashSet<>(Arrays.asList(MemoryComputeKey.of(DEGREE, Operator.assign, true, false)));
+            return new HashSet<>(Collections.singletonList(MemoryComputeKey.of(DEGREE, Operator.assign, true, false)));
         }
 
         @Override
@@ -401,7 +400,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
 
         @Override
         public Set<MessageScope> getMessageScopes(Memory memory) {
-            if (memory.getIteration()<length) return ImmutableSet.of((MessageScope)DEG_MSG);
+            if (memory.getIteration()<length) return ImmutableSet.of(DEG_MSG);
             else return Collections.emptySet();
         }
 
@@ -539,9 +538,8 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         }
 
         double correctPRSum = 0;
-        Iterator<JanusGraphVertex> iv = tx.query().vertices().iterator();
-        while (iv.hasNext()) {
-            correctPRSum += correctPR[iv.next().<Integer>value("distance")];
+        for (final JanusGraphVertex janusGraphVertex : tx.query().vertices()) {
+            correctPRSum += correctPR[janusGraphVertex.<Integer>value("distance")];
         }
 
         final JanusGraphComputer computer = graph.compute();

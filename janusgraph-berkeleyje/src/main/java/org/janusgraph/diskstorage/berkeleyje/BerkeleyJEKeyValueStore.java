@@ -66,7 +66,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         return name;
     }
 
-    private static final Transaction getTransaction(StoreTransaction txh) {
+    private static Transaction getTransaction(StoreTransaction txh) {
         Preconditions.checkArgument(txh!=null);
         return ((BerkeleyJETx) txh).getTransaction();
     }

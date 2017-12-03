@@ -66,20 +66,20 @@ public class HBaseStoreManagerMutationTest {
                     e.setMetaData(EntryMetaData.TTL, i % 10 + 1);
                     // Collect the columns with TTL. Only do this for one row
                     if (row == 1) {
-                      expectedColumnsWithTTL.add(new Long(i));
+                      expectedColumnsWithTTL.add((long) i);
                     }
                     additions.add(e);
                 } else {
                     // Collect the columns without TTL. Only do this for one row
                     if (row == 1) {
-                        expectedColumnsWithoutTTL.add(new Long(i));
+                        expectedColumnsWithoutTTL.add((long) i);
                     }
                     additions.add(e);
                 }
             }
             // Add one deletion to the row
             if (row == 1) {
-                expectedColumnDelete.add(new Long(i - 1));
+                expectedColumnDelete.add((long) (i - 1));
             }
             deletions.add((StaticBuffer) e);
             rowkeyMutationMap.put(rowkey, new KCVMutation(additions, deletions));

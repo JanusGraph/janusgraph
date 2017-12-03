@@ -33,7 +33,7 @@ public class StorageSetup {
 
     //############ UTILITIES #############
 
-    public static final String getHomeDir(String subDirectory) {
+    public static String getHomeDir(String subDirectory) {
         String homeDirectory = System.getProperty("janusgraph.testdir");
         if (null == homeDirectory) {
             homeDirectory = "target" + File.separator + "db";
@@ -44,19 +44,19 @@ public class StorageSetup {
         return homeDirectory;
     }
 
-    public static final File getHomeDirFile() {
+    public static File getHomeDirFile() {
         return getHomeDirFile(null);
     }
 
-    public static final File getHomeDirFile(String subDirectory) {
+    public static File getHomeDirFile(String subDirectory) {
         return new File(getHomeDir(subDirectory));
     }
 
-    public static final void deleteHomeDir() {
+    public static void deleteHomeDir() {
         deleteHomeDir(null);
     }
 
-    public static final void deleteHomeDir(String subDirectory) {
+    public static void deleteHomeDir(String subDirectory) {
         File homeDirFile = getHomeDirFile(subDirectory);
         // Make directory if it doesn't exist
         if (!homeDirFile.exists())
