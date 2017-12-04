@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.diskstorage.es.compat.ES6Compat;
 import org.janusgraph.diskstorage.es.rest.util.HttpAuthTypes;
 import org.locationtech.spatial4j.shape.Rectangle;
@@ -811,7 +812,7 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
-    public Map<String,Object> getFilter(Condition<?> condition, KeyInformation.StoreRetriever information) {
+    public <A extends JanusGraphElement> Map<String,Object> getFilter(Condition<A> condition, KeyInformation.StoreRetriever information) {
         if (condition instanceof PredicateCondition) {
             final PredicateCondition<String, ?> atom = (PredicateCondition) condition;
             Object value = atom.getValue();
@@ -977,13 +978,13 @@ public class ElasticSearchIndex implements IndexProvider {
         } else if (condition instanceof Not) {
             return compat.boolMustNot(getFilter(((Not) condition).getChild(),information));
         } else if (condition instanceof And) {
-            final List queries = StreamSupport.stream(condition.getChildren().spliterator(), false)
-                .map(c -> getFilter(c,information)).collect(Collectors.toList());
-            return compat.boolMust(queries);
+            try (final Stream<Condition<A>> stream = StreamSupport.stream(condition.getChildren().spliterator(), false)) {
+                return compat.boolMust(stream.map(c -> getFilter(c, information)).collect(Collectors.toList()));
+            }
         } else if (condition instanceof Or) {
-            final List queries = StreamSupport.stream(condition.getChildren().spliterator(), false)
-                .map(c -> getFilter(c,information)).collect(Collectors.toList());
-            return compat.boolShould(queries);
+            try (final Stream<Condition<A>> stream = StreamSupport.stream(condition.getChildren().spliterator(), false)) {
+                return compat.boolShould(stream.map(c -> getFilter(c, information)).collect(Collectors.toList()));
+            }
         } else throw new IllegalArgumentException("Invalid condition: " + condition);
     }
 
@@ -1017,6 +1018,7 @@ public class ElasticSearchIndex implements IndexProvider {
             response = client.search(indexStoreName, indexType, compat.createRequestBody(sr, NULL_PARAMETERS), sr.getSize() >= batchSize);
             log.debug("First Executed query [{}] in {} ms", query.getCondition(), response.getTook());
             final ElasticSearchScroll resultIterator = new ElasticSearchScroll(client, response, sr.getSize());
+            // This method returns a Stream. There is no way to return a stream without leaking it. Coverity ID 1456881
             final Stream<RawQuery.Result<String>> toReturn = StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, Spliterator.ORDERED), false);
             return (query.hasLimit() ? toReturn.limit(query.getLimit()) : toReturn).map(RawQuery.Result<String>::getResult);
         } catch (final IOException | UncheckedIOException e) {
@@ -1062,7 +1064,7 @@ public class ElasticSearchIndex implements IndexProvider {
         sr.setFrom(0);
         sr.setSize(size);
         try {
-            return  client.search(getIndexStoreName(query.getStore()), useMultitypeIndex ? query.getStore() : null, compat.createRequestBody(sr, query.getParameters()), useScroll);
+            return client.search(getIndexStoreName(query.getStore()), useMultitypeIndex ? query.getStore() : null, compat.createRequestBody(sr, query.getParameters()), useScroll);
         } catch (final IOException | UncheckedIOException e) {
             throw new PermanentBackendException(e);
         }
@@ -1074,6 +1076,7 @@ public class ElasticSearchIndex implements IndexProvider {
         final ElasticSearchResponse response = runCommonQuery(query, tx, size, size >= batchSize );
         log.debug("First Executed query [{}] in {} ms", query.getQuery(), response.getTook());
         final ElasticSearchScroll resultIterator = new ElasticSearchScroll(client, response, size);
+        // This method returns a Stream. There is no way to return a stream without leaking it. Coverity ID 1456884
         final Stream<RawQuery.Result<String>> toReturn = StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, Spliterator.ORDERED), false).skip(query.getOffset());
         return query.hasLimit() ? toReturn.limit(query.getLimit()) : toReturn;
     }

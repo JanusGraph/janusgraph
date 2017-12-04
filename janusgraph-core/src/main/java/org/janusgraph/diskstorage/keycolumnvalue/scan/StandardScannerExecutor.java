@@ -324,10 +324,14 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
             try {
                 while (keyIterator.hasNext()) {
                     StaticBuffer key = keyIterator.next();
-                    RecordIterator<Entry> entries = keyIterator.getEntries();
-                    if (!keyFilter.test(key)) continue;
-                    EntryList entryList = StaticArrayEntryList.ofStaticBuffer(entries, StaticArrayEntry.ENTRY_GETTER);
-                    queue.put(new SliceResult(query, key, entryList));
+                    if (!keyFilter.test(key)) {
+                        continue;
+                    }
+                    try (final RecordIterator<Entry> entries = keyIterator.getEntries()) {
+                        final EntryList entryList = StaticArrayEntryList.ofStaticBuffer(entries,
+                                StaticArrayEntry.ENTRY_GETTER);
+                        queue.put(new SliceResult(query, key, entryList));
+                    }
                 }
                 finished = true;
             } catch (InterruptedException e) {
@@ -364,6 +368,3 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
 
 
 }
-
-
-

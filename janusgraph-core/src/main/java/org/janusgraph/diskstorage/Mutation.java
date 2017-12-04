@@ -21,6 +21,7 @@ import com.google.common.collect.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Container for collection mutations against a data store.
@@ -149,7 +150,7 @@ public abstract class Mutation<E,K> {
      */
     public<V> void consolidate(Function<E,V> convertAdditions, Function<K,V> convertDeletions) {
         if (hasDeletions() && hasAdditions()) {
-            Set<V> adds = Sets.newHashSet(Iterables.transform(additions,convertAdditions));
+            final Set<V> adds = additions.stream().map(convertAdditions::apply).collect(Collectors.toSet());
             deletions.removeIf(k -> adds.contains(convertDeletions.apply(k)));
         }
     }
