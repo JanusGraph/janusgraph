@@ -144,6 +144,48 @@ public interface CQLConfigOptions {
             ConfigOption.Type.FIXED,
             64);
 
+    ConfigOption<Integer> LOCAL_CORE_CONNECTIONS_PER_HOST = new ConfigOption<>(
+            CQL_NS,
+            "local-core-connections-per-host",
+            "The number of connections initially created and kept open to each host for local datacenter",
+            ConfigOption.Type.FIXED,
+            1);
+
+    ConfigOption<Integer> REMOTE_CORE_CONNECTIONS_PER_HOST = new ConfigOption<>(
+            CQL_NS,
+            "remote-core-connections-per-host",
+            "The number of connections initially created and kept open to each host for remote datacenter",
+            ConfigOption.Type.FIXED,
+            1);
+
+    ConfigOption<Integer> LOCAL_MAX_CONNECTIONS_PER_HOST = new ConfigOption<>(
+            CQL_NS,
+            "local-max-connections-per-host",
+            "The maximum number of connections that can be created per host for local datacenter",
+            ConfigOption.Type.FIXED,
+            1);
+
+    ConfigOption<Integer> REMOTE_MAX_CONNECTIONS_PER_HOST = new ConfigOption<>(
+            CQL_NS,
+            "remote-max-connections-per-host",
+            "The maximum number of connections that can be created per host for remote datacenter",
+            ConfigOption.Type.FIXED,
+            1);
+
+    ConfigOption<Integer> LOCAL_MAX_REQUESTS_PER_CONNECTION = new ConfigOption<>(
+            CQL_NS,
+            "local-max-requests-per-connection",
+            "The maximum number of requests per connection for local datacenter",
+            ConfigOption.Type.FIXED,
+            1024);
+
+    ConfigOption<Integer> REMOTE_MAX_REQUESTS_PER_CONNECTION = new ConfigOption<>(
+            CQL_NS,
+            "remote-max-requests-per-connection",
+            "The maximum number of requests per connection for remote datacenter",
+            ConfigOption.Type.FIXED,
+            256);
+
     // SSL
     ConfigNamespace SSL_NS = new ConfigNamespace(
             CQL_NS,
