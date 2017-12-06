@@ -249,7 +249,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         try {
             computer.submit().get();
             fail();
-        } catch (ExecutionException ee) {
+        } catch (ExecutionException ignored) {
         }
     }
 

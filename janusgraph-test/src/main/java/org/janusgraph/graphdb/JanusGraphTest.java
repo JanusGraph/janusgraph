@@ -253,7 +253,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         try {
             assertCount(0, v2.query().direction(Direction.BOTH).edges());
             fail();
-        } catch (IllegalStateException ex) {
+        } catch (IllegalStateException ignored) {
         }
         assertCount(1, graph.query().vertices());
         assertCount(1, graph.query().has(nameUniqueVertexPropertyName, "v1").vertices());
@@ -538,20 +538,20 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             //No data type
             mgmt.makePropertyKey("fid").make();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //Already exists
             mgmt.makeEdgeLabel("link").unidirected().make();
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         try {
             //signature and sort-key collide
             ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel("other")).
                     sortKey(someId, weight).signature(someId).make();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
 //        try {
 //            //keys must be single-valued
@@ -564,26 +564,26 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel("other")).multiplicity(Multiplicity.SIMPLE).
                     sortKey(weight).make();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //sort key requires the label to be non-constrained
             ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel("other")).multiplicity(Multiplicity.MANY2ONE).
                     sortKey(weight).make();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //Already exists
             mgmt.makeVertexLabel("tweet").make();
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         try {
             //signature key must have non-generic data type
             mgmt.makeEdgeLabel("test").signature(someId).make();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
 
         // ######### END INSPECTION ############
@@ -679,20 +679,20 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             //No data type
             mgmt.makePropertyKey("fid").make();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //Already exists
             mgmt.makeEdgeLabel("link").unidirected().make();
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         try {
             //signature and sort-key collide
             ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel("other")).
                     sortKey(someId, weight).signature(someId).make();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
 //        try {
 //            //keys must be single-valued
@@ -705,26 +705,26 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel("other")).multiplicity(Multiplicity.SIMPLE).
                     sortKey(weight).make();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //sort key requires the label to be non-constrained
             ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel("other")).multiplicity(Multiplicity.MANY2ONE).
                     sortKey(weight).make();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //Already exists
             mgmt.makeVertexLabel("tweet").make();
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         try {
             //signature key must have non-generic data type
             mgmt.makeEdgeLabel("test").signature(someId).make();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
 
         // ######### END INSPECTION ############
@@ -776,19 +776,19 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             //Invalid data type
             v.property("weight", "x");
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         try {
             //Only one "John" should be allowed
             v.property(VertexProperty.Cardinality.list, "name", "John");
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         try {
             //Cannot set a property as edge
             v.property("link", v);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
 
 
@@ -818,25 +818,25 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             //multiplicity violation
             v12.addEdge("parent", v13);
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         try {
             //multiplicity violation
             v13.addEdge("child", v12);
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         try {
             //multiplicity violation
             v13.addEdge("spouse", v12);
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         try {
             //multiplicity violation
             v.addEdge("spouse", v13);
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         assertCount(2, v.query().direction(Direction.IN).labels("parent").edges());
         assertCount(1, v12.query().direction(Direction.OUT).labels("parent").has("weight").edges());
@@ -849,7 +849,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             //connect is simple
             v.addEdge("connect", v12);
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         //Make sure "link" is unidirected
         assertCount(1, v.query().direction(Direction.BOTH).labels("link").edges());
@@ -878,19 +878,19 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             //Invalid data type
             v.property("weight", "x");
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         try {
             //Only one "John" should be allowed
             v.property(VertexProperty.Cardinality.list, "name", "John");
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         try {
             //Cannot set a property as edge
             v.property("link", v);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
 
         //Only one property for weight allowed
@@ -920,25 +920,25 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             //multiplicity violation
             v12.addEdge("parent", v13);
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         try {
             //multiplicity violation
             v13.addEdge("child", v12);
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         try {
             //multiplicity violation
             v13.addEdge("spouse", v12);
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         try {
             //multiplicity violation
             v.addEdge("spouse", v13);
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         assertCount(2, v.query().direction(Direction.IN).labels("parent").edges());
         assertCount(1, v12.query().direction(Direction.OUT).labels("parent").has("weight").edges());
@@ -951,7 +951,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             //connect is simple
             v.addEdge("connect", v12);
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         //Make sure "link" is unidirected
         assertCount(1, v.query().direction(Direction.BOTH).labels("link").edges());
@@ -977,7 +977,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 //property is unique
                 vx.property(VertexProperty.Cardinality.single, "uid", "v1");
                 fail();
-            } catch (SchemaViolationException e) {
+            } catch (SchemaViolationException ignored) {
             }
             vx.property(VertexProperty.Cardinality.single, "uid", "unique");
             JanusGraphVertex vx2 = tx2.addVertex();
@@ -985,7 +985,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 //property unique
                 vx2.property(VertexProperty.Cardinality.single, "uid", "unique");
                 fail();
-            } catch (SchemaViolationException e) {
+            } catch (SchemaViolationException ignored) {
             }
         } finally {
             tx2.rollback();
@@ -998,12 +998,12 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         try {
             v2.property(VertexProperty.Cardinality.single, "weight", 11);
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
         try {
             v2.addEdge("friend", v12);
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
 
         //Ensure that unidirected edges keep pointing to deleted vertices
@@ -1056,14 +1056,14 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             //Not a valid data type - primitive
             makeKey("pint", int.class);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
 
         try {
             //Not a valid data type - interface
             makeKey("number", Number.class);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
 
         finishSchema();
@@ -1154,7 +1154,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         v1 = tx.addVertex();
         try {
             v1.property(VertexProperty.Cardinality.single, "domain", "unique1");
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
 
         } finally {
             tx.rollback();
@@ -1169,7 +1169,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             v2 = tx.addVertex();
             v2.property("domain", "unique1");
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
 
         } finally {
             tx.rollback();
@@ -1185,7 +1185,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             v2 = tx.addVertex();
             v2.property("domain", "unique1");
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
 
         } finally {
             tx.rollback();
@@ -1225,17 +1225,17 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         try {
             tx.addVertex("org");
             fail();
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             v.property("bla", 5);
             fail();
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             v.addEdge("blub", v);
             fail();
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException ignored) {
         }
     }
 
@@ -1525,17 +1525,17 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         try {
             mgmt.updateIndex(pindex, SchemaAction.ENABLE_INDEX);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             mgmt.updateIndex(eindex, SchemaAction.ENABLE_INDEX);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             mgmt.updateIndex(graphIndex, SchemaAction.ENABLE_INDEX);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         mgmt.commit();
 
@@ -1713,7 +1713,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         try {
             mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
             fail(); //Open tx2 should not make this possible
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         finishSchema();
         tx2.commit(); //Release transaction and wait a little for registration which should make enabling possible
@@ -1751,7 +1751,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         try {
             mgmt.forceCloseInstance(graph.getConfiguration().getUniqueGraphId());
             fail(); //Cannot close current instance
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         mgmt.forceCloseInstance(graph2.getConfiguration().getUniqueGraphId());
 
@@ -1826,7 +1826,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             //Not a valid vertex
             assertCount(0, v.query().direction(BOTH).has("~adjacent", 110111).edges());
             fail();
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException ignored) {
         }
 
     }
@@ -2014,7 +2014,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         try {
             v21.addEdge("knows", v11);
             fail();
-        } catch (IllegalStateException e) {
+        } catch (IllegalStateException ignored) {
         }
         JanusGraphVertex v22 = tx2.addVertex();
         v21.addEdge("knows", v22);
@@ -2022,13 +2022,13 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         try {
             v22.addEdge("knows", v21);
             fail();
-        } catch (IllegalStateException e) {
+        } catch (IllegalStateException ignored) {
         }
         tx1.rollback();
         try {
             v11.property(VertexProperty.Cardinality.single, "test", 5);
             fail();
-        } catch (IllegalStateException e) {
+        } catch (IllegalStateException ignored) {
         }
 
         //Test unidirected edge with and without internal existence check
@@ -2483,7 +2483,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             //Fork does not apply to constrained types
             mgmt.setConsistency(mgmt.getPropertyKey("name"), ConsistencyModifier.FORK);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
     }
 
@@ -2515,13 +2515,13 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             try {
                 tx2.commit();
                 fail("Storage backend does not abort conflicting transactions");
-            } catch (JanusGraphException e) {
+            } catch (JanusGraphException ignored) {
             }
         } else {
             try {
                 tx1.commit();
                 fail("Storage backend does not abort conflicting transactions");
-            } catch (JanusGraphException e) {
+            } catch (JanusGraphException ignored) {
             }
             tx2.commit();
         }
@@ -2988,7 +2988,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             //Name already exists
             mgmt.buildEdgeIndex(connect, "weightAsc", Direction.OUT, time);
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
 //        try {
 //           //Invalid key - must be single valued
@@ -2999,13 +2999,13 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             //Not valid in this direction due to multiplicity constraint
             mgmt.buildEdgeIndex(child, "blablub", Direction.IN, time);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //Not valid in this direction due to unidirectionality
             mgmt.buildEdgeIndex(link, "blablub", Direction.BOTH, time);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
 
         // ########## END INSPECTION ###########
@@ -3035,7 +3035,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             //Name already exists
             mgmt.buildEdgeIndex(connect, "weightAsc", Direction.OUT, time);
             fail();
-        } catch (SchemaViolationException e) {
+        } catch (SchemaViolationException ignored) {
         }
 //        try {
 //           //Invalid key - must be single valued
@@ -3046,13 +3046,13 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             //Not valid in this direction due to multiplicity constraint
             mgmt.buildEdgeIndex(child, "blablub", Direction.IN, time);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //Not valid in this direction due to unidirectionality
             mgmt.buildEdgeIndex(link, "blablub", Direction.BOTH, time);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
 
         // ########## END INSPECTION ###########
@@ -4006,25 +4006,25 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             //Parameters not supported
             mgmt.buildIndex("blablub", Vertex.class).addKey(text, Mapping.TEXT.asParameter()).buildCompositeIndex();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //Name already in use
             mgmt.buildIndex("edge1", Vertex.class).addKey(weight).buildCompositeIndex();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //ImplicitKeys not allowed
             mgmt.buildIndex("jupdup", Vertex.class).addKey(ImplicitKey.ID).buildCompositeIndex();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //Unique is only allowed for vertex
             mgmt.buildIndex("edgexyz", Edge.class).addKey(time).unique().buildCompositeIndex();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
 
         // ########### END INSPECTION & FAILURE ##############
@@ -4066,25 +4066,25 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             //Parameters not supported
             mgmt.buildIndex("blablub", Vertex.class).addKey(text, Mapping.TEXT.asParameter()).buildCompositeIndex();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //Name already in use
             mgmt.buildIndex("edge1", Vertex.class).addKey(weight).buildCompositeIndex();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //ImplicitKeys not allowed
             mgmt.buildIndex("jupdup", Vertex.class).addKey(ImplicitKey.ID).buildCompositeIndex();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //Unique is only allowed for vertex
             mgmt.buildIndex("edgexyz", Edge.class).addKey(time).unique().buildCompositeIndex();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
 
         // ########### END INSPECTION & FAILURE ##############
@@ -4509,7 +4509,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         try {
             assertCount(1, tx.query().has("age", 6).vertices());
             fail();
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
     }
 

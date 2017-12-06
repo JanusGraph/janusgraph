@@ -104,9 +104,7 @@ public class Hadoop2Compat implements HadoopCompat {
         try {
             JobStatus js = j.getStatus();
             return String.format("state=%s, failureinfo=%s", js.getState(), js.getFailureInfo());
-        } catch (IOException e) {
-            throw new JanusGraphException(e);
-        } catch (InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             throw new JanusGraphException(e);
         }
     }

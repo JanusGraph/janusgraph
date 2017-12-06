@@ -19,14 +19,14 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.Map.Entry;
-import com.google.common.base.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.util.time.Durations;
 
@@ -85,13 +85,16 @@ public class HadoopConfiguration implements WriteConfiguration {
             String s = config.get(internalKey);
             String[] comps = s.split("\\s");
             TemporalUnit unit = null;
-            if (comps.length == 1) {
-                //By default, times are in milli seconds
-                unit = ChronoUnit.MILLIS;
-            } else if (comps.length == 2) {
-                unit = Durations.parse(comps[1]);
-            } else {
-                throw new IllegalArgumentException("Cannot parse time duration from: " + s);
+            switch (comps.length) {
+                case 1:
+                    //By default, times are in milli seconds
+                    unit = ChronoUnit.MILLIS;
+                    break;
+                case 2:
+                    unit = Durations.parse(comps[1]);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Cannot parse time duration from: " + s);
             }
             return (O) Duration.of(Long.valueOf(comps[0]), unit);
         } else throw new IllegalArgumentException("Unsupported data type: " + dataType);
@@ -103,30 +106,26 @@ public class HadoopConfiguration implements WriteConfiguration {
          * Is there a way to iterate over just the keys of a Hadoop Configuration?
          * Iterating over Map.Entry is needlessly wasteful since we don't need the values.
          */
-        Iterable<String> internalKeys = Iterables.transform(config, internalEntry -> internalEntry.getKey());
 
-        Iterable<String> prefixedKeys = Iterables.filter(internalKeys, internalKey -> {
-            String k = internalKey;
-            if (null != prefix) {
-                if (k.startsWith(prefix)) {
-                    k = getUserKey(k);
-                } else {
-                    return false; // does not have the prefix
+        return StreamSupport.stream(config.spliterator(), false)
+            .map(Entry::getKey)
+            .filter(internalKey -> {
+                String k = internalKey;
+                if (null != prefix) {
+                    if (k.startsWith(prefix)) {
+                        k = getUserKey(k);
+                    } else {
+                        return false; // does not have the prefix
+                    }
                 }
-            }
-            return k.startsWith(userPrefix);
-        });
-
-        return Iterables.transform(prefixedKeys, new Function<String, String>() {
-
-            @Nullable
-            @Override
-            public String apply(@Nullable String internalKey) {
+                return k.startsWith(userPrefix);
+            })
+            .map(internalKey -> {
                 String userKey = getUserKey(internalKey);
                 Preconditions.checkState(userKey.startsWith(userPrefix));
                 return userKey;
-            }
-        });
+            })
+            .collect(Collectors.toList());
     }
 
     @Override

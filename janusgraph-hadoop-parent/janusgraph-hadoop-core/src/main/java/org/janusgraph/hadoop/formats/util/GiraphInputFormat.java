@@ -14,7 +14,6 @@
 
 package org.janusgraph.hadoop.formats.util;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -28,6 +27,7 @@ import org.apache.hadoop.mapreduce.*;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Function;
 
 import static org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon.SETUP_CLASS_NAME;
 import static org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon.SETUP_PACKAGE_PREFIX;

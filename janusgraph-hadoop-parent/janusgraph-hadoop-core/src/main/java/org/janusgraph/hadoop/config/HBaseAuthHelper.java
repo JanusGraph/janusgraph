@@ -48,13 +48,8 @@ public class HBaseAuthHelper {
             Class<?> clazz = HBaseAuthHelper.class.getClassLoader().loadClass(className);
             Method m = clazz.getMethod(methodName, methodArgType);
             return (Configuration)m.invoke(null, inner);
-        } catch (ClassNotFoundException e) {
-            log.error("Failed to call {}.{}({})", className, methodName, methodArgType.getSimpleName(), e);
-        } catch (NoSuchMethodException e) {
-            log.error("Failed to call {}.{}({})", className, methodName, methodArgType.getSimpleName(), e);
-        } catch (InvocationTargetException e) {
-            log.error("Failed to call {}.{}({})", className, methodName, methodArgType.getSimpleName(), e);
-        } catch (IllegalAccessException e) {
+        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException
+                | IllegalAccessException e) {
             log.error("Failed to call {}.{}({})", className, methodName, methodArgType.getSimpleName(), e);
         } catch (Throwable t) {
             log.error("Failed to call {}.{}({})", className, methodName, methodArgType.getSimpleName(), t);
@@ -82,13 +77,8 @@ public class HBaseAuthHelper {
                 Method obtainAuthTokenForJob = clazz.getMethod("obtainAuthTokenForJob", Configuration.class, Job.class);
                 obtainAuthTokenForJob.invoke(user, configuration, job);
                 log.info("Obtained HBase Auth Token from ZooKeeper quorum {} for job {}", configuration.get(quorumCfgKey), job.getJobName());
-            } catch (ClassNotFoundException e) {
-                log.error("Failed to generate or store HBase auth token", e);
-            } catch (InvocationTargetException e) {
-                log.error("Failed to generate or store HBase auth token", e);
-            } catch (NoSuchMethodException e) {
-                log.error("Failed to generate or store HBase auth token", e);
-            } catch (IllegalAccessException e) {
+            } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException
+                    | IllegalAccessException e) {
                 log.error("Failed to generate or store HBase auth token", e);
             } catch (Throwable t) {
                 log.error("Failed to generate or store HBase auth token", t);

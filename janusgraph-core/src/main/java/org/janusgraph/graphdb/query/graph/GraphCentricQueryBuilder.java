@@ -374,9 +374,8 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
                     newValues[position]=value;
                     constructIndexCover(newValues,position+1,fields,condition,indexCovers,coveredClauses);
                 }
-            } else return;
+            }
         }
-
     }
 
     private static Map.Entry<Condition,Collection<Object>> getEqualityConditionValues(

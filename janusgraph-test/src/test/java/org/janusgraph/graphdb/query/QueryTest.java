@@ -90,7 +90,7 @@ public class QueryTest {
         try {
             ol1.add(time, Order.DESC);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
         assertEquals(2, ol1.size());
         assertEquals(name,ol1.getKey(0));
         assertEquals(weight, ol1.getKey(1));

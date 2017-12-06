@@ -625,7 +625,7 @@ public class ConcurrentLRUCache<V> {
                     if (stop) break;
                     try {
                         this.wait();
-                    } catch (InterruptedException e) {
+                    } catch (InterruptedException ignored) {
                     }
                 }
                 if (stop) break;

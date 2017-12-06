@@ -136,8 +136,7 @@ public class RestClientSetupTest {
         assertSame(restElasticSearchClientMock, elasticClient);
 
         verify(restClientSetup).getRestClient(hostListCaptor.capture(), any(Configuration.class));
-        final List<HttpHost[]> hostsConfigured = hostListCaptor.getAllValues();
-        return hostsConfigured;
+        return hostListCaptor.getAllValues();
     }
 
     @Test

@@ -82,11 +82,11 @@ public class ConfigurationTest {
         try {
             userconfig.set("storage.locktime",500);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
         try {
             config.set(retry,(short)100);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
 //        System.out.println(userconfig.get("storage"));
         userconfig.close();
         ReadConfiguration localConfig = userconfig.getConfiguration();
@@ -105,14 +105,14 @@ public class ConfigurationTest {
         assertEquals("333", userconfig.get("storage.special.retry"));
         try {
             userconfig.set("storage.bits",6);
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
         userconfig.set("storage.bits",6);
         try {
             userconfig.set("storage.locktime",1221);
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
         try {
             userconfig.set("storage.locktime",1221);
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
         userconfig.set("indexes.find.name","lulu");
 
         userconfig.close();

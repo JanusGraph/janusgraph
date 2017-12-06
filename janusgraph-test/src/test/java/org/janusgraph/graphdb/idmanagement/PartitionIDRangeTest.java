@@ -70,15 +70,15 @@ public class PartitionIDRangeTest {
         try {
             pr = new PartitionIDRange(0,5,4);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
         try {
             pr = new PartitionIDRange(5,3,4);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
         try {
             pr = new PartitionIDRange(-1,3,4);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
     }
 
     private void verifyRandomSampling(PartitionIDRange pr) {
@@ -118,7 +118,7 @@ public class PartitionIDRangeTest {
         try {
             PartitionIDRange.getGlobalRange(-1);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
     }
 
     @Test

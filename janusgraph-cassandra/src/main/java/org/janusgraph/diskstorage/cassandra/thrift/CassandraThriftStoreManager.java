@@ -439,8 +439,6 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
             if (conn != null && conn.getClient() != null) {
                 try {
                     conn.getClient().set_keyspace(SYSTEM_KS);
-                } catch (InvalidRequestException e) {
-                    log.warn("Failed to reset keyspace", e);
                 } catch (TException e) {
                     log.warn("Failed to reset keyspace", e);
                 }
@@ -488,8 +486,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 // Keyspace didn't exist; create it
                 log.debug("Creating keyspace {}...", keyspaceName);
 
-                KsDef ksdef = new KsDef().setName(keyspaceName)
-                        .setCf_defs(new LinkedList<CfDef>()) // cannot be null but can be empty
+                final KsDef ksdef = new KsDef().setName(keyspaceName)
+                        .setCf_defs(new LinkedList<>()) // cannot be null but can be empty
                         .setStrategy_class(storageConfig.get(REPLICATION_STRATEGY))
                         .setStrategy_options(strategyOptions);
 
