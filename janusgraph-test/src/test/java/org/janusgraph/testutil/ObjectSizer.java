@@ -64,13 +64,9 @@ public final class ObjectSizer {
 
     public static final Factory guavaFactory = () -> {
         final int size = 10000;
-        final Cache<String,Long> cache = CacheBuilder.newBuilder()
+        return CacheBuilder.newBuilder()
                 .concurrencyLevel(2).initialCapacity(16*3)
-                .maximumSize(10000).build();
-//            for (int i=0;i<size;i++) {
-//                cache.put(new Nothing(),new Nothing());
-//            }
-        return cache;
+                .maximumSize(10000).<String, Long>build();
     };
 
     private static class Nothing {}

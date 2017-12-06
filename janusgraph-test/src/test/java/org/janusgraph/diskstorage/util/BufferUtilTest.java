@@ -79,7 +79,7 @@ public class BufferUtilTest {
             StaticBuffer b = BufferUtil.getLongBuffer(-1);
             BufferUtil.nextBiggerBuffer(b);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
         StaticBuffer b = BufferUtil.getLongBuffer(-1);
         StaticBuffer bn = BufferUtil.nextBiggerBufferAllowOverflow(b);
         Assert.assertEquals(8,bn.length());

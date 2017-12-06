@@ -24,5 +24,5 @@ import org.apache.hadoop.mapreduce.Job;
  */
 public interface JobClasspathConfigurer {
 
-    public void configure(Job job) throws IOException;
+    void configure(Job job) throws IOException;
 }

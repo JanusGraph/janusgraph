@@ -536,12 +536,11 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     @Test
     public void testGetKeysColumnSlicesOnLowerTriangular() throws BackendException, IOException {
         if (manager.getFeatures().hasScan()) {
-            final int offset = 10;
-            final int size = 10;
+            final int offset = 10; //should be greater than or equal to 1
+            final int size = 10; //should be greater than or equal to 4
             final int midpoint = size / 2 + offset;
             final int upper = offset + size;
             final int step = 1;
-            Preconditions.checkState(4 <= size && 1 <= offset);
 
             loadLowerTriangularValues(size, offset);
 

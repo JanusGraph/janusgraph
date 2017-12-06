@@ -165,8 +165,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     public BerkeleyJEKeyValueStore openDatabase(String name) throws BackendException {
         Preconditions.checkNotNull(name);
         if (stores.containsKey(name)) {
-            BerkeleyJEKeyValueStore store = stores.get(name);
-            return store;
+            return stores.get(name);
         }
         try {
             DatabaseConfig dbConfig = new DatabaseConfig();
@@ -250,14 +249,16 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
     }
 
+    private static final Transaction NULL_TRANSACTION = null;
+
     @Override
     public void clearStorage() throws BackendException {
-        if (!stores.isEmpty())
+        if (!stores.isEmpty()) {
             throw new IllegalStateException("Cannot delete store, since database is open: " + stores.keySet().toString());
+        }
 
-        Transaction tx = null;
-        for (String db : environment.getDatabaseNames()) {
-            environment.removeDatabase(tx, db);
+        for (final String db : environment.getDatabaseNames()) {
+            environment.removeDatabase(NULL_TRANSACTION, db);
             log.debug("Removed database {} (clearStorage)", db);
         }
         close();

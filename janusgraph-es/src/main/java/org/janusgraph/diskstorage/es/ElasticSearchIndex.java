@@ -900,13 +900,13 @@ public class ElasticSearchIndex implements IndexProvider {
                 }
             } else if (value instanceof String) {
                 final Mapping map = getStringMapping(information.get(key));
-                String fieldName = key;
                 if (map==Mapping.TEXT && !Text.HAS_CONTAINS.contains(predicate))
                     throw new IllegalArgumentException(
                             "Text mapped string values only support CONTAINS queries and not: " + predicate);
                 if (map==Mapping.STRING && Text.HAS_CONTAINS.contains(predicate))
                     throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: "
                             + predicate);
+                final String fieldName;
                 if (map==Mapping.TEXTSTRING && !Text.HAS_CONTAINS.contains(predicate)) {
                     fieldName = getDualMappingName(key);
                 } else {
@@ -1183,7 +1183,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 !(mapping==Mapping.PREFIX_TREE && AttributeUtil.isGeo(dataType))) return false;
 
         if (Number.class.isAssignableFrom(dataType)) {
-            if (janusgraphPredicate instanceof Cmp) return true;
+            return janusgraphPredicate instanceof Cmp;
         } else if (dataType == Geoshape.class) {
             switch(mapping) {
                 case DEFAULT:
@@ -1206,7 +1206,7 @@ public class ElasticSearchIndex implements IndexProvider {
                             || janusgraphPredicate==Cmp.NOT_EQUAL;
             }
         } else if (dataType == Date.class || dataType == Instant.class) {
-            if (janusgraphPredicate instanceof Cmp) return true;
+            return janusgraphPredicate instanceof Cmp;
         } else if (dataType == Boolean.class) {
             return janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate == Cmp.NOT_EQUAL;
         } else if (dataType == UUID.class) {
@@ -1222,12 +1222,12 @@ public class ElasticSearchIndex implements IndexProvider {
         final Mapping mapping = Mapping.getMapping(information);
         if (Number.class.isAssignableFrom(dataType) || dataType == Date.class || dataType== Instant.class
                 || dataType == Boolean.class || dataType == UUID.class) {
-            if (mapping==Mapping.DEFAULT) return true;
+            return mapping == Mapping.DEFAULT;
         } else if (AttributeUtil.isString(dataType)) {
-            if (mapping==Mapping.DEFAULT || mapping==Mapping.STRING
-                    || mapping==Mapping.TEXT || mapping==Mapping.TEXTSTRING) return true;
+            return mapping == Mapping.DEFAULT || mapping == Mapping.STRING
+                || mapping == Mapping.TEXT || mapping == Mapping.TEXTSTRING;
         } else if (AttributeUtil.isGeo(dataType)) {
-            if (mapping==Mapping.DEFAULT || mapping==Mapping.PREFIX_TREE) return true;
+            return mapping == Mapping.DEFAULT || mapping == Mapping.PREFIX_TREE;
         }
         return false;
     }

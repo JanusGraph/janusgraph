@@ -152,11 +152,12 @@ public class SolrIndexTest extends IndexProviderTest {
         assertTrue(index.supports(of(UUID.class, Cardinality.SINGLE), Cmp.NOT_EQUAL));
     }
 
-    /**
+    /*
      * Dropping collection is not implemented with Solr Cloud to accommodate use case where collection is created
      * outside of JanusGraph and associated with a config set with a different name.
-     * @throws Exception
      */
     @Override @Test @Ignore
-    public void clearStorageTest() throws Exception { }
+    public void clearStorageTest() throws Exception {
+        super.clearStorageTest();
+    }
 }

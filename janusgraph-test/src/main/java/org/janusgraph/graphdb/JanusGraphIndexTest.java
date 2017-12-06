@@ -485,7 +485,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             try {
                 assertEquals(v1, getOnlyVertex(graph.query().has("instant", Cmp.EQUAL, firstTimestamp)));
                 Assert.fail("Should have failed to update the index");
-            } catch (Exception e) {
+            } catch (Exception ignored) {
 
             }
         }
@@ -595,19 +595,19 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             //Already exists
             mgmt.buildIndex("index2", Vertex.class).addKey(weight).buildMixedIndex(INDEX);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //Already exists
             mgmt.buildIndex("index2", Vertex.class).addKey(weight).buildCompositeIndex();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //Key is already added
             mgmt.addIndexKey(index2, weight);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
 
         finishSchema();
@@ -641,19 +641,19 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             //Already exists
             mgmt.buildIndex("index2", Vertex.class).addKey(weight).buildMixedIndex(INDEX);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //Already exists
             mgmt.buildIndex("index2", Vertex.class).addKey(weight).buildCompositeIndex();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
         try {
             //Key is already added
             mgmt.addIndexKey(index2, weight);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException ignored) {
         }
 
 
@@ -1768,7 +1768,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 //This should throw an exception
                 mgmt.buildIndex("collectionIndex", Vertex.class).addKey(stringProperty, getStringMapping()).buildMixedIndex(INDEX);
                 Assert.fail("Should have thrown an exception");
-            } catch (JanusGraphException e) {
+            } catch (JanusGraphException ignored) {
 
             }
         }

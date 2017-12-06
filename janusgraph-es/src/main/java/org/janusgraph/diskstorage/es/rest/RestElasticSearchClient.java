@@ -158,7 +158,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
             try (final InputStream inputStream = response.getEntity().getContent()) {
                 exists = mapper.readValue(inputStream, Map.class).containsKey(indexName);
             }
-        } catch (final IOException e) {
+        } catch (final IOException ignored) {
         }
         return exists;
     }
@@ -169,7 +169,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         try {
             delegate.performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + "_alias" + REQUEST_SEPARATOR + aliasName);
             exists = true;
-        } catch (final IOException e) {
+        } catch (final IOException ignored) {
         }
         return exists;
     }

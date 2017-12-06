@@ -65,9 +65,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean isValidCondition(Object condition) {
-            if (condition == null) return false;
-            else if (condition instanceof String && StringUtils.isNotBlank((String) condition)) return true;
-            else return false;
+            return condition != null && condition instanceof String && StringUtils.isNotBlank((String) condition);
         }
         @Override
         public String toString() {

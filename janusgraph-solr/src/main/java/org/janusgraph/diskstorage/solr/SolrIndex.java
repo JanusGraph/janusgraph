@@ -301,7 +301,8 @@ public class SolrIndex implements IndexProvider {
      * @param key New key to register
      * @param information data type to register for the key
      * @param tx enclosing transaction
-     * @throws org.janusgraph.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException in case an exception is thrown when
+     * creating a collection.
      */
     @SuppressWarnings("unchecked")
     @Override
@@ -485,7 +486,7 @@ public class SolrIndex implements IndexProvider {
                     final SolrInputDocument doc = new SolrInputDocument();
                     doc.setField(getKeyFieldId(collectionName), docID);
                     final Map<String, Object> adds = collectFieldValues(content, collectionName, information);
-                    adds.forEach((key, value) -> doc.setField(key, value));
+                    adds.forEach(doc::setField);
                     newDocuments.add(doc);
                 }
                 commitDeletes(collectionName, deleteIds);
@@ -877,10 +878,9 @@ public class SolrIndex implements IndexProvider {
      * race conditions.
      *
      * @return New Transaction Handle
-     * @throws org.janusgraph.diskstorage.BackendException
      */
     @Override
-    public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws BackendException {
+    public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) {
         return new DefaultTransaction(config);
     }
 
@@ -954,7 +954,7 @@ public class SolrIndex implements IndexProvider {
 //                    return (janusgraphPredicate instanceof Text) || janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL;
             }
         } else if (dataType == Date.class || dataType == Instant.class) {
-            if (predicate instanceof Cmp) return true;
+            return predicate instanceof Cmp;
         } else if (dataType == Boolean.class) {
             return predicate == Cmp.EQUAL || predicate == Cmp.NOT_EQUAL;
         } else if (dataType == UUID.class) {

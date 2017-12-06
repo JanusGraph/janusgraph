@@ -89,7 +89,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException {
-        Map<StaticBuffer, EntryList> result = getHelper(Arrays.asList(query.getKey()), getFilter(query));
+        Map<StaticBuffer, EntryList> result = getHelper(Collections.singletonList(query.getKey()), getFilter(query));
         return Iterables.getOnlyElement(result.values(), EntryList.EMPTY_LIST);
     }
 

@@ -146,7 +146,7 @@ public class RangeInterval<T> implements Interval<T> {
             }
             if (end!=null) {
                 int cmp = ((Comparable)end).compareTo(other);
-                if (cmp<0 || (cmp==0 && !endInclusive)) return false;
+                return cmp >= 0 && (cmp != 0 || endInclusive);
             }
             return true;
         }

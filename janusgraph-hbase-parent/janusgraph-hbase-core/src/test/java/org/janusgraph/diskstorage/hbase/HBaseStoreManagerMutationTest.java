@@ -81,7 +81,7 @@ public class HBaseStoreManagerMutationTest {
             if (row == 1) {
                 expectedColumnDelete.add((long) (i - 1));
             }
-            deletions.add((StaticBuffer) e);
+            deletions.add(e);
             rowkeyMutationMap.put(rowkey, new KCVMutation(additions, deletions));
         }
         storeMutationMap.put("store1", rowkeyMutationMap);

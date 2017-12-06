@@ -82,7 +82,7 @@ public class Geoshape {
         boolean haveJts = false;
         try {
             haveJts = Class.forName("com.vividsolutions.jts.geom.Geometry") != null;
-        } catch (ClassNotFoundException e) { }
+        } catch (ClassNotFoundException ignored) { }
 
         HELPER = haveJts ? new JtsGeoshapeHelper() : new GeoshapeHelper();
     }
@@ -578,7 +578,7 @@ public class Geoshape {
                     final float lat = buffer.getFloat();
                     final float lon = buffer.getFloat();
                     return point(lat, lon);
-                } catch (Exception e2) { }
+                } catch (Exception ignored) { }
                 // throw original exception
                 throw new RuntimeException("I/O exception reading geoshape", e);
             }
@@ -631,7 +631,7 @@ public class Geoshape {
                     final float lat = input.readFloat();
                     final float lon = input.readFloat();
                     return point(lat, lon);
-                } catch (KryoException e2) { }
+                } catch (KryoException ignored) { }
                 // throw original exception
                 throw new RuntimeException("I/O exception reading geoshape", e);
             }

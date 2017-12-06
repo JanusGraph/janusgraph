@@ -58,7 +58,7 @@ public class HConnection0_98 implements ConnectionMask
         try {
             table = new HTable(cnx.getConfiguration(), tableName);
             return table.getRegionLocations().entrySet().stream()
-                .map(e -> { return new HRegionLocation(e.getKey(), e.getValue()); })
+                .map(e -> new HRegionLocation(e.getKey(), e.getValue()))
                 .collect(Collectors.toList());
         } finally {
             IOUtils.closeQuietly(table);

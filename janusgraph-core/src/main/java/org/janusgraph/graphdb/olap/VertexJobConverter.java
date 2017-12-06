@@ -168,11 +168,7 @@ public class VertexJobConverter implements ScanJob {
 
     @Override
     public Predicate<StaticBuffer> getKeyFilter() {
-        return buffer -> {
-            long vertexId = getVertexId(buffer);
-            if (IDManager.VertexIDType.Invisible.is(vertexId)) return false;
-            else return true;
-        };
+        return buffer -> !IDManager.VertexIDType.Invisible.is(getVertexId(buffer));
     }
 
     @Override
