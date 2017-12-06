@@ -199,7 +199,7 @@ public abstract class IDAuthorityTest {
         try {
             block.getId(blockSize);
             fail();
-        } catch (ArrayIndexOutOfBoundsException e) {}
+        } catch (ArrayIndexOutOfBoundsException ignored) {}
     }
 
 //    private void checkIdList(List<Long> ids) {
@@ -277,7 +277,7 @@ public abstract class IDAuthorityTest {
             try {
                 idAuthorities[0].getIDBlock(0,0,GET_ID_BLOCK_TIMEOUT);
                 Assert.fail();
-            } catch (IDPoolExhaustedException e) {}
+            } catch (IDPoolExhaustedException ignored) {}
         } else {
             for (int i=0;i<(chunks*Math.max(1,(1<<uidBitWidth)/10));i++) {
                 idAuthorities[0].getIDBlock(0,0,GET_ID_BLOCK_TIMEOUT);
@@ -287,7 +287,7 @@ public abstract class IDAuthorityTest {
                     idAuthorities[0].getIDBlock(0,0,GET_ID_BLOCK_TIMEOUT);
                 }
                 Assert.fail();
-            } catch (IDPoolExhaustedException e) {}
+            } catch (IDPoolExhaustedException ignored) {}
         }
     }
 

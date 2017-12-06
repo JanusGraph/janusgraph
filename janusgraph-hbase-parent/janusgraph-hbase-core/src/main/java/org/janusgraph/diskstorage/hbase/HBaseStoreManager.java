@@ -438,9 +438,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             } finally {
                 IOUtils.closeQuietly(table);
             }
-        } catch (IOException e) {
-            throw new TemporaryBackendException(e);
-        } catch (InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             throw new TemporaryBackendException(e);
         }
 
@@ -642,7 +640,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
 
         // Require either no null key bounds or a pair of them
-        Preconditions.checkState(!(null == nullStart ^ null == nullEnd));
+        Preconditions.checkState((null == nullStart) == (null == nullEnd));
 
         // Check that every key in the result is at least 4 bytes long
         Map<KeyRange, ServerName> result = b.build();
@@ -662,7 +660,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      * @param dataToPad non-null but possibly zero-length byte array
      * @return either the parameter or a new array
      */
-    private final byte[] zeroExtend(byte[] dataToPad) {
+    private byte[] zeroExtend(byte[] dataToPad) {
         assert null != dataToPad;
 
         final int targetLength = 4;
@@ -672,8 +670,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         byte padded[] = new byte[targetLength];
 
-        for (int i = 0; i < dataToPad.length; i++)
-            padded[i] = dataToPad[i];
+        System.arraycopy(dataToPad, 0, padded, 0, dataToPad.length);
 
         for (int i = dataToPad.length; i < padded.length; i++)
             padded[i] = (byte)0;

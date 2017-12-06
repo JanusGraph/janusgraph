@@ -77,11 +77,7 @@ public class HBaseCompatLoader {
         try {
             compat = (HBaseCompat)Class.forName(className).newInstance();
             log.info("Instantiated HBase compatibility layer {}: {}", classNameSource, compat.getClass().getCanonicalName());
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e.getClass().getSimpleName() + errTemplate, e);
-        } catch (InstantiationException e) {
-            throw new RuntimeException(e.getClass().getSimpleName() + errTemplate, e);
-        } catch (ClassNotFoundException e) {
+        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException e) {
             throw new RuntimeException(e.getClass().getSimpleName() + errTemplate, e);
         }
 

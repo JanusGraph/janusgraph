@@ -90,7 +90,7 @@ public class ManagementUtil {
             if (isStable) break;
             try {
                 times.sleepFor(Duration.ofMillis(500));
-            } catch (InterruptedException e) {
+            } catch (InterruptedException ignored) {
 
             }
         }

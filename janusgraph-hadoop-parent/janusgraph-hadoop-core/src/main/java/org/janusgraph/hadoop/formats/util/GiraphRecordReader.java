@@ -35,8 +35,8 @@ public class GiraphRecordReader extends RecordReader<NullWritable, VertexWritabl
     private static final Logger log =
             LoggerFactory.getLogger(GiraphRecordReader.class);
 
-    private RecordReader<StaticBuffer, Iterable<Entry>> reader;
-    private GiraphInputFormat.RefCountedCloseable countedDeserializer;
+    private final RecordReader<StaticBuffer, Iterable<Entry>> reader;
+    private final GiraphInputFormat.RefCountedCloseable countedDeserializer;
     private JanusGraphVertexDeserializer deserializer;
     private VertexWritable vertex;
 

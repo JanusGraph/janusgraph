@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.query.condition;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import org.janusgraph.core.JanusGraphElement;
 
@@ -68,16 +69,15 @@ public class ConditionUtil {
     }
 
     public static <E extends JanusGraphElement> void traversal(Condition<E> condition, Predicate<Condition<E>> evaluator) {
-        if (!evaluator.apply(condition)) return; //Abort if the evaluator returns false
-
-        if (condition.getType()== Condition.Type.LITERAL) {
-            return;
-        } else if (condition instanceof Not) {
+        Preconditions.checkArgument(!evaluator.apply(condition)
+            || condition.getType() == Condition.Type.LITERAL
+            || condition instanceof Not
+            || condition instanceof MultiCondition, "Unexpected condition type: " + condition);
+        if (condition instanceof Not) {
             traversal(((Not) condition).getChild(), evaluator);
         } else if (condition instanceof MultiCondition) {
-            for (Condition<E> child : condition.getChildren()) traversal(child, evaluator);
-        } else throw new IllegalArgumentException("Unexpected condition type: " + condition);
+            condition.getChildren().forEach(child -> traversal(child, evaluator));
+        }
     }
-
 
 }

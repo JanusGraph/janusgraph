@@ -67,7 +67,7 @@ public class VertexListTest {
             try {
                 iterator.next();
                 fail();
-            } catch (NoSuchElementException ex) {
+            } catch (NoSuchElementException ignored) {
 
             }
         }

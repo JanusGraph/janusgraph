@@ -90,7 +90,7 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
         assertEquals(12L, (long) graph.traversal().V().count().next());
 
         // Add a self-loop on sky with edge label "lives"; it's nonsense, but at least it needs no schema changes
-        JanusGraphVertex sky = (JanusGraphVertex)graph.query().has("name", "sky").vertices().iterator().next();
+        JanusGraphVertex sky = graph.query().has("name", "sky").vertices().iterator().next();
         assertNotNull(sky);
         assertEquals("sky", sky.value("name"));
         assertEquals(1L, sky.query().direction(Direction.IN).edgeCount());

@@ -93,18 +93,14 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         if (!isOpen) return;
         isOpen = false;
         try {
-            try {
-                for (Log log : processorLogs.values()) {
-                    log.close();
-                }
-                processorLogs.clear();
-            } finally {
+            for (Log log : processorLogs.values()) {
+                log.close();
             }
+            processorLogs.clear();
         } catch (BackendException e) {
             throw new JanusGraphException(e);
         }
     }
-
 
     @Override
     public LogProcessorBuilder addLogProcessor(String logIdentifier) {

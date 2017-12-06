@@ -65,12 +65,12 @@ public class IDManagementTest {
         try {
             testEntityID(0, 1, 242342, 242345);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
 
         try {
             testEntityID(0, 0, -11, -10);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
 
     }
 
@@ -87,7 +87,7 @@ public class IDManagementTest {
         try {
             IDManager.getTemporaryVertexID(IDManager.VertexIDType.RelationType,5);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
 
         for (long count=minCount;count<maxCount;count++) {
 

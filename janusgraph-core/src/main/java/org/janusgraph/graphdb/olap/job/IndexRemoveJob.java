@@ -97,16 +97,17 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
 
     @Override
     protected void validateIndexStatus() {
-        if (index instanceof RelationTypeIndex) {
-            //Nothing specific to be done
-        } else if (index instanceof JanusGraphIndex) {
+        if(!(index instanceof RelationTypeIndex || index instanceof JanusGraphIndex)) {
+            throw new UnsupportedOperationException("Unsupported index found: "+index);
+        }
+        if (index instanceof JanusGraphIndex) {
             JanusGraphIndex graphIndex = (JanusGraphIndex)index;
             if (graphIndex.isMixedIndex())
                 throw new UnsupportedOperationException("Cannot remove mixed indexes through JanusGraph. This can " +
                         "only be accomplished in the indexing system directly.");
             CompositeIndexType indexType = (CompositeIndexType) managementSystem.getSchemaVertex(index).asIndexType();
             graphIndexId = indexType.getID();
-        } else throw new UnsupportedOperationException("Unsupported index found: "+index);
+        }
 
         //Must be a relation type index or a composite graph index
         JanusGraphSchemaVertex schemaVertex = managementSystem.getSchemaVertex(index);
@@ -176,11 +177,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
                 }
             });
         } else {
-            return buffer -> {
-                long vertexId = idManager.getKeyID(buffer);
-                if (IDManager.VertexIDType.Invisible.is(vertexId)) return false;
-                else return true;
-            };
+            return buffer -> !IDManager.VertexIDType.Invisible.is(idManager.getKeyID(buffer));
         }
     }
 

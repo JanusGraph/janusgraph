@@ -45,11 +45,7 @@ public class HadoopVertexScanMapper extends HadoopScanMapper {
 
         try {
             return (VertexScanJob)Class.forName(jobClass).newInstance();
-        } catch (InstantiationException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        } catch (ClassNotFoundException e) {
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }

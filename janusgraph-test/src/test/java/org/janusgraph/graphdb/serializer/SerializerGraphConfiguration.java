@@ -81,7 +81,7 @@ public class SerializerGraphConfiguration {
                 v.property("any", o); //Should not be allowed
                 tx.commit();
                 fail();
-            } catch (IllegalArgumentException e) {
+            } catch (IllegalArgumentException ignored) {
             } finally {
                 if (tx.isOpen()) tx.rollback();
             }

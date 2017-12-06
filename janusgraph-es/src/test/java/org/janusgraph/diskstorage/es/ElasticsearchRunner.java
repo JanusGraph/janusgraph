@@ -71,7 +71,7 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
                     }
                 }
             }
-        } catch (IOException e) { }
+        } catch (IOException ignored) { }
         if (version == null) {
             throw new RuntimeException("Unable to find Elasticsearch version");
         }
@@ -118,9 +118,11 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
             throw new RuntimeException(e);
         }
 
-        stat.getFile().delete();
-
-        log.info("Deleted {}", stat.getFile());
+        if (stat.getFile().delete()){
+            log.info("Deleted {}", stat.getFile());
+        } else {
+            log.error("Unable to delete {}", stat.getFile());
+        }
     }
 
     @Override

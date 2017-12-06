@@ -222,11 +222,11 @@ public abstract class LogTest {
         try {
             l1.registerReader(ReadMarker.fromIdentifierOrNow("other"));
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
         try {
             l1.registerReader(ReadMarker.fromTime(Instant.now().minusMillis(100)));
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
         l1.registerReader(ReadMarker.fromNow(), new StoringReader(2));
     }
 

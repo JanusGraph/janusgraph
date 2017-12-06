@@ -113,7 +113,7 @@ public class IDPoolTest {
         try {
             pool.nextID();
             fail();
-        } catch (JanusGraphException e) {
+        } catch (JanusGraphException ignored) {
 
         }
 
@@ -186,7 +186,7 @@ public class IDPoolTest {
         try {
             pool.nextID();
             fail();
-        } catch (JanusGraphException e) {
+        } catch (JanusGraphException ignored) {
 
         }
 

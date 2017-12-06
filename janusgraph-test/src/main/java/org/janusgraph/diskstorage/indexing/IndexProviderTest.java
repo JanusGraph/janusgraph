@@ -247,7 +247,7 @@ public abstract class IndexProviderTest {
                 try {
                     assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, tp, "tzubull"))).size());
                     if (indexFeatures.supportsStringMapping(Mapping.TEXT)) fail();
-                } catch (IllegalArgumentException e) {}
+                } catch (IllegalArgumentException ignored) {}
             }
             //String
             assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, "Tomorrow is the world"))).size());
@@ -260,7 +260,7 @@ public abstract class IndexProviderTest {
                 try {
                     assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, tp, "tzubull"))).size());
                     if (indexFeatures.supportsStringMapping(Mapping.STRING)) fail();
-                } catch (IllegalArgumentException e) {}
+                } catch (IllegalArgumentException ignored) {}
             }
             if (index.supports(new StandardKeyInformation(String.class, Cardinality.SINGLE), Text.REGEX)) {
                 assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Text.REGEX, "Tomo[r]+ow is.*world"))).size());

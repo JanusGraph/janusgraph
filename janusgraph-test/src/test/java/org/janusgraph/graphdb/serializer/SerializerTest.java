@@ -186,7 +186,7 @@ public class SerializerTest extends SerializerTestCommon {
             try {
                 out.writeObjectNotNull(o);
                 fail();
-            } catch (Exception e) {
+            } catch (Exception ignored) {
 
             }
         }

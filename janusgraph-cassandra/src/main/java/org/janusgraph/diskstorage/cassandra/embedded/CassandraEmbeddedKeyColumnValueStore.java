@@ -222,16 +222,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
         @Override
         public boolean apply(Cell input) {
-            if (!input.isLive(tsMillis))
-                return false;
-
-            // Don't do this.  getTimeToLive() is a duration divorced from any particular clock.
-            // For instance, if TTL=10 seconds, getTimeToLive() will have value 10 (not 10 + epoch seconds), and
-            // this will always return false.
-            //if (input instanceof ExpiringCell)
-            //    return tsSeconds < ((ExpiringCell)input).getTimeToLive();
-
-            return true;
+            return input.isLive(tsMillis);
         }
     }
 

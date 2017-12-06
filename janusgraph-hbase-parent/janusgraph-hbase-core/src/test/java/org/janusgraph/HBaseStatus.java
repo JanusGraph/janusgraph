@@ -72,9 +72,7 @@ public class HBaseStatus {
             HBaseStatus s = parsePidFile(pid, pidReader);
             log.info("Read HBase status from {}", path);
             return s;
-        } catch (HBasePidfileParseException e) {
-            log.warn("Assuming HBase is not running", e);
-        } catch (IOException e) {
+        } catch (HBasePidfileParseException | IOException e) {
             log.warn("Assuming HBase is not running", e);
         } finally {
             IOUtils.closeQuietly(pidReader);
@@ -106,8 +104,7 @@ public class HBaseStatus {
             throw new HBasePidfileParseException("Empty HBase status file " + f);
         }
 
-        HBaseStatus stat = new HBaseStatus(f, l.trim());
-        return stat;
+        return new HBaseStatus(f, l.trim());
     }
 
     private static class HBasePidfileParseException extends Exception {

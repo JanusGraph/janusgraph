@@ -109,7 +109,7 @@ public class BerkeleyGraphTest extends JanusGraphTest {
         try {
             graph.addVertex();
             fail();
-        } catch (JanusGraphException e) {
+        } catch (JanusGraphException ignored) {
 
         }
 
