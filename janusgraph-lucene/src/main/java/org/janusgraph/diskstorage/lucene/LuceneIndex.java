@@ -672,7 +672,7 @@ public class LuceneIndex implements IndexProvider {
             throw new TemporaryBackendException("Could not execute Lucene query", e);
         }
     }
-    
+
     @Override
     public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws BackendException {
         return new Transaction(config);
@@ -725,8 +725,8 @@ public class LuceneIndex implements IndexProvider {
 
     @Override
     public String mapKey2Field(String key, KeyInformation information) {
-        Preconditions.checkArgument(!StringUtils.containsAny(key,new char[]{' '}),"Invalid key name provided: %s",key);
-        return key;
+        IndexProvider.checkKeyValidity(key);
+        return key.replace(' ', REPLACEMENT_CHAR);
     }
 
     @Override

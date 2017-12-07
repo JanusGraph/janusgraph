@@ -29,6 +29,8 @@ import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexProviderTest;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
+import org.janusgraph.diskstorage.indexing.KeyInformation;
+import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.junit.AfterClass;
@@ -165,4 +167,17 @@ public class SolrIndexTest extends IndexProviderTest {
      */
     @Override @Test @Ignore
     public void clearStorageTest() throws Exception { }
+
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testMapKey2Field_IllegalCharacter() {
+        KeyInformation keyInfo = new StandardKeyInformation(Boolean.class, Cardinality.SINGLE);
+        index.mapKey2Field("here is an illegal character: •", keyInfo);
+    }
+
+    @Test
+    public void testMapKey2Field_MappingSpaces() {
+        KeyInformation keyInfo = new StandardKeyInformation(Boolean.class, Cardinality.SINGLE);
+        assertEquals("field•name•with•spaces_b", index.mapKey2Field("field name with spaces", keyInfo));
+    }
 }

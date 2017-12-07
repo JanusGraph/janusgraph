@@ -59,6 +59,10 @@ Names of property keys that contain non-alphanumeric characters must be placed i
 [source, java]
 graph.indexQuery("vertexByText", "v.\"first_name\":john").vertices()
 
+Some property key names may be transformed by the JanusGraph indexing backend implementation. For instance, an indexing backend that does not permit spaces in field names may transform "My Field Name" to "My•Field•Name", or an indexing backend like Solr may append type information to the name, transforming "myBooleanField" to "myBooleanField_b". These transformations happen in the index backend's implementation of IndexProvider, in the "mapKey2Field" method. Indexing backends may reserve special characters (such as '•') and prohibit indexing of fields that contain them. For this reason it is recommended to avoid spaces and special characters in property names.
+
+In general, making direct index queries depends on implementation details of JanusGraph indexing backends that are normally hidden from users, so it's best to verify a query empirically against the indexing backend in use.
+
 ==== Element Identifier Collision
 
 The strings "v.", "e.", and "p." are used to identify a vertex, edge or property element respectively in a query. If the field name or the query value contains the same sequence of characters, this can cause a collision in the query string and parsing errors as in the following example:

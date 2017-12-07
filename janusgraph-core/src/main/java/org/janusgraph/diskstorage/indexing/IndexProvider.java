@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.indexing;
 
+import org.apache.commons.lang.StringUtils;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransaction;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
@@ -23,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import com.google.common.base.Preconditions;
+
 /**
  * External index for querying.
  * An index can contain an arbitrary number of index stores which are updated and queried separately.
@@ -31,6 +34,16 @@ import java.util.stream.Stream;
  */
 
 public interface IndexProvider extends IndexInformation {
+    /*
+     * An obscure unicode character (•) provided as a convenience for implementations of {@link #mapKey2Field}, for
+     * instance to replace spaces in property keys. See #777.
+     */
+    char REPLACEMENT_CHAR = '\u2022';
+
+    static void checkKeyValidity(String key) {
+        Preconditions.checkArgument(!StringUtils.containsAny(key, new char[]{ IndexProvider.REPLACEMENT_CHAR }),
+            "Invalid key name containing reserved character %c provided: %s", IndexProvider.REPLACEMENT_CHAR, key);
+    }
 
     /**
      * This method registers a new key for the specified index store with the given data type. This allows the IndexProvider
