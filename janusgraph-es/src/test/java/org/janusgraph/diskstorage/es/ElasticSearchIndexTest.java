@@ -69,6 +69,8 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
     static CloseableHttpClient httpClient;
     static ObjectMapper objectMapper;
 
+    private static char REPLACEMENT_CHAR = '\u2022';
+
     @BeforeClass
     public static void startElasticsearch() throws Exception {
         esr = new ElasticsearchRunner();
@@ -246,5 +248,16 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
             assertEquals(1, tx.queryStream(new IndexQuery("ingestvertex", PredicateCondition.of(TEXT, Text.CONTAINS, "bob"))).count());
             assertEquals(1, tx.queryStream(new IndexQuery("ingestvertex", PredicateCondition.of(STRING, Cmp.EQUAL, "hello"))).count());
         }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testMapKey2Field_IllegalCharacter() {
+        index.mapKey2Field("here is an illegal character: " + REPLACEMENT_CHAR, null);
+    }
+
+    @Test
+    public void testMapKey2Field_MappingSpaces() {
+        String expected = "field" + REPLACEMENT_CHAR + "name" + REPLACEMENT_CHAR + "with" + REPLACEMENT_CHAR + "spaces";
+        assertEquals(expected, index.mapKey2Field("field name with spaces", null));
     }
 }
