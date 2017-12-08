@@ -115,7 +115,8 @@ public class JanusGraphStepStrategyTest {
                         g_V("name", eq("marko"), "name", eq("bob"), "name", eq("stephen")).out("knows"), Collections.emptyList()},
                 {__.V().hasId(1), g_V(T.id, 1), Collections.emptyList()},
                 {__.V().hasId(within(1, 2)), g_V(T.id, 1, T.id, 2), Collections.emptyList()},
-                {__.V().hasId(1).has("name", "marko"), g_V(T.id, 1, "name", eq("marko")), Collections.emptyList()}
+                {__.V().hasId(1).has("name", "marko"), g_V(T.id, 1, "name", eq("marko")), Collections.emptyList()},
+                {__.V().hasId(1).hasLabel("Person"), g_V(T.id, 1, "~label", eq("Person")), Collections.emptyList()}
         });
     }
 }

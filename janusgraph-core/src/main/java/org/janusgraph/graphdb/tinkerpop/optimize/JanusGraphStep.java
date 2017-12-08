@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.core.JanusGraphQuery;
 import org.janusgraph.core.JanusGraphTransaction;
@@ -119,6 +118,15 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
                 list.add(e);
         }
         return list.iterator();
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (hasContainers != null ? hasContainers.hashCode() : 0);
+        result = 31 * result + limit;
+        result = 31 * result + (orders != null ? orders.hashCode() : 0);
+        return result;
     }
 }
 
