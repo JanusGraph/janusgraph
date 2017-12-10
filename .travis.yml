@@ -110,7 +110,7 @@ script:
 
 after_success:
   # Upload test coverage reports to Codecov
-  - if [ "${COVERITY_SCAN_BRANCH}" == 1 ] || [ -n "${COVERITY_ONLY:-}" ]; then
+  - if [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] || [ -n "${COVERITY_ONLY:-}" ]; then
       echo "Skipping test coverage report upload in Coverity branch/job";
     else
       bash <(curl -s https://codecov.io/bash);
