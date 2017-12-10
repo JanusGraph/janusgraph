@@ -13,9 +13,9 @@
         <top.level.basedir>${basedir}/..</top.level.basedir>
         <elasticsearch1.test.version>1.7.6</elasticsearch1.test.version>
         <elasticsearch2.test.version>2.4.6</elasticsearch2.test.version>
-        <elasticsearch5.test.version>5.6.2</elasticsearch5.test.version>
-        <elasticsearch6.test.version>6.0.0-rc1</elasticsearch6.test.version>
-        <elasticsearch.test.version>${elasticsearch5.test.version}</elasticsearch.test.version>
+        <elasticsearch5.test.version>5.6.5</elasticsearch5.test.version>
+        <elasticsearch6.test.version>6.0.1</elasticsearch6.test.version>
+        <elasticsearch.test.version>${elasticsearch6.test.version}</elasticsearch.test.version>
         <!-- Enabling Groovy dynamic scripting is not required from ES 5.x -->
         <elasticsearch.test.groovy.inline />
         <skip.es.test>${skipTests}</skip.es.test>
@@ -311,9 +311,6 @@
         </profile>
         <profile>
             <id>elasticsearch5</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
             <properties>
                 <elasticsearch.test.version>${elasticsearch5.test.version}</elasticsearch.test.version>
                 <!-- Enabling Groovy dynamic scripting is not required from ES 5.x -->
@@ -322,6 +319,9 @@
         </profile>
         <profile>
             <id>elasticsearch6</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <properties>
                 <elasticsearch.test.version>${elasticsearch6.test.version}</elasticsearch.test.version>
                 <!-- Enabling Groovy dynamic scripting is not required from ES 5.x -->
