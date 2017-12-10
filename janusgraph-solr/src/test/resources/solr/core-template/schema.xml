@@ -561,6 +561,8 @@
     <field name="location" type="geo" indexed="true" stored="true" multiValued="false" />
     <field name="boundary" type="geo" indexed="true" stored="true" multiValued="false" />
     <field name="name" type="string" indexed="true" stored="true"/>
+    <field name="alias" type="text_general" indexed="true" stored="true" multiValued="true"/>
+    <field name="alias_ts" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="phone_list" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="phone_set" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="blah" type="string" indexed="true" stored="true"/>

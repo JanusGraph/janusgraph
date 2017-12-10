@@ -238,6 +238,69 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         for (Vertex u : tx.getVertices()) assertEquals("Marko", u.value("name"));
     }
 
+    @Test
+    public void testListUpdate() {
+        if (!indexFeatures.supportsCardinality(Cardinality.LIST)) {
+            return;
+        }
+        PropertyKey name = makeKey("name", String.class);
+        if (!indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) {
+            
+        }
+        PropertyKey alias = mgmt.makePropertyKey("alias") .dataType(String.class).cardinality(Cardinality.LIST).make();
+        mgmt.buildIndex("namev", Vertex.class).addKey(name).addKey(alias, indexFeatures.supportsStringMapping(Mapping.TEXTSTRING) ?Mapping.TEXTSTRING.asParameter(): Mapping.DEFAULT.asParameter()).buildMixedIndex(INDEX);
+        finishSchema();
+        JanusGraphVertex v = tx.addVertex("name", "Marko Rodriguez");
+        assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
+        clopen();
+        assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
+        v = getOnlyVertex(tx.query().has("name", Text.CONTAINS, "marko"));
+        v.property(VertexProperty.Cardinality.list, "alias", "Marko");
+        assertCount(1, tx.query().has("alias", Text.CONTAINS, "Marko").vertices());
+        clopen();
+        assertCount(1, tx.query().has("alias", Text.CONTAINS, "Marko").vertices());
+        v = getOnlyVertex(tx.query().has("name", Text.CONTAINS, "marko"));
+        v.property(VertexProperty.Cardinality.list, "alias", "mRodriguez");
+        assertCount(1, tx.query().has("alias", Text.CONTAINS, "mRodriguez").vertices());
+        clopen();
+        assertCount(1, tx.query().has("alias", Text.CONTAINS, "Marko").vertices());
+        assertCount(1, tx.query().has("alias", Text.CONTAINS, "mRodriguez").vertices());
+        if (indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) {
+            assertCount(1, tx.query().has("alias", Cmp.EQUAL, "Marko").vertices());
+            assertCount(1, tx.query().has("alias", Cmp.EQUAL, "mRodriguez").vertices());
+        }
+    }
+    
+    @Test
+    public void testSetUpdate() {
+        if (!indexFeatures.supportsCardinality(Cardinality.SET)) {
+            return;
+        }
+        PropertyKey name = makeKey("name", String.class);
+        PropertyKey alias = mgmt.makePropertyKey("alias").dataType(String.class).cardinality(Cardinality.SET).make();
+        mgmt.buildIndex("namev", Vertex.class).addKey(name).addKey(alias, indexFeatures.supportsStringMapping(Mapping.TEXTSTRING) ?Mapping.TEXTSTRING.asParameter(): Mapping.DEFAULT.asParameter()).buildMixedIndex(INDEX);
+        finishSchema();
+        JanusGraphVertex v = tx.addVertex("name", "Marko Rodriguez");
+        assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
+        clopen();
+        assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
+        v = getOnlyVertex(tx.query().has("name", Text.CONTAINS, "marko"));
+        v.property(VertexProperty.Cardinality.set, "alias", "Marko");
+        assertCount(1, tx.query().has("alias", Text.CONTAINS, "Marko").vertices());
+        clopen();
+        assertCount(1, tx.query().has("alias", Text.CONTAINS, "Marko").vertices());
+        v = getOnlyVertex(tx.query().has("name", Text.CONTAINS, "marko"));
+        v.property(VertexProperty.Cardinality.set, "alias", "mRodriguez");
+        assertCount(1, tx.query().has("alias", Text.CONTAINS, "mRodriguez").vertices());
+        clopen();
+        assertCount(1, tx.query().has("alias", Text.CONTAINS, "Marko").vertices());
+        assertCount(1, tx.query().has("alias", Text.CONTAINS, "mRodriguez").vertices());
+        if (indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) {
+            assertCount(1, tx.query().has("alias", Cmp.EQUAL, "Marko").vertices());
+            assertCount(1, tx.query().has("alias", Cmp.EQUAL, "mRodriguez").vertices());
+        }
+    }
+
 
     @Test
     public void testIndexing() throws InterruptedException {
