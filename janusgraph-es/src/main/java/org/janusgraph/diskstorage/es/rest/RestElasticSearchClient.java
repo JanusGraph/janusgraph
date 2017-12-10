@@ -17,17 +17,22 @@ package org.janusgraph.diskstorage.es.rest;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
+import org.apache.tinkerpop.shaded.jackson.core.JsonParseException;
 import org.apache.tinkerpop.shaded.jackson.core.type.TypeReference;
+import org.apache.tinkerpop.shaded.jackson.databind.JsonMappingException;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectReader;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectWriter;
 import org.apache.tinkerpop.shaded.jackson.databind.SerializationFeature;
 import org.apache.tinkerpop.shaded.jackson.databind.module.SimpleModule;
 import org.elasticsearch.client.Response;
+import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.diskstorage.es.ElasticMajorVersion;
@@ -181,13 +186,13 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     @Override
     public void addAlias(String alias, String index) throws IOException {
-        Map actionAlias = ImmutableMap.of("actions", ImmutableList.of(ImmutableMap.of("add", ImmutableMap.of("index", index, "alias", alias))));
+        final Map actionAlias = ImmutableMap.of("actions", ImmutableList.of(ImmutableMap.of("add", ImmutableMap.of("index", index, "alias", alias))));
         performRequest(REQUEST_TYPE_POST, REQUEST_SEPARATOR + "_aliases", mapWriter.writeValueAsBytes(actionAlias));
     }
 
     @Override
     public Map getIndexSettings(String indexName) throws IOException {
-        Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_settings", null);
+        final Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_settings", null);
         try (final InputStream inputStream = response.getEntity().getContent()) {
             final Map<String,RestIndexSettings> settings = mapper.readValue(inputStream, new TypeReference<Map<String, RestIndexSettings>>() {});
             return settings == null ? null : settings.get(indexName).getSettings().getMap();
@@ -200,14 +205,13 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     }
 
     @Override
-    public IndexMapping getMapping(String indexName, String typeName) throws IOException{
-        Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_mapping" + REQUEST_SEPARATOR + typeName, null);
-        try (final InputStream inputStream = response.getEntity().getContent()) {
+    public IndexMapping getMapping(String indexName, String typeName) throws IOException {
+        try (final InputStream inputStream = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_mapping" + REQUEST_SEPARATOR + typeName, null).getEntity().getContent()) {
             final Map<String, IndexMappings> settings = mapper.readValue(inputStream, new TypeReference<Map<String, IndexMappings>>() {});
-            if (settings == null) {
-                return null;
-            }
-            return settings.get(indexName).getMappings().get(typeName);
+            return settings != null ? settings.get(indexName).getMappings().get(typeName) : null;
+        } catch (final JsonParseException | JsonMappingException | ResponseException e) {
+            log.info("Error when we try to get ES mapping", e);
+            return null;
         }
     }
 
