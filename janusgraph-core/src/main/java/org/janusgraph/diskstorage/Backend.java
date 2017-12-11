@@ -673,7 +673,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         }
     };
 
-    private final Function<String, Locker> TEST_LOCKER_CREATOR = lockerName -> openManagedLocker("org.janusgraph.diskstorage.util.TestLockerManager",lockerName);
+    private static final Function<String, Locker> TEST_LOCKER_CREATOR = lockerName -> openManagedLocker("org.janusgraph.diskstorage.util.TestLockerManager",lockerName);
 
     private final Map<String, Function<String, Locker>> REGISTERED_LOCKERS = ImmutableMap.of(
             "consistentkey", CONSISTENT_KEY_LOCKER_CREATOR,
@@ -691,7 +691,7 @@ public class Backend implements LockerProvider, AutoCloseable {
             return (Locker) o;
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("Could not find implementation class: " + classname);
-        } catch (InstantiationException e) {
+        } catch (InstantiationException | ClassCastException e) {
             throw new IllegalArgumentException("Could not instantiate implementation: " + classname, e);
         } catch (NoSuchMethodException e) {
             throw new IllegalArgumentException("Could not find method when configuring locking for: " + classname,e);
@@ -699,8 +699,6 @@ public class Backend implements LockerProvider, AutoCloseable {
             throw new IllegalArgumentException("Could not access method when configuring locking for: " + classname,e);
         } catch (InvocationTargetException e) {
             throw new IllegalArgumentException("Could not invoke method when configuring locking for: " + classname,e);
-        } catch (ClassCastException e) {
-            throw new IllegalArgumentException("Could not instantiate implementation: " + classname, e);
         }
     }
 }

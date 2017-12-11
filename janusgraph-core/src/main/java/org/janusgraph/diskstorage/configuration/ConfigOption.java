@@ -257,19 +257,14 @@ public class ConfigOption<O> extends ConfigElement {
 
     public static <O> Predicate<O> disallowEmpty(Class<O> clazz) {
         return o -> {
-            if (o==null) {
+            if (o == null) {
                 return false;
             }
             if (o instanceof String) {
-                return StringUtils.isNotBlank((String)o);
+                return StringUtils.isNotBlank((String) o);
             }
-            if (o.getClass().isArray() && (Array.getLength(o)==0 || Array.get(o,0)==null)) {
-                return false;
-            }
-            if (o instanceof Collection && (((Collection)o).isEmpty() || ((Collection)o).iterator().next()==null)) {
-                return false;
-            }
-            return true;
+            return (!o.getClass().isArray() || (Array.getLength(o) != 0 && Array.get(o, 0) != null))
+                    && (!(o instanceof Collection) || (!((Collection) o).isEmpty() && ((Collection) o).iterator().next() != null));
         };
     }
 

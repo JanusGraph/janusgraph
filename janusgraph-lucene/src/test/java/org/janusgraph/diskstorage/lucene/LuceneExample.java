@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.lucene;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.locationtech.spatial4j.context.SpatialContext;
@@ -60,7 +61,9 @@ public abstract class LuceneExample {
     @Before
     public void setup() {
         if (path.exists()) IOUtils.deleteDirectory(path,false);
-        if (!path.exists() && path.isDirectory()) path.mkdirs();
+        if (!path.exists() && path.isDirectory()) {
+            Preconditions.checkState(path.mkdirs());
+        }
     }
 
     private SpatialStrategy getSpatialStrategy(String key) {
@@ -105,7 +108,6 @@ public abstract class LuceneExample {
         //Search
         IndexReader reader = DirectoryReader.open(FSDirectory.open(path.toPath()));
         IndexSearcher searcher = new IndexSearcher(reader);
-        analyzer = new StandardAnalyzer();
 
         //Auesee
         BooleanQuery.Builder filter = new BooleanQuery.Builder();
@@ -148,7 +150,7 @@ public abstract class LuceneExample {
             Object value = kv.getValue();
 
             if (value instanceof Number) {
-                Field field = null;
+                final Field field;
                 if (value instanceof Integer || value instanceof Long) {
                     field = new LongPoint(key, ((Number)value).longValue());
                 } else { //double or float

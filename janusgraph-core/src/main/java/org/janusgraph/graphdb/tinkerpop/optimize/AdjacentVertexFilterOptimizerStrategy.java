@@ -78,9 +78,9 @@ public class AdjacentVertexFilterOptimizerStrategy extends AbstractTraversalStra
                     //Now, check that this step is preceded by VertexStep that returns edges
                     Step<?, ?> currentStep = originalStep.getPreviousStep();
                     while (true) {
-                        if (currentStep instanceof HasStep || currentStep instanceof IdentityStep) {
-                            //We can jump over those steps as we move backward
-                        } else break;
+                        if (!(currentStep instanceof HasStep) && !(currentStep instanceof IdentityStep)) {
+                            break;
+                        } //We can jump over other steps as we move backward
                     }
                     if (currentStep instanceof VertexStep) {
                         VertexStep vertexStep = (VertexStep) currentStep;

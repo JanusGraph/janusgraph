@@ -118,17 +118,15 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
     @Override
     public RecordIterator<KeyValueEntry> getSlice(KVQuery query, StoreTransaction txh) throws BackendException {
         log.trace("beginning db={}, op=getSlice, tx={}", name, txh);
-        Transaction tx = getTransaction(txh);
-        Cursor cursor = null;
+        final Transaction tx = getTransaction(txh);
         final StaticBuffer keyStart = query.getStart();
         final StaticBuffer keyEnd = query.getEnd();
         final KeySelector selector = query.getKeySelector();
         final List<KeyValueEntry> result = new ArrayList<>();
-        try {
-            DatabaseEntry foundKey = keyStart.as(ENTRY_FACTORY);
-            DatabaseEntry foundData = new DatabaseEntry();
+        final DatabaseEntry foundKey = keyStart.as(ENTRY_FACTORY);
+        final DatabaseEntry foundData = new DatabaseEntry();
 
-            cursor = db.openCursor(tx, null);
+        try (final Cursor cursor = db.openCursor(tx, null)) {
             OperationStatus status = cursor.getSearchKeyRange(foundKey, foundData, getLockMode(txh));
             //Iterate until given condition is satisfied or end of records
             while (status == OperationStatus.SUCCESS) {
@@ -146,40 +144,34 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
                 status = cursor.getNext(foundKey, foundData, getLockMode(txh));
             }
-            log.trace("db={}, op=getSlice, tx={}, resultcount={}", name, txh, result.size());
-//            log.trace("db={}, op=getSlice, tx={}, resultcount={}", name, txh, result.size(), new Throwable("getSlice trace"));
-
-            return new RecordIterator<KeyValueEntry>() {
-                private final Iterator<KeyValueEntry> entries = result.iterator();
-
-                @Override
-                public boolean hasNext() {
-                    return entries.hasNext();
-                }
-
-                @Override
-                public KeyValueEntry next() {
-                    return entries.next();
-                }
-
-                @Override
-                public void close() {
-                }
-
-                @Override
-                public void remove() {
-                    throw new UnsupportedOperationException();
-                }
-            };
         } catch (Exception e) {
             throw new PermanentBackendException(e);
-        } finally {
-            try {
-                if (cursor != null) cursor.close();
-            } catch (Exception e) {
-                throw new PermanentBackendException(e);
-            }
         }
+
+        log.trace("db={}, op=getSlice, tx={}, resultcount={}", name, txh, result.size());
+
+        return new RecordIterator<KeyValueEntry>() {
+            private final Iterator<KeyValueEntry> entries = result.iterator();
+
+            @Override
+            public boolean hasNext() {
+                return entries.hasNext();
+            }
+
+            @Override
+            public KeyValueEntry next() {
+                return entries.next();
+            }
+
+            @Override
+            public void close() {
+            }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 
     @Override

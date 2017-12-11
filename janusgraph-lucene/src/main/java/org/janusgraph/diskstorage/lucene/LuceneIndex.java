@@ -780,7 +780,7 @@ public class LuceneIndex implements IndexProvider {
         private synchronized IndexSearcher getSearcher(String store) throws BackendException {
             IndexSearcher searcher = searchers.get(store);
             if (searcher == null) {
-                IndexReader reader = null;
+                final IndexReader reader;
                 try {
                     reader = DirectoryReader.open(getStoreDirectory(store));
                     searcher = new IndexSearcher(reader);

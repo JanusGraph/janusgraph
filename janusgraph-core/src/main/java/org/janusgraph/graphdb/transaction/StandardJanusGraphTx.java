@@ -384,8 +384,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         //Make canonical partitioned vertex id
         if (idInspector.isPartitionedVertex(vertexId)) vertexId=idManager.getCanonicalVertexId(vertexId);
 
-        InternalVertex v = null;
-        v = vertexCache.get(vertexId, externalVertexRetriever);
+        final InternalVertex v = vertexCache.get(vertexId, externalVertexRetriever);
         return (null == v || v.isRemoved()) ? null : v;
     }
 
@@ -468,7 +467,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                 lifecycle = getExistingVertex(canonicalVertexId).getLifeCycle();
             }
 
-            InternalVertex vertex = null;
+            final InternalVertex vertex;
             if (idInspector.isRelationTypeId(vertexId)) {
                 if (idInspector.isPropertyKeyId(vertexId)) {
                     if (IDManager.isSystemRelationTypeId(vertexId)) {
@@ -960,14 +959,12 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     @Override
     public PropertyKeyMaker makePropertyKey(String name) {
-        StandardPropertyKeyMaker maker = new StandardPropertyKeyMaker(this, name, indexSerializer, attributeHandler);
-        return maker;
+        return new StandardPropertyKeyMaker(this, name, indexSerializer, attributeHandler);
     }
 
     @Override
     public EdgeLabelMaker makeEdgeLabel(String name) {
-        StandardEdgeLabelMaker maker = new StandardEdgeLabelMaker(this, name, indexSerializer, attributeHandler);
-        return maker;
+        return new StandardEdgeLabelMaker(this, name, indexSerializer, attributeHandler);
     }
 
     //-------- Vertex Labels -----------------
@@ -1087,8 +1084,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             if (vertex.isNew()) return false;
             //In addition to deleted, we need to also check for added relations since those can potentially
             //replace existing ones due to a multiplicity constraint
-            if (vertex.hasRemovedRelations() || vertex.hasAddedRelations()) return true;
-            return false;
+            return vertex.hasRemovedRelations() || vertex.hasAddedRelations();
         }
 
         @Override
@@ -1099,7 +1095,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             InternalVertex vertex = query.getVertex();
             if (type.multiplicity().isConstrained() && vertex.hasAddedRelations()) {
                 final RelationComparator comparator = new RelationComparator(vertex);
-                if (!Iterables.isEmpty(vertex.getAddedRelations(internalRelation -> comparator.compare((InternalRelation)result,internalRelation)==0))) return true;
+                return !Iterables.isEmpty(vertex.getAddedRelations(internalRelation -> comparator.compare((InternalRelation) result, internalRelation) == 0));
             }
             return false;
         }

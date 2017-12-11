@@ -232,7 +232,9 @@ public class HBaseStorageSetup {
 
         log.info("Shutdown HBase");
 
-        stat.getFile().delete();
+        if (!stat.getFile().delete()) {
+            log.warn("Unable to delete stat file {}", stat.getFile().getAbsolutePath());
+        }
 
         log.info("Deleted {}", stat.getFile());
 

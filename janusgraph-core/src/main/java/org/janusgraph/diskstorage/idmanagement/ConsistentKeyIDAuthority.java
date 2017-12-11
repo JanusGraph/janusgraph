@@ -76,6 +76,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
      */
     private static final StaticBuffer LOWER_SLICE = BufferUtil.zeroBuffer(1);
     private static final StaticBuffer UPPER_SLICE = BufferUtil.oneBuffer(17);
+    private static final int ROLLBACK_ATTEMPTS = 5;
 
     private final StoreManager manager;
     private final KeyColumnValueStore idStore;
@@ -85,12 +86,9 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
      */
     private final TimestampProvider times;
 
-    private final int rollbackAttempts = 5;
     private final Duration rollbackWaitTime = Duration.ofMillis(200L);
 
     private final int partitionBitWidth;
-
-    private final ConflictAvoidanceMode conflictAvoidanceMode;
 
     private final int uniqueIdBitWidth;
     private final int uniqueIDUpperBound;
@@ -122,7 +120,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
 
         storeTxConfigBuilder = new StandardBaseTransactionConfig.Builder().groupName(metricsPrefix).timestampProvider(times);
 
-        conflictAvoidanceMode = config.get(IDAUTHORITY_CONFLICT_AVOIDANCE);
+        final ConflictAvoidanceMode conflictAvoidanceMode = config.get(IDAUTHORITY_CONFLICT_AVOIDANCE);
 
         if (conflictAvoidanceMode.equals(ConflictAvoidanceMode.GLOBAL_AUTO)) {
             Preconditions.checkArgument(!config.has(IDAUTHORITY_CAV_TAG),"Conflicting configuration: a unique id and randomization have been set");
@@ -310,7 +308,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                 } finally {
                     if (!success && null != target) {
                         //Delete claim to not pollute id space
-                        for (int attempt = 0; attempt < rollbackAttempts; attempt++) {
+                        for (int attempt = 0; attempt < ROLLBACK_ATTEMPTS; attempt++) {
                             try {
                                 final StaticBuffer finalTarget = target; // copy for the inner class
                                 BackendOperation.execute(txh -> {
@@ -414,8 +412,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         public long getId(long index) {
             if (index<0 || index>= numIds) throw new ArrayIndexOutOfBoundsException((int)index);
             assert uniqueID<(1<<uniqueIDBitWidth);
-            long id = ((startIDCount +index)<<uniqueIDBitWidth) + uniqueID;
-            return id;
+            return ((startIDCount +index)<<uniqueIDBitWidth) + uniqueID;
         }
 
         @Override

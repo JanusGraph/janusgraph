@@ -228,7 +228,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
             for (int i=1;i<=retryAttempts;i++) {
                 StandardJanusGraphTx tx = (StandardJanusGraphTx)graph.newTransaction();
                 StandardChangeState changes = new StandardChangeState();
-                StandardTransactionId transactionId = null;
+                final StandardTransactionId transactionId;
                 try {
                     ReadBuffer content = message.getContent().asReadBuffer();
                     String senderId =  message.getSenderId();

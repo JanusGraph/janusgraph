@@ -45,7 +45,7 @@ public abstract class CassandraGraphTest extends JanusGraphTest {
     }
 
     @Test
-    public void testHasTTL() throws Exception {
+    public void testHasTTL() {
         assertTrue(features.hasCellTTL());
     }
 

@@ -46,7 +46,7 @@ public class ThriftConnectionTest {
     private CTConnectionFactory.Config factoryConfig;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         try {
             Config.setClientMode(true);
             Schema.instance.load(KSMetaData.newKeyspace("janusgraph", "SimpleStrategy", ImmutableMap.of("replication_factor", "1"), true));

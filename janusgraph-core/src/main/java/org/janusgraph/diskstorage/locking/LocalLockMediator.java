@@ -257,11 +257,10 @@ public class LocalLockMediator<T> {
             @SuppressWarnings("rawtypes")
             AuditRecord other = (AuditRecord) obj;
             if (holder == null) {
-                if (other.holder != null)
-                    return false;
-            } else if (!holder.equals(other.holder))
-                return false;
-            return true;
+                return other.holder == null;
+            } else {
+                return holder.equals(other.holder);
+            }
         }
 
         @Override

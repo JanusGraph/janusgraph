@@ -41,7 +41,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private boolean hasEnabledBatchLoading = false;
 
-    private boolean assignIDsImmediately = false;
+    private final boolean assignIDsImmediately;
 
     private boolean preloadedData = false;
 
@@ -55,7 +55,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private boolean acquireLocks = true;
 
-    private boolean propertyPrefetching = true;
+    private final boolean propertyPrefetching;
 
     private boolean singleThreaded = false;
 

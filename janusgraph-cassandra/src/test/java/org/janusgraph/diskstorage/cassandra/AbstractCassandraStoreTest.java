@@ -140,7 +140,7 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
     }
 
     @Test
-    public void testTTLSupported() throws Exception {
+    public void testTTLSupported() {
         StoreFeatures features = manager.getFeatures();
         assertTrue(features.hasCellTTL());
     }

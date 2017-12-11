@@ -74,7 +74,7 @@ public class ResultMergeSortIterator<R> implements Iterator<R> {
             nextSecond = second.next();
             assert nextSecond != null;
         }
-        R result = null;
+        final R result;
         if (nextFirst == null && nextSecond == null) {
             return null;
         } else if (nextFirst == null) {

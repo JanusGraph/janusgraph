@@ -39,6 +39,7 @@ import org.junit.Test;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -205,31 +206,38 @@ public abstract class IndexProviderTest {
 
         for (String store : stores) {
             //Token
-            List<String> result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world")));
+            List<String> result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world")))
+                .collect(Collectors.toList());
             assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
             assertEquals(ImmutableSet.copyOf(result), ImmutableSet.copyOf(tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "wOrLD")))));
-            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "bob"))).size());
-            assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "worl"))).size());
-            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "Tomorrow world"))).size());
-            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "WorLD HELLO"))).size());
-            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_FUZZY, "boby"))).size());
+            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "bob"))).count());
+            assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "worl"))).count());
+            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "Tomorrow world"))).count());
+            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "WorLD HELLO"))).count());
+            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_FUZZY, "boby"))).count());
 
 
             //Ordering
-            result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderTimeDesc));
+            result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderTimeDesc))
+                    .collect(Collectors.toList());
             assertEquals(ImmutableList.of("doc2", "doc1"), result);
-            result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderWeightDesc));
+            result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderWeightDesc))
+                    .collect(Collectors.toList());
             assertEquals(ImmutableList.of("doc2", "doc1"), result);
-            result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderTimeAsc));
+            result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderTimeAsc))
+                    .collect(Collectors.toList());
             assertEquals(ImmutableList.of("doc1", "doc2"), result);
-            result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderWeightAsc));
+            result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderWeightAsc))
+                    .collect(Collectors.toList());
             assertEquals(ImmutableList.of("doc1", "doc2"), result);
-            result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), jointOrder));
+            result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), jointOrder))
+                    .collect(Collectors.toList());
             assertEquals(ImmutableList.of("doc2", "doc1"), result);
 
-            result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_PREFIX, "w")));
+            result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_PREFIX, "w")))
+                    .collect(Collectors.toList());
             assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
-            result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_PREFIX, "wOr")));
+            result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_PREFIX, "wOr"))).collect(Collectors.toList());
             assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
             assertEquals(0,tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_PREFIX, "bobi"))).size());
 

@@ -470,7 +470,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         }
     }
 
-    private KsDef ensureKeyspaceExists(String keyspaceName) throws TException, BackendException {
+    private KsDef ensureKeyspaceExists(String keyspaceName) throws BackendException {
         CTConnection connection = null;
 
         try {

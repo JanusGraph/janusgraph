@@ -495,7 +495,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
     private void expand(Vertex v, final int distance, final int diameter, final int branch) {
         v.property(VertexProperty.Cardinality.single, "distance", distance);
         if (distance<diameter) {
-            JanusGraphVertex previous = null;
+//          JanusGraphVertex previous = null;
             for (int i=0;i<branch;i++) {
                 JanusGraphVertex u = tx.addVertex();
                 u.addEdge("likes",v);
@@ -505,7 +505,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
 //                    u.addEdge("knows",previous);
 //                    log.error("knows {}->{}", u.id(), v.id());
 //                }
-                previous=u;
+//              previous=u;
                 expand(u,distance+1,diameter,branch);
             }
         }

@@ -34,7 +34,6 @@ public abstract class KCVSCache extends KCVSProxy {
     public static final List<Entry> NO_DELETIONS = ImmutableList.of();
 
     private final String metricsName;
-    private final boolean validateKeysOnly = true;
 
     protected KCVSCache(KeyColumnValueStore store, String metricsName) {
         super(store);
@@ -42,7 +41,7 @@ public abstract class KCVSCache extends KCVSProxy {
     }
 
     protected boolean hasValidateKeysOnly() {
-        return validateKeysOnly;
+        return true;
     }
 
     protected void incActionBy(int by, CacheMetricsAction action, StoreTransaction txh) {

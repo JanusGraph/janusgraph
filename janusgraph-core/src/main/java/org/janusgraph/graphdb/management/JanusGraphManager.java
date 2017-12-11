@@ -45,7 +45,6 @@ public class JanusGraphManager implements GraphManager {
 
     private final Map<String, Graph> graphs = new ConcurrentHashMap<>();
     private final Map<String, TraversalSource> traversalSources = new ConcurrentHashMap<>();
-    private Settings settings = null;
     private final Object instantiateGraphLock = new Object();
 
     private static JanusGraphManager instance = null;
@@ -60,7 +59,6 @@ public class JanusGraphManager implements GraphManager {
      */
     public JanusGraphManager(Settings settings) {
         initialize();
-        this.settings = settings;
         // Open graphs defined at server start in settings.graphs
         settings.graphs.forEach((key, value) -> {
             final StandardJanusGraph graph = (StandardJanusGraph) JanusGraphFactory.open(value, key);
