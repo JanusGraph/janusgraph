@@ -73,7 +73,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
     private final IRequestScheduler requestScheduler;
 
-    public CassandraEmbeddedStoreManager(Configuration config) throws BackendException {
+    public CassandraEmbeddedStoreManager(Configuration config) {
         super(config);
 
         String cassandraConfig = CASSANDRA_YAML_DEFAULT;
@@ -120,7 +120,6 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     @Override
     public void close() {
         openStores.clear();
-        CassandraDaemonWrapper.stop();
     }
 
     @Override

@@ -60,8 +60,6 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
     private boolean hasCompleted = false;
     private boolean interrupted = false;
 
-    private List<SliceQuery> queries;
-    private int numQueries;
     private List<BlockingQueue<SliceResult>> dataQueues;
     private DataPuller[] pullThreads;
 
@@ -97,13 +95,15 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
 
     @Override
     public void run() {
+        final List<SliceQuery> queries;
+        final int numQueries;
         try {
             job.workerIterationStart(jobConfiguration, graphConfiguration, metrics);
 
             queries = job.getQueries();
             numQueries = queries.size();
-            Preconditions.checkArgument(numQueries>0,"Must at least specify one query for job: %s",job);
-            if (numQueries>1) {
+            Preconditions.checkArgument(numQueries > 0,"Must at least specify one query for job: %s",job);
+            if (numQueries > 1) {
                 //It is assumed that the first query is the grounding query if multiple queries exist
                 SliceQuery ground = queries.get(0);
                 StaticBuffer start = ground.getSliceStart();
@@ -116,7 +116,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
             dataQueues = new ArrayList<>(numQueries);
             pullThreads = new DataPuller[numQueries];
 
-            for (int pos=0;pos<numQueries;pos++) {
+            for (int pos = 0; pos< numQueries; pos++) {
                 pullThreads[pos]=addDataPuller(queries.get(pos),storeTx);
             }
         }  catch (Throwable e) {

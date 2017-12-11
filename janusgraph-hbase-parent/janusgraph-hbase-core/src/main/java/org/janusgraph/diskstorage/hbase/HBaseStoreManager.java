@@ -243,10 +243,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private final int regionCount;
     private final int regionsPerServer;
     private final ConnectionMask cnx;
-    private final org.apache.hadoop.conf.Configuration hconf;
     private final boolean shortCfNames;
     private final boolean skipSchemaCheck;
-    private final String compatClass;
     private final HBaseCompat compat;
     // Cached return value of getDeployment() as requesting it can be expensive.
     private Deployment deployment = null;
@@ -272,7 +270,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         this.regionCount = config.has(REGION_COUNT) ? config.get(REGION_COUNT) : -1;
         this.regionsPerServer = config.has(REGIONS_PER_SERVER) ? config.get(REGIONS_PER_SERVER) : -1;
         this.skipSchemaCheck = config.get(SKIP_SCHEMA_CHECK);
-        this.compatClass = config.has(COMPAT_CLASS) ? config.get(COMPAT_CLASS) : null;
+        final String compatClass = config.has(COMPAT_CLASS) ? config.get(COMPAT_CLASS) : null;
         this.compat = HBaseCompatLoader.getCompat(compatClass);
 
         /*
@@ -289,7 +287,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
          * which in turn applies the contents of hbase-default.xml and then
          * applies the contents of hbase-site.xml.
          */
-        this.hconf = HBaseConfiguration.create();
+        final org.apache.hadoop.conf.Configuration hconf = HBaseConfiguration.create();
 
         // Copy a subset of our commons config into a Hadoop config
         int keysLoaded=0;

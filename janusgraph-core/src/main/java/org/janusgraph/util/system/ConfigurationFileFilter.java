@@ -93,7 +93,8 @@ public class ConfigurationFileFilter {
                     File outputDir = new File(outputContextDir.getPath() + contextPath);
 
                     if (!outputDir.exists()) {
-                        outputDir.mkdirs();
+                        Preconditions.checkState(outputDir.mkdirs(), "Unable to create output directory {}",
+                            outputDir.getAbsolutePath());
                     }
 
                     parseErrors += processFile(f, new File(outputContextDir.getPath() + contextPath + f.getName()));

@@ -98,7 +98,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
             Object o2 = ((JanusGraphVertexProperty) r2).value();
             Preconditions.checkArgument(o1 != null && o2 != null);
             if (!o1.equals(o2)) {
-                int objectCompare = 0;
+                final int objectCompare;
                 if (Comparable.class.isAssignableFrom(((PropertyKey) t1).dataType())) {
                     objectCompare = ((Comparable) o1).compareTo(o2);
                 } else {

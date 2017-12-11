@@ -15,6 +15,7 @@
 package org.janusgraph.diskstorage.solr;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 
@@ -59,7 +60,7 @@ public class SolrRunner {
         File temp = new File(TMP_DIRECTORY + File.separator + "solr-" + System.nanoTime());
         assert !temp.exists();
 
-        temp.mkdirs();
+        Preconditions.checkState(temp.mkdirs(), "Unable to create solr temporary directory {}", temp.getAbsolutePath());
         temp.deleteOnExit();
 
         final String solrXml = new String(Files.readAllBytes(new File(solrHome, "solr.xml").toPath()));

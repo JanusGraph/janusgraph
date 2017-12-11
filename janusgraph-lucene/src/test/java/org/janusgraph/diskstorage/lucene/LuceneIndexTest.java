@@ -29,8 +29,6 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
@@ -44,9 +42,6 @@ import static org.junit.Assert.assertTrue;
  */
 
 public class LuceneIndexTest extends IndexProviderTest {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(LuceneIndexTest.class);
 
     @Rule
     public TestName methodName = new TestName();

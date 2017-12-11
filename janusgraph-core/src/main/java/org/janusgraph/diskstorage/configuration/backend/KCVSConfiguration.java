@@ -57,7 +57,6 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
     private final BackendOperation.TransactionalProvider txProvider;
     private final TimestampProvider times;
     private final KeyColumnValueStore store;
-    private final String identifier;
     private final StaticBuffer rowKey;
     private final StandardSerializer serializer;
 
@@ -70,8 +69,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         this.txProvider = txProvider;
         this.times = config.get(TIMESTAMP_PROVIDER);
         this.store = store;
-        this.identifier = identifier;
-        this.rowKey = string2StaticBuffer(this.identifier);
+        this.rowKey = string2StaticBuffer(identifier);
         this.serializer = new StandardSerializer();
     }
 

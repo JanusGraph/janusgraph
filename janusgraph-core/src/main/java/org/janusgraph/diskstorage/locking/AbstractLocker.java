@@ -351,10 +351,8 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
                 checkSingleLock(entry.getKey(), entry.getValue(), tx);
             }
             ok = true;
-        } catch (TemporaryLockingException | PermanentLockingException tle) {
+        } catch (TemporaryLockingException | PermanentLockingException | AssertionError tle) {
             throw tle;
-        } catch (AssertionError ae) {
-            throw ae; // Concession to ease testing with mocks & behavior verification
         } catch (InterruptedException | TemporaryBackendException e) {
             throw new TemporaryLockingException(e);
         } catch (Throwable t) {

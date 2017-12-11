@@ -200,7 +200,6 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     private final Duration readPollingInterval;
     private final Duration readLagTime;
     private final Duration maxReadTime;
-    private final boolean allowReadMarkerRecovery = true;
 
     /**
      * Thread pool to read messages in the specified interval from the various keys in a time slice AND to process
@@ -662,7 +661,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         @Override
         public void run() {
             try {
-                if (allowReadMarkerRecovery) setReadMarker();
+                setReadMarker();
 
                 final int timeslice = getTimeSlice(messageTimeStart);
 

@@ -50,8 +50,7 @@ public class KeySelector {
     }
 
     public boolean reachedLimit() {
-        if (count >= limit) return true;
-        else return false;
+        return count >= limit;
     }
 
 }

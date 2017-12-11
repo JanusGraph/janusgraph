@@ -336,13 +336,13 @@ public class ElasticSearchConfigTest {
         for (final Entry<String, KeyInformation> entry : IndexProviderTest.getMapping(idx.getFeatures(), "english", "keyword").entrySet()) {
            idx.register(storeName, entry.getKey(), entry.getValue(), itx);
         }
-        assertEquals(0, itx.query(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "ali"))).size());
+        assertEquals(0, itx.queryStream(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "ali"))).count());
         itx.add(storeName, "doc", IndexProviderTest.NAME, "alice", false);
         itx.commit();
         Thread.sleep(1500L); // Slightly longer than default 1s index.refresh_interval
         itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
-        assertEquals(0, itx.query(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "zed"))).size());
-        assertEquals(1, itx.query(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "ali"))).size());
+        assertEquals(0, itx.queryStream(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "zed"))).count());
+        assertEquals(1, itx.queryStream(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "ali"))).count());
         itx.rollback();
     }
 

@@ -51,7 +51,6 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
     private final TableInputFormat tableInputFormat = new TableInputFormat();
     private RecordReader<ImmutableBytesWritable, Result> tableReader;
     private byte[] edgeStoreFamily;
-    private RecordReader<StaticBuffer, Iterable<Entry>> janusgraphRecordReader;
 
     @Override
     public List<InputSplit> getSplits(final JobContext jobContext) throws IOException, InterruptedException {
@@ -61,9 +60,7 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
     @Override
     public RecordReader<StaticBuffer, Iterable<Entry>> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
         tableReader = tableInputFormat.createRecordReader(inputSplit, taskAttemptContext);
-        janusgraphRecordReader =
-                new HBaseBinaryRecordReader(tableReader, edgeStoreFamily);
-        return janusgraphRecordReader;
+        return new HBaseBinaryRecordReader(tableReader, edgeStoreFamily);
     }
 
     @Override

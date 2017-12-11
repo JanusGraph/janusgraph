@@ -76,7 +76,7 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
     private boolean executed = false;
 
     private int numThreads = 1;//Math.max(1,Runtime.getRuntime().availableProcessors());
-    private int readBatchSize = 10000;
+    private final int readBatchSize;
     private final int writeBatchSize;
 
     private ResultGraph resultGraphMode = null;

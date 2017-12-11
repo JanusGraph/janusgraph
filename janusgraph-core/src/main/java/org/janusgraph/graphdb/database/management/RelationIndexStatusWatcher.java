@@ -61,7 +61,7 @@ public class RelationIndexStatusWatcher
         Timer t = new Timer(TimestampProviders.MILLI).start();
         boolean timedOut;
         while (true) {
-            SchemaStatus actualStatus = null;
+            final SchemaStatus actualStatus;
             JanusGraphManagement management = null;
             try {
                 management = g.openManagement();

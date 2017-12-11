@@ -41,7 +41,7 @@ import java.util.*;
  */
 public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
 
-    private final Logger log = LoggerFactory.getLogger(OrderedKeyValueStoreAdapter.class);
+    private static final Logger log = LoggerFactory.getLogger(OrderedKeyValueStoreAdapter.class);
 
     public static final int variableKeyLength = 0;
 
@@ -234,7 +234,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
 
         if (addKeyLength) {
             result[position++] = (byte) (length >>> 8);
-            result[position++] = (byte) length;
+            result[position] = (byte) length;
         }
         return StaticArrayBuffer.of(result);
     }

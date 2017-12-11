@@ -100,7 +100,7 @@ public class CommonsConfiguration implements WriteConfiguration {
                 return (O) o;
             } else {
                 String[] comps = o.toString().split("\\s");
-                TemporalUnit unit = null;
+                final TemporalUnit unit;
                 switch (comps.length) {
                     case 1:
                         //By default, times are in milli seconds

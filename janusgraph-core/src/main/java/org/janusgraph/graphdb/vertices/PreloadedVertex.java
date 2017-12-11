@@ -189,19 +189,13 @@ public class PreloadedVertex extends CacheVertex {
 
     public static final AccessCheck CLOSEDSTAR_CHECK = new AccessCheck() {
         @Override
-        public final void accessEdges() {
-            return; //Allowed
-        }
+        public final void accessEdges() { }
 
         @Override
-        public final void accessProperties() {
-            return; //Allowed
-        }
+        public final void accessProperties() { }
 
         @Override
-        public void accessSetProperty() {
-            return; //Allowed
-        }
+        public void accessSetProperty() { }
 
         @Override
         public Retriever<SliceQuery, EntryList> retrieveSliceQuery() {
@@ -215,19 +209,13 @@ public class PreloadedVertex extends CacheVertex {
 
     public static final AccessCheck OPENSTAR_CHECK = new AccessCheck() {
         @Override
-        public final void accessEdges() {
-            return; //Allowed
-        }
+        public final void accessEdges() { }
 
         @Override
-        public final void accessProperties() {
-            return; //Allowed
-        }
+        public final void accessProperties() { }
 
         @Override
-        public void accessSetProperty() {
-            return; //Allowed
-        }
+        public void accessSetProperty() { }
 
         @Override
         public Retriever<SliceQuery, EntryList> retrieveSliceQuery() {

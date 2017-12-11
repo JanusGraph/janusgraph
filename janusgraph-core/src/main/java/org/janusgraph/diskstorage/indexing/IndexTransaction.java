@@ -105,7 +105,7 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
     }
 
     public Stream<String> queryStream(IndexQuery query) throws BackendException {
-        return index.query(query, keyInformation,indexTx);
+        return index.query(query, keyInformation, indexTx);
     }
 
     /**
