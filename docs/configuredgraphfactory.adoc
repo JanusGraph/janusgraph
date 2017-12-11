@@ -95,7 +95,7 @@ server's YAML's `graphs` map. For example:
 
 [source, properties]
 ----
-graphManager: org.JanusGraph.graphdb.management.JanusGraphManager
+graphManager: org.janusgraph.graphdb.management.JanusGraphManager
 graphs: {
   ConfigurationManagementGraph: conf/JanusGraph-configurationmanagement.properties
 }
@@ -108,7 +108,7 @@ example, look like:
 
 [source, properties]
 ----
-gremlin.graph=org.JanusGraph.core.JanusGraphFactory
+gremlin.graph=org.janusgraph.core.JanusGraphFactory
 storage.backend=cassandrathrift
 graph.graphname=ConfigurationManagementGraph
 storage.hostname=127.0.0.1
@@ -349,7 +349,7 @@ For backwards compatibility, any graphs that do not supply this parameter but su
 
 [source, properties]
 ----
-graphManager: org.JanusGraph.graphdb.management.JanusGraphManager
+graphManager: org.janusgraph.graphdb.management.JanusGraphManager
 graphs {
   graph1: conf/graph1.properties,
   graph2: conf/graph2.properties
