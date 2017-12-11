@@ -99,14 +99,14 @@ public class QueryUtil {
             return false;
         }
         for (final Condition<?> child : ((And<?>) condition).getChildren()) {
-            if (isQNFLiteralOrNot(child)) {
-                continue;
-            } else if (child instanceof Or) {
-                for (Condition<?> child2 : ((Or<?>) child).getChildren()) {
-                    if (!isQNFLiteralOrNot(child2)) return false;
+            if (!isQNFLiteralOrNot(child)) {
+                if (child instanceof Or) {
+                    for (Condition<?> child2 : ((Or<?>) child).getChildren()) {
+                        if (!isQNFLiteralOrNot(child2)) return false;
+                    }
+                } else {
+                    return false;
                 }
-            } else {
-                return false;
             }
         }
         return true;

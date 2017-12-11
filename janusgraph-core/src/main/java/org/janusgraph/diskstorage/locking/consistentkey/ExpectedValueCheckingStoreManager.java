@@ -92,8 +92,7 @@ public class ExpectedValueCheckingStoreManager extends KCVSManagerProxy {
         StoreTransaction strongConsistentTx = manager.beginTransaction(consistentTxCfg);
 
         // Return a wrapper around both the inconsistent and consistent store transactions
-        ExpectedValueCheckingTransaction wrappedTx = new ExpectedValueCheckingTransaction(inconsistentTx, strongConsistentTx, maxReadTime);
-        return wrappedTx;
+        return new ExpectedValueCheckingTransaction(inconsistentTx, strongConsistentTx, maxReadTime);
     }
 
     @Override

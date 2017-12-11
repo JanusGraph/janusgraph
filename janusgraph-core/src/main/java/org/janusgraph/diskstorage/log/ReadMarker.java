@@ -76,8 +76,7 @@ public class ReadMarker {
         if (newMarker.hasIdentifier()) {
             return hasIdentifier() && identifier.equals(newMarker.identifier);
         }
-        if (newMarker.hasStartTime()) return false;
-        return true;
+        return !newMarker.hasStartTime();
     }
 
     /**

@@ -15,8 +15,9 @@
 package org.janusgraph.graphdb.berkeleyje;
 
 import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.util.JanusGraphCleanup;
+import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.diskstorage.Backend;
+import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.Rule;
@@ -99,12 +100,11 @@ public class BerkeleyGraphTest extends JanusGraphTest {
     }
 
     @Test
-    public void testIDBlockAllocationTimeout()
-    {
+    public void testIDBlockAllocationTimeout() throws BackendException {
         config.set("ids.authority.wait-time", Duration.of(0L, ChronoUnit.NANOS));
         config.set("ids.renew-timeout", Duration.of(1L, ChronoUnit.MILLIS));
         close();
-        JanusGraphCleanup.clear(graph);
+        JanusGraphFactory.drop(graph);
         open(config);
         try {
             graph.addVertex();

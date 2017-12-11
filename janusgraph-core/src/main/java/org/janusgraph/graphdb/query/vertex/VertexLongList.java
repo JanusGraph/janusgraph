@@ -99,7 +99,7 @@ public class VertexLongList implements VertexListInternal {
 
     @Override
     public void addAll(VertexList vertexlist) {
-        LongArrayList otherVertexIds = null;
+        final LongArrayList otherVertexIds;
         if (vertexlist instanceof VertexLongList) {
             otherVertexIds = ((VertexLongList) vertexlist).vertices;
         } else if (vertexlist instanceof VertexArrayList) {

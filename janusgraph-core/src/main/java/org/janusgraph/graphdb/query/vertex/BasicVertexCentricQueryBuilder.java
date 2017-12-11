@@ -655,7 +655,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             entireKey[i]=tx.getExistingPropertyKey(type.getSortKey()[i]);
         }
         if (type.isEdgeLabel() && !type.multiplicity().isUnique(dir)) entireKey[i++]=ImplicitKey.ADJACENT_ID;
-        if (!type.multiplicity().isConstrained()) entireKey[i++]=ImplicitKey.JANUSGRAPHID;
+        if (!type.multiplicity().isConstrained()) entireKey[i]=ImplicitKey.JANUSGRAPHID;
         return entireKey;
     }
 

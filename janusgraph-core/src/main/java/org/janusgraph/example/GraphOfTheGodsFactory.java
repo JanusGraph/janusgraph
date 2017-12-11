@@ -66,7 +66,7 @@ public class GraphOfTheGodsFactory {
     }
 
     private static boolean mixedIndexNullOrExists(StandardJanusGraph graph, String indexName) {
-        return indexName == null || graph.getIndexSerializer().containsIndex(indexName) == true;
+        return indexName == null || graph.getIndexSerializer().containsIndex(indexName);
     }
 
     public static void load(final JanusGraph graph, String mixedIndexName, boolean uniqueNameCompositeIndex) {

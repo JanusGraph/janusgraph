@@ -69,8 +69,8 @@ public class RandomRemovalList<T> implements Collection<T>, Iterator<T> {
         assert size >= 0;
         if (size == 0) throw new NoSuchElementException("List is empty");
         int numTries = 0;
-        T element = null;
-        int pos = -1;
+        T element;
+        int pos;
         do {
             pos = random.nextInt(list.size());
             element = list.get(pos);

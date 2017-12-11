@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.tinkerpop.optimize;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.janusgraph.core.*;
 import org.janusgraph.graphdb.query.BaseQuery;
 import org.janusgraph.graphdb.query.Query;
@@ -77,7 +78,7 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
             return (Iterator<E>) iterable.iterator();
         }
         assert getReturnType().forValues();
-        return (Iterator<E>) Iterators.transform(iterable.iterator(), p -> p.value());
+        return (Iterator<E>) Iterators.transform(iterable.iterator(), Property::value);
     }
 
     @SuppressWarnings("deprecation")
@@ -153,7 +154,7 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
      */
 
     private final List<HasContainer> hasContainers;
-    private int limit = BaseQuery.NO_LIMIT;
+    private int limit;
     private final List<HasStepFolder.OrderEntry> orders = new ArrayList<>();
 
 

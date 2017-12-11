@@ -14,6 +14,7 @@
 
 package org.janusgraph.hadoop;
 
+import com.google.common.base.Preconditions;
 import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;

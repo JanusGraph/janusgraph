@@ -50,18 +50,8 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
         return tx;
     }
 
-    void registerCursor(Cursor cursor) {
-        Preconditions.checkArgument(cursor != null);
-        synchronized (openCursors) {
-            //TODO: attempt to remove closed cursors if there are too many
-            openCursors.add(cursor);
-        }
-    }
-
-    private void closeOpenIterators() throws BackendException {
-        for (Cursor cursor : openCursors) {
-            cursor.close();
-        }
+    private void closeOpenIterators() {
+        openCursors.forEach(Cursor::close);
     }
 
     LockMode getLockMode() {

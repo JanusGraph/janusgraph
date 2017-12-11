@@ -66,7 +66,7 @@ public class JanusGraphTraversalUtil {
     }
 
     public static JanusGraphTransaction getTx(Traversal.Admin<?, ?> traversal) {
-        JanusGraphTransaction tx = null;
+        final JanusGraphTransaction tx;
         Optional<Graph> optGraph = TraversalHelper.getRootTraversal(traversal.asAdmin()).getGraph();
 
         if (traversal instanceof FulgoraElementTraversal) {

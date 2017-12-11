@@ -134,7 +134,6 @@ public class ManagementSystem implements JanusGraphManagement {
     private final Log sysLog;
     private final ManagementLogger managementLogger;
 
-    private final KCVSConfiguration baseConfig;
     private final TransactionalConfiguration transactionalConfig;
     private final ModifiableConfiguration modifyConfig;
     private final UserModifiableConfiguration userConfig;
@@ -153,11 +152,10 @@ public class ManagementSystem implements JanusGraphManagement {
                             ManagementLogger managementLogger, SchemaCache schemaCache) {
         Preconditions.checkArgument(config != null && graph != null && sysLog != null && managementLogger != null);
         this.graph = graph;
-        this.baseConfig = config;
         this.sysLog = sysLog;
         this.managementLogger = managementLogger;
         this.schemaCache = schemaCache;
-        this.transactionalConfig = new TransactionalConfiguration(baseConfig);
+        this.transactionalConfig = new TransactionalConfiguration(config);
         this.modifyConfig = new ModifiableConfiguration(ROOT_NS,
                 transactionalConfig, BasicConfiguration.Restriction.GLOBAL);
         this.userConfig = new UserModifiableConfiguration(modifyConfig, configVerifier);
@@ -517,7 +515,7 @@ public class ManagementSystem implements JanusGraphManagement {
         int arrPosition = parameters.length;
         if (addMappingParameter) extendedParas[arrPosition++] = ParameterType.MAPPED_NAME.getParameter(
                 graph.getIndexSerializer().getDefaultFieldName(key, parameters, indexType.getBackingIndexName()));
-        extendedParas[arrPosition++] = ParameterType.STATUS.getParameter(key.isNew() ? SchemaStatus.ENABLED : SchemaStatus.INSTALLED);
+        extendedParas[arrPosition] = ParameterType.STATUS.getParameter(key.isNew() ? SchemaStatus.ENABLED : SchemaStatus.INSTALLED);
 
         addSchemaEdge(indexVertex, key, TypeDefinitionCategory.INDEX_FIELD, extendedParas);
         updateSchemaVertex(indexVertex);
@@ -1243,14 +1241,16 @@ public class ManagementSystem implements JanusGraphManagement {
     @Override
     public <T extends RelationType> Iterable<T> getRelationTypes(Class<T> clazz) {
         Preconditions.checkNotNull(clazz);
-        Iterable<? extends JanusGraphVertex> types = null;
+        final Iterable<? extends JanusGraphVertex> types;
         if (PropertyKey.class.equals(clazz)) {
             types = QueryUtil.getVertices(transaction, BaseKey.SchemaCategory, JanusGraphSchemaCategory.PROPERTYKEY);
         } else if (EdgeLabel.class.equals(clazz)) {
             types = QueryUtil.getVertices(transaction, BaseKey.SchemaCategory, JanusGraphSchemaCategory.EDGELABEL);
         } else if (RelationType.class.equals(clazz)) {
             types = Iterables.concat(getRelationTypes(EdgeLabel.class), getRelationTypes(PropertyKey.class));
-        } else throw new IllegalArgumentException("Unknown type class: " + clazz);
+        } else {
+            throw new IllegalArgumentException("Unknown type class: " + clazz);
+        }
         return Iterables.filter(Iterables.filter(types, clazz), t -> {
             //Filter out all relation type indexes
             return ((InternalRelationType) t).getBaseType() == null;

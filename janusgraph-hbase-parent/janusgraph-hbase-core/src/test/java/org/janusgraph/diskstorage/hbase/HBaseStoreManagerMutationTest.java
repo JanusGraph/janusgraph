@@ -56,7 +56,7 @@ public class HBaseStoreManagerMutationTest {
             List<StaticBuffer> deletions = new ArrayList<>();
 
             // 100 columns each row
-            int i = 0;
+            int i;
             for (i = 0; i < 100; i++) {
                 col = KeyColumnValueStoreUtil.longToByteBuffer(i);
                 val = KeyColumnValueStoreUtil.longToByteBuffer(i + 100);

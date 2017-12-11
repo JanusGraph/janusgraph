@@ -165,7 +165,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
         try {
             TableMask table = null;
-            Result[] results = null;
+            final Result[] results;
 
             try {
                 table = cnx.getTable(tableName);
@@ -180,7 +180,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             assert results.length==keys.size();
 
             for (int i = 0; i < results.length; i++) {
-                Result result = results[i];
+                final Result result = results[i];
                 NavigableMap<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> f = result.getMap();
 
                 if (f == null) { // no result for this key

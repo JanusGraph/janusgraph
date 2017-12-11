@@ -112,12 +112,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                 }
                 graphStep.addIds(ids);
                 if (!ids.isEmpty()) traversal.removeStep(currentStep);
-            }
-            else if (currentStep instanceof IdentityStep) {
-                // do nothing, has no impact
-            } else if (currentStep instanceof NoOpBarrierStep) {
-                // do nothing, has no impact
-            } else {
+            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep)) {
                 break;
             }
             currentStep = currentStep.getNextStep();
@@ -134,25 +129,12 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                     currentStep.getLabels().forEach(janusgraphStep::addLabel);
                     traversal.removeStep(currentStep);
                 }
-            } else if (currentStep instanceof IdentityStep) {
-                // do nothing, has no impact
-            } else if (currentStep instanceof NoOpBarrierStep) {
-                // do nothing, has no impact
-            } else {
+            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep)) {
                 break;
             }
             currentStep = currentStep.getNextStep();
         }
     }
-
-//    public static boolean addLabeledStepAsIdentity(Step<?,?> currentStep, final Traversal.Admin<?, ?> traversal) {
-//        if (currentStep.getLabel().isPresent()) {
-//            final IdentityStep identityStep = new IdentityStep<>(traversal);
-//            identityStep.setLabel(currentStep.getLabel().get());
-//            TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
-//            return true;
-//        } else return false;
-//    }
 
     static void foldInOrder(final HasStepFolder janusgraphStep, final Traversal.Admin<?, ?> traversal,
                                    final Traversal<?, ?> rootTraversal, boolean isVertexOrder) {
@@ -165,13 +147,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                     traversal.removeStep(lastOrder);
                 }
                 lastOrder = (OrderGlobalStep) currentStep;
-            } else if (currentStep instanceof IdentityStep) {
-                // do nothing, can be skipped
-            } else if (currentStep instanceof HasStep) {
-                // do nothing, can be skipped
-            } else if (currentStep instanceof NoOpBarrierStep) {
-                // do nothing, can be skipped
-            } else {
+            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof HasStep) && !(currentStep instanceof NoOpBarrierStep)) {
                 break;
             }
             currentStep = currentStep.getNextStep();

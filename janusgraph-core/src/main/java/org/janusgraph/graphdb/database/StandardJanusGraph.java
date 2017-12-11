@@ -100,34 +100,34 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraphTx.class, graphStrategies);
     }
 
-    private GraphDatabaseConfiguration config;
-    private Backend backend;
-    private IDManager idManager;
-    private VertexIDAssigner idAssigner;
-    private TimestampProvider times;
+    private final GraphDatabaseConfiguration config;
+    private final Backend backend;
+    private final IDManager idManager;
+    private final VertexIDAssigner idAssigner;
+    private final TimestampProvider times;
 
     //Serializers
-    protected IndexSerializer indexSerializer;
-    protected EdgeSerializer edgeSerializer;
-    protected Serializer serializer;
+    protected final IndexSerializer indexSerializer;
+    protected final EdgeSerializer edgeSerializer;
+    protected final Serializer serializer;
 
     //Caches
-    public SliceQuery vertexExistenceQuery;
-    private RelationQueryCache queryCache;
-    private SchemaCache schemaCache;
+    public final SliceQuery vertexExistenceQuery;
+    private final RelationQueryCache queryCache;
+    private final SchemaCache schemaCache;
 
     //Log
-    private ManagementLogger managementLogger;
+    private final ManagementLogger managementLogger;
 
     //Shutdown hook
     private volatile ShutdownThread shutdownHook;
 
-    private volatile boolean isOpen = true;
-    private AtomicLong txCounter;
+    private volatile boolean isOpen;
+    private final AtomicLong txCounter;
 
-    private Set<StandardJanusGraphTx> openTransactions;
+    private final Set<StandardJanusGraphTx> openTransactions;
 
-    private String name = null;
+    private final String name;
 
     public StandardJanusGraph(GraphDatabaseConfiguration configuration) {
 
@@ -612,13 +612,13 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         for (IndexSerializer.IndexUpdate indexUpdate : indexUpdates) {
             assert indexUpdate.isAddition() || indexUpdate.isDeletion();
             if (indexUpdate.isCompositeIndex()) {
-                IndexSerializer.IndexUpdate<StaticBuffer,Entry> update = indexUpdate;
+                final IndexSerializer.IndexUpdate<StaticBuffer,Entry> update = indexUpdate;
                 if (update.isAddition())
                     mutator.mutateIndex(update.getKey(), Lists.newArrayList(update.getEntry()), KCVSCache.NO_DELETIONS);
                 else
                     mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(update.getEntry()));
             } else {
-                IndexSerializer.IndexUpdate<String,IndexEntry> update = indexUpdate;
+                final IndexSerializer.IndexUpdate<String,IndexEntry> update = indexUpdate;
                 has2iMods = true;
                 IndexTransaction itx = mutator.getIndexTransaction(update.getIndex().getBackingIndexName());
                 String indexStore = ((MixedIndexType)update.getIndex()).getStoreName();

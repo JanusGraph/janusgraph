@@ -138,10 +138,9 @@ public class StandardLockCleanerRunnable implements Runnable {
         } else if (!target.equals(other.target))
             return false;
         if (tx == null) {
-            if (other.tx != null)
-                return false;
-        } else if (!tx.equals(other.tx))
-            return false;
-        return true;
+            return other.tx == null;
+        } else {
+            return tx.equals(other.tx);
+        }
     }
 }

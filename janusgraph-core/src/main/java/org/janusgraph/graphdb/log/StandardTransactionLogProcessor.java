@@ -78,7 +78,6 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
     private final StandardJanusGraph graph;
     private final Serializer serializer;
     private final TimestampProvider times;
-    private final Log txLog;
     private final Duration persistenceTime;
     private final Duration readTime = Duration.ofSeconds(1);
     private final AtomicLong txCounter = new AtomicLong(0);
@@ -104,7 +103,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         this.graph = graph;
         this.serializer = graph.getDataSerializer();
         this.times = graph.getConfiguration().getTimestampProvider();
-        this.txLog = graph.getBackend().getSystemTxLog();
+        final Log txLog = graph.getBackend().getSystemTxLog();
         this.persistenceTime = graph.getConfiguration().getMaxWriteTime();
         this.verboseLogging = graph.getConfiguration().getConfiguration()
                 .get(GraphDatabaseConfiguration.VERBOSE_TX_RECOVERY);
@@ -127,7 +126,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
                 .build();
 
         ReadMarker start = ReadMarker.fromTime(startTime);
-        this.txLog.registerReader(start,new TxLogMessageReader());
+        txLog.registerReader(start,new TxLogMessageReader());
 
         cleaner = new BackgroundCleaner();
         cleaner.start();

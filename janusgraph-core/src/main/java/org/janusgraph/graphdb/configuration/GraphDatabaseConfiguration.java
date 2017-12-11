@@ -1230,7 +1230,7 @@ public class GraphDatabaseConfiguration {
         final KeyColumnValueStoreManager storeManager = Backend.getStorageManager(localBasicConfiguration);
         final StoreFeatures storeFeatures = storeManager.getFeatures();
         KCVSConfiguration keyColumnValueStoreConfiguration=Backend.getStandaloneGlobalConfiguration(storeManager,localBasicConfiguration);
-        ReadConfiguration globalConfig=null;
+        final ReadConfiguration globalConfig;
 
         //Copy over local config options
         localConfiguration = new ModifiableConfiguration(ROOT_NS, new CommonsConfiguration(), BasicConfiguration.Restriction.LOCAL);
@@ -1259,7 +1259,7 @@ public class GraphDatabaseConfiguration {
                  */
                 if (!localBasicConfiguration.has(TIMESTAMP_PROVIDER)) {
                     StoreFeatures f = storeManager.getFeatures();
-                    TimestampProviders backendPreference = null;
+                    final TimestampProviders backendPreference;
                     if (f.hasTimestamps() && null != (backendPreference = f.getPreferredTimestamps())) {
                         globalWrite.set(TIMESTAMP_PROVIDER, backendPreference);
                         log.info("Set timestamps to {} according to storage backend preference",
@@ -1315,10 +1315,8 @@ public class GraphDatabaseConfiguration {
                     final boolean match;
                     if (null != localValue && null != storeValue) {
                         match = localValue.equals(storeValue);
-                    } else if (null == localValue && null == storeValue) {
-                        match = true;
                     } else {
-                        match = false;
+                        match = null == localValue && null == storeValue;
                     }
 
                     // Log each option with value disagreement between local and backend configs
@@ -1390,12 +1388,12 @@ public class GraphDatabaseConfiguration {
         boolean localTitanConfigured = localBasicConfiguration.get(TITAN_COMPATIBLE_VERSIONS) != null;
         boolean localIdStoreIsDefault = JanusGraphConstants.JANUSGRAPH_ID_STORE_NAME.equals(localBasicConfiguration.get(IDS_STORE_NAME));
 
-        if (localTitanConfigured == true) {
-            boolean usingTitanIdStore = localIdStoreIsDefault == true || JanusGraphConstants.TITAN_ID_STORE_NAME.equals(localBasicConfiguration.get(IDS_STORE_NAME));
+        if (localTitanConfigured) {
+            boolean usingTitanIdStore = localIdStoreIsDefault || JanusGraphConstants.TITAN_ID_STORE_NAME.equals(localBasicConfiguration.get(IDS_STORE_NAME));
             boolean existingKeyStore = keyColumnValueStoreConfiguration.get(IDS_STORE_NAME.getName(), IDS_STORE_NAME.getDatatype()) != null;
 
         	Preconditions.checkArgument(usingTitanIdStore,"ID store for Titan compatibility has not been initialized to: " + JanusGraphConstants.TITAN_ID_STORE_NAME);
-            if (existingKeyStore == false) {
+            if (!existingKeyStore) {
                 log.info("Setting {} to {} for Titan compatibility", IDS_STORE_NAME.getName(), JanusGraphConstants.TITAN_ID_STORE_NAME);
                 overwrite.set(IDS_STORE_NAME, JanusGraphConstants.TITAN_ID_STORE_NAME);
             }
@@ -1686,8 +1684,8 @@ public class GraphDatabaseConfiguration {
             } catch (NumberFormatException e) {
                 throw new IllegalArgumentException("Expected entry of the form ["+ ATTRIBUTE_PREFIX +"X] where X is a number but given" + attributeId);
             }
-            Class<?> clazz = null;
-            AttributeSerializer<?> serializer = null;
+            final Class<?> clazz;
+            final AttributeSerializer<?> serializer;
             String classname = configuration.get(CUSTOM_ATTRIBUTE_CLASS,attributeId);
             try {
                 clazz = Class.forName(classname);

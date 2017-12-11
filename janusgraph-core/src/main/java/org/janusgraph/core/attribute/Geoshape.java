@@ -449,24 +449,19 @@ public class Geoshape {
 
             if (value.getClass().isArray() && (value.getClass().getComponentType().isPrimitive() ||
                     Number.class.isAssignableFrom(value.getClass().getComponentType())) ) {
-                Geoshape shape = null;
                 int len= Array.getLength(value);
                 double[] arr = new double[len];
                 for (int i=0;i<len;i++) arr[i]=((Number)Array.get(value,i)).doubleValue();
                 switch (len) {
                     case 2:
-                        shape = point(arr[0], arr[1]);
-                        break;
+                        return point(arr[0], arr[1]);
                     case 3:
-                        shape = circle(arr[0], arr[1], arr[2]);
-                        break;
+                        return circle(arr[0], arr[1], arr[2]);
                     case 4:
-                        shape = box(arr[0], arr[1], arr[2], arr[3]);
-                        break;
+                        return box(arr[0], arr[1], arr[2], arr[3]);
                     default:
                         throw new IllegalArgumentException("Expected 2-4 coordinates to create Geoshape, but given: " + value);
                 }
-                return shape;
             } else if (value instanceof String) {
                 String[] components=null;
                 for (String delimiter : new String[]{",",";"}) {

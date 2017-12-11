@@ -30,9 +30,6 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.util.time.Durations;
 
-
-import javax.annotation.Nullable;
-
 public class HadoopConfiguration implements WriteConfiguration {
 
     private static final Logger log =
@@ -84,7 +81,7 @@ public class HadoopConfiguration implements WriteConfiguration {
             // This is a conceptual leak; the config layer should ideally only handle standard library types
             String s = config.get(internalKey);
             String[] comps = s.split("\\s");
-            TemporalUnit unit = null;
+            final TemporalUnit unit;
             switch (comps.length) {
                 case 1:
                     //By default, times are in milli seconds

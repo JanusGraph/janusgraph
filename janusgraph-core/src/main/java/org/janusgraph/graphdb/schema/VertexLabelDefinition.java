@@ -43,7 +43,7 @@ public class VertexLabelDefinition extends SchemaElementDefinition {
     }
 
     public boolean hasDefaultConfiguration() {
-        return isPartitioned==false && isStatic==false;
+        return !isPartitioned && !isStatic;
     }
 
 }
