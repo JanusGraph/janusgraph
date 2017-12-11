@@ -1,4 +1,4 @@
-dist: trusty
+group: travis_latest
 language: java
 sudo: true
 services:
