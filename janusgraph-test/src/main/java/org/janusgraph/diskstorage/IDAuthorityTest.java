@@ -349,11 +349,7 @@ public abstract class IDAuthorityTest {
         }
 
         for (Future<Void> f : futures) {
-            try {
-                f.get();
-            } catch (ExecutionException e) {
-                throw e;
-            }
+            f.get();
         }
 
         es.shutdownNow();

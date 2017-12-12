@@ -117,6 +117,7 @@ public class JanusGraphManager implements GraphManager {
      * @Deprecated
      */
     @Override
+    @Deprecated
     public Map<String, TraversalSource> getTraversalSources() {
         return traversalSources;
     }
