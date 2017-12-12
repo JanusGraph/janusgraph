@@ -263,7 +263,7 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
             g1 = getV(tx2, gids[0]);
             assertEquals(0, g1.<Integer>value("gid").intValue());
             assertEquals("group", g1.label());
-            assertTrue(names.size() >= size(g1.properties("name")));
+            assertTrue(names.size() >= Iterators.size(g1.properties("name")));
             assertCount(numV, g1.query().direction(Direction.OUT).labels("knows").edges());
             assertCount(numV, g1.query().direction(Direction.IN).labels("knows").edges());
             assertCount(numV * 2, g1.query().direction(Direction.BOTH).labels("knows").edges());
