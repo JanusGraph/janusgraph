@@ -78,17 +78,17 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static org.janusgraph.graphdb.JanusGraphTest.evaluateQuery;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -950,8 +950,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         //Test name mapping
         if (supportsLuceneStyleQueries()) {
-            assertCount(numV / strings.length * 2, graph.indexQuery(VINDEX, "xtext:ducks").vertices());
-            assertCount(0, graph.indexQuery(EINDEX, "xtext:ducks").edges());
+            assertCount(numV / strings.length * 2, graph.indexQuery(VINDEX, "xtext:ducks").vertexStream());
+            assertCount(0, graph.indexQuery(EINDEX, "xtext:ducks").edgeStream());
         }
     }
 
@@ -967,60 +967,60 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         setupChainGraph(numV, strings, true);
         clopen();
 
-        assertCount(numV / strings.length * 2, graph.indexQuery(VINDEX, "v.text:ducks").vertices());
-        assertCount(numV / strings.length * 2, graph.indexQuery(VINDEX, "v.text:(farm uncle berry)").vertices());
-        assertCount(numV / strings.length, graph.indexQuery(VINDEX, "v.text:(farm uncle berry) AND v.name:\"Uncle Berry has a farm\"").vertices());
-        assertCount(numV / strings.length * 2, graph.indexQuery(VINDEX, "v.text:(beautiful are ducks)").vertices());
-        assertCount(numV / strings.length * 2 - 10, graph.indexQuery(VINDEX, "v.text:(beautiful are ducks)").offset(10).vertices());
-        long total = size(graph.indexQuery(VINDEX, "v.\"text\":(beautiful are ducks)").limit(Integer.MAX_VALUE).vertices());
-        assertCount(10, graph.indexQuery(VINDEX, "v.\"text\":(beautiful are ducks)").limit(10).vertices());
+        assertCount(numV / strings.length * 2, graph.indexQuery(VINDEX, "v.text:ducks").vertexStream());
+        assertCount(numV / strings.length * 2, graph.indexQuery(VINDEX, "v.text:(farm uncle berry)").vertexStream());
+        assertCount(numV / strings.length, graph.indexQuery(VINDEX, "v.text:(farm uncle berry) AND v.name:\"Uncle Berry has a farm\"").vertexStream());
+        assertCount(numV / strings.length * 2, graph.indexQuery(VINDEX, "v.text:(beautiful are ducks)").vertexStream());
+        assertCount(numV / strings.length * 2 - 10, graph.indexQuery(VINDEX, "v.text:(beautiful are ducks)").offset(10).vertexStream());
+        long total = graph.indexQuery(VINDEX, "v.\"text\":(beautiful are ducks)").limit(Integer.MAX_VALUE).vertexStream().count();
+        assertCount(10, graph.indexQuery(VINDEX, "v.\"text\":(beautiful are ducks)").limit(10).vertexStream());
         assertEquals(total, (long) graph.indexQuery(VINDEX, "v.\"text\":(beautiful are ducks)").limit(10).vertexTotals());
-        assertCount(10, graph.indexQuery(VINDEX, "v.\"text\":(beautiful are ducks)").limit(10).offset(10).vertices());
+        assertCount(10, graph.indexQuery(VINDEX, "v.\"text\":(beautiful are ducks)").limit(10).offset(10).vertexStream());
         assertEquals(total, (long) graph.indexQuery(VINDEX, "v.\"text\":(beautiful are ducks)").limit(10).offset(10).vertexTotals());
-        assertCount(0, graph.indexQuery(VINDEX, "v.\"text\":(beautiful are ducks)").limit(10).offset(numV).vertices());
+        assertCount(0, graph.indexQuery(VINDEX, "v.\"text\":(beautiful are ducks)").limit(10).offset(numV).vertexStream());
         assertEquals(total, (long) graph.indexQuery(VINDEX, "v.\"text\":(beautiful are ducks)").limit(10).offset(numV).vertexTotals());
         //Test name mapping
-        assertCount(numV / strings.length * 2, graph.indexQuery(VINDEX, "xtext:ducks").vertices());
-        assertCount(0, graph.indexQuery(VINDEX, "text:ducks").vertices());
+        assertCount(numV / strings.length * 2, graph.indexQuery(VINDEX, "xtext:ducks").vertexStream());
+        assertCount(0, graph.indexQuery(VINDEX, "text:ducks").vertexStream());
         //Test custom element identifier
-        assertCount(numV / strings.length * 2, graph.indexQuery(VINDEX, "$v$text:ducks").setElementIdentifier("$v$").vertices());
+        assertCount(numV / strings.length * 2, graph.indexQuery(VINDEX, "$v$text:ducks").setElementIdentifier("$v$").vertexStream());
         //assertCount(0, graph.indexQuery(VINDEX, "v.\"text\":ducks").setElementIdentifier("$v$").vertices()));
 
         //Same queries for edges
-        assertCount(numV / strings.length * 2, graph.indexQuery(EINDEX, "e.text:ducks").edges());
-        total = size(graph.indexQuery(EINDEX, "e.text:ducks").limit(Integer.MAX_VALUE).edges());
+        assertCount(numV / strings.length * 2, graph.indexQuery(EINDEX, "e.text:ducks").edgeStream());
+        total = graph.indexQuery(EINDEX, "e.text:ducks").limit(Integer.MAX_VALUE).edgeStream().count();
         assertEquals(total, (long) numV / strings.length * 2, graph.indexQuery(EINDEX, "e.text:ducks").edgeTotals());
-        assertCount(numV / strings.length * 2, graph.indexQuery(EINDEX, "e.text:(farm uncle berry)").edges());
-        assertCount(numV / strings.length, graph.indexQuery(EINDEX, "e.text:(farm uncle berry) AND e.name:\"Uncle Berry has a farm\"").edges());
-        assertCount(numV / strings.length * 2, graph.indexQuery(EINDEX, "e.text:(beautiful are ducks)").edges());
-        assertCount(numV / strings.length * 2 - 10, graph.indexQuery(EINDEX, "e.text:(beautiful are ducks)").offset(10).edges());
-        total = size(graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(Integer.MAX_VALUE).edges());
-        assertCount(10, graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(10).edges());
+        assertCount(numV / strings.length * 2, graph.indexQuery(EINDEX, "e.text:(farm uncle berry)").edgeStream());
+        assertCount(numV / strings.length, graph.indexQuery(EINDEX, "e.text:(farm uncle berry) AND e.name:\"Uncle Berry has a farm\"").edgeStream());
+        assertCount(numV / strings.length * 2, graph.indexQuery(EINDEX, "e.text:(beautiful are ducks)").edgeStream());
+        assertCount(numV / strings.length * 2 - 10, graph.indexQuery(EINDEX, "e.text:(beautiful are ducks)").offset(10).edgeStream());
+        total = graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(Integer.MAX_VALUE).edgeStream().count();
+        assertCount(10, graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(10).edgeStream());
         assertEquals(total, (long) graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(10).edgeTotals());
-        assertCount(10, graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(10).offset(10).edges());
+        assertCount(10, graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(10).offset(10).edgeStream());
         assertEquals(total, (long) graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(10).offset(10).edgeTotals());
-        assertCount(0, graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(10).offset(numV).edges());
+        assertCount(0, graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(10).offset(numV).edgeStream());
         assertEquals(total, (long) graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(10).offset(numV).edgeTotals());
         //Test name mapping
-        assertCount(numV / strings.length * 2, graph.indexQuery(EINDEX, "text:ducks").edges());
+        assertCount(numV / strings.length * 2, graph.indexQuery(EINDEX, "text:ducks").edgeStream());
 
         //Same queries for properties
-        assertCount(numV / strings.length * 2, graph.indexQuery(PINDEX, "p.text:ducks").properties());
-        total = size(graph.indexQuery(PINDEX, "p.text:ducks").limit(Integer.MAX_VALUE).properties());
+        assertCount(numV / strings.length * 2, graph.indexQuery(PINDEX, "p.text:ducks").propertyStream());
+        total = graph.indexQuery(PINDEX, "p.text:ducks").limit(Integer.MAX_VALUE).propertyStream().count();
         assertEquals(total, (long) numV / strings.length * 2, graph.indexQuery(PINDEX, "p.text:ducks").propertyTotals());
-        assertCount(numV / strings.length * 2, graph.indexQuery(PINDEX, "p.text:(farm uncle berry)").properties());
-        assertCount(numV / strings.length, graph.indexQuery(PINDEX, "p.text:(farm uncle berry) AND p.name:\"Uncle Berry has a farm\"").properties());
-        assertCount(numV / strings.length * 2, graph.indexQuery(PINDEX, "p.text:(beautiful are ducks)").properties());
-        assertCount(numV / strings.length * 2 - 10, graph.indexQuery(PINDEX, "p.text:(beautiful are ducks)").offset(10).properties());
-        total = size(graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(Integer.MAX_VALUE).properties());
-        assertCount(10, graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).properties());
+        assertCount(numV / strings.length * 2, graph.indexQuery(PINDEX, "p.text:(farm uncle berry)").propertyStream());
+        assertCount(numV / strings.length, graph.indexQuery(PINDEX, "p.text:(farm uncle berry) AND p.name:\"Uncle Berry has a farm\"").propertyStream());
+        assertCount(numV / strings.length * 2, graph.indexQuery(PINDEX, "p.text:(beautiful are ducks)").propertyStream());
+        assertCount(numV / strings.length * 2 - 10, graph.indexQuery(PINDEX, "p.text:(beautiful are ducks)").offset(10).propertyStream());
+        total = graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(Integer.MAX_VALUE).propertyStream().count();
+        assertCount(10, graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).propertyStream());
         assertEquals(total, (long) graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).propertyTotals());
-        assertCount(10, graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).offset(10).properties());
+        assertCount(10, graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).offset(10).propertyStream());
         assertEquals(total, (long) graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).offset(10).propertyTotals());
-        assertCount(0, graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).offset(numV).properties());
+        assertCount(0, graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).offset(numV).propertyStream());
         assertEquals(total, (long) graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).offset(numV).propertyTotals());
         //Test name mapping
-        assertCount(numV / strings.length * 2, graph.indexQuery(PINDEX, "text:ducks").properties());
+        assertCount(numV / strings.length * 2, graph.indexQuery(PINDEX, "text:ducks").propertyStream());
     }
 
     /**
@@ -1069,16 +1069,16 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         tx.commit();
 
-        final List<JanusGraphVertex> vertices = new ArrayList<>();
-        for (JanusGraphIndexQuery.Result<JanusGraphVertex> r : graph.indexQuery("store1", "v.field1:(Hello)").addParameter(asc_sort_p).vertices()) {
-            vertices.add(r.getElement());
-        }
+        final List<JanusGraphVertex> vertices = graph.indexQuery("store1", "v.field1:(Hello)")
+            .addParameter(asc_sort_p).vertexStream()
+            .map(JanusGraphIndexQuery.Result::getElement)
+            .collect(Collectors.toList());
         assertNotEmpty(vertices);
-        int idx=vertices.size()-1;
+        final AtomicInteger idx = new AtomicInteger(vertices.size() - 1);
         // Verify this query returns the items in reverse order.
-        for (JanusGraphIndexQuery.Result<JanusGraphVertex> r : graph.indexQuery("store1", "v.field1:(Hello)").addParameter(desc_sort_p).vertices()) {
-            assertEquals(vertices.get(idx--), r.getElement());
-        }
+        graph.indexQuery("store1", "v.field1:(Hello)").addParameter(desc_sort_p).vertexStream()
+            .map(JanusGraphIndexQuery.Result::getElement)
+            .forEachOrdered(e -> assertEquals(vertices.get(idx.getAndDecrement()), e));
     }
 
     @Test
@@ -1615,10 +1615,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         tx.commit();
 
-        final Set<Double> scores = new HashSet<>();
-        for (JanusGraphIndexQuery.Result<JanusGraphVertex> r : graph.indexQuery("store1", "v.text:(Hello)").vertices()) {
-            scores.add(r.getScore());
-        }
+        final Set<Double> scores = graph.indexQuery("store1", "v.text:(Hello)").vertexStream()
+            .map(JanusGraphIndexQuery.Result::getScore)
+            .collect(Collectors.toSet());
 
         Assert.assertEquals(3, scores.size());
     }
@@ -1716,8 +1715,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             v1.property("p2", "test2");
 
             clopen();//Flush the index
-            assertEquals(v1, graph.indexQuery("mixedIndex", "v.*:\"test1\"").vertices().iterator().next().getElement());
-            assertEquals(v1, graph.indexQuery("mixedIndex", "v.*:\"test2\"").vertices().iterator().next().getElement());
+            assertEquals(v1, graph.indexQuery("mixedIndex", "v.*:\"test1\"").vertexStream().findFirst().orElseThrow(IllegalStateException::new).getElement());
+            assertEquals(v1, graph.indexQuery("mixedIndex", "v.*:\"test2\"").vertexStream().findFirst().orElseThrow(IllegalStateException::new).getElement());
         }
 
     }
