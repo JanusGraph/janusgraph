@@ -47,14 +47,6 @@ public class IDManagementTest {
     private static final IDManager.VertexIDType[] USER_VERTEX_TYPES = {IDManager.VertexIDType.NormalVertex,
             IDManager.VertexIDType.PartitionedVertex, IDManager.VertexIDType.UnmodifiableVertex};
 
-    @Before
-    public void setUp() throws Exception {
-    }
-
-    @After
-    public void tearDown() throws Exception {
-    }
-
     @Test
     public void EntityIDTest() {
         testEntityID(12, 2341, 1234123, 1235123);

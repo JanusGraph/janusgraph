@@ -100,14 +100,14 @@ public class TransactionLogHeader {
 
     public StaticBuffer serializePrimary(Serializer serializer, LogTxStatus status) {
         Preconditions.checkArgument(status==LogTxStatus.PRIMARY_SUCCESS || status==LogTxStatus.COMPLETE_SUCCESS);
-        DataOutput out = serializeHeader(serializer, 30, status);
+        final DataOutput out = serializeHeader(serializer, status);
         return out.getStaticBuffer();
     }
 
     public StaticBuffer serializeSecondary(Serializer serializer, LogTxStatus status,
                                            Map<String,Throwable> indexFailures, boolean userLogSuccess) {
         Preconditions.checkArgument(status==LogTxStatus.SECONDARY_SUCCESS || status==LogTxStatus.SECONDARY_FAILURE);
-        DataOutput out = serializeHeader(serializer,30,status);
+        final DataOutput out = serializeHeader(serializer, status);
         if (status==LogTxStatus.SECONDARY_FAILURE) {
             out.putBoolean(userLogSuccess);
             out.putInt(indexFailures.size());
@@ -119,8 +119,8 @@ public class TransactionLogHeader {
         return out.getStaticBuffer();
     }
 
-    private DataOutput serializeHeader(Serializer serializer, int capacity, LogTxStatus status) {
-        return serializeHeader(serializer, capacity, status, new EnumMap<>(LogTxMeta.class));
+    private DataOutput serializeHeader(Serializer serializer, LogTxStatus status) {
+        return serializeHeader(serializer, 30, status, new EnumMap<>(LogTxMeta.class));
     }
 
     private DataOutput serializeHeader(Serializer serializer, int capacity, LogTxStatus status, TransactionConfiguration txConfig) {

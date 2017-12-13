@@ -39,7 +39,6 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
     private final Logger log = LoggerFactory.getLogger(KeyValueStoreTest.class);
 
     private final int numKeys = 2000;
-    private final String storeName = "testStore1";
 
 
     protected OrderedKeyValueStoreManager manager;
@@ -56,6 +55,7 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
 
     public void open() throws BackendException {
         manager = openStorageManager();
+        String storeName = "testStore1";
         store = manager.openDatabase(storeName);
         tx = manager.beginTransaction(getTxConfig());
     }

@@ -53,7 +53,7 @@ public class LocalStoreManagerTest {
          * The following methods are placeholders to adhere to the StoreManager interface.
          */
         @Override
-        public List<KeyRange> getLocalKeyPartition() throws BackendException {
+        public List<KeyRange> getLocalKeyPartition() {
             return null;
         }
 
@@ -68,18 +68,18 @@ public class LocalStoreManagerTest {
         }
 
         @Override
-        public void clearStorage() throws BackendException {}
+        public void clearStorage() {}
 
         @Override
-        public void close() throws BackendException {}
+        public void close() {}
 
         @Override
-        public StoreTransaction beginTransaction(BaseTransactionConfig config) throws BackendException {
+        public StoreTransaction beginTransaction(BaseTransactionConfig config) {
             return null;
         }
 
         @Override
-        public boolean exists() throws BackendException {
+        public boolean exists() {
             return true;
         }
     }

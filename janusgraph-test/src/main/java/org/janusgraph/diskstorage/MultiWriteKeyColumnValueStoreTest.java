@@ -190,16 +190,16 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
     @Test
     public void mutateManyStressTest() throws BackendException {
 
-        mutateManyStressTestWithVariableRounds(5);
+        mutateManyStressTestWithVariableRounds();
     }
 
-    protected void mutateManyStressTestWithVariableRounds(int rounds) throws BackendException {
+    protected void mutateManyStressTestWithVariableRounds() throws BackendException {
         Map<StaticBuffer, Map<StaticBuffer, StaticBuffer>> state = new HashMap<>();
 
         int deletions = 1024;
         int additions = 4096;
 
-        for (int round = 0; round < rounds; round++) {
+        for (int round = 0; round < 5; round++) {
             Map<StaticBuffer, KCVEntryMutation> changes = mutateState(state, deletions, additions);
 
             applyChanges(changes, store1, tx);

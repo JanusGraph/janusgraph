@@ -14,7 +14,6 @@
 
 package org.janusgraph.diskstorage.inmemory;
 
-import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.LockKeyColumnValueStoreTest;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -27,7 +26,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
 public class InMemoryLockKeyColumnValueStoreTest extends LockKeyColumnValueStoreTest {
 
     @Override
-    public KeyColumnValueStoreManager openStorageManager(int id, Configuration configuration) throws BackendException {
+    public KeyColumnValueStoreManager openStorageManager(int id, Configuration configuration) {
         return new InMemoryStoreManager();
     }
 

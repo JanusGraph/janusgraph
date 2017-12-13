@@ -39,7 +39,6 @@ import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 
 public class LockCleanerServiceTest {
     private IMocksControl ctrl;
-    private IMocksControl relaxedCtrl;
     private KeyColumnValueStore store;
     private StoreTransaction tx;
     private ExecutorService exec;
@@ -52,7 +51,7 @@ public class LockCleanerServiceTest {
 
     @Before
     public void setupMocks() {
-        relaxedCtrl = EasyMock.createControl();
+        IMocksControl relaxedCtrl = EasyMock.createControl();
         tx = relaxedCtrl.createMock(StoreTransaction.class);
 
         ctrl = EasyMock.createStrictControl();

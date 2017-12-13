@@ -25,5 +25,5 @@ import java.util.concurrent.ExecutionException;
 public interface SimpleScanJobRunner {
 
     ScanMetrics run(ScanJob job, Configuration jobConf, String rootNSName)
-            throws ExecutionException, BackendException, InterruptedException, IOException;
+        throws ExecutionException, BackendException, InterruptedException, IOException;
 }

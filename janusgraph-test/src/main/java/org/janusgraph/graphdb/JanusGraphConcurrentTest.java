@@ -296,11 +296,11 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
      */
     @Test
     public void testStandardIndexVertexPropertyReads() throws InterruptedException, ExecutionException {
-        testStandardIndexVertexPropertyReadsLogic(THREAD_COUNT);
+        testStandardIndexVertexPropertyReadsLogic();
     }
 
-    protected void testStandardIndexVertexPropertyReadsLogic(int numThreads) throws InterruptedException, ExecutionException {
-        final int propCount = numThreads * 5;
+    protected void testStandardIndexVertexPropertyReadsLogic() throws InterruptedException, ExecutionException {
+        final int propCount = JanusGraphConcurrentTest.THREAD_COUNT * 5;
         final int vertexCount = 1000;
         // Create props with standard indexes
         log.info("Creating types");
@@ -416,7 +416,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
         }
 
         @Override
-        protected void doRun() throws Exception {
+        protected void doRun() {
             JanusGraphVertex v = Iterables.getOnlyElement(tx.query().has(idKey, vertexId).vertices());
 
             for (int i = 0; i < nodeTraversalCount; i++) {
@@ -440,7 +440,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
             this.stopLatch = stopLatch;
         }
 
-        protected abstract void doRun() throws Exception;
+        protected abstract void doRun();
 
         @Override
         public void run() {

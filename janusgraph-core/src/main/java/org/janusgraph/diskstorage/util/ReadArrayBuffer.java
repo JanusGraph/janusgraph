@@ -35,8 +35,8 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
         super(buffer);
     }
 
-    protected ReadArrayBuffer(byte[] array, int offset, int limit) {
-        super(array,offset,limit);
+    protected ReadArrayBuffer(byte[] array, int limit) {
+        super(array, 0,limit);
     }
 
     @Override

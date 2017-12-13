@@ -635,9 +635,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 // Replace null end key with zeroes
                 b.put(new KeyRange(StaticArrayBuffer.of(zeroExtend(startKey)), FOUR_ZERO_BYTES), serverName);
             } else {
-                Preconditions.checkState(null != startKey);
-                Preconditions.checkState(null != endKey);
-
                 // Convert HBase's inclusive end keys into exclusive JanusGraph end keys
                 StaticBuffer startBuf = StaticArrayBuffer.of(zeroExtend(startKey));
                 StaticBuffer endBuf = StaticArrayBuffer.of(zeroExtend(endKey));
