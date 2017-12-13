@@ -431,7 +431,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         }
 
         for (int i = 0; i < numV; i += 5) {
-            testGeo(i, originalNumV, numV, "location", "boundary");
+            testGeo(i, originalNumV, numV);
         }
 
         //Queries combining mixed and composite indexes
@@ -1090,7 +1090,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
      * Tests query parameters with raw indexQuery
      */
     @Test
-    public void testRawQueriesWithParameters() throws Exception {
+    public void testRawQueriesWithParameters() {
         if (!supportsLuceneStyleQueries()) return;
         Parameter asc_sort_p = null;
         Parameter desc_sort_p = null;
@@ -1663,7 +1663,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     @Test
-    public void testIndexQueryWithScore() throws InterruptedException {
+    public void testIndexQueryWithScore() {
         PropertyKey textKey = mgmt.makePropertyKey("text").dataType(String.class).make();
         mgmt.buildIndex("store1", Vertex.class).addKey(textKey).buildMixedIndex(INDEX);
         mgmt.commit();
@@ -1689,7 +1689,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     // this tests a case when there as AND with a single CONTAINS condition inside AND(name:(was here))
     // which (in case of Solr) spans multiple conditions such as AND(AND(name:was, name:here))
     // so we need to make sure that we don't apply AND twice.
-    public void testContainsWithMultipleValues() throws Exception {
+    public void testContainsWithMultipleValues() {
         PropertyKey name = makeKey("name", String.class);
 
         mgmt.buildIndex("store1", Vertex.class).addKey(name).buildMixedIndex(INDEX);
@@ -1923,63 +1923,63 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertFalse(g.V().has(property, value2).hasNext());
     }
 
-    private void testGeo(int i, int origNumV, int numV, String geoPointProperty, String geoShapeProperty) {
+    private void testGeo(int i, int origNumV, int numV) {
         double offset = (i * 50.0 / origNumV);
         double bufferKm = 20;
         double distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + bufferKm;
 
-        assertCount(i + 1, tx.query().has(geoPointProperty, Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).vertices());
-        assertCount(i + 1, tx.query().has(geoPointProperty, Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges());
-        assertCount(i + 1, tx.query().has(geoPointProperty, Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).vertices());
-        assertCount(i + 1, tx.query().has(geoPointProperty, Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).edges());
-        assertCount(numV-(i + 1), tx.query().has(geoPointProperty, Geo.DISJOINT, Geoshape.circle(0.0, 0.0, distance)).vertices());
-        assertCount(numV-(i + 1), tx.query().has(geoPointProperty, Geo.DISJOINT, Geoshape.circle(0.0, 0.0, distance)).edges());
-        assertCount(i + 1, tx.query().has(geoShapeProperty, Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).vertices());
-        assertCount(i + 1, tx.query().has(geoShapeProperty, Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).edges());
+        assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).vertices());
+        assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges());
+        assertCount(i + 1, tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).vertices());
+        assertCount(i + 1, tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).edges());
+        assertCount(numV-(i + 1), tx.query().has("location", Geo.DISJOINT, Geoshape.circle(0.0, 0.0, distance)).vertices());
+        assertCount(numV-(i + 1), tx.query().has("location", Geo.DISJOINT, Geoshape.circle(0.0, 0.0, distance)).edges());
+        assertCount(i + 1, tx.query().has("boundary", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).vertices());
+        assertCount(i + 1, tx.query().has("boundary", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).edges());
         if (i > 0) {
-            assertCount(i, tx.query().has(geoShapeProperty, Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance-bufferKm)).vertices());
-            assertCount(i, tx.query().has(geoShapeProperty, Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance-bufferKm)).edges());
+            assertCount(i, tx.query().has("boundary", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance-bufferKm)).vertices());
+            assertCount(i, tx.query().has("boundary", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance-bufferKm)).edges());
         }
-        assertCount(numV-(i + 1), tx.query().has(geoShapeProperty, Geo.DISJOINT, Geoshape.circle(0.0, 0.0, distance)).vertices());
-        assertCount(numV-(i + 1), tx.query().has(geoShapeProperty, Geo.DISJOINT, Geoshape.circle(0.0, 0.0, distance)).edges());
+        assertCount(numV-(i + 1), tx.query().has("boundary", Geo.DISJOINT, Geoshape.circle(0.0, 0.0, distance)).vertices());
+        assertCount(numV-(i + 1), tx.query().has("boundary", Geo.DISJOINT, Geoshape.circle(0.0, 0.0, distance)).edges());
 
         if (indexFeatures.supportsGeoContains()) {
-            assertCount(i % 2, tx.query().has(geoShapeProperty, Geo.CONTAINS, Geoshape.point(-offset, -offset)).vertices());
-            assertCount(i % 2, tx.query().has(geoShapeProperty, Geo.CONTAINS, Geoshape.point(-offset, -offset)).edges());
+            assertCount(i % 2, tx.query().has("boundary", Geo.CONTAINS, Geoshape.point(-offset, -offset)).vertices());
+            assertCount(i % 2, tx.query().has("boundary", Geo.CONTAINS, Geoshape.point(-offset, -offset)).edges());
         }
 
         double buffer = bufferKm/111.;
         double min = -Math.abs(offset);
         double max = Math.abs(offset);
         Geoshape bufferedBox = Geoshape.box(min-buffer, min-buffer, max+buffer, max+buffer);
-        assertCount(i + 1, tx.query().has(geoPointProperty, Geo.WITHIN, bufferedBox).vertices());
-        assertCount(i + 1, tx.query().has(geoPointProperty, Geo.WITHIN, bufferedBox).edges());
-        assertCount(i + 1, tx.query().has(geoPointProperty, Geo.INTERSECT, bufferedBox).vertices());
-        assertCount(i + 1, tx.query().has(geoPointProperty, Geo.INTERSECT, bufferedBox).edges());
-        assertCount(numV-(i + 1), tx.query().has(geoPointProperty, Geo.DISJOINT, bufferedBox).vertices());
-        assertCount(numV-(i + 1), tx.query().has(geoPointProperty, Geo.DISJOINT, bufferedBox).edges());
+        assertCount(i + 1, tx.query().has("location", Geo.WITHIN, bufferedBox).vertices());
+        assertCount(i + 1, tx.query().has("location", Geo.WITHIN, bufferedBox).edges());
+        assertCount(i + 1, tx.query().has("location", Geo.INTERSECT, bufferedBox).vertices());
+        assertCount(i + 1, tx.query().has("location", Geo.INTERSECT, bufferedBox).edges());
+        assertCount(numV-(i + 1), tx.query().has("location", Geo.DISJOINT, bufferedBox).vertices());
+        assertCount(numV-(i + 1), tx.query().has("location", Geo.DISJOINT, bufferedBox).edges());
         if (i > 0) {
             Geoshape exactBox = Geoshape.box(min, min, max, max);
-            assertCount(i, tx.query().has(geoShapeProperty, Geo.WITHIN, exactBox).vertices());
-            assertCount(i, tx.query().has(geoShapeProperty, Geo.WITHIN, exactBox).edges());
+            assertCount(i, tx.query().has("boundary", Geo.WITHIN, exactBox).vertices());
+            assertCount(i, tx.query().has("boundary", Geo.WITHIN, exactBox).edges());
         }
-        assertCount(i + 1, tx.query().has(geoShapeProperty, Geo.INTERSECT, bufferedBox).vertices());
-        assertCount(i + 1, tx.query().has(geoShapeProperty, Geo.INTERSECT, bufferedBox).edges());
-        assertCount(numV-(i + 1), tx.query().has(geoShapeProperty, Geo.DISJOINT, bufferedBox).vertices());
-        assertCount(numV-(i + 1), tx.query().has(geoShapeProperty, Geo.DISJOINT, bufferedBox).edges());
+        assertCount(i + 1, tx.query().has("boundary", Geo.INTERSECT, bufferedBox).vertices());
+        assertCount(i + 1, tx.query().has("boundary", Geo.INTERSECT, bufferedBox).edges());
+        assertCount(numV-(i + 1), tx.query().has("boundary", Geo.DISJOINT, bufferedBox).vertices());
+        assertCount(numV-(i + 1), tx.query().has("boundary", Geo.DISJOINT, bufferedBox).edges());
 
         Geoshape bufferedPoly = Geoshape.polygon(Arrays.asList(new double[][]
                 {{min-buffer,min-buffer},{max+buffer,min-buffer},{max+buffer,max+buffer},{min-buffer,max+buffer},{min-buffer,min-buffer}}));
         if (i > 0) {
             Geoshape exactPoly = Geoshape.polygon(Arrays.asList(new double[][]
                     {{min,min},{max,min},{max,max},{min,max},{min,min}}));
-            assertCount(i, tx.query().has(geoShapeProperty, Geo.WITHIN, exactPoly).vertices());
-            assertCount(i, tx.query().has(geoShapeProperty, Geo.WITHIN, exactPoly).edges());
+            assertCount(i, tx.query().has("boundary", Geo.WITHIN, exactPoly).vertices());
+            assertCount(i, tx.query().has("boundary", Geo.WITHIN, exactPoly).edges());
         }
-        assertCount(i + 1, tx.query().has(geoShapeProperty, Geo.INTERSECT, bufferedPoly).vertices());
-        assertCount(i + 1, tx.query().has(geoShapeProperty, Geo.INTERSECT, bufferedPoly).edges());
-        assertCount(numV-(i + 1), tx.query().has(geoShapeProperty, Geo.DISJOINT, bufferedPoly).vertices());
-        assertCount(numV-(i + 1), tx.query().has(geoShapeProperty, Geo.DISJOINT, bufferedPoly).edges());
+        assertCount(i + 1, tx.query().has("boundary", Geo.INTERSECT, bufferedPoly).vertices());
+        assertCount(i + 1, tx.query().has("boundary", Geo.INTERSECT, bufferedPoly).edges());
+        assertCount(numV-(i + 1), tx.query().has("boundary", Geo.DISJOINT, bufferedPoly).vertices());
+        assertCount(numV-(i + 1), tx.query().has("boundary", Geo.DISJOINT, bufferedPoly).edges());
     }
 
     @Test

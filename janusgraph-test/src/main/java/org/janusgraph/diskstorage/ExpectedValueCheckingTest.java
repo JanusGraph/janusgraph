@@ -64,11 +64,6 @@ public class ExpectedValueCheckingTest {
     private IMocksControl ctrl;
     private ExpectedValueCheckingStoreManager expectManager;
     private KeyColumnValueStoreManager backingManager;
-    private LockerProvider lockerProvider;
-    private StoreFeatures backingFeatures;
-    private ModifiableConfiguration globalConfig;
-    private ModifiableConfiguration localConfig;
-    private ModifiableConfiguration defaultConfig;
     private StoreTransaction consistentTx;
     private StoreTransaction inconsistentTx;
     private StoreTransaction expectTx;
@@ -76,7 +71,6 @@ public class ExpectedValueCheckingTest {
     private KeyColumnValueStore backingStore;
     private KeyColumnValueStore expectStore;
     private Capture<BaseTransactionConfig> txConfigCapture;
-    private BaseTransactionConfig defaultTxConfig;
 
     private static final String STORE_NAME = "ExpectTestStore";
     private static final String LOCK_SUFFIX = "_expecttest";
@@ -99,16 +93,16 @@ public class ExpectedValueCheckingTest {
 
         // Setup some config mocks and objects
         backingManager = ctrl.createMock(KeyColumnValueStoreManager.class);
-        lockerProvider = ctrl.createMock(LockerProvider.class);
-        globalConfig = GraphDatabaseConfiguration.buildGraphConfiguration();
-        localConfig = GraphDatabaseConfiguration.buildGraphConfiguration();
-        defaultConfig = GraphDatabaseConfiguration.buildGraphConfiguration();
+        LockerProvider lockerProvider = ctrl.createMock(LockerProvider.class);
+        ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.buildGraphConfiguration();
+        ModifiableConfiguration localConfig = GraphDatabaseConfiguration.buildGraphConfiguration();
+        ModifiableConfiguration defaultConfig = GraphDatabaseConfiguration.buildGraphConfiguration();
         // Set some properties on the configs, just so that global/local/default can be easily distinguished
         globalConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "global");
         localConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "local");
         defaultConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "default");
-        defaultTxConfig = new StandardBaseTransactionConfig.Builder().customOptions(defaultConfig).timestampProvider(TimestampProviders.MICRO).build();
-        backingFeatures = new StandardStoreFeatures.Builder().keyConsistent(globalConfig, localConfig).build();
+        BaseTransactionConfig defaultTxConfig = new StandardBaseTransactionConfig.Builder().customOptions(defaultConfig).timestampProvider(TimestampProviders.MICRO).build();
+        StoreFeatures backingFeatures = new StandardStoreFeatures.Builder().keyConsistent(globalConfig, localConfig).build();
 
 
         // Setup behavior specification starts below this line

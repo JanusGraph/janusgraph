@@ -200,7 +200,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
     }
 
     @Test
-    public void testBasicComputeJob() throws Exception {
+    public void testBasicComputeJob() {
         GraphTraversalSource g = graph.traversal().withComputer(FulgoraGraphComputer.class);
         System.out.println(g.V().count().next());
     }

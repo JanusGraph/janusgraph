@@ -143,7 +143,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         private Map<EntryMetaData,Object> metadata=null;
 
         public SwappingEntry() {
-            super(data,0,0);
+            super(data, 0);
         }
 
         private void verifyAccess() {
@@ -414,7 +414,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             dataHandler.copy(val,data,offset);
             offset+=valueSize;
 
-            limitAndValuePos = ensureSpace(limitAndValuePos,pos,1);
+            limitAndValuePos = ensureSpace(limitAndValuePos,pos);
             limitAndValuePos[pos]= getOffsetAndValue(offset,colSize); //valuePosition = colSize
             pos++;
         }
@@ -444,9 +444,9 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
     }
 
     //Copy-pasted from above replacing byte->long
-    private static long[] ensureSpace(long[] data, int offset, int length) {
-        if (offset+length<=data.length) return data;
-        long[] newData = new long[Math.max(data.length*2,offset+length)];
+    private static long[] ensureSpace(long[] data, int offset) {
+        if (offset+1<=data.length) return data;
+        final long[] newData = new long[Math.max(data.length*2,offset+1)];
         System.arraycopy(data,0,newData,0,offset);
         return newData;
     }

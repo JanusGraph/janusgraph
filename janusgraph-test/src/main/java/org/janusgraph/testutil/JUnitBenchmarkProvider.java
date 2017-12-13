@@ -389,8 +389,7 @@ public class JUnitBenchmarkProvider {
 
         @Override
         public Object invoke(Object proxy, Method method, Object[] args)
-                throws IllegalAccessException, IllegalArgumentException,
-                InvocationTargetException {
+                throws IllegalArgumentException {
             if (method.getName().equals("benchmarkRounds")) {
                 log.trace("Intercepted benchmarkRounds() invocation: returning {}", rounds);
                 return rounds;

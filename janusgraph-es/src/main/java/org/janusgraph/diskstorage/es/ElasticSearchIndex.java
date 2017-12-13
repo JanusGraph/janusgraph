@@ -334,7 +334,7 @@ public class ElasticSearchIndex implements IndexProvider {
         }
         indexSetting = new HashMap<>();
 
-        ElasticSearchSetup.applySettingsFromJanusGraphConf(indexSetting, config, ES_CREATE_EXTRAS_NS);
+        ElasticSearchSetup.applySettingsFromJanusGraphConf(indexSetting, config);
         indexSetting.put("index.max_result_window", Integer.MAX_VALUE);
     }
 

@@ -112,7 +112,7 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
         log.info("Sent SIGTERM to {} pid {}", getDaemonShortName(), stat.getPid());
 
         try {
-            watchLog(" closed", 60L, TimeUnit.SECONDS);
+            watchLog(" closed");
             Thread.sleep(10000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -142,7 +142,7 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
 
         runCommand(homeDirectory + File.separator + "bin" + File.separator + "elasticsearch", "-d", "-p", ES_PID_FILE);
         try {
-            watchLog(" started", 60L, TimeUnit.SECONDS);
+            watchLog(" started");
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -155,9 +155,9 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
         return ElasticsearchStatus.read(ES_PID_FILE);
     }
 
-    private void watchLog(String suffix, long duration, TimeUnit unit) throws InterruptedException {
+    private void watchLog(String suffix) throws InterruptedException {
         long startMS = System.currentTimeMillis();
-        long durationMS = TimeUnit.MILLISECONDS.convert(duration, unit);
+        long durationMS = TimeUnit.MILLISECONDS.convert(60L, TimeUnit.SECONDS);
         long elapsedMS;
 
         File logFile = new File(homeDirectory + File.separator + "logs" + File.separator + "elasticsearch.log");

@@ -37,7 +37,7 @@ public class SerializerTestCommon {
     protected boolean printStats;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         serialize = new StandardSerializer();
         printStats = false;
     }

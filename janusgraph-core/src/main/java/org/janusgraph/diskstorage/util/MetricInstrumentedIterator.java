@@ -37,7 +37,7 @@ public class MetricInstrumentedIterator implements KeyIterator {
     
     private static final String M_HAS_NEXT = "hasNext";
     private static final String M_NEXT = "next";
-    private static final String M_CLOSE = "close";
+    static final String M_CLOSE = "close";
 
     /**
      * If the iterator argument is non-null, then return a new
@@ -70,19 +70,19 @@ public class MetricInstrumentedIterator implements KeyIterator {
 
     @Override
     public boolean hasNext() {
-        return MetricInstrumentedStore.runWithMetrics(p, null, M_HAS_NEXT,
+        return MetricInstrumentedStore.runWithMetrics(p, M_HAS_NEXT,
                 (UncheckedCallable<Boolean>) iterator::hasNext);
     }
 
     @Override
     public StaticBuffer next() {
-        return MetricInstrumentedStore.runWithMetrics(p, null, M_NEXT,
+        return MetricInstrumentedStore.runWithMetrics(p, M_NEXT,
                 (UncheckedCallable<StaticBuffer>) iterator::next);
     }
     
     @Override
     public void close() throws IOException {
-        MetricInstrumentedStore.runWithMetrics(p, null, M_CLOSE, (IOCallable<Void>) () -> {
+        MetricInstrumentedStore.runWithMetrics(p, MetricInstrumentedIterator.M_CLOSE, (IOCallable<Void>) () -> {
             iterator.close();
             return null;
         });

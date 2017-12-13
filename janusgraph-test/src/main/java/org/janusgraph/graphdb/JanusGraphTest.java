@@ -55,7 +55,6 @@ import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.JanusGraphSchemaType;
-import org.janusgraph.core.util.JanusGraphCleanup;
 import org.janusgraph.core.util.ManagementUtil;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
@@ -1032,7 +1031,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
      * Test the different data types that JanusGraph supports natively and ensure that invalid data types aren't allowed
      */
     @Test
-    public void testDataTypes() throws Exception {
+    public void testDataTypes() {
         clopen(option(CUSTOM_ATTRIBUTE_CLASS, "attribute10"), SpecialInt.class.getCanonicalName(),
                 option(CUSTOM_SERIALIZER_CLASS, "attribute10"), SpecialIntSerializer.class.getCanonicalName());
 
@@ -1415,7 +1414,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
-    public void testVertexCentricIndexOrderingOnEdgePropertyWithCardinalityList() throws InterruptedException, ExecutionException {
+    public void testVertexCentricIndexOrderingOnEdgePropertyWithCardinalityList() {
         clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
                 option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
                 option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250)
@@ -1437,7 +1436,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
-    public void testVertexCentricIndexOrderingOnMetaPropertyWithCardinalityList() throws InterruptedException, ExecutionException {
+    public void testVertexCentricIndexOrderingOnMetaPropertyWithCardinalityList() {
         clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
                 option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
                 option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250)
@@ -3258,12 +3257,11 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         ns = new JanusGraphVertex[numV * 3 / 2];
         for (int i = numV; i < numV * 3 / 2; i++) {
             double w = (i * 0.5) % 5;
-            long t = i;
-            v.property("name", "v" + i, "weight", w, "time", t);
+            v.property("name", "v" + i, "weight", w, "time", (long) i);
 
             ns[i] = tx.addVertex();
             for (String label : new String[]{"connect", "child", "link"}) {
-                JanusGraphEdge e = v.addEdge(label, ns[i], "weight", w, "time", t);
+                JanusGraphEdge e = v.addEdge(label, ns[i], "weight", w, "time", (long) i);
             }
         }
 
@@ -4108,22 +4106,21 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             VertexProperty p2 = ns[i].property("name", "u" + (i % 5));
 
             double w = (i * 0.5) % 5;
-            long t = i;
             String txt = strings[i % (strings.length)];
 
             ns[i].property(VertexProperty.Cardinality.single, "weight", w);
-            ns[i].property(VertexProperty.Cardinality.single, "time", t);
+            ns[i].property(VertexProperty.Cardinality.single, "time", (long) i);
             ns[i].property(VertexProperty.Cardinality.single, "text", txt);
 
             for (VertexProperty p : new VertexProperty[]{p1, p2}) {
                 p.property("weight", w);
-                p.property("time", t);
+                p.property("time", (long) i);
                 p.property("text", txt);
             }
 
             JanusGraphVertex u = ns[(i > 0 ? i - 1 : i)]; //previous or self-loop
             for (String label : new String[]{"connect", "related"}) {
-                Edge e = ns[i].addEdge(label, u, "weight", (w++) % 5, "time", t, "text", txt);
+                Edge e = ns[i].addEdge(label, u, "weight", (w++) % 5, "time", (long) i, "text", txt);
             }
         }
 
@@ -4274,22 +4271,21 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             VertexProperty p2 = ns[i].property("name", "u" + (i % 5));
 
             double w = (i * 0.5) % 5;
-            long t = i;
             String txt = strings[i % (strings.length)];
 
             ns[i].property(VertexProperty.Cardinality.single, "weight", w);
-            ns[i].property(VertexProperty.Cardinality.single, "time", t);
+            ns[i].property(VertexProperty.Cardinality.single, "time", (long) i);
             ns[i].property(VertexProperty.Cardinality.single, "text", txt);
 
             for (VertexProperty p : new VertexProperty[]{p1, p2}) {
                 p.property("weight", w);
-                p.property("time", t);
+                p.property("time", (long) i);
                 p.property("text", txt);
             }
 
             JanusGraphVertex u = ns[(i > numV ? i - 1 : i)]; //previous or self-loop
             for (String label : new String[]{"connect", "related"}) {
-                Edge e = ns[i].addEdge(label, u, "weight", (w++) % 5, "time", t, "text", txt);
+                Edge e = ns[i].addEdge(label, u, "weight", (w++) % 5, "time", (long) i, "text", txt);
             }
         }
 
@@ -5078,7 +5074,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testSettingTTLOnUnsupportedType() throws Exception {
+    public void testSettingTTLOnUnsupportedType() {
         if (!features.hasCellTTL()) {
             throw new IllegalArgumentException();
         }
@@ -5174,7 +5170,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testGetTTLFromUnsupportedType() throws Exception {
+    public void testGetTTLFromUnsupportedType() {
         if (!features.hasCellTTL()) {
             throw new IllegalArgumentException();
         }
@@ -5184,7 +5180,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testSettingTTLOnNonStaticVertexLabel() throws Exception {
+    public void testSettingTTLOnNonStaticVertexLabel() {
         if (!features.hasCellTTL()) {
             throw new IllegalArgumentException();
         }

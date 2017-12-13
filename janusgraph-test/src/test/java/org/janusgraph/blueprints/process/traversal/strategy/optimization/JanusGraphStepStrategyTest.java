@@ -60,7 +60,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class JanusGraphStepStrategyTest {
 
-    @Parameterized.Parameter(value = 0)
+    @Parameterized.Parameter()
     public Traversal original;
 
     @Parameterized.Parameter(value = 1)

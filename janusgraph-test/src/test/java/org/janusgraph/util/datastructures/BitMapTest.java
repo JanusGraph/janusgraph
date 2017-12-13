@@ -25,10 +25,6 @@ import static org.junit.Assert.assertTrue;
 
 public class BitMapTest {
 
-    @Before
-    public void setUp() throws Exception {
-    }
-
     @Test
     public void testBitMap() {
         byte map = BitMap.setBitb(BitMap.createMapb(2), 4);
@@ -40,10 +36,6 @@ public class BitMapTest {
         assertFalse(BitMap.readBitb(map, 7));
         map = BitMap.setBitb(map, 7);
         assertTrue(BitMap.readBitb(map, 7));
-    }
-
-    @After
-    public void tearDown() throws Exception {
     }
 
 }

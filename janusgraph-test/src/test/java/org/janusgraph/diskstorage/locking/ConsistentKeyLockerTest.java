@@ -78,17 +78,13 @@ public class ConsistentKeyLockerTest {
     private final StaticBuffer defaultLockVal = BufferUtil.getIntBuffer(0); // maybe refactor...
 
     private StoreTransaction defaultTx;
-    private BaseTransactionConfig defaultTxCfg;
     private Configuration defaultTxCustomOpts;
 
     private StoreTransaction otherTx;
-    private BaseTransactionConfig otherTxCfg;
     private Configuration otherTxCustomOpts;
 
     private final Duration defaultWaitNS = Duration.ofNanos(100 * 1000 * 1000);
     private final Duration defaultExpireNS = Duration.ofNanos(30L * 1000 * 1000 * 1000);
-
-    private final int maxTemporaryStorageExceptions = 3;
 
     private IMocksControl ctrl;
     private IMocksControl relaxedCtrl;
@@ -114,7 +110,7 @@ public class ConsistentKeyLockerTest {
         manager = relaxedCtrl.createMock(StoreManager.class);
 
         defaultTx = relaxedCtrl.createMock(StoreTransaction.class);
-        defaultTxCfg = relaxedCtrl.createMock(BaseTransactionConfig.class);
+        BaseTransactionConfig defaultTxCfg = relaxedCtrl.createMock(BaseTransactionConfig.class);
         defaultTxCustomOpts = relaxedCtrl.createMock(Configuration.class);
         expect(defaultTx.getConfiguration()).andReturn(defaultTxCfg).anyTimes();
         expect(defaultTxCfg.getGroupName()).andReturn("default").anyTimes();
@@ -125,7 +121,7 @@ public class ConsistentKeyLockerTest {
                 .andReturn(defaultTx).anyTimes();
 
         otherTx = relaxedCtrl.createMock(StoreTransaction.class);
-        otherTxCfg = relaxedCtrl.createMock(BaseTransactionConfig.class);
+        BaseTransactionConfig otherTxCfg = relaxedCtrl.createMock(BaseTransactionConfig.class);
         otherTxCustomOpts = relaxedCtrl.createMock(Configuration.class);
         expect(otherTx.getConfiguration()).andReturn(otherTxCfg).anyTimes();
         expect(otherTxCfg.getGroupName()).andReturn("other").anyTimes();
@@ -231,7 +227,7 @@ public class ConsistentKeyLockerTest {
         StaticBuffer firstCol = recordSuccessfulLockWrite(5, ChronoUnit.SECONDS, null).col;
         StaticBuffer secondCol = recordSuccessfulLockWrite(5, ChronoUnit.SECONDS, firstCol).col;
         StaticBuffer thirdCol = recordSuccessfulLockWrite(5, ChronoUnit.SECONDS, secondCol).col;
-        recordSuccessfulLockDelete(1, ChronoUnit.NANOS, thirdCol);
+        recordSuccessfulLockDelete(thirdCol);
         recordSuccessfulLocalUnlock();
         ctrl.replay();
 
@@ -257,8 +253,8 @@ public class ConsistentKeyLockerTest {
 
         expect(lockState.has(defaultTx, defaultLockID)).andReturn(false);
         recordSuccessfulLocalLock();
-        StaticBuffer lockCol = recordExceptionLockWrite(1, ChronoUnit.NANOS, null, errOnFire);
-        recordSuccessfulLockDelete(1, ChronoUnit.NANOS, lockCol);
+        StaticBuffer lockCol = recordExceptionLockWrite(errOnFire);
+        recordSuccessfulLockDelete(lockCol);
         recordSuccessfulLocalUnlock();
         ctrl.replay();
 
@@ -285,7 +281,7 @@ public class ConsistentKeyLockerTest {
 
         expect(lockState.has(defaultTx, defaultLockID)).andReturn(false);
         recordSuccessfulLocalLock();
-        StaticBuffer firstCol = recordExceptionLockWrite(1, ChronoUnit.NANOS, null, tse);
+        StaticBuffer firstCol = recordExceptionLockWrite(tse);
         LockInfo secondLI = recordSuccessfulLockWrite(1, ChronoUnit.NANOS, firstCol);
         recordSuccessfulLocalLock(secondLI.tsNS);
         lockState.take(eq(defaultTx), eq(defaultLockID), eq(secondLI.stat));
@@ -828,6 +824,7 @@ public class ConsistentKeyLockerTest {
                 break;
             }
             backendExceptionsThrown++;
+            int maxTemporaryStorageExceptions = 3;
             if (backendExceptionsThrown < maxTemporaryStorageExceptions) {
                 expect(times.getTime()).andReturn(currentTimeNS);
                 store.mutate(eq(lockKey), eq(ImmutableList.of()), eq(deletions), eq(defaultTx));
@@ -1075,8 +1072,7 @@ public class ConsistentKeyLockerTest {
         return new LockInfo(lockNS, status, lockCol);
     }
 
-    private StaticBuffer recordExceptionLockWrite(long duration, TemporalUnit tu, StaticBuffer del,
-                                                  Throwable t) throws BackendException {
+    private StaticBuffer recordExceptionLockWrite(Throwable t) throws BackendException {
         currentTimeNS = currentTimeNS.plusNanos(1);
         expect(times.getTime()).andReturn(currentTimeNS);
         StaticBuffer lockCol = codec.toLockCol(currentTimeNS, defaultLockRid, times);
@@ -1086,26 +1082,22 @@ public class ConsistentKeyLockerTest {
         StaticBuffer k = eq(defaultLockKey);
         final List<Entry> adds = eq(Collections.singletonList(add));
         final List<StaticBuffer> deletions;
-        if (null != del) {
-            deletions = eq(Collections.singletonList(del));
-        } else {
-            deletions = eq(ImmutableList.<StaticBuffer>of());
-        }
+        deletions = eq(ImmutableList.<StaticBuffer>of());
         store.mutate(k, adds, deletions, eq(defaultTx));
         expectLastCall().andThrow(t);
 
-        currentTimeNS = currentTimeNS.plus(duration, tu);
+        currentTimeNS = currentTimeNS.plus((long) 1, ChronoUnit.NANOS);
         expect(times.getTime()).andReturn(currentTimeNS);
 
         return lockCol;
     }
 
-    private void recordSuccessfulLockDelete(long duration, TemporalUnit tu, StaticBuffer del) throws BackendException {
+    private void recordSuccessfulLockDelete(StaticBuffer del) throws BackendException {
         currentTimeNS = currentTimeNS.plusNanos(1);
         expect(times.getTime()).andReturn(currentTimeNS);
         store.mutate(eq(defaultLockKey), eq(ImmutableList.of()), eq(Collections.singletonList(del)), eq(defaultTx));
 
-        currentTimeNS = currentTimeNS.plus(duration, tu);
+        currentTimeNS = currentTimeNS.plus((long) 1, ChronoUnit.NANOS);
         expect(times.getTime()).andReturn(currentTimeNS);
     }
 
@@ -1191,13 +1183,12 @@ public class ConsistentKeyLockerTest {
         }
 
         @Override
-        public Instant sleepPast(Instant futureTime)
-                throws InterruptedException {
+        public Instant sleepPast(Instant futureTime) {
             throw new IllegalStateException();
         }
 
         @Override
-        public void sleepFor(Duration duration) throws InterruptedException {
+        public void sleepFor(Duration duration) {
             throw new IllegalStateException();
         }
 

@@ -210,30 +210,31 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
         }
     }
 
-    static <T> T runWithMetrics(String prefix, String storeName, String name, IOCallable<T> impl) throws IOException {
+    static <T> void runWithMetrics(String prefix, String name, IOCallable<T> impl) throws IOException {
 
         if (null == prefix) {
-            return impl.call();
+            impl.call();
+            return;
         }
 
         Preconditions.checkNotNull(name);
         Preconditions.checkNotNull(impl);
 
         final MetricManager mgr = MetricManager.INSTANCE;
-        mgr.getCounter(prefix, storeName, name, M_CALLS).inc();
-        final Timer.Context tc = mgr.getTimer(prefix, storeName, name, M_TIME).time();
+        mgr.getCounter(prefix, null, MetricInstrumentedIterator.M_CLOSE, M_CALLS).inc();
+        final Timer.Context tc = mgr.getTimer(prefix, null, MetricInstrumentedIterator.M_CLOSE, M_TIME).time();
 
         try {
-            return impl.call();
+            impl.call();
         } catch (IOException e) {
-            mgr.getCounter(prefix, storeName, name, M_EXCEPTIONS).inc();
+            mgr.getCounter(prefix, null, MetricInstrumentedIterator.M_CLOSE, M_EXCEPTIONS).inc();
             throw e;
         } finally {
             tc.stop();
         }
     }
 
-    static <T> T runWithMetrics(String prefix, String storeName, String name, UncheckedCallable<T> impl) {
+    static <T> T runWithMetrics(String prefix, String name, UncheckedCallable<T> impl) {
 
         if (null == prefix) {
             return impl.call();
@@ -244,14 +245,14 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
 
         final MetricManager mgr = MetricManager.INSTANCE;
 
-        mgr.getCounter(prefix, storeName, name, M_CALLS).inc();
+        mgr.getCounter(prefix, null, name, M_CALLS).inc();
 
-        final Timer.Context tc = mgr.getTimer(prefix, storeName, name, M_TIME).time();
+        final Timer.Context tc = mgr.getTimer(prefix, null, name, M_TIME).time();
 
         try {
             return impl.call();
         } catch (RuntimeException e) {
-            mgr.getCounter(prefix, storeName, name, M_EXCEPTIONS).inc();
+            mgr.getCounter(prefix, null, name, M_EXCEPTIONS).inc();
             throw e;
         } finally {
             tc.stop();

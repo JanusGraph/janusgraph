@@ -85,12 +85,12 @@ public abstract class LogTest {
 
     @Test
     public void smallSendReceiveSerial() throws Exception {
-        simpleSendReceive(100, 50, TIMEOUT_MS);
+        simpleSendReceive(100, 50);
     }
 
     @Test
     public void mediumSendReceiveSerial() throws Exception {
-        simpleSendReceive(2000,1, TIMEOUT_MS);
+        simpleSendReceive(2000,1);
     }
 
     @Test
@@ -252,8 +252,8 @@ public abstract class LogTest {
         assertEquals(3, reader2.totalValue.get());
     }
 
-    protected void simpleSendReceive(int numMessages, int delayMS, long timeoutMS) throws Exception {
-        sendReceive(1, numMessages, delayMS, true, timeoutMS);
+    protected void simpleSendReceive(int numMessages, int delayMS) throws Exception {
+        sendReceive(1, numMessages, delayMS, true, LogTest.TIMEOUT_MS);
     }
 
     public void sendReceive(int readers, int numMessages, int delayMS, boolean expectMessageOrder, long timeoutMS) throws Exception {

@@ -460,10 +460,6 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     }
 
     private void ensureColumnFamilyExists(String name) throws BackendException {
-        ensureColumnFamilyExists(name, "org.apache.cassandra.db.marshal.BytesType");
-    }
-
-    private void ensureColumnFamilyExists(String name, String comparator) throws BackendException {
         Cluster cl = clusterContext.getClient();
         try {
             KeyspaceDefinition ksDef = cl.describeKeyspace(keySpaceName);
@@ -478,7 +474,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                         cl.makeColumnFamilyDefinition()
                                 .setName(name)
                                 .setKeyspace(keySpaceName)
-                                .setComparatorType(comparator);
+                                .setComparatorType("org.apache.cassandra.db.marshal.BytesType");
 
                 final ImmutableMap.Builder<String, String> compressionOptions = new ImmutableMap.Builder<>();
 
@@ -577,7 +573,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         // Conditional context builder option: host supplier
         if (config.has(HOST_SUPPLIER)) {
             String hostSupplier = config.get(HOST_SUPPLIER);
-            Supplier<List<Host>> supplier = null;
+            final Supplier<List<Host>> supplier;
             if (hostSupplier != null) {
                 try {
                     supplier = (Supplier<List<Host>>) Class.forName(hostSupplier).newInstance();

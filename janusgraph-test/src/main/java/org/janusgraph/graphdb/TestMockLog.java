@@ -19,7 +19,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
@@ -58,12 +57,12 @@ public class TestMockLog implements LogManager {
     }
 
     @Override
-    public synchronized Log openLog(String name) throws BackendException {
+    public synchronized Log openLog(String name) {
         return openLogs.computeIfAbsent(name, TestLog::new);
     }
 
     @Override
-    public synchronized void close() throws BackendException {
+    public synchronized void close() {
         openLogs.clear();
     }
 
@@ -133,7 +132,7 @@ public class TestMockLog implements LogManager {
         }
 
         @Override
-        public void close() throws BackendException {
+        public void close() {
             readers.clear();
         }
     }

@@ -16,8 +16,6 @@ package org.janusgraph.diskstorage.util;
 
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.locking.Locker;
-import org.janusgraph.diskstorage.locking.PermanentLockingException;
-import org.janusgraph.diskstorage.locking.TemporaryLockingException;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -43,18 +41,18 @@ public class TestLockerManager {
         }
 
         @Override
-        public void writeLock(KeyColumn lockID, StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
+        public void writeLock(KeyColumn lockID, StoreTransaction tx) {
             if (errorOnLock)
                 throw new UnsupportedOperationException("Locking is not supported!");
         }
 
         @Override
-        public void checkLocks(StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
+        public void checkLocks(StoreTransaction tx) {
             //Do nothing since no locks where written
         }
 
         @Override
-        public void deleteLocks(StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
+        public void deleteLocks(StoreTransaction tx) {
             //Do nothing since no locks where written
         }
     }

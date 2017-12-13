@@ -98,7 +98,7 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
-    public void testVertexPartitioning() throws Exception {
+    public void testVertexPartitioning() {
         Object[] options = {option(GraphDatabaseConfiguration.IDS_FLUSH), false};
         clopen(options);
 
