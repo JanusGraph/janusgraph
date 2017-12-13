@@ -119,5 +119,14 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
         }
         return list.iterator();
     }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (hasContainers != null ? hasContainers.hashCode() : 0);
+        result = 31 * result + limit;
+        result = 31 * result + (orders != null ? orders.hashCode() : 0);
+        return result;
+    }
 }
 
