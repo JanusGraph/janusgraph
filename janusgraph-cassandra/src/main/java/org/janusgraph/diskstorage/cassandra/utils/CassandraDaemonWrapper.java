@@ -89,8 +89,4 @@ public class CassandraDaemonWrapper {
     public static synchronized boolean isStarted() {
         return started;
     }
-
-    public static void stop() {
-        // Do nothing
-    }
 }

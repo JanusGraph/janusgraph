@@ -311,7 +311,7 @@ public abstract class IDAuthorityTest {
     }
 
     @Test
-    public void testManyThreadsOneIDAuthority() throws BackendException, InterruptedException, ExecutionException {
+    public void testManyThreadsOneIDAuthority() throws InterruptedException, ExecutionException {
 
         ExecutorService es = Executors.newFixedThreadPool(CONCURRENCY);
 
@@ -487,7 +487,7 @@ public abstract class IDAuthorityTest {
             return block;
         }
 
-        private boolean throwIterationsExceededException() {
+        private void throwIterationsExceededException() {
             throw new RuntimeException(
                     "Exceeded maximum ID allocation iteration count ("
                             + maxIterations + "); too many timeouts?");

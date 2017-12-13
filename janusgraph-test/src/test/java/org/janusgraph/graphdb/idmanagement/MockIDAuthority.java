@@ -114,7 +114,7 @@ public class MockIDAuthority implements IDAuthority {
     }
 
     @Override
-    public List<KeyRange> getLocalIDPartition() throws BackendException {
+    public List<KeyRange> getLocalIDPartition() {
         Preconditions.checkNotNull(localPartition);
         return localPartition;
     }
@@ -125,7 +125,7 @@ public class MockIDAuthority implements IDAuthority {
     }
 
     @Override
-    public void close() throws BackendException {
+    public void close() {
 
     }
 

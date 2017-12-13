@@ -84,7 +84,7 @@ public abstract class JanusGraphIoTest extends JanusGraphBaseTest {
         });
     }
 
-    @Parameterized.Parameter(value = 0)
+    @Parameterized.Parameter()
     public String ioType;
 
     @Parameterized.Parameter(value = 1)

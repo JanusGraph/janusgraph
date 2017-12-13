@@ -143,7 +143,7 @@ public class IDPoolTest {
             }
 
             @Override
-            public List<KeyRange> getLocalIDPartition() throws BackendException {
+            public List<KeyRange> getLocalIDPartition() {
                 throw new IllegalArgumentException();
             }
 
@@ -153,7 +153,7 @@ public class IDPoolTest {
             }
 
             @Override
-            public void close() throws BackendException {
+            public void close() {
                 throw new IllegalArgumentException();
             }
 

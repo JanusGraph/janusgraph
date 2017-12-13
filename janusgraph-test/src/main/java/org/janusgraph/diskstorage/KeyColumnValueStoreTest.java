@@ -407,7 +407,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
             String[][] values = generateValues();
             loadValues(values);
             KeyIterator iterator0 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
-            verifyIterator(iterator0,numKeys,1);
+            verifyIterator(iterator0,numKeys);
             clopen();
             KeyIterator iterator1 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
             KeyIterator iterator2 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
@@ -416,12 +416,12 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
             // (important for BerkeleyJE where leaving cursors open causes exceptions)
             @SuppressWarnings("unused")
             KeyIterator iterator3 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
-            verifyIterator(iterator1,numKeys,1);
-            verifyIterator(iterator2,numKeys,1);
+            verifyIterator(iterator1,numKeys);
+            verifyIterator(iterator2,numKeys);
         }
     }
 
-    private void verifyIterator(KeyIterator iterator, int expectedKeys, int expectedColumns) {
+    private void verifyIterator(KeyIterator iterator, int expectedKeys) {
         int keys = 0;
         while (iterator.hasNext()) {
             StaticBuffer b = iterator.next();
@@ -434,7 +434,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
                 assertTrue(e!=null && e.length()>0);
                 cols++;
             }
-            assertEquals(expectedColumns,cols);
+            assertEquals(1,cols);
         }
         assertEquals(expectedKeys,keys);
     }
@@ -661,7 +661,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         loadValues(values);
         Set<KeyColumn> deleted = Sets.newHashSet();
         clopen();
-        checkRandomSlices(values, deleted, TRIALS);
+        checkRandomSlices(values, deleted);
     }
 
     @Test
@@ -672,11 +672,11 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         newTx();
         Set<KeyColumn> deleted = deleteValues(7);
         clopen();
-        checkRandomSlices(values, deleted, TRIALS);
+        checkRandomSlices(values, deleted);
     }
 
-    protected void checkRandomSlices(String[][] values, Set<KeyColumn> deleted, int trials) throws BackendException {
-        for (int t = 0; t < trials; t++) {
+    protected void checkRandomSlices(String[][] values, Set<KeyColumn> deleted) throws BackendException {
+        for (int t = 0; t < KeyColumnValueStoreTest.TRIALS; t++) {
             int key = RandomGenerator.randomInt(0, numKeys);
             int start = RandomGenerator.randomInt(0, numColumns);
             int end = RandomGenerator.randomInt(start, numColumns);
@@ -688,15 +688,15 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
     @Test
     public void testConcurrentGetSlice() throws ExecutionException, InterruptedException, BackendException {
-        testConcurrentStoreOps(false, TRIALS);
+        testConcurrentStoreOps(false);
     }
 
     @Test
     public void testConcurrentGetSliceAndMutate() throws BackendException, ExecutionException, InterruptedException {
-        testConcurrentStoreOps(true, TRIALS);
+        testConcurrentStoreOps(true);
     }
 
-    protected void testConcurrentStoreOps(boolean deletionEnabled, int trials) throws BackendException, ExecutionException, InterruptedException {
+    protected void testConcurrentStoreOps(boolean deletionEnabled) throws BackendException, ExecutionException, InterruptedException {
         // Load data fixture
         String[][] values = generateValues();
         loadValues(values);
@@ -724,9 +724,9 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         for (int i = 0; i < NUM_THREADS; i++) {
             Set<KeyColumn> deleted = Sets.newHashSet();
             if (!deletionEnabled) {
-                tasks.add(new ConcurrentRandomSliceReader(values, deleted, trials));
+                tasks.add(new ConcurrentRandomSliceReader(values, deleted, KeyColumnValueStoreTest.TRIALS));
             } else {
-                tasks.add(new ConcurrentRandomSliceReader(values, deleted, i, trials));
+                tasks.add(new ConcurrentRandomSliceReader(values, deleted, i, KeyColumnValueStoreTest.TRIALS));
             }
         }
         List<Future<?>> futures = new ArrayList<>(NUM_THREADS);
@@ -988,7 +988,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
                 new SliceQuery(new ReadArrayBuffer("b".getBytes()),
                         new ReadArrayBuffer("c".getBytes())), tx);
 
-        examineGetKeysResults(keyIterator, 0, 100, 1);
+        examineGetKeysResults(keyIterator, 0, 100);
     }
 
     @Test
@@ -1013,7 +1013,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
                 new ReadArrayBuffer("b".getBytes()), // column start
                 new ReadArrayBuffer("c".getBytes())), tx);
 
-        examineGetKeysResults(keyIterator, 10, 40, 1);
+        examineGetKeysResults(keyIterator, 10, 40);
     }
 
     @Category({ BrittleTests.class })
@@ -1138,8 +1138,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     protected void examineGetKeysResults(KeyIterator keyIterator,
-                                         long startKey, long endKey, int expectedColumns)
-            throws BackendException {
+                                         long startKey, long endKey) {
         Assert.assertNotNull(keyIterator);
 
         int count = 0;
@@ -1166,7 +1165,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
                 entryCount++;
             }
 
-            Assert.assertEquals(expectedColumns, entryCount);
+            Assert.assertEquals(1, entryCount);
 
             count++;
         }

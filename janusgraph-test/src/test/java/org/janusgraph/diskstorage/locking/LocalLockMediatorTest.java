@@ -41,7 +41,7 @@ public class LocalLockMediatorTest {
     private static final ExpectedValueCheckingTransaction mockTx2 = mock(ExpectedValueCheckingTransaction.class);
 
     @Test
-    public void testLockExpiration() throws InterruptedException {
+    public void testLockExpiration() {
         TimestampProvider times = TimestampProviders.MICRO;
         LocalLockMediator<ExpectedValueCheckingTransaction> llm = new LocalLockMediator<>(LOCK_NAMESPACE, times);
 

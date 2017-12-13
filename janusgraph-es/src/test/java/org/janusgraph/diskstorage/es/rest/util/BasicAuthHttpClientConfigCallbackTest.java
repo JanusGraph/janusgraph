@@ -47,8 +47,9 @@ public class BasicAuthHttpClientConfigCallbackTest {
         when(httpAsyncClientBuilderMock.setDefaultCredentialsProvider(anyObject())).thenReturn(httpAsyncClientBuilderMock);
     }
 
-    private CredentialsProvider basicAuthTestBase(final String realm, final String username, final String password) {
-        final BasicAuthHttpClientConfigCallback cb = new BasicAuthHttpClientConfigCallback(realm, username, password);
+    private CredentialsProvider basicAuthTestBase(final String realm) {
+        final BasicAuthHttpClientConfigCallback cb = new BasicAuthHttpClientConfigCallback(realm,
+            BasicAuthHttpClientConfigCallbackTest.HTTP_USER, BasicAuthHttpClientConfigCallbackTest.HTTP_PASSWORD);
 
         cb.customizeHttpClient(httpAsyncClientBuilderMock);
 
@@ -65,7 +66,7 @@ public class BasicAuthHttpClientConfigCallbackTest {
     @Test
     public void testSetDefaultCredentialsProviderNoRealm() throws Exception {
 
-        final CredentialsProvider cp = basicAuthTestBase("", HTTP_USER, HTTP_PASSWORD);
+        final CredentialsProvider cp = basicAuthTestBase("");
 
         // expected: will match any host and any realm
         final Credentials credentialsForRealm1 = cp.getCredentials(new AuthScope("dummyhost1", 1234, "dummyrealm1"));
@@ -76,7 +77,7 @@ public class BasicAuthHttpClientConfigCallbackTest {
     @Test
     public void testSetDefaultCredentialsProviderWithRealm() throws Exception {
 
-        final CredentialsProvider cp = basicAuthTestBase(HTTP_REALM, HTTP_USER, HTTP_PASSWORD);
+        final CredentialsProvider cp = basicAuthTestBase(HTTP_REALM);
 
         // expected: will match any host in that specific realm
         final Credentials credentialsForRealm1 = cp.getCredentials(new AuthScope("dummyhost1", 1234, HTTP_REALM));

@@ -532,10 +532,6 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     }
 
     private void ensureColumnFamilyExists(String ksName, String cfName) throws BackendException {
-        ensureColumnFamilyExists(ksName, cfName, "org.apache.cassandra.db.marshal.BytesType");
-    }
-
-    private void ensureColumnFamilyExists(String ksName, String cfName, String comparator) throws BackendException {
         CTConnection conn = null;
         try {
             KsDef keyspaceDef = ensureKeyspaceExists(ksName);
@@ -553,7 +549,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
             }
 
             if (!foundColumnFamily) {
-                createColumnFamily(client, ksName, cfName, comparator);
+                createColumnFamily(client, ksName, cfName, "org.apache.cassandra.db.marshal.BytesType");
             } else {
                 log.debug("Keyspace {} and ColumnFamily {} were found.", ksName, cfName);
             }

@@ -1016,9 +1016,9 @@ public class ManagementSystem implements JanusGraphManagement {
 
             JanusGraphSchemaCategory cat = relType.isEdgeLabel() ?
                     JanusGraphSchemaCategory.EDGELABEL : JanusGraphSchemaCategory.PROPERTYKEY;
-            SystemTypeManager.isNotSystemName(cat, newName);
+            SystemTypeManager.throwIfSystemName(cat, newName);
         } else if (element instanceof VertexLabel) {
-            SystemTypeManager.isNotSystemName(JanusGraphSchemaCategory.VERTEXLABEL, newName);
+            SystemTypeManager.throwIfSystemName(JanusGraphSchemaCategory.VERTEXLABEL, newName);
         } else if (element instanceof JanusGraphIndex) {
             checkIndexName(newName);
         }

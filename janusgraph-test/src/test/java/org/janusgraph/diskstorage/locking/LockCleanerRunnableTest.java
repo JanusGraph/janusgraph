@@ -47,7 +47,6 @@ import org.janusgraph.diskstorage.locking.consistentkey.StandardLockCleanerRunna
 public class LockCleanerRunnableTest {
 
     private IMocksControl ctrl;
-    private IMocksControl relaxedCtrl;
     private StandardLockCleanerRunnable del;
     private KeyColumnValueStore store;
     private StoreTransaction tx;
@@ -62,7 +61,7 @@ public class LockCleanerRunnableTest {
 
     @Before
     public void setupMocks() {
-        relaxedCtrl = EasyMock.createControl();
+        IMocksControl relaxedCtrl = EasyMock.createControl();
         tx = relaxedCtrl.createMock(StoreTransaction.class);
 
         ctrl = EasyMock.createStrictControl();

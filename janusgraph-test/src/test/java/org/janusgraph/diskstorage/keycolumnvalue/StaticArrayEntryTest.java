@@ -229,7 +229,7 @@ public class StaticArrayEntryTest {
     }
 
     @Test
-    public void testTTLMetadata() throws Exception {
+    public void testTTLMetadata() {
         WriteBuffer wb = new WriteByteBuffer(128);
         wb.putInt(1).putInt(2).putInt(3).putInt(4);
         int valuePos = wb.getPosition();

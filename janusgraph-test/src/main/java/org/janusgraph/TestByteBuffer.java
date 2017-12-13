@@ -55,8 +55,8 @@ public class TestByteBuffer {
             for (int j = 0; j < NUM; j++) {
                 if (i == j) continue;
                 if (Math.random() < FRACTION) {
-                    Edge e = new Edge(vertices[i], "connect", vertices[j]);
-                    e.setProperty("number", random.nextInt(ROUNDSIZE));
+                    Edge e = new Edge(vertices[i], vertices[j]);
+                    e.setProperty(random.nextInt(ROUNDSIZE));
                     vertices[i].addOutEdge(e);
                 }
             }
@@ -174,8 +174,8 @@ public class TestByteBuffer {
         private final String label;
         private final Map<String, Object> properties = new HashMap<>();
 
-        Edge(Vertex start, String label, Vertex end) {
-            this.label = label;
+        Edge(Vertex start, Vertex end) {
+            this.label = "connect";
             this.end = end;
             this.start = start;
         }
@@ -184,8 +184,8 @@ public class TestByteBuffer {
             return label;
         }
 
-        void setProperty(String key, Object value) {
-            properties.put(key, value);
+        void setProperty(Object value) {
+            properties.put("number", value);
         }
 
         public Object getProperty(String key) {

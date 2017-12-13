@@ -82,13 +82,12 @@ public abstract class JanusGraphBlueprintsGraph implements JanusGraph {
         return tx;
     }
 
-    private JanusGraphBlueprintsTransaction startNewTx() {
+    private void startNewTx() {
         JanusGraphBlueprintsTransaction tx = txs.get();
         if (tx!=null && tx.isOpen()) throw Transaction.Exceptions.transactionAlreadyOpen();
         tx = (JanusGraphBlueprintsTransaction) newThreadBoundTransaction();
         txs.set(tx);
         log.debug("Created new thread-bound transaction {}", tx);
-        return tx;
     }
 
     public JanusGraphTransaction getCurrentThreadTx() {

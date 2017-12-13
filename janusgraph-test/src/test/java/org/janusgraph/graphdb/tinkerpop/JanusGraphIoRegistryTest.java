@@ -131,7 +131,7 @@ public class JanusGraphIoRegistryTest {
     }
 
     @Test
-    public void testLegacyGeoshapAsGryo() throws SerializationException {
+    public void testLegacyGeoshapAsGryo() {
         final Geoshape point = Geoshape.point(1.0d, 4.0d);
 
         Kryo kryo = new Kryo();

@@ -340,7 +340,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test
-    public void parallelNoncontendedLockStressTest() throws BackendException, InterruptedException {
+    public void parallelNoncontendedLockStressTest() throws InterruptedException {
         final Executor stressPool = Executors.newFixedThreadPool(CONCURRENCY);
         final CountDownLatch stressComplete = new CountDownLatch(CONCURRENCY);
         final long maxWallTimeAllowedMilliseconds = 90 * 1000L;
