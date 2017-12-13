@@ -782,16 +782,11 @@ public class ElasticSearchIndex implements IndexProvider {
             switch (keyInformation.getCardinality()) {
                 case SET:
                 case LIST:
-                    script.append("ctx._source[\"")
-                        .append(e.field).append("\"].add(")
-                        .append(convertToJsType(e.value, compat.scriptLang(), Mapping.getMapping(keyInformation)))
-                        .append(");");
+                    script.append("if(ctx._source[\"").append(e.field).append("\"] == null) ctx._source[\"").append(e.field).append("\"] = [];");
+                    script.append("ctx._source[\"").append(e.field).append("\"].add(").append(convertToJsType(e.value, compat.scriptLang(), Mapping.getMapping(keyInformation))).append(");");
                     if (hasDualStringMapping(keyInformation)) {
-                        script.append("ctx._source[\"")
-                            .append(getDualMappingName(e.field))
-                            .append("\"].add(")
-                            .append(convertToJsType(e.value, compat.scriptLang(), Mapping.getMapping(keyInformation)))
-                            .append(");");
+                        script.append("if(ctx._source[\"").append(getDualMappingName(e.field)).append("\"] == null) ctx._source[\"").append(getDualMappingName(e.field)).append("\"] = [];");
+                        script.append("ctx._source[\"").append(getDualMappingName(e.field)).append("\"].add(").append(convertToJsType(e.value, compat.scriptLang(), Mapping.getMapping(keyInformation))).append(");");
                     }
                     break;
                 default:
