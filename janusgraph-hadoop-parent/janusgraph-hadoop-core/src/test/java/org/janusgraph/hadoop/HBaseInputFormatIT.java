@@ -20,7 +20,6 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.hadoop.hbase.util.VersionInfo;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.junit.AfterClass;
@@ -40,9 +39,6 @@ public class HBaseInputFormatIT extends AbstractInputFormatIT {
 
     @AfterClass
     public static void stopHBase() {
-        // Workaround for https://issues.apache.org/jira/browse/HBASE-10312
-        if (VersionInfo.getVersion().startsWith("0.96"))
-            HBaseStorageSetup.killIfRunning();
     }
 
     protected Graph getGraph() throws IOException, ConfigurationException {
