@@ -72,7 +72,7 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
     @Override
     public String toString() {
         return this.hasContainers.isEmpty() ?
-                super.toString() : StringFactory.stepString(this, Arrays.toString(this.ids), this.hasContainers);
+                super.toString() : StringFactory.stepString(this, Arrays.toString(this.ids), this.hasContainers, this.orders);
     }
 
     @Override
