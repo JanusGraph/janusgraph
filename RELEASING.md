@@ -16,12 +16,7 @@ tools must be installed.
 <settings>
   <servers>
     <server>
-      <id>sonatype-nexus-snapshots</id>
-      <username>...</username>
-      <password>...</password>
-    </server>
-    <server>
-      <id>sonatype-nexus-staging</id>
+      <id>ossrh</id>
       <username>...</username>
       <password>...</password>
     </server>
