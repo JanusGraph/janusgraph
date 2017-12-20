@@ -684,12 +684,11 @@ public class SolrIndex implements IndexProvider {
             } else if (value instanceof String) {
                 final Mapping map = getStringMapping(information.get(key));
                 assert map==Mapping.TEXT || map==Mapping.STRING;
-                if (map==Mapping.TEXT && !Text.HAS_CONTAINS.contains(predicate))
-                    throw new IllegalArgumentException("Text mapped string values only support CONTAINS queries and not: "
-                            + predicate);
+
+                if (map==Mapping.TEXT && !(Text.HAS_CONTAINS.contains(predicate) || predicate instanceof Cmp))
+                    throw new IllegalArgumentException("Text mapped string values only support CONTAINS and Compare queries and not: " + predicate);
                 if (map==Mapping.STRING && Text.HAS_CONTAINS.contains(predicate))
-                    throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: "
-                            + predicate);
+                    throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + predicate);
 
                 //Special case
                 if (predicate == Text.CONTAINS) {
@@ -711,6 +710,14 @@ public class SolrIndex implements IndexProvider {
                     return ("-" + key + ":\"" + escapeValue(value) + "\"");
                 } else if (predicate == Text.FUZZY || predicate == Text.CONTAINS_FUZZY) {
                     return (key + ":"+escapeValue(value)+"~");
+                } else if (predicate == Cmp.LESS_THAN) {
+                    return (key + ":[* TO \"" + escapeValue(value) + "\"}");
+                } else if (predicate == Cmp.LESS_THAN_EQUAL) {
+                     return (key + ":[* TO \"" + escapeValue(value) + "\"]");
+                } else if (predicate == Cmp.GREATER_THAN) {
+                    return (key + ":{\"" + escapeValue(value) + "\" TO *]");
+                } else if (predicate == Cmp.GREATER_THAN_EQUAL) {
+                     return (key + ":[\"" + escapeValue(value) + "\" TO *]");
                 } else {
                     throw new IllegalArgumentException("Relation is not supported for string value: " + predicate);
                 }
@@ -948,8 +955,7 @@ public class SolrIndex implements IndexProvider {
                     return predicate == Text.CONTAINS || predicate == Text.CONTAINS_PREFIX
                             || predicate == Text.CONTAINS_REGEX || predicate == Text.CONTAINS_FUZZY;
                 case STRING:
-                    return predicate == Cmp.EQUAL || predicate==Cmp.NOT_EQUAL || predicate==Text.REGEX
-                            || predicate==Text.PREFIX  || predicate == Text.FUZZY;
+                    return predicate instanceof Cmp || predicate==Text.REGEX || predicate==Text.PREFIX  || predicate == Text.FUZZY;
 //                case TEXTSTRING:
 //                    return (janusgraphPredicate instanceof Text) || janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL;
             }

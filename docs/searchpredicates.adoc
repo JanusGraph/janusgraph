@@ -14,6 +14,11 @@ The `Compare` enum specifies the following comparison predicates used for index 
 * `lt` (less than)
 * `lte` (less than or equal)
 
+All comparison predicates are supported by String, numeric, Date and Instant data types.
+Boolean and UUID data types support the `eq` and `neq` comparison predicates.
+
+`eq` and `neq` can be used on Boolean and UUID.
+
 === Text Predicate
 
 The `Text` enum specifies the <<text-search, search operator>> used to query for matching text or string values.  We differentiate between two types of predicates:
