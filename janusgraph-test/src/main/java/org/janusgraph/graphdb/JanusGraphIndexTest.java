@@ -311,6 +311,10 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         createExternalVertexIndex(text, INDEX);
         createExternalEdgeIndex(text, INDEX);
 
+        PropertyKey name = makeKey("name", String.class);
+        mgmt.addIndexKey(getExternalIndex(Vertex.class,INDEX),name, Parameter.of("mapping", Mapping.TEXT));
+        mgmt.addIndexKey(getExternalIndex(Edge.class,INDEX),name, Parameter.of("mapping", Mapping.TEXT));
+
         PropertyKey location = makeKey("location", Geoshape.class);
         createExternalVertexIndex(location, INDEX);
         createExternalEdgeIndex(location, INDEX);
@@ -348,6 +352,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             v.property(VertexProperty.Cardinality.single, "category", i % numCategories);
             v.property(VertexProperty.Cardinality.single, "group", i % numGroups);
             v.property(VertexProperty.Cardinality.single, "text", "Vertex " + words[i % words.length]);
+            v.property(VertexProperty.Cardinality.single, "name", words[i % words.length]);
             v.property(VertexProperty.Cardinality.single, "time", i);
             offset = (i % 2 == 0 ? 1 : -1) * (i * 50.0 / numV);
             v.property(VertexProperty.Cardinality.single, "location", Geoshape.point(0.0 + offset, 0.0 + offset));
@@ -360,6 +365,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             }
             Edge e = v.addEdge("knows", getVertex("uid", Math.max(0, i - 1)));
             e.property("text", "Vertex " + words[i % words.length]);
+            e.property("name",words[i % words.length]);
             e.property("time", i);
             e.property("category", i % numCategories);
             e.property("group", i % numGroups);
@@ -446,6 +452,18 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         assertCount(numV, tx.query().vertices());
         assertCount(numV, tx.query().edges());
+
+        assertCount(numV/words.length, tx.query().has("name", Cmp.GREATER_THAN_EQUAL, "world").vertices());
+        assertCount(numV/words.length, tx.query().has("name", Cmp.GREATER_THAN_EQUAL, "world").edges());
+
+        assertCount(0, tx.query().has("name", Cmp.GREATER_THAN, "world").vertices());
+        assertCount(0, tx.query().has("name", Cmp.GREATER_THAN, "world").edges());
+
+        assertCount(numV-numV/words.length, tx.query().has("name", Cmp.LESS_THAN, "world").vertices());
+        assertCount(numV-numV/words.length, tx.query().has("name", Cmp.LESS_THAN, "world").edges());
+
+        assertCount(numV, tx.query().has("name", Cmp.LESS_THAN_EQUAL, "world").vertices());
+        assertCount(numV, tx.query().has("name", Cmp.LESS_THAN_EQUAL, "world").edges());
     }
 
     /**
