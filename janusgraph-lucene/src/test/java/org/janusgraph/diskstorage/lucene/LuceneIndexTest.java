@@ -58,12 +58,12 @@ public class LuceneIndexTest extends IndexProviderTest {
 
     @Override
     public String getEnglishAnalyzerName() {
-        return null;
+        return org.apache.lucene.analysis.en.EnglishAnalyzer.class.getName();
     }
     
     @Override
     public String getKeywordAnalyzerName() {
-        return null;
+        return org.apache.lucene.analysis.core.KeywordAnalyzer.class.getName();
     }
 
     public static Configuration getLocalLuceneTestConfig() {
