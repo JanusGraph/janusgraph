@@ -135,6 +135,17 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             " If this configuration option is not provided but graph.graphname is, the table will be set" +
             " to that value.",
             ConfigOption.Type.LOCAL, "janusgraph");
+    
+    public static final ConfigOption<String> HBASE_SNAPSHOT =
+            new ConfigOption<>(HBASE_NS, "snapshot-name",
+            "The name of an exising HBase snapshot to be used by HBaseSnapshotInputFormat",
+            ConfigOption.Type.LOCAL, "janusgraph-snapshot");
+    
+    public static final ConfigOption<String> HBASE_SNAPSHOT_RESTORE_DIR =
+            new ConfigOption<>(HBASE_NS, "snapshot-restore-dir",
+            "The tempoary directory to be used by HBaseSnapshotInputFormat to restore a snapshot." +
+            " This directory should be on the same File System as the HBase root dir.",
+            ConfigOption.Type.LOCAL, System.getProperty("java.io.tmpdir"));
 
     /**
      * Related bug fixed in 0.98.0, 0.94.7, 0.95.0:

@@ -71,4 +71,8 @@ public interface AdminMask extends Closeable
     boolean isTableDisabled(String tableName) throws IOException;
 
     void addColumn(String tableName, HColumnDescriptor columnDescriptor) throws IOException;
+
+    void snapshot(String snapshotName, String table) throws IllegalArgumentException, IOException;
+
+    void deleteSnapshot(String snapshotName) throws IOException;
 }
