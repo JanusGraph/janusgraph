@@ -126,6 +126,7 @@
     <modules>
         <module>janusgraph-codepipelines-ci</module>
         <module>janusgraph-core</module>
+        <module>janusgraph-server</module>
         <module>janusgraph-test</module>
         <module>janusgraph-berkeleyje</module>
         <module>janusgraph-cql</module>
