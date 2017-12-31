@@ -16,7 +16,6 @@ package org.janusgraph.core.attribute;
 
 import org.janusgraph.core.attribute.GeoshapeHelper;
 import org.janusgraph.core.attribute.JtsGeoshapeHelper;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -29,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test of JtsGeoshapeHelper.
@@ -53,7 +53,7 @@ public class JtsGeoshapeHelperTest extends GeoshapeHelperTest {
     }
 
     @Test
-    public void testPolygon() {
+    public void testPolygonIsClosed() {
         if (supportJts()) {
             List<double[]> coordinates = new ArrayList<>();
             coordinates.add(new double[]{1.0,1.0});
@@ -62,7 +62,7 @@ public class JtsGeoshapeHelperTest extends GeoshapeHelperTest {
             coordinates.add(new double[]{1.0,1.0});
             Geoshape polygon = getHelper().polygon(coordinates);
 
-            Assert.assertEquals(4, polygon.size());
+            assertEquals(4, polygon.size());
         }
     }
 
