@@ -236,7 +236,6 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
 
             if (key != null ? !key.equals(that.key) : that.key != null) return false;
             return order == that.order;
-
         }
 
         @Override
