@@ -100,10 +100,31 @@ fi
 
 if ! [ -d "${COVERITY_BUILD_OUTPUT_DIR}" ]; then
   echo "Running Maven build with Coverity analysis ..."
-  mvn -DskipTests=true -T 1C -B -V clean
+  # reconfigure Coverity to skip files that cause build errors
+  "${COVERITY_ANALYSIS_DIR}"/bin/cov-configure --delete-compiler-config template-javac-config-0
+  "${COVERITY_ANALYSIS_DIR}"/bin/cov-configure --delete-compiler-config template-java-config-0
+  "${COVERITY_ANALYSIS_DIR}"/bin/cov-configure --java \
+    --xml-option=skip_file:AbstractVertex.java \
+    --xml-option=skip_file:CacheVertex.java \
+    --xml-option=skip_file:CacheVertexProperty.java \
+    --xml-option=skip_file:EdgeLabelVertex.java \
+    --xml-option=skip_file:GraphDatabaseConfiguration.java \
+    --xml-option=skip_file:ImplicitKey.java \
+    --xml-option=skip_file:JanusGraph.java \
+    --xml-option=skip_file:JanusGraphSchemaVertex.java \
+    --xml-option=skip_file:JanusGraphVertex.java \
+    --xml-option=skip_file:PreloadedVertex.java \
+    --xml-option=skip_file:PropertyKeyVertex.java \
+    --xml-option=skip_file:RelationTypeVertex.java \
+    --xml-option=skip_file:StandardJanusGraphTx.java \
+    --xml-option=skip_file:StandardVertex.java \
+    --xml-option=skip_file:StaticArrayBuffer.java \
+    --xml-option=skip_file:VertexLabelVertex.java
+  # run Coverity build
   "${COVERITY_ANALYSIS_DIR}"/bin/cov-build \
     --dir "${COVERITY_BUILD_OUTPUT_DIR}" \
-    mvn -DskipTests=true -T 1C -B -V package
+    --java-cmd-line-buf-size 102400 \
+    mvn -DskipTests=true -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -B -V clean install
 else
   echo "Maven build already done; remove the '${COVERITY_BUILD_OUTPUT_DIR}' directory to re-run."
 fi
