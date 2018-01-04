@@ -125,10 +125,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                             Arrays.stream(graphStep.getIds()).forEach(ids::add);
                         }
                     }
-                    // clear ids to allow folding in ids from next HasContainer if relevant
-                    graphStep.clearIds();
                 });
-                graphStep.addIds(ids);
                 if (!removableHasContainers.isEmpty()) {
                     removableHasContainers.forEach(hasContainerHolder::removeHasContainer);
                 }

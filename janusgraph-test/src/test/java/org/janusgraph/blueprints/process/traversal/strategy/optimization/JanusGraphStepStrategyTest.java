@@ -148,7 +148,10 @@ public class JanusGraphStepStrategyTest {
                 g_V("~label", eq("Person")).order().by(values("age")), Collections.emptyList()},
             // age property is not registered in the schema so the order should not be folded in
             {g.V().hasLabel("Person").has("lang", "java").order().by("age"),
-                g_V("~label", eq("Person"), "lang", eq("java")).order().by("age"), Collections.emptyList()}
+                g_V("~label", eq("Person"), "lang", eq("java")).order().by("age"), Collections.emptyList()},
+            // Per the TinkerGraph reference implementation, multiple hasIds in a row should not be folded
+            // into a single within(ids) lookup
+            {g.V().hasId(1).hasId(2), g_V(T.id, 1).hasId(2), Collections.emptyList()},
         });
     }
 }
