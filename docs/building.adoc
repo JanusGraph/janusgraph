@@ -25,7 +25,7 @@ When adding this dependency, be sure to add the following repository to the `pom
 
 [source, xml]
 <repository>
-  <id>sonatype-nexus-snapshots</id>
+  <id>ossrh</id>
   <name>Sonatype Nexus Snapshots</name>
   <url>https://oss.sonatype.org/content/repositories/snapshots</url>
   <releases>
