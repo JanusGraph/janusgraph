@@ -25,9 +25,9 @@ import java.time.Instant;
  */
 public class StandardTransactionId implements TransactionId {
 
-    private String instanceId;
-    private long transactionId;
-    private Instant transactionTime;
+    private final String instanceId;
+    private final long transactionId;
+    private final Instant transactionTime;
 
     public StandardTransactionId(String instanceId, long transactionId, Instant transactionTime) {
         Preconditions.checkArgument(instanceId!=null && transactionId>=0 && transactionTime!=null);

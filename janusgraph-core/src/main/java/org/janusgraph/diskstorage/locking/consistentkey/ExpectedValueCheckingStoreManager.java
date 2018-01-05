@@ -53,7 +53,7 @@ public class ExpectedValueCheckingStoreManager extends KCVSManagerProxy {
         this.lockerProvider = lockerProvider;
         this.maxReadTime = maxReadTime;
         this.storeFeatures = new StandardStoreFeatures.Builder(storeManager.getFeatures()).locking(true).build();
-        this.stores = new HashMap<String,ExpectedValueCheckingStore>(6);
+        this.stores = new HashMap<>(6);
     }
 
     @Override
@@ -92,8 +92,7 @@ public class ExpectedValueCheckingStoreManager extends KCVSManagerProxy {
         StoreTransaction strongConsistentTx = manager.beginTransaction(consistentTxCfg);
 
         // Return a wrapper around both the inconsistent and consistent store transactions
-        ExpectedValueCheckingTransaction wrappedTx = new ExpectedValueCheckingTransaction(inconsistentTx, strongConsistentTx, maxReadTime);
-        return wrappedTx;
+        return new ExpectedValueCheckingTransaction(inconsistentTx, strongConsistentTx, maxReadTime);
     }
 
     @Override

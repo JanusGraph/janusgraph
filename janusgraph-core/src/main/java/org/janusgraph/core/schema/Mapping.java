@@ -57,8 +57,8 @@ public enum Mapping {
         }
     }
 
-    public static Mapping getMapping(String store, String key, KeyInformation.IndexRetriever informations) {
-        KeyInformation ki = informations.get(store, key);
+    public static Mapping getMapping(String store, String key, KeyInformation.IndexRetriever information) {
+        KeyInformation ki = information.get(store, key);
         Preconditions.checkArgument(ki!=null,"Could not find key information for: %s",key);
         return getMapping(ki);
     }

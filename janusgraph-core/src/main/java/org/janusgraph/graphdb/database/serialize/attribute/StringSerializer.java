@@ -40,7 +40,7 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
     public static final int MAX_LENGTH = 128 * 1024 * 1024; //128 MB
 
     public static final int LONG_COMPRESSION_THRESHOLD = 16000;
-    public static final int TEXT_COMRPESSION_THRESHOLD = 48;
+    public static final int TEXT_COMPRESSION_THRESHOLD = 48;
 
     private static final long COMPRESSOR_BIT_LEN = 3;
     private static final int MAX_NUM_COMPRESSORS = (1<<COMPRESSOR_BIT_LEN);
@@ -168,8 +168,8 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
         if (compression==CompressionType.NO_COMPRESSION) {
             assert compression.getId()==0;
             if (StringEncoding.isAsciiString(attribute)) {
-                if (attribute.length()==0) VariableLong.writePositive(buffer,1l<<NO_COMPRESSION_OFFSET);
-                else VariableLong.writePositive(buffer,2l<<NO_COMPRESSION_OFFSET);
+                if (attribute.length()==0) VariableLong.writePositive(buffer, 1L <<NO_COMPRESSION_OFFSET);
+                else VariableLong.writePositive(buffer, 2L <<NO_COMPRESSION_OFFSET);
                 for (int i = 0; i < attribute.length(); i++) {
                     int c = attribute.charAt(i);
                     assert c <= 127;
@@ -179,7 +179,7 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
                 }
             } else {
                 assert attribute.length()>0;
-                VariableLong.writePositive(buffer,(((long)attribute.length())<<NO_COMPRESSION_OFFSET) + (1l<<COMPRESSOR_BIT_LEN)); //Marker for full UTF encoding
+                VariableLong.writePositive(buffer,(((long)attribute.length())<<NO_COMPRESSION_OFFSET) + (1L <<COMPRESSOR_BIT_LEN)); //Marker for full UTF encoding
                 for (int i = 0; i < attribute.length(); i++) { //variable encoding of the characters
                     int c = attribute.charAt(i);
                     if (c <= 0x007F) {
@@ -223,15 +223,15 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
         GZIP {
             @Override
             public byte[] compress(String text) {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
                 try {
-                    OutputStream out = new GZIPOutputStream(baos);
+                    OutputStream out = new GZIPOutputStream(byteArrayOutputStream);
                     out.write(text.getBytes("UTF-8"));
                     out.close();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-                return baos.toByteArray();
+                return byteArrayOutputStream.toByteArray();
             }
 
             @Override

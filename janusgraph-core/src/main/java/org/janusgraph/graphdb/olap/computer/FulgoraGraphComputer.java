@@ -70,20 +70,20 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
     private final Set<MapReduce> mapReduces = new HashSet<>();
 
     private final StandardJanusGraph graph;
-    private int expectedNumVertices = 10000;
+    private final int expectedNumVertices = 10000;
     private FulgoraMemory memory;
     private FulgoraVertexMemory vertexMemory;
     private boolean executed = false;
 
     private int numThreads = 1;//Math.max(1,Runtime.getRuntime().availableProcessors());
-    private int readBatchSize = 10000;
-    private int writeBatchSize;
+    private final int readBatchSize;
+    private final int writeBatchSize;
 
     private ResultGraph resultGraphMode = null;
     private Persist persistMode = null;
 
     private static final AtomicInteger computerCounter = new AtomicInteger(0);
-    private String name;
+    private final String name;
     private String jobId;
 
     private final GraphFilter graphFilter = new GraphFilter();
@@ -148,10 +148,10 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
         else
             executed = true;
 
-        // it is not possible execute a computer if it has no vertex program nor mapreducers
+        // it is not possible execute a computer if it has no vertex program nor map-reducers
         if (null == vertexProgram && mapReduces.isEmpty())
             throw GraphComputer.Exceptions.computerHasNoVertexProgramNorMapReducers();
-        // it is possible to run mapreducers without a vertex program
+        // it is possible to run map-reducers without a vertex program
         if (null != vertexProgram) {
             GraphComputerHelper.validateProgramOnComputer(this, vertexProgram);
             this.mapReduces.addAll(this.vertexProgram.getMapReducers());
@@ -169,7 +169,7 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
 
         memory = new FulgoraMemory(vertexProgram, mapReduces);
 
-        return CompletableFuture.<ComputerResult>supplyAsync(() -> {
+        return CompletableFuture.supplyAsync(() -> {
             final long time = System.currentTimeMillis();
             if (null != vertexProgram) {
                 // ##### Execute vertex program
@@ -188,7 +188,7 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
                         scanBuilder.setNumProcessingThreads(numThreads);
                         scanBuilder.setWorkBlockSize(readBatchSize);
                         scanBuilder.setJob(job);
-                        PartitionedVertexProgramExecutor pvpe = new PartitionedVertexProgramExecutor(graph, memory, vertexMemory, vertexProgram);
+                        PartitionedVertexProgramExecutor programExecutor = new PartitionedVertexProgramExecutor(graph, memory, vertexMemory, vertexProgram);
                         try {
                             //Iterates over all vertices and computes the vertex program on all non-partitioned vertices. For partitioned ones, the data is aggregated
                             ScanMetrics jobResult = scanBuilder.execute().get();
@@ -197,7 +197,7 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
                                 throw new JanusGraphException("Failed to process [" + failures + "] vertices in vertex program iteration [" + iteration + "]. Computer is aborting.");
                             }
                             //Runs the vertex program on all aggregated, partitioned vertices.
-                            pvpe.run(numThreads, jobResult);
+                            programExecutor.run(numThreads, jobResult);
                             failures = jobResult.getCustom(PartitionedVertexProgramExecutor.PARTITION_VERTEX_POSTFAIL);
                             if (failures > 0) {
                                 throw new JanusGraphException("Failed to process [" + failures + "] partitioned vertices in vertex program iteration [" + iteration + "]. Computer is aborting.");
@@ -219,7 +219,7 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
                 }
             }
 
-            // ##### Execute mapreduce jobs
+            // ##### Execute map-reduce jobs
             // Collect map jobs
             Map<MapReduce, FulgoraMapEmitter> mapJobs = new HashMap<>(mapReduces.size());
             for (MapReduce mapReduce : mapReduces) {
@@ -284,16 +284,16 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
                 resultgraph = EmptyGraph.instance();
             } else if (persistMode != Persist.NOTHING && vertexProgram != null && !vertexProgram.getVertexComputeKeys().isEmpty()) {
                 //First, create property keys in graph if they don't already exist
-                JanusGraphManagement mgmt = graph.openManagement();
+                JanusGraphManagement management = graph.openManagement();
                 try {
                     for (VertexComputeKey key : vertexProgram.getVertexComputeKeys()) {
-                        if (!mgmt.containsPropertyKey(key.getKey()))
+                        if (!management.containsPropertyKey(key.getKey()))
                             log.warn("Property key [{}] is not part of the schema and will be created. It is advised to initialize all keys.", key.getKey());
-                        mgmt.getOrCreatePropertyKey(key.getKey());
+                        management.getOrCreatePropertyKey(key.getKey());
                     }
-                    mgmt.commit();
+                    management.commit();
                 } finally {
-                    if (mgmt != null && mgmt.isOpen()) mgmt.rollback();
+                    if (management != null && management.isOpen()) management.rollback();
                 }
 
                 //TODO: Filter based on VertexProgram
@@ -328,9 +328,9 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
                         throw new JanusGraphException("Could not persist program results to graph. Check log for details.");
                 } else if (resultGraphMode == ResultGraph.NEW) {
                     resultgraph = graph.newTransaction();
-                    for (Map.Entry<Long, Map<String, Object>> vprop : mutatedProperties.entrySet()) {
-                        Vertex v = resultgraph.vertices(vprop.getKey()).next();
-                        for (Map.Entry<String, Object> prop : vprop.getValue().entrySet()) {
+                    for (Map.Entry<Long, Map<String, Object>> vertexProperty : mutatedProperties.entrySet()) {
+                        Vertex v = resultgraph.vertices(vertexProperty.getKey()).next();
+                        for (Map.Entry<String, Object> prop : vertexProperty.getValue().entrySet()) {
                             if (prop.getValue() instanceof List) {
                                 ((List) prop.getValue())
                                     .forEach(value -> v.property(VertexProperty.Cardinality.list, prop.getKey(), value));
@@ -364,12 +364,12 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
         public void run() {
             JanusGraphTransaction tx = graph.buildTransaction().enableBatchLoading().start();
             try {
-                for (Map.Entry<Long, Map<String, Object>> vprop : properties) {
-                    Vertex v = tx.getVertex(vprop.getKey());
+                for (Map.Entry<Long, Map<String, Object>> vertexProperty : properties) {
+                    Vertex v = tx.getVertex(vertexProperty.getKey());
                     if (v == null) {
                         continue;
                     }
-                    for (Map.Entry<String, Object> prop : vprop.getValue().entrySet()) {
+                    for (Map.Entry<String, Object> prop : vertexProperty.getValue().entrySet()) {
                         v.property(VertexProperty.Cardinality.single, prop.getKey(), prop.getValue());
                     }
                 }

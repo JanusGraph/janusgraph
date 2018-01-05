@@ -19,8 +19,6 @@ import org.apache.tinkerpop.shaded.jackson.annotation.JsonProperty;
 import org.janusgraph.diskstorage.es.ElasticSearchResponse;
 import org.janusgraph.diskstorage.indexing.RawQuery;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @JsonIgnoreProperties(ignoreUnknown=true)
@@ -68,7 +66,7 @@ public class RestSearchResponse extends ElasticSearchResponse {
     @Override
     public Stream<RawQuery.Result<String>> getResults() {
         return hits.getHits().stream()
-            .map(hit -> new RawQuery.Result<String>(hit.getId(),hit.getScore() != null ? hit.getScore() : 0f));
+            .map(hit -> new RawQuery.Result<>(hit.getId(), hit.getScore() != null ? hit.getScore() : 0f));
     }
 
     @Override

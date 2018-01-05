@@ -27,6 +27,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import static org.junit.Assert.*;
 
@@ -59,7 +60,7 @@ public class QueryTest {
         tx.addVertex("name","vertex2");
         tx.addVertex("name","vertex3");
 
-        int found = Iterators.size(tx.query().has("name", Contain.IN, Arrays.asList("vertex1")).vertices().iterator());
+        int found = Iterators.size(tx.query().has("name", Contain.IN, Collections.singletonList("vertex1")).vertices().iterator());
         assertEquals(1, found);
 
         found = Iterators.size(tx.query().has("name", Contain.IN, Arrays.asList("vertex1", "vertex2")).vertices().iterator());
@@ -89,7 +90,7 @@ public class QueryTest {
         try {
             ol1.add(time, Order.DESC);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
         assertEquals(2, ol1.size());
         assertEquals(name,ol1.getKey(0));
         assertEquals(weight, ol1.getKey(1));

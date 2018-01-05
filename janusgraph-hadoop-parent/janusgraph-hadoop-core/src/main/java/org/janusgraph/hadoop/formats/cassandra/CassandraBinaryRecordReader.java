@@ -37,7 +37,7 @@ import java.util.SortedMap;
  */
 public class CassandraBinaryRecordReader extends RecordReader<StaticBuffer, Iterable<Entry>> {
 
-    private ColumnFamilyRecordReader reader;
+    private final ColumnFamilyRecordReader reader;
 
     private KV currentKV;
     private KV incompleteKV;

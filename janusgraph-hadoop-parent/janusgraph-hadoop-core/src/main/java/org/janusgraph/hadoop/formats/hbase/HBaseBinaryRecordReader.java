@@ -32,7 +32,7 @@ import java.util.NavigableMap;
 
 public class HBaseBinaryRecordReader  extends RecordReader<StaticBuffer, Iterable<Entry>> {
 
-    private RecordReader<ImmutableBytesWritable, Result> reader;
+    private final RecordReader<ImmutableBytesWritable, Result> reader;
 
     private final byte[] edgestoreFamilyBytes;
 

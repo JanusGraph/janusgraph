@@ -45,7 +45,7 @@ public class PartitionedVertexProgramExecutor<M> {
     private final VertexProgram<M> vertexProgram;
 
 
-    public static final String GHOTST_PARTITION_VERTEX = "partition-ghost";
+    public static final String GHOST_PARTITION_VERTEX = "partition-ghost";
     public static final String PARTITION_VERTEX_POSTSUCCESS = "partition-success";
     public static final String PARTITION_VERTEX_POSTFAIL = "partition-fail";
 
@@ -65,12 +65,12 @@ public class PartitionedVertexProgramExecutor<M> {
 
         try (WorkerPool workers = new WorkerPool(numThreads)) {
             tx = VertexJobConverter.startTransaction(graph);
-            for (Map.Entry<Long,EntryList> pvertices : pVertexAggregates.entrySet()) {
-                if (pvertices.getValue()==null) {
-                    metrics.incrementCustom(GHOTST_PARTITION_VERTEX);
+            for (Map.Entry<Long,EntryList> partitionedVertices : pVertexAggregates.entrySet()) {
+                if (partitionedVertices.getValue()==null) {
+                    metrics.incrementCustom(GHOST_PARTITION_VERTEX);
                     continue;
                 }
-                workers.submit(new PartitionedVertexProcessor(pvertices.getKey(),pvertices.getValue(),tx,metrics));
+                workers.submit(new PartitionedVertexProcessor(partitionedVertices.getKey(),partitionedVertices.getValue(),tx,metrics));
             }
         } catch (Throwable ex) {
             log.error("Could not post-process partitioned vertices", ex);
@@ -105,7 +105,7 @@ public class PartitionedVertexProgramExecutor<M> {
                 PreloadedVertex v = (PreloadedVertex)vertex;
                 v.setAccessCheck(PreloadedVertex.OPENSTAR_CHECK);
                 v.addToQueryCache(VertexProgramScanJob.SYSTEM_PROPS_QUERY,preloaded);
-                VertexMemoryHandler.Partition<M> vh = new VertexMemoryHandler.Partition<M>(vertexMemory,v);
+                final VertexMemoryHandler.Partition<M> vh = new VertexMemoryHandler.Partition<>(vertexMemory, v);
                 v.setPropertyMixing(vh);
                 vertexProgram.execute(v,vh,memory);
                 metrics.incrementCustom(PARTITION_VERTEX_POSTSUCCESS);

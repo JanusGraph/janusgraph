@@ -142,7 +142,8 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             CFMetaData cfm = Schema.instance.getCFMetaData(keyspace, columnFamily);
             IDiskAtomFilter filter = ThriftValidation.asIFilter(predicate, cfm, null);
 
-            RangeSliceCommand cmd = new RangeSliceCommand(keyspace, columnFamily, nowMillis, filter, new Bounds<RowPosition>(startPosition, endPosition), pageSize);
+            final RangeSliceCommand cmd = new RangeSliceCommand(keyspace, columnFamily, nowMillis, filter,
+                    new Bounds<>(startPosition, endPosition), pageSize);
 
             rows = StorageProxy.getRangeSlice(cmd, ConsistencyLevel.QUORUM);
         } catch (Exception e) {
@@ -221,16 +222,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
         @Override
         public boolean apply(Cell input) {
-            if (!input.isLive(tsMillis))
-                return false;
-
-            // Don't do this.  getTimeToLive() is a duration divorced from any particular clock.
-            // For instance, if TTL=10 seconds, getTimeToLive() will have value 10 (not 10 + epoch seconds), and
-            // this will always return false.
-            //if (input instanceof ExpiringCell)
-            //    return tsSeconds < ((ExpiringCell)input).getTimeToLive();
-
-            return true;
+            return input.isLive(tsMillis);
         }
     }
 
@@ -253,22 +245,18 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         storeManager.mutateMany(ImmutableMap.of(columnFamily, mutations), txh);
     }
 
-    private static List<Row> read(ReadCommand cmd, org.apache.cassandra.db.ConsistencyLevel clvl) throws BackendException {
-        ArrayList<ReadCommand> cmdHolder = new ArrayList<ReadCommand>(1);
+    private static List<Row> read(ReadCommand cmd, org.apache.cassandra.db.ConsistencyLevel consistencyLevel) throws BackendException {
+        final ArrayList<ReadCommand> cmdHolder = new ArrayList<>(1);
         cmdHolder.add(cmd);
-        return read(cmdHolder, clvl);
+        return read(cmdHolder, consistencyLevel);
     }
 
-    private static List<Row> read(List<ReadCommand> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws BackendException {
+    private static List<Row> read(List<ReadCommand> commands, org.apache.cassandra.db.ConsistencyLevel consistencyLevel) throws BackendException {
         try {
-            return StorageProxy.read(cmds, clvl);
-        } catch (UnavailableException e) {
+            return StorageProxy.read(commands, consistencyLevel);
+        } catch (UnavailableException | IsBootstrappingException e) {
             throw new TemporaryBackendException(e);
-        } catch (RequestTimeoutException e) {
-            throw new PermanentBackendException(e);
-        } catch (IsBootstrappingException e) {
-            throw new TemporaryBackendException(e);
-        } catch (InvalidRequestException e) {
+        } catch (RequestTimeoutException | InvalidRequestException e) {
             throw new PermanentBackendException(e);
         }
     }
@@ -351,7 +339,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         private Iterator<Row> keys;
         private ByteBuffer lastSeenKey = null;
         private Row currentRow;
-        private int pageSize;
+        private final int pageSize;
 
         private boolean isClosed;
 
@@ -449,7 +437,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
         }
 
-        private final boolean hasNextInternal() throws BackendException {
+        private boolean hasNextInternal() throws BackendException {
             ensureOpen();
 
             if (keys == null)
@@ -483,12 +471,10 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             if (rows == null)
                 return null;
 
-            return Iterators.filter(rows.iterator(), new Predicate<Row>() {
-                @Override
-                public boolean apply(@Nullable Row row) {
-                    // The hasOnlyTombstones(x) call below ultimately calls Column.isMarkedForDelete(x)
-                    return !(row == null || row.cf == null || row.cf.isMarkedForDelete() || row.cf.hasOnlyTombstones(nowMillis));
-                }
+            return Iterators.filter(rows.iterator(), row -> {
+                // The hasOnlyTombstones(x) call below ultimately calls Column.isMarkedForDelete(x)
+                return !(row == null || row.cf == null || row.cf.isMarkedForDelete()
+                    || row.cf.hasOnlyTombstones(nowMillis));
             });
         }
 
@@ -498,12 +484,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             if (rowIterator == null)
                 return null;
 
-            return Iterators.filter(rowIterator, new Predicate<Row>() {
-                @Override
-                public boolean apply(@Nullable Row row) {
-                    return row != null && !row.key.getKey().equals(exceptKey);
-                }
-            });
+            return Iterators.filter(rowIterator, row -> row != null && !row.key.getKey().equals(exceptKey));
         }
     }
 

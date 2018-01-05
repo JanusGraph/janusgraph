@@ -77,27 +77,27 @@ public class JanusGraphHadoopSetupImpl extends JanusGraphHadoopSetupCommon {
     public SystemTypeInspector getSystemTypeInspector() {
         return new SystemTypeInspector() {
             @Override
-            public boolean isSystemType(long typeid) {
-                return IDManager.isSystemRelationTypeId(typeid);
+            public boolean isSystemType(long typeId) {
+                return IDManager.isSystemRelationTypeId(typeId);
             }
 
             @Override
-            public boolean isVertexExistsSystemType(long typeid) {
-                return typeid == BaseKey.VertexExists.longId();
+            public boolean isVertexExistsSystemType(long typeId) {
+                return typeId == BaseKey.VertexExists.longId();
             }
 
             @Override
-            public boolean isVertexLabelSystemType(long typeid) {
-                return typeid == BaseLabel.VertexLabelEdge.longId();
+            public boolean isVertexLabelSystemType(long typeId) {
+                return typeId == BaseLabel.VertexLabelEdge.longId();
             }
 
             @Override
-            public boolean isTypeSystemType(long typeid) {
-                return typeid == BaseKey.SchemaCategory.longId() ||
-                        typeid == BaseKey.SchemaDefinitionProperty.longId() ||
-                        typeid == BaseKey.SchemaDefinitionDesc.longId() ||
-                        typeid == BaseKey.SchemaName.longId() ||
-                        typeid == BaseLabel.SchemaDefinitionEdge.longId();
+            public boolean isTypeSystemType(long typeId) {
+                return typeId == BaseKey.SchemaCategory.longId() ||
+                        typeId == BaseKey.SchemaDefinitionProperty.longId() ||
+                        typeId == BaseKey.SchemaDefinitionDesc.longId() ||
+                        typeId == BaseKey.SchemaName.longId() ||
+                        typeId == BaseLabel.SchemaDefinitionEdge.longId();
             }
         };
     }
@@ -108,7 +108,7 @@ public class JanusGraphHadoopSetupImpl extends JanusGraphHadoopSetupCommon {
     }
 
     @Override
-    public RelationReader getRelationReader(long vertexid) {
+    public RelationReader getRelationReader(long vertexId) {
         return graph.getEdgeSerializer();
     }
 

@@ -28,7 +28,6 @@ import org.janusgraph.graphdb.query.BackendQueryHolder;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.RelationConstructor;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.util.datastructures.Retriever;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -69,15 +68,15 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
 
     @Override
     public Iterator<Entry> iterator() {
-        Iterator<Entry> iter;
+        Iterator<Entry> iterator;
         //If there is a limit we need to wrap the basic iterator in a LimitAdjustingIterator which ensures the right number
         //of elements is returned. Otherwise we just return the basic iterator.
         if (sliceQuery.hasLimit() && sliceQuery.getLimit()!=query.getLimit()) {
-            iter = new LimitAdjustingIterator();
+            iterator = new LimitAdjustingIterator();
         } else {
-            iter = getBasicIterator();
+            iterator = getBasicIterator();
         }
-        return iter;
+        return iterator;
     }
 
     /**
@@ -118,12 +117,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
      * @return
      */
     private Iterator<Entry> getBasicIterator() {
-        EntryList result = vertex.loadRelations(sliceQuery, new Retriever<SliceQuery, EntryList>() {
-            @Override
-            public EntryList get(SliceQuery query) {
-                return QueryProfiler.profile(profiler,query, q -> tx.getGraph().edgeQuery(vertex.longId(), q, tx.getTxHandle()));
-            }
-        });
+        final EntryList result = vertex.loadRelations(sliceQuery, query -> QueryProfiler.profile(profiler, query, q -> tx.getGraph().edgeQuery(vertex.longId(), q, tx.getTxHandle())));
         return result.iterator();
     }
 

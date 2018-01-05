@@ -32,7 +32,6 @@ import org.janusgraph.graphdb.olap.VertexScanJob;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
 import org.janusgraph.graphdb.vertices.CacheVertex;
-import org.janusgraph.util.datastructures.Retriever;
 
 import java.time.Instant;
 import java.util.Iterator;
@@ -102,18 +101,13 @@ public class GhostVertexRemover extends VertexJobConverter {
         Preconditions.checkArgument(vertex instanceof CacheVertex,
                 "The bounding transaction is not configured correctly");
         CacheVertex v = (CacheVertex)vertex;
-        v.loadRelations(EVERYTHING_QUERY,new Retriever<SliceQuery, EntryList>() {
-            @Override
-            public EntryList get(SliceQuery input) {
-                return everything;
-            }
-        });
+        v.loadRelations(EVERYTHING_QUERY, input -> everything);
 
         int removedRelations = 0;
-        Iterator<JanusGraphRelation> iter = v.query().noPartitionRestriction().relations().iterator();
-        while (iter.hasNext()) {
-            iter.next();
-            iter.remove();
+        Iterator<JanusGraphRelation> iterator = v.query().noPartitionRestriction().relations().iterator();
+        while (iterator.hasNext()) {
+            iterator.next();
+            iterator.remove();
             removedRelations++;
         }
         //There should be no more system relations to remove

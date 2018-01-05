@@ -41,12 +41,7 @@ import java.util.List;
  */
 public class PreloadedVertex extends CacheVertex {
 
-    public static final Retriever<SliceQuery, EntryList> EMPTY_RETRIEVER = new Retriever<SliceQuery, EntryList>() {
-        @Override
-        public EntryList get(SliceQuery input) {
-            return EntryList.EMPTY_LIST;
-        }
-    };
+    public static final Retriever<SliceQuery, EntryList> EMPTY_RETRIEVER = input -> EntryList.EMPTY_LIST;
 
     private PropertyMixing mixin = NO_MIXIN;
     private AccessCheck accessCheck = DEFAULT_CHECK;
@@ -125,7 +120,7 @@ public class PreloadedVertex extends CacheVertex {
         if (mixin == NO_MIXIN) return super.properties(keys);
         if (keys != null && keys.length > 0) {
             int count = 0;
-            for (int i = 0; i < keys.length; i++) if (mixin.supports(keys[i])) count++;
+            for (String key : keys) if (mixin.supports(key)) count++;
             if (count == 0 || !mixin.properties(keys).hasNext()) return super.properties(keys);
             else if (count == keys.length) return mixin.properties(keys);
         }
@@ -160,13 +155,13 @@ public class PreloadedVertex extends CacheVertex {
 
     public interface AccessCheck {
 
-        public void accessEdges();
+        void accessEdges();
 
-        public void accessProperties();
+        void accessProperties();
 
-        public void accessSetProperty();
+        void accessSetProperty();
 
-        public Retriever<SliceQuery, EntryList> retrieveSliceQuery();
+        Retriever<SliceQuery, EntryList> retrieveSliceQuery();
 
     }
 
@@ -194,48 +189,33 @@ public class PreloadedVertex extends CacheVertex {
 
     public static final AccessCheck CLOSEDSTAR_CHECK = new AccessCheck() {
         @Override
-        public final void accessEdges() {
-            return; //Allowed
-        }
+        public final void accessEdges() { }
 
         @Override
-        public final void accessProperties() {
-            return; //Allowed
-        }
+        public final void accessProperties() { }
 
         @Override
-        public void accessSetProperty() {
-            return; //Allowed
-        }
+        public void accessSetProperty() { }
 
         @Override
         public Retriever<SliceQuery, EntryList> retrieveSliceQuery() {
             return EXCEPTION_RETRIEVER;
         }
 
-        private final Retriever<SliceQuery,EntryList> EXCEPTION_RETRIEVER = new Retriever<SliceQuery, EntryList>() {
-            @Override
-            public EntryList get(SliceQuery input) {
-                throw new UnsupportedOperationException("Cannot access data that hasn't been preloaded.");
-            }
+        private final Retriever<SliceQuery,EntryList> EXCEPTION_RETRIEVER = input -> {
+            throw new UnsupportedOperationException("Cannot access data that hasn't been preloaded.");
         };
     };
 
     public static final AccessCheck OPENSTAR_CHECK = new AccessCheck() {
         @Override
-        public final void accessEdges() {
-            return; //Allowed
-        }
+        public final void accessEdges() { }
 
         @Override
-        public final void accessProperties() {
-            return; //Allowed
-        }
+        public final void accessProperties() { }
 
         @Override
-        public void accessSetProperty() {
-            return; //Allowed
-        }
+        public void accessSetProperty() { }
 
         @Override
         public Retriever<SliceQuery, EntryList> retrieveSliceQuery() {
@@ -246,15 +226,15 @@ public class PreloadedVertex extends CacheVertex {
 
     public interface PropertyMixing {
 
-        public <V> Iterator<VertexProperty<V>> properties(String... keys);
+        <V> Iterator<VertexProperty<V>> properties(String... keys);
 
-        public boolean supports(String key);
+        boolean supports(String key);
 
-        public <V> JanusGraphVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value);
+        <V> JanusGraphVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value);
 
     }
 
-    private static PropertyMixing NO_MIXIN = new PropertyMixing() {
+    private static final PropertyMixing NO_MIXIN = new PropertyMixing() {
         @Override
         public <V> Iterator<VertexProperty<V>> properties(String... keys) {
             return Collections.emptyIterator();

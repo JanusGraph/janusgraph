@@ -125,7 +125,7 @@ public class ElasticSearchConfigTest {
         indexConfig = config.restrictTo(INDEX_NAME);
         Throwable failure = null;
         try {
-            idx = new ElasticSearchIndex(indexConfig);
+            new ElasticSearchIndex(indexConfig);
         } catch (final Throwable t) {
             failure = t;
         }
@@ -170,7 +170,7 @@ public class ElasticSearchConfigTest {
         try {
             idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
             fail("should fail");
-        } catch (final PermanentBackendException e) {
+        } catch (final PermanentBackendException ignored) {
         }
 
         final HttpPut newMapping = new HttpPut("janusgraph_"+storeName);
@@ -183,7 +183,7 @@ public class ElasticSearchConfigTest {
         try {
             idx.register(storeName, "weight", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("weight"), itx);
             fail("should fail");
-        } catch (final BackendException e) {
+        } catch (final BackendException ignored) {
         }
         itx.rollback();
         idx.close();
@@ -226,7 +226,7 @@ public class ElasticSearchConfigTest {
         try {
             idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
             fail("should fail");
-        } catch (final PermanentBackendException e) {
+        } catch (final PermanentBackendException ignored) {
         }
 
         final HttpPut newMapping = new HttpPut("janusgraph_"+storeName);
@@ -267,7 +267,7 @@ public class ElasticSearchConfigTest {
         try {
             idx.register(storeName, "weight", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("weight"), itx);
             fail("should fail");
-        } catch (final BackendException e) {
+        } catch (final BackendException ignored) {
         }
         itx.rollback();
         idx.close();
@@ -286,7 +286,7 @@ public class ElasticSearchConfigTest {
             indexConfig = config.restrictTo(INDEX_NAME);
             open(indexConfig);
             fail("should fail");
-        } catch (final IllegalArgumentException e) {
+        } catch (final IllegalArgumentException ignored) {
         }
         idx.close();
     }
@@ -304,7 +304,7 @@ public class ElasticSearchConfigTest {
             indexConfig = config.restrictTo(INDEX_NAME);
             open(indexConfig);
             fail("should fail");
-        } catch (final IllegalArgumentException e) {
+        } catch (final IllegalArgumentException ignored) {
         }
         idx.close();
     }
@@ -336,13 +336,13 @@ public class ElasticSearchConfigTest {
         for (final Entry<String, KeyInformation> entry : IndexProviderTest.getMapping(idx.getFeatures(), "english", "keyword").entrySet()) {
            idx.register(storeName, entry.getKey(), entry.getValue(), itx);
         }
-        assertEquals(0, itx.query(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "ali"))).size());
+        assertEquals(0, itx.queryStream(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "ali"))).count());
         itx.add(storeName, "doc", IndexProviderTest.NAME, "alice", false);
         itx.commit();
         Thread.sleep(1500L); // Slightly longer than default 1s index.refresh_interval
         itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
-        assertEquals(0, itx.query(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "zed"))).size());
-        assertEquals(1, itx.query(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "ali"))).size());
+        assertEquals(0, itx.queryStream(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "zed"))).count());
+        assertEquals(1, itx.queryStream(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "ali"))).count());
         itx.rollback();
     }
 

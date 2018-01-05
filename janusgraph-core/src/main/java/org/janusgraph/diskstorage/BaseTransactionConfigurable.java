@@ -28,6 +28,6 @@ public interface BaseTransactionConfigurable extends BaseTransaction {
      *
      * @return
      */
-    public BaseTransactionConfig getConfiguration();
+    BaseTransactionConfig getConfiguration();
 
 }

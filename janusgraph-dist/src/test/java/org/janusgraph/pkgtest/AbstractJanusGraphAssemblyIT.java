@@ -16,7 +16,6 @@ package org.janusgraph.pkgtest;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -37,7 +36,6 @@ import org.apache.velocity.app.Velocity;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
-import org.janusgraph.core.JanusGraphFactory;
 
 public abstract class AbstractJanusGraphAssemblyIT {
 
@@ -112,8 +110,8 @@ public abstract class AbstractJanusGraphAssemblyIT {
         command(new File(dir), "expect", expectScript);
     }
 
-    protected static void unzip(String dir, String zipfile) throws IOException, InterruptedException {
-        command(new File(dir), "unzip", "-q", zipfile);
+    protected static void unzip(String dir, String zipFile) throws IOException, InterruptedException {
+        command(new File(dir), "unzip", "-q", zipFile);
     }
 
     protected static void command(File dir, String... command) throws IOException, InterruptedException {

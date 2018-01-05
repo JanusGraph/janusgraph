@@ -63,7 +63,7 @@ public class ManagementLogger implements MessageReader {
     private final TimestampProvider times;
 
     private final AtomicInteger evictionTriggerCounter = new AtomicInteger(0);
-    private final ConcurrentMap<Long,EvictionTrigger> evictionTriggerMap = new ConcurrentHashMap<Long,EvictionTrigger>();
+    private final ConcurrentMap<Long,EvictionTrigger> evictionTriggerMap = new ConcurrentHashMap<>();
 
     public ManagementLogger(StandardJanusGraph graph, Log sysLog, SchemaCache schemaCache, TimestampProvider times) {
         this.graph = graph;
@@ -80,28 +80,36 @@ public class ManagementLogger implements MessageReader {
         Serializer serializer = graph.getDataSerializer();
         MgmtLogType logType = serializer.readObjectNotNull(in, MgmtLogType.class);
         Preconditions.checkNotNull(logType);
-        if (logType==MgmtLogType.CACHED_TYPE_EVICTION) {
+        switch (logType) {
+            case CACHED_TYPE_EVICTION: {
                 long evictionId = VariableLong.readPositive(in);
                 long numEvictions = VariableLong.readPositive(in);
                 for (int i = 0; i < numEvictions; i++) {
                     long typeId = VariableLong.readPositive(in);
                     schemaCache.expireSchemaElement(typeId);
                 }
-                Thread ack = new Thread(new SendAckOnTxClose(evictionId,senderId,graph.getOpenTransactions()));
+                Thread ack = new Thread(new SendAckOnTxClose(evictionId, senderId, graph.getOpenTransactions()));
                 ack.setDaemon(true);
                 ack.start();
-        } else if (logType == MgmtLogType.CACHED_TYPE_EVICTION_ACK) {
-                String receiverId = serializer.readObjectNotNull(in,String.class);
+                break;
+            }
+            case CACHED_TYPE_EVICTION_ACK: {
+                String receiverId = serializer.readObjectNotNull(in, String.class);
                 long evictionId = VariableLong.readPositive(in);
                 if (receiverId.equals(graph.getConfiguration().getUniqueGraphId())) {
                     //Acknowledgements targeted at this instance
                     EvictionTrigger evictTrigger = evictionTriggerMap.get(evictionId);
-                    if (evictTrigger!=null) {
+                    if (evictTrigger != null) {
                         evictTrigger.receivedAcknowledgement(senderId);
-                    } else log.error("Could not find eviction trigger for {} from {}",evictionId,senderId);
+                    } else log.error("Could not find eviction trigger for {} from {}", evictionId, senderId);
                 }
 
-        } else assert logType == MgmtLogType.CONFIG_MUTATION;
+                break;
+            }
+            default:
+                assert logType == MgmtLogType.CONFIG_MUTATION;
+                break;
+        }
 
     }
 
@@ -175,10 +183,10 @@ public class ManagementLogger implements MessageReader {
             Timer t = times.getTimer().start();
             while (true) {
                 boolean txStillOpen = false;
-                Iterator<? extends JanusGraphTransaction> iter = openTx.iterator();
-                while (iter.hasNext()) {
-                    if (iter.next().isClosed()) {
-                        iter.remove();
+                Iterator<? extends JanusGraphTransaction> iterator = openTx.iterator();
+                while (iterator.hasNext()) {
+                    if (iterator.next().isClosed()) {
+                        iterator.remove();
                     } else {
                         txStillOpen = true;
                     }

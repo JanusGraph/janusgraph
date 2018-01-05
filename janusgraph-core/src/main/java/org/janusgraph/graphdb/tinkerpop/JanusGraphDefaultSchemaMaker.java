@@ -43,8 +43,8 @@ public class JanusGraphDefaultSchemaMaker implements DefaultSchemaMaker {
     @Override
     public PropertyKey makePropertyKey(PropertyKeyMaker factory, Object value) {
         String name = factory.getName();
-        Class klass = determineClass(value);
-        return factory.cardinality(defaultPropertyCardinality(name)).dataType(klass).make();
+        Class actualClass = determineClass(value);
+        return factory.cardinality(defaultPropertyCardinality(name)).dataType(actualClass).make();
     }
 
     @Override

@@ -188,7 +188,7 @@ public class CassandraStorageSetup {
             s = Joiner.on(File.separator).join(System.getProperty("user.dir"), "target", "cassandra", name, "localhost-bop");
             log.info("Set default Cassandra {} directory path {}", name, s);
         } else {
-            log.info("Loaded Cassandra {} directory path {} from system property {}", new Object[] { name, s, prop });
+            log.info("Loaded Cassandra {} directory path {} from system property {}", name, s, prop);
         }
 
         if (mustExistAndBeAbsolute) {

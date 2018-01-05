@@ -30,7 +30,7 @@ public interface SchemaManager extends SchemaInspector {
      * @see org.janusgraph.core.schema.PropertyKeyMaker
      * @see org.janusgraph.core.PropertyKey
      */
-    public PropertyKeyMaker makePropertyKey(String name);
+    PropertyKeyMaker makePropertyKey(String name);
 
     /**
      * Returns a {@link org.janusgraph.core.schema.EdgeLabelMaker} instance to define a new {@link org.janusgraph.core.EdgeLabel} with the given name.
@@ -43,7 +43,7 @@ public interface SchemaManager extends SchemaInspector {
      * @see org.janusgraph.core.schema.EdgeLabelMaker
      * @see org.janusgraph.core.EdgeLabel
      */
-    public EdgeLabelMaker makeEdgeLabel(String name);
+    EdgeLabelMaker makeEdgeLabel(String name);
 
     /**
      * Returns a {@link VertexLabelMaker} to define a new vertex label with the given name. Note, that the name must
@@ -52,7 +52,7 @@ public interface SchemaManager extends SchemaInspector {
      * @param name
      * @return
      */
-    public VertexLabelMaker makeVertexLabel(String name);
+    VertexLabelMaker makeVertexLabel(String name);
 
 
 }

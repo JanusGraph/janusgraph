@@ -19,19 +19,16 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.Map.Entry;
-import com.google.common.base.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.util.time.Durations;
-
-
-import javax.annotation.Nullable;
 
 public class HadoopConfiguration implements WriteConfiguration {
 
@@ -51,50 +48,53 @@ public class HadoopConfiguration implements WriteConfiguration {
     }
 
     @Override
-    public <O> O get(String key, Class<O> datatype) {
+    public <O> O get(String key, Class<O> dataType) {
 
         final String internalKey = getInternalKey(key);
 
         if (null == config.get(internalKey))
             return null;
 
-        if (datatype.isArray()) {
-            Preconditions.checkArgument(datatype.getComponentType()==String.class,"Only string arrays are supported: %s",datatype);
+        if (dataType.isArray()) {
+            Preconditions.checkArgument(dataType.getComponentType()==String.class,"Only string arrays are supported: %s",dataType);
             return (O)config.getStrings(internalKey);
-        } else if (Number.class.isAssignableFrom(datatype)) {
+        } else if (Number.class.isAssignableFrom(dataType)) {
             String s = config.get(internalKey);
-            return constructFromStringArgument(datatype, s);
-        } else if (datatype==String.class) {
+            return constructFromStringArgument(dataType, s);
+        } else if (dataType==String.class) {
             return (O)config.get(internalKey);
-        } else if (datatype==Boolean.class) {
+        } else if (dataType==Boolean.class) {
             return (O)Boolean.valueOf(config.get(internalKey));
-        } else if (datatype.isEnum()) {
-            O[] constants = datatype.getEnumConstants();
+        } else if (dataType.isEnum()) {
+            O[] constants = dataType.getEnumConstants();
             Preconditions.checkState(null != constants && 0 < constants.length, "Zero-length or undefined enum");
             String estr = config.get(internalKey);
             for (O c : constants)
                 if (c.toString().equals(estr))
                     return c;
-            throw new IllegalArgumentException("No match for string \"" + estr + "\" in enum " + datatype);
-        } else if (datatype==Object.class) {
+            throw new IllegalArgumentException("No match for string \"" + estr + "\" in enum " + dataType);
+        } else if (dataType==Object.class) {
             // Return String when an Object is requested
             // Object.class must be supported for the sake of AbstractConfiguration's getSubset impl
             return (O)config.get(internalKey);
-        } else if (Duration.class.isAssignableFrom(datatype)) {
+        } else if (Duration.class.isAssignableFrom(dataType)) {
             // This is a conceptual leak; the config layer should ideally only handle standard library types
             String s = config.get(internalKey);
             String[] comps = s.split("\\s");
-            TemporalUnit unit = null;
-            if (comps.length == 1) {
-                //By default, times are in milli seconds
-                unit = ChronoUnit.MILLIS;
-            } else if (comps.length == 2) {
-                unit = Durations.parse(comps[1]);
-            } else {
-                throw new IllegalArgumentException("Cannot parse time duration from: " + s);
+            final TemporalUnit unit;
+            switch (comps.length) {
+                case 1:
+                    //By default, times are in milli seconds
+                    unit = ChronoUnit.MILLIS;
+                    break;
+                case 2:
+                    unit = Durations.parse(comps[1]);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Cannot parse time duration from: " + s);
             }
             return (O) Duration.of(Long.valueOf(comps[0]), unit);
-        } else throw new IllegalArgumentException("Unsupported data type: " + datatype);
+        } else throw new IllegalArgumentException("Unsupported data type: " + dataType);
     }
 
     @Override
@@ -103,16 +103,10 @@ public class HadoopConfiguration implements WriteConfiguration {
          * Is there a way to iterate over just the keys of a Hadoop Configuration?
          * Iterating over Map.Entry is needlessly wasteful since we don't need the values.
          */
-        Iterable<String> internalKeys = Iterables.transform(config, new Function<Entry<String, String>, String>() {
-            @Override
-            public String apply(Entry<String, String> internalEntry) {
-                return internalEntry.getKey();
-            }
-        });
 
-        Iterable<String> prefixedKeys = Iterables.filter(internalKeys, new Predicate<String>() {
-            @Override
-            public boolean apply(final String internalKey) {
+        return StreamSupport.stream(config.spliterator(), false)
+            .map(Entry::getKey)
+            .filter(internalKey -> {
                 String k = internalKey;
                 if (null != prefix) {
                     if (k.startsWith(prefix)) {
@@ -122,19 +116,13 @@ public class HadoopConfiguration implements WriteConfiguration {
                     }
                 }
                 return k.startsWith(userPrefix);
-            }
-        });
-
-        return Iterables.transform(prefixedKeys, new Function<String, String>() {
-
-            @Nullable
-            @Override
-            public String apply(@Nullable String internalKey) {
+            })
+            .map(internalKey -> {
                 String userKey = getUserKey(internalKey);
                 Preconditions.checkState(userKey.startsWith(userPrefix));
                 return userKey;
-            }
-        });
+            })
+            .collect(Collectors.toList());
     }
 
     @Override
@@ -147,26 +135,26 @@ public class HadoopConfiguration implements WriteConfiguration {
 
         final String internalKey = getInternalKey(key);
 
-        Class<?> datatype = value.getClass();
+        Class<?> dataType = value.getClass();
 
-        if (datatype.isArray()) {
-            Preconditions.checkArgument(datatype.getComponentType()==String.class,"Only string arrays are supported: %s",datatype);
+        if (dataType.isArray()) {
+            Preconditions.checkArgument(dataType.getComponentType()==String.class,"Only string arrays are supported: %s",dataType);
             config.setStrings(internalKey, (String[])value);
-        } else if (Number.class.isAssignableFrom(datatype)) {
+        } else if (Number.class.isAssignableFrom(dataType)) {
             config.set(internalKey, value.toString());
-        } else if (datatype==String.class) {
+        } else if (dataType==String.class) {
             config.set(internalKey, value.toString());
-        } else if (datatype==Boolean.class) {
+        } else if (dataType==Boolean.class) {
             config.setBoolean(internalKey, (Boolean)value);
-        } else if (datatype.isEnum()) {
+        } else if (dataType.isEnum()) {
             config.set(internalKey, value.toString());
-        } else if (datatype==Object.class) {
+        } else if (dataType==Object.class) {
             config.set(internalKey, value.toString());
-        } else if (Duration.class.isAssignableFrom(datatype)) {
+        } else if (Duration.class.isAssignableFrom(dataType)) {
             // This is a conceptual leak; the config layer should ideally only handle standard library types
             String millis = String.valueOf(((Duration)value).toMillis());
             config.set(internalKey, millis);
-        } else throw new IllegalArgumentException("Unsupported data type: " + datatype);
+        } else throw new IllegalArgumentException("Unsupported data type: " + dataType);
     }
 
     @Override
@@ -179,14 +167,14 @@ public class HadoopConfiguration implements WriteConfiguration {
         return new HadoopConfiguration(new Configuration(config), prefix);
     }
 
-    private <O> O constructFromStringArgument(Class<O> datatype, String arg) {
+    private <O> O constructFromStringArgument(Class<O> dataType, String arg) {
         try {
-            Constructor<O> ctor = datatype.getConstructor(String.class);
+            Constructor<O> ctor = dataType.getConstructor(String.class);
             return ctor.newInstance(arg);
         // ReflectiveOperationException is narrower and more appropriate than Exception, but only @since 1.7
         //} catch (ReflectiveOperationException e) {
         } catch (Exception e) {
-            log.error("Failed to parse configuration string \"{}\" into type {} due to the following reflection exception", arg, datatype, e);
+            log.error("Failed to parse configuration string \"{}\" into type {} due to the following reflection exception", arg, dataType, e);
             throw new RuntimeException(e);
         }
     }

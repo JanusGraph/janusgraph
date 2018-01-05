@@ -16,7 +16,6 @@ package org.janusgraph.diskstorage.solr.transform;
 
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.PermanentBackendException;
 
 public class GeoToWktConverter {
     /**

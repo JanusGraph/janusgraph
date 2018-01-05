@@ -45,7 +45,7 @@ public class ConcurrentIndexCache implements IndexCache {
 
     @Override
     public synchronized Iterable<JanusGraphVertexProperty> get(final Object value, final PropertyKey key) {
-        List<JanusGraphVertexProperty> result = new ArrayList<JanusGraphVertexProperty>(4);
+        final List<JanusGraphVertexProperty> result = new ArrayList<>(4);
         for (JanusGraphVertexProperty p : map.get(value)) {
             if (p.propertyKey().equals(key)) result.add(p);
         }

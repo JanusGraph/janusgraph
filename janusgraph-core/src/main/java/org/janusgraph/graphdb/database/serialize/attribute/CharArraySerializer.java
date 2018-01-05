@@ -50,6 +50,6 @@ public class CharArraySerializer extends ArraySerializer implements AttributeSer
     @Override
     public void write(WriteBuffer buffer, char[] attribute) {
         writeLength(buffer,attribute);
-        if (attribute!=null) for (int i = 0; i < attribute.length; i++) buffer.putChar(attribute[i]);
+        if (attribute!=null) for (char anAttribute : attribute) buffer.putChar(anAttribute);
     }
 }

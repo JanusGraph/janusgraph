@@ -62,13 +62,13 @@ public class HBaseStoreTest extends KeyColumnValueStoreTest {
 
     @Test
     public void tableShouldEqualSuppliedTableName() throws BackendException {
-        final HBaseStoreManager mgr = (HBaseStoreManager) openStorageManager("randomTableName");
+        final HBaseStoreManager mgr = openStorageManager("randomTableName");
         assertEquals("randomTableName", mgr.getName());
     }
 
     @Test
     public void tableShouldEqualGraphName() throws BackendException {
-        final HBaseStoreManager mgr = (HBaseStoreManager) openStorageManager("", "randomGraphName");
+        final HBaseStoreManager mgr = openStorageManager("", "randomGraphName");
         assertEquals("randomGraphName", mgr.getName());
     }
 }

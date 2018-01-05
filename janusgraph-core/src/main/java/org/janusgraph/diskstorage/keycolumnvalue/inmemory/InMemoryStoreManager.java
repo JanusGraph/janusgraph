@@ -46,7 +46,7 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
 
     public InMemoryStoreManager(final Configuration configuration) {
 
-        stores = new ConcurrentHashMap<String, InMemoryKeyColumnValueStore>();
+        stores = new ConcurrentHashMap<>();
 
         features = new StandardStoreFeatures.Builder()
             .orderedScan(true)

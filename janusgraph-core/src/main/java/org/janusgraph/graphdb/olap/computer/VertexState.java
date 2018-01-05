@@ -85,15 +85,15 @@ public class VertexState<M> {
             else currentMessages = combiner.combine(message,(M)currentMessages);
         } else {
             int pos = scopeMap.get(scope);
-            Object[] msgs =  (Object[])currentMessages;
-            if (msgs[pos]==null) msgs[pos]=message;
-            else msgs[pos] = combiner.combine(message,(M)msgs[pos]);
+            Object[] messages =  (Object[])currentMessages;
+            if (messages[pos]==null) messages[pos]=message;
+            else messages[pos] = combiner.combine(message,(M)messages[pos]);
         }
     }
 
     public M getMessage(MessageScope scope, Map<MessageScope,Integer> scopeMap) {
         assert scope!=null && isValidIdMap(scopeMap) && scopeMap.containsKey(scope);
-        if (scopeMap.size()==1 || previousMessages == null) return (M)previousMessages;
+        if (scopeMap.size()==1 || (previousMessages==null && currentMessages==null)) return (M)previousMessages;
         else return (M)((Object[])previousMessages)[scopeMap.get(scope)];
     }
 

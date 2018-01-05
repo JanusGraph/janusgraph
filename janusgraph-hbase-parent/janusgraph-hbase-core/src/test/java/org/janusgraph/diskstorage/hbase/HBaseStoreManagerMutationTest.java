@@ -56,7 +56,7 @@ public class HBaseStoreManagerMutationTest {
             List<StaticBuffer> deletions = new ArrayList<>();
 
             // 100 columns each row
-            int i = 0;
+            int i;
             for (i = 0; i < 100; i++) {
                 col = KeyColumnValueStoreUtil.longToByteBuffer(i);
                 val = KeyColumnValueStoreUtil.longToByteBuffer(i + 100);
@@ -66,22 +66,22 @@ public class HBaseStoreManagerMutationTest {
                     e.setMetaData(EntryMetaData.TTL, i % 10 + 1);
                     // Collect the columns with TTL. Only do this for one row
                     if (row == 1) {
-                      expectedColumnsWithTTL.add(new Long(i));
+                      expectedColumnsWithTTL.add((long) i);
                     }
                     additions.add(e);
                 } else {
                     // Collect the columns without TTL. Only do this for one row
                     if (row == 1) {
-                        expectedColumnsWithoutTTL.add(new Long(i));
+                        expectedColumnsWithoutTTL.add((long) i);
                     }
                     additions.add(e);
                 }
             }
             // Add one deletion to the row
             if (row == 1) {
-                expectedColumnDelete.add(new Long(i - 1));
+                expectedColumnDelete.add((long) (i - 1));
             }
-            deletions.add((StaticBuffer) e);
+            deletions.add(e);
             rowkeyMutationMap.put(rowkey, new KCVMutation(additions, deletions));
         }
         storeMutationMap.put("store1", rowkeyMutationMap);

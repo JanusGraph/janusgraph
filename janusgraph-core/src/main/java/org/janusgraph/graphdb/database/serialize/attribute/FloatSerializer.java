@@ -30,11 +30,11 @@ public class FloatSerializer implements OrderPreservingSerializer<Float> {
     @Override
     public Float convert(Object value) {
         if (value instanceof Number) {
-            double d = ((Number)value).doubleValue();
-            if (d<-Float.MAX_VALUE || d>Float.MAX_VALUE) throw new IllegalArgumentException("Value too large for float: " + value);
-            return Float.valueOf((float)d);
+            final double d = ((Number)value).doubleValue();
+            if (d < -Float.MAX_VALUE || d > Float.MAX_VALUE) throw new IllegalArgumentException("Value too large for float: " + value);
+            return (float) d;
         } else if (value instanceof String) {
-            return Float.valueOf(Float.parseFloat((String) value));
+            return Float.parseFloat((String) value);
         } else return null;
     }
 
@@ -45,7 +45,7 @@ public class FloatSerializer implements OrderPreservingSerializer<Float> {
 
     @Override
     public void write(WriteBuffer buffer, Float attribute) {
-        buffer.putFloat(attribute.floatValue());
+        buffer.putFloat(attribute);
     }
 
     @Override

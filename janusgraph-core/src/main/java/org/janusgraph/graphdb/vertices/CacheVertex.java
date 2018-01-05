@@ -35,7 +35,7 @@ public class CacheVertex extends StandardVertex {
 
     public CacheVertex(StandardJanusGraphTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
-        queryCache = new HashMap<SliceQuery, EntryList>(4);
+        queryCache = new HashMap<>(4);
     }
 
     protected void addToQueryCache(final SliceQuery query, final EntryList entries) {

@@ -74,7 +74,7 @@ public interface Locker {
      * @throws PermanentLockingException
      *             a failure unlikely to disappear if the call is retried
      */
-    public void writeLock(KeyColumn lockID, StoreTransaction tx)
+    void writeLock(KeyColumn lockID, StoreTransaction tx)
             throws TemporaryLockingException, PermanentLockingException;
 
     /**
@@ -92,7 +92,7 @@ public interface Locker {
      * @throws PermanentLockingException
      *             a failure unlikely to disappear if the call is retried
      */
-    public void checkLocks(StoreTransaction tx)
+    void checkLocks(StoreTransaction tx)
             throws TemporaryLockingException, PermanentLockingException;
 
     /**
@@ -109,6 +109,6 @@ public interface Locker {
      * @throws PermanentLockingException
      *             a failure unlikely to disappear if the call is retried
      */
-    public void deleteLocks(StoreTransaction tx)
+    void deleteLocks(StoreTransaction tx)
             throws TemporaryLockingException, PermanentLockingException;
 }

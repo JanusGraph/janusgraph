@@ -23,7 +23,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
 import org.apache.commons.lang.StringUtils;
 
 /**
- * This class is used by {@code MetricInstrumentedStore} to measure wallclock
+ * This class is used by {@code MetricInstrumentedStore} to measure wall clock
  * time, method invocation counts, and exceptions thrown by the methods on
  * {@link RecordIterator} instances returned from
  * {@link MetricInstrumentedStore#getSlice(org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery, org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction)}.
@@ -71,35 +71,21 @@ public class MetricInstrumentedIterator implements KeyIterator {
     @Override
     public boolean hasNext() {
         return MetricInstrumentedStore.runWithMetrics(p, null, M_HAS_NEXT,
-            new UncheckedCallable<Boolean>() {
-                public Boolean call() {
-                    return Boolean.valueOf(iterator.hasNext());
-                }
-            }
-        );
+                (UncheckedCallable<Boolean>) iterator::hasNext);
     }
 
     @Override
     public StaticBuffer next() {
         return MetricInstrumentedStore.runWithMetrics(p, null, M_NEXT,
-            new UncheckedCallable<StaticBuffer>() {
-                public StaticBuffer call() {
-                    return iterator.next();
-                }
-            }
-        );
+                (UncheckedCallable<StaticBuffer>) iterator::next);
     }
     
     @Override
     public void close() throws IOException {
-        MetricInstrumentedStore.runWithMetrics(p, null, M_CLOSE,
-            new IOCallable<Void>() {
-                public Void call() throws IOException {
-                    iterator.close();
-                    return null;
-                }
-            }
-        );
+        MetricInstrumentedStore.runWithMetrics(p, null, M_CLOSE, (IOCallable<Void>) () -> {
+            iterator.close();
+            return null;
+        });
     }
 
     @Override

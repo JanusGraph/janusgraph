@@ -20,8 +20,6 @@ import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -43,7 +41,7 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
      * Implementation note: for Cassandra, namespace is usually a column
      * family name.
      */
-    private final ConcurrentHashMap<String, LocalLockMediator<?>> mediators = new ConcurrentHashMap<String, LocalLockMediator<?>>();
+    private final ConcurrentHashMap<String, LocalLockMediator<?>> mediators = new ConcurrentHashMap<>();
 
     @Override
     public <T> LocalLockMediator<T> get(String namespace, TimestampProvider times) {
@@ -54,9 +52,9 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
         LocalLockMediator<T> m = (LocalLockMediator<T>)mediators.get(namespace);
 
         if (null == m) {
-            m = new LocalLockMediator<T>(namespace, times);
+            m = new LocalLockMediator<>(namespace, times);
             @SuppressWarnings("unchecked")
-            LocalLockMediator<T> old = (LocalLockMediator<T>)mediators.putIfAbsent(namespace, m);
+            final LocalLockMediator<T> old = (LocalLockMediator<T>)mediators.putIfAbsent(namespace, m);
             if (null != old)
                 m = old;
             else
@@ -84,17 +82,9 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
      * This deletes all entries in the global map of namespaces to mediators
      * whose namespace key equals the argument.
      *
-     * @param prefix
+     * @param namespace
      */
     public void clear(String namespace) {
-        Iterator<Entry<String, LocalLockMediator<?>>> iter = mediators.entrySet().iterator();
-
-        while (iter.hasNext()) {
-            Entry<String, LocalLockMediator<?>> e = iter.next();
-
-            if (e.getKey().equals(namespace)) {
-                iter.remove();
-            }
-        }
+        mediators.entrySet().removeIf(e -> e.getKey().equals(namespace));
     }
 }

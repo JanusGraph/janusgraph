@@ -49,35 +49,21 @@ public class IDPoolTest {
 
     @Test
     public void testStandardIDPool1() throws InterruptedException {
-        final MockIDAuthority idauth = new MockIDAuthority(200);
-        testIDPoolWith(new IDPoolFactory() {
-            @Override
-            public StandardIDPool get(int partitionID) {
-                return new StandardIDPool(idauth, partitionID, partitionID, Integer.MAX_VALUE, Duration.ofMillis(2000L), 0.2);
-            }
-        }, 1000, 6, 100000);
+
+        final MockIDAuthority idAuthority = new MockIDAuthority(200);
+        testIDPoolWith(partitionID -> new StandardIDPool(idAuthority, partitionID, partitionID, Integer.MAX_VALUE, Duration.ofMillis(2000L), 0.2), 1000, 6, 100000);
     }
 
     @Test
     public void testStandardIDPool2() throws InterruptedException {
-        final MockIDAuthority idauth = new MockIDAuthority(10000, Integer.MAX_VALUE, 2000);
-        testIDPoolWith(new IDPoolFactory() {
-            @Override
-            public StandardIDPool get(int partitionID) {
-                return new StandardIDPool(idauth, partitionID, partitionID, Integer.MAX_VALUE, Duration.ofMillis(4000), 0.1);
-            }
-        }, 2, 5, 10000);
+        final MockIDAuthority idAuthority = new MockIDAuthority(10000, Integer.MAX_VALUE, 2000);
+        testIDPoolWith(partitionID -> new StandardIDPool(idAuthority, partitionID, partitionID, Integer.MAX_VALUE, Duration.ofMillis(4000), 0.1), 2, 5, 10000);
     }
 
     @Test
     public void testStandardIDPool3() throws InterruptedException {
-        final MockIDAuthority idauth = new MockIDAuthority(200);
-        testIDPoolWith(new IDPoolFactory() {
-            @Override
-            public StandardIDPool get(int partitionID) {
-                return new StandardIDPool(idauth, partitionID, partitionID, Integer.MAX_VALUE, Duration.ofMillis(2000), 0.2);
-            }
-        }, 10, 20, 100000);
+        final MockIDAuthority idAuthority = new MockIDAuthority(200);
+        testIDPoolWith(partitionID -> new StandardIDPool(idAuthority, partitionID, partitionID, Integer.MAX_VALUE, Duration.ofMillis(2000), 0.2), 10, 20, 100000);
     }
 
     private void testIDPoolWith(IDPoolFactory poolFactory, final int numPartitions,
@@ -93,43 +79,41 @@ public class IDPoolTest {
 
         Thread[] threads = new Thread[numThreads];
         for (int i = 0; i < numThreads; i++) {
-            threads[i] = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    for (int attempt = 0; attempt < attemptsPerThread; attempt++) {
-                        int offset = random.nextInt(numPartitions);
-                        long id = idPools[offset].nextID();
-                        assertTrue(id < Integer.MAX_VALUE);
-                        IntSet idset = ids[offset];
-                        synchronized (idset) {
-                            assertFalse(idset.contains((int) id));
-                            idset.add((int) id);
-                        }
+
+            threads[i] = new Thread(() -> {
+                for (int attempt = 0; attempt < attemptsPerThread; attempt++) {
+                    int offset = random.nextInt(numPartitions);
+                    long id = idPools[offset].nextID();
+                    assertTrue(id < Integer.MAX_VALUE);
+                    IntSet idSet = ids[offset];
+                    synchronized (idSet) {
+                        assertFalse(idSet.contains((int) id));
+                        idSet.add((int) id);
                     }
                 }
             });
             threads[i].start();
         }
         for (int i = 0; i < numThreads; i++) threads[i].join();
-        for (int i = 0; i < idPools.length; i++) idPools[i].close();
+        for (final StandardIDPool idPool : idPools) idPool.close();
         //Verify consecutive id assignment
         for (int i = 0; i < ids.length; i++) {
             IntSet set = ids[i];
             int max = 0;
             int[] all = set.getAll();
-            for (int j=0;j<all.length;j++) if (all[j]>max) max=all[j];
+            for (int id : all) if (id > max) max = id;
             for (int j=1;j<=max;j++) assertTrue(i+ " contains: " + j,set.contains(j));
         }
     }
 
     @Test
     public void testAllocationTimeout() {
-        final MockIDAuthority idauth = new MockIDAuthority(10000, Integer.MAX_VALUE, 5000);
-        StandardIDPool pool = new StandardIDPool(idauth, 1, 1, Integer.MAX_VALUE, Duration.ofMillis(4000), 0.1);
+        final MockIDAuthority idAuthority = new MockIDAuthority(10000, Integer.MAX_VALUE, 5000);
+        StandardIDPool pool = new StandardIDPool(idAuthority, 1, 1, Integer.MAX_VALUE, Duration.ofMillis(4000), 0.1);
         try {
             pool.nextID();
             fail();
-        } catch (JanusGraphException e) {
+        } catch (JanusGraphException ignored) {
 
         }
 
@@ -145,7 +129,7 @@ public class IDPoolTest {
 
         final IDAuthority mockAuthority = ctrl.createMock(IDAuthority.class);
 
-        // Sleep for two seconds, then throw a backendexception
+        // Sleep for two seconds, then throw a BackendException
         // this whole delegate could be deleted if we abstracted StandardIDPool's internal executor and stopwatches
         expect(mockAuthority.getIDBlock(partition, idNamespace, timeout)).andDelegateTo(new IDAuthority() {
             @Override
@@ -202,7 +186,7 @@ public class IDPoolTest {
         try {
             pool.nextID();
             fail();
-        } catch (JanusGraphException e) {
+        } catch (JanusGraphException ignored) {
 
         }
 
@@ -214,9 +198,9 @@ public class IDPoolTest {
 
     @Test
     public void testPoolExhaustion1() {
-        MockIDAuthority idauth = new MockIDAuthority(200);
+        MockIDAuthority idAuthority = new MockIDAuthority(200);
         int idUpper = 10000;
-        StandardIDPool pool = new StandardIDPool(idauth, 0, 1, idUpper, Duration.ofMillis(2000), 0.2);
+        StandardIDPool pool = new StandardIDPool(idAuthority, 0, 1, idUpper, Duration.ofMillis(2000), 0.2);
         for (int i = 1; i < idUpper * 2; i++) {
             try {
                 long id = pool.nextID();
@@ -231,8 +215,8 @@ public class IDPoolTest {
     @Test
     public void testPoolExhaustion2() {
         int idUpper = 10000;
-        MockIDAuthority idauth = new MockIDAuthority(200, idUpper);
-        StandardIDPool pool = new StandardIDPool(idauth, 0, 1, Integer.MAX_VALUE, Duration.ofMillis(2000), 0.2);
+        MockIDAuthority idAuthority = new MockIDAuthority(200, idUpper);
+        StandardIDPool pool = new StandardIDPool(idAuthority, 0, 1, Integer.MAX_VALUE, Duration.ofMillis(2000), 0.2);
         for (int i = 1; i < idUpper * 2; i++) {
             try {
                 long id = pool.nextID();
@@ -245,7 +229,7 @@ public class IDPoolTest {
     }
 
     interface IDPoolFactory {
-        public StandardIDPool get(int partitionID);
+        StandardIDPool get(int partitionID);
     }
 
 }

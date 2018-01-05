@@ -95,7 +95,7 @@ public class EdgeSerializer implements RelationReader {
         RelationType relationType = tx.getExistingRelationType(typeId);
         InternalRelationType def = (InternalRelationType) relationType;
         Multiplicity multiplicity = def.multiplicity();
-        long[] keysig = def.getSortKey();
+        long[] keySignature = def.getSortKey();
 
         long relationId;
         Object other;
@@ -135,19 +135,20 @@ public class EdgeSerializer implements RelationReader {
                 in.movePositionTo(data.getValuePosition());
                 other = readPropertyValue(in,key);
             }
-            Preconditions.checkState(other!=null,"Encountered error in deserializer [null value returned]. Check serializer compatibility.");
+            Preconditions.checkState(other!=null,
+                "Encountered error in deserializer [null value returned]. Check serializer compatibility.");
         }
         assert other!=null;
 
-        if (!excludeProperties && !multiplicity.isConstrained() && keysig.length>0) {
+        if (!excludeProperties && !multiplicity.isConstrained() && keySignature.length>0) {
             int currentPos = in.getPosition();
             //Read sort key which only exists if type is not unique in this direction
             assert endKeyPos>startKeyPos;
             int keyLength = endKeyPos-startKeyPos; //after reading the ids, we are on the last byte of the key
             in.movePositionTo(startKeyPos);
-            ReadBuffer inkey = in;
-            if (def.getSortOrder()== Order.DESC) inkey = in.subrange(keyLength,true);
-            readInlineTypes(keysig, properties, inkey, tx, InlineType.KEY);
+            ReadBuffer inKey = in;
+            if (def.getSortOrder()== Order.DESC) inKey = in.subrange(keyLength,true);
+            readInlineTypes(keySignature, properties, inKey, tx, InlineType.KEY);
             in.movePositionTo(currentPos);
         }
 
@@ -158,9 +159,9 @@ public class EdgeSerializer implements RelationReader {
             //Third: read rest
             while (in.hasRemaining()) {
                 PropertyKey type = tx.getExistingPropertyKey(IDHandler.readInlineRelationType(in));
-                Object pvalue = readInline(in, type, InlineType.NORMAL);
-                assert pvalue != null;
-                properties.put(type.longId(), pvalue);
+                Object propertyValue = readInline(in, type, InlineType.NORMAL);
+                assert propertyValue != null;
+                properties.put(type.longId(), propertyValue);
             }
 
             if (data.hasMetaData()) {
@@ -177,7 +178,8 @@ public class EdgeSerializer implements RelationReader {
         return new RelationCache(dir, typeId, relationId, other, properties);
     }
 
-    private void readInlineTypes(long[] keyIds, LongObjectHashMap properties, ReadBuffer in, TypeInspector tx, InlineType inlineType) {
+    private void readInlineTypes(long[] keyIds, LongObjectHashMap properties, ReadBuffer in, TypeInspector tx,
+                                 InlineType inlineType) {
         for (long keyId : keyIds) {
             PropertyKey keyType = tx.getExistingPropertyKey(keyId);
             Object value = readInline(in, keyType, inlineType);
@@ -231,16 +233,18 @@ public class EdgeSerializer implements RelationReader {
         return writeRelation(relation, (InternalRelationType) relation.getType(), position, tx);
     }
 
-    public StaticArrayEntry writeRelation(InternalRelation relation, InternalRelationType type, int position, TypeInspector tx) {
-        assert type==relation.getType() || (type.getBaseType() != null && type.getBaseType().equals(relation.getType()));
+    public StaticArrayEntry writeRelation(InternalRelation relation, InternalRelationType type, int position,
+                                          TypeInspector tx) {
+        assert type==relation.getType() || (type.getBaseType() != null
+                && type.getBaseType().equals(relation.getType()));
         Direction dir = EdgeDirection.fromPosition(position);
         Preconditions.checkArgument(type.isUnidirected(Direction.BOTH) || type.isUnidirected(dir));
-        long typeid = type.longId();
+        long typeId = type.longId();
         DirectionID dirID = getDirID(dir, relation.isProperty() ? RelationCategory.PROPERTY : RelationCategory.EDGE);
 
         DataOutput out = serializer.getDataOutput(DEFAULT_CAPACITY);
         int valuePosition;
-        IDHandler.writeRelationType(out, typeid, dirID, type.isInvisibleType());
+        IDHandler.writeRelationType(out, typeId, dirID, type.isInvisibleType());
         Multiplicity multiplicity = type.multiplicity();
 
         long[] sortKey = type.getSortKey();
@@ -320,10 +324,9 @@ public class EdgeSerializer implements RelationReader {
         }
         assert valuePosition>0;
 
-        StaticArrayEntry entry = new StaticArrayEntry(type.getSortOrder()==Order.DESC?
-                                    out.getStaticBufferFlipBytes(keyStartPos,keyEndPos):
-                                    out.getStaticBuffer(),valuePosition);
-        return entry;
+        return new StaticArrayEntry(type.getSortOrder() == Order.DESC ?
+                                    out.getStaticBufferFlipBytes(keyStartPos, keyEndPos) :
+                                    out.getStaticBuffer(), valuePosition);
     }
 
     private enum InlineType {
@@ -340,7 +343,8 @@ public class EdgeSerializer implements RelationReader {
 
     }
 
-    private void writeInlineTypes(long[] keyIds, InternalRelation relation, DataOutput out, TypeInspector tx, InlineType inlineType) {
+    private void writeInlineTypes(long[] keyIds, InternalRelation relation, DataOutput out, TypeInspector tx,
+                                  InlineType inlineType) {
         for (long keyId : keyIds) {
             PropertyKey t = tx.getExistingPropertyKey(keyId);
             writeInline(out, t, relation.getValueDirect(t), inlineType);
@@ -406,41 +410,43 @@ public class EdgeSerializer implements RelationReader {
             int keyStartPos = colStart.getPosition();
             int keyEndPos = -1;
             for (int i = 0; i < sortKey.length && sortKey[i] != null; i++) {
-                PropertyKey skey = sortKey[i].key;
+                PropertyKey propertyKey = sortKey[i].key;
                 Interval interval = sortKey[i].interval;
 
                 if (i>=sortKeyIDs.length) {
                     assert !type.multiplicity().isUnique(dir);
-                    assert (skey instanceof ImplicitKey) && (skey==ImplicitKey.JANUSGRAPHID || skey==ImplicitKey.ADJACENT_ID);
-                    assert skey!=ImplicitKey.ADJACENT_ID || (i==sortKeyIDs.length);
-                    assert skey!=ImplicitKey.JANUSGRAPHID || (!type.multiplicity().isConstrained() &&
-                                                  (i==sortKeyIDs.length && skey.isPropertyKey() || i==sortKeyIDs.length+1 && skey.isEdgeLabel() ));
+                    assert (propertyKey instanceof ImplicitKey)
+                            && (propertyKey==ImplicitKey.JANUSGRAPHID || propertyKey==ImplicitKey.ADJACENT_ID);
+                    assert propertyKey!=ImplicitKey.ADJACENT_ID || (i==sortKeyIDs.length);
+                    assert propertyKey!=ImplicitKey.JANUSGRAPHID || (!type.multiplicity().isConstrained() &&
+                                                  (i==sortKeyIDs.length && propertyKey.isPropertyKey()
+                                                      || i==sortKeyIDs.length+1 && propertyKey.isEdgeLabel() ));
                     assert colStart.getPosition()==colEnd.getPosition();
                     assert interval==null || interval.isPoints();
                     keyEndPos = colStart.getPosition();
 
                 } else {
                     assert !type.multiplicity().isConstrained();
-                    assert skey.longId() == sortKeyIDs[i];
+                    assert propertyKey.longId() == sortKeyIDs[i];
                 }
 
                 if (interval == null || interval.isEmpty()) {
                     break;
                 }
                 if (interval.isPoints()) {
-                    if (skey==ImplicitKey.JANUSGRAPHID || skey==ImplicitKey.ADJACENT_ID) {
+                    if (propertyKey==ImplicitKey.JANUSGRAPHID || propertyKey==ImplicitKey.ADJACENT_ID) {
                         assert !type.multiplicity().isUnique(dir);
                         VariableLong.writePositiveBackward(colStart, (Long)interval.getStart());
                         VariableLong.writePositiveBackward(colEnd, (Long)interval.getEnd());
                     } else {
-                        writeInline(colStart, skey, interval.getStart(), InlineType.KEY);
-                        writeInline(colEnd, skey, interval.getEnd(), InlineType.KEY);
+                        writeInline(colStart, propertyKey, interval.getStart(), InlineType.KEY);
+                        writeInline(colEnd, propertyKey, interval.getEnd(), InlineType.KEY);
                     }
                 } else {
                     if (interval.getStart() != null)
-                        writeInline(colStart, skey, interval.getStart(), InlineType.KEY);
+                        writeInline(colStart, propertyKey, interval.getStart(), InlineType.KEY);
                     if (interval.getEnd() != null)
-                        writeInline(colEnd, skey, interval.getEnd(), InlineType.KEY);
+                        writeInline(colEnd, propertyKey, interval.getEnd(), InlineType.KEY);
 
                     switch (type.getSortOrder()) {
                         case ASC:

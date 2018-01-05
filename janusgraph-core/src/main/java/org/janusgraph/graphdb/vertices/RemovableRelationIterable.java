@@ -24,13 +24,13 @@ public class RemovableRelationIterable<O extends JanusGraphRelation>
 
     private final Iterable<InternalRelation> iterable;
 
-    public RemovableRelationIterable(Iterable<InternalRelation> iter) {
-        iterable = iter;
+    public RemovableRelationIterable(Iterable<InternalRelation> iterable) {
+        this.iterable = iterable;
     }
 
     @Override
     public Iterator<O> iterator() {
-        return new RemovableRelationIterator<O>(iterable.iterator());
+        return new RemovableRelationIterator<>(iterable.iterator());
     }
 
 }

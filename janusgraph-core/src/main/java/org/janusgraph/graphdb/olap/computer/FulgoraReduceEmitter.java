@@ -18,7 +18,6 @@ import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Queue;
@@ -30,7 +29,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class FulgoraReduceEmitter<OK, OV> implements MapReduce.ReduceEmitter<OK, OV> {
 
-    protected Queue<KeyValue<OK, OV>> reduceQueue = new ConcurrentLinkedQueue<>();
+    protected final Queue<KeyValue<OK, OV>> reduceQueue = new ConcurrentLinkedQueue<>();
 
     @Override
     public void emit(final OK key, final OV value) {
@@ -41,7 +40,7 @@ public class FulgoraReduceEmitter<OK, OV> implements MapReduce.ReduceEmitter<OK,
         if (mapReduce.getReduceKeySort().isPresent()) {
             final Comparator<OK> comparator = mapReduce.getReduceKeySort().get();
             final List<KeyValue<OK, OV>> list = new ArrayList<>(this.reduceQueue);
-            Collections.sort(list, Comparator.comparing(KeyValue::getKey, comparator));
+            list.sort(Comparator.comparing(KeyValue::getKey, comparator));
             this.reduceQueue.clear();
             this.reduceQueue.addAll(list);
         }

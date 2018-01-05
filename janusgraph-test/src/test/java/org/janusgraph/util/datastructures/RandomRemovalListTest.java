@@ -18,8 +18,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
-
 import static org.junit.Assert.assertEquals;
 
 
@@ -31,7 +29,7 @@ public class RandomRemovalListTest {
     @Test
     public void test1() {
         int max = 1000000;
-        RandomRemovalList<Integer> list = new RandomRemovalList<Integer>();
+        final RandomRemovalList<Integer> list = new RandomRemovalList<>();
         for (int i = 1; i <= max; i++) {
             list.add(i);
         }
@@ -54,7 +52,7 @@ public class RandomRemovalListTest {
 
     public int runIndividual() {
         long max = 2000000;
-        RandomRemovalList<Integer> list = new RandomRemovalList<Integer>();
+        final RandomRemovalList<Integer> list = new RandomRemovalList<>();
         for (int i = 1; i <= max; i++) {
             list.add(i);
         }
@@ -70,16 +68,15 @@ public class RandomRemovalListTest {
     @Test
     public void test3() {
         long max = 20000;
-        RandomRemovalList<Integer> list = new RandomRemovalList<Integer>();
+        final RandomRemovalList<Integer> list = new RandomRemovalList<>();
         for (int i = 1; i <= max; i++) {
             list.add(i);
         }
 
         long sum = 0;
         int numReturned = 0;
-        Iterator<Integer> iter = list.iterator();
-        while (iter.hasNext()) {
-            sum += iter.next();
+        for (final Integer aList : list) {
+            sum += aList;
             numReturned++;
         }
         assertEquals(sum, (max + 1) * max / 2);
@@ -89,7 +86,7 @@ public class RandomRemovalListTest {
     //@Test
     public void benchmark() {
         for (int i = 10; i < 20; i = i + 1) {
-            //RandomRemovalList.numTriesBeforeCompactification=i;
+            //RandomRemovalList.numTriesBeforeCompaction=i;
             long before = System.currentTimeMillis();
             int compact = runIndividual();
             long after = System.currentTimeMillis();

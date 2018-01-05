@@ -19,10 +19,10 @@ import java.io.IOException;
 import org.apache.hadoop.mapreduce.Job;
 
 /**
- * Configures a Job a mapreduce jar and/or additional classpath elements hosted
+ * Configures a Job a map reduce jar and/or additional classpath elements hosted
  * in the Hadoop DistributedCache.
  */
 public interface JobClasspathConfigurer {
 
-    public void configure(Job job) throws IOException;
+    void configure(Job job) throws IOException;
 }

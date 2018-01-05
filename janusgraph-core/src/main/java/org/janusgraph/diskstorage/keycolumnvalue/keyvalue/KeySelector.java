@@ -38,8 +38,8 @@ public class KeySelector {
         count = 0;
     }
 
-    public static final KeySelector of(int limit) {
-        return new KeySelector(Predicates.<StaticBuffer>alwaysTrue(), limit);
+    public static KeySelector of(int limit) {
+        return new KeySelector(Predicates.alwaysTrue(), limit);
     }
 
     public boolean include(StaticBuffer key) {
@@ -50,8 +50,7 @@ public class KeySelector {
     }
 
     public boolean reachedLimit() {
-        if (count >= limit) return true;
-        else return false;
+        return count >= limit;
     }
 
 }

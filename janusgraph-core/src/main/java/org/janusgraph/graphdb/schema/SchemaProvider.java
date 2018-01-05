@@ -19,12 +19,12 @@ package org.janusgraph.graphdb.schema;
  */
 public interface SchemaProvider {
 
-    public EdgeLabelDefinition getEdgeLabel(String name);
+    EdgeLabelDefinition getEdgeLabel(String name);
 
-    public PropertyKeyDefinition getPropertyKey(String name);
+    PropertyKeyDefinition getPropertyKey(String name);
 
-    public RelationTypeDefinition getRelationType(String name);
+    RelationTypeDefinition getRelationType(String name);
 
-    public VertexLabelDefinition getVertexLabel(String name);
+    VertexLabelDefinition getVertexLabel(String name);
 
 }

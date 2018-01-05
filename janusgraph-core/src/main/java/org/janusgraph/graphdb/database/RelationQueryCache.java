@@ -22,7 +22,6 @@ import org.janusgraph.graphdb.internal.RelationCategory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.EnumMap;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -43,7 +42,7 @@ public class RelationQueryCache implements AutoCloseable {
         this.edgeSerializer = edgeSerializer;
         this.cache = CacheBuilder.newBuilder().maximumSize(capacity*3/2).initialCapacity(capacity)
                 .concurrencyLevel(2).build();
-        relationTypes = new EnumMap<RelationCategory, SliceQuery>(RelationCategory.class);
+        relationTypes = new EnumMap<>(RelationCategory.class);
         for (RelationCategory rt : RelationCategory.values()) {
             relationTypes.put(rt,edgeSerializer.getQuery(rt,false));
         }
@@ -56,12 +55,7 @@ public class RelationQueryCache implements AutoCloseable {
     public SliceQuery getQuery(final InternalRelationType type, Direction dir) {
         CacheEntry ce;
         try {
-            ce = cache.get(type.longId(),new Callable<CacheEntry>() {
-                @Override
-                public CacheEntry call() throws Exception {
-                    return new CacheEntry(edgeSerializer,type);
-                }
-            });
+            ce = cache.get(type.longId(), () -> new CacheEntry(edgeSerializer,type));
         } catch (ExecutionException e) {
             throw new AssertionError("Should not happen: " + e.getMessage());
         }

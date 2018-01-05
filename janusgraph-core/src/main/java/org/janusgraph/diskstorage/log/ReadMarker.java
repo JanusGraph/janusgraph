@@ -76,8 +76,7 @@ public class ReadMarker {
         if (newMarker.hasIdentifier()) {
             return hasIdentifier() && identifier.equals(newMarker.identifier);
         }
-        if (newMarker.hasStartTime()) return false;
-        return true;
+        return !newMarker.hasStartTime();
     }
 
     /**
@@ -116,7 +115,7 @@ public class ReadMarker {
     }
 
     /**
-     * Like {@link #fromIdentifierOrTime(String, long, java.util.concurrent.TimeUnit)} but uses the current time point
+     * Like {@link #fromIdentifierOrTime(String, java.time.Instant)} but uses the current time point
      * as the starting timestamp if the log has no record of the id.
      *
      * @param id

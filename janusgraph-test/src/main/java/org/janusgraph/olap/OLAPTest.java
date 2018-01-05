@@ -83,9 +83,9 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         JanusGraphVertex[] vs = new JanusGraphVertex[numV];
         for (int i=0;i<numV;i++) {
             vs[i] = tx.addVertex("uid",i+1);
-            int numVals = random.nextInt(5)+1;
-            vs[i].property(VertexProperty.Cardinality.single, "numvals", numVals);
-            for (int j=0;j<numVals;j++) {
+            int numberOfValues = random.nextInt(5)+1;
+            vs[i].property(VertexProperty.Cardinality.single, "numvals", numberOfValues);
+            for (int j=0;j<numberOfValues;j++) {
                 vs[i].property("values",random.nextInt(100));
             }
         }
@@ -189,7 +189,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         assertNull(getV(tx,v3id));
         v1 = getV(tx, v1id);
         assertNotNull(v1);
-        assertEquals(v3id,((JanusGraphVertex) v1.query().direction(Direction.IN).labels("knows").vertices().iterator().next()).longId());
+        assertEquals(v3id, v1.query().direction(Direction.IN).labels("knows").vertices().iterator().next().longId());
         tx.commit();
         mgmt.commit();
 
@@ -225,7 +225,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         int totalCount = 0;
         for (Map.Entry<Long,Integer> entry : degrees.entrySet()) {
             int degree = entry.getValue();
-            JanusGraphVertex v = getV(tx, entry.getKey().longValue());
+            final JanusGraphVertex v = getV(tx, entry.getKey());
             int count = v.value("uid");
             assertEquals(count,degree);
             totalCount+= degree;
@@ -249,7 +249,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         try {
             computer.submit().get();
             fail();
-        } catch (ExecutionException ee) {
+        } catch (ExecutionException ignored) {
         }
     }
 
@@ -365,7 +365,6 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
 
         @Override
         public void setup(Memory memory) {
-            return;
         }
 
         @Override
@@ -386,12 +385,12 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
 
         @Override
         public Set<VertexComputeKey> getVertexComputeKeys() {
-            return new HashSet<>(Arrays.asList(VertexComputeKey.of(DEGREE, false)));
+            return new HashSet<>(Collections.singletonList(VertexComputeKey.of(DEGREE, false)));
         }
 
         @Override
         public Set<MemoryComputeKey> getMemoryComputeKeys() {
-            return new HashSet<>(Arrays.asList(MemoryComputeKey.of(DEGREE, Operator.assign, true, false)));
+            return new HashSet<>(Collections.singletonList(MemoryComputeKey.of(DEGREE, Operator.assign, true, false)));
         }
 
         @Override
@@ -401,7 +400,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
 
         @Override
         public Set<MessageScope> getMessageScopes(Memory memory) {
-            if (memory.getIteration()<length) return ImmutableSet.of((MessageScope)DEG_MSG);
+            if (memory.getIteration()<length) return ImmutableSet.of(DEG_MSG);
             else return Collections.emptySet();
         }
 
@@ -496,7 +495,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
     private void expand(Vertex v, final int distance, final int diameter, final int branch) {
         v.property(VertexProperty.Cardinality.single, "distance", distance);
         if (distance<diameter) {
-            JanusGraphVertex previous = null;
+//          JanusGraphVertex previous = null;
             for (int i=0;i<branch;i++) {
                 JanusGraphVertex u = tx.addVertex();
                 u.addEdge("likes",v);
@@ -506,7 +505,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
 //                    u.addEdge("knows",previous);
 //                    log.error("knows {}->{}", u.id(), v.id());
 //                }
-                previous=u;
+//              previous=u;
                 expand(u,distance+1,diameter,branch);
             }
         }
@@ -539,9 +538,8 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         }
 
         double correctPRSum = 0;
-        Iterator<JanusGraphVertex> iv = tx.query().vertices().iterator();
-        while (iv.hasNext()) {
-            correctPRSum += correctPR[iv.next().<Integer>value("distance")];
+        for (final JanusGraphVertex janusGraphVertex : tx.query().vertices()) {
+            correctPRSum += correctPR[janusGraphVertex.<Integer>value("distance")];
         }
 
         final JanusGraphComputer computer = graph.compute();
@@ -556,7 +554,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         int vertexCounter = 0;
         double computedPRSum = 0;
         correctPRSum = 0;
-        Set<Long> vertexIDs = new HashSet<Long>(numV);
+        final Set<Long> vertexIDs = new HashSet<>(numV);
         while (ranks.hasNext()) {
             final KeyValue<Long, Double> rank = ranks.next();
             final Long vertexID = rank.getKey();

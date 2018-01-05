@@ -61,9 +61,9 @@ public abstract class AbstractMessage implements Message {
 
     @Override
     public String toString() {
-        String paystr = content.toString();
-        if (paystr.length()>MAX_PAYLOAD_STR_LENGTH) paystr=paystr.substring(0,MAX_PAYLOAD_STR_LENGTH) + "...";
-        return "Message@" + timestamp + ":" + senderId + "=" + paystr;
+        String payloadString = content.toString();
+        if (payloadString.length()>MAX_PAYLOAD_STR_LENGTH) payloadString=payloadString.substring(0,MAX_PAYLOAD_STR_LENGTH) + "...";
+        return "Message@" + timestamp + ":" + senderId + "=" + payloadString;
     }
 
     @Override

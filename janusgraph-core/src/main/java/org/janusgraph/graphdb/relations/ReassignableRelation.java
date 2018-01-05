@@ -21,6 +21,6 @@ import org.janusgraph.graphdb.internal.InternalVertex;
  */
 public interface ReassignableRelation {
 
-    public void setVertexAt(int pos, InternalVertex vertex);
+    void setVertexAt(int pos, InternalVertex vertex);
 
 }

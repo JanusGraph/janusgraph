@@ -60,14 +60,15 @@ public class StandardLockCleanerService implements LockCleanerService {
 
     private final KeyColumnValueStore store;
     private final ExecutorService exec;
-    private TimestampProvider times;
+    private final TimestampProvider times;
     private final ConcurrentMap<KeyColumn, Instant> blocked;
     private final ConsistentKeyLockerSerializer serializer;
 
     private static final Logger log =
             LoggerFactory.getLogger(LockCleanerService.class);
 
-    public StandardLockCleanerService(KeyColumnValueStore store, ConsistentKeyLockerSerializer serializer, ExecutorService exec, Duration cooldown, TimestampProvider times) {
+    public StandardLockCleanerService(KeyColumnValueStore store, ConsistentKeyLockerSerializer serializer,
+                                      ExecutorService exec, Duration cooldown, TimestampProvider times) {
         this.store = store;
         this.serializer = serializer;
         this.exec = exec;
@@ -79,7 +80,8 @@ public class StandardLockCleanerService implements LockCleanerService {
                 .asMap();
     }
 
-    public StandardLockCleanerService(KeyColumnValueStore store, ConsistentKeyLockerSerializer serializer, TimestampProvider times) {
+    public StandardLockCleanerService(KeyColumnValueStore store, ConsistentKeyLockerSerializer serializer,
+                                      TimestampProvider times) {
         this (store, serializer, getDefaultExecutor(), COOLDOWN_TIME, times);
     }
 
@@ -87,21 +89,21 @@ public class StandardLockCleanerService implements LockCleanerService {
     public void clean(KeyColumn target, Instant cutoff, StoreTransaction tx) {
         Instant b = blocked.putIfAbsent(target, cutoff);
         if (null == b) {
-            log.info("Enqueuing expired lock cleaner task for target={}, tx={}, cutoff={}",
-                    new Object[] { target, tx, cutoff });
+            log.info("Enqueuing expired lock cleaner task for target={}, tx={}, cutoff={}", target, tx, cutoff);
             try {
                 exec.submit(new StandardLockCleanerRunnable(store, target, tx, serializer, cutoff, times));
             } catch (RejectedExecutionException e) {
                 log.debug("Failed to enqueue expired lock cleaner for target={}, tx={}, cutoff={}",
-                        new Object[] { target, tx, cutoff, e });
+                    target, tx, cutoff, e);
             }
         } else {
             log.debug("Blocked redundant attempt to enqueue lock cleaner task for target={}, tx={}, cutoff={}",
-                    new Object[] { target, tx, cutoff });
+                target, tx, cutoff);
         }
     }
 
     private static ExecutorService getDefaultExecutor() {
-        return new ThreadPoolExecutor(0, 1, KEEPALIVE_TIME, KEEPALIVE_UNIT, new LinkedBlockingQueue<Runnable>(), THREAD_FACTORY);
+        return new ThreadPoolExecutor(0, 1, KEEPALIVE_TIME, KEEPALIVE_UNIT,
+                new LinkedBlockingQueue<>(), THREAD_FACTORY);
     }
 }

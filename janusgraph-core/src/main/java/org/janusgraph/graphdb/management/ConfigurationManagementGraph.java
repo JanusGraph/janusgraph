@@ -84,7 +84,7 @@ public class ConfigurationManagementGraph {
             final String errMsg = "ConfigurationManagementGraph should be instantiated just once, by the JanusGraphManager.";
             throw new ConfigurationManagementGraphAlreadyInstantiatedException(errMsg);
         }
-        this.instance = this;
+        instance = this;
     }
 
     /**
@@ -182,7 +182,7 @@ public class ConfigurationManagementGraph {
                                     String.format("Your updated template configuration may not contain the property \"%s\".",
                                                   PROPERTY_GRAPH_NAME
                                     ));
-        log.warn("Any graph configuration created using the template configuration are only guraranteed to have their configuration updated " +
+        log.warn("Any graph configuration created using the template configuration are only guaranteed to have their configuration updated " +
                  "according to this new template configuration when the graph in question has been closed on every Janus Graph Node, its " +
                  "corresponding Configuration has been removed, and the graph has been recreated.");
         updateVertexWithProperties(PROPERTY_TEMPLATE, true, ConfigurationConverter.getMap(config));
@@ -260,31 +260,31 @@ public class ConfigurationManagementGraph {
 
     private void createIndexIfDoesNotExist(String indexName, String propertyKeyName, Class dataType,boolean unique) {
         graph.tx().rollback();
-        JanusGraphManagement mgmt = graph.openManagement();
-        if (null == mgmt.getGraphIndex(indexName)) {
-            final PropertyKey key = mgmt.makePropertyKey(propertyKeyName).dataType(dataType).make();
+        JanusGraphManagement management = graph.openManagement();
+        if (null == management.getGraphIndex(indexName)) {
+            final PropertyKey key = management.makePropertyKey(propertyKeyName).dataType(dataType).make();
 
             final JanusGraphIndex index;
-            if (unique) index = mgmt.buildIndex(indexName, Vertex.class).addKey(key).unique().buildCompositeIndex();
-            else index = mgmt.buildIndex(indexName, Vertex.class).addKey(key).buildCompositeIndex();
+            if (unique) index = management.buildIndex(indexName, Vertex.class).addKey(key).unique().buildCompositeIndex();
+            else index = management.buildIndex(indexName, Vertex.class).addKey(key).buildCompositeIndex();
             try {
                 if (index.getIndexStatus(key) == INSTALLED) {
-                    mgmt.commit();
+                    management.commit();
                     ManagementSystem.awaitGraphIndexStatus(graph, indexName).call();
-                    mgmt = graph.openManagement();
-                    mgmt.updateIndex(index, ENABLE_INDEX).get();
+                    management = graph.openManagement();
+                    management.updateIndex(index, ENABLE_INDEX).get();
                 } else if (index.getIndexStatus(key) == REGISTERED) {
-                    mgmt.updateIndex(index, ENABLE_INDEX).get();
+                    management.updateIndex(index, ENABLE_INDEX).get();
                 }
             } catch (InterruptedException | ExecutionException e) {
                 log.warn("Failed to create index {} for ConfigurationManagementGraph with exception: {}",
                         indexName,
                         e.toString()
                 );
-                mgmt.rollback();
+                management.rollback();
                 graph.tx().rollback();
             }
-            mgmt.commit();
+            management.commit();
             graph.tx().commit();
         }
     }

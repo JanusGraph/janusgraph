@@ -35,7 +35,7 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
     private static final Logger log = LoggerFactory.getLogger(BerkeleyJETx.class);
 
     private volatile Transaction tx;
-    private final List<Cursor> openCursors = new ArrayList<Cursor>();
+    private final List<Cursor> openCursors = new ArrayList<>();
     private final LockMode lm;
 
     public BerkeleyJETx(Transaction t, LockMode lockMode, BaseTransactionConfig config) {
@@ -50,18 +50,8 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
         return tx;
     }
 
-    void registerCursor(Cursor cursor) {
-        Preconditions.checkArgument(cursor != null);
-        synchronized (openCursors) {
-            //TODO: attempt to remove closed cursors if there are too many
-            openCursors.add(cursor);
-        }
-    }
-
-    private void closeOpenIterators() throws BackendException {
-        for (Cursor cursor : openCursors) {
-            cursor.close();
-        }
+    private void closeOpenIterators() {
+        openCursors.forEach(Cursor::close);
     }
 
     LockMode getLockMode() {

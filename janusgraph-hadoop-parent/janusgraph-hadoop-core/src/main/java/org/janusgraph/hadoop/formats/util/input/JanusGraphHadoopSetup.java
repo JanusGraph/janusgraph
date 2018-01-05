@@ -24,13 +24,13 @@ import org.janusgraph.graphdb.types.TypeInspector;
  */
 public interface JanusGraphHadoopSetup {
 
-    public TypeInspector getTypeInspector();
+    TypeInspector getTypeInspector();
 
-    public SystemTypeInspector getSystemTypeInspector();
+    SystemTypeInspector getSystemTypeInspector();
 
-    public RelationReader getRelationReader(long vertexid);
+    RelationReader getRelationReader(long vertexId);
 
-    public IDManager getIDManager();
+    IDManager getIDManager();
 
     /**
      * Return an input slice across the entire row.
@@ -39,10 +39,10 @@ public interface JanusGraphHadoopSetup {
      * The slice must include the hidden vertex state property (to filter removed vertices).
      *
      */
-    public SliceQuery inputSlice();
+    SliceQuery inputSlice();
 
-    public void close();
+    void close();
 
-    public boolean getFilterPartitionedVertices();
+    boolean getFilterPartitionedVertices();
 
 }

@@ -44,7 +44,7 @@ import java.util.Optional;
  */
 public class FulgoraUtil {
 
-    private final static TraversalStrategies FULGORA_STRATEGIES = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(JanusGraphLocalQueryOptimizerStrategy.instance());;
+    private final static TraversalStrategies FULGORA_STRATEGIES = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(JanusGraphLocalQueryOptimizerStrategy.instance());
 
     public static JanusGraphVertexStep<Vertex> getReverseJanusGraphVertexStep(final MessageScope.Local<?> scope,
                                                                        final JanusGraphTransaction graph) {
@@ -85,7 +85,9 @@ public class FulgoraUtil {
         Optional<Step> violatingStep = steps.stream().filter(s -> !(s instanceof JanusGraphVertexStep ||
                 s instanceof OrderGlobalStep || s instanceof OrderLocalStep ||
                         s instanceof IdentityStep || s instanceof FilterStep)).findAny();
-        if (violatingStep.isPresent()) throw new IllegalArgumentException("Encountered unsupported step in incident traversal: " + violatingStep.get());
+        violatingStep.ifPresent(step -> {
+            throw new IllegalArgumentException("Encountered unsupported step in incident traversal: " + step);
+        });
     }
 
     public static<M> MessageCombiner<M> getMessageCombiner(VertexProgram<M> program) {

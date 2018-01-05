@@ -24,7 +24,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * A JanusGraphVertexQuery is a VertexQuery executed for a single vertex.
  * <p />
  * Calling {@link org.janusgraph.core.JanusGraphVertex#query()} builds such a query against the vertex
- * this method is called on. This query builder provides the methods to specify which indicent edges or
+ * this method is called on. This query builder provides the methods to specify which incident edges or
  * properties to query for.
  *
  *
@@ -39,46 +39,46 @@ public interface JanusGraphVertexQuery<Q extends JanusGraphVertexQuery<Q>> exten
     */
 
     @Override
-    public Q adjacent(Vertex vertex);
+    Q adjacent(Vertex vertex);
 
     @Override
-    public Q types(String... type);
+    Q types(String... type);
 
     @Override
-    public Q types(RelationType... type);
+    Q types(RelationType... type);
 
     @Override
-    public Q labels(String... labels);
+    Q labels(String... labels);
 
     @Override
-    public Q keys(String... keys);
+    Q keys(String... keys);
 
     @Override
-    public Q direction(Direction d);
+    Q direction(Direction d);
 
     @Override
-    public Q has(String type, Object value);
+    Q has(String type, Object value);
 
     @Override
-    public Q has(String key);
+    Q has(String key);
 
     @Override
-    public Q hasNot(String key);
+    Q hasNot(String key);
 
     @Override
-    public Q hasNot(String key, Object value);
+    Q hasNot(String key, Object value);
 
     @Override
-    public Q has(String key, JanusGraphPredicate predicate, Object value);
+    Q has(String key, JanusGraphPredicate predicate, Object value);
 
     @Override
-    public <T extends Comparable<?>> Q interval(String key, T start, T end);
+    <T extends Comparable<?>> Q interval(String key, T start, T end);
 
     @Override
-    public Q limit(int limit);
+    Q limit(int limit);
 
     @Override
-    public Q orderBy(String key, Order order);
+    Q orderBy(String key, Order order);
 
 
     /* ---------------------------------------------------------------
@@ -91,31 +91,31 @@ public interface JanusGraphVertexQuery<Q extends JanusGraphVertexQuery<Q>> exten
      *
      * @return Iterable over all incident edges that match this query
      */
-    public Iterable<JanusGraphEdge> edges();
+    Iterable<JanusGraphEdge> edges();
 
 
-    public Iterable<JanusGraphVertex> vertices();
+    Iterable<JanusGraphVertex> vertices();
 
     /**
      * Returns an iterable over all incident properties that match this query
      *
      * @return Iterable over all incident properties that match this query
      */
-    public Iterable<JanusGraphVertexProperty> properties();
+    Iterable<JanusGraphVertexProperty> properties();
 
     /**
      * Returns an iterable over all incident relations that match this query
      *
      * @return Iterable over all incident relations that match this query
      */
-    public Iterable<JanusGraphRelation> relations();
+    Iterable<JanusGraphRelation> relations();
 
     /**
      * Returns the number of relations that match this query
      *
      * @return Number of relations that match this query
      */
-    public default long count() {
+    default long count() {
         return Iterables.size(relations());
     }
 
@@ -124,7 +124,7 @@ public interface JanusGraphVertexQuery<Q extends JanusGraphVertexQuery<Q>> exten
      *
      * @return Number of edges that match this query
      */
-    public default long edgeCount() {
+    default long edgeCount() {
         return vertexIds().size();
     }
 
@@ -133,7 +133,7 @@ public interface JanusGraphVertexQuery<Q extends JanusGraphVertexQuery<Q>> exten
      *
      * @return Number of properties that match this query
      */
-    public default long propertyCount() {
+    default long propertyCount() {
         return Iterables.size(properties());
     }
 
@@ -145,7 +145,7 @@ public interface JanusGraphVertexQuery<Q extends JanusGraphVertexQuery<Q>> exten
      *
      * @return A list of all vertices connected to this query's base vertex by matching edges
      */
-    public VertexList vertexIds();
+    VertexList vertexIds();
 
 
 }

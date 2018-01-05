@@ -44,7 +44,7 @@ public class LockerState<S> {
     public LockerState() {
         // TODO this wild guess at the concurrency level should not be hardcoded
         this(new MapMaker().concurrencyLevel(8).weakKeys()
-                .<StoreTransaction, Map<KeyColumn, S>> makeMap());
+                .makeMap());
     }
 
     public LockerState(ConcurrentMap<StoreTransaction, Map<KeyColumn, S>> locks) {
@@ -67,7 +67,7 @@ public class LockerState<S> {
         Map<KeyColumn, S> m = locks.get(tx);
 
         if (null == m) {
-            m = new HashMap<KeyColumn, S>();
+            m = new HashMap<>();
             final Map<KeyColumn, S> x = locks.putIfAbsent(tx, m);
             if (null != x) {
                 m = x;

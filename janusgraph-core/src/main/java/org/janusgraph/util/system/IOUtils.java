@@ -35,11 +35,11 @@ public class IOUtils {
         boolean success = true;
         if (path.exists()) {
             File[] files = path.listFiles();
-            for (int i = 0; i < files.length; i++) {
-                if (files[i].isDirectory()) {
-                    success = deleteDirectory(files[i], true) && success;
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    success = deleteDirectory(file, true) && success;
                 } else {
-                    success = files[i].delete() && success;
+                    success = file.delete() && success;
                 }
             }
         }

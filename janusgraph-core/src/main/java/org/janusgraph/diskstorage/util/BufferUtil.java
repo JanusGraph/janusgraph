@@ -37,7 +37,7 @@ public class BufferUtil {
      * ################
      */
 
-    public static final StaticBuffer getIntBuffer(int id) {
+    public static StaticBuffer getIntBuffer(int id) {
         ByteBuffer buffer = ByteBuffer.allocate(intSize);
         buffer.putInt(id);
         byte[] arr = buffer.array();
@@ -45,16 +45,15 @@ public class BufferUtil {
         return StaticArrayBuffer.of(arr);
     }
 
-    public static final StaticBuffer getIntBuffer(int[] ids) {
+    public static StaticBuffer getIntBuffer(int[] ids) {
         ByteBuffer buffer = ByteBuffer.allocate(intSize * ids.length);
-        for (int i = 0; i < ids.length; i++)
-            buffer.putInt(ids[i]);
+        for (int id : ids) buffer.putInt(id);
         byte[] arr = buffer.array();
         Preconditions.checkArgument(arr.length == intSize * ids.length);
         return StaticArrayBuffer.of(arr);
     }
 
-    public static final StaticBuffer getLongBuffer(long id) {
+    public static StaticBuffer getLongBuffer(long id) {
         ByteBuffer buffer = ByteBuffer.allocate(longSize);
         buffer.putLong(id);
         byte[] arr = buffer.array();
@@ -63,21 +62,21 @@ public class BufferUtil {
     }
 
 
-    public static final StaticBuffer fillBuffer(int len, byte value) {
+    public static StaticBuffer fillBuffer(int len, byte value) {
         byte[] res = new byte[len];
         for (int i = 0; i < len; i++) res[i]=value;
         return StaticArrayBuffer.of(res);
     }
 
-    public static final StaticBuffer oneBuffer(int len) {
+    public static StaticBuffer oneBuffer(int len) {
         return fillBuffer(len,(byte)-1);
     }
 
-    public static final StaticBuffer zeroBuffer(int len) {
+    public static StaticBuffer zeroBuffer(int len) {
         return fillBuffer(len,(byte)0);
     }
 
-    public static final StaticBuffer emptyBuffer() {
+    public static StaticBuffer emptyBuffer() {
         return fillBuffer(0,(byte)0);
     }
 
@@ -144,15 +143,15 @@ public class BufferUtil {
         return new StaticArrayBuffer(data);
     }
 
-    public static final StaticBuffer nextBiggerBufferAllowOverflow(StaticBuffer buffer) {
+    public static StaticBuffer nextBiggerBufferAllowOverflow(StaticBuffer buffer) {
         return nextBiggerBuffer(buffer, true);
     }
 
-    public static final StaticBuffer nextBiggerBuffer(StaticBuffer buffer) {
+    public static StaticBuffer nextBiggerBuffer(StaticBuffer buffer) {
         return nextBiggerBuffer(buffer,false);
     }
 
-    private static final StaticBuffer nextBiggerBuffer(StaticBuffer buffer, boolean allowOverflow) {
+    private static StaticBuffer nextBiggerBuffer(StaticBuffer buffer, boolean allowOverflow) {
         int len = buffer.length();
         byte[] next = new byte[len];
         boolean carry = true;
@@ -181,7 +180,7 @@ public class BufferUtil {
      * @param b2
      * @return
      */
-    public static final boolean equals(StaticBuffer b1, ByteBuffer b2) {
+    public static boolean equals(StaticBuffer b1, ByteBuffer b2) {
         if (b1.length()!=b2.remaining()) return false;
         int p2 = b2.position();
         for (int i=0;i<b1.length();i++) {

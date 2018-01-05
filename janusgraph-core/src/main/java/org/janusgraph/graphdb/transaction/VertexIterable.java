@@ -40,13 +40,13 @@ public class VertexIterable implements Iterable<InternalVertex> {
     public Iterator<InternalVertex> iterator() {
         return new Iterator<InternalVertex>() {
 
-            RecordIterator<Long> iterator = graph.getVertexIDs(tx.getTxHandle());
+            final RecordIterator<Long> iterator = graph.getVertexIDs(tx.getTxHandle());
             InternalVertex nextVertex = nextVertex();
 
             private InternalVertex nextVertex() {
                 InternalVertex v = null;
                 while (v == null && iterator.hasNext()) {
-                    long nextId = iterator.next().longValue();
+                    final long nextId = iterator.next();
                     //Filter out invisible vertices
                     if (IDManager.VertexIDType.Invisible.is(nextId)) continue;
 
@@ -65,7 +65,7 @@ public class VertexIterable implements Iterable<InternalVertex> {
             @Override
             public InternalVertex next() {
                 if (!hasNext()) throw new NoSuchElementException();
-                InternalVertex returnVertex = nextVertex;
+                final InternalVertex returnVertex = nextVertex;
                 nextVertex = nextVertex();
                 return returnVertex;
             }

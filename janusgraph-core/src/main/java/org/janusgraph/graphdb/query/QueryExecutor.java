@@ -32,7 +32,7 @@ public interface QueryExecutor<Q extends ElementQuery,R extends JanusGraphElemen
      * @param query
      * @return
      */
-    public Iterator<R> getNew(Q query);
+    Iterator<R> getNew(Q query);
 
     /**
      * Whether the transactional context contains any deletions that could potentially affect the result set of the given query.
@@ -41,7 +41,7 @@ public interface QueryExecutor<Q extends ElementQuery,R extends JanusGraphElemen
      * @param query
      * @return
      */
-    public boolean hasDeletions(Q query);
+    boolean hasDeletions(Q query);
 
     /**
      * Whether the given result entry has been deleted in the transactional context and should hence be removed from the result set.
@@ -50,7 +50,7 @@ public interface QueryExecutor<Q extends ElementQuery,R extends JanusGraphElemen
      * @param result
      * @return
      */
-    public boolean isDeleted(Q query, R result);
+    boolean isDeleted(Q query, R result);
 
     /**
      * Executes the given sub-query against a data store and returns an iterator over the results. These results are not yet adjusted
@@ -63,6 +63,6 @@ public interface QueryExecutor<Q extends ElementQuery,R extends JanusGraphElemen
      * @param profiler
      * @return
      */
-    public Iterator<R> execute(Q query, B subquery, Object executionInfo, QueryProfiler profiler);
+    Iterator<R> execute(Q query, B subquery, Object executionInfo, QueryProfiler profiler);
 
 }

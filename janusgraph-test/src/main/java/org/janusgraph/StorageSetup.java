@@ -33,31 +33,31 @@ public class StorageSetup {
 
     //############ UTILITIES #############
 
-    public static final String getHomeDir(String subdir) {
-        String homedir = System.getProperty("janusgraph.testdir");
-        if (null == homedir) {
-            homedir = "target" + File.separator + "db";
+    public static String getHomeDir(String subDirectory) {
+        String homeDirectory = System.getProperty("janusgraph.testdir");
+        if (null == homeDirectory) {
+            homeDirectory = "target" + File.separator + "db";
         }
-        if (subdir!=null && !StringUtils.isEmpty(subdir)) homedir += File.separator + subdir;
-        File homefile = new File(homedir);
-        if (!homefile.exists()) homefile.mkdirs();
-        return homedir;
+        if (subDirectory!=null && !StringUtils.isEmpty(subDirectory)) homeDirectory += File.separator + subDirectory;
+        File homeFile = new File(homeDirectory);
+        if (!homeFile.exists()) homeFile.mkdirs();
+        return homeDirectory;
     }
 
-    public static final File getHomeDirFile() {
+    public static File getHomeDirFile() {
         return getHomeDirFile(null);
     }
 
-    public static final File getHomeDirFile(String subdir) {
-        return new File(getHomeDir(subdir));
+    public static File getHomeDirFile(String subDirectory) {
+        return new File(getHomeDir(subDirectory));
     }
 
-    public static final void deleteHomeDir() {
+    public static void deleteHomeDir() {
         deleteHomeDir(null);
     }
 
-    public static final void deleteHomeDir(String subdir) {
-        File homeDirFile = getHomeDirFile(subdir);
+    public static void deleteHomeDir(String subDirectory) {
+        File homeDirFile = getHomeDirFile(subDirectory);
         // Make directory if it doesn't exist
         if (!homeDirFile.exists())
             homeDirFile.mkdirs();
@@ -78,7 +78,7 @@ public class StorageSetup {
 
     public static WriteConfiguration addPermanentCache(ModifiableConfiguration conf) {
         conf.set(DB_CACHE, true);
-        conf.set(DB_CACHE_TIME,0l);
+        conf.set(DB_CACHE_TIME, 0L);
         return conf.getConfiguration();
     }
 

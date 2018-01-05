@@ -54,7 +54,7 @@ public interface IDAuthority {
      *            and throw a {@code StorageException} ASAP
      * @return a range of ids for the {@code partition} parameter
      */
-    public IDBlock getIDBlock(int partition, int idNamespace, Duration timeout)
+    IDBlock getIDBlock(int partition, int idNamespace, Duration timeout)
             throws BackendException;
 
     /**
@@ -63,24 +63,24 @@ public interface IDAuthority {
      * @return
      * @throws BackendException
      */
-    public List<KeyRange> getLocalIDPartition() throws BackendException;
+    List<KeyRange> getLocalIDPartition() throws BackendException;
 
     /**
      * Sets the {@link IDBlockSizer} to be used by this IDAuthority. The IDBlockSizer specifies the block size for
      * each partition guaranteeing that the same partition will always be assigned the same block size.
      * <p/>
-     * The IDBlockSizer cannot be changed for an IDAuthority that has already been used (i.e. after invoking {@link #getIDBlock(int)}.
+     * The IDBlockSizer cannot be changed for an IDAuthority that has already been used (i.e. after invoking {@link #getIDBlock(int, int, Duration)}.
      *
      * @param sizer The IDBlockSizer to be used by this IDAuthority
      */
-    public void setIDBlockSizer(IDBlockSizer sizer);
+    void setIDBlockSizer(IDBlockSizer sizer);
 
     /**
      * Closes the IDAuthority and any underlying storage backend.
      *
      * @throws BackendException
      */
-    public void close() throws BackendException;
+    void close() throws BackendException;
 
     /**
      * Return the globally unique string used by this {@code IDAuthority}
@@ -93,13 +93,13 @@ public interface IDAuthority {
      *
      * @return unique ID string
      */
-    public String getUniqueID();
+    String getUniqueID();
 
     /**
      * Whether {@link #getIDBlock(int, int, Duration)} may be safely interrupted.
      *
      * @return true if interruption is allowed, false if it is not
      */
-    public boolean supportsInterruption();
+    boolean supportsInterruption();
 
 }

@@ -30,7 +30,7 @@ public interface JanusGraphConfiguration {
      * @param path
      * @return
      */
-    public String get(String path);
+    String get(String path);
 
     /**
      * Sets the configuration option identified by the provided path to the given value.
@@ -38,6 +38,6 @@ public interface JanusGraphConfiguration {
      * @param path
      * @param value
      */
-    public JanusGraphConfiguration set(String path, Object value);
+    JanusGraphConfiguration set(String path, Object value);
 
 }

@@ -45,34 +45,34 @@ public interface KeyInformation {
      *
      * @return
      */
-    public Class<?> getDataType();
+    Class<?> getDataType();
 
     /**
      * Returns the parameters of the key's configuration.
      *
      * @return
      */
-    public Parameter[] getParameters();
+    Parameter[] getParameters();
 
     /**
      * Returns the {@link org.janusgraph.core.Cardinality} for this key.
      * @return
      */
-    public Cardinality getCardinality();
+    Cardinality getCardinality();
 
 
-    public interface StoreRetriever {
+    interface StoreRetriever {
 
         /**
          * Returns the {@link KeyInformation} for a particular key for this store
          * @param key
          * @return
          */
-        public KeyInformation get(String key);
+        KeyInformation get(String key);
 
     }
 
-    public interface IndexRetriever {
+    interface IndexRetriever {
 
         /**
          * Returns the {@link KeyInformation} for a particular key in a given store.
@@ -81,25 +81,25 @@ public interface KeyInformation {
          * @param key
          * @return
          */
-        public KeyInformation get(String store, String key);
+        KeyInformation get(String store, String key);
 
         /**
          * Returns a {@link StoreRetriever} for the given store on this IndexRetriever
          * @param store
          * @return
          */
-        public StoreRetriever get(String store);
+        StoreRetriever get(String store);
 
     }
 
-    public interface Retriever {
+    interface Retriever {
 
         /**
          * Returns the {@link IndexRetriever} for a given index.
          * @param index
          * @return
          */
-        public IndexRetriever get(String index);
+        IndexRetriever get(String index);
 
     }
 

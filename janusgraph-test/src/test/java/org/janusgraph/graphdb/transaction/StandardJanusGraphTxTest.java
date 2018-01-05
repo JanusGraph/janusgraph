@@ -82,7 +82,7 @@ public class StandardJanusGraphTxTest extends EasyMockSupport {
         expect(txConfig.getVertexCacheSize()).andReturn(6);
         expect(txConfig.isReadOnly()).andReturn(true);
         expect(txConfig.getDirtyVertexSize()).andReturn(2);
-        expect(txConfig.getIndexCacheWeight()).andReturn(2l);
+        expect(txConfig.getIndexCacheWeight()).andReturn(2L);
         expect(txConfig.getGroupName()).andReturn(null);
         expect(txConfig.getAutoSchemaMaker()).andReturn(defaultSchemaMaker);
 

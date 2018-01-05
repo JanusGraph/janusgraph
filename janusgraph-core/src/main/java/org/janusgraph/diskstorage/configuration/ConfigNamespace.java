@@ -38,7 +38,7 @@ public class ConfigNamespace extends ConfigElement {
     }
 
     /**
-     * Wether this namespace is an umbrella namespace, that is, is expects immediate sub-namespaces which are user defined.
+     * Whether this namespace is an umbrella namespace, that is, is expects immediate sub-namespaces which are user defined.
      * @return
      */
     public boolean isUmbrella() {
@@ -50,9 +50,7 @@ public class ConfigNamespace extends ConfigElement {
      * @return
      */
     public boolean hasUmbrella() {
-        if (isUmbrella()) return true;
-        if (isRoot()) return false;
-        return getNamespace().hasUmbrella();
+        return isUmbrella() || (!isRoot() && getNamespace().hasUmbrella());
     }
 
     @Override
@@ -76,15 +74,19 @@ public class ConfigNamespace extends ConfigElement {
 
         ConfigElement child = children.get(name);
 
-        if (null == child) {
-            // Attempt to load
-            ReflectiveConfigOptionLoader.INSTANCE.loadStandard(this.getClass());
-            child = children.get(name);
-            if (null == child) {
-                ReflectiveConfigOptionLoader.INSTANCE.loadAll(this.getClass());
-                child = children.get(name);
-            }
+        if (null != child) {
+            return child;
         }
+
+        // Attempt to load
+        ReflectiveConfigOptionLoader.INSTANCE.loadStandard(this.getClass());
+        child = children.get(name);
+        if (null != child) {
+            return child;
+        }
+
+        ReflectiveConfigOptionLoader.INSTANCE.loadAll(this.getClass());
+        child = children.get(name);
 
         return child;
     }

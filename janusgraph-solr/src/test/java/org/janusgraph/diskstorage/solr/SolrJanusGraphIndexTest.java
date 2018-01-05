@@ -56,13 +56,13 @@ public abstract class SolrJanusGraphIndexTest extends JanusGraphIndexTest {
         super.testRawQueries();
     }
 
-    /**
+    /*
      * Dropping collection is not implemented with Solr Cloud to accommodate use case where collection is created
      * outside of JanusGraph and associated with a config set with a different name.
-     * @throws Exception
      */
     @Override @Test @Ignore
     public void testClearStorage() throws Exception {
+        super.testClearStorage();
     }
 
 }

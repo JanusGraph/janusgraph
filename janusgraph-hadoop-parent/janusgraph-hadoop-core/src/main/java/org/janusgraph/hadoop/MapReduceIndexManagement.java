@@ -111,7 +111,7 @@ public class MapReduceIndexManagement {
                 index.getClass(), RelationTypeIndex.class.getSimpleName(), JanusGraphIndex.class.getSimpleName());
 
         org.apache.hadoop.conf.Configuration hadoopConf = new org.apache.hadoop.conf.Configuration();
-        ModifiableHadoopConfiguration janusgraphmrConf =
+        ModifiableHadoopConfiguration janusGraphMapReduceConfiguration =
                 ModifiableHadoopConfiguration.of(JanusGraphHadoopConfiguration.MAPRED_NS, hadoopConf);
 
         // The job we'll execute to either REINDEX or REMOVE_INDEX
@@ -135,8 +135,8 @@ public class MapReduceIndexManagement {
         if (RelationTypeIndex.class.isAssignableFrom(index.getClass())) {
             readCF = Backend.EDGESTORE_NAME;
         } else {
-            JanusGraphIndex gindex = (JanusGraphIndex)index;
-            if (gindex.isMixedIndex() && !updateAction.equals(SchemaAction.REINDEX))
+            JanusGraphIndex graphIndex = (JanusGraphIndex)index;
+            if (graphIndex.isMixedIndex() && !updateAction.equals(SchemaAction.REINDEX))
                 throw new UnsupportedOperationException("External mixed indexes must be removed in the indexing system directly.");
 
             Preconditions.checkState(JanusGraphIndex.class.isAssignableFrom(index.getClass()));
@@ -145,7 +145,7 @@ public class MapReduceIndexManagement {
             else
                 readCF = Backend.EDGESTORE_NAME;
         }
-        janusgraphmrConf.set(JanusGraphHadoopConfiguration.COLUMN_FAMILY_NAME, readCF);
+        janusGraphMapReduceConfiguration.set(JanusGraphHadoopConfiguration.COLUMN_FAMILY_NAME, readCF);
 
         // The MapReduce InputFormat class based on the open graph's store manager
         final Class<? extends InputFormat> inputFormat;
@@ -171,15 +171,15 @@ public class MapReduceIndexManagement {
         Preconditions.checkNotNull(indexName);
 
         // Set the class of the IndexUpdateJob
-        janusgraphmrConf.set(JanusGraphHadoopConfiguration.SCAN_JOB_CLASS, indexJobClass.getName());
+        janusGraphMapReduceConfiguration.set(JanusGraphHadoopConfiguration.SCAN_JOB_CLASS, indexJobClass.getName());
         // Set the configuration of the IndexUpdateJob
         copyIndexJobKeys(hadoopConf, indexName, relationTypeName);
-        janusgraphmrConf.set(JanusGraphHadoopConfiguration.SCAN_JOB_CONFIG_ROOT,
+        janusGraphMapReduceConfiguration.set(JanusGraphHadoopConfiguration.SCAN_JOB_CONFIG_ROOT,
                 GraphDatabaseConfiguration.class.getName() + "#JOB_NS");
         // Copy the StandardJanusGraph configuration under JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS
-        org.apache.commons.configuration.Configuration localbc = graph.getConfiguration().getLocalConfiguration();
-        localbc.clearProperty(Graph.GRAPH);
-        copyInputKeys(hadoopConf, localbc);
+        org.apache.commons.configuration.Configuration localConfiguration = graph.getConfiguration().getLocalConfiguration();
+        localConfiguration.clearProperty(Graph.GRAPH);
+        copyInputKeys(hadoopConf, localConfiguration);
 
         String jobName = HadoopScanMapper.class.getSimpleName() + "[" + indexJobClass.getSimpleName() + "]";
 
@@ -192,9 +192,9 @@ public class MapReduceIndexManagement {
 
     private static void copyInputKeys(org.apache.hadoop.conf.Configuration hadoopConf, org.apache.commons.configuration.Configuration source) {
         // Copy IndexUpdateJob settings into the hadoop-backed cfg
-        Iterator<String> keyIter = source.getKeys();
-        while (keyIter.hasNext()) {
-            String key = keyIter.next();
+        Iterator<String> iterator = source.getKeys();
+        while (iterator.hasNext()) {
+            String key = iterator.next();
             ConfigElement.PathIdentifier pid;
             try {
                 pid = ConfigElement.parse(ROOT_NS, key);

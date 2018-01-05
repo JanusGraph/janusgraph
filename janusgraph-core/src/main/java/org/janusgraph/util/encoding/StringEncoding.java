@@ -65,7 +65,7 @@ public class StringEncoding {
         return sb.toString();
     }
 
-    public static final int getAsciiByteLength(String attribute) {
+    public static int getAsciiByteLength(String attribute) {
         Preconditions.checkArgument(isAsciiString(attribute));
         return attribute.isEmpty()?1:attribute.length();
     }

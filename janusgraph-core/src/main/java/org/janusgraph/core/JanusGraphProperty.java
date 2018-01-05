@@ -21,10 +21,10 @@ import org.apache.tinkerpop.gremlin.structure.Property;
  */
 public interface JanusGraphProperty<V> extends Property<V> {
 
-    public PropertyKey propertyKey();
+    PropertyKey propertyKey();
 
     @Override
-    public default String key() {
+    default String key() {
         return propertyKey().name();
     }
 

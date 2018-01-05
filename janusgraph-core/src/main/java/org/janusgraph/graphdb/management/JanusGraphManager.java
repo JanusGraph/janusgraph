@@ -40,11 +40,11 @@ import javax.script.Bindings;
  */
 public class JanusGraphManager implements GraphManager {
 
-    public static final String JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG = "Gremlin Server must be configured to use the JanusGraphManager.";
+    public static final String JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG
+            = "Gremlin Server must be configured to use the JanusGraphManager.";
 
-    private final Map<String, Graph> graphs = new ConcurrentHashMap<String, Graph>();
-    private final Map<String, TraversalSource> traversalSources = new ConcurrentHashMap<String, TraversalSource>();
-    private Settings settings = null;
+    private final Map<String, Graph> graphs = new ConcurrentHashMap<>();
+    private final Map<String, TraversalSource> traversalSources = new ConcurrentHashMap<>();
     private final Object instantiateGraphLock = new Object();
 
     private static JanusGraphManager instance = null;
@@ -59,7 +59,6 @@ public class JanusGraphManager implements GraphManager {
      */
     public JanusGraphManager(Settings settings) {
         initialize();
-        this.settings = settings;
         // Open graphs defined at server start in settings.graphs
         settings.graphs.forEach((key, value) -> {
             final StandardJanusGraph graph = (StandardJanusGraph) JanusGraphFactory.open(value, key);
@@ -70,11 +69,11 @@ public class JanusGraphManager implements GraphManager {
     }
 
     private synchronized void initialize() {
-        if (null != this.instance) {
+        if (null != instance) {
             final String errMsg = "You may not instantiate a JanusGraphManager. The single instance should be handled by Tinkerpop's GremlinServer startup processes.";
             throw new JanusGraphManagerException(errMsg);
         }
-        this.instance = this;
+        instance = this;
     }
 
     public static JanusGraphManager getInstance() {
@@ -118,6 +117,7 @@ public class JanusGraphManager implements GraphManager {
      * @Deprecated
      */
     @Override
+    @Deprecated
     public Map<String, TraversalSource> getTraversalSources() {
         return traversalSources;
     }
@@ -152,8 +152,7 @@ public class JanusGraphManager implements GraphManager {
 
     @Override
     public void rollbackAll() {
-        graphs.forEach((key, value) -> {
-            final Graph graph = value;
+        graphs.forEach((key, graph) -> {
             if (graph.tx().isOpen()) {
                 graph.tx().rollback();
             }
@@ -167,8 +166,7 @@ public class JanusGraphManager implements GraphManager {
 
     @Override
     public void commitAll() {
-        graphs.forEach((key, value) -> {
-            final Graph graph = value;
+        graphs.forEach((key, graph) -> {
             if (graph.tx().isOpen())
                 graph.tx().commit();
         });

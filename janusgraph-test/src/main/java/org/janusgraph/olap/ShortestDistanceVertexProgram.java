@@ -32,11 +32,12 @@ import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
+
 
 public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
 
@@ -54,7 +55,7 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
     private long seed;
     private String weightProperty;
 
-    private static final Set<VertexComputeKey> COMPUTE_KEYS = new HashSet<>(Arrays.asList(VertexComputeKey.of(DISTANCE, false)));
+    private static final Set<VertexComputeKey> COMPUTE_KEYS = new HashSet<>(Collections.singletonList(VertexComputeKey.of(DISTANCE, false)));
 
     private ShortestDistanceVertexProgram() {
 
@@ -82,7 +83,7 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
 
     @Override
     public Optional<MessageCombiner<Long>> getMessageCombiner() {
-        return (Optional) ShortestDistanceMessageCombiner.instance();
+        return Optional.of(ShortestDistanceMessageCombiner.instance());
     }
 
     @Override
@@ -110,7 +111,7 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
     @Override
     public void execute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         if (memory.isInitialIteration()) {
-            if (vertex.id().equals(Long.valueOf(seed).longValue())) {
+            if (vertex.id().equals(seed)) {
                 // The seed sends a single message to start the computation
                 log.debug("Sent initial message from {}", vertex.id());
                 // The seed's distance to itself is zero
@@ -122,7 +123,7 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
 
             // Find minimum distance among all incoming messages, or null if no messages came in
             Long shortestDistanceSeenOnThisIteration =
-                    IteratorUtils.stream(distances).reduce((a, b) -> Math.min(a, b)).orElse(null);
+                    IteratorUtils.stream(distances).reduce(Math::min).orElse(null);
 
             if (null == shortestDistanceSeenOnThisIteration)
                 return; // no messages to process or forward on this superstep

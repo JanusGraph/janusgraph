@@ -52,7 +52,7 @@ public class InMemoryConfigurationTest {
         try {
             tx.addVertex();
             fail();
-        } catch (Exception e ) {
+        } catch (Exception ignored) {
         } finally {
             tx.rollback();
         }
@@ -60,7 +60,7 @@ public class InMemoryConfigurationTest {
         try {
             graph.addVertex();
             fail();
-        } catch (Exception e ) {
+        } catch (Exception ignored) {
         } finally {
             graph.tx().rollback();
         }

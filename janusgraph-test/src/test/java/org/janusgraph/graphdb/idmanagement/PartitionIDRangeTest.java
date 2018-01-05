@@ -70,15 +70,15 @@ public class PartitionIDRangeTest {
         try {
             pr = new PartitionIDRange(0,5,4);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
         try {
             pr = new PartitionIDRange(5,3,4);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
         try {
             pr = new PartitionIDRange(-1,3,4);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
     }
 
     private void verifyRandomSampling(PartitionIDRange pr) {
@@ -91,8 +91,8 @@ public class PartitionIDRangeTest {
         */
         double x = allIds.size();
         final int T = 300000;
-        double failureSampleProb = x * Math.pow((x-1)/x,T);
-        assertTrue(failureSampleProb<1e-12); //Make sure the failure prob is infinitisimally small
+        double failureSampleProblem = x * Math.pow((x-1)/x,T);
+        assertTrue(failureSampleProblem<1e-12); //Make sure the failure prob is infinitesimally small
 
         Set<Integer> randomIds = Sets.newHashSet();
         for (int t=0;t<T;t++) {
@@ -118,7 +118,7 @@ public class PartitionIDRangeTest {
         try {
             PartitionIDRange.getGlobalRange(-1);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
     }
 
     @Test
@@ -166,20 +166,20 @@ public class PartitionIDRangeTest {
     }
 
 
-    public static PartitionIDRange getPIR(int partitionBits, long lower, long upper, int bitwidth) {
-        return Iterables.getOnlyElement(PartitionIDRange.getIDRanges(partitionBits, convert(lower, upper, bitwidth)), null);
+    public static PartitionIDRange getPIR(int partitionBits, long lower, long upper, int bitWidth) {
+        return Iterables.getOnlyElement(PartitionIDRange.getIDRanges(partitionBits, convert(lower, upper, bitWidth)), null);
     }
 
-    public static List<KeyRange> convert(long lower, long upper, int bitwidth) {
-        StaticBuffer lowerBuffer = BufferUtil.getLongBuffer(convert(lower, bitwidth));
-        StaticBuffer upperBuffer = BufferUtil.getLongBuffer(convert(upper, bitwidth));
+    public static List<KeyRange> convert(long lower, long upper, int bitWidth) {
+        StaticBuffer lowerBuffer = BufferUtil.getLongBuffer(convert(lower, bitWidth));
+        StaticBuffer upperBuffer = BufferUtil.getLongBuffer(convert(upper, bitWidth));
 //        Preconditions.checkArgument(lowerBuffer.compareTo(upperBuffer) < 0, "%s vs %s",lowerBuffer,upperBuffer);
         return Lists.newArrayList(new KeyRange(lowerBuffer, upperBuffer));
     }
 
-    public static long convert(long id, int bitwidth) {
-        Preconditions.checkArgument(id>=0 && id<=(1<<bitwidth));
-        return id<<(64-bitwidth);
+    public static long convert(long id, int bitWidth) {
+        Preconditions.checkArgument(id>=0 && id<=(1<<bitWidth));
+        return id<<(64-bitWidth);
     }
 
 }

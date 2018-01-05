@@ -14,10 +14,6 @@
 
 package org.janusgraph.graphdb.query.condition;
 
-/**
- * @author Matthias Broecheler (me@matthiasb.com)
- */
-
 import org.janusgraph.core.JanusGraphElement;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
@@ -56,14 +52,6 @@ public abstract class MultiCondition<E extends JanusGraphElement> extends ArrayL
     public boolean add(Condition<E> condition) {
         assert condition != null;
         return super.add(condition);
-    }
-
-    public int size() {
-        return super.size();
-    }
-
-    public Condition<E> get(int position) {
-        return super.get(position);
     }
 
     @Override

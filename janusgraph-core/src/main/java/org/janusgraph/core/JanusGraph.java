@@ -28,15 +28,8 @@ import org.apache.tinkerpop.gremlin.util.Gremlin;
  * @see JanusGraphTransaction
  */
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
-@Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_COMPUTER)
-@Graph.OptIn(Graph.OptIn.SUITE_PROCESS_PERFORMANCE)
-@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_PROCESS_STANDARD)
-@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_PROCESS_COMPUTER)
-@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT)
-@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_INTEGRATE)
-@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_PERFORMANCE)
 @Graph.OptIn("org.janusgraph.blueprints.process.traversal.strategy.JanusGraphStrategySuite")
 //------------------------
 @Graph.OptOut(
@@ -84,7 +77,7 @@ public interface JanusGraph extends Transaction {
      *
      * @return Transaction object representing a transactional context.
      */
-    public JanusGraphTransaction newTransaction();
+    JanusGraphTransaction newTransaction();
 
     /**
      * Returns a {@link TransactionBuilder} to construct a new thread-independent {@link JanusGraphTransaction}.
@@ -93,7 +86,7 @@ public interface JanusGraph extends Transaction {
      * @see TransactionBuilder
      * @see #newTransaction()
      */
-    public TransactionBuilder buildTransaction();
+    TransactionBuilder buildTransaction();
 
     /**
      * Returns the management system for this graph instance. The management system provides functionality
@@ -103,7 +96,7 @@ public interface JanusGraph extends Transaction {
      *
      * @return
      */
-    public JanusGraphManagement openManagement();
+    JanusGraphManagement openManagement();
 
     /**
      * Checks whether the graph is open.
@@ -111,14 +104,14 @@ public interface JanusGraph extends Transaction {
      * @return true, if the graph is open, else false.
      * @see #close()
      */
-    public boolean isOpen();
+    boolean isOpen();
 
     /**
      * Checks whether the graph is closed.
      *
      * @return true, if the graph has been closed, else false
      */
-    public boolean isClosed();
+    boolean isClosed();
 
     /**
      * Closes the graph database.
@@ -131,18 +124,18 @@ public interface JanusGraph extends Transaction {
      * @throws JanusGraphException if closing the graph database caused errors in the storage backend
      */
     @Override
-    public void close() throws JanusGraphException;
+    void close() throws JanusGraphException;
 
     /**
      * The version of this JanusGraph graph database
      *
      * @return
      */
-    public static String version() {
+    static String version() {
         return JanusGraphConstants.VERSION;
     }
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         System.out.println("JanusGraph " + JanusGraph.version() + ", Apache TinkerPop " + Gremlin.version());
     }
 }

@@ -61,7 +61,7 @@ public interface JanusGraphTransaction extends Transaction {
      * @param vertexLabel vertex label for this vertex - can be null if no vertex label should be set.
      * @return New vertex
      */
-    public JanusGraphVertex addVertex(Long id, VertexLabel vertexLabel);
+    JanusGraphVertex addVertex(Long id, VertexLabel vertexLabel);
 
     /**
      * Retrieves the vertex for the specified id.
@@ -71,12 +71,12 @@ public interface JanusGraphTransaction extends Transaction {
      * @param id id of the vertex to retrieve
      * @return vertex with the given id if it exists, else null
      */
-    public JanusGraphVertex getVertex(long id);
+    JanusGraphVertex getVertex(long id);
 
 
-    public Iterable<JanusGraphVertex> getVertices(long... ids);
+    Iterable<JanusGraphVertex> getVertices(long... ids);
 
-    public Iterable<JanusGraphEdge> getEdges(RelationIdentifier... ids);
+    Iterable<JanusGraphEdge> getEdges(RelationIdentifier... ids);
 
    /* ---------------------------------------------------------------
     * Closing and admin
@@ -95,7 +95,7 @@ public interface JanusGraphTransaction extends Transaction {
      * @throws org.janusgraph.diskstorage.BackendException
      *          if an error arises during persistence
      */
-    public void commit();
+    void commit();
 
     /**
      * Aborts and closes the transaction. Will discard all modifications.
@@ -106,21 +106,21 @@ public interface JanusGraphTransaction extends Transaction {
      * @throws org.janusgraph.diskstorage.BackendException
      *          if an error arises when releasing the transaction handle
      */
-    public void rollback();
+    void rollback();
 
     /**
      * Checks whether the transaction is still open.
      *
      * @return true, when the transaction is open, else false
      */
-    public boolean isOpen();
+    boolean isOpen();
 
     /**
      * Checks whether the transaction has been closed.
      *
      * @return true, if the transaction has been closed, else false
      */
-    public boolean isClosed();
+    boolean isClosed();
 
     /**
      * Checks whether any changes to the graph database have been made in this transaction.
@@ -129,6 +129,6 @@ public interface JanusGraphTransaction extends Transaction {
      *
      * @return true, if the transaction contains updates, else false.
      */
-    public boolean hasModifications();
+    boolean hasModifications();
 
 }

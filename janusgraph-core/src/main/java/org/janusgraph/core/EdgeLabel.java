@@ -39,20 +39,20 @@ public interface EdgeLabel extends RelationType {
      *
      * @return true, if this label is directed, else false.
      */
-    public boolean isDirected();
+    boolean isDirected();
 
     /**
      * Checks whether this labels is defined as unidirected.
      *
      * @return true, if this label is unidirected, else false.
      */
-    public boolean isUnidirected();
+    boolean isUnidirected();
 
     /**
      * The {@link Multiplicity} for this edge label.
      *
      * @return
      */
-    public Multiplicity multiplicity();
+    Multiplicity multiplicity();
 
 }

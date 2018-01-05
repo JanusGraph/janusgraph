@@ -19,6 +19,6 @@ package org.janusgraph.graphdb.database.management;
  */
 public enum MgmtLogType {
 
-    CACHED_TYPE_EVICTION, CACHED_TYPE_EVICTION_ACK, CONFIG_MUTATION;
+    CACHED_TYPE_EVICTION, CACHED_TYPE_EVICTION_ACK, CONFIG_MUTATION
 
 }

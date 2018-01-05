@@ -34,7 +34,7 @@ public class GraphIndexStatusWatcher
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphIndexStatusWatcher.class);
 
-    private String graphIndexName;
+    private final String graphIndexName;
 
     public GraphIndexStatusWatcher(JanusGraph g, String graphIndexName) {
         super(g);
@@ -60,10 +60,10 @@ public class GraphIndexStatusWatcher
         Timer t = new Timer(TimestampProviders.MILLI).start();
         boolean timedOut;
         while (true) {
-            JanusGraphManagement mgmt = null;
+            JanusGraphManagement management = null;
             try {
-                mgmt = g.openManagement();
-                idx = mgmt.getGraphIndex(graphIndexName);
+                management = g.openManagement();
+                idx = management.getGraphIndex(graphIndexName);
                 for (PropertyKey pk : idx.getFieldKeys()) {
                     SchemaStatus s = idx.getIndexStatus(pk);
                     LOGGER.debug("Key {} has status {}", pk, s);
@@ -73,8 +73,8 @@ public class GraphIndexStatusWatcher
                         converged.put(pk.toString(), s);
                 }
             } finally {
-                if (null != mgmt)
-                    mgmt.rollback(); // Let an exception here propagate up the stack
+                if (null != management)
+                    management.rollback(); // Let an exception here propagate up the stack
             }
 
             String waitingOn = Joiner.on(",").withKeyValueSeparator("=").join(notConverged);

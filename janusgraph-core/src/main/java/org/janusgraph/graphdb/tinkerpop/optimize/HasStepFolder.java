@@ -61,7 +61,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
     static boolean validJanusGraphHas(HasContainer has) {
         if (has.getPredicate() instanceof AndP) {
             final List<? extends P<?>> predicates = ((AndP<?>) has.getPredicate()).getPredicates();
-            return !predicates.stream().filter(p->!validJanusGraphHas(new HasContainer(has.getKey(), p))).findAny().isPresent();
+            return predicates.stream().allMatch(p-> validJanusGraphHas(new HasContainer(has.getKey(), p)));
         } else {
             return JanusGraphPredicate.Converter.supports(has.getBiPredicate());
         }
@@ -74,9 +74,9 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         return true;
     }
 
-    static boolean validJanusGraphOrder(OrderGlobalStep ostep, Traversal rootTraversal,
+    static boolean validJanusGraphOrder(OrderGlobalStep orderGlobalStep, Traversal rootTraversal,
                                           boolean isVertexOrder) {
-        final List<Pair<Traversal.Admin, Object>> comparators = ostep.getComparators();
+        final List<Pair<Traversal.Admin, Object>> comparators = orderGlobalStep.getComparators();
         for(Pair<Traversal.Admin, Object> comp : comparators) {
             if (comp.getValue0() instanceof ElementValueTraversal &&
                 comp.getValue1() instanceof Order) {
@@ -122,10 +122,11 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                                 return;
                             }
                         } else {
-                            Arrays.stream(graphStep.getIds()).forEach(ids::add);
+                            ids.addAll(Arrays.asList(graphStep.getIds()));
                         }
                     }
                 });
+
                 if (!removableHasContainers.isEmpty()) {
                     removableHasContainers.forEach(hasContainerHolder::removeHasContainer);
                 }
@@ -155,11 +156,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                     currentStep.getLabels().forEach(janusgraphStep::addLabel);
                     traversal.removeStep(currentStep);
                 }
-            } else if (currentStep instanceof IdentityStep) {
-                // do nothing, has no impact
-            } else if (currentStep instanceof NoOpBarrierStep) {
-                // do nothing, has no impact
-            } else {
+            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep)) {
                 break;
             }
             currentStep = currentStep.getNextStep();
@@ -177,13 +174,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                     traversal.removeStep(lastOrder);
                 }
                 lastOrder = (OrderGlobalStep) currentStep;
-            } else if (currentStep instanceof IdentityStep) {
-                // do nothing, can be skipped
-            } else if (currentStep instanceof HasStep) {
-                // do nothing, can be skipped
-            } else if (currentStep instanceof NoOpBarrierStep) {
-                // do nothing, can be skipped
-            } else {
+            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof HasStep) && !(currentStep instanceof NoOpBarrierStep)) {
                 break;
             }
             currentStep = currentStep.getNextStep();

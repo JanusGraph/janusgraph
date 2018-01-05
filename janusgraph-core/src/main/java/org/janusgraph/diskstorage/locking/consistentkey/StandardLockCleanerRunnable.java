@@ -48,7 +48,7 @@ public class StandardLockCleanerRunnable implements Runnable {
     private final ConsistentKeyLockerSerializer serializer;
     private final StoreTransaction tx;
     private final Instant cutoff;
-    private TimestampProvider times;
+    private final TimestampProvider times;
 
     private static final Logger log = LoggerFactory.getLogger(StandardLockCleanerRunnable.class);
 
@@ -80,19 +80,19 @@ public class StandardLockCleanerRunnable implements Runnable {
             TimestampRid tr = serializer.fromLockColumn(lc.getColumn(), times);
             if (tr.getTimestamp().isBefore(cutoff)) {
                 log.info("Deleting expired lock on {} by rid {} with timestamp {} (before or at cutoff {})",
-                        new Object[] { target, tr.getRid(), tr.getTimestamp(), cutoff });
+                    target, tr.getRid(), tr.getTimestamp(), cutoff);
                 b.add(lc.getColumn());
             } else {
                 log.debug("Ignoring lock on {} by rid {} with timestamp {} (timestamp is after cutoff {})",
-                        new Object[] { target, tr.getRid(), tr.getTimestamp(), cutoff });
+                    target, tr.getRid(), tr.getTimestamp(), cutoff);
             }
         }
 
-        List<StaticBuffer> dels = b.build();
+        List<StaticBuffer> deletions = b.build();
 
-        if (!dels.isEmpty()) {
-            store.mutate(lockKey, ImmutableList.<Entry>of(), dels, tx);
-            log.info("Deleted {} expired locks (before or at cutoff {})", dels.size(), cutoff);
+        if (!deletions.isEmpty()) {
+            store.mutate(lockKey, ImmutableList.of(), deletions, tx);
+            log.info("Deleted {} expired locks (before or at cutoff {})", deletions.size(), cutoff);
         }
     }
 
@@ -138,10 +138,9 @@ public class StandardLockCleanerRunnable implements Runnable {
         } else if (!target.equals(other.target))
             return false;
         if (tx == null) {
-            if (other.tx != null)
-                return false;
-        } else if (!tx.equals(other.tx))
-            return false;
-        return true;
+            return other.tx == null;
+        } else {
+            return tx.equals(other.tx);
+        }
     }
 }

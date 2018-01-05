@@ -42,7 +42,7 @@ import java.util.concurrent.Future;
  */
 public class TestMockLog implements LogManager {
 
-    public static final ConfigOption<Boolean> LOG_MOCK_FAILADD = new ConfigOption<Boolean>(LOG_NS,"fail-adds",
+    public static final ConfigOption<Boolean> LOG_MOCK_FAILADD = new ConfigOption<>(LOG_NS, "fail-adds",
             "Sets the log to reject adding messages. FOR TESTING ONLY",
             ConfigOption.Type.LOCAL, false).hide();
 
@@ -59,12 +59,7 @@ public class TestMockLog implements LogManager {
 
     @Override
     public synchronized Log openLog(String name) throws BackendException {
-        TestLog log = openLogs.get(name);
-        if (log==null) {
-            log = new TestLog(name);
-            openLogs.put(name,log);
-        }
-        return log;
+        return openLogs.computeIfAbsent(name, TestLog::new);
     }
 
     @Override
@@ -85,8 +80,8 @@ public class TestMockLog implements LogManager {
 
         @Override
         public synchronized Future<Message> add(StaticBuffer content) {
-            TestMessage msg = new TestMessage(content);
-            FutureMessage<TestMessage> fmsg = new FutureMessage<TestMessage>(msg);
+            final TestMessage msg = new TestMessage(content);
+            final FutureMessage<TestMessage> fmsg = new FutureMessage<>(msg);
 
             if (failAdds) {
                 System.out.println("Failed message add");

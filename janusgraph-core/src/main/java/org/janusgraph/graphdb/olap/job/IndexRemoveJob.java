@@ -97,19 +97,20 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
 
     @Override
     protected void validateIndexStatus() {
-        if (index instanceof RelationTypeIndex) {
-            //Nothing specific to be done
-        } else if (index instanceof JanusGraphIndex) {
-            JanusGraphIndex gindex = (JanusGraphIndex)index;
-            if (gindex.isMixedIndex())
+        if(!(index instanceof RelationTypeIndex || index instanceof JanusGraphIndex)) {
+            throw new UnsupportedOperationException("Unsupported index found: "+index);
+        }
+        if (index instanceof JanusGraphIndex) {
+            JanusGraphIndex graphIndex = (JanusGraphIndex)index;
+            if (graphIndex.isMixedIndex())
                 throw new UnsupportedOperationException("Cannot remove mixed indexes through JanusGraph. This can " +
                         "only be accomplished in the indexing system directly.");
-            CompositeIndexType indexType = (CompositeIndexType)mgmt.getSchemaVertex(index).asIndexType();
+            CompositeIndexType indexType = (CompositeIndexType) managementSystem.getSchemaVertex(index).asIndexType();
             graphIndexId = indexType.getID();
-        } else throw new UnsupportedOperationException("Unsupported index found: "+index);
+        }
 
         //Must be a relation type index or a composite graph index
-        JanusGraphSchemaVertex schemaVertex = mgmt.getSchemaVertex(index);
+        JanusGraphSchemaVertex schemaVertex = managementSystem.getSchemaVertex(index);
         SchemaStatus actualStatus = schemaVertex.getStatus();
         Preconditions.checkArgument(actualStatus==SchemaStatus.DISABLED,"The index [%s] must be disabled before it can be removed",indexName);
     }
@@ -122,9 +123,9 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
             final List<Entry> deletions;
             if (entries.size()==1) deletions = Iterables.getOnlyElement(entries.values());
             else {
-                int size = IteratorUtils.stream(entries.values().iterator()).map( e -> e.size()).reduce(0, (x,y) -> x+y);
+                final int size = IteratorUtils.stream(entries.values().iterator()).map(List::size).reduce(0, (x,y) -> x+y);
                 deletions = new ArrayList<>(size);
-                entries.values().forEach(e -> deletions.addAll(e));
+                entries.values().forEach(deletions::addAll);
             }
             metrics.incrementCustom(DELETED_RECORDS_COUNT,deletions.size());
             if (isRelationTypeIndex()) {
@@ -133,7 +134,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
                 mutator.mutateIndex(key, KCVSCache.NO_ADDITIONS, deletions);
             }
         } catch (final Exception e) {
-            mgmt.rollback();
+            managementSystem.rollback();
             writeTx.rollback();
             metrics.incrementCustom(FAILED_TX);
             throw new JanusGraphException(e.getMessage(), e);
@@ -176,11 +177,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
                 }
             });
         } else {
-            return buffer -> {
-                long vertexId = idManager.getKeyID(buffer);
-                if (IDManager.VertexIDType.Invisible.is(vertexId)) return false;
-                else return true;
-            };
+            return buffer -> !IDManager.VertexIDType.Invisible.is(idManager.getKeyID(buffer));
         }
     }
 

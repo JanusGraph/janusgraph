@@ -45,17 +45,17 @@ public interface JanusGraphQuery<Q extends JanusGraphQuery<Q>> {
      * @param condition
      * @return This query
      */
-    public Q has(String key, JanusGraphPredicate predicate, Object condition);
+    Q has(String key, JanusGraphPredicate predicate, Object condition);
 
-    public Q has(String key);
+    Q has(String key);
 
-    public Q hasNot(String key);
+    Q hasNot(String key);
 
-    public Q has(String key, Object value);
+    Q has(String key, Object value);
 
-    public Q hasNot(String key, Object value);
+    Q hasNot(String key, Object value);
 
-    public <T extends Comparable<?>> Q interval(String key, T startValue, T endValue);
+    <T extends Comparable<?>> Q interval(String key, T startValue, T endValue);
 
     /**
      * Limits the size of the returned result set
@@ -63,7 +63,7 @@ public interface JanusGraphQuery<Q extends JanusGraphQuery<Q>> {
      * @param max The maximum number of results to return
      * @return This query
      */
-    public Q limit(final int max);
+    Q limit(final int max);
 
     /**
      * Orders the element results of this query according
@@ -73,7 +73,7 @@ public interface JanusGraphQuery<Q extends JanusGraphQuery<Q>> {
      * @param order the ordering direction
      * @return
      */
-    public Q orderBy(String key, Order order);
+    Q orderBy(String key, Order order);
 
 
     /* ---------------------------------------------------------------
@@ -86,21 +86,21 @@ public interface JanusGraphQuery<Q extends JanusGraphQuery<Q>> {
      *
      * @return
      */
-    public Iterable<JanusGraphVertex> vertices();
+    Iterable<JanusGraphVertex> vertices();
 
     /**
      * Returns all edges that match the conditions.
      *
      * @return
      */
-    public Iterable<JanusGraphEdge> edges();
+    Iterable<JanusGraphEdge> edges();
 
     /**
      * Returns all properties that match the conditions
      *
      * @return
      */
-    public Iterable<JanusGraphVertexProperty> properties();
+    Iterable<JanusGraphVertexProperty> properties();
 
 
 }

@@ -21,6 +21,6 @@ import org.janusgraph.diskstorage.StaticBuffer;
  */
 public interface VertexReader {
 
-    public long getVertexId(StaticBuffer key);
+    long getVertexId(StaticBuffer key);
 
 }

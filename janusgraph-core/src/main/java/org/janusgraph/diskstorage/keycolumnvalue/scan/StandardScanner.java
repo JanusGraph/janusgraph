@@ -102,7 +102,7 @@ public class StandardScanner  {
             graphConfiguration = Configuration.EMPTY;
             jobConfiguration = Configuration.EMPTY;
             dbName = null;
-            jobId = Long.valueOf(jobCounter.incrementAndGet());
+            jobId = jobCounter.incrementAndGet();
             finishJob = m -> {} ;
         }
 

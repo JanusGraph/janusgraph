@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Abstract base class for {@link org.janusgraph.hadoop.config.job.JobClasspathConfigurer}
- * implementations that use Hadoop's distributed cache to store push classfiles to the cluster.
+ * implementations that use Hadoop's distributed cache to store push class files to the cluster.
  */
 public abstract class AbstractDistCacheConfigurer {
 
@@ -42,14 +42,14 @@ public abstract class AbstractDistCacheConfigurer {
 //        FILENAME,
 //
 //        /**
-//         * Copy a jar unless a file with the same name and same modtime already exists
+//         * Copy a jar unless a file with the same name and same modify time already exists
 //         * in the staging directory of the Hadoop FileSystem.
 //         */
 //        MODTIME,
 //
 //        /**
 //         * Unconditionally copy all jars to the Hadoop FileSystem, even if they
-//         * already exist at the destination and have up-to-date modtimes.
+//         * already exist at the destination and have up-to-date modify times.
 //         */
 //        ALWAYS;
 //    }
@@ -67,12 +67,12 @@ public abstract class AbstractDistCacheConfigurer {
     private static final Logger log =
             LoggerFactory.getLogger(AbstractDistCacheConfigurer.class);
 
-    public AbstractDistCacheConfigurer(String mapredJarFilename) {
-        this.conf = configureByClasspath(mapredJarFilename);
+    public AbstractDistCacheConfigurer(String mapReduceJarFilename) {
+        this.conf = configureByClasspath(mapReduceJarFilename);
     }
 
     public String getMapredJar() {
-        return conf.mapredJar;
+        return conf.mapReduceJar;
     }
 
     public ImmutableList<Path> getLocalPaths() {
@@ -138,30 +138,30 @@ public abstract class AbstractDistCacheConfigurer {
         return s;
     }
 
-    private static Conf configureByClasspath(String mapredJarFilename) {
-        List<Path> paths = new LinkedList<Path>();
+    private static Conf configureByClasspath(String mapReduceJarFilename) {
+        final List<Path> paths = new LinkedList<>();
         final String classpath = System.getProperty("java.class.path");
-        final String mrj = mapredJarFilename.toLowerCase();
-        String mapredJarPath = null;
-        for (String cpentry : classpath.split(File.pathSeparator)) {
-            if (cpentry.toLowerCase().endsWith(".jar") || cpentry.toLowerCase().endsWith(".properties")) {
-                paths.add(new Path(cpentry));
-                if (cpentry.toLowerCase().endsWith(mrj)) {
-                    mapredJarPath = cpentry;
+        final String mrj = mapReduceJarFilename.toLowerCase();
+        String mapReduceJarPath = null;
+        for (String classPathEntry : classpath.split(File.pathSeparator)) {
+            if (classPathEntry.toLowerCase().endsWith(".jar") || classPathEntry.toLowerCase().endsWith(".properties")) {
+                paths.add(new Path(classPathEntry));
+                if (classPathEntry.toLowerCase().endsWith(mrj)) {
+                    mapReduceJarPath = classPathEntry;
                 }
             }
         }
-        return new Conf(paths, mapredJarPath);
+        return new Conf(paths, mapReduceJarPath);
     }
 
     private static class Conf {
 
         private final ImmutableList<Path> paths;
-        private final String mapredJar;
+        private final String mapReduceJar;
 
-        public Conf(List<Path> paths, String mapredJar) {
+        public Conf(List<Path> paths, String mapReduceJar) {
             this.paths = ImmutableList.copyOf(paths);
-            this.mapredJar = mapredJar;
+            this.mapReduceJar = mapReduceJar;
         }
     }
 

@@ -125,7 +125,7 @@ public class UserModifiableConfiguration implements JanusGraphConfiguration {
         config.close();
     }
 
-    private static final Object convertBasic(Object value, Class datatype) {
+    private static Object convertBasic(Object value, Class datatype) {
         if (Number.class.isAssignableFrom(datatype)) {
             Preconditions.checkArgument(value instanceof Number,"Expected a number but got: %s",value);
             Number n = (Number)value;
@@ -172,15 +172,12 @@ public class UserModifiableConfiguration implements JanusGraphConfiguration {
          * Otherwise just returns.
          * @param option
          */
-        public void verifyModification(ConfigOption option);
+        void verifyModification(ConfigOption option);
 
     }
 
-    public static final ConfigVerifier ALLOW_ALL = new ConfigVerifier() {
-        @Override
-        public void verifyModification(ConfigOption option) {
-            //Do nothing;
-        }
+    public static final ConfigVerifier ALLOW_ALL = option -> {
+        //Do nothing;
     };
 
 

@@ -124,7 +124,7 @@ public class CsvConsumer implements IResultsConsumer {
 
         private final String name;
 
-        private Column(String name) {
+        Column(String name) {
             this.name = name;
         }
 
@@ -142,7 +142,7 @@ public class CsvConsumer implements IResultsConsumer {
 
     public synchronized void accept(Result r) throws IOException {
         Joiner j = Joiner.on(separator);
-        List<String> fields = new ArrayList<String>(Column.values().length);
+        final List<String> fields = new ArrayList<>(Column.values().length);
         for (Column c : Column.values()) {
             fields.add(c.get(r));
         }
@@ -159,7 +159,7 @@ public class CsvConsumer implements IResultsConsumer {
         }
 
         Joiner j = Joiner.on(separator);
-        List<String> headers = new ArrayList<String>(Column.values().length);
+        final List<String> headers = new ArrayList<>(Column.values().length);
         for (Column c : Column.values()) {
             headers.add(c.getName());
         }

@@ -22,11 +22,11 @@ import org.janusgraph.diskstorage.StaticBuffer;
 
 public interface BackendCompression {
 
-    public StaticBuffer compress(StaticBuffer value);
+    StaticBuffer compress(StaticBuffer value);
 
-    public StaticBuffer decompress(StaticBuffer value);
+    StaticBuffer decompress(StaticBuffer value);
 
-    public static final BackendCompression NO_COMPRESSION = new BackendCompression() {
+    BackendCompression NO_COMPRESSION = new BackendCompression() {
         @Override
         public StaticBuffer compress(StaticBuffer value) {
             return value;

@@ -33,7 +33,7 @@ public interface ScanMetrics {
      * accepted by {@link #get(org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics.Metric)}
      * and {@link #increment(org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics.Metric)}.
      */
-    public enum Metric { FAILURE, SUCCESS }
+    enum Metric { FAILURE, SUCCESS }
 
     /**
      * Get the value of a custom counter.  Only the effects of prior calls to
@@ -44,7 +44,7 @@ public interface ScanMetrics {
      * @param metric
      * @return
      */
-    public long getCustom(String metric);
+    long getCustom(String metric);
 
     /**
      * Increment a custom counter by {@code delta}.  The effects of calls
@@ -54,14 +54,14 @@ public interface ScanMetrics {
      * @param metric the name of the counter
      * @param delta the amount to add to the counter
      */
-    public void incrementCustom(String metric, long delta);
+    void incrementCustom(String metric, long delta);
 
     /**
      * Like {@link #incrementCustom(String, long)}, except the {@code delta} is 1.
      *
      * @param metric the name of the counter to increment by 1
      */
-    public void incrementCustom(String metric);
+    void incrementCustom(String metric);
 
     /**
      * Get the value of a standard counter.
@@ -69,13 +69,13 @@ public interface ScanMetrics {
      * @param metric the standard counter whose value should be returned
      * @return the value of the standard counter
      */
-    public long get(Metric metric);
+    long get(Metric metric);
 
     /**
      * Increment a standard counter by 1.
      *
      * @param metric the standard counter whose value will be increased by 1
      */
-    public void increment(Metric metric);
+    void increment(Metric metric);
 
 }

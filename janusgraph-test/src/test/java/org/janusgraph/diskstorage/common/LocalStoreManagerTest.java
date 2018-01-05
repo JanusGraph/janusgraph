@@ -85,7 +85,7 @@ public class LocalStoreManagerTest {
     }
 
     public Map<ConfigOption, String> getBaseConfigurationMap() {
-        final Map<ConfigOption, String> map = new HashMap<ConfigOption, String>();
+        final Map<ConfigOption, String> map = new HashMap<>();
         map.put(STORAGE_BACKEND, "berkeleyje");
         return map;
     }

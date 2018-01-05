@@ -38,7 +38,7 @@ public interface IDPlacementStrategy {
      * @param element Vertex or relation to assign id to.
      * @return
      */
-    public int getPartition(InternalElement element);
+    int getPartition(InternalElement element);
 
     /**
      * Bulk assignment of idAuthorities to vertices.
@@ -50,7 +50,7 @@ public interface IDPlacementStrategy {
      *
      * @param vertices Map containing all vertices and their partition placement.
      */
-    public void getPartitions(Map<InternalVertex, PartitionAssignment> vertices);
+    void getPartitions(Map<InternalVertex, PartitionAssignment> vertices);
 
     /**
      * After construction, the {@link org.janusgraph.graphdb.idmanagement.IDManager} used by this graph instance
@@ -59,7 +59,7 @@ public interface IDPlacementStrategy {
      *
      * @param idManager
      */
-    public void injectIDManager(IDManager idManager);
+    void injectIDManager(IDManager idManager);
 
     /**
      * Whether this placement strategy supports bulk placement.
@@ -67,7 +67,7 @@ public interface IDPlacementStrategy {
      *
      * @return
      */
-    public boolean supportsBulkPlacement();
+    boolean supportsBulkPlacement();
 
     /**
      * If JanusGraph is embedded, this method is used to indicate to the placement strategy which
@@ -79,11 +79,11 @@ public interface IDPlacementStrategy {
      * after construction and when the id space is redistributed.
      * <p/>
      * Depending on the storage backend one or multiple ranges of partition ids may be given. However, this list is never
-     * emtpy.
+     * empty.
      *
-     * @param localPartitionIdRanges List of {@link PartitionIDRange}s correspondinging to the locally hosted partitions
+     * @param localPartitionIdRanges List of {@link PartitionIDRange}s corresponding to the locally hosted partitions
      */
-    public void setLocalPartitionBounds(List<PartitionIDRange> localPartitionIdRanges);
+    void setLocalPartitionBounds(List<PartitionIDRange> localPartitionIdRanges);
 
     /**
      * Called when there are no more idAuthorities left in the given partition. It is expected that the
@@ -91,6 +91,6 @@ public interface IDPlacementStrategy {
      *
      * @param partitionID Id of the partition that has been exhausted.
      */
-    public void exhaustedPartition(int partitionID);
+    void exhaustedPartition(int partitionID);
 
 }

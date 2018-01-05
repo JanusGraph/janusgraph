@@ -12,20 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.blueprints.structure.groovy;
+package org.janusgraph.diskstorage.es.rest.util;
 
-import org.janusgraph.blueprints.BerkeleyGraphProvider;
-import org.janusgraph.core.JanusGraph;
-import org.apache.tinkerpop.gremlin.GraphProviderClass;
-import org.apache.tinkerpop.gremlin.groovy.GroovyEnvironmentPerformanceSuite;
-import org.junit.Ignore;
-import org.junit.runner.RunWith;
-
-/**
- * @author Bryn Cooke
- */
-@Ignore
-@RunWith(GroovyEnvironmentPerformanceSuite.class)
-@GraphProviderClass(provider = BerkeleyGraphProvider.class, graph = JanusGraph.class)
-public class BerkeleyJanusGraphGroovyEnvironmentPerformanceTest {
+public enum HttpAuthTypes {
+    /** No authentication - default */
+    NONE,
+    /** Basic authentication with username/password */
+    BASIC,
+    /** Custom authentication with a provided authenticator implementation. Please refer to the documentation for
+     * the custom authenticator.
+     */
+    CUSTOM
 }

@@ -30,12 +30,10 @@ import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadedTransaction;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.structure.T;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.function.Function;
 
 /**
  * Blueprints specific implementation of {@link JanusGraphTransaction}.
@@ -126,14 +124,14 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
     }
 
     @Override
-    public Iterator<Vertex> vertices(Object... vids) {
-        if (vids==null || vids.length==0) return (Iterator)getVertices().iterator();
-        ElementUtils.verifyArgsMustBeEitherIdorElement(vids);
-        long[] ids = new long[vids.length];
+    public Iterator<Vertex> vertices(Object... vertexIds) {
+        if (vertexIds==null || vertexIds.length==0) return (Iterator)getVertices().iterator();
+        ElementUtils.verifyArgsMustBeEitherIdOrElement(vertexIds);
+        long[] ids = new long[vertexIds.length];
         int pos = 0;
-        for (int i = 0; i < vids.length; i++) {
-            long id = ElementUtils.getVertexId(vids[i]);
-            if (id>0) ids[pos++]=id;
+        for (Object vertexId : vertexIds) {
+            long id = ElementUtils.getVertexId(vertexId);
+            if (id > 0) ids[pos++] = id;
         }
         if (pos==0) return Collections.emptyIterator();
         if (pos<ids.length) ids = Arrays.copyOf(ids,pos);
@@ -141,14 +139,14 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
     }
 
     @Override
-    public Iterator<Edge> edges(Object... eids) {
-        if (eids==null || eids.length==0) return (Iterator)getEdges().iterator();
-        ElementUtils.verifyArgsMustBeEitherIdorElement(eids);
-        RelationIdentifier[] ids = new RelationIdentifier[eids.length];
+    public Iterator<Edge> edges(Object... edgeIds) {
+        if (edgeIds==null || edgeIds.length==0) return (Iterator)getEdges().iterator();
+        ElementUtils.verifyArgsMustBeEitherIdOrElement(edgeIds);
+        RelationIdentifier[] ids = new RelationIdentifier[edgeIds.length];
         int pos = 0;
-        for (int i = 0; i < eids.length; i++) {
-            RelationIdentifier id = ElementUtils.getEdgeId(eids[i]);
-            if (id!=null) ids[pos++]=id;
+        for (Object edgeId : edgeIds) {
+            RelationIdentifier id = ElementUtils.getEdgeId(edgeId);
+            if (id != null) ids[pos++] = id;
         }
         if (pos==0) return Collections.emptyIterator();
         if (pos<ids.length) ids = Arrays.copyOf(ids,pos);
@@ -190,12 +188,6 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
             @Override
             public void doRollback() {
                 JanusGraphBlueprintsTransaction.this.rollback();
-            }
-
-            @Override
-            public <R> Workload<R> submit(Function<Graph, R> graphRFunction) {
-                throw new UnsupportedOperationException("JanusGraph does not support nested transactions. " +
-                        "Call submit on a JanusGraph not an individual transaction.");
             }
 
             @Override

@@ -202,16 +202,16 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
 //                            .getBytes();
 //            }
 //
-//            byte[] addrBytes;
+//            byte[] addressBytes;
 //            try {
-//                addrBytes = Inet4Address.getLocalHost().getAddress();
+//                addressBytes = Inet4Address.getLocalHost().getAddress();
 //            } catch (UnknownHostException e) {
 //                throw new JanusGraphConfigurationException("Unknown host specified", e);
 //            }
 //
-//            tentativeRid = new byte[addrBytes.length + endBytes.length];
-//            System.arraycopy(addrBytes, 0, tentativeRid, 0, addrBytes.length);
-//            System.arraycopy(endBytes, 0, tentativeRid, addrBytes.length, endBytes.length);
+//            tentativeRid = new byte[addressBytes.length + endBytes.length];
+//            System.arraycopy(addrBytes, 0, tentativeRid, 0, addressBytes.length);
+//            System.arraycopy(endBytes, 0, tentativeRid, addressBytes.length, endBytes.length);
 //
 //            if (log.isDebugEnabled()) {
 //                log.debug("Set rid: 0x{}", new String(Hex.encodeHex(tentativeRid)));

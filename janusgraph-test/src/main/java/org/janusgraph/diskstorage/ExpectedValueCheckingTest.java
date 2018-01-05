@@ -121,7 +121,7 @@ public class ExpectedValueCheckingTest {
         // 2. Begin transaction
         // EVCTx begins two transactions on the backingManager: one with globalConfig and one with localConfig
         // The capture is used in the @After method to check the config
-        txConfigCapture = new Capture<BaseTransactionConfig>(CaptureType.ALL);
+        txConfigCapture = EasyMock.newCapture(CaptureType.ALL);
         inconsistentTx = ctrl.createMock(StoreTransaction.class);
         consistentTx = ctrl.createMock(StoreTransaction.class);
         expect(backingManager.beginTransaction(capture(txConfigCapture))).andReturn(inconsistentTx);
@@ -155,14 +155,14 @@ public class ExpectedValueCheckingTest {
 
         // Check capture created in the @Before method
         assertTrue(txConfigCapture.hasCaptured());
-        List<BaseTransactionConfig> txCfgs = txConfigCapture.getValues();
-        assertEquals(2, txCfgs.size());
+        List<BaseTransactionConfig> transactionConfigurations = txConfigCapture.getValues();
+        assertEquals(2, transactionConfigurations.size());
         // First backing store transaction should use default tx config
-        assertEquals("default", txCfgs.get(0).getCustomOption(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID));
+        assertEquals("default", transactionConfigurations.get(0).getCustomOption(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID));
         // Second backing store transaction should use global strong consistency config
-        assertEquals("global",  txCfgs.get(1).getCustomOption(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID));
+        assertEquals("global",  transactionConfigurations.get(1).getCustomOption(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID));
         // The order in which these transactions are opened isn't really significant;
-        // testing them in order is kind of overspecifying the impl's behavior.
+        // testing them in order is kind of over-specifying the implementation's behavior.
         // Could probably relax the ordering selectively here with some thought, but
         // I want to keep order checking on in general for the EasyMock control.
     }
@@ -170,7 +170,7 @@ public class ExpectedValueCheckingTest {
     @Test
     public void testMutateWithLockUsesConsistentTx() throws BackendException {
         final ImmutableList<Entry> adds = ImmutableList.of(StaticArrayEntry.of(DATA_COL, DATA_VAL));
-        final ImmutableList<StaticBuffer> dels = ImmutableList.<StaticBuffer>of();
+        final ImmutableList<StaticBuffer> deletions = ImmutableList.of();
         final KeyColumn kc = new KeyColumn(LOCK_KEY, LOCK_COL);
 
         // 1. Acquire a lock
@@ -185,34 +185,34 @@ public class ExpectedValueCheckingTest {
         expect(backingStore.getSlice(expectedValueQuery, consistentTx)) // expected value read must use strong consistency
             .andReturn(StaticArrayEntryList.of(StaticArrayEntry.of(LOCK_COL, LOCK_VAL)));
         // 2.2. Mutate data
-        backingStore.mutate(DATA_KEY, adds, dels, consistentTx); // writes by txs with locks must use strong consistency
+        backingStore.mutate(DATA_KEY, adds, deletions, consistentTx); // writes by txs with locks must use strong consistency
 
         ctrl.replay();
         // 1. Lock acquisition
         expectStore.acquireLock(LOCK_KEY, LOCK_COL, LOCK_VAL, expectTx);
         // 2. Mutate
-        expectStore.mutate(DATA_KEY, adds, dels, expectTx);
+        expectStore.mutate(DATA_KEY, adds, deletions, expectTx);
     }
 
     @Test
     public void testMutateWithoutLockUsesInconsistentTx() throws BackendException {
         // Run a mutation
         final ImmutableList<Entry> adds = ImmutableList.of(StaticArrayEntry.of(DATA_COL, DATA_VAL));
-        final ImmutableList<StaticBuffer> dels = ImmutableList.<StaticBuffer>of();
-        backingStore.mutate(DATA_KEY, adds, dels, inconsistentTx); // consistency level is unconstrained w/o locks
+        final ImmutableList<StaticBuffer> deletions = ImmutableList.of();
+        backingStore.mutate(DATA_KEY, adds, deletions, inconsistentTx); // consistency level is unconstrained w/o locks
 
         ctrl.replay();
-        expectStore.mutate(DATA_KEY, adds, dels, expectTx);
+        expectStore.mutate(DATA_KEY, adds, deletions, expectTx);
     }
 
     @Test
     public void testMutateManyWithLockUsesConsistentTx() throws BackendException {
         final ImmutableList<Entry> adds = ImmutableList.of(StaticArrayEntry.of(DATA_COL, DATA_VAL));
-        final ImmutableList<StaticBuffer> dels = ImmutableList.<StaticBuffer>of();
+        final ImmutableList<StaticBuffer> deletions = ImmutableList.of();
 
         Map<String, Map<StaticBuffer, KCVMutation>> mutations =
-                ImmutableMap.<String, Map<StaticBuffer, KCVMutation>>of(STORE_NAME,
-                        ImmutableMap.<StaticBuffer, KCVMutation>of(DATA_KEY, new KCVMutation(adds, dels)));
+                ImmutableMap.of(STORE_NAME,
+                        ImmutableMap.of(DATA_KEY, new KCVMutation(adds, deletions)));
         final KeyColumn kc = new KeyColumn(LOCK_KEY, LOCK_COL);
 
         // Acquire a lock
@@ -238,11 +238,11 @@ public class ExpectedValueCheckingTest {
     @Test
     public void testMutateManyWithoutLockUsesInconsistentTx() throws BackendException {
         final ImmutableList<Entry> adds = ImmutableList.of(StaticArrayEntry.of(DATA_COL, DATA_VAL));
-        final ImmutableList<StaticBuffer> dels = ImmutableList.<StaticBuffer>of();
+        final ImmutableList<StaticBuffer> deletions = ImmutableList.of();
 
         Map<String, Map<StaticBuffer, KCVMutation>> mutations =
-                ImmutableMap.<String, Map<StaticBuffer, KCVMutation>>of(STORE_NAME,
-                        ImmutableMap.<StaticBuffer, KCVMutation>of(DATA_KEY, new KCVMutation(adds, dels)));
+                ImmutableMap.of(STORE_NAME,
+                        ImmutableMap.of(DATA_KEY, new KCVMutation(adds, deletions)));
 
         // Run mutateMany
         backingManager.mutateMany(mutations, inconsistentTx); // consistency level is unconstrained w/o locks

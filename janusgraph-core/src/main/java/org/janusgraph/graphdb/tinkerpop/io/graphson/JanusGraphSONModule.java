@@ -20,19 +20,21 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.TinkerPopJacksonModule;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONUtil;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerationException;
-import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
 import org.apache.tinkerpop.shaded.jackson.core.JsonParser;
 import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
 import org.apache.tinkerpop.shaded.jackson.databind.DeserializationContext;
-import org.apache.tinkerpop.shaded.jackson.databind.SerializerProvider;
 import org.apache.tinkerpop.shaded.jackson.databind.deser.std.StdDeserializer;
-import org.apache.tinkerpop.shaded.jackson.databind.jsontype.TypeSerializer;
-import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.TinkerPopJacksonModule;
+import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
+import org.apache.tinkerpop.shaded.jackson.databind.SerializerProvider;
+import org.apache.tinkerpop.shaded.jackson.databind.jsontype.TypeSerializer;
+import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
 
 /**
  * @author Stephen Mallette (http://stephen.genoprime.com)
@@ -51,9 +53,6 @@ public abstract class JanusGraphSONModule extends TinkerPopJacksonModule {
 
     protected JanusGraphSONModule() {
         super("janusgraph");
-        addSerializer(RelationIdentifier.class, new RelationIdentifierSerializer());
-
-        addDeserializer(RelationIdentifier.class, new RelationIdentifierDeserializer());
     }
 
     @Override
@@ -66,9 +65,9 @@ public abstract class JanusGraphSONModule extends TinkerPopJacksonModule {
         return TYPE_NAMESPACE;
     }
 
-    public static class RelationIdentifierSerializer extends StdSerializer<RelationIdentifier> {
+    public static class RelationIdentifierSerializerV1d0 extends StdSerializer<RelationIdentifier> {
 
-        public RelationIdentifierSerializer() {
+        public RelationIdentifierSerializerV1d0() {
             super(RelationIdentifier.class);
         }
 
@@ -91,8 +90,8 @@ public abstract class JanusGraphSONModule extends TinkerPopJacksonModule {
         }
     }
 
-    public static class RelationIdentifierDeserializer extends StdDeserializer<RelationIdentifier> {
-        public RelationIdentifierDeserializer() {
+    public static class RelationIdentifierDeserializerV1d0 extends StdDeserializer<RelationIdentifier> {
+        public RelationIdentifierDeserializerV1d0() {
             super(RelationIdentifier.class);
         }
 
@@ -102,6 +101,43 @@ public abstract class JanusGraphSONModule extends TinkerPopJacksonModule {
             jsonParser.nextToken();
             final Map<String, Object> mapData = deserializationContext.readValue(jsonParser, Map.class);
             return RelationIdentifier.parse((String) mapData.get(GraphSONTokens.VALUE));
+        }
+    }
+
+    public static class RelationIdentifierSerializerV2d0 extends StdSerializer<RelationIdentifier> {
+
+        public RelationIdentifierSerializerV2d0() {
+            super(RelationIdentifier.class);
+        }
+
+        @Override
+        public void serialize(final RelationIdentifier relationIdentifier, final JsonGenerator jsonGenerator,
+                              final SerializerProvider serializerProvider) throws IOException {
+            jsonGenerator.writeString(relationIdentifier.toString());
+        }
+
+        @Override
+        public void serializeWithType(final RelationIdentifier relationIdentifier, final JsonGenerator jsonGenerator,
+                                      final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException {
+
+            jsonGenerator.writeStartObject();
+            if (typeSerializer != null) jsonGenerator.writeStringField(GraphSONTokens.VALUETYPE, TYPE_NAMESPACE + ":" + TYPE_DEFINITIONS.get(RelationIdentifier.class));
+            jsonGenerator.writeFieldName(GraphSONTokens.VALUEPROP);
+            GraphSONUtil.writeStartObject(relationIdentifier, jsonGenerator, typeSerializer);
+            GraphSONUtil.writeWithType("relationId", relationIdentifier.toString(), jsonGenerator, serializerProvider, typeSerializer);
+            GraphSONUtil.writeEndObject(relationIdentifier, jsonGenerator, typeSerializer);
+            jsonGenerator.writeEndObject();
+        }
+    }
+
+    public static class RelationIdentifierDeserializerV2d0 extends AbstractObjectDeserializer<RelationIdentifier> {
+        public RelationIdentifierDeserializerV2d0() {
+            super(RelationIdentifier.class);
+        }
+
+        @Override
+        public RelationIdentifier createObject(Map data) {
+            return RelationIdentifier.parse((String) data.get("relationId"));
         }
     }
 }

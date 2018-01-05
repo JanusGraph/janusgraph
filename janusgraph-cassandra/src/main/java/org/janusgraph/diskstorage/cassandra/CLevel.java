@@ -16,6 +16,9 @@ package org.janusgraph.diskstorage.cassandra;
 
 import com.google.common.base.Preconditions;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 /**
  * This enum unites different libraries' consistency level enums, streamlining
  * configuration and processing in {@link AbstractCassandraStoreManager}.
@@ -36,7 +39,7 @@ public enum CLevel implements CLevelInterface { // One ring to rule them all
     private final org.apache.cassandra.thrift.ConsistencyLevel thrift;
     private final com.netflix.astyanax.model.ConsistencyLevel astyanax;
 
-    private CLevel() {
+    CLevel() {
         db = org.apache.cassandra.db.ConsistencyLevel.valueOf(toString());
         thrift = org.apache.cassandra.thrift.ConsistencyLevel.valueOf(toString());
         astyanax = com.netflix.astyanax.model.ConsistencyLevel.valueOf("CL_" + toString());
@@ -57,18 +60,26 @@ public enum CLevel implements CLevelInterface { // One ring to rule them all
         return astyanax;
     }
 
-    public static CLevel parse(String value) {
+    public static CLevel parse(final String value) {
         Preconditions.checkArgument(value != null && !value.isEmpty());
-        value = value.trim();
-        if (value.equals("1")) return ONE;
-        else if (value.equals("2")) return TWO;
-        else if (value.equals("3")) return THREE;
-        else {
-            for (CLevel c : values()) {
-                if (c.toString().equalsIgnoreCase(value) ||
-                    ("CL_" + c.toString()).equalsIgnoreCase(value)) return c;
-            }
+        final String trimmed = value.trim();
+        switch (trimmed) {
+            case "1":
+                return ONE;
+            case "2":
+                return TWO;
+            case "3":
+                return THREE;
+            default:
+                final Optional<CLevel> level = Arrays.stream(values())
+                    .filter(c -> c.toString().equalsIgnoreCase(trimmed)
+                            || ("CL_" + c.toString()).equalsIgnoreCase(trimmed))
+                    .findFirst();
+                if (level.isPresent()) {
+                    return level.get();
+                } else {
+                    throw new IllegalArgumentException("Unrecognized cassandra consistency level: " + value);
+                }
         }
-        throw new IllegalArgumentException("Unrecognized cassandra consistency level: " + value);
     }
 }

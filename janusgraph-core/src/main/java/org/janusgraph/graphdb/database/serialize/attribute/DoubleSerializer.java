@@ -30,9 +30,9 @@ public class DoubleSerializer implements OrderPreservingSerializer<Double> {
     @Override
     public Double convert(Object value) {
         if (value instanceof Number) {
-            return Double.valueOf(((Number) value).doubleValue());
+            return ((Number) value).doubleValue();
         } else if (value instanceof String) {
-            return Double.valueOf(Double.parseDouble((String) value));
+            return Double.parseDouble((String) value);
         } else return null;
     }
 
@@ -43,7 +43,7 @@ public class DoubleSerializer implements OrderPreservingSerializer<Double> {
 
     @Override
     public void write(WriteBuffer buffer, Double attribute) {
-        buffer.putDouble(attribute.doubleValue());
+        buffer.putDouble(attribute);
     }
 
     @Override

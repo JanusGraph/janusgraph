@@ -62,7 +62,7 @@ public class CassandraHadoopScanRunner extends AbstractHadoopScanRunner<Cassandr
                 String prefix = ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + ".";
                 hadoopConf.set(prefix + k, janusgraphConf.get(k, Object.class).toString());
                 log.debug("Set: {}={}", prefix + k,
-                        janusgraphConf.<Object>get(k, Object.class).toString());
+                        janusgraphConf.get(k, Object.class).toString());
             }
         }
 

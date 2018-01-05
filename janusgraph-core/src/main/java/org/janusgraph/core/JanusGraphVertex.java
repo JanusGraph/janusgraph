@@ -51,7 +51,7 @@ public interface JanusGraphVertex extends JanusGraphElement, Vertex {
      * @return new edge
      */
     @Override
-    public JanusGraphEdge addEdge(String label, Vertex vertex, Object... keyValues);
+    JanusGraphEdge addEdge(String label, Vertex vertex, Object... keyValues);
 
     /**
      * Creates a new property for this vertex and given key with the specified value.
@@ -68,16 +68,16 @@ public interface JanusGraphVertex extends JanusGraphElement, Vertex {
      * @throws IllegalArgumentException if the value does not match the data type of the property key.
      */
     @Override
-    public default<V> JanusGraphVertexProperty<V> property(String key, V value) {
+    default<V> JanusGraphVertexProperty<V> property(String key, V value) {
         return this.property(key, value, EMPTY_ARGS);
     }
 
     @Override
-    public <V> JanusGraphVertexProperty<V> property(final String key, final V value, final Object... keyValues);
+    <V> JanusGraphVertexProperty<V> property(final String key, final V value, final Object... keyValues);
 
 
     @Override
-    public <V> JanusGraphVertexProperty<V> property(final VertexProperty.Cardinality cardinality, final String key, final V value, final Object... keyValues);
+    <V> JanusGraphVertexProperty<V> property(final VertexProperty.Cardinality cardinality, final String key, final V value, final Object... keyValues);
 
      /* ---------------------------------------------------------------
       * Vertex Label
@@ -90,7 +90,7 @@ public interface JanusGraphVertex extends JanusGraphElement, Vertex {
      * @return
      */
     @Override
-    public default String label() {
+    default String label() {
         return vertexLabel().name();
     }
 
@@ -99,7 +99,7 @@ public interface JanusGraphVertex extends JanusGraphElement, Vertex {
      *
      * @return
      */
-    public VertexLabel vertexLabel();
+    VertexLabel vertexLabel();
 
 	/* ---------------------------------------------------------------
      * Incident JanusGraphRelation Access methods
@@ -114,14 +114,14 @@ public interface JanusGraphVertex extends JanusGraphElement, Vertex {
      * @return New JanusGraphQuery for this vertex
      * @see JanusGraphVertexQuery
      */
-    public JanusGraphVertexQuery<? extends JanusGraphVertexQuery> query();
+    JanusGraphVertexQuery<? extends JanusGraphVertexQuery> query();
 
     /**
      * Checks whether this entity has been loaded into the current transaction and modified.
      *
      * @return True, has been loaded and modified, else false.
      */
-    public boolean isModified();
+    boolean isModified();
 
 
 }

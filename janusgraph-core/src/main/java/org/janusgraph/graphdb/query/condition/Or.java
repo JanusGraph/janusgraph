@@ -38,7 +38,7 @@ public class Or<E extends JanusGraphElement> extends MultiCondition<E> {
 
     @Override
     public Or<E> clone() {
-        return new Or<E>(this);
+        return new Or<>(this);
     }
 
     @Override
@@ -60,7 +60,7 @@ public class Or<E extends JanusGraphElement> extends MultiCondition<E> {
     }
 
     public static <E extends JanusGraphElement> Or<E> of(Condition<E>... elements) {
-        return new Or<E>(elements);
+        return new Or<>(elements);
     }
 
 }

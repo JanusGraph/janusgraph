@@ -28,17 +28,17 @@ public class Token {
     public static final String systemETprefix = Graph.Hidden.hide("T$");
     public static final String NON_EXISTANT_TYPE = systemETprefix+"doesNotExist";
 
-    public static final String getSeparatedName(String... components) {
+    public static String getSeparatedName(String... components) {
         for (String component : components) verifyName(component);
         return StringUtils.join(components,SEPARATOR_CHAR);
     }
 
-    public static final void verifyName(String name) {
+    public static void verifyName(String name) {
         Preconditions.checkArgument(name.indexOf(Token.SEPARATOR_CHAR) < 0,
                 "Name can not contains reserved character %s: %s", Token.SEPARATOR_CHAR, name);
     }
 
-    public static final String[] splitSeparatedName(String name) {
+    public static String[] splitSeparatedName(String name) {
         return name.split(SEPARATOR_CHAR+"");
     }
 

@@ -45,7 +45,7 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
 
     private final List<HasContainer> hasContainers = new ArrayList<>();
     private int limit = BaseQuery.NO_LIMIT;
-    private List<OrderEntry> orders = new ArrayList<>();
+    private final List<OrderEntry> orders = new ArrayList<>();
     private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
 
 
@@ -110,10 +110,10 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
         this.addAll(Collections.singleton(hasContainer));
     }
 
-    private <E extends Element> Iterator<E> iteratorList(final Iterator<E> iterator) {
-        final List<E> list = new ArrayList<E>();
+    private <A extends Element> Iterator<A> iteratorList(final Iterator<A> iterator) {
+        final List<A> list = new ArrayList<>();
         while (iterator.hasNext()) {
-            final E e = iterator.next();
+            final A e = iterator.next();
             if (HasContainer.testAll(e, this.hasContainers))
                 list.add(e);
         }

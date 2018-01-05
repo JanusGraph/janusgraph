@@ -70,7 +70,7 @@ There are several example configuration files in the `conf/` directory that can 
 [source, java]
 ----
 // Connect to Cassandra on localhost using a default configuration
-graph = JanusGraphFactory.open("conf/janusgraph-cassandra.properties")
+graph = JanusGraphFactory.open("conf/gremlin-server/http-janusgraph-hbase-server.properties")
 // Connect to HBase on localhost using a default configuration
 graph = JanusGraphFactory.open("conf/janusgraph-hbase.properties")
 ----
@@ -635,22 +635,113 @@ bin/gremlin-server.sh ./conf/gremlin-server/http-gremlin-server.yaml
 curl -XPOST -Hcontent-type:application/json -d '{"gremlin":"g.V().count()"}' http://[IP for JanusGraph server host]:8182
 ```
 
+=== JanusGraph Server as Both a WebSocket and HTTP Endpoint
+
+As of JanusGraph 0.2.0, you can configure your gremlin-server.yaml to accept both WebSocket and HTTP connections over the same port. This can be achieved by changing the channelizer in any of the previous examples as follows.
+
+```
+channelizer: org.apache.tinkerpop.gremlin.server.channel.WsAndHttpChannelizer
+```
+
 === Advanced JanusGraph Server Configurations
 
-==== WebSocket versus HTTP
+==== Authentication over HTTP
 
-JanusGraph Server must be run with a configuration for either WebSocket (for Gremlin Console or other WebSocket programs) or re-configured for HTTP to work with HTTP clients.
+IMPORTANT: In the following example, credentialsDb should be different from the graph(s) you are using. It should be configured with the correct backend and a different keyspace, table, or storage directory as appropriate for the configured backend. This graph will be used for storing usernames and passwords.
 
-Currently, there is no way to configure a single running instance of JanusGraph Server to communicate simultaneously with clients talking WebSocket and HTTP.
-However, it is possible to create configuration files (following the steps in this chapter) for both WebSocket and HTTP and start two instances of the JanusGraph Server by pointing it to the various configurations when it is started.
-In this way, the same JanusGraph database instance can be reached through different JanusGraph Servers through both WebSocket and HTTP calls.
-Make sure the port parameter in each yaml configuration is different if starting more than one JanusGraph Server on the same machine:
+===== HTTP Basic authentication
+To enable Basic authentication in JanusGraph Server include the following configuration in your gremlin-server.yaml.
 
 ```
-port: 8182
+ authentication: {
+   authenticator: org.janusgraph.graphdb.tinkerpop.gremlin.server.auth.JanusGraphSimpleAuthenticator,
+   authenticationHandler: org.apache.tinkerpop.gremlin.server.handler.HttpBasicAuthenticationHandler,
+   config: {
+     defaultUsername: user,
+     defaultPassword: password,
+     credentialsDb: conf/janusgraph-credentials-server.properties
+    }
+ }
 ```
 
-In the future, the option to have one running instance of JanusGraph Server supporting multiple protocols may be possible.
+Verify that basic authentication is configured correctly. For example
+
+```
+curl -v -XPOST http://localhost:8182 -d '{"gremlin": "g.V().count()"}'
+```
+
+should return a 401 if the authentication is configured correctly and
+
+```
+curl -v -XPOST http://localhost:8182 -d '{"gremlin": "g.V().count()"}' -u user:password
+```
+should return a 200 and the result of 4 if authentication is configured correctly.
+
+==== Authentication over WebSocket
+Authentication over WebSocket occurs through a Simple Authentication and Security Layer (https://en.wikipedia.org/wiki/Simple_Authentication_and_Security_Layer[SASL]) mechanism.
+
+
+To enable SASL authentication include the following configuration in the gremlin-server.yaml
+
+```
+authentication: {
+  authenticator: org.janusgraph.graphdb.tinkerpop.gremlin.server.auth.JanusGraphSimpleAuthenticator,
+  authenticationHandler: org.apache.tinkerpop.gremlin.server.handler.SaslAuthenticationHandler,
+  config: {
+    defaultUsername: user,
+    defaultPassword: password,
+    credentialsDb: conf/janusgraph-credentials-server.properties
+  }
+}
+```
+
+IMPORTANT: In the preceding example, credentialsDb should be different from the graph(s) you are using. It should be configured with the correct backend and a different keyspace, table, or storage directory as appropriate for the configured backend. This graph will be used for storing usernames and passwords.
+
+If you are connecting through the gremlin console, your remote yaml file should ammend the `username` and `password` properties with the appropriate values.
+
+```
+username: user
+password: password
+```
+
+==== Authentication over HTTP and WebSocket
+If you are using the combined channelizer for both HTTP and WebSocket you can use the SaslAndHMACAuthenticator to authorize through either WebSocket through SASL, HTTP through basic auth, and HTTP through hash-based messsage authentication code (https://en.wikipedia.org/wiki/Hash-based_message_authentication_code[HMAC]) Auth. HMAC is a token based authentication designed to be used over HTTP. You first acquire a token via the `/session` endpoint and then use that to authenticate. It is used to amortize the time spent encrypting the password using basic auth.
+
+The gremlin-server.yaml should include the following configurations
+
+```
+authentication: {
+  authenticator: org.janusgraph.graphdb.tinkerpop.gremlin.server.auth.SaslAndHMACAuthenticator,
+  authenticationHandler: org.janusgraph.graphdb.tinkerpop.gremlin.server.handler.SaslAndHMACAuthenticationHandler,
+  config: {
+    defaultUsername: user,
+    defaultPassword: password,
+    hmacSecret: secret,
+    credentialsDb: conf/janusgraph-credentials-server.properties
+  }
+}
+```
+
+IMPORTANT: In the preceding example, credentialsDb should be different from the graph(s) you are using. It should be configured with the correct backend and a different keyspace, table, or storage directory as appropriate for the configured backend. This graph will be used for storing usernames and passwords.
+
+IMPORTANT: Note the hmacSecret here. This should be the same across all running JanusGraph servers if you want to be able to use the same HMAC token on each server.
+
+For HMAC authentication over HTTP, this creates a `/session` endpoint that provides a token that expires after an hour by default. This timeout for the token can be configured through the `tokenTimeout` configuration option in the `authentication.config` map. This value is a Long value and in milliseconds.
+
+You can obtain the token using curl by issuing a get request to the `/session` endpoint. For example
+
+```
+curl http://localhost:8182/session -XGET -u user:password
+
+{"token": "dXNlcjoxNTA5NTQ2NjI0NDUzOkhrclhYaGhRVG9KTnVSRXJ5U2VpdndhalJRcVBtWEpSMzh5WldqRTM4MW89"}
+```
+
+You can then use that token for authentication by using the "Authorization: Token" header. For example
+
+```
+curl -v http://localhost:8182/session -XPOST -d '{"gremlin": "g.V().count()"}' -H "Authorization: Token dXNlcjoxNTA5NTQ2NjI0NDUzOkhrclhYaGhRVG9KTnVSRXJ5U2VpdndhalJRcVBtWEpSMzh5WldqRTM4MW89"
+```
+
 
 [[gremlin-server-with-janusgraph]]
 ==== Using TinkerPop Gremlin Server with JanusGraph

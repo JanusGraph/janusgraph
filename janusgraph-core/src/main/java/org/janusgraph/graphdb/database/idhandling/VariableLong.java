@@ -32,7 +32,7 @@ public class VariableLong {
     }
 
     public static byte unsignedByte(int value) {
-        Preconditions.checkArgument(value>=0 && value<256,"Value overflow: %s",value);
+        Preconditions.checkArgument(value >= 0 && value < 256,"Value overflow: %s", value);
         return (byte)(value & 0xFF);
     }
 
@@ -161,26 +161,26 @@ public class VariableLong {
         assert prefixBitLen > 0 && prefixBitLen < 6 && (prefix < (1L << prefixBitLen));
         //Write first byte
         int deltaLen = 8 - prefixBitLen;
-        byte first = (byte)(prefix<<deltaLen);
+        byte first = (byte)(prefix << deltaLen);
         int valueLen = unsignedBitLength(value);
-        int mod = valueLen%7;
-        if (mod<=(deltaLen-1)) {
-            int offset = (valueLen-mod);
+        int mod = valueLen % 7;
+        if (mod <= (deltaLen - 1)) {
+            int offset = (valueLen - mod);
             first = (byte)(first | (value >>> offset));
-            value = value & ((1l<<offset)-1);
+            value = value & ((1L << offset) - 1);
             valueLen -= mod;
         } else {
-            valueLen += (7-mod);
+            valueLen += (7 - mod);
         }
-        assert valueLen>=0;
-        if (valueLen>0) {
+        assert valueLen >= 0;
+        if (valueLen > 0) {
             //Add continue mask to indicate reading further
-            first = (byte) ( first | (1<<(deltaLen-1)));
+            first = (byte) ( first | (1 << (deltaLen - 1)));
         }
         out.putByte(first);
-        if (valueLen>0) {
+        if (valueLen > 0) {
             //Keep writing
-            writeUnsigned(out,valueLen,value);
+            writeUnsigned(out, valueLen, value);
         }
     }
 
@@ -195,14 +195,14 @@ public class VariableLong {
 
         int first = unsignedByte(in.getByte());
         int deltaLen = 8 - prefixBitLen;
-        long prefix = first>>deltaLen;
-        long value =  first & ((1<<(deltaLen-1))-1);
-        if ( ((first>>>(deltaLen-1)) & 1) == 1) { //Continue mask
+        long prefix = first >> deltaLen;
+        long value =  first & ((1 << (deltaLen - 1)) - 1);
+        if ( ((first >>> (deltaLen-1)) & 1) == 1) { //Continue mask
             int deltaPos = in.getPosition();
             long remainder = readUnsigned(in);
             deltaPos = in.getPosition()-deltaPos;
             assert deltaPos > 0;
-            value = (value<<(deltaPos*7)) + remainder;
+            value = (value << (deltaPos * 7)) + remainder;
         }
         return new long[]{value, prefix};
     }
@@ -246,7 +246,7 @@ public class VariableLong {
 
     /**
      * The format used is this:
-     * - The first bit indicates whether this is the first block (reading backwards, this would be the stopping criterion)
+     * - The first bit indicates whether this is the first block (reading backwards, this would be the stop criterion)
      * - In the first byte, the 3 bits after the first bit indicate the number of bytes written minus 3 (since 3 is
      * the minimum number of bytes written. So, if the 3 bits are 010 = 2 => 5 bytes written. The value is aligned to
      * the left to ensure that this encoding is byte order preserving.
@@ -255,23 +255,22 @@ public class VariableLong {
      * @param value
      */
     private static void writeUnsignedBackward(WriteBuffer out, final long value) {
-        int numBytes= unsignedBackwardLength(value);
-        int prefixLen = numBytes-3;
-        assert prefixLen>=0 && prefixLen<8; //Consumes 3 bits
+        int numBytes = unsignedBackwardLength(value);
+        int prefixLen = numBytes - 3;
+        assert prefixLen >= 0 && prefixLen < 8; //Consumes 3 bits
         //Prepare first byte
-        byte b = (byte)((prefixLen<<4) | 0x80); //stop marker (first bit) and length
-        for (int i=numBytes-1; i>=0; i--) {
-            b = (byte)(b | (0x7F & (value>>>(i*7))));
+        byte b = (byte)((prefixLen << 4) | 0x80); //stop marker (first bit) and length
+        for (int i = numBytes - 1; i >= 0; i--) {
+            b = (byte)(b | (0x7F & (value >>> (i * 7))));
             out.putByte(b);
-            b=0;
+            b = 0;
         }
     }
 
     private static int unsignedBackwardLength(final long value) {
-        int bitlength = unsignedBitLength(value);
-        assert bitlength>0 && bitlength<=64;
-        int numBytes= Math.max(3,1+(bitlength<=4?0:(1+(bitlength-5)/7)));
-        return numBytes;
+        int bitLength = unsignedBitLength(value);
+        assert bitLength > 0 && bitLength <= 64;
+        return Math.max(3, 1 + (bitLength <= 4 ? 0 : (1 + (bitLength - 5) / 7)));
     }
 
     private static long readUnsignedBackward(ReadBuffer in) {
@@ -282,12 +281,12 @@ public class VariableLong {
         while (true) {
             position--;
             b = in.getByte(position);
-            if (b<0) { //First byte
-                value = value | ((b & 0x0F)<<(7*numBytes));
-                assert ((b>>>4)&7)+3 == numBytes+1 : b + " vs " + numBytes; //verify correct length
+            if (b < 0) { //First byte
+                value = value | ((b & 0x0F)<<(7 * numBytes));
+                assert ((b >>> 4) & 7) + 3 == numBytes + 1 : b + " vs " + numBytes; //verify correct length
                 break;
             }
-            value = value | (b<<(7*numBytes));
+            value = value | (b << (7 * numBytes));
             numBytes++;
         }
         in.movePositionTo(position);

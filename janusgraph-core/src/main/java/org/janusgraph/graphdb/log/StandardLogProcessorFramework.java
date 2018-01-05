@@ -67,7 +67,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         this.graph = graph;
         this.serializer = graph.getDataSerializer();
         this.times = graph.getConfiguration().getTimestampProvider();
-        this.processorLogs = new HashMap<String, Log>();
+        this.processorLogs = new HashMap<>();
     }
 
     private void checkOpen() {
@@ -93,18 +93,14 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         if (!isOpen) return;
         isOpen = false;
         try {
-            try {
-                for (Log log : processorLogs.values()) {
-                    log.close();
-                }
-                processorLogs.clear();
-            } finally {
+            for (Log log : processorLogs.values()) {
+                log.close();
             }
+            processorLogs.clear();
         } catch (BackendException e) {
             throw new JanusGraphException(e);
         }
     }
-
 
     @Override
     public LogProcessorBuilder addLogProcessor(String logIdentifier) {
@@ -124,7 +120,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         private Builder(String userLogName) {
             Preconditions.checkArgument(StringUtils.isNotBlank(userLogName));
             this.userLogName = userLogName;
-            this.processors = new ArrayList<ChangeProcessor>();
+            this.processors = new ArrayList<>();
         }
 
         @Override
@@ -209,9 +205,9 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
             this.retryAttempts = retryAttempts;
         }
 
-        private void readRelations(TransactionLogHeader.Entry txentry,
+        private void readRelations(TransactionLogHeader.Entry transactionEntry,
                                    StandardJanusGraphTx tx, StandardChangeState changes) {
-            for (TransactionLogHeader.Modification modification : txentry.getContentAsModifications(serializer)) {
+            for (TransactionLogHeader.Modification modification : transactionEntry.getContentAsModifications(serializer)) {
                 InternalRelation rel = ModificationDeserializer.parseRelation(modification,tx);
 
                 //Special case for vertex addition/removal
@@ -232,17 +228,17 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
             for (int i=1;i<=retryAttempts;i++) {
                 StandardJanusGraphTx tx = (StandardJanusGraphTx)graph.newTransaction();
                 StandardChangeState changes = new StandardChangeState();
-                StandardTransactionId transactionId = null;
+                final StandardTransactionId transactionId;
                 try {
                     ReadBuffer content = message.getContent().asReadBuffer();
                     String senderId =  message.getSenderId();
-                    TransactionLogHeader.Entry txentry = TransactionLogHeader.parse(content, serializer, times);
-                    if (txentry.getMetadata().containsKey(LogTxMeta.SOURCE_TRANSACTION)) {
-                        transactionId = (StandardTransactionId)txentry.getMetadata().get(LogTxMeta.SOURCE_TRANSACTION);
+                    TransactionLogHeader.Entry transactionEntry = TransactionLogHeader.parse(content, serializer, times);
+                    if (transactionEntry.getMetadata().containsKey(LogTxMeta.SOURCE_TRANSACTION)) {
+                        transactionId = (StandardTransactionId)transactionEntry.getMetadata().get(LogTxMeta.SOURCE_TRANSACTION);
                     } else {
-                        transactionId = new StandardTransactionId(senderId,txentry.getHeader().getId(), txentry.getHeader().getTimestamp());
+                        transactionId = new StandardTransactionId(senderId,transactionEntry.getHeader().getId(), transactionEntry.getHeader().getTimestamp());
                     }
-                    readRelations(txentry,tx,changes);
+                    readRelations(transactionEntry,tx,changes);
                 } catch (Throwable e) {
                     tx.rollback();
                     logger.error("Encountered exception [{}] when preparing processor [{}] for user log [{}] on attempt {} of {}",

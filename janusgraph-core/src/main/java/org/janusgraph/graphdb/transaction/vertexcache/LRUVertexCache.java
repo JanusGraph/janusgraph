@@ -30,22 +30,20 @@ public class LRUVertexCache implements VertexCache {
     private final ConcurrentLRUCache<InternalVertex> cache;
 
     public LRUVertexCache(int capacity) {
-        volatileVertices = new NonBlockingHashMapLong<InternalVertex>();
-        cache = new ConcurrentLRUCache<InternalVertex>(capacity * 2, // upper is double capacity
-                capacity + capacity / 3, // lower is capacity + 1/3
-                capacity, // acceptable watermark is capacity
-                100, true, false, // 100 items initial size + use only one thread for items cleanup
-                new ConcurrentLRUCache.EvictionListener<InternalVertex>() {
-                    @Override
-                    public void evictedEntry(Long vertexId, InternalVertex vertex) {
-                        if (vertexId == null || vertex == null)
-                            return;
+        volatileVertices = new NonBlockingHashMapLong<>();
+        cache = new ConcurrentLRUCache<>(capacity * 2, // upper is double capacity
+            capacity + capacity / 3, // lower is capacity + 1/3
+            capacity, // acceptable watermark is capacity
+            100, true, false, // 100 items initial size + use only one thread for items cleanup
+            (vertexId, vertex) -> {
+                if (vertexId == null || vertex == null) {
+                    return;
+                }
 
-                        if (vertex.isModified()) {
-                            volatileVertices.putIfAbsent(vertexId, vertex);
-                        }
-                    }
-                });
+                if (vertex.isModified()) {
+                    volatileVertices.putIfAbsent(vertexId, vertex);
+                }
+            });
 
         cache.setAlive(true); //need counters to its actually LRU
     }
@@ -90,7 +88,7 @@ public class LRUVertexCache implements VertexCache {
 
     @Override
     public List<InternalVertex> getAllNew() {
-        List<InternalVertex> vertices = new ArrayList<InternalVertex>(10);
+        final List<InternalVertex> vertices = new ArrayList<>(10);
         for (InternalVertex v : volatileVertices.values()) {
             if (v.isNew()) vertices.add(v);
         }

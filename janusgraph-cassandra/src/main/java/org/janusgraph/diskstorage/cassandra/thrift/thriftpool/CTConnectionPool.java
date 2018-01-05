@@ -63,15 +63,11 @@ public class CTConnectionPool extends GenericKeyedObjectPool<String, CTConnectio
      * @param conn The pooled object being returned, or null to do nothing
      */
     public void returnObjectUnsafe(String keyspace, CTConnection conn) {
-        if (conn != null && conn.isOpen()) {
-            try {
-                returnObject(keyspace, conn);
-            } catch (Exception e) {
-                log.warn("Failed to return Cassandra connection to pool", e);
-                log.warn(
-                        "Failure context: keyspace={}, pool={}, connection={}",
-                        new Object[] { keyspace, this, conn });
-            }
+        if (conn != null && conn.isOpen()) try {
+            returnObject(keyspace, conn);
+        } catch (Exception e) {
+            log.warn("Failed to return Cassandra connection to pool", e);
+            log.warn("Failure context: keyspace={}, pool={}, connection={}", keyspace, this, conn);
         }
     }
 }

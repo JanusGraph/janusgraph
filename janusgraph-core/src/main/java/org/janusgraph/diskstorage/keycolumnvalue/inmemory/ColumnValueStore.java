@@ -134,68 +134,70 @@ class ColumnValueStore {
         Lock lock = getLock(txh);
         lock.lock();
         try {
-            Entry[] olddata = data.array;
-            int oldsize = data.size;
-            Entry[] newdata = new Entry[oldsize + add.length];
+            Entry[] oldData = data.array;
+            int oldSize = data.size;
+            Entry[] newData = new Entry[oldSize + add.length];
 
             //Merge sort
-            int i = 0, iold = 0, iadd = 0, idel = 0;
-            while (iold < oldsize) {
-                Entry e = olddata[iold];
-                iold++;
+            int i = 0, indexOld = 0, indexAdd = 0, indexDelete = 0;
+            while (indexOld < oldSize) {
+                Entry e = oldData[indexOld];
+                indexOld++;
                 //Compare with additions
-                if (iadd < add.length) {
-                    int compare = e.compareTo(add[iadd]);
+                if (indexAdd < add.length) {
+                    int compare = e.compareTo(add[indexAdd]);
                     if (compare >= 0) {
-                        e = add[iadd];
-                        iadd++;
+                        e = add[indexAdd];
+                        indexAdd++;
                         //Skip duplicates
-                        while (iadd < add.length && e.equals(add[iadd])) iadd++;
+                        while (indexAdd < add.length && e.equals(add[indexAdd])) indexAdd++;
                     }
-                    if (compare > 0) iold--;
+                    if (compare > 0) indexOld--;
                 }
                 //Compare with deletions
-                if (idel < del.length) {
-                    int compare = e.compareTo(del[idel]);
+                if (indexDelete < del.length) {
+                    int compare = e.compareTo(del[indexDelete]);
                     if (compare == 0) e = null;
-                    if (compare >= 0) idel++;
+                    if (compare >= 0) indexDelete++;
                 }
                 if (e != null) {
-                    newdata[i] = e;
+                    newData[i] = e;
                     i++;
                 }
             }
-            while (iadd < add.length) {
-                newdata[i] = add[iadd];
+            while (indexAdd < add.length) {
+                newData[i] = add[indexAdd];
                 i++;
-                iadd++;
+                indexAdd++;
             }
 
-            if (i * 1.0 / newdata.length < SIZE_THRESHOLD) {
+            if (i * 1.0 / newData.length < SIZE_THRESHOLD) {
                 //shrink array to free space
-                Entry[] tmpdata = newdata;
-                newdata = new Entry[i];
-                System.arraycopy(tmpdata, 0, newdata, 0, i);
+                Entry[] tempData = newData;
+                newData = new Entry[i];
+                System.arraycopy(tempData, 0, newData, 0, i);
             }
-            data = new Data(newdata, i);
+            data = new Data(newData, i);
         } finally {
             lock.unlock();
         }
     }
 
-    private ReentrantLock lock = null;
+    private volatile ReentrantLock lock = null;
 
     private Lock getLock(StoreTransaction txh) {
         Boolean txOn = txh.getConfiguration().getCustomOption(STORAGE_TRANSACTIONAL);
         if (null != txOn && txOn) {
-            if (lock == null) {
+            ReentrantLock result = lock;
+            if (result == null) {
                 synchronized (this) {
-                    if (lock == null) {
-                        lock = new ReentrantLock();
+                    result = lock;
+                    if (result == null) {
+                        lock = result = new ReentrantLock();
                     }
                 }
             }
-            return lock;
+            return result;
         } else return NoLock.INSTANCE;
     }
 

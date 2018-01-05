@@ -43,7 +43,7 @@ public class JanusGraphId {
      * @return a corresponding JanusGraph vertex id
      * @deprecated Use {@link org.janusgraph.graphdb.idmanagement.IDManager#toVertexId(long)}.
      */
-    public static final long toVertexId(long id) {
+    public static long toVertexId(long id) {
         Preconditions.checkArgument(id > 0, "Vertex id must be positive: %s", id);
         Preconditions.checkArgument(IDManager.VertexIDType.NormalVertex.removePadding(Long.MAX_VALUE) >= id, "Vertex id is too large: %s", id);
         return IDManager.VertexIDType.NormalVertex.addPadding(id);
@@ -56,7 +56,7 @@ public class JanusGraphId {
      * @return original user provided id
      * @deprecated Use {@link org.janusgraph.graphdb.idmanagement.IDManager#fromVertexId(long)}
      */
-    public static final long fromVertexId(long id) {
+    public static long fromVertexId(long id) {
         Preconditions.checkArgument(id > 0, "Invalid vertex id provided: %s", id);
         return IDManager.VertexIDType.NormalVertex.removePadding(id);
     }
@@ -68,7 +68,7 @@ public class JanusGraphId {
      * @return original user provided id
      * @deprecated Use {@link org.janusgraph.graphdb.idmanagement.IDManager#fromVertexId(long)}
      */
-    public static final long fromVertexID(JanusGraphVertex v) {
+    public static long fromVertexID(JanusGraphVertex v) {
         Preconditions.checkArgument(v.hasId(), "Invalid vertex provided: %s", v);
         return fromVertexId(v.longId());
     }

@@ -33,7 +33,7 @@ public class SimpleBufferAddedRelations implements AddedRelationsContainer {
     private List<InternalRelation> deleted;
 
     public SimpleBufferAddedRelations() {
-        added = new ArrayList<InternalRelation>(INITIAL_ADDED_SIZE);
+        added = new ArrayList<>(INITIAL_ADDED_SIZE);
         deleted = null;
     }
 
@@ -45,7 +45,7 @@ public class SimpleBufferAddedRelations implements AddedRelationsContainer {
     @Override
     public boolean remove(InternalRelation relation) {
         if (added.isEmpty()) return false;
-        if (deleted==null) deleted = new ArrayList<InternalRelation>(INITIAL_DELETED_SIZE);
+        if (deleted==null) deleted = new ArrayList<>(INITIAL_DELETED_SIZE);
         boolean del = deleted.add(relation);
         if (deleted.size()>MAX_DELETED_SIZE) cleanup();
         return del;
@@ -59,19 +59,19 @@ public class SimpleBufferAddedRelations implements AddedRelationsContainer {
 
     private void cleanup() {
         if (deleted==null || deleted.isEmpty()) return;
-        Set<InternalRelation> deletedSet = new HashSet<InternalRelation>(deleted);
+        final Set<InternalRelation> deletedSet = new HashSet<>(deleted);
         deleted=null;
-        List<InternalRelation> newadded = new ArrayList<InternalRelation>(added.size()-deletedSet.size()/2);
+        final List<InternalRelation> newlyAdded = new ArrayList<>(added.size()-deletedSet.size()/2);
         for (InternalRelation r : added) {
-            if (!deletedSet.contains(r)) newadded.add(r);
+            if (!deletedSet.contains(r)) newlyAdded.add(r);
         }
-        added=newadded;
+        added=newlyAdded;
     }
 
     @Override
     public List<InternalRelation> getView(Predicate<InternalRelation> filter) {
         cleanup();
-        List<InternalRelation> result = new ArrayList<InternalRelation>();
+        final List<InternalRelation> result = new ArrayList<>();
         for (InternalRelation r : added) {
             if (filter.apply(r)) result.add(r);
         }

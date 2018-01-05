@@ -55,7 +55,7 @@ public class VertexIDAssigner implements AutoCloseable {
 
     private static final int MAX_PARTITION_RENEW_ATTEMPTS = 1000;
 
-    public static final ConfigOption<String> PLACEMENT_STRATEGY = new ConfigOption<String>(IDS_NS,"placement",
+    public static final ConfigOption<String> PLACEMENT_STRATEGY = new ConfigOption<>(IDS_NS, "placement",
             "Name of the vertex placement strategy or full class name", ConfigOption.Type.MASKABLE, "simple");
 
     private static final Map<String,String> REGISTERED_PLACEMENT_STRATEGIES = ImmutableMap.of(
@@ -100,7 +100,7 @@ public class VertexIDAssigner implements AutoCloseable {
         renewTimeoutMS = config.get(IDS_RENEW_TIMEOUT);
         renewBufferPercentage = config.get(IDS_RENEW_BUFFER_PERCENTAGE);
 
-        idPools = new ConcurrentHashMap<Integer, PartitionIDPool>(partitionIdBound);
+        idPools = new ConcurrentHashMap<>(partitionIdBound);
         schemaIdPool = new StandardIDPool(idAuthority, IDManager.SCHEMA_PARTITION, PoolType.SCHEMA.getIDNamespace(),
                 IDManager.getSchemaCountBound(), renewTimeoutMS, renewBufferPercentage);
         partitionVertexIdPool = new StandardIDPool(idAuthority, IDManager.PARTITIONED_VERTEX_PARTITION, PoolType.PARTITIONED_VERTEX.getIDNamespace(),
@@ -185,13 +185,13 @@ public class VertexIDAssigner implements AutoCloseable {
             }
             assert element.hasId();
 
-            /**
-             * The next block of code checks the added the relation for partitioned vertices as either end point. If such exists,
-             * we might have to assign the relation to a different representative of that partitioned vertex using the following logic:
-             * 1) Properties are always assigned to the canonical representative
-             * 2) Edges are assigned to the partition block of the non-partitioned vertex
-             *  2a) unless the edge is unique in the direction away from the partitioned vertex in which case its assigned to the canonical representative
-             *  2b) if both end vertices are partitioned, it is assigned to the partition to which the edge id hashes
+            /*
+              The next block of code checks the added the relation for partitioned vertices as either end point. If such exists,
+              we might have to assign the relation to a different representative of that partitioned vertex using the following logic:
+              1) Properties are always assigned to the canonical representative
+              2) Edges are assigned to the partition block of the non-partitioned vertex
+               2a) unless the edge is unique in the direction away from the partitioned vertex in which case its assigned to the canonical representative
+               2b) if both end vertices are partitioned, it is assigned to the partition to which the edge id hashes
              */
             //Check if we should assign a different representative of a potential partitioned vertex
             if (element instanceof InternalRelation) {
@@ -205,13 +205,13 @@ public class VertexIDAssigner implements AutoCloseable {
                         if (isPartitionedAt(relation, pos)) {
                             InternalVertex incident = relation.getVertex(pos);
                             long newPartition;
-                            int otherpos = (pos+1)%2;
+                            int otherPosition = (pos+1)%2;
                             if (((InternalRelationType)relation.getType()).multiplicity().isUnique(EdgeDirection.fromPosition(pos))) {
                                 //If the relation is unique in the direction, we assign it to the canonical vertex...
                                 newPartition = idManager.getPartitionId(idManager.getCanonicalVertexId(incident.longId()));
-                            } else if (!isPartitionedAt(relation,otherpos)) {
+                            } else if (!isPartitionedAt(relation,otherPosition)) {
                                 //...else, we assign it to the partition of the non-partitioned vertex...
-                                newPartition = getPartitionID(relation.getVertex(otherpos));
+                                newPartition = getPartitionID(relation.getVertex(otherPosition));
                             } else {
                                 //...and if such does not exists (i.e. both end vertices are partitioned) we use the hash of the relation id
                                 newPartition = idManager.getPartitionHashForId(relation.longId());
@@ -228,7 +228,7 @@ public class VertexIDAssigner implements AutoCloseable {
         throw new IDPoolExhaustedException("Could not find non-exhausted partition ID Pool after " + MAX_PARTITION_RENEW_ATTEMPTS + " attempts");
     }
 
-    private final boolean isPartitionedAt(InternalRelation relation, int position) {
+    private boolean isPartitionedAt(InternalRelation relation, int position) {
         return idManager.isPartitionedVertex(relation.getVertex(position).longId());
     }
 
@@ -245,7 +245,7 @@ public class VertexIDAssigner implements AutoCloseable {
             }
         } else {
             //2) only assign ids to (user) vertices
-            Map<InternalVertex, PartitionAssignment> assignments = new HashMap<InternalVertex, PartitionAssignment>();
+            Map<InternalVertex, PartitionAssignment> assignments = new HashMap<>();
             for (InternalRelation relation : addedRelations) {
                 for (int i = 0; i < relation.getArity(); i++) {
                     InternalVertex vertex = relation.getVertex(i);
@@ -262,20 +262,20 @@ public class VertexIDAssigner implements AutoCloseable {
             for (int attempt = 0; attempt < MAX_PARTITION_RENEW_ATTEMPTS && (assignments != null && !assignments.isEmpty()); attempt++) {
                 placementStrategy.getPartitions(assignments);
                 Map<InternalVertex, PartitionAssignment> leftOvers = null;
-                Iterator<Map.Entry<InternalVertex, PartitionAssignment>> iter = assignments.entrySet().iterator();
-                while (iter.hasNext()) {
-                    Map.Entry<InternalVertex, PartitionAssignment> entry = iter.next();
+                Iterator<Map.Entry<InternalVertex, PartitionAssignment>> iterator = assignments.entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Map.Entry<InternalVertex, PartitionAssignment> entry = iterator.next();
                     try {
                         assignID(entry.getKey(), entry.getValue().getPartitionID(), getVertexIDType(entry.getKey()));
                         Preconditions.checkArgument(entry.getKey().hasId());
                     } catch (IDPoolExhaustedException e) {
-                        if (leftOvers == null) leftOvers = new HashMap<InternalVertex, PartitionAssignment>();
+                        if (leftOvers == null) leftOvers = new HashMap<>();
                         leftOvers.put(entry.getKey(), PartitionAssignment.EMPTY);
                         break;
                     }
                 }
                 if (leftOvers != null) {
-                    while (iter.hasNext()) leftOvers.put(iter.next().getKey(), PartitionAssignment.EMPTY);
+                    while (iterator.hasNext()) leftOvers.put(iterator.next().getKey(), PartitionAssignment.EMPTY);
                     log.debug("Exhausted ID Pool in bulk assignment. Left-over vertices {}", leftOvers.size());
                 }
                 assignments = leftOvers;
@@ -289,7 +289,7 @@ public class VertexIDAssigner implements AutoCloseable {
         }
     }
 
-    private final long getPartitionID(final InternalVertex v) {
+    private long getPartitionID(final InternalVertex v) {
         long vid = v.longId();
         if (IDManager.VertexIDType.Schema.is(vid)) return IDManager.SCHEMA_PARTITION;
         else return idManager.getPartitionId(vid);
@@ -359,10 +359,10 @@ public class VertexIDAssigner implements AutoCloseable {
         element.setId(elementId);
     }
 
-    private static IDManager.VertexIDType getVertexIDType(VertexLabel vlabel) {
-        if (vlabel.isPartitioned()) {
+    private static IDManager.VertexIDType getVertexIDType(VertexLabel vertexLabel) {
+        if (vertexLabel.isPartitioned()) {
             return IDManager.VertexIDType.PartitionedVertex;
-        } else if (vlabel.isStatic()) {
+        } else if (vertexLabel.isStatic()) {
             return IDManager.VertexIDType.UnmodifiableVertex;
         } else {
             return IDManager.VertexIDType.NormalVertex;

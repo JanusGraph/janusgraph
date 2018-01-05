@@ -25,9 +25,8 @@ import static org.janusgraph.graphdb.management.JanusGraphManager.JANUS_GRAPH_MA
 
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.MapConfiguration;
-import org.apache.commons.configuration.ConfigurationException;
+
 import com.google.common.base.Preconditions;
 
 import java.util.Map;
@@ -35,7 +34,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.io.IOException;
 
 /**
  * This class provides static methods to: 1) create graph references denoted by a

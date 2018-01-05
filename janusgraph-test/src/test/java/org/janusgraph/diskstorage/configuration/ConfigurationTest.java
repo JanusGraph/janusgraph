@@ -14,14 +14,14 @@
 
 package org.janusgraph.diskstorage.configuration;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import org.janusgraph.core.util.ReflectiveConfigOptionLoader;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.junit.Test;
+
+import java.util.stream.StreamSupport;
 
 import static org.junit.Assert.*;
 
@@ -37,26 +37,26 @@ public class ConfigurationTest {
         ConfigNamespace indexes = new ConfigNamespace(root,"indexes","Index definitions",true);
         ConfigNamespace storage = new ConfigNamespace(root,"storage","Storage definitions");
         ConfigNamespace special = new ConfigNamespace(storage,"special","Special storage definitions");
-        ConfigOption<String[]> hostnames = new ConfigOption<String[]>(storage,"hostname","Storage backend hostname",
+        ConfigOption<String[]> hostnames = new ConfigOption<>(storage, "hostname", "Storage backend hostname",
                 ConfigOption.Type.LOCAL, String[].class);
-        ConfigOption<Boolean> partition = new ConfigOption<Boolean>(storage,"partition","whether to enable partition",
+        ConfigOption<Boolean> partition = new ConfigOption<>(storage, "partition", "whether to enable partition",
                 ConfigOption.Type.MASKABLE, false);
-        ConfigOption<Long> locktime = new ConfigOption<Long>(storage,"locktime","how long to lock",
-                ConfigOption.Type.FIXED, 500l);
-        ConfigOption<Byte> bits = new ConfigOption<Byte>(storage,"bits","number of unique bits",
+        ConfigOption<Long> locktime = new ConfigOption<>(storage,"locktime","how long to lock",
+                ConfigOption.Type.FIXED, 500L);
+        ConfigOption<Byte> bits = new ConfigOption<>(storage,"bits","number of unique bits",
                 ConfigOption.Type.GLOBAL_OFFLINE, (byte)8);
-        ConfigOption<Short> retry = new ConfigOption<Short>(special,"retry","retry wait time",
+        ConfigOption<Short> retry = new ConfigOption<>(special,"retry","retry wait time",
                 ConfigOption.Type.GLOBAL, (short)200);
-        ConfigOption<Double> bar = new ConfigOption<Double>(special,"bar","bar",
+        ConfigOption<Double> bar = new ConfigOption<>(special,"bar","bar",
                 ConfigOption.Type.GLOBAL, 1.5d);
-        ConfigOption<Integer> bim = new ConfigOption<Integer>(special,"bim","bim",
+        ConfigOption<Integer> bim = new ConfigOption<>(special, "bim", "bim",
                 ConfigOption.Type.MASKABLE, Integer.class);
 
-        ConfigOption<String> indexback = new ConfigOption<String>(indexes,"name","index name",
+        ConfigOption<String> indexback = new ConfigOption<>(indexes, "name", "index name",
                 ConfigOption.Type.MASKABLE, String.class);
-        ConfigOption<Integer> ping = new ConfigOption<Integer>(indexes,"ping","ping time",
+        ConfigOption<Integer> ping = new ConfigOption<>(indexes, "ping", "ping time",
                 ConfigOption.Type.LOCAL, 100);
-        ConfigOption<Boolean> presort = new ConfigOption<Boolean>(indexes,"presort","presort result set",
+        ConfigOption<Boolean> presort = new ConfigOption<>(indexes, "presort", "presort result set",
                 ConfigOption.Type.LOCAL, false);
 
         //Local configuration
@@ -76,17 +76,17 @@ public class ConfigurationTest {
         assertEquals("+ search", userconfig.get("indexes").trim());
         assertEquals("foo", userconfig.get("indexes.search.name"));
         assertEquals("100", userconfig.get("indexes.search.ping"));
-        userconfig.set("indexes.search.ping", 400l);
+        userconfig.set("indexes.search.ping", 400L);
         assertEquals("400",userconfig.get("indexes.search.ping"));
         assertFalse(config.isFrozen());
         try {
             userconfig.set("storage.locktime",500);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
         try {
             config.set(retry,(short)100);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
 //        System.out.println(userconfig.get("storage"));
         userconfig.close();
         ReadConfiguration localConfig = userconfig.getConfiguration();
@@ -105,14 +105,14 @@ public class ConfigurationTest {
         assertEquals("333", userconfig.get("storage.special.retry"));
         try {
             userconfig.set("storage.bits",6);
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
         userconfig.set("storage.bits",6);
         try {
             userconfig.set("storage.locktime",1221);
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
         try {
             userconfig.set("storage.locktime",1221);
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException ignored) {}
         userconfig.set("indexes.find.name","lulu");
 
         userconfig.close();
@@ -124,14 +124,14 @@ public class ConfigurationTest {
         assertEquals("foo",search.get(indexback));
         assertEquals(400,search.get(ping).intValue());
         assertEquals(100,mixed.get(ping,"find").intValue());
-        assertEquals(false,mixed.get(presort,"find").booleanValue());
+        assertEquals(false, mixed.get(presort, "find"));
         assertEquals(400,mixed.get(ping,"search").intValue());
-        assertEquals(false,mixed.get(presort,"search").booleanValue());
+        assertEquals(false, mixed.get(presort, "search"));
         assertFalse(mixed.has(bim));
         assertTrue(mixed.has(bits));
         assertEquals(5,mixed.getSubset(storage).size());
 
-        assertEquals(1.5d,mixed.get(bar).doubleValue(),0.0);
+        assertEquals(1.5d, mixed.get(bar),0.0);
         assertEquals("localhost",mixed.get(hostnames)[0]);
         assertEquals(1111,mixed.get(locktime).longValue());
 
@@ -146,21 +146,13 @@ public class ConfigurationTest {
         ReflectiveConfigOptionLoader.INSTANCE.setEnabled(false);
         ReflectiveConfigOptionLoader.INSTANCE.loadStandard(this.getClass());
 
-        assertFalse(Iterables.any(GraphDatabaseConfiguration.LOG_NS.getChildren(), new Predicate<ConfigElement>() {
-            @Override
-            public boolean apply(ConfigElement elem) {
-                return elem instanceof ConfigOption<?> && elem.getName().equals("max-write-time");
-            }
-        }));
+        assertFalse(StreamSupport.stream(GraphDatabaseConfiguration.LOG_NS.getChildren().spliterator(), false)
+            .anyMatch(elem -> elem instanceof ConfigOption<?> && elem.getName().equals("max-write-time")));
 
         ReflectiveConfigOptionLoader.INSTANCE.setEnabled(true);
         ReflectiveConfigOptionLoader.INSTANCE.loadStandard(this.getClass());
 
-        assertTrue(Iterables.any(GraphDatabaseConfiguration.LOG_NS.getChildren(), new Predicate<ConfigElement>() {
-            @Override
-            public boolean apply(ConfigElement elem) {
-                return elem instanceof ConfigOption<?> && elem.getName().equals("max-write-time");
-            }
-        }));
+        assertTrue(StreamSupport.stream(GraphDatabaseConfiguration.LOG_NS.getChildren().spliterator(), false)
+            .anyMatch(elem -> elem instanceof ConfigOption<?> && elem.getName().equals("max-write-time")));
     }
 }

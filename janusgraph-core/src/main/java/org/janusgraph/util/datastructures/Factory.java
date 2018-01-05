@@ -23,6 +23,6 @@ package org.janusgraph.util.datastructures;
  */
 public interface Factory<O> {
 
-    public O create();
+    O create();
 
 }

@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.es.rest;
 
 import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
-import org.apache.tinkerpop.shaded.jackson.annotation.JsonRawValue;
 
 import java.util.List;
 import java.util.Map;

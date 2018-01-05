@@ -19,7 +19,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -91,7 +90,7 @@ public abstract class Mutation<E,K> {
      * @param entry
      */
     public void addition(E entry) {
-        if (additions==null) additions = new ArrayList<E>();
+        if (additions==null) additions = new ArrayList<>();
         additions.add(entry);
     }
 
@@ -101,7 +100,7 @@ public abstract class Mutation<E,K> {
      * @param key
      */
     public void deletion(K key) {
-        if (deletions==null) deletions = new ArrayList<K>();
+        if (deletions==null) deletions = new ArrayList<>();
         deletions.add(key);
     }
 
@@ -145,16 +144,13 @@ public abstract class Mutation<E,K> {
      * </p>
      * It needs to be ensured that V objects have valid hashCode() and equals() implementations.
      *
-     * @param convertAdds Function which maps additions onto comparison objects.
-     * @param convertDels Function which maps deletions onto comparison objects.
+     * @param convertAdditions Function which maps additions onto comparison objects.
+     * @param convertDeletions Function which maps deletions onto comparison objects.
      */
-    public<V> void consolidate(Function<E,V> convertAdds, Function<K,V> convertDels) {
+    public<V> void consolidate(Function<E,V> convertAdditions, Function<K,V> convertDeletions) {
         if (hasDeletions() && hasAdditions()) {
-            Set<V> adds = Sets.newHashSet(Iterables.transform(additions,convertAdds));
-            Iterator<K> iter = deletions.iterator();
-            while (iter.hasNext()) {
-                if (adds.contains(convertDels.apply(iter.next()))) iter.remove();
-            }
+            Set<V> adds = Sets.newHashSet(Iterables.transform(additions,convertAdditions));
+            deletions.removeIf(k -> adds.contains(convertDeletions.apply(k)));
         }
     }
 
@@ -164,14 +160,14 @@ public abstract class Mutation<E,K> {
      * Checks whether this mutation is consolidated in the sense of {@link #consolidate(com.google.common.base.Function, com.google.common.base.Function)}.
      * This should only be used in assertions and tests due to the performance penalty.
      *
-     * @param convertAdds
-     * @param convertDels
+     * @param convertAdditions
+     * @param convertDeletions
      * @param <V>
      * @return
      */
-    public<V> boolean isConsolidated(Function<E,V> convertAdds, Function<K,V> convertDels) {
+    public<V> boolean isConsolidated(Function<E,V> convertAdditions, Function<K,V> convertDeletions) {
         int delBefore = getDeletions().size();
-        consolidate(convertAdds,convertDels);
+        consolidate(convertAdditions,convertDeletions);
         return getDeletions().size()==delBefore;
     }
 

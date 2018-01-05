@@ -38,15 +38,16 @@ import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistryV1d0;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Tests JanusGraph specific serialization classes not covered by the TinkerPop suite.
@@ -62,9 +63,10 @@ public abstract class JanusGraphIoTest extends JanusGraphBaseTest {
 
     @Parameterized.Parameters(name = "{0}")
     public static Iterable<Object[]> data() {
-        
+
         final GraphSONMapper v1mapper = GraphSONMapper.build().version(GraphSONVersion.V1_0).typeInfo(TypeInfo.PARTIAL_TYPES).addRegistry(JanusGraphIoRegistryV1d0.getInstance()).create();
         final GraphSONMapper v2mapper = GraphSONMapper.build().version(GraphSONVersion.V2_0).typeInfo(TypeInfo.PARTIAL_TYPES).addRegistry(JanusGraphIoRegistry.getInstance()).create();
+        final GraphSONMapper v3mapper = GraphSONMapper.build().version(GraphSONVersion.V3_0).typeInfo(TypeInfo.PARTIAL_TYPES).addRegistry(JanusGraphIoRegistry.getInstance()).create();
 
         return Arrays.asList(new Object[][]{
             {"graphson-v1-embedded",
@@ -73,6 +75,9 @@ public abstract class JanusGraphIoTest extends JanusGraphBaseTest {
             {"graphson-v2-embedded",
                 (Function<Graph, GraphReader>) g -> GraphSONReader.build().mapper(v2mapper).create(),
                 (Function<Graph, GraphWriter>) g -> GraphSONWriter.build().mapper(v2mapper).create()},
+            {"graphson-v3",
+                (Function<Graph, GraphReader>) g -> GraphSONReader.build().mapper(v3mapper).create(),
+                (Function<Graph, GraphWriter>) g -> GraphSONWriter.build().mapper(v3mapper).create()},
             {"gryo",
                 (Function<Graph, GraphReader>) g -> g.io(IoCore.gryo()).reader().mapper(g.io(IoCore.gryo()).mapper().create()).create(),
                 (Function<Graph, GraphWriter>) g -> g.io(IoCore.gryo()).writer().mapper(g.io(IoCore.gryo()).mapper().create()).create()}
@@ -91,9 +96,9 @@ public abstract class JanusGraphIoTest extends JanusGraphBaseTest {
     @Before
     public void setup() {
         GraphOfTheGodsFactory.loadWithoutMixedIndex(graph, true);
-        JanusGraphManagement mgmt = graph.openManagement();
-        mgmt.makePropertyKey("shape").dataType(Geoshape.class).make();
-        mgmt.commit();
+        JanusGraphManagement management = graph.openManagement();
+        management.makePropertyKey("shape").dataType(Geoshape.class).make();
+        management.commit();
     }
 
     @Test
@@ -129,7 +134,7 @@ public abstract class JanusGraphIoTest extends JanusGraphBaseTest {
 
     private void addGeoshape(Function<Geoshape,Geoshape> makeGeoshape) {
         JanusGraphTransaction tx = graph.newTransaction();
-        graph.traversal().E().has("place").toList().stream().forEach(e-> {
+        graph.traversal().E().has("place").toList().forEach(e-> {
             Geoshape place = (Geoshape) e.property("place").value();
             e.property("shape", makeGeoshape.apply(place));
         });
@@ -137,7 +142,7 @@ public abstract class JanusGraphIoTest extends JanusGraphBaseTest {
     }
 
     private void assertGeoshape(Function<Geoshape,Geoshape> makeGeoshape) {
-        graph.traversal().E().has("place").toList().stream().forEach(e-> {
+        graph.traversal().E().has("place").toList().forEach(e-> {
             assertTrue(e.property("shape").isPresent());
             Geoshape place = (Geoshape) e.property("place").value();
             Geoshape expected = makeGeoshape.apply(place);

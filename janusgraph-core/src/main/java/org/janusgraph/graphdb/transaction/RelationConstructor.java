@@ -42,31 +42,26 @@ public class RelationConstructor {
     }
 
     public static Iterable<JanusGraphRelation> readRelation(final InternalVertex vertex, final Iterable<Entry> data, final StandardJanusGraphTx tx) {
-        return new Iterable<JanusGraphRelation>() {
+        return () -> new Iterator<JanusGraphRelation>() {
+
+            private final Iterator<Entry> iterator = data.iterator();
+            private JanusGraphRelation current = null;
+
             @Override
-            public Iterator<JanusGraphRelation> iterator() {
-                return new Iterator<JanusGraphRelation>() {
+            public boolean hasNext() {
+                return iterator.hasNext();
+            }
 
-                    Iterator<Entry> iter = data.iterator();
-                    JanusGraphRelation current = null;
+            @Override
+            public JanusGraphRelation next() {
+                current = readRelation(vertex, iterator.next(),tx);
+                return current;
+            }
 
-                    @Override
-                    public boolean hasNext() {
-                        return iter.hasNext();
-                    }
-
-                    @Override
-                    public JanusGraphRelation next() {
-                        current = readRelation(vertex,iter.next(),tx);
-                        return current;
-                    }
-
-                    @Override
-                    public void remove() {
-                        Preconditions.checkState(current!=null);
-                        current.remove();
-                    }
-                };
+            @Override
+            public void remove() {
+                Preconditions.checkState(current!=null);
+                current.remove();
             }
         };
     }

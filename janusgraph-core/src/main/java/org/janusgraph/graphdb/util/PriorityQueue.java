@@ -50,7 +50,7 @@ public abstract class PriorityQueue<T> {
         // Don't wrap heapSize to -1, in this case, which
         // causes a confusing NegativeArraySizeException.
         // Note that very likely this will simply then hit
-        // an OOME, but at least that's more indicative to
+        // an OutOfMemoryError, but at least that's more indicative to
         // caller that this values is too big.  We don't +1
         // in this case, but it's very unlikely in practice
         // one will actually insert this many objects into
@@ -225,7 +225,7 @@ public abstract class PriorityQueue<T> {
     size = 0;
   }
 
-  private final void upHeap() {
+  private void upHeap() {
     int i = size;
     T node = heap[i];          // save bottom node
     int j = i >>> 1;
@@ -237,7 +237,7 @@ public abstract class PriorityQueue<T> {
     heap[i] = node;            // install saved node
   }
 
-  private final void downHeap() {
+  private void downHeap() {
     int i = 1;
     T node = heap[i];          // save top node
     int j = i << 1;            // find smaller child
@@ -261,6 +261,6 @@ public abstract class PriorityQueue<T> {
    * @lucene.internal
    */
   protected final Object[] getHeapArray() {
-    return (Object[]) heap;
+    return heap;
   }
 }

@@ -17,7 +17,6 @@ package org.janusgraph.graphdb.types;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.janusgraph.core.*;
-import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.schema.RelationTypeMaker;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.database.IndexSerializer;
@@ -39,9 +38,9 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 
     private String name;
     private boolean isInvisible;
-    private List<PropertyKey> sortKey;
+    private final List<PropertyKey> sortKey;
     private Order sortOrder;
-    private List<PropertyKey> signature;
+    private final List<PropertyKey> signature;
     private Multiplicity multiplicity;
     private SchemaStatus status = SchemaStatus.ENABLED;
 
@@ -149,7 +148,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
      * <br />
      * For instance, if the edge label <i>friend</i> has the sort key (<i>since</i>), which is a property key
      * with a timestamp data type, then one can efficiently retrieve all edges with label <i>friend</i> in a specified
-     * time interval using {@link org.janusgraph.core.JanusGraphVertexQuery#interval(org.janusgraph.core.PropertyKey, Comparable, Comparable)}.
+     * time interval using {@link org.janusgraph.core.JanusGraphVertexQuery#interval(String, Comparable, Comparable)}.
      * <br />
      * In other words, relations are stored on disk in the order of the configured sort key. The sort key is empty
      * by default.
@@ -157,7 +156,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
      * If multiple types are specified as sort key, then those are considered as a <i>composite</i> sort key, i.e. taken jointly
      * in the given order.
      * <p/>
-     * {@link org.janusgraph.core.RelationType}s used in the sort key must be either property out-unique keys or out-unique unidirected edge lables.
+     * {@link org.janusgraph.core.RelationType}s used in the sort key must be either property out-unique keys or out-unique unidirected edge labels.
      *
      * @param keys JanusGraphTypes composing the sort key. The order is relevant.
      * @return this LabelMaker
@@ -176,7 +175,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
      *
      * @param order
      * @return
-     * @see #sortKey(RelationType...)
+     * @see #sortKey(PropertyKey...)
      */
     public StandardRelationTypeMaker sortOrder(Order order) {
         Preconditions.checkNotNull(order);

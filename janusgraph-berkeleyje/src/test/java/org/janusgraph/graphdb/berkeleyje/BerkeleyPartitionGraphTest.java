@@ -27,7 +27,7 @@ public class BerkeleyPartitionGraphTest extends JanusGraphPartitionGraphTest {
         return BerkeleyStorageSetup.getBerkeleyJEGraphConfiguration();
     }
 
-    /**
+    /*
      * TODO: debug berkeley dbs keyslice method
      */
 

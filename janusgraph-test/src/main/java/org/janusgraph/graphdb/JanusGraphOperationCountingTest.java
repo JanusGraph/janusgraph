@@ -38,7 +38,6 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.janusgraph.graphdb.database.cache.MetricInstrumentedSchemaCache.*;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelationType;
@@ -76,11 +75,11 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
     @Override
     public WriteConfiguration getConfiguration() {
         WriteConfiguration config = getBaseConfiguration();
-        ModifiableConfiguration mconf = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.NONE);
-        mconf.set(BASIC_METRICS,true);
-        mconf.set(METRICS_MERGE_STORES,false);
-        mconf.set(PROPERTY_PREFETCHING,false);
-        mconf.set(DB_CACHE, false);
+        ModifiableConfiguration modifiableConfiguration = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.NONE);
+        modifiableConfiguration.set(BASIC_METRICS,true);
+        modifiableConfiguration.set(METRICS_MERGE_STORES,false);
+        modifiableConfiguration.set(PROPERTY_PREFETCHING,false);
+        modifiableConfiguration.set(DB_CACHE, false);
         return config;
     }
 
@@ -107,7 +106,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         finishSchema();
 
         //Schema and relation id pools are tapped, Schema id pool twice because the renew is triggered. Each id acquisition requires 1 mutations and 2 reads
-        verifyStoreMetrics(getConfig().get(IDS_STORE_NAME), SYSTEM_METRICS, ImmutableMap.of(M_MUTATE, 3l, M_GET_SLICE, 6l));
+        verifyStoreMetrics(getConfig().get(IDS_STORE_NAME), SYSTEM_METRICS, ImmutableMap.of(M_MUTATE, 3L, M_GET_SLICE, 6L));
     }
 
 
@@ -141,7 +140,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         tx.commit();
         verifyStoreMetrics(EDGESTORE_NAME);
         verifyLockingOverwrite(INDEXSTORE_NAME, 3);
-        verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1l));
+        verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1L));
 
         resetMetrics();
 
@@ -171,27 +170,27 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
             assertFalse(person.isPartitioned());
             assertEquals(Integer.class,uid.dataType());
             //Retrieving in and out relations for the relation types...
-            InternalRelationType namei = (InternalRelationType)name;
-            InternalRelationType knowsi = (InternalRelationType)knows;
-            InternalRelationType uidi = (InternalRelationType)uid;
-            assertNull(namei.getBaseType());
-            assertNull(knowsi.getBaseType());
-            IndexType index = Iterables.getOnlyElement(uidi.getKeyIndexes());
+            InternalRelationType nameInternal = (InternalRelationType)name;
+            InternalRelationType knowsInternal = (InternalRelationType)knows;
+            InternalRelationType uidInternal = (InternalRelationType)uid;
+            assertNull(nameInternal.getBaseType());
+            assertNull(knowsInternal.getBaseType());
+            IndexType index = Iterables.getOnlyElement(uidInternal.getKeyIndexes());
             assertEquals(1,index.getFieldKeys().length);
             assertEquals(ElementCategory.VERTEX,index.getElement());
             assertEquals(ConsistencyModifier.LOCK,((CompositeIndexType)index).getConsistencyModifier());
-            assertEquals(1, Iterables.size(uidi.getRelationIndexes()));
-            assertEquals(1, Iterables.size(namei.getRelationIndexes()));
-            assertEquals(namei, Iterables.getOnlyElement(namei.getRelationIndexes()));
-            assertEquals(knowsi, Iterables.getOnlyElement(knowsi.getRelationIndexes()));
+            assertEquals(1, Iterables.size(uidInternal.getRelationIndexes()));
+            assertEquals(1, Iterables.size(nameInternal.getRelationIndexes()));
+            assertEquals(nameInternal, Iterables.getOnlyElement(nameInternal.getRelationIndexes()));
+            assertEquals(knowsInternal, Iterables.getOnlyElement(knowsInternal.getRelationIndexes()));
             //.. and vertex labels
             assertEquals(0,((InternalVertexLabel)person).getTTL());
 
             tx.commit();
             //Needs to read on first iteration, after that it doesn't change anymore
-            verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 19l));
+            verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 19L));
             verifyStoreMetrics(INDEXSTORE_NAME,
-                    ImmutableMap.of(M_GET_SLICE, 4l /* name, knows, person, uid */, M_ACQUIRE_LOCK, 0l));
+                    ImmutableMap.of(M_GET_SLICE, 4L /* name, knows, person, uid */, M_ACQUIRE_LOCK, 0L));
         }
 
         //Create some graph data
@@ -210,17 +209,17 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         for (int i = 1; i <= 30; i++) {
             metricsPrefix = "op"+i+cache;
             tx = graph.buildTransaction().groupName(metricsPrefix).start();
-            v = (JanusGraphVertex)getOnlyElement(tx.query().has("uid",1).vertices());
+            v = getOnlyElement(tx.query().has("uid",1).vertices());
             assertEquals(1,v.<Integer>value("uid").intValue());
-            u = (JanusGraphVertex)getOnlyElement(v.query().direction(Direction.BOTH).labels("knows").vertices());
-            e = (Edge)getOnlyElement(u.query().direction(Direction.IN).labels("knows").edges());
+            u = getOnlyElement(v.query().direction(Direction.BOTH).labels("knows").vertices());
+            e = getOnlyElement(u.query().direction(Direction.IN).labels("knows").edges());
             assertEquals("juju",u.value("name"));
             assertEquals("edge",e.value("name"));
             tx.commit();
-            if (!cache || i==0) {
-                verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 4l));
-                verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 1l));
-            } else if (cache && i>20) { //Needs a couple of iterations for cache to be cleaned
+            if (!cache) {
+                verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 4L));
+                verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 1L));
+            } else if (i > 20) { //Needs a couple of iterations for cache to be cleaned
                 verifyStoreMetrics(EDGESTORE_NAME);
                 verifyStoreMetrics(INDEXSTORE_NAME);
             }
@@ -249,7 +248,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         tx.commit();
         verifyStoreMetrics(EDGESTORE_NAME);
         verifyStoreMetrics(INDEXSTORE_NAME);
-        verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1l));
+        verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1L));
 
         tx = graph.buildTransaction().checkExternalVertexExistence(false).groupName(metricsPrefix).start();
         v = tx.getVertex(v.longId());
@@ -258,9 +257,9 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         assertEquals(1, Iterators.size(v.properties("foo")));
         assertEquals(1, Iterators.size(v.properties()));
         tx.commit();
-        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 2l));
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 2L));
         verifyStoreMetrics(INDEXSTORE_NAME);
-        verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 2l));
+        verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 2L));
         verifyStoreMetrics(getConfig().get(IDS_STORE_NAME));
     }
 
@@ -276,7 +275,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         tx.commit();
         verifyStoreMetrics(EDGESTORE_NAME);
         verifyLockingOverwrite(INDEXSTORE_NAME, 3);
-        verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1l + (features.hasTxIsolation()?0:1)));
+        verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1L + (features.hasTxIsolation()?0:1)));
 
         verifyTypeCacheMetrics(3, 0);
 
@@ -284,14 +283,14 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         tx = graph.buildTransaction().groupName(metricsPrefix).start();
         v = getV(tx,v);
         assertCount(2, v.properties());
-        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 2l)); //1 verify vertex existence, 1 for query
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 2L)); //1 verify vertex existence, 1 for query
         verifyTypeCacheMetrics(3, 4);
         tx.commit();
 
         tx = graph.buildTransaction().groupName(metricsPrefix).start();
         v = getV(tx,v);
         assertCount(2, v.properties());
-        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 4l)); //1 verify vertex existence, 1 for query
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 4L)); //1 verify vertex existence, 1 for query
         verifyTypeCacheMetrics(3, 4);
         tx.commit();
 
@@ -300,7 +299,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         v = getV(tx,v);
         assertNotNull(v.value("age"));
         assertNotNull(v.value("name"));
-        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 7l)); //1 verify vertex existence, 2 for query
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 7L)); //1 verify vertex existence, 2 for query
         verifyTypeCacheMetrics(5, 8);
         tx.commit();
 
@@ -309,12 +308,12 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         assertNotNull(v.value("age"));
         assertNotNull(v.value("name"));
         assertCount(1, v.query().direction(Direction.BOTH).edges());
-        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 11l)); //1 verify vertex existence, 3 for query
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 11L)); //1 verify vertex existence, 3 for query
         verifyTypeCacheMetrics(5, 10);
         tx.commit();
 
         verifyLockingOverwrite(INDEXSTORE_NAME, 3);
-        verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1l + (features.hasTxIsolation()?0:1)));
+        verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1L + (features.hasTxIsolation()?0:1)));
 
     }
 
@@ -335,16 +334,16 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         tx.commit();
         verifyStoreMetrics(EDGESTORE_NAME);
         verifyLockingOverwrite(INDEXSTORE_NAME, 1);
-        verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1l));
+        verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1L));
 
         resetMetrics();
 
         tx = graph.buildTransaction().groupName(metricsPrefix).start();
-        v = (JanusGraphVertex) Iterables.getOnlyElement(tx.query().has("uid", Cmp.EQUAL, "v1").vertices());
+        v = Iterables.getOnlyElement(tx.query().has("uid", Cmp.EQUAL, "v1").vertices());
         assertEquals(25,v.property("age").value());
         tx.commit();
-        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE,1l));
-        verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE,1l));
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 1L));
+        verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 1L));
         verifyStoreMetrics(METRICS_STOREMANAGER_NAME);
     }
 
@@ -374,7 +373,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         tx.commit();
         verifyStoreMetrics(EDGESTORE_NAME);
         verifyStoreMetrics(INDEXSTORE_NAME);
-        verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1l));
+        verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1L));
 
         tx = graph.buildTransaction().groupName(metricsPrefix).start();
         v = getV(tx, v);
@@ -383,17 +382,17 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         assertEquals("john",v.property("name").value());
         tx.commit();
         if (fastProperty)
-            verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 2l));
+            verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 2L));
         else
-            verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 4l));
+            verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 4L));
         verifyStoreMetrics(INDEXSTORE_NAME);
-        verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1l));
+        verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1L));
     }
 
     private String metricsPrefix;
 
     public void verifyStoreMetrics(String storeName) {
-        verifyStoreMetrics(storeName, new HashMap<String, Long>(0));
+        verifyStoreMetrics(storeName, new HashMap<>(0));
     }
 
     public void verifyStoreMetrics(String storeName, Map<String, Long> operationCounts) {
@@ -403,7 +402,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
     public void verifyStoreMetrics(String storeName, String prefix, Map<String, Long> operationCounts) {
         for (String operation : OPERATION_NAMES) {
             Long count = operationCounts.get(operation);
-            if (count==null) count = 0l;
+            if (count==null) count = 0L;
             assertEquals(Joiner.on(".").join(prefix, storeName, operation, MetricInstrumentedStore.M_CALLS),count.longValue(), metric.getCounter(prefix, storeName, operation, MetricInstrumentedStore.M_CALLS).getCount());
         }
     }
@@ -474,11 +473,11 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         finishSchema();
 
         final int numV = 100;
-        final long[] vids = new long[numV];
+        final long[] vertexIds = new long[numV];
         for (int i=0;i<numV;i++) {
             JanusGraphVertex v = graph.addVertex(prop,0);
             graph.tx().commit();
-            vids[i]=getId(v);
+            vertexIds[i]=getId(v);
         }
         clopen(newConfig);
         resetEdgeCacheCounts();
@@ -495,47 +494,41 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         final int readSleepTime = 2;
         final int numReads = Math.round((numV*updateSleepTime)/readSleepTime*2.0f);
 
-        Thread reader = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                int reads = 0;
-                while (reads<numReads) {
-                    final int pos = random.nextInt(vids.length);
-                    long vid = vids[pos];
-                    JanusGraphVertex v = getV(graph,vid);
-                    assertNotNull(v);
-                    boolean postCommit = postcommit[pos].get();
-                    Integer value = v.value(prop);
-                    lookups.incrementAndGet();
-                    assertNotNull("On pos [" + pos + "]", value);
-                    if (!precommit[pos].get()) assertEquals(0, value.intValue());
-                    else if (postCommit) assertEquals(1, value.intValue());
-                    graph.tx().commit();
-                    try {
-                        Thread.sleep(readSleepTime);
-                    } catch (InterruptedException e) {
-                        return;
-                    }
-                    reads++;
+        Thread reader = new Thread(() -> {
+            int reads = 0;
+            while (reads<numReads) {
+                final int pos = random.nextInt(vertexIds.length);
+                final long vid = vertexIds[pos];
+                JanusGraphVertex v = getV(graph,vid);
+                assertNotNull(v);
+                boolean postCommit = postcommit[pos].get();
+                final Integer value = v.value(prop);
+                lookups.incrementAndGet();
+                assertNotNull("On pos [" + pos + "]", value);
+                if (!precommit[pos].get()) assertEquals(0, value.intValue());
+                else if (postCommit) assertEquals(1, value.intValue());
+                graph.tx().commit();
+                try {
+                    Thread.sleep(readSleepTime);
+                } catch (InterruptedException e) {
+                    return;
                 }
+                reads++;
             }
         });
         reader.start();
 
-        Thread updater = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                for (int i=0;i<numV;i++) {
-                    try {
-                        JanusGraphVertex v = getV(graph,vids[i]);
-                        v.property(VertexProperty.Cardinality.single, prop, 1);
-                        precommit[i].set(true);
-                        graph.tx().commit();
-                        postcommit[i].set(true);
-                        Thread.sleep(updateSleepTime);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException("Unexpected interruption",e);
-                    }
+        Thread updater = new Thread(() -> {
+            for (int i=0;i<numV;i++) {
+                try {
+                    final JanusGraphVertex v = getV(graph,vertexIds[i]);
+                    v.property(VertexProperty.Cardinality.single, prop, 1);
+                    precommit[i].set(true);
+                    graph.tx().commit();
+                    postcommit[i].set(true);
+                    Thread.sleep(updateSleepTime);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException("Unexpected interruption",e);
                 }
             }
         });
@@ -548,7 +541,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         System.out.println("Hits: " + (getEdgeCacheRetrievals()-getEdgeCacheMisses()));
         System.out.println("Misses: " + getEdgeCacheMisses());
         assertEquals(numReads, lookups.get());
-        assertEquals(2 * numReads + 1 * numV, getEdgeCacheRetrievals());
+        assertEquals(2 * numReads + numV, getEdgeCacheRetrievals());
         int minMisses = 2*numV;
         assertTrue("Min misses ["+minMisses+"] vs actual ["+getEdgeCacheMisses()+"]",minMisses<=getEdgeCacheMisses() && 4*minMisses>=getEdgeCacheMisses());
     }
@@ -596,50 +589,50 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
 
         clopen(newConfig);
 
-        double timecoldglobal=0, timewarmglobal=0,timehotglobal=0;
+        double timeColdGlobal=0, timeWarmGlobal=0, timeHotGlobal=0;
 
+        // measurements must be less than outerRepeat
         int outerRepeat = 20;
         int measurements = 10;
-        assertTrue(measurements<outerRepeat);
         int innerRepeat = 2;
         for (int c=0;c<outerRepeat;c++) {
 
-            double timecold = testAllVertices(vertexId,numV);
+            double timeCold = testAllVertices(vertexId,numV);
 
-            double timewarm = 0;
-            double timehot = 0;
+            double timeWarm = 0;
+            double timeHot = 0;
             for (int i = 0;i<innerRepeat;i++) {
                 graph.tx().commit();
-                timewarm += testAllVertices(vertexId,numV);
+                timeWarm += testAllVertices(vertexId,numV);
                 for (int j=0;j<innerRepeat;j++) {
-                    timehot += testAllVertices(vertexId,numV);
+                    timeHot += testAllVertices(vertexId,numV);
                 }
             }
-            timewarm = timewarm / innerRepeat;
-            timehot = timehot / (innerRepeat*innerRepeat);
+            timeWarm = timeWarm / innerRepeat;
+            timeHot = timeHot / (innerRepeat*innerRepeat);
 
             if (c>=(outerRepeat-measurements)) {
-                timecoldglobal += timecold;
-                timewarmglobal += timewarm;
-                timehotglobal  += timehot;
+                timeColdGlobal += timeCold;
+                timeWarmGlobal += timeWarm;
+                timeHotGlobal  += timeHot;
             }
-//            System.out.println(timecold + "\t" + timewarm + "\t" + timehot);
+//            System.out.println(timeCold + "\t" + timeWarm + "\t" + timeHot);
             clopen(newConfig);
         }
-        timecoldglobal = timecoldglobal/measurements;
-        timewarmglobal = timewarmglobal/measurements;
-        timehotglobal = timehotglobal/measurements;
+        timeColdGlobal = timeColdGlobal/measurements;
+        timeWarmGlobal = timeWarmGlobal/measurements;
+        timeHotGlobal = timeHotGlobal/measurements;
 
-        System.out.println(round(timecoldglobal) + "\t" + round(timewarmglobal) + "\t" + round(timehotglobal));
-        assertTrue(timecoldglobal + " vs " + timewarmglobal, timecoldglobal>timewarmglobal*2);
-        //assertTrue(timewarmglobal + " vs " + timehotglobal, timewarmglobal>timehotglobal); Sometimes, this is not true
+        System.out.println(round(timeColdGlobal) + "\t" + round(timeWarmGlobal) + "\t" + round(timeHotGlobal));
+        assertTrue(timeColdGlobal + " vs " + timeWarmGlobal, timeColdGlobal>timeWarmGlobal*2);
+        //assertTrue(timeWarmGlobal + " vs " + timeHotGlobal, timeWarmGlobal>timeHotGlobal); Sometimes, this is not true
     }
 
     private double testAllVertices(long vid, int numV) {
         long start = System.nanoTime();
         JanusGraphVertex v = getV(graph,vid);
         for (int i=1; i<numV; i++) {
-            v = Iterables.<JanusGraphVertex>getOnlyElement(v.query().direction(Direction.OUT).labels("knows").vertices());
+            v = Iterables.getOnlyElement(v.query().direction(Direction.OUT).labels("knows").vertices());
         }
         return ((System.nanoTime()-start)/1000000.0);
     }

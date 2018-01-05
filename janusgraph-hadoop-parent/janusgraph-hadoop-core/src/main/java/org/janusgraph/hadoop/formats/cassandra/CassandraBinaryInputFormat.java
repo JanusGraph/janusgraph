@@ -50,7 +50,6 @@ public class CassandraBinaryInputFormat extends AbstractBinaryInputFormat {
     private static final String RANGE_BATCH_SIZE_CONFIG = "cassandra.range.batch.size";
 
     private final ColumnFamilyInputFormat columnFamilyInputFormat = new ColumnFamilyInputFormat();
-    private ColumnFamilyRecordReader columnFamilyRecordReader;
     RecordReader<StaticBuffer, Iterable<Entry>> janusgraphRecordReader;
 
     public RecordReader<StaticBuffer, Iterable<Entry>> getRecordReader() {
@@ -65,10 +64,8 @@ public class CassandraBinaryInputFormat extends AbstractBinaryInputFormat {
     @Override
     public RecordReader<StaticBuffer, Iterable<Entry>> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext)
             throws IOException, InterruptedException {
-        columnFamilyRecordReader =
-            (ColumnFamilyRecordReader) columnFamilyInputFormat.createRecordReader(inputSplit, taskAttemptContext);
-        janusgraphRecordReader =
-            new CassandraBinaryRecordReader(columnFamilyRecordReader);
+        janusgraphRecordReader = new CassandraBinaryRecordReader(
+                (ColumnFamilyRecordReader) columnFamilyInputFormat.createRecordReader(inputSplit, taskAttemptContext));
         return janusgraphRecordReader;
     }
 
@@ -92,7 +89,7 @@ public class CassandraBinaryInputFormat extends AbstractBinaryInputFormat {
                 mrConf.get(JanusGraphHadoopConfiguration.COLUMN_FAMILY_NAME), wideRows);
         log.debug("Set keyspace: {}", janusgraphConf.get(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE));
 
-        // Set the column slice bounds via Faunus's vertex query filter
+        // Set the column slice bounds via Faunus' vertex query filter
         final SlicePredicate predicate = new SlicePredicate();
         final int rangeBatchSize = config.getInt(RANGE_BATCH_SIZE_CONFIG, Integer.MAX_VALUE);
         predicate.setSlice_range(getSliceRange(JanusGraphHadoopSetupCommon.DEFAULT_SLICE_QUERY, rangeBatchSize)); // TODO stop slicing the whole row

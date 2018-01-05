@@ -21,6 +21,6 @@ package org.janusgraph.util.datastructures;
  */
 public interface Retriever<I,O> {
 
-    public O get(I input);
+    O get(I input);
 
 }

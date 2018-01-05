@@ -19,11 +19,13 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.util.*;
+import org.janusgraph.diskstorage.util.time.Timer;
 import org.janusgraph.util.stats.NumberUtil;
 import org.janusgraph.diskstorage.util.time.*;
 import org.slf4j.Logger;
@@ -39,7 +41,6 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.locking.TemporaryLockingException;
-import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.graphdb.database.idassigner.IDPoolExhaustedException;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 
@@ -75,6 +76,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
      */
     private static final StaticBuffer LOWER_SLICE = BufferUtil.zeroBuffer(1);
     private static final StaticBuffer UPPER_SLICE = BufferUtil.oneBuffer(17);
+    private static final int ROLLBACK_ATTEMPTS = 5;
 
     private final StoreManager manager;
     private final KeyColumnValueStore idStore;
@@ -84,12 +86,9 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
      */
     private final TimestampProvider times;
 
-    private final int rollbackAttempts = 5;
     private final Duration rollbackWaitTime = Duration.ofMillis(200L);
 
-    private final int partitionBitWdith;
-
-    private final ConflictAvoidanceMode conflictAvoidanceMode;
+    private final int partitionBitWidth;
 
     private final int uniqueIdBitWidth;
     private final int uniqueIDUpperBound;
@@ -112,8 +111,8 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
 
         supportsInterruption = manager.getFeatures().supportsInterruption();
 
-        partitionBitWdith = NumberUtil.getPowerOf2(config.get(CLUSTER_MAX_PARTITIONS));
-        Preconditions.checkArgument(partitionBitWdith>=0 && partitionBitWdith<=16);
+        partitionBitWidth = NumberUtil.getPowerOf2(config.get(CLUSTER_MAX_PARTITIONS));
+        Preconditions.checkArgument(partitionBitWidth >=0 && partitionBitWidth <=16);
 
         uniqueIdBitWidth = config.get(IDAUTHORITY_CAV_BITS);
         Preconditions.checkArgument(uniqueIdBitWidth<=16 && uniqueIdBitWidth>=0);
@@ -121,7 +120,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
 
         storeTxConfigBuilder = new StandardBaseTransactionConfig.Builder().groupName(metricsPrefix).timestampProvider(times);
 
-        conflictAvoidanceMode = config.get(IDAUTHORITY_CONFLICT_AVOIDANCE);
+        final ConflictAvoidanceMode conflictAvoidanceMode = config.get(IDAUTHORITY_CONFLICT_AVOIDANCE);
 
         if (conflictAvoidanceMode.equals(ConflictAvoidanceMode.GLOBAL_AUTO)) {
             Preconditions.checkArgument(!config.has(IDAUTHORITY_CAV_TAG),"Conflicting configuration: a unique id and randomization have been set");
@@ -169,12 +168,8 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
     }
 
     private long getCurrentID(final StaticBuffer partitionKey) throws BackendException {
-        List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
-            @Override
-            public List<Entry> call(StoreTransaction txh) throws BackendException {
-                return idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE).setLimit(5), txh);
-            }
-        },this,times);
+        final List<Entry> blocks = BackendOperation.execute(
+            (BackendOperation.Transactional<List<Entry>>) txh -> idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE).setLimit(5), txh),this,times);
 
         if (blocks == null) throw new TemporaryBackendException("Could not read from storage");
         long latest = BASE_ID;
@@ -198,19 +193,19 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
     }
 
     private StaticBuffer getPartitionKey(int partition, int idNamespace, int uniqueId) {
-        assert partition>=0 && partition<(1<<partitionBitWdith);
+        assert partition>=0 && partition<(1<< partitionBitWidth);
         assert idNamespace>=0;
         assert uniqueId>=0 && uniqueId<(1<<uniqueIdBitWidth);
 
         int[] components = new int[2];
-        components[0] = (partitionBitWdith>0?(partition<<(Integer.SIZE-partitionBitWdith)):0) + uniqueId;
+        components[0] = (partitionBitWidth >0?(partition<<(Integer.SIZE- partitionBitWidth)):0) + uniqueId;
         components[1]=idNamespace;
         return BufferUtil.getIntBuffer(components);
     }
 
     @Override
     public synchronized IDBlock getIDBlock(final int partition, final int idNamespace, Duration timeout) throws BackendException {
-        Preconditions.checkArgument(partition>=0 && partition<(1<<partitionBitWdith),"Invalid partition id [%s] for bit width [%s]",partition, partitionBitWdith);
+        Preconditions.checkArgument(partition>=0 && partition<(1<< partitionBitWidth),"Invalid partition id [%s] for bit width [%s]",partition, partitionBitWidth);
         Preconditions.checkArgument(idNamespace>=0); //can be any non-negative value
 
         final Timer methodTime = times.getTimer().start();
@@ -221,9 +216,9 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         final int maxAvailableBits = (VariableLong.unsignedBitLength(idUpperBound)-1)-uniqueIdBitWidth;
         Preconditions.checkArgument(maxAvailableBits>0,"Unique id bit width [%s] is too wide for id-namespace [%s] id bound [%s]"
                                                 ,uniqueIdBitWidth,idNamespace,idUpperBound);
-        final long idBlockUpperBound = (1l<<maxAvailableBits);
+        final long idBlockUpperBound = (1L <<maxAvailableBits);
 
-        final List<Integer> exhaustedUniquePIDs = new ArrayList<Integer>(randomUniqueIDLimit);
+        final List<Integer> exhaustedUniquePIDs = new ArrayList<>(randomUniqueIDLimit);
 
         Duration backoffMS = idApplicationWaitMS;
 
@@ -262,12 +257,9 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                     Timer writeTimer = times.getTimer().start();
                     target = getBlockApplication(nextEnd, writeTimer.getStartTime());
                     final StaticBuffer finalTarget = target; // copy for the inner class
-                    BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
-                        @Override
-                        public Boolean call(StoreTransaction txh) throws BackendException {
-                            idStore.mutate(partitionKey, Arrays.asList(StaticArrayEntry.of(finalTarget)), KeyColumnValueStore.NO_DELETIONS, txh);
-                            return true;
-                        }
+                    BackendOperation.execute(txh -> {
+                        idStore.mutate(partitionKey, Collections.singletonList(StaticArrayEntry.of(finalTarget)), KeyColumnValueStore.NO_DELETIONS, txh);
+                        return true;
                     },this,times);
                     writeTimer.stop();
 
@@ -287,12 +279,8 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                         sleepAndConvertInterrupts(idApplicationWaitMS.plus(waitGracePeriod));
 
                         // Read all id allocation claims on this partition, for the counter value we're claiming
-                        List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
-                            @Override
-                            public List<Entry> call(StoreTransaction txh) throws BackendException {
-                                return idStore.getSlice(new KeySliceQuery(partitionKey, slice[0], slice[1]), txh);
-                            }
-                        },this,times);
+                        final List<Entry> blocks = BackendOperation.execute(
+                            (BackendOperation.Transactional<List<Entry>>) txh -> idStore.getSlice(new KeySliceQuery(partitionKey, slice[0], slice[1]), txh),this,times);
                         if (blocks == null) throw new TemporaryBackendException("Could not read from storage");
                         if (blocks.isEmpty())
                             throw new PermanentBackendException("It seems there is a race-condition in the block application. " +
@@ -303,15 +291,15 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                          */
                         if (target.equals(blocks.get(0).getColumnAs(StaticBuffer.STATIC_FACTORY))) {
 
-                            ConsistentKeyIDBlock idblock = new ConsistentKeyIDBlock(nextStart,blockSize,uniqueIdBitWidth,uniquePID);
+                            ConsistentKeyIDBlock idBlock = new ConsistentKeyIDBlock(nextStart,blockSize,uniqueIdBitWidth,uniquePID);
 
                             if (log.isDebugEnabled()) {
                                 log.debug("Acquired ID block [{}] on partition({})-namespace({}) (my rid is {})",
-                                        new Object[]{idblock, partition, idNamespace, new String(uid)});
+                                    idBlock, partition, idNamespace, uid);
                             }
 
                             success = true;
-                            return idblock;
+                            return idBlock;
                         } else {
                             // Another claimant beat us to this id block -- try again.
                             log.debug("Failed to acquire ID block [{},{}) (another host claimed it first)", nextStart, nextEnd);
@@ -320,15 +308,12 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                 } finally {
                     if (!success && null != target) {
                         //Delete claim to not pollute id space
-                        for (int attempt = 0; attempt < rollbackAttempts; attempt++) {
+                        for (int attempt = 0; attempt < ROLLBACK_ATTEMPTS; attempt++) {
                             try {
                                 final StaticBuffer finalTarget = target; // copy for the inner class
-                                BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
-                                    @Override
-                                    public Boolean call(StoreTransaction txh) throws BackendException {
-                                        idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(finalTarget), txh);
-                                        return true;
-                                    }
+                                BackendOperation.execute(txh -> {
+                                    idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Collections.singletonList(finalTarget), txh);
+                                    return true;
                                 }, new BackendOperation.TransactionalProvider() { //Use normal consistency level for these non-critical delete operations
                                     @Override
                                     public StoreTransaction openTx() throws BackendException {
@@ -362,14 +347,14 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
     }
 
 
-    private final StaticBuffer[] getBlockSlice(long blockValue) {
+    private StaticBuffer[] getBlockSlice(long blockValue) {
         StaticBuffer[] slice = new StaticBuffer[2];
         slice[0] = new WriteByteBuffer(16).putLong(-blockValue).putLong(0).getStaticBuffer();
         slice[1] = new WriteByteBuffer(16).putLong(-blockValue).putLong(-1).getStaticBuffer();
         return slice;
     }
 
-    private final StaticBuffer getBlockApplication(long blockValue, Instant timestamp) {
+    private StaticBuffer getBlockApplication(long blockValue, Instant timestamp) {
         WriteByteBuffer bb = new WriteByteBuffer(
                 8 // counter long
                         + 8 // time in ms
@@ -380,7 +365,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         return bb.getStaticBuffer();
     }
 
-    private final long getBlockValue(Entry column) {
+    private long getBlockValue(Entry column) {
         return -column.getLong(0);
     }
 
@@ -404,14 +389,14 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
 
     private static class ConsistentKeyIDBlock implements IDBlock {
 
-        private final long startIDCound;
+        private final long startIDCount;
         private final long numIds;
         private final int uniqueIDBitWidth;
         private final int uniqueID;
 
 
-        private ConsistentKeyIDBlock(long startIDCound, long numIDs, int uniqueIDBitWidth, int uniqueID) {
-            this.startIDCound = startIDCound;
+        private ConsistentKeyIDBlock(long startIDCount, long numIDs, int uniqueIDBitWidth, int uniqueID) {
+            this.startIDCount = startIDCount;
             this.numIds = numIDs;
             this.uniqueIDBitWidth = uniqueIDBitWidth;
             this.uniqueID = uniqueID;
@@ -427,13 +412,12 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         public long getId(long index) {
             if (index<0 || index>= numIds) throw new ArrayIndexOutOfBoundsException((int)index);
             assert uniqueID<(1<<uniqueIDBitWidth);
-            long id = ((startIDCound+index)<<uniqueIDBitWidth) + uniqueID;
-            return id;
+            return ((startIDCount +index)<<uniqueIDBitWidth) + uniqueID;
         }
 
         @Override
         public String toString() {
-            String interval = "["+startIDCound+","+(startIDCound+ numIds)+")";
+            String interval = "["+ startIDCount +","+(startIDCount + numIds)+")";
             if (uniqueIDBitWidth>0) interval+="/"+uniqueID+":"+uniqueIDBitWidth;
             return interval;
         }

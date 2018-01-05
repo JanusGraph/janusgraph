@@ -33,15 +33,15 @@ public interface JanusGraphVertexProperty<V> extends JanusGraphRelation, VertexP
      * @return The vertex of this property.
      */
     @Override
-    public JanusGraphVertex element();
+    JanusGraphVertex element();
 
     @Override
-    public default JanusGraphTransaction graph() {
+    default JanusGraphTransaction graph() {
         return element().graph();
     }
 
     @Override
-    public default PropertyKey propertyKey() {
+    default PropertyKey propertyKey() {
         return (PropertyKey)getType();
     }
 

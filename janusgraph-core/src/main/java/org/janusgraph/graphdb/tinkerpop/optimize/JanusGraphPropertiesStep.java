@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.tinkerpop.optimize;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.janusgraph.core.*;
 import org.janusgraph.graphdb.query.BaseQuery;
 import org.janusgraph.graphdb.query.Query;
@@ -73,9 +74,11 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     }
 
     private Iterator<E> convertIterator(Iterable<? extends JanusGraphProperty> iterable) {
-        if (getReturnType().forProperties()) return (Iterator<E>) iterable.iterator();
+        if (getReturnType().forProperties()) {
+            return (Iterator<E>) iterable.iterator();
+        }
         assert getReturnType().forValues();
-        return (Iterator<E>) Iterators.transform(iterable.iterator(), p -> ((JanusGraphProperty) p).value());
+        return (Iterator<E>) Iterators.transform(iterable.iterator(), Property::value);
     }
 
     @SuppressWarnings("deprecation")
@@ -86,18 +89,18 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
 
         if (!starts.hasNext()) throw FastNoSuchElementException.instance();
         List<Traverser.Admin<Element>> elements = new ArrayList<>();
-        starts.forEachRemaining(v -> elements.add(v));
+        starts.forEachRemaining(elements::add);
         starts.add(elements.iterator());
         assert elements.size() > 0;
 
-        useMultiQuery = useMultiQuery && elements.stream().noneMatch(e -> !(e.get() instanceof Vertex));
+        useMultiQuery = useMultiQuery && elements.stream().allMatch(e -> e.get() instanceof Vertex);
 
         if (useMultiQuery) {
-            JanusGraphMultiVertexQuery mquery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
-            elements.forEach(e -> mquery.addVertex((Vertex) e.get()));
-            makeQuery(mquery);
+            JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
+            elements.forEach(e -> multiQuery.addVertex((Vertex) e.get()));
+            makeQuery(multiQuery);
 
-            multiQueryResults = mquery.properties();
+            multiQueryResults = multiQuery.properties();
         }
     }
 
@@ -117,19 +120,19 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
             return convertIterator(query.properties());
         } else {
             //It is some other element (edge or vertex property)
-            Iterator<E> iter;
+            Iterator<E> iterator;
             if (getReturnType().forValues()) {
                 assert orders.isEmpty() && hasContainers.isEmpty();
-                iter = traverser.get().values(getPropertyKeys());
+                iterator = traverser.get().values(getPropertyKeys());
             } else {
                 //this asks for properties
                 assert orders.isEmpty();
                 //HasContainers don't apply => empty result set
                 if (!hasContainers.isEmpty()) return Collections.emptyIterator();
-                iter = (Iterator<E>) traverser.get().properties(getPropertyKeys());
+                iterator = (Iterator<E>) traverser.get().properties(getPropertyKeys());
             }
-            if (limit!=Query.NO_LIMIT) iter = Iterators.limit(iter,limit);
-            return iter;
+            if (limit!=Query.NO_LIMIT) iterator = Iterators.limit(iterator,limit);
+            return iterator;
         }
     }
 
@@ -151,8 +154,8 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
      */
 
     private final List<HasContainer> hasContainers;
-    private int limit = BaseQuery.NO_LIMIT;
-    private List<HasStepFolder.OrderEntry> orders = new ArrayList<>();
+    private int limit;
+    private final List<HasStepFolder.OrderEntry> orders = new ArrayList<>();
 
 
     @Override

@@ -135,12 +135,12 @@ public class BackendTransaction implements LoggableTransaction {
     }
 
     public Map<String,Throwable> commitIndexes() {
-        Map<String,Throwable> exceptions = new HashMap<String, Throwable>(indexTx.size());
-        for (Map.Entry<String,IndexTransaction> txentry : indexTx.entrySet()) {
+        final Map<String,Throwable> exceptions = new HashMap<>(indexTx.size());
+        for (Map.Entry<String,IndexTransaction> indexTransactionEntry : indexTx.entrySet()) {
             try {
-                txentry.getValue().commit();
+                indexTransactionEntry.getValue().commit();
             } catch (Throwable e) {
-                exceptions.put(txentry.getKey(),e);
+                exceptions.put(indexTransactionEntry.getKey(),e);
             }
         }
         return exceptions;
@@ -159,18 +159,18 @@ public class BackendTransaction implements LoggableTransaction {
      */
     @Override
     public void rollback() throws BackendException {
-        Throwable excep = null;
+        Throwable exception = null;
         for (IndexTransaction itx : indexTx.values()) {
             try {
                 itx.rollback();
             } catch (Throwable e) {
-                excep = e;
+                exception = e;
             }
         }
         storeTx.rollback();
-        if (excep!=null) { //throw any encountered index transaction rollback exceptions
-            if (excep instanceof BackendException) throw (BackendException)excep;
-            else throw new PermanentBackendException("Unexpected exception",excep);
+        if (exception!=null) { //throw any encountered index transaction rollback exceptions
+            if (exception instanceof BackendException) throw (BackendException)exception;
+            else throw new PermanentBackendException("Unexpected exception",exception);
         }
     }
 
@@ -295,7 +295,7 @@ public class BackendTransaction implements LoggableTransaction {
                 }
             });
         } else {
-            final Map<StaticBuffer,EntryList> results = new HashMap<StaticBuffer,EntryList>(keys.size());
+            final Map<StaticBuffer,EntryList> results = new HashMap<>(keys.size());
             if (threadPool == null || keys.size() < MIN_TASKS_TO_PARALLELIZE) {
                 for (StaticBuffer key : keys) {
                     results.put(key,edgeStoreQuery(new KeySliceQuery(key, query)));
@@ -465,7 +465,7 @@ public class BackendTransaction implements LoggableTransaction {
     }
 
 
-    private final <V> V executeRead(Callable<V> exe) throws JanusGraphException {
+    private <V> V executeRead(Callable<V> exe) throws JanusGraphException {
         try {
             return BackendOperation.execute(exe, maxReadTime);
         } catch (JanusGraphException e) {

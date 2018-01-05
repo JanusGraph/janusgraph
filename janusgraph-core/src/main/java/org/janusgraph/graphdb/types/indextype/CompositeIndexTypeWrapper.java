@@ -17,11 +17,9 @@ package org.janusgraph.graphdb.types.indextype;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import org.janusgraph.core.*;
-import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.graphdb.types.*;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 

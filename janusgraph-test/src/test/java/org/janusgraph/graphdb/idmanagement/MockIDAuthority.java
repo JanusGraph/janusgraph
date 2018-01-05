@@ -35,7 +35,7 @@ public class MockIDAuthority implements IDAuthority {
 
     private static final int BLOCK_SIZE_LIMIT = Integer.MAX_VALUE;
 
-    private final ConcurrentHashMap<Long, AtomicLong> ids = new ConcurrentHashMap<Long, AtomicLong>();
+    private final ConcurrentHashMap<Long, AtomicLong> ids = new ConcurrentHashMap<>();
     private IDBlockSizer blockSizer;
     private final int blockSizeLimit;
     private final int delayAcquisitionMS;
@@ -70,8 +70,8 @@ public class MockIDAuthority implements IDAuthority {
                 throw new TemporaryBackendException(e);
             }
         }
-        Preconditions.checkArgument(partition>=0 && partition<=Integer.MAX_VALUE);
-        Preconditions.checkArgument(idNamespace>=0 && idNamespace<=Integer.MAX_VALUE);
+        Preconditions.checkArgument(partition >= 0);
+        Preconditions.checkArgument(idNamespace >= 0);
         Long p = (((long)partition)<<Integer.SIZE) + ((long)idNamespace);
         long size = blockSizer.getBlockSize(idNamespace);
         AtomicLong id = ids.get(p);

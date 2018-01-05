@@ -46,7 +46,7 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
         GraphOfTheGodsFactory.load(graph, null, true);
         assertEquals(12L, (long) graph.traversal().V().count().next());
         Graph g = getGraph();
-        GraphTraversalSource t = g.traversal(GraphTraversalSource.computer(SparkGraphComputer.class));
+        GraphTraversalSource t = g.traversal().withComputer(SparkGraphComputer.class);
         assertEquals(12L, (long) t.V().count().next());
     }
 
@@ -75,7 +75,7 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
             assertEquals(Integer.toString(i), valuesOnP.get(i).toString());
         }
         Graph g = getGraph();
-        GraphTraversalSource t = g.traversal(GraphTraversalSource.computer(SparkGraphComputer.class));
+        GraphTraversalSource t = g.traversal().withComputer(SparkGraphComputer.class);
         assertEquals(numV, (long) t.V().count().next());
         propertiesOnVertex = t.V().valueMap().next();
         final Set<?> observedValuesOnP = ImmutableSet.copyOf((List)propertiesOnVertex.values().iterator().next());
@@ -90,7 +90,7 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
         assertEquals(12L, (long) graph.traversal().V().count().next());
 
         // Add a self-loop on sky with edge label "lives"; it's nonsense, but at least it needs no schema changes
-        JanusGraphVertex sky = (JanusGraphVertex)graph.query().has("name", "sky").vertices().iterator().next();
+        JanusGraphVertex sky = graph.query().has("name", "sky").vertices().iterator().next();
         assertNotNull(sky);
         assertEquals("sky", sky.value("name"));
         assertEquals(1L, sky.query().direction(Direction.IN).edgeCount());
@@ -104,11 +104,11 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
 
         // Read the new edge using the inputformat
         Graph g = getGraph();
-        GraphTraversalSource t = g.traversal(GraphTraversalSource.computer(SparkGraphComputer.class));
-        Iterator<Object> edgeIdIter = t.V().has("name", "sky").bothE().id();
-        assertNotNull(edgeIdIter);
-        assertTrue(edgeIdIter.hasNext());
-        Set<Object> edges = Sets.newHashSet(edgeIdIter);
+        GraphTraversalSource t = g.traversal().withComputer(SparkGraphComputer.class);
+        Iterator<Object> edgeIdIterator = t.V().has("name", "sky").bothE().id();
+        assertNotNull(edgeIdIterator);
+        assertTrue(edgeIdIterator.hasNext());
+        Set<Object> edges = Sets.newHashSet(edgeIdIterator);
         assertEquals(2, edges.size());
     }
 
@@ -116,14 +116,14 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
     public void testGeoshapeGetValues() throws Exception {
         GraphOfTheGodsFactory.load(graph, null, true);
 
-        // Read geoshape using the inputformat
+        // Read geoshape using the input format
         Graph g = getGraph();
-        GraphTraversalSource t = g.traversal(GraphTraversalSource.computer(SparkGraphComputer.class));
-        Iterator<Object> geoIter = t.E().values("place");
-        assertNotNull(geoIter);
-        assertTrue(geoIter.hasNext());
-        Set<Object> geos = Sets.newHashSet(geoIter);
-        assertEquals(3, geos.size());
+        GraphTraversalSource t = g.traversal().withComputer(SparkGraphComputer.class);
+        Iterator<Object> geoIterator = t.E().values("place");
+        assertNotNull(geoIterator);
+        assertTrue(geoIterator.hasNext());
+        Set<Object> geoShapes = Sets.newHashSet(geoIterator);
+        assertEquals(3, geoShapes.size());
     }
 
     abstract protected Graph getGraph() throws IOException, ConfigurationException;

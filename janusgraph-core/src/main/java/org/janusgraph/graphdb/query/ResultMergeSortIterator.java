@@ -74,7 +74,7 @@ public class ResultMergeSortIterator<R> implements Iterator<R> {
             nextSecond = second.next();
             assert nextSecond != null;
         }
-        R result = null;
+        final R result;
         if (nextFirst == null && nextSecond == null) {
             return null;
         } else if (nextFirst == null) {
@@ -104,12 +104,7 @@ public class ResultMergeSortIterator<R> implements Iterator<R> {
 
     public static<R> Iterable<R> mergeSort(final Iterable<R> first, final Iterable<R> second,
                                            final Comparator<R> comparator, final boolean filterDuplicates) {
-        return new Iterable<R>() {
-            @Override
-            public Iterator<R> iterator() {
-                return new ResultMergeSortIterator<R>(first.iterator(),second.iterator(),comparator,filterDuplicates);
-            }
-        };
+        return () -> new ResultMergeSortIterator<>(first.iterator(),second.iterator(),comparator,filterDuplicates);
     }
 
 

@@ -42,8 +42,9 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 /**
- * Builds a {@link BaseVertexQuery}, optimizes the query and compiles the result into a {@link org.janusgraph.graphdb.query.vertex.BaseVertexCentricQuery} which
- * is then executed by one of the extending classes.
+ * Builds a {@link BaseVertexQuery}, optimizes the query and compiles the result into
+ * a {@link org.janusgraph.graphdb.query.vertex.BaseVertexCentricQuery} which is then executed by one of the extending
+ * classes.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -74,7 +75,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     /**
      * Whether this query should only focus on the provided vertex representative of a (potentially) partitioned vertex.
      * This effectively disables the automatic querying for other vertex representatives and focuses on the provided
-     * vertex object only. This is used in combination with {@link org.janusgraph.graphdb.vertices.PreloadedVertex}, for example.
+     * vertex object only. This is used in combination with {@link org.janusgraph.graphdb.vertices.PreloadedVertex}.
      */
     private boolean queryOnlyGivenVertex = false;
 
@@ -91,8 +92,8 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     }
 
     @Override
-    public JanusGraphVertex getVertex(long vertexid) {
-        return tx.getVertex(vertexid);
+    public JanusGraphVertex getVertex(long vertexId) {
+        return tx.getVertex(vertexId);
     }
 
     /* ---------------------------------------------------------------
@@ -172,7 +173,8 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 	 * ---------------------------------------------------------------
 	 */
 
-    protected static Iterable<JanusGraphVertex> edges2Vertices(final Iterable<JanusGraphEdge> edges, final JanusGraphVertex other) {
+    protected static Iterable<JanusGraphVertex> edges2Vertices(final Iterable<JanusGraphEdge> edges,
+                                                               final JanusGraphVertex other) {
         return Iterables.transform(edges, new Function<JanusGraphEdge, JanusGraphVertex>() {
             @Nullable
             @Override
@@ -207,7 +209,8 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         assert isImplicitKeyQuery(RelationCategory.PROPERTY);
         if (dir==Direction.IN || limit<1) return ImmutableList.of();
         ImplicitKey key = (ImplicitKey)tx.getRelationType(types[0]);
-        return ImmutableList.of((JanusGraphRelation)new StandardVertexProperty(0,key,v,key.computeProperty(v), v.isNew()?ElementLifeCycle.New:ElementLifeCycle.Loaded));
+        return ImmutableList.of(new StandardVertexProperty(0, key, v, key.computeProperty(v),
+                v.isNew() ? ElementLifeCycle.New : ElementLifeCycle.Loaded));
     }
 
     protected interface ResultConstructor<Q> {
@@ -227,7 +230,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
         @Override
         public Iterable<? extends JanusGraphRelation> emptyResult() {
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
 
     }
@@ -241,7 +244,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
         @Override
         public Iterable<JanusGraphVertex> emptyResult() {
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
 
     }
@@ -273,7 +276,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     }
 
     protected boolean useSimpleQueryProcessor(BaseVertexCentricQuery query, InternalVertex... vertices) {
-        assert vertices.length>0;
+        assert vertices.length > 0;
         if (!query.isSimple()) return false;
         if (queryOnlyLoaded) return true;
         for (InternalVertex vertex : vertices) if (!vertex.isLoaded()) return false;
@@ -287,9 +290,12 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                 Iterable<JanusGraphRelation> merge = null;
 
                 for (InternalVertex rep : representatives) {
-                    Iterable<JanusGraphRelation> iter = executeIndividualRelations(rep,baseQuery);
-                    if (merge==null) merge = iter;
-                    else merge = ResultMergeSortIterator.mergeSort(merge,iter,(Comparator)orders,false);
+                    Iterable<JanusGraphRelation> iterable = executeIndividualRelations(rep,baseQuery);
+                    if (merge==null) {
+                        merge = iterable;
+                    } else {
+                        merge = ResultMergeSortIterator.mergeSort(merge, iterable, (Comparator) orders, false);
+                    }
                 }
                 return ResultSetIterator.wrap(merge,baseQuery.getLimit());
             } else vertex = tx.getCanonicalVertex(vertex);
@@ -297,10 +303,11 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         return executeIndividualRelations(vertex,baseQuery);
     }
 
-    private Iterable<JanusGraphRelation> executeIndividualRelations(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
+    private Iterable<JanusGraphRelation> executeIndividualRelations(InternalVertex vertex,
+                                                                    BaseVertexCentricQuery baseQuery) {
         VertexCentricQuery query = constructQuery(vertex, baseQuery);
         if (useSimpleQueryProcessor(query,vertex)) return new SimpleVertexQueryProcessor(query,tx).relations();
-        else return new QueryProcessor<VertexCentricQuery,JanusGraphRelation,SliceQuery>(query, tx.edgeProcessor);
+        else return new QueryProcessor<>(query, tx.edgeProcessor);
     }
 
     public Iterable<JanusGraphVertex> executeVertices(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
@@ -313,9 +320,10 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                 Iterable<JanusGraphVertex> merge = null;
 
                 for (InternalVertex rep : representatives) {
-                    Iterable<JanusGraphVertex> iter = executeIndividualVertices(rep,baseQuery);
-                    if (merge==null) merge = iter;
-                    else merge = ResultMergeSortIterator.mergeSort(merge,iter,VertexArrayList.VERTEX_ID_COMPARATOR,false);
+                    Iterable<JanusGraphVertex> iterable = executeIndividualVertices(rep,baseQuery);
+                    if (merge==null) merge = iterable;
+                    else merge = ResultMergeSortIterator.mergeSort(merge, iterable,
+                            VertexArrayList.VERTEX_ID_COMPARATOR,false);
                 }
                 return ResultSetIterator.wrap(merge,baseQuery.getLimit());
             } else vertex = tx.getCanonicalVertex(vertex);
@@ -323,7 +331,8 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         return executeIndividualVertices(vertex,baseQuery);
     }
 
-    private Iterable<JanusGraphVertex> executeIndividualVertices(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
+    private Iterable<JanusGraphVertex> executeIndividualVertices(InternalVertex vertex,
+                                                                 BaseVertexCentricQuery baseQuery) {
         VertexCentricQuery query = constructQuery(vertex, baseQuery);
         if (useSimpleQueryProcessor(query, vertex)) return new SimpleVertexQueryProcessor(query,tx).vertexIds();
         else return edges2Vertices((Iterable) executeIndividualRelations(vertex,baseQuery), query.getVertex());
@@ -340,11 +349,13 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
                 for (InternalVertex rep : representatives) {
                     if (merge!=null && merge.size()>=baseQuery.getLimit()) break;
-                    VertexList vlist = executeIndividualVertexIds(rep,baseQuery);
-                    if (merge==null) merge = (VertexListInternal)vlist;
-                    else merge.addAll(vlist);
+                    VertexList vertexList = executeIndividualVertexIds(rep,baseQuery);
+                    if (merge==null) merge = (VertexListInternal)vertexList;
+                    else merge.addAll(vertexList);
                 }
-                if (merge != null && merge.size()>baseQuery.getLimit()) merge = (VertexListInternal)merge.subList(0,baseQuery.getLimit());
+                if (merge != null && merge.size()>baseQuery.getLimit()) {
+                    merge = (VertexListInternal)merge.subList(0,baseQuery.getLimit());
+                }
                 return merge;
             } else vertex = tx.getCanonicalVertex(vertex);
         }
@@ -378,18 +389,20 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         Condition<JanusGraphRelation> condition = baseQuery.getCondition();
         if (!baseQuery.isEmpty()) {
             //Add adjacent-vertex and direction related conditions; copy conditions to so that baseQuery does not change
-            And<JanusGraphRelation> newcond = new And<JanusGraphRelation>();
-            if (condition instanceof And) newcond.addAll((And) condition);
-            else newcond.add(condition);
+            final And<JanusGraphRelation> newCondition = new And<>();
+            if (condition instanceof And) newCondition.addAll((And) condition);
+            else newCondition.add(condition);
 
-            newcond.add(new DirectionCondition<JanusGraphRelation>(vertex,dir));
+            newCondition.add(new DirectionCondition<>(vertex,dir));
             if (adjacentVertex != null)
-                newcond.add(new IncidenceCondition<JanusGraphRelation>(vertex,adjacentVertex));
+                newCondition.add(new IncidenceCondition<>(vertex,adjacentVertex));
 
-            condition = newcond;
+            condition = newCondition;
         }
-        VertexCentricQuery query = new VertexCentricQuery(vertex, condition, baseQuery.getDirection(), baseQuery.getQueries(),baseQuery.getOrders(), baseQuery.getLimit());
-        Preconditions.checkArgument(!queryOnlyLoaded || query.isSimple(),"Query-only-loaded only works on simple queries");
+        VertexCentricQuery query = new VertexCentricQuery(vertex, condition, baseQuery.getDirection(),
+            baseQuery.getQueries(), baseQuery.getOrders(), baseQuery.getLimit());
+        Preconditions.checkArgument(!queryOnlyLoaded || query.isSimple(),
+                "Query-only-loaded only works on simple queries");
         return query;
     }
 
@@ -404,7 +417,8 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
     protected BaseVertexCentricQuery constructQueryWithoutProfile(RelationCategory returnType) {
         assert returnType != null;
-        Preconditions.checkArgument(adjacentVertex==null || returnType == RelationCategory.EDGE,"Vertex constraints only apply to edges");
+        Preconditions.checkArgument(adjacentVertex==null || returnType == RelationCategory.EDGE,
+                "Vertex constraints only apply to edges");
         if (limit <= 0)
             return BaseVertexCentricQuery.emptyQuery();
 
@@ -423,52 +437,65 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         if (conditions == null)
             return BaseVertexCentricQuery.emptyQuery();
 
-        //Don't be smart with query limit adjustments - it just messes up the caching layer and penalizes when appropriate limits are set by the user!
+        //Don't be smart with query limit adjustments - it just messes up the caching layer and
+        //penalizes when appropriate limits are set by the user!
         int sliceLimit = limit;
 
         //Construct (optimal) SliceQueries
         EdgeSerializer serializer = tx.getEdgeSerializer();
         List<BackendQueryHolder<SliceQuery>> queries;
         if (!hasTypes()) {
-            BackendQueryHolder<SliceQuery> query = new BackendQueryHolder<SliceQuery>(serializer.getQuery(returnType, querySystem),
-                    ((dir == Direction.BOTH || (returnType == RelationCategory.PROPERTY && dir == Direction.OUT))
-                            && !conditions.hasChildren()), orders.isEmpty());
+            final BackendQueryHolder<SliceQuery> query= new BackendQueryHolder<>(
+                serializer.getQuery(returnType, querySystem),
+                ((dir == Direction.BOTH || (returnType == RelationCategory.PROPERTY && dir == Direction.OUT))
+                        && !conditions.hasChildren()),
+                orders.isEmpty());
             if (sliceLimit!=Query.NO_LIMIT && sliceLimit<Integer.MAX_VALUE/3) {
-                //If only one direction is queried, ask for twice the limit from backend since approximately half will be filtered
-                if (dir != Direction.BOTH && (returnType == RelationCategory.EDGE || returnType == RelationCategory.RELATION))
+                //If only one direction is queried, ask for twice the limit from backend since approximately
+                //half will be filtered
+                if (dir != Direction.BOTH
+                        && (returnType == RelationCategory.EDGE || returnType == RelationCategory.RELATION)) {
                     sliceLimit *= 2;
+                }
             }
             query.getBackendQuery().setLimit(computeLimit(conditions.size(),sliceLimit));
             queries = ImmutableList.of(query);
             conditions.add(returnType);
-            conditions.add(new VisibilityFilterCondition<JanusGraphRelation>(  //Need this to filter out newly created invisible relations in the transaction
-                    querySystem? VisibilityFilterCondition.Visibility.SYSTEM: VisibilityFilterCondition.Visibility.NORMAL));
+            conditions.add(new VisibilityFilterCondition<>(
+                //Need this to filter out newly created invisible relations in the transaction
+                querySystem ? VisibilityFilterCondition.Visibility.SYSTEM
+                        : VisibilityFilterCondition.Visibility.NORMAL));
         } else {
-            Set<RelationType> ts = new HashSet<RelationType>(types.length);
-            queries = new ArrayList<BackendQueryHolder<SliceQuery>>(types.length + 2);
-            Map<RelationType,Interval> intervalConstraints = new HashMap<RelationType, Interval>(conditions.size());
+            final Set<RelationType> ts = new HashSet<>(types.length);
+            queries = new ArrayList<>(types.length + 2);
+            final Map<RelationType,Interval> intervalConstraints = new HashMap<>(conditions.size());
             final boolean isIntervalFittedConditions = compileConstraints(conditions,intervalConstraints);
-            for (Interval pint : intervalConstraints.values()) { //Check if one of the constraints leads to an empty result set
+            for (Interval pint : intervalConstraints.values()) {
+                //Check if one of the constraints leads to an empty result set
                 if (pint.isEmpty()) return BaseVertexCentricQuery.emptyQuery();
             }
 
             for (String typeName : types) {
                 InternalRelationType type = QueryUtil.getType(tx, typeName);
                 if (type==null) continue;
-                Preconditions.checkArgument(!querySystem || (type instanceof SystemRelationType),"Can only query for system types: %s",type);
-                if (type instanceof ImplicitKey) throw new UnsupportedOperationException("Implicit types are not supported in complex queries: "+type);
+                Preconditions.checkArgument(!querySystem || (type instanceof SystemRelationType),
+                        "Can only query for system types: %s", type);
+                if (type instanceof ImplicitKey) {
+                    throw new UnsupportedOperationException("Implicit types are not supported in complex queries: "
+                            + type);
+                }
                 ts.add(type);
 
                 Direction typeDir = dir;
                 if (type.isPropertyKey()) {
-                    if (returnType == RelationCategory.EDGE)
-                        throw new IllegalArgumentException("Querying for edges but including a property key: " + type.name());
+                    Preconditions.checkArgument(returnType != RelationCategory.EDGE,
+                            "Querying for edges but including a property key: " + type.name());
                     returnType = RelationCategory.PROPERTY;
                     typeDir = Direction.OUT;
                 }
                 if (type.isEdgeLabel()) {
-                    if (returnType == RelationCategory.PROPERTY)
-                        throw new IllegalArgumentException("Querying for properties but including an edge label: " + type.name());
+                    Preconditions.checkArgument(returnType != RelationCategory.PROPERTY,
+                        "Querying for properties but including an edge label: " + type.name());
                     returnType = RelationCategory.EDGE;
                     if (!type.isUnidirected(Direction.BOTH)) {
                         //Make sure unidirectionality lines up
@@ -480,12 +507,13 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                 }
 
 
-                if (type.isEdgeLabel() && typeDir==Direction.BOTH && intervalConstraints.isEmpty() && orders.isEmpty()) {
-                    //TODO: This if-condition is a little too restrictive - we also want to include those cases where there
-                    // ARE intervalConstraints or orders but those cannot be covered by any sort-keys
+                if (type.isEdgeLabel() && typeDir==Direction.BOTH && intervalConstraints.isEmpty()
+                        && orders.isEmpty()) {
+                    //TODO: This if-condition is a little too restrictive - we also want to include those cases where
+                    //there ARE intervalConstraints or orders but those cannot be covered by any sort-keys
                     SliceQuery q = serializer.getQuery(type, typeDir, null);
                     q.setLimit(sliceLimit);
-                    queries.add(new BackendQueryHolder<SliceQuery>(q, isIntervalFittedConditions, true));
+                    queries.add(new BackendQueryHolder<>(q, isIntervalFittedConditions, true));
                 } else {
                     //Optimize for each direction independently
                     Direction[] dirs = {typeDir};
@@ -499,35 +527,38 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                     for (Direction direction : dirs) {
                         /*
                         Find best scoring relation type to answer this query with. We score each candidate by the number
-                        of conditions that each sort-keys satisfy. Equality conditions score higher than interval conditions
-                        since they are more restrictive. We assign additional points if the sort key satisfies the order
-                        of this query.
+                        of conditions that each sort-keys satisfy. Equality conditions score higher than interval
+                        conditions since they are more restrictive. We assign additional points if the sort key
+                        satisfies the order of this query.
                         */
                         InternalRelationType bestCandidate = null;
                         double bestScore = Double.NEGATIVE_INFINITY;
                         boolean bestCandidateSupportsOrder = false;
                         for (InternalRelationType candidate : type.getRelationIndexes()) {
                             //Filter out those that don't apply
-                            if (!candidate.isUnidirected(Direction.BOTH) && !candidate.isUnidirected(direction)) continue;
+                            if (!candidate.isUnidirected(Direction.BOTH) && !candidate.isUnidirected(direction)) {
+                                continue;
+                            }
                             if (!candidate.equals(type) && candidate.getStatus()!= SchemaStatus.ENABLED) continue;
 
-                            boolean supportsOrder = orders.isEmpty()?true:orders.getCommonOrder()==candidate.getSortOrder();
+                            boolean supportsOrder = orders.isEmpty()
+                                    || orders.getCommonOrder() == candidate.getSortOrder();
                             int currentOrder = 0;
 
                             double score = 0.0;
                             PropertyKey[] extendedSortKey = getExtendedSortKey(candidate,direction,tx);
 
-                            for (int i=0;i<extendedSortKey.length;i++) {
-                                PropertyKey keyType = extendedSortKey[i];
-                                if (currentOrder<orders.size() && orders.getKey(currentOrder).equals(keyType)) currentOrder++;
+                            for (PropertyKey keyType : extendedSortKey) {
+                                if (currentOrder < orders.size() && orders.getKey(currentOrder).equals(keyType))
+                                    currentOrder++;
 
                                 Interval interval = intervalConstraints.get(keyType);
-                                if (interval==null || !interval.isPoints()) {
-                                    if (interval!=null) score+=1;
+                                if (interval == null || !interval.isPoints()) {
+                                    if (interval != null) score += 1;
                                     break;
                                 } else {
                                     assert interval.isPoints();
-                                    score+=5.0/interval.getPoints().size();
+                                    score += 5.0 / interval.getPoints().size();
                                 }
                             }
                             if (supportsOrder && currentOrder==orders.size()) score+=3;
@@ -537,14 +568,18 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                                 bestCandidateSupportsOrder=supportsOrder && currentOrder==orders.size();
                             }
                         }
-                        Preconditions.checkArgument(bestCandidate!=null,"Current graph schema does not support the specified query constraints for type: %s",type.name());
+                        Preconditions.checkArgument(bestCandidate != null,
+                            "Current graph schema does not support the specified query constraints for type: %s",
+                            type.name());
 
                         //Construct sort key constraints for the best candidate and then serialize into a SliceQuery
                         //that is wrapped into a BackendQueryHolder
                         PropertyKey[] extendedSortKey = getExtendedSortKey(bestCandidate,direction,tx);
-                        EdgeSerializer.TypedInterval[] sortKeyConstraints = new EdgeSerializer.TypedInterval[extendedSortKey.length];
-                        constructSliceQueries(extendedSortKey,sortKeyConstraints,0,bestCandidate,direction,intervalConstraints,
-                                sliceLimit,isIntervalFittedConditions,bestCandidateSupportsOrder,queries);
+                        EdgeSerializer.TypedInterval[] sortKeyConstraints
+                                = new EdgeSerializer.TypedInterval[extendedSortKey.length];
+                        constructSliceQueries(extendedSortKey, sortKeyConstraints, 0, bestCandidate, direction,
+                                intervalConstraints, sliceLimit, isIntervalFittedConditions, bestCandidateSupportsOrder,
+                                queries);
                     }
                 }
             }
@@ -572,7 +607,8 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             if (interval!=null && interval.isPoints()) {
                 //Keep invoking recursively to see if we can satisfy more constraints...
                 for (Object point : interval.getPoints()) {
-                    EdgeSerializer.TypedInterval[] clonedSKC = Arrays.copyOf(sortKeyConstraints,sortKeyConstraints.length);
+                    EdgeSerializer.TypedInterval[] clonedSKC
+                            = Arrays.copyOf(sortKeyConstraints,sortKeyConstraints.length);
                     clonedSKC[position-1]=new EdgeSerializer.TypedInterval(keyType,new PointInterval(point));
                     constructSliceQueries(extendedSortKey, clonedSKC, position,
                             bestCandidate, direction, intervalConstraints, sliceLimit,
@@ -593,7 +629,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         EdgeSerializer serializer = tx.getEdgeSerializer();
         SliceQuery q = serializer.getQuery(bestCandidate, direction, sortKeyConstraints);
         q.setLimit(computeLimit(intervalConstraints.size()-position, sliceLimit));
-        queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted, bestCandidateSupportsOrder));
+        queries.add(new BackendQueryHolder<>(q, isFitted, bestCandidateSupportsOrder));
     }
 
 
@@ -619,15 +655,15 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             entireKey[i]=tx.getExistingPropertyKey(type.getSortKey()[i]);
         }
         if (type.isEdgeLabel() && !type.multiplicity().isUnique(dir)) entireKey[i++]=ImplicitKey.ADJACENT_ID;
-        if (!type.multiplicity().isConstrained()) entireKey[i++]=ImplicitKey.JANUSGRAPHID;
+        if (!type.multiplicity().isConstrained()) entireKey[i]=ImplicitKey.JANUSGRAPHID;
         return entireKey;
     }
 
     /**
      * Converts the constraint conditions of this query into a constraintMap which is passed as an argument.
      * If all the constraint conditions could be accounted for in the constraintMap, this method returns true, else -
-     * if some constraints cannot be captured in an interval - it returns false to indicate that further in-memory filtering
-     * will be necessary.
+     * if some constraints cannot be captured in an interval - it returns false to indicate that further in-memory
+     * filtering will be necessary.
      * </p>
      * This constraint map is used in constructing the SliceQueries and query optimization since this representation
      * is easier to handle.
@@ -658,13 +694,16 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             } else isFitted = false;
         }
         if (adjacentVertex!=null) {
-            if (adjacentVertex.hasId()) constraintMap.put(ImplicitKey.ADJACENT_ID,new PointInterval(adjacentVertex.longId()));
+            if (adjacentVertex.hasId()) {
+                constraintMap.put(ImplicitKey.ADJACENT_ID,new PointInterval(adjacentVertex.longId()));
+            }
             else isFitted=false;
         }
         return isFitted;
     }
 
-    private static Interval intersectConstraints(Interval pint, RelationType type, JanusGraphPredicate predicate, Object value) {
+    private static Interval intersectConstraints(Interval pint, RelationType type,
+                                                 JanusGraphPredicate predicate, Object value) {
         Interval newInt;
         if (predicate instanceof Cmp) {
             switch ((Cmp) predicate) {
@@ -702,30 +741,34 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     private static Condition<JanusGraphRelation> getTypeCondition(Set<RelationType> types) {
         assert !types.isEmpty();
         if (types.size() == 1)
-            return new RelationTypeCondition<JanusGraphRelation>(types.iterator().next());
+            return new RelationTypeCondition<>(types.iterator().next());
 
-        Or<JanusGraphRelation> typeCond = new Or<JanusGraphRelation>(types.size());
+        final Or<JanusGraphRelation> typeCond = new Or<>(types.size());
         for (RelationType type : types)
-            typeCond.add(new RelationTypeCondition<JanusGraphRelation>(type));
+            typeCond.add(new RelationTypeCondition<>(type));
 
         return typeCond;
     }
 
     /**
-     * Updates a given user limit based on the number of conditions that can not be fulfilled by the backend query, i.e. the query
-     * is not fitted and these remaining conditions must be enforced by filtering in-memory. By filtering in memory, we will discard
-     * results returned from the backend and hence we should increase the limit to account for this "waste" in order to not have
-     * to adjust the limit too often in {@link org.janusgraph.graphdb.query.LimitAdjustingIterator}.
+     * Updates a given user limit based on the number of conditions that can not be fulfilled by the backend query, i.e.
+     * the query is not fitted and these remaining conditions must be enforced by filtering in-memory. By filtering in
+     * memory, we will discard results returned from the backend and hence we should increase the limit to account for
+     * this "waste" in order to not have to adjust the limit too often
+     * in {@link org.janusgraph.graphdb.query.LimitAdjustingIterator}.
      *
      * @param remainingConditions
      * @param baseLimit
      * @return
      */
     private int computeLimit(int remainingConditions, int baseLimit) {
-        if (baseLimit==Query.NO_LIMIT) return baseLimit;
-        assert baseLimit>0;
-        baseLimit = Math.max(baseLimit,Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, remainingConditions, baseLimit)));
-        assert baseLimit>0;
+        if (baseLimit == Query.NO_LIMIT) {
+            return baseLimit;
+        }
+        assert baseLimit > 0;
+        baseLimit = Math.max(baseLimit,
+                Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, remainingConditions, baseLimit)));
+        assert baseLimit > 0;
         return baseLimit;
     }
 

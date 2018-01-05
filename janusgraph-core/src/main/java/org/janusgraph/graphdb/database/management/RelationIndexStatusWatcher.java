@@ -29,8 +29,8 @@ public class RelationIndexStatusWatcher
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RelationIndexStatusWatcher.class);
 
-    private String relationIndexName;
-    private String relationTypeName;
+    private final String relationIndexName;
+    private final String relationTypeName;
 
     public RelationIndexStatusWatcher(JanusGraph g, String relationIndexName, String relationTypeName) {
         super(g);
@@ -61,19 +61,19 @@ public class RelationIndexStatusWatcher
         Timer t = new Timer(TimestampProviders.MILLI).start();
         boolean timedOut;
         while (true) {
-            SchemaStatus actualStatus = null;
-            JanusGraphManagement mgmt = null;
+            final SchemaStatus actualStatus;
+            JanusGraphManagement management = null;
             try {
-                mgmt = g.openManagement();
-                idx = mgmt.getRelationIndex(mgmt.getRelationType(relationTypeName), relationIndexName);
+                management = g.openManagement();
+                idx = management.getRelationIndex(management.getRelationType(relationTypeName), relationIndexName);
                 actualStatus = idx.getIndexStatus();
                 LOGGER.info("Index {} (relation type {}) has status {}", relationIndexName, relationTypeName, actualStatus);
                 if (statuses.contains(actualStatus)) {
                     return new RelationIndexStatusReport(true, relationIndexName, relationTypeName, actualStatus, statuses, t.elapsed());
                 }
             } finally {
-                if (null != mgmt)
-                    mgmt.rollback(); // Let an exception here propagate up the stack
+                if (null != management)
+                    management.rollback(); // Let an exception here propagate up the stack
             }
 
             timedOut = null != timeout && 0 < t.elapsed().compareTo(timeout);

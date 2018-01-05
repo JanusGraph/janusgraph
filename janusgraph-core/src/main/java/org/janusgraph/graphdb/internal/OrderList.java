@@ -33,7 +33,7 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
         makeImmutable();
     }};
 
-    private List<OrderEntry> list = new ArrayList<OrderList.OrderEntry>(3);
+    final private List<OrderEntry> list = new ArrayList<>(3);
     private boolean immutable = false;
 
     public void add(PropertyKey key, Order order) {
@@ -114,8 +114,8 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
 
     @Override
     public int compare(JanusGraphElement o1, JanusGraphElement o2) {
-        for (int i = 0; i < list.size(); i++) {
-            int cmp = list.get(i).compare(o1, o2);
+        for (OrderEntry aList : list) {
+            int cmp = aList.compare(o1, o2);
             if (cmp != 0) return cmp;
         }
 //        return o1.compareTo(o2);

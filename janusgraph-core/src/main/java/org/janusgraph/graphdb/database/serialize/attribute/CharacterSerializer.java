@@ -24,13 +24,13 @@ public class CharacterSerializer implements OrderPreservingSerializer<Character>
 
     @Override
     public Character read(ScanBuffer buffer) {
-        short s = ss.read(buffer);
-        return Character.valueOf(short2char(s));
+        final short s = ss.read(buffer);
+        return short2char(s);
     }
 
     @Override
     public void write(WriteBuffer out, Character attribute) {
-        ss.write(out, char2short(attribute.charValue()));
+        ss.write(out, char2short(attribute));
     }
 
     @Override
@@ -43,18 +43,18 @@ public class CharacterSerializer implements OrderPreservingSerializer<Character>
         write(buffer,attribute);
     }
 
-    public static final short char2short(char c) {
+    public static short char2short(char c) {
         return (short) (((int) c) + Short.MIN_VALUE);
     }
 
-    public static final char short2char(short s) {
+    public static char short2char(short s) {
         return (char) (((int) s) - Short.MIN_VALUE);
     }
 
     @Override
     public Character convert(Object value) {
         if (value instanceof String && ((String) value).length() == 1) {
-            return Character.valueOf(((String) value).charAt(0));
+            return ((String) value).charAt(0);
         }
         return null;
     }

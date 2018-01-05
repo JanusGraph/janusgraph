@@ -15,7 +15,6 @@
 package org.janusgraph.core;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 
 import org.janusgraph.core.log.LogProcessorFramework;
@@ -47,9 +46,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.time.Instant;
-import java.util.Iterator;
+import java.util.*;
 import java.util.regex.Pattern;
-import java.util.Set;
 
 /**
  * JanusGraphFactory is used to open or instantiate a JanusGraph graph database.
@@ -148,9 +146,7 @@ public class JanusGraphFactory {
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         if (null != graphName) {
             Preconditions.checkState(jgm != null, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
-            return (JanusGraph) jgm.openGraph(graphName, (gName) -> {
-                return new StandardJanusGraph(new GraphDatabaseConfiguration(configuration));
-            });
+            return (JanusGraph) jgm.openGraph(graphName, gName -> new StandardJanusGraph(new GraphDatabaseConfiguration(configuration)));
         } else {
             if (jgm != null) {
                 log.warn("You should supply \"graph.graphname\" in your .properties file configuration if you are opening " +
@@ -375,19 +371,12 @@ public class JanusGraphFactory {
                                   Pattern.quote(INDEX_CONF_FILE.getName()) +  ")"
             + ")");
 
-            final Iterator<String> keysToMangle = Iterators.filter(configuration.getKeys(), new Predicate<String>() {
-                @Override
-                public boolean apply(String key) {
-                    if (null == key)
-                        return false;
-                    return p.matcher(key).matches();
-                }
-            });
+            final Iterator<String> keysToMangle = Iterators.filter(configuration.getKeys(), key -> null != key && p.matcher(key).matches());
 
             while (keysToMangle.hasNext()) {
                 String k = keysToMangle.next();
                 Preconditions.checkNotNull(k);
-                String s = configuration.getString(k);
+                final String s = configuration.getString(k);
                 Preconditions.checkArgument(StringUtils.isNotBlank(s),"Invalid Configuration: key %s has null empty value",k);
                 configuration.setProperty(k,getAbsolutePath(configParent,s));
             }
@@ -397,13 +386,13 @@ public class JanusGraphFactory {
         }
     }
 
-    private static final String getAbsolutePath(String file) {
+    private static String getAbsolutePath(String file) {
         return getAbsolutePath(new File(System.getProperty("user.dir")), file);
     }
 
-    private static final String getAbsolutePath(final File configParent, String file) {
-        File storedir = new File(file);
-        if (!storedir.isAbsolute()) {
+    private static String getAbsolutePath(final File configParent, final String file) {
+        final File storeDirectory = new File(file);
+        if (!storeDirectory.isAbsolute()) {
             String newFile = configParent.getAbsolutePath() + File.separator + file;
             log.debug("Overwrote relative path: was {}, now {}", sanitizeAndLaunder(file), sanitizeAndLaunder(newFile));
             return newFile;

@@ -39,11 +39,11 @@ public abstract class DaemonRunner<S> {
     protected abstract S readStatusFromDisk();
 
     /**
-     * Read daemon status from disk, then try to start the dameon
+     * Read daemon status from disk, then try to start the daemon
      * if the status file says it is stopped.  Do nothing if the
      * status read from disk says the daemon is running.
      *
-     * After succesfully starting the daemon (no exceptions from
+     * After successfully starting the daemon (no exceptions from
      * {@link #startImpl()}, register a shutdown hook with the VM
      * that will call {@link #killImpl(S)} on shutdown.
      *
@@ -90,11 +90,7 @@ public abstract class DaemonRunner<S> {
             log.debug("Daemon killer hook already registered: {}", killerHook);
             return;
         }
-        killerHook = new Thread() {
-            public void run() {
-                killAndUnregisterHook(stat);
-            }
-        };
+        killerHook = new Thread(() -> killAndUnregisterHook(stat));
         Runtime.getRuntime().addShutdownHook(killerHook);
         log.debug("Registered daemon killer hook: {}", killerHook);
     }
@@ -160,11 +156,11 @@ public abstract class DaemonRunner<S> {
 
     private static void waitForProcessAndCheckStatus(String cmd, Process startup) {
         try {
-            int exitcode = startup.waitFor(); // wait for script to return
-            if (0 == exitcode) {
+            int exitCode = startup.waitFor(); // wait for script to return
+            if (0 == exitCode) {
                 log.info("Command \"{}\" exited with status 0", cmd);
             } else {
-                throw new RuntimeException("Command \"" + cmd + "\" exited with status " + exitcode);
+                throw new RuntimeException("Command \"" + cmd + "\" exited with status " + exitCode);
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);

@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestBed {
 
-    static enum TEnum {
+    enum TEnum {
 
         ONE, TWO, THREE {
             @Override
@@ -64,7 +64,7 @@ public class TestBed {
 
     }
 
-    private static final void doSomethingExpensive(int milliseconds) {
+    private static void doSomethingExpensive(int milliseconds) {
         double d=0.0;
         Random r = new Random();
         for (int i=0;i<10000*milliseconds;i++) d+=Math.pow(1.1,r.nextDouble());
@@ -84,15 +84,15 @@ public class TestBed {
 
     interface Observer {
 
-        boolean observes();
+        boolean doesNotObserve();
 
         void observe(Object o);
 
-        static Observer NO_OP = new Observer() {
+        Observer NO_OP = new Observer() {
 
             @Override
-            public boolean observes() {
-                return false;
+            public boolean doesNotObserve() {
+                return true;
             }
 
             @Override
@@ -105,25 +105,25 @@ public class TestBed {
 
     static class ObserverManager implements Observer {
 
-        private boolean observed = false;
+        private final boolean observed = false;
 
         public void observe(Object o, Observer other) {
-            if (!observed && !other.observes()) return;
+            if (other.doesNotObserve()) return;
             observe(o);
             other.observe(o);
         }
 
         public void observe(Object o1, Object o2, Observer other) {
-            if (!observed && !other.observes()) return;
-            List<Object> combined = new ArrayList<>();
+            if (other.doesNotObserve()) return;
+            final List<Object> combined = new ArrayList<>();
             combined.add(o1);
             combined.add(o2);
             observe(combined);
             other.observe(combined);
         }
 
-        public boolean observes() {
-            return observed;
+        public boolean doesNotObserve() {
+            return !observed;
         }
 
         @Override
@@ -202,14 +202,9 @@ public class TestBed {
 
         System.exit(0);
 
-        final ScheduledExecutorService exe = new ScheduledThreadPoolExecutor(1,new RejectedExecutionHandler() {
-            @Override
-            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                r.run();
-            }
-        });
+        final ScheduledExecutorService exe = new ScheduledThreadPoolExecutor(1, (r, executor) -> r.run());
         ScheduledFuture future = exe.scheduleWithFixedDelay(new Runnable() {
-            AtomicInteger atomicInt = new AtomicInteger(0);
+            final AtomicInteger atomicInt = new AtomicInteger(0);
 
             @Override
             public void run() {
@@ -248,11 +243,9 @@ public class TestBed {
     }
 
     public static String toBinary(int b) {
-        String res = Integer.toBinaryString(b);
-        while (res.length() < 32) res = "0" + res;
-        return res;
-
-
+        final StringBuilder res = new StringBuilder(Integer.toBinaryString(b));
+        while (res.length() < 32) res.insert(0, "0");
+        return res.toString();
     }
 
 }

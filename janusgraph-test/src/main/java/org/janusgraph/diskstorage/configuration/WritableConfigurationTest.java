@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.time.Duration;
 import java.util.Arrays;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -49,7 +48,6 @@ public abstract class WritableConfigurationTest {
     public void configTest() {
         config.set("test.key","world");
         config.set("test.bar", 100);
-
         config.set("storage.xyz", true);
         config.set("storage.abc", Boolean.FALSE);
         config.set("storage.duba", new String[]{"x", "y"});
@@ -57,12 +55,13 @@ public abstract class WritableConfigurationTest {
         config.set("obj", new Object()); // necessary for AbstractConfiguration.getSubset
         assertEquals("world", config.get("test.key", String.class));
         assertEquals(ImmutableSet.of("test.key", "test.bar"), Sets.newHashSet(config.getKeys("test")));
-        //assertEquals(ImmutableSet.of("test.key", "test.bar", "test.baz"), Sets.newHashSet(config.getKeys("test")));
-        assertEquals(ImmutableSet.of("storage.xyz", "storage.duba", "storage.abc"),Sets.newHashSet(config.getKeys("storage")));
+        // assertEquals(ImmutableSet.of("test.key", "test.bar", "test.baz"), Sets.newHashSet(config.getKeys("test")));
+        assertEquals(ImmutableSet.of("storage.xyz", "storage.duba", "storage.abc"),
+            Sets.newHashSet(config.getKeys("storage")));
         assertEquals(100,config.get("test.bar",Integer.class).intValue());
-        //assertEquals(1,config.get("test.baz",Integer.class).intValue());
-        assertEquals(true,config.get("storage.xyz",Boolean.class).booleanValue());
-        assertEquals(false,config.get("storage.abc",Boolean.class).booleanValue());
+        // assertEquals(1,config.get("test.baz",Integer.class).intValue());
+        assertEquals(true, config.get("storage.xyz", Boolean.class));
+        assertEquals(false, config.get("storage.abc", Boolean.class));
         assertTrue(Arrays.equals(new String[]{"x", "y"},config.get("storage.duba",String[].class)));
         assertEquals(Duration.ofMinutes(60), config.get("times.60m", Duration.class));
         assertTrue(Object.class.isAssignableFrom(config.get("obj", Object.class).getClass()));

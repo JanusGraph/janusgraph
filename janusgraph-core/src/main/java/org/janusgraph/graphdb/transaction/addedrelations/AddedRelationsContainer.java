@@ -27,23 +27,23 @@ import java.util.List;
 
 public interface AddedRelationsContainer {
 
-    public boolean add(InternalRelation relation);
+    boolean add(InternalRelation relation);
 
-    public boolean remove(InternalRelation relation);
+    boolean remove(InternalRelation relation);
 
-    public List<InternalRelation> getView(Predicate<InternalRelation> filter);
+    List<InternalRelation> getView(Predicate<InternalRelation> filter);
 
-    public boolean isEmpty();
+    boolean isEmpty();
 
     /**
      * This method returns all relations in this container. It may only be invoked at the end
      * of the transaction after there are no additional changes. Otherwise the behavior is non deterministic.
      * @return
      */
-    public Collection<InternalRelation> getAll();
+    Collection<InternalRelation> getAll();
 
 
-    public static final AddedRelationsContainer EMPTY = new AddedRelationsContainer() {
+    AddedRelationsContainer EMPTY = new AddedRelationsContainer() {
         @Override
         public boolean add(InternalRelation relation) {
             throw new UnsupportedOperationException();

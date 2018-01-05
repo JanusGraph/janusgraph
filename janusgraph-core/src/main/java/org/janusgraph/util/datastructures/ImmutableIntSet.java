@@ -49,8 +49,8 @@ public class ImmutableIntSet implements IntSet {
 
     @Override
     public boolean contains(int value) {
-        for (int i = 0; i < values.length; i++) {
-            if (values[i] == value) return true;
+        for (int value1 : values) {
+            if (value1 == value) return true;
         }
         return false;
     }
@@ -75,8 +75,8 @@ public class ImmutableIntSet implements IntSet {
         if (this == other) return true;
         else if (!(other instanceof IntSet)) return false;
         IntSet oth = (IntSet) other;
-        for (int i = 0; i < values.length; i++) {
-            if (!oth.contains(values[i])) return false;
+        for (int value : values) {
+            if (!oth.contains(value)) return false;
         }
         return size() == oth.size();
     }

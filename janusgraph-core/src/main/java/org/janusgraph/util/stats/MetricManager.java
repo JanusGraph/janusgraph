@@ -82,7 +82,7 @@ public enum MetricManager {
 
     /**
      * Stop a {@link ConsoleReporter} previously created by a call to
-     * {@link #addConsoleReporter(long)} and release it for GC. Idempotent
+     * {@link #addConsoleReporter(Duration)} and release it for GC. Idempotent
      * between calls to the associated add method. Does nothing before the first
      * call to the associated add method.
      */
@@ -129,7 +129,7 @@ public enum MetricManager {
 
     /**
      * Stop a {@link CsvReporter} previously created by a call to
-     * {@link #addCsvReporter(long, String)} and release it for GC. Idempotent
+     * {@link #addCsvReporter(Duration, String)} and release it for GC. Idempotent
      * between calls to the associated add method. Does nothing before the first
      * call to the associated add method.
      */
@@ -147,11 +147,11 @@ public enum MetricManager {
      * internal default value(s).
      * <p>
      * If {@code agentId} is non-null, then
-     * {@link MBeanServerFactory#findMBeanServer(agentId)} must return exactly
+     * {@link MBeanServerFactory#findMBeanServer(String)} must return exactly
      * one {@code MBeanServer}. The reporter will register with that server. If
-     * the {@code findMBeanServer(agentId)} call returns no or multiple servers,
-     * then this method logs an error and falls back on the Metrics default for
-     * {@code agentId}.
+     * the {@code MBeanServerFactory#findMBeanServer(String)} call returns no or
+     * multiple servers, then this method logs an error and falls back on the
+     * Metrics default for {@code agentId}.
      *
      * @param domain
      *            the JMX domain in which to continuously expose metrics
@@ -171,9 +171,9 @@ public enum MetricManager {
         }
 
         if (null != agentId) {
-            List<MBeanServer> servs = MBeanServerFactory.findMBeanServer(agentId);
-            if (null != servs && 1 == servs.size()) {
-                b.registerWith(servs.get(0));
+            List<MBeanServer> servers = MBeanServerFactory.findMBeanServer(agentId);
+            if (null != servers && 1 == servers.size()) {
+                b.registerWith(servers.get(0));
             } else {
                 log.error("Metrics Slf4jReporter agentId {} does not resolve to a single MBeanServer", agentId);
             }
@@ -200,7 +200,7 @@ public enum MetricManager {
      * Create a {@link Slf4jReporter} attached to the JanusGraph Metrics registry.
      * <p>
      * If {@code loggerName} is null, or if it is non-null but
-     * {@link LoggerFactory#getLogger(loggerName)} returns null, then Metrics's
+     * {@link LoggerFactory#getLogger(String)} returns null, then Metrics's
      * default Slf4j logger name is used instead.
      *
      * @param reportInterval
@@ -232,7 +232,7 @@ public enum MetricManager {
 
     /**
      * Stop a {@link Slf4jReporter} previously created by a call to
-     * {@link #addSlf4jReporter(long, String)} and release it for GC. Idempotent
+     * {@link #addSlf4jReporter(Duration, String)} and release it for GC. Idempotent
      * between calls to the associated add method. Does nothing before the first
      * call to the associated add method.
      */
@@ -270,7 +270,7 @@ public enum MetricManager {
      *            override this machine's IP/hostname as it appears on the
      *            Ganglia server
      * @param reportInterval
-     *            titme to wait before sending data to the ganglia
+     *            time to wait before sending data to the ganglia
      *            unicast host or multicast group
      * @throws IOException
      *             when a {@link GMetric} can't be instantiated using the
@@ -300,12 +300,12 @@ public enum MetricManager {
         gangliaReporter.start(reportInterval.toMillis(), TimeUnit.MILLISECONDS);
 
         log.info("Configured Ganglia Metrics reporter host={} interval={} port={} addrmode={} ttl={} proto31={} uuid={} spoof={}",
-                new Object[] { groupOrHost, reportInterval, port, addressingMode, ttl, protocol31, hostUUID, spoof });
+            groupOrHost, reportInterval, port, addressingMode, ttl, protocol31, hostUUID, spoof);
     }
 
     /**
      * Stop a {@link GangliaReporter} previously created by a call to
-     * {@link #addGangliaReporter(String, int, UDPAddressingMode, int, Boolean, UUID, long)}
+     * {@link #addGangliaReporter(String, int, UDPAddressingMode, int, Boolean, UUID, String, Duration)}
      * and release it for GC. Idempotent between calls to the associated add
      * method. Does nothing before the first call to the associated add method.
      */
@@ -350,12 +350,12 @@ public enum MetricManager {
         graphiteReporter = b.build(graphite);
         graphiteReporter.start(reportInterval.toMillis(), TimeUnit.MILLISECONDS);
         log.info("Configured Graphite reporter host={} interval={} port={} prefix={}",
-                new Object[] { host, reportInterval, port, prefix });
+            host, reportInterval, port, prefix);
     }
 
     /**
      * Stop a {@link GraphiteReporter} previously created by a call to
-     * {@link #addGraphiteReporter(String, int, String, long)} and release it
+     * {@link #addGraphiteReporter(String, int, String, Duration)} and release it
      * for GC. Idempotent between calls to the associated add method. Does
      * nothing before the first call to the associated add method.
      */

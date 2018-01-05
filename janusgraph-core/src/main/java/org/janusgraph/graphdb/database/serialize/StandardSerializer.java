@@ -36,7 +36,6 @@ import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
 import org.janusgraph.graphdb.log.StandardTransactionId;
 import org.janusgraph.graphdb.types.ParameterType;
-import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.janusgraph.graphdb.types.TypeDefinitionDescription;
 
@@ -426,7 +425,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
             return getClass(VariableLong.readPositive(buffer));
         }
 
-        private final Class getClass(long registrationNo) {
+        private Class getClass(long registrationNo) {
             assert registrationNo<Integer.MAX_VALUE && registrationNo>=0;
             if (registrationNo==0) return null;
             return getDataType((int) registrationNo);
