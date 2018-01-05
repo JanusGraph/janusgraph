@@ -36,7 +36,7 @@ public class StringArraySerializer extends ArraySerializer implements AttributeS
 
     @Override
     protected void setArray(Object array, int pos, Object value) {
-        Array.set(array, pos, ((String) value));
+        Array.set(array, pos, value);
     }
 
     //############### Serialization ###################
@@ -55,6 +55,6 @@ public class StringArraySerializer extends ArraySerializer implements AttributeS
     @Override
     public void write(WriteBuffer buffer, String[] attribute) {
         writeLength(buffer,attribute);
-        if (attribute!=null) for (int i = 0; i < attribute.length; i++) stringSerializer.write(buffer, attribute[i]);
+        if (attribute!=null) for (String anAttribute : attribute) stringSerializer.write(buffer, anAttribute);
     }
 }

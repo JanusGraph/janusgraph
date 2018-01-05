@@ -51,7 +51,7 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
     }
 
     public JointIndexQuery() {
-        this.queries = new ArrayList<Subquery>(4);
+        this.queries = new ArrayList<>(4);
     }
 
     public void add(MixedIndexType index, IndexQuery query) {

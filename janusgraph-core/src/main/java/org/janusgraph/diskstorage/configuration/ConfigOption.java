@@ -27,11 +27,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-
 import java.lang.reflect.Array;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Set;
@@ -65,7 +64,7 @@ public class ConfigOption<O> extends ConfigElement {
         /**
          * These options can ONLY be provided through a local configuration file
          */
-        LOCAL;
+        LOCAL
     }
 
     private static final Logger log =
@@ -75,7 +74,7 @@ public class ConfigOption<O> extends ConfigElement {
 
     /**
      * This is a subset of types accepted by StandardSerializer.
-     * Its subset-ness is enforced in the static initializer block further down this file.
+     * Inclusion is enforced in the static initializer block further down this file.
      */
     private static final Set<Class<?>> ACCEPTED_DATATYPES;
 
@@ -126,35 +125,35 @@ public class ConfigOption<O> extends ConfigElement {
         this(parent,name,description,type,(Class<O>)defaultValue.getClass(),defaultValue,verificationFct);
     }
 
-    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> datatype) {
-        this(parent,name,description,type,datatype, disallowEmpty(datatype));
+    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> dataType) {
+        this(parent,name,description,type,dataType, disallowEmpty(dataType));
     }
 
-    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> datatype, Predicate<O> verificationFct) {
-        this(parent,name,description,type,datatype,null,verificationFct);
+    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> dataType, Predicate<O> verificationFct) {
+        this(parent,name,description,type,dataType,null,verificationFct);
     }
 
-    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> datatype, O defaultValue) {
-        this(parent,name,description,type,datatype,defaultValue,disallowEmpty(datatype));
+    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> dataType, O defaultValue) {
+        this(parent,name,description,type,dataType,defaultValue,disallowEmpty(dataType));
     }
 
-    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> datatype, O defaultValue, Predicate<O> verificationFct) {
-        this(parent, name, description, type, datatype, defaultValue, verificationFct, null);
+    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> dataType, O defaultValue, Predicate<O> verificationFct) {
+        this(parent, name, description, type, dataType, defaultValue, verificationFct, null);
     }
 
-    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> datatype, O defaultValue, Predicate<O> verificationFct, ConfigOption<?> supersededBy) {
+    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> dataType, O defaultValue, Predicate<O> verificationFct, ConfigOption<?> supersededBy) {
         super(parent, name, description);
         Preconditions.checkNotNull(type);
-        Preconditions.checkNotNull(datatype);
+        Preconditions.checkNotNull(dataType);
         Preconditions.checkNotNull(verificationFct);
         this.type = type;
-        this.datatype = datatype;
+        this.datatype = dataType;
         this.defaultValue = defaultValue;
         this.verificationFct = verificationFct;
         this.supersededBy = supersededBy;
-        // This constructor tends to get called by static initializers, so log before throwing the IAE
-        if (!ACCEPTED_DATATYPES.contains(datatype)) {
-            String msg = String.format("Datatype %s is not one of %s", datatype, ACCEPTED_DATATYPES_STRING);
+        // A static initializer calls this constructor, so log before throwing the IAE
+        if (!ACCEPTED_DATATYPES.contains(dataType)) {
+            String msg = String.format("Datatype %s is not one of %s", dataType, ACCEPTED_DATATYPES_STRING);
             log.error(msg);
             throw new IllegalArgumentException(msg);
         }
@@ -245,53 +244,40 @@ public class ConfigOption<O> extends ConfigElement {
 
     //########### HELPER METHODS ##################
 
-    public static final<E extends Enum> E getEnumValue(String str, Class<E> enumClass) {
-        str = str.trim();
-        if (StringUtils.isBlank(str)) return null;
-        for (E e : enumClass.getEnumConstants()) {
-            if (e.toString().equalsIgnoreCase(str)) return e;
+    public static <E extends Enum> E getEnumValue(String str, Class<E> enumClass) {
+        final String trimmed = str.trim();
+        if (StringUtils.isBlank(trimmed)) {
+            return null;
         }
-        throw new IllegalArgumentException("Invalid enum string provided for ["+enumClass+"]: " + str);
+        return Arrays.stream(enumClass.getEnumConstants())
+            .filter(e -> e.toString().equalsIgnoreCase(trimmed))
+            .findAny()
+            .orElseThrow(() -> new IllegalArgumentException("Invalid enum string provided for ["+enumClass+"]: " + trimmed));
     }
 
-    public static final<O> Predicate<O> disallowEmpty(Class<O> clazz) {
-        return new Predicate<O>() {
-            @Override
-            public boolean apply(@Nullable O o) {
-                if (o==null) return false;
-                if (o instanceof String) return StringUtils.isNotBlank((String)o);
-                if (o.getClass().isArray() && (Array.getLength(o)==0 || Array.get(o,0)==null)) return false;
-                if (o instanceof Collection && (((Collection)o).isEmpty() || ((Collection)o).iterator().next()==null)) return false;
-                return true;
+    public static <O> Predicate<O> disallowEmpty(Class<O> clazz) {
+        return o -> {
+            if (o == null) {
+                return false;
             }
+            if (o instanceof String) {
+                return StringUtils.isNotBlank((String) o);
+            }
+            return (!o.getClass().isArray() || (Array.getLength(o) != 0 && Array.get(o, 0) != null))
+                    && (!(o instanceof Collection) || (!((Collection) o).isEmpty() && ((Collection) o).iterator().next() != null));
         };
     }
 
-    public static final Predicate<Integer> positiveInt() {
-        return new Predicate<Integer>() {
-            @Override
-            public boolean apply(@Nullable Integer num) {
-                return num!=null && num>0;
-            }
-        };
+    public static Predicate<Integer> positiveInt() {
+        return num -> num!=null && num>0;
     }
 
-    public static final Predicate<Integer> nonnegativeInt() {
-        return new Predicate<Integer>() {
-            @Override
-            public boolean apply(@Nullable Integer num) {
-                return num!=null && num>=0;
-            }
-        };
+    public static Predicate<Integer> nonnegativeInt() {
+        return num -> num!=null && num>=0;
     }
 
-    public static final Predicate<Long> positiveLong() {
-        return new Predicate<Long>() {
-            @Override
-            public boolean apply(@Nullable Long num) {
-                return num!=null && num>0;
-            }
-        };
+    public static Predicate<Long> positiveLong() {
+        return num -> num!=null && num>0;
     }
 
 

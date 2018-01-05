@@ -25,19 +25,18 @@ import java.util.concurrent.Callable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Arrays;
-import java.util.stream.Collectors;
 
 
 public abstract class AbstractIndexStatusWatcher<R, S extends AbstractIndexStatusWatcher<R,S>> implements Callable<R> {
 
-    protected JanusGraph g;
-    protected List<SchemaStatus> statuses;
+    protected final JanusGraph g;
+    protected final List<SchemaStatus> statuses;
     protected Duration timeout;
     protected Duration poll;
 
     public AbstractIndexStatusWatcher(JanusGraph g) {
         this.g = g;
-        this.statuses = new ArrayList<SchemaStatus>();
+        this.statuses = new ArrayList<>();
         this.statuses.add(SchemaStatus.REGISTERED);
         this.timeout = Duration.ofSeconds(60L);
         this.poll = Duration.ofMillis(500L);
@@ -61,7 +60,7 @@ public abstract class AbstractIndexStatusWatcher<R, S extends AbstractIndexStatu
     }
 
     /**
-     * Set the maximum amount of wallclock time that {@link #call()} will
+     * Set the maximum amount of wall clock time that {@link #call()} will
      * wait for the index to reach the target status.  If the index does
      * not reach the target state in this interval, then {@link #call()}
      * will return a report value indicating failure.

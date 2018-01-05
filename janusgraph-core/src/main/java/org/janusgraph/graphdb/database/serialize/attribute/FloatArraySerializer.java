@@ -49,6 +49,6 @@ public class FloatArraySerializer extends ArraySerializer implements AttributeSe
     @Override
     public void write(WriteBuffer buffer, float[] attribute) {
         writeLength(buffer,attribute);
-        if (attribute!=null) for (int i = 0; i < attribute.length; i++) buffer.putFloat(attribute[i]);
+        if (attribute!=null) for (float anAttribute : attribute) buffer.putFloat(anAttribute);
     }
 }

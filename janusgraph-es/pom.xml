@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.2.1-SNAPSHOT</version>
+        <version>0.3.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-es</artifactId>
@@ -21,6 +21,7 @@
         <skip.es.test>${skipTests}</skip.es.test>
         <es.docker.image>docker.elastic.co/elasticsearch/elasticsearch</es.docker.image>
         <elasticsearch.docker.test.version>${elasticsearch.test.version}</elasticsearch.docker.test.version>
+        <powermock.version>1.7.3</powermock.version>
     </properties>
     <dependencies>
         <dependency>
@@ -101,6 +102,31 @@
             <artifactId>logback-classic</artifactId>
         </dependency>
         <!-- End logging backends. -->
+
+		<dependency>
+			<groupId>org.powermock</groupId>
+			<artifactId>powermock-core</artifactId>
+			<version>${powermock.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.powermock</groupId>
+			<artifactId>powermock-reflect</artifactId>
+			<version>${powermock.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.powermock</groupId>
+			<artifactId>powermock-module-junit4</artifactId>
+			<version>${powermock.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.powermock</groupId>
+			<artifactId>powermock-api-mockito</artifactId>
+			<version>${powermock.version}</version>
+			<scope>test</scope>
+		</dependency>
     </dependencies>
     <build>
         <resources>

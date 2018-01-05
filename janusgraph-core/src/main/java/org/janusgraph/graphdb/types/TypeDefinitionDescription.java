@@ -21,8 +21,8 @@ import com.google.common.base.Preconditions;
  */
 public class TypeDefinitionDescription {
 
-    private TypeDefinitionCategory category;
-    private Object modifier;
+    private final TypeDefinitionCategory category;
+    private final Object modifier;
 
     public TypeDefinitionDescription(TypeDefinitionCategory category, Object modifier) {
         Preconditions.checkNotNull(category);

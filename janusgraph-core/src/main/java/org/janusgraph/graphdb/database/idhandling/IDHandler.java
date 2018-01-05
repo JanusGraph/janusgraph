@@ -35,7 +35,7 @@ public class IDHandler {
     public static final StaticBuffer MIN_KEY = BufferUtil.getLongBuffer(0);
     public static final StaticBuffer MAX_KEY = BufferUtil.getLongBuffer(-1);
 
-    public static enum DirectionID {
+    public enum DirectionID {
 
         PROPERTY_DIR(0),  //00b
         EDGE_OUT_DIR(2),  //10b
@@ -43,7 +43,7 @@ public class IDHandler {
 
         private final int id;
 
-        private DirectionID(int id) {
+        DirectionID(int id) {
             this.id = id;
         }
 

@@ -59,13 +59,13 @@ public class RelationComparator implements Comparator<InternalRelation> {
         }
 
         //2) RelationType (determine if property or edge - properties come first)
-        int reltypecompare = (r1.isProperty()?1:2) - (r2.isProperty()?1:2);
-        if (reltypecompare != 0) return reltypecompare;
+        int relationTypeCompare = (r1.isProperty()?1:2) - (r2.isProperty()?1:2);
+        if (relationTypeCompare != 0) return relationTypeCompare;
 
         //3) JanusGraphType
         InternalRelationType t1 = (InternalRelationType) r1.getType(), t2 = (InternalRelationType) r2.getType();
-        int typecompare = AbstractElement.compare(t1,t2);
-        if (typecompare != 0) return typecompare;
+        int typeCompare = AbstractElement.compare(t1,t2);
+        if (typeCompare != 0) return typeCompare;
         assert t1.equals(t2);
 
         //4) Direction
@@ -88,9 +88,9 @@ public class RelationComparator implements Comparator<InternalRelation> {
         if (t1.multiplicity().isUnique(dir1)) return 0;
 
         // 5) Compare sort key values (this is empty and hence skipped if the type multiplicity is constrained)
-        for (long typeid : t1.getSortKey()) {
-            int keycompare = compareOnKey(r1, r2, typeid, t1.getSortOrder());
-            if (keycompare != 0) return keycompare;
+        for (long typeId : t1.getSortKey()) {
+            int keyCompare = compareOnKey(r1, r2, typeId, t1.getSortOrder());
+            if (keyCompare != 0) return keyCompare;
         }
         // 6) Compare property objects or other vertices
         if (r1.isProperty()) {
@@ -98,19 +98,19 @@ public class RelationComparator implements Comparator<InternalRelation> {
             Object o2 = ((JanusGraphVertexProperty) r2).value();
             Preconditions.checkArgument(o1 != null && o2 != null);
             if (!o1.equals(o2)) {
-                int objectcompare = 0;
+                final int objectCompare;
                 if (Comparable.class.isAssignableFrom(((PropertyKey) t1).dataType())) {
-                    objectcompare = ((Comparable) o1).compareTo(o2);
+                    objectCompare = ((Comparable) o1).compareTo(o2);
                 } else {
-                    objectcompare = System.identityHashCode(o1) - System.identityHashCode(o2);
+                    objectCompare = System.identityHashCode(o1) - System.identityHashCode(o2);
                 }
-                if (objectcompare != 0) return objectcompare;
+                if (objectCompare != 0) return objectCompare;
             }
         } else {
             Preconditions.checkArgument(r1.isEdge() && r2.isEdge());
-            int vertexcompare = AbstractElement.compare(r1.getVertex(EdgeDirection.position(dir1.opposite())),
+            int vertexCompare = AbstractElement.compare(r1.getVertex(EdgeDirection.position(dir1.opposite())),
                     r2.getVertex(EdgeDirection.position(dir1.opposite())));
-            if (vertexcompare != 0) return vertexcompare;
+            if (vertexCompare != 0) return vertexCompare;
         }
         // Breakout: if type&direction are the same, and the end points of the relation are the same and the type is constrained, the relations must be the same
         if (t1.multiplicity().isConstrained()) return 0;
@@ -134,8 +134,8 @@ public class RelationComparator implements Comparator<InternalRelation> {
         }
     }
 
-    private int compareOnKey(JanusGraphRelation r1, JanusGraphRelation r2, long typeid, Order order) {
-        return compareOnKey(r1,r2,tx.getExistingPropertyKey(typeid),order);
+    private int compareOnKey(JanusGraphRelation r1, JanusGraphRelation r2, long typeId, Order order) {
+        return compareOnKey(r1,r2,tx.getExistingPropertyKey(typeId),order);
     }
 
     private int compareOnKey(JanusGraphRelation r1, JanusGraphRelation r2, PropertyKey type, Order order) {

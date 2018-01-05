@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.log.kcvs;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.StoreMetaData;
@@ -36,7 +35,6 @@ import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.*;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -53,7 +51,7 @@ public class KCVSLogManager implements LogManager {
     private static final Logger log =
             LoggerFactory.getLogger(KCVSLogManager.class);
 
-    public static final ConfigOption<Boolean> LOG_FIXED_PARTITION = new ConfigOption<Boolean>(LOG_NS,"fixed-partition",
+    public static final ConfigOption<Boolean> LOG_FIXED_PARTITION = new ConfigOption<>(LOG_NS,"fixed-partition",
             "Whether all log entries are written to one fixed partition even if the backend store is partitioned." +
                     "This can cause imbalanced loads and should only be used on low volume logs",
             ConfigOption.Type.GLOBAL_OFFLINE, false);
@@ -61,12 +59,7 @@ public class KCVSLogManager implements LogManager {
     public static final ConfigOption<Integer> LOG_MAX_PARTITIONS = new ConfigOption<Integer>(LOG_NS,"max-partitions",
             "The maximum number of partitions to use for logging. Setting up this many actual or virtual partitions. Must be bigger than 0" +
                     "and a power of 2.",
-            ConfigOption.Type.FIXED, Integer.class, new Predicate<Integer>() {
-        @Override
-        public boolean apply(@Nullable Integer integer) {
-            return integer!=null && integer>0 && NumberUtil.isPowerOf2(integer);
-        }
-    });
+            ConfigOption.Type.FIXED, Integer.class, integer -> integer!=null && integer>0 && NumberUtil.isPowerOf2(integer));
 
     /**
      * If {@link #LOG_MAX_PARTITIONS} isn't set explicitly, the number of partitions is derived by taking the configured
@@ -153,7 +146,7 @@ public class KCVSLogManager implements LogManager {
 
         this.storeManager = storeManager;
         this.configuration = config;
-        openLogs = new HashMap<String, KCVSLog>();
+        openLogs = new HashMap<>();
 
         this.senderId=config.get(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID);
         Preconditions.checkNotNull(senderId);
@@ -175,12 +168,12 @@ public class KCVSLogManager implements LogManager {
             for (int i=0;i<numPartitions;i++) writePartitions[i]=i;
             if (storeManager.getFeatures().hasLocalKeyPartition()) {
                 //Write only to local partitions
-                List<Integer> localPartitions = new ArrayList<Integer>();
+                final List<Integer> localPartitions = new ArrayList<>();
                 try {
                     List<PartitionIDRange> partitionRanges = PartitionIDRange.getIDRanges(partitionBitWidth,
                             storeManager.getLocalKeyPartition());
-                    for (PartitionIDRange idrange : partitionRanges) {
-                        for (int p : idrange.getAllContainedIDs()) localPartitions.add(p);
+                    for (PartitionIDRange idRange : partitionRanges) {
+                        for (int p : idRange.getAllContainedIDs()) localPartitions.add(p);
                     }
                 } catch (Throwable e) {
                     log.error("Could not process local id partitions",e);

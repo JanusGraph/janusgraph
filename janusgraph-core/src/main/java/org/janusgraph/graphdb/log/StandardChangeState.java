@@ -25,7 +25,6 @@ import org.janusgraph.graphdb.internal.InternalVertex;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import javax.annotation.Nullable;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -40,11 +39,11 @@ class StandardChangeState implements ChangeState {
 
 
     StandardChangeState() {
-        vertices = new EnumMap<Change, Set<JanusGraphVertex>>(Change.class);
-        relations = new EnumMap<Change, Set<JanusGraphRelation>>(Change.class);
+        vertices = new EnumMap<>(Change.class);
+        relations = new EnumMap<>(Change.class);
         for (Change state : new Change[]{Change.ADDED,Change.REMOVED}) {
-            vertices.put(state,new HashSet<JanusGraphVertex>());
-            relations.put(state,new HashSet<JanusGraphRelation>());
+            vertices.put(state, new HashSet<>());
+            relations.put(state, new HashSet<>());
         }
     }
 
@@ -61,12 +60,12 @@ class StandardChangeState implements ChangeState {
     public Set<JanusGraphVertex> getVertices(Change change) {
         if (change.isProper()) return vertices.get(change);
         assert change==Change.ANY;
-        Set<JanusGraphVertex> all = new HashSet<JanusGraphVertex>();
+        final Set<JanusGraphVertex> all = new HashSet<>();
         for (Change state : new Change[]{Change.ADDED,Change.REMOVED}) {
             all.addAll(vertices.get(state));
             for (JanusGraphRelation rel : relations.get(state)) {
-                InternalRelation irel = (InternalRelation)rel;
-                for (int p=0;p<irel.getLen();p++) all.add(irel.getVertex(p));
+                InternalRelation internalRelation = (InternalRelation)rel;
+                for (int p=0;p<internalRelation.getLen();p++) all.add(internalRelation.getVertex(p));
             }
         }
         return all;
@@ -86,39 +85,24 @@ class StandardChangeState implements ChangeState {
 
     @Override
     public Iterable<JanusGraphRelation> getRelations(final Change change, final RelationType... types) {
-        final Set<RelationType> stypes = toSet(types);
-        return getRelations(change, new Predicate<JanusGraphRelation>() {
-            @Override
-            public boolean apply(@Nullable JanusGraphRelation janusgraphRelation) {
-                return stypes.isEmpty() || stypes.contains(janusgraphRelation.getType());
-            }
-        });
+        final Set<RelationType> typeSet = toSet(types);
+        return getRelations(change, janusgraphRelation -> typeSet.isEmpty() || typeSet.contains(janusgraphRelation.getType()));
     }
 
     @Override
     public Iterable<JanusGraphEdge> getEdges(final Vertex vertex, final Change change, final Direction dir, final String... labels) {
         final Set<String> stypes = toSet(labels);
-        return (Iterable)getRelations(change, new Predicate<JanusGraphRelation>() {
-            @Override
-            public boolean apply(@Nullable JanusGraphRelation janusgraphRelation) {
-                return janusgraphRelation.isEdge() && janusgraphRelation.isIncidentOn(vertex) &&
-                        (dir==Direction.BOTH || ((JanusGraphEdge)janusgraphRelation).vertex(dir).equals(vertex)) &&
-                        (stypes.isEmpty() || stypes.contains(janusgraphRelation.getType().name()));
-            }
-        });
+        return (Iterable)getRelations(change, janusgraphRelation -> janusgraphRelation.isEdge() && janusgraphRelation.isIncidentOn(vertex) &&
+                (dir==Direction.BOTH || ((JanusGraphEdge)janusgraphRelation).vertex(dir).equals(vertex)) &&
+                (stypes.isEmpty() || stypes.contains(janusgraphRelation.getType().name())));
     }
 
 
     @Override
     public Iterable<JanusGraphVertexProperty> getProperties(final Vertex vertex, final Change change, final String... keys) {
         final Set<String> stypes = toSet(keys);
-        return (Iterable)getRelations(change, new Predicate<JanusGraphRelation>() {
-            @Override
-            public boolean apply(@Nullable JanusGraphRelation janusgraphRelation) {
-                return janusgraphRelation.isProperty() && janusgraphRelation.isIncidentOn(vertex) &&
-                        (stypes.isEmpty() || stypes.contains(janusgraphRelation.getType().name()));
-            }
-        });
+        return (Iterable)getRelations(change, janusgraphRelation -> janusgraphRelation.isProperty() && janusgraphRelation.isIncidentOn(vertex) &&
+                (stypes.isEmpty() || stypes.contains(janusgraphRelation.getType().name())));
     }
 
 }

@@ -47,8 +47,8 @@ public class CQLGraphSpeedTest extends JanusGraphSpeedTest {
     @Override
     protected StandardJanusGraph getGraph() throws BackendException {
         if (null == graph) {
-            GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(conf);
-            graphconfig.getBackend().clearStorage();
+            GraphDatabaseConfiguration graphDatabaseConfiguration = new GraphDatabaseConfiguration(conf);
+            graphDatabaseConfiguration.getBackend().clearStorage();
             log.debug("Cleared backend storage");
             graph = (StandardJanusGraph)JanusGraphFactory.open(conf);
             initializeGraph(graph);

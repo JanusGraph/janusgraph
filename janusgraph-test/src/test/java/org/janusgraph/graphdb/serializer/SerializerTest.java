@@ -52,7 +52,7 @@ public class SerializerTest extends SerializerTestCommon {
         //Characters
         DataOutput out = serialize.getDataOutput(((int) Character.MAX_VALUE) * 2 + 8);
         for (char c = Character.MIN_VALUE; c < Character.MAX_VALUE; c++) {
-            out.writeObjectNotNull(Character.valueOf(c));
+            out.writeObjectNotNull(c);
         }
         ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         for (char c = Character.MIN_VALUE; c < Character.MAX_VALUE; c++) {
@@ -98,7 +98,7 @@ public class SerializerTest extends SerializerTestCommon {
 
         DataOutput out = serialize.getDataOutput(128);
         out.putLong(value);
-        out.writeClassAndObject(Long.valueOf(value));
+        out.writeClassAndObject(value);
         out.writeObject(c, TClass2.class);
         out.writeObjectNotNull(str);
         final StaticBuffer b = out.getStaticBuffer();
@@ -106,16 +106,13 @@ public class SerializerTest extends SerializerTestCommon {
         int numThreads = 4;
         Thread[] threads = new Thread[numThreads];
         for (int i = 0; i < numThreads; i++) {
-            threads[i] = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    for (int j = 0; j < 100000; j++) {
-                        ReadBuffer buffer = b.asReadBuffer();
-                        assertEquals(8, buffer.getLong());
-                        assertEquals (value , (long)serialize.readClassAndObject(buffer));
-                        assertEquals(c,serialize.readObject(buffer,TClass2.class));
-                        assertEquals(str,serialize.readObjectNotNull(buffer,String.class));
-                    }
+            threads[i] = new Thread(() -> {
+                for (int j = 0; j < 100000; j++) {
+                    ReadBuffer buffer = b.asReadBuffer();
+                    assertEquals(8, buffer.getLong());
+                    assertEquals (value , (long)serialize.readClassAndObject(buffer));
+                    assertEquals(c,serialize.readObject(buffer,TClass2.class));
+                    assertEquals(str,serialize.readObjectNotNull(buffer,String.class));
                 }
             });
             threads[i].start();
@@ -133,21 +130,21 @@ public class SerializerTest extends SerializerTestCommon {
         out.writeObjectNotNull(Boolean.TRUE);
         out.writeObjectNotNull(Byte.MIN_VALUE);
         out.writeObjectNotNull(Byte.MAX_VALUE);
-        out.writeObjectNotNull(new Byte((byte) 0));
+        out.writeObjectNotNull((byte) 0);
         out.writeObjectNotNull(Short.MIN_VALUE);
         out.writeObjectNotNull(Short.MAX_VALUE);
-        out.writeObjectNotNull(new Short((short) 0));
+        out.writeObjectNotNull((short) 0);
         out.writeObjectNotNull(Character.MIN_VALUE);
         out.writeObjectNotNull(Character.MAX_VALUE);
-        out.writeObjectNotNull(new Character('a'));
+        out.writeObjectNotNull('a');
         out.writeObjectNotNull(Integer.MIN_VALUE);
         out.writeObjectNotNull(Integer.MAX_VALUE);
-        out.writeObjectNotNull(new Integer(0));
+        out.writeObjectNotNull(0);
         out.writeObjectNotNull(Long.MIN_VALUE);
         out.writeObjectNotNull(Long.MAX_VALUE);
-        out.writeObjectNotNull(new Long(0));
-        out.writeObjectNotNull(new Float((float) 0.0));
-        out.writeObjectNotNull(new Double(0.0));
+        out.writeObjectNotNull(0L);
+        out.writeObjectNotNull((float) 0.0);
+        out.writeObjectNotNull(0.0);
 
         ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         assertEquals(Boolean.FALSE, serialize.readObjectNotNull(b, Boolean.class));
@@ -167,8 +164,8 @@ public class SerializerTest extends SerializerTestCommon {
         assertEquals(Long.MIN_VALUE, serialize.readObjectNotNull(b, Long.class).longValue());
         assertEquals(Long.MAX_VALUE, serialize.readObjectNotNull(b, Long.class).longValue());
         assertEquals(0, serialize.readObjectNotNull(b, Long.class).longValue());
-        assertEquals(0.0, serialize.readObjectNotNull(b, Float.class).floatValue(), 1e-20);
-        assertEquals(0.0, serialize.readObjectNotNull(b, Double.class).doubleValue(), 1e-20);
+        assertEquals(0.0, serialize.readObjectNotNull(b, Float.class), 1e-20);
+        assertEquals(0.0, serialize.readObjectNotNull(b, Double.class), 1e-20);
 
     }
 
@@ -189,7 +186,7 @@ public class SerializerTest extends SerializerTestCommon {
             try {
                 out.writeObjectNotNull(o);
                 fail();
-            } catch (Exception e) {
+            } catch (Exception ignored) {
 
             }
         }
@@ -211,14 +208,14 @@ public class SerializerTest extends SerializerTestCommon {
 
     @Test
     public void largeWriteTest() {
-        String base = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; //26 chars
-        String str = "";
-        for (int i = 0; i < 100; i++) str += base;
+        final String base = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; //26 chars
+        final StringBuilder str = new StringBuilder();
+        for (int i = 0; i < 100; i++) str.append(base);
         DataOutput out = serialize.getDataOutput(128);
-        out.writeObjectNotNull(str);
+        out.writeObjectNotNull(str.toString());
         ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         if (printStats) log.debug(bufferStats(b));
-        assertEquals(str, serialize.readObjectNotNull(b, String.class));
+        assertEquals(str.toString(), serialize.readObjectNotNull(b, String.class));
         assertFalse(b.hasRemaining());
     }
 
@@ -243,14 +240,14 @@ public class SerializerTest extends SerializerTestCommon {
 
         final String property1 = "property1";
         final String value1 = "value1";
-        HashMap<String, Object> hashMapIn = new HashMap<String, Object>();
+        final HashMap<String, Object> hashMapIn = new HashMap<>();
         hashMapIn.put(property1, value1);
         out.writeObjectNotNull(hashMapIn);
 
         ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         if (printStats) log.debug(bufferStats(b));
         
-        HashMap<String, Object> hashMapOut = serialize.readObjectNotNull(b, HashMap.class);
+        final HashMap<String, Object> hashMapOut = serialize.readObjectNotNull(b, HashMap.class);
         assertNotNull(hashMapOut);
         assertEquals(2, hashMapOut.size());
         assertEquals(value1, hashMapOut.get(property1));
@@ -267,7 +264,7 @@ public class SerializerTest extends SerializerTestCommon {
     public void testStringCompression() {
         //ASCII encoding
         for (int t = 0; t < 100; t++) {
-            String x = getRandomString(StringSerializer.TEXT_COMRPESSION_THRESHOLD-1,ASCII_VALUE);
+            String x = getRandomString(StringSerializer.TEXT_COMPRESSION_THRESHOLD -1,ASCII_VALUE);
             assertEquals(x.length()+1, getStringBuffer(x).length());
         }
 
@@ -279,7 +276,7 @@ public class SerializerTest extends SerializerTestCommon {
 //                "A man entered who could hardly have been less than six feet six inches in height, with the chest and limbs of a Hercules. His dress was rich with a richness which would, in England"
 //        };
 //        for (String text : texts) {
-//            assertTrue(text.length()> StringSerializer.TEXT_COMRPESSION_THRESHOLD);
+//            assertTrue(text.length()> StringSerializer.TEXT_COMPRESSION_THRESHOLD);
 //            StaticBuffer s = getStringBuffer(text);
 ////            System.out.println(String.format("String length [%s] -> byte size [%s]",text.length(),s.length()));
 //            assertTrue(text.length()>s.length()); //Test that actual compression is happening
@@ -316,7 +313,7 @@ public class SerializerTest extends SerializerTestCommon {
         for (int t = 0; t < 1000; t++) {
             DataOutput out = serialize.getDataOutput(128);
             int num = random.nextInt(100)+1;
-            List<SerialEntry> entries = new ArrayList<SerialEntry>(num);
+            final List<SerialEntry> entries = new ArrayList<>(num);
             for (int i = 0; i < num; i++) {
                 Map.Entry<Class,Factory> type = Iterables.get(TYPES.entrySet(),random.nextInt(TYPES.size()));
                 Object element = type.getValue().newInstance();
@@ -350,7 +347,7 @@ public class SerializerTest extends SerializerTestCommon {
     public void testSerializedOrder() {
         serialize.registerClass(1,TClass1.class, new TClass1Serializer());
 
-        Map<Class,Factory> sortTypes = new HashMap<Class, Factory>();
+        final Map<Class,Factory> sortTypes = new HashMap<>();
         for (Map.Entry<Class,Factory> entry : TYPES.entrySet()) {
             if (serialize.isOrderPreservingDatatype(entry.getKey()))
                 sortTypes.put(entry.getKey(),entry.getValue());
@@ -425,7 +422,7 @@ public class SerializerTest extends SerializerTestCommon {
 
     public interface Factory<T> {
 
-        public T newInstance();
+        T newInstance();
 
     }
 
@@ -434,7 +431,7 @@ public class SerializerTest extends SerializerTestCommon {
     public static final int MAX_CHAR_VALUE = 20000;
     public static final int ASCII_VALUE = 128;
 
-    public static final String getRandomString(int maxSize, int maxChar) {
+    public static String getRandomString(int maxSize, int maxChar) {
         int charOffset = 10;
         int size = random.nextInt(maxSize);
         StringBuilder sb = new StringBuilder(size);
@@ -446,24 +443,21 @@ public class SerializerTest extends SerializerTestCommon {
     }
 
 
-    public static final Factory<String> STRING_FACTORY = new Factory<String>() {
-        @Override
-        public String newInstance() {
-            if (random.nextDouble()>0.1) {
-                return getRandomString(StringSerializer.TEXT_COMRPESSION_THRESHOLD*2,
-                        random.nextDouble()>0.5?ASCII_VALUE:MAX_CHAR_VALUE);
-            } else {
-                return getRandomString(StringSerializer.LONG_COMPRESSION_THRESHOLD*4,
-                        random.nextDouble()>0.5?ASCII_VALUE:MAX_CHAR_VALUE);
-            }
+    public static final Factory<String> STRING_FACTORY = () -> {
+        if (random.nextDouble()>0.1) {
+            return getRandomString(StringSerializer.TEXT_COMPRESSION_THRESHOLD *2,
+                    random.nextDouble()>0.5?ASCII_VALUE:MAX_CHAR_VALUE);
+        } else {
+            return getRandomString(StringSerializer.LONG_COMPRESSION_THRESHOLD*4,
+                    random.nextDouble()>0.5?ASCII_VALUE:MAX_CHAR_VALUE);
         }
     };
 
-    public static final float randomGeoPoint() {
+    public static float randomGeoPoint() {
         return random.nextFloat()*180.0f-90.0f;
     }
 
-    public static final List<double[]> randomGeoPoints(int n) {
+    public static List<double[]> randomGeoPoints(int n) {
         List<double[]> points = new ArrayList<>();
         for (int i=0; i<n; i++) {
             points.add(new double[] {random.nextFloat()*360.0f-180.0f, random.nextFloat()*180.0f-90.0f});
@@ -471,77 +465,29 @@ public class SerializerTest extends SerializerTestCommon {
         return points;
     }
 
-    public static Map<Class,Factory> TYPES = new HashMap<Class,Factory>() {{
-        put(Byte.class, new Factory<Byte>() {
-            @Override
-            public Byte newInstance() {
-                return (byte)random.nextInt();
-            }
-        });
-        put(Short.class, new Factory<Short>() {
-            @Override
-            public Short newInstance() {
-                return (short)random.nextInt();
-            }
-        });
-        put(Integer.class, new Factory<Integer>() {
-            @Override
-            public Integer newInstance() {
-                return random.nextInt();
-            }
-        });
-        put(Long.class, new Factory<Long>() {
-            @Override
-            public Long newInstance() {
-                return random.nextLong();
-            }
-        });
-        put(Boolean.class, new Factory<Boolean>() {
-            @Override
-            public Boolean newInstance() {
-                return random.nextInt(2)==0;
-            }
-        });
-        put(Character.class, new Factory<Character>() {
-            @Override
-            public Character newInstance() {
-                return (char)random.nextInt();
-            }
-        });
-        put(Date.class, new Factory<Date>() {
-            @Override
-            public Date newInstance() {
-                return new Date(random.nextLong());
-            }
-        });
-        put(Float.class, new Factory<Float>() {
-            @Override
-            public Float newInstance() {
-                return random.nextFloat()*10000 - 10000/2.0f;
-            }
-        });
-        put(Double.class, new Factory<Double>() {
-            @Override
-            public Double newInstance() {
-                return random.nextDouble()*10000000 - 10000000/2.0;
-            }
-        });
-        put(Geoshape.class, new Factory<Geoshape>() {
-            @Override
-            public Geoshape newInstance() {
-                double alpha = random.nextDouble();
-                double x0=randomGeoPoint(), y0=randomGeoPoint(), x1=randomGeoPoint(), y1=randomGeoPoint();
-                if (alpha>0.75) {
-                    double minx=Math.min(x0,x1), miny=Math.min(y0,y1);
-                    double maxx=minx==x0? x1 : x0, maxy=miny==y0 ? y1 : y0;
-                    return Geoshape.box(miny, minx, maxy, maxx);
-                } else if (alpha>0.5) {
-                    return Geoshape.circle(y0,x0,random.nextInt(100)+1);
-                } else if (alpha>0.25) {
-                    return Geoshape.line(Arrays.asList(new double[][] {{x0,y0},{x0,y1},{x1,y1},{x1,y0}}));
-                } else {
-                    return Geoshape.polygon(Arrays.asList(new double[][] {{x0,y0},{x1,y0},{x1,y1},{x0,y1},{x0,y0}}));
-                }
+    public static final Map<Class,Factory> TYPES = new HashMap<Class,Factory>() {{
+        put(Byte.class, (Factory<Byte>) () -> (byte)random.nextInt());
+        put(Short.class, (Factory<Short>) () -> (short)random.nextInt());
+        put(Integer.class, (Factory<Integer>) random::nextInt);
+        put(Long.class, (Factory<Long>) random::nextLong);
+        put(Boolean.class, (Factory<Boolean>) () -> random.nextInt(2)==0);
+        put(Character.class, (Factory<Character>) () -> (char)random.nextInt());
+        put(Date.class, (Factory<Date>) () -> new Date(random.nextLong()));
+        put(Float.class, (Factory<Float>) () -> random.nextFloat()*10000 - 10000/2.0f);
+        put(Double.class, (Factory<Double>) () -> random.nextDouble()*10000000 - 10000000/2.0);
+        put(Geoshape.class, (Factory<Geoshape>) () -> {
+            final double alpha = random.nextDouble();
+            final double x0=randomGeoPoint(), y0=randomGeoPoint(), x1=randomGeoPoint(), y1=randomGeoPoint();
+            if (alpha>0.75) {
+                final double minx=Math.min(x0,x1), miny=Math.min(y0,y1);
+                final double maxx=minx==x0? x1 : x0, maxy=miny==y0 ? y1 : y0;
+                return Geoshape.box(miny, minx, maxy, maxx);
+            } else if (alpha>0.5) {
+                return Geoshape.circle(y0,x0,random.nextInt(100)+1);
+            } else if (alpha>0.25) {
+                return Geoshape.line(Arrays.asList(new double[][] {{x0,y0},{x0,y1},{x1,y1},{x1,y0}}));
+            } else {
+                return Geoshape.polygon(Arrays.asList(new double[][] {{x0,y0},{x1,y0},{x1,y1},{x0,y1},{x0,y0}}));
             }
         });
         put(String.class, STRING_FACTORY);
@@ -554,33 +500,25 @@ public class SerializerTest extends SerializerTestCommon {
         put(double[].class,getArrayFactory(double.class,get(Double.class)));
         put(char[].class,getArrayFactory(char.class,get(Character.class)));
         put(String[].class,getArrayFactory(String.class,get(String.class)));
-        put(TClass1.class,new Factory<TClass1>() {
-            @Override
-            public TClass1 newInstance() {
-                return new TClass1(random.nextLong(),random.nextFloat());
-            }
-        });
+        put(TClass1.class, (Factory<TClass1>) () -> new TClass1(random.nextLong(),random.nextFloat()));
     }};
 
     private static Factory getArrayFactory(final Class ct, final Factory f) {
-        return new Factory() {
-            @Override
-            public Object newInstance() {
-                int length = random.nextInt(100);
-                Object array = Array.newInstance(ct,length);
-                for (int i = 0; i < length; i++) {
-                    if (ct==boolean.class) Array.setBoolean(array,i, (Boolean) f.newInstance());
-                    else if (ct==byte.class) Array.setByte(array,i, (Byte) f.newInstance());
-                    else if (ct==short.class) Array.setShort(array,i, (Short) f.newInstance());
-                    else if (ct==int.class) Array.setInt(array,i, (Integer) f.newInstance());
-                    else if (ct==long.class) Array.setLong(array,i, (Long) f.newInstance());
-                    else if (ct==float.class) Array.setFloat(array,i, (Float) f.newInstance());
-                    else if (ct==double.class) Array.setDouble(array,i, (Double) f.newInstance());
-                    else if (ct==char.class) Array.setChar(array,i, (Character) f.newInstance());
-                    else Array.set(array,i, f.newInstance());
-                }
-                return array;
+        return () -> {
+            final int length = random.nextInt(100);
+            final Object array = Array.newInstance(ct,length);
+            for (int i = 0; i < length; i++) {
+                if (ct==boolean.class) Array.setBoolean(array,i, (Boolean) f.newInstance());
+                else if (ct==byte.class) Array.setByte(array,i, (Byte) f.newInstance());
+                else if (ct==short.class) Array.setShort(array,i, (Short) f.newInstance());
+                else if (ct==int.class) Array.setInt(array,i, (Integer) f.newInstance());
+                else if (ct==long.class) Array.setLong(array,i, (Long) f.newInstance());
+                else if (ct==float.class) Array.setFloat(array,i, (Float) f.newInstance());
+                else if (ct==double.class) Array.setDouble(array,i, (Double) f.newInstance());
+                else if (ct==char.class) Array.setChar(array,i, (Character) f.newInstance());
+                else Array.set(array,i, f.newInstance());
             }
+            return array;
         };
     }
 

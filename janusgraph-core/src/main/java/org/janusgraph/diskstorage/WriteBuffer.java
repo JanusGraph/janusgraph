@@ -23,30 +23,30 @@ package org.janusgraph.diskstorage;
 public interface WriteBuffer {
 
 
-    public WriteBuffer putByte(byte val);
+    WriteBuffer putByte(byte val);
 
-    public WriteBuffer putBytes(byte[] val);
+    WriteBuffer putBytes(byte[] val);
 
-    public WriteBuffer putBytes(StaticBuffer val);
+    WriteBuffer putBytes(StaticBuffer val);
 
-    public WriteBuffer putBoolean(boolean val);
+    WriteBuffer putBoolean(boolean val);
 
-    public WriteBuffer putShort(short val);
+    WriteBuffer putShort(short val);
 
-    public WriteBuffer putInt(int val);
+    WriteBuffer putInt(int val);
 
-    public WriteBuffer putLong(long val);
+    WriteBuffer putLong(long val);
 
-    public WriteBuffer putChar(char val);
+    WriteBuffer putChar(char val);
 
-    public WriteBuffer putFloat(float val);
+    WriteBuffer putFloat(float val);
 
-    public WriteBuffer putDouble(double val);
+    WriteBuffer putDouble(double val);
 
-    public StaticBuffer getStaticBuffer();
+    StaticBuffer getStaticBuffer();
 
-    public int getPosition();
+    int getPosition();
 
-    public StaticBuffer getStaticBufferFlipBytes(int from, int to);
+    StaticBuffer getStaticBufferFlipBytes(int from, int to);
 
 }

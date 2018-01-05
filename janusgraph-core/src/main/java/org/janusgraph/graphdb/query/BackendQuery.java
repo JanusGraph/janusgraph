@@ -30,6 +30,6 @@ public interface BackendQuery<Q extends BackendQuery> extends Query {
      * @param newLimit
      * @return
      */
-    public Q updateLimit(int newLimit);
+    Q updateLimit(int newLimit);
 
 }

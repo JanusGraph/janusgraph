@@ -117,7 +117,7 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
         Map<SliceQuery, EntryList> matches = new HashMap<>();
         matches.put(initialQuery, initialQueryMatches);
 
-        // Find matches (if any are present) for noninitial queries
+        // Find matches (if any are present) for subsequent queries
         for (SliceQuery sq : subsequentQueries) {
             matches.put(sq, findEntriesMatchingQuery(sq, al));
         }
@@ -222,11 +222,7 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
 
         try {
             return (ScanJob)Class.forName(jobClass).newInstance();
-        } catch (InstantiationException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        } catch (ClassNotFoundException e) {
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
@@ -255,11 +251,7 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
         try {
             Field f = Class.forName(className).getField(fieldName);
             return (ConfigNamespace)f.get(null);
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
+        } catch (NoSuchFieldException | ClassNotFoundException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }

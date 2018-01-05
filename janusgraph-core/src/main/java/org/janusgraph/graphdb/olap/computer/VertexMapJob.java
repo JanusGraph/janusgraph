@@ -53,9 +53,7 @@ public class VertexMapJob implements VertexScanJob {
         }
 
         @Override
-        public final void accessProperties() {
-            return; //Allowed
-        }
+        public final void accessProperties() { }
 
         @Override
         public void accessSetProperty() {
@@ -107,7 +105,7 @@ public class VertexMapJob implements VertexScanJob {
 
     @Override
     public void process(JanusGraphVertex vertex, ScanMetrics metrics) {
-        PreloadedVertex v = (PreloadedVertex) vertex;
+        final PreloadedVertex v = (PreloadedVertex) vertex;
         if (vertexMemory != null) {
             VertexMemoryHandler vh = new VertexMemoryHandler(vertexMemory, v);
             v.setPropertyMixing(vh);
@@ -115,16 +113,15 @@ public class VertexMapJob implements VertexScanJob {
         v.setAccessCheck(MAPREDUCE_CHECK);
         if (idManager.isPartitionedVertex(v.longId()) && !idManager.isCanonicalVertexId(v.longId())) {
             return; //Only consider the canonical partition vertex representative
-        } else {
-            for (Map.Entry<MapReduce, FulgoraMapEmitter> mapJob : mapJobs.entrySet()) {
-                MapReduce job = mapJob.getKey();
-                try {
-                    job.map(v, mapJob.getValue());
-                    metrics.incrementCustom(MAP_JOB_SUCCESS);
-                } catch (Throwable ex) {
-                    log.error("Encountered exception executing map job [" + job + "] on vertex [" + vertex + "]:", ex);
-                    metrics.incrementCustom(MAP_JOB_FAILURE);
-                }
+        }
+        for (Map.Entry<MapReduce, FulgoraMapEmitter> mapJob : mapJobs.entrySet()) {
+            final MapReduce job = mapJob.getKey();
+            try {
+                job.map(v, mapJob.getValue());
+                metrics.incrementCustom(MAP_JOB_SUCCESS);
+            } catch (Throwable ex) {
+                log.error("Encountered exception executing map job [" + job + "] on vertex [" + vertex + "]:", ex);
+                metrics.incrementCustom(MAP_JOB_FAILURE);
             }
         }
     }

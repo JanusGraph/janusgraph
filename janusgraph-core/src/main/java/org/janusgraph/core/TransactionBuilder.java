@@ -31,7 +31,7 @@ public interface TransactionBuilder {
      *
      * @return
      */
-    public TransactionBuilder readOnly();
+    TransactionBuilder readOnly();
 
     /**
      * Enabling batch loading disables a number of consistency checks inside JanusGraph to speed up the ingestion of
@@ -39,7 +39,7 @@ public interface TransactionBuilder {
      *
      * @return
      */
-    public TransactionBuilder enableBatchLoading();
+    TransactionBuilder enableBatchLoading();
 
     /**
      * Disables batch loading by ensuring that consistency checks are applied in this transaction. This allows
@@ -48,7 +48,7 @@ public interface TransactionBuilder {
      *
      * @return
      */
-    public TransactionBuilder disableBatchLoading();
+    TransactionBuilder disableBatchLoading();
 
     /**
      * Configures the size of the internal caches used in the transaction.
@@ -56,7 +56,7 @@ public interface TransactionBuilder {
      * @param size
      * @return
      */
-    public TransactionBuilder vertexCacheSize(int size);
+    TransactionBuilder vertexCacheSize(int size);
 
     /**
      * Configures the initial size of the map of modified vertices held by this
@@ -67,7 +67,7 @@ public interface TransactionBuilder {
      * @param size initial size of the transaction's dirty vertex collection
      * @return
      */
-    public TransactionBuilder dirtyVertexSize(int size);
+    TransactionBuilder dirtyVertexSize(int size);
 
     /**
      * Enables/disables checks that verify that each vertex actually exists in the underlying data store when it is retrieved.
@@ -80,7 +80,7 @@ public interface TransactionBuilder {
      * @param enabled
      * @return
      */
-    public TransactionBuilder checkInternalVertexExistence(boolean enabled);
+    TransactionBuilder checkInternalVertexExistence(boolean enabled);
 
     /**
      * Enables/disables checking whether the vertex with a user provided id indeed exists. If the user is absolutely sure
@@ -92,7 +92,7 @@ public interface TransactionBuilder {
      * @param enabled
      * @return
      */
-    public TransactionBuilder checkExternalVertexExistence(boolean enabled);
+    TransactionBuilder checkExternalVertexExistence(boolean enabled);
 
 
     /**
@@ -102,7 +102,7 @@ public interface TransactionBuilder {
      * @param enabled
      * @return
      */
-    public TransactionBuilder consistencyChecks(boolean enabled);
+    TransactionBuilder consistencyChecks(boolean enabled);
 
     /**
      * Sets the timestamp for this transaction. The transaction will be recorded
@@ -113,7 +113,7 @@ public interface TransactionBuilder {
      *            The instant at which the commit took place
      * @return
      */
-    public TransactionBuilder commitTime(Instant instant);
+    TransactionBuilder commitTime(Instant instant);
 
 
     /**
@@ -150,7 +150,7 @@ public interface TransactionBuilder {
      *            Metric name prefix for this transaction
      * @return
      */
-    public TransactionBuilder groupName(String name);
+    TransactionBuilder groupName(String name);
 
     /**
      * Name of the log to be used for logging the mutations in this transaction. If no log identifier is set,
@@ -159,7 +159,7 @@ public interface TransactionBuilder {
      * @param logName
      * @return
      */
-    public TransactionBuilder logIdentifier(String logName);
+    TransactionBuilder logIdentifier(String logName);
 
     /**
      * Configures this transaction such that queries against partitioned vertices are
@@ -168,7 +168,7 @@ public interface TransactionBuilder {
      * @param partitions
      * @return
      */
-    public TransactionBuilder restrictedPartitions(int[] partitions);
+    TransactionBuilder restrictedPartitions(int[] partitions);
 
     /**
      * Configures a custom option on this transaction which will be passed through to the storage and indexing backends.
@@ -176,13 +176,13 @@ public interface TransactionBuilder {
      * @param v
      * @return
      */
-    public TransactionBuilder customOption(String k, Object v);
+    TransactionBuilder customOption(String k, Object v);
 
     /**
      * Starts and returns the transaction build by this builder
      *
      * @return A new transaction configured according to this builder
      */
-    public JanusGraphTransaction start();
+    JanusGraphTransaction start();
 
 }

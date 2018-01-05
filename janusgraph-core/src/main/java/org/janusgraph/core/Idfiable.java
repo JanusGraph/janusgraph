@@ -26,6 +26,6 @@ public interface Idfiable {
      *
      * @return Unique long id for this entity
      */
-    public long longId();
+    long longId();
 
 }

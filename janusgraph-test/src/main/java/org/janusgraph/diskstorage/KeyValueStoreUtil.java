@@ -58,7 +58,7 @@ public class KeyValueStoreUtil {
     }
 
     public static void print(String[][] data) {
-        for (int i = 0; i < data.length; i++) print(data[i]);
+        for (String[] aData : data) print(aData);
     }
 
     public static StaticBuffer getBuffer(int no) {

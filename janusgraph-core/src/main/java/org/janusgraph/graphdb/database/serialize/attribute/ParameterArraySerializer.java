@@ -43,7 +43,7 @@ public class ParameterArraySerializer extends ArraySerializer implements Attribu
 
     @Override
     protected void setArray(Object array, int pos, Object value) {
-        Array.set(array, pos, ((Parameter) value));
+        Array.set(array, pos, value);
     }
 
     //############### Serialization ###################
@@ -62,7 +62,8 @@ public class ParameterArraySerializer extends ArraySerializer implements Attribu
     @Override
     public void write(WriteBuffer buffer, Parameter[] attribute) {
         writeLength(buffer,attribute);
-        if (attribute!=null) for (int i = 0; i < attribute.length; i++) ((DataOutput)buffer).writeObjectNotNull(attribute[i]);
+        if (attribute!=null)
+            for (Parameter anAttribute : attribute) ((DataOutput) buffer).writeObjectNotNull(anAttribute);
     }
 
 

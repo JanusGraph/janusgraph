@@ -87,15 +87,15 @@ public enum TypeDefinitionCategory {
     private final RelationCategory relationCategory;
     private final Class dataType;
 
-    private TypeDefinitionCategory() {
+    TypeDefinitionCategory() {
         this(RelationCategory.EDGE,null);
     }
 
-    private TypeDefinitionCategory(Class<?> dataType) {
+    TypeDefinitionCategory(Class<?> dataType) {
         this(RelationCategory.PROPERTY, dataType);
     }
 
-    private TypeDefinitionCategory(RelationCategory relCat, Class<?> dataType) {
+    TypeDefinitionCategory(RelationCategory relCat, Class<?> dataType) {
         Preconditions.checkArgument(relCat!=null && relCat.isProper());
         Preconditions.checkArgument(relCat==RelationCategory.EDGE || dataType !=null);
         this.relationCategory = relCat;

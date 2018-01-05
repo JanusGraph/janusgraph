@@ -54,7 +54,7 @@ public abstract class EmptyRelationType extends EmptyVertex implements InternalR
 
     @Override
     public Iterable<InternalRelationType> getRelationIndexes() {
-        return ImmutableSet.of((InternalRelationType)this);
+        return ImmutableSet.of(this);
     }
 
     @Override

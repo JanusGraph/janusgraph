@@ -18,8 +18,6 @@ package org.janusgraph.diskstorage.berkeleyje;
 import com.google.common.base.Preconditions;
 import com.sleepycat.je.*;
 import org.janusgraph.diskstorage.*;
-import org.janusgraph.diskstorage.PermanentBackendException;
-import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.common.LocalStoreManager;
 import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
@@ -54,7 +52,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
             new ConfigNamespace(GraphDatabaseConfiguration.STORAGE_NS, "berkeleyje", "BerkeleyDB JE configuration options");
 
     public static final ConfigOption<Integer> JVM_CACHE =
-            new ConfigOption<Integer>(BERKELEY_NS,"cache-percentage",
+            new ConfigOption<>(BERKELEY_NS, "cache-percentage",
             "Percentage of JVM heap reserved for BerkeleyJE's cache",
             ConfigOption.Type.MASKABLE, 65, ConfigOption.positiveInt());
 
@@ -76,7 +74,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
     public BerkeleyJEStoreManager(Configuration configuration) throws BackendException {
         super(configuration);
-        stores = new HashMap<String, BerkeleyJEKeyValueStore>();
+        stores = new HashMap<>();
 
         int cachePercentage = configuration.get(JVM_CACHE);
         initialize(cachePercentage);
@@ -167,8 +165,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     public BerkeleyJEKeyValueStore openDatabase(String name) throws BackendException {
         Preconditions.checkNotNull(name);
         if (stores.containsKey(name)) {
-            BerkeleyJEKeyValueStore store = stores.get(name);
-            return store;
+            return stores.get(name);
         }
         try {
             DatabaseConfig dbConfig = new DatabaseConfig();
@@ -196,26 +193,26 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
     @Override
     public void mutateMany(Map<String, KVMutation> mutations, StoreTransaction txh) throws BackendException {
-        for (Map.Entry<String,KVMutation> muts : mutations.entrySet()) {
-            BerkeleyJEKeyValueStore store = openDatabase(muts.getKey());
-            KVMutation mut = muts.getValue();
+        for (Map.Entry<String,KVMutation> mutation : mutations.entrySet()) {
+            BerkeleyJEKeyValueStore store = openDatabase(mutation.getKey());
+            KVMutation mutationValue = mutation.getValue();
 
-            if (!mut.hasAdditions() && !mut.hasDeletions()) {
-                log.debug("Empty mutation set for {}, doing nothing", muts.getKey());
+            if (!mutationValue.hasAdditions() && !mutationValue.hasDeletions()) {
+                log.debug("Empty mutation set for {}, doing nothing", mutation.getKey());
             } else {
-                log.debug("Mutating {}", muts.getKey());
+                log.debug("Mutating {}", mutation.getKey());
             }
 
-            if (mut.hasAdditions()) {
-                for (KeyValueEntry entry : mut.getAdditions()) {
+            if (mutationValue.hasAdditions()) {
+                for (KeyValueEntry entry : mutationValue.getAdditions()) {
                     store.insert(entry.getKey(),entry.getValue(),txh);
-                    log.trace("Insertion on {}: {}", muts.getKey(), entry);
+                    log.trace("Insertion on {}: {}", mutation.getKey(), entry);
                 }
             }
-            if (mut.hasDeletions()) {
-                for (StaticBuffer del : mut.getDeletions()) {
+            if (mutationValue.hasDeletions()) {
+                for (StaticBuffer del : mutationValue.getDeletions()) {
                     store.delete(del,txh);
-                    log.trace("Deletion on {}: {}", muts.getKey(), del);
+                    log.trace("Deletion on {}: {}", mutation.getKey(), del);
                 }
             }
         }
@@ -252,14 +249,16 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
     }
 
+    private static final Transaction NULL_TRANSACTION = null;
+
     @Override
     public void clearStorage() throws BackendException {
-        if (!stores.isEmpty())
+        if (!stores.isEmpty()) {
             throw new IllegalStateException("Cannot delete store, since database is open: " + stores.keySet().toString());
+        }
 
-        Transaction tx = null;
-        for (String db : environment.getDatabaseNames()) {
-            environment.removeDatabase(tx, db);
+        for (final String db : environment.getDatabaseNames()) {
+            environment.removeDatabase(NULL_TRANSACTION, db);
             log.debug("Removed database {} (clearStorage)", db);
         }
         close();
@@ -277,7 +276,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     }
 
 
-    public static enum IsolationLevel {
+    public enum IsolationLevel {
         READ_UNCOMMITTED {
             @Override
             void configure(TransactionConfig cfg) {
@@ -302,7 +301,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         };
 
         abstract void configure(TransactionConfig cfg);
-    };
+    }
 
     private static class TransactionBegin extends Exception {
         private static final long serialVersionUID = 1L;

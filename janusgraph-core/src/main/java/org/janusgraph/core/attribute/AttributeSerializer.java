@@ -48,7 +48,7 @@ public interface AttributeSerializer<V> {
      * @param buffer ReadBuffer to read attribute from
      * @return Read attribute
      */
-    public V read(ScanBuffer buffer);
+    V read(ScanBuffer buffer);
 
     /**
      * Writes the attribute value to the given WriteBuffer.
@@ -58,7 +58,7 @@ public interface AttributeSerializer<V> {
      * @param buffer    WriteBuffer to write attribute to
      * @param attribute Attribute to write to WriteBuffer
      */
-    public void write(WriteBuffer buffer, V attribute);
+    void write(WriteBuffer buffer, V attribute);
 
 
     /**
@@ -68,19 +68,19 @@ public interface AttributeSerializer<V> {
      *
      * @param value to verify
      */
-    public default void verifyAttribute(V value) {
+    default void verifyAttribute(V value) {
         Preconditions.checkArgument(value != null,"Provided value cannot be null");
     }
 
     /**
-     * Converts the given (not-null) value to the expected datatype V.
+     * Converts the given (not-null) value to the expected data type V.
      * The given object will NOT be of type V.
      * Throws an {@link IllegalArgumentException} if it cannot be converted.
      *
      * @param value to convert
-     * @return converted to expected datatype
+     * @return converted to expected data type
      */
-    public default V convert(Object value) {
+    default V convert(Object value) {
         try {
             return (V)value;
         } catch (ClassCastException e) {

@@ -46,8 +46,9 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
     private static final Logger log =
             LoggerFactory.getLogger(SimpleBulkPlacementStrategy.class);
 
-    public static final ConfigOption<Integer> CONCURRENT_PARTITIONS = new ConfigOption<Integer>(GraphDatabaseConfiguration.IDS_NS,
-            "num-partitions","Number of partition block to allocate for placement of vertices", ConfigOption.Type.MASKABLE,10);
+    public static final ConfigOption<Integer> CONCURRENT_PARTITIONS = new ConfigOption<>(
+            GraphDatabaseConfiguration.IDS_NS, "num-partitions",
+        "Number of partition block to allocate for placement of vertices", ConfigOption.Type.MASKABLE, 10);
 
     public static final int PARTITION_FINDING_ATTEMPTS = 1000;
 
@@ -67,11 +68,11 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
         this(config.get(CONCURRENT_PARTITIONS));
     }
 
-    private final int nextPartitionID() {
+    private int nextPartitionID() {
         return currentPartitions[random.nextInt(currentPartitions.length)];
     }
 
-    private final void updateElement(int index) {
+    private void updateElement(int index) {
         Preconditions.checkArgument(localPartitionIdRanges!=null && !localPartitionIdRanges.isEmpty(),"Local partition id ranges have not been initialized");
         int newPartition;
         int attempts = 0;

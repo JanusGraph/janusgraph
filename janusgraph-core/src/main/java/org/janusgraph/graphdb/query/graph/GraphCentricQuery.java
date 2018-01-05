@@ -73,10 +73,10 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGr
         this.indexQuery = indexQuery;
     }
 
-    public static final GraphCentricQuery emptyQuery(ElementCategory resultType) {
-        Condition<JanusGraphElement> cond = new FixedCondition<JanusGraphElement>(false);
+    public static GraphCentricQuery emptyQuery(ElementCategory resultType) {
+        final Condition<JanusGraphElement> cond = new FixedCondition<>(false);
         return new GraphCentricQuery(resultType, cond, OrderList.NO_ORDER,
-                new BackendQueryHolder<JointIndexQuery>(new JointIndexQuery(),
+                new BackendQueryHolder<>(new JointIndexQuery(),
                         true, false), 0);
     }
 

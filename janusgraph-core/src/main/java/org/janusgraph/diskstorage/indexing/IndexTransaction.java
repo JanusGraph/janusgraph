@@ -44,48 +44,43 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
 
     private final IndexProvider index;
     private final BaseTransaction indexTx;
-    private final KeyInformation.IndexRetriever keyInformations;
+    private final KeyInformation.IndexRetriever keyInformation;
 
     private final Duration maxWriteTime;
 
     private Map<String,Map<String,IndexMutation>> mutations;
 
-    public IndexTransaction(final IndexProvider index, final KeyInformation.IndexRetriever keyInformations,
+    public IndexTransaction(final IndexProvider index, final KeyInformation.IndexRetriever keyInformation,
                             BaseTransactionConfig config,
                             Duration maxWriteTime) throws BackendException {
         Preconditions.checkNotNull(index);
-        Preconditions.checkNotNull(keyInformations);
+        Preconditions.checkNotNull(keyInformation);
         this.index=index;
-        this.keyInformations = keyInformations;
+        this.keyInformation = keyInformation;
         this.indexTx=index.beginTransaction(config);
         Preconditions.checkNotNull(indexTx);
         this.maxWriteTime = maxWriteTime;
-        this.mutations = new HashMap<String,Map<String,IndexMutation>>(DEFAULT_OUTER_MAP_SIZE);
+        this.mutations = new HashMap<>(DEFAULT_OUTER_MAP_SIZE);
     }
 
-    public void add(String store, String docid, IndexEntry entry, boolean isNew) {
-        getIndexMutation(store,docid, isNew, false).addition(new IndexEntry(entry.field, entry.value, entry.getMetaData()));
+    public void add(String store, String documentId, IndexEntry entry, boolean isNew) {
+        getIndexMutation(store,documentId, isNew, false).addition(new IndexEntry(entry.field, entry.value, entry.getMetaData()));
     }
 
-    public void add(String store, String docid, String key, Object value, boolean isNew) {
-        getIndexMutation(store,docid,isNew,false).addition(new IndexEntry(key,value));
+    public void add(String store, String documentId, String key, Object value, boolean isNew) {
+        getIndexMutation(store,documentId,isNew,false).addition(new IndexEntry(key,value));
     }
 
-    public void delete(String store, String docid, String key, Object value, boolean deleteAll) {
-        getIndexMutation(store,docid,false,deleteAll).deletion(new IndexEntry(key,value));
+    public void delete(String store, String documentId, String key, Object value, boolean deleteAll) {
+        getIndexMutation(store,documentId,false,deleteAll).deletion(new IndexEntry(key,value));
     }
 
-    private IndexMutation getIndexMutation(String store, String docid, boolean isNew, boolean isDeleted) {
-        Map<String,IndexMutation> storeMutations = mutations.get(store);
-        if (storeMutations==null) {
-            storeMutations = new HashMap<String,IndexMutation>(DEFAULT_INNER_MAP_SIZE);
-            mutations.put(store,storeMutations);
-
-        }
-        IndexMutation m = storeMutations.get(docid);
+    private IndexMutation getIndexMutation(String store, String documentId, boolean isNew, boolean isDeleted) {
+        final Map<String, IndexMutation> storeMutations = mutations.computeIfAbsent(store, k -> new HashMap<>(DEFAULT_INNER_MAP_SIZE));
+        IndexMutation m = storeMutations.get(documentId);
         if (m==null) {
             m = new IndexMutation(isNew,isDeleted);
-            storeMutations.put(docid, m);
+            storeMutations.put(documentId, m);
         } else {
             //IndexMutation already exists => if we deleted and re-created it we need to remove the deleted flag
             if (isNew && m.isDeleted()) {
@@ -110,7 +105,7 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
     }
 
     public Stream<String> queryStream(IndexQuery query) throws BackendException {
-        return index.query(query,keyInformations,indexTx);
+        return index.query(query, keyInformation, indexTx);
     }
 
     /**
@@ -118,19 +113,19 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
      */
     @Deprecated
     public Iterable<RawQuery.Result<String>> query(RawQuery query) throws BackendException {
-        return new StreamIterable<>(index.query(query,keyInformations,indexTx));
+        return new StreamIterable<>(index.query(query, keyInformation,indexTx));
     }
 
     public Stream<RawQuery.Result<String>> queryStream(RawQuery query) throws BackendException {
-        return index.query(query,keyInformations,indexTx);
+        return index.query(query, keyInformation,indexTx);
     }
 
     public Long totals(RawQuery query) throws BackendException {
-        return index.totals(query,keyInformations,indexTx);
+        return index.totals(query, keyInformation,indexTx);
     }
 
     public void restore(Map<String, Map<String,List<IndexEntry>>> documents) throws BackendException {
-        index.restore(documents,keyInformations,indexTx);
+        index.restore(documents, keyInformation,indexTx);
     }
 
     @Override
@@ -157,7 +152,7 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
             BackendOperation.execute(new Callable<Boolean>() {
                 @Override
                 public Boolean call() throws Exception {
-                    index.mutate(mutations, keyInformations, indexTx);
+                    index.mutate(mutations, keyInformation, indexTx);
                     return true;
                 }
 
@@ -181,12 +176,12 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
                 out.writeObjectNotNull(doc.getKey());
                 IndexMutation mut = doc.getValue();
                 out.putByte((byte)(mut.isNew()?1:(mut.isDeleted()?2:0)));
-                List<IndexEntry> adds = mut.getAdditions();
-                VariableLong.writePositive(out,adds.size());
-                for (IndexEntry add : adds) writeIndexEntry(out,add);
-                List<IndexEntry> dels = mut.getDeletions();
-                VariableLong.writePositive(out,dels.size());
-                for (IndexEntry del: dels) writeIndexEntry(out,del);
+                List<IndexEntry> additions = mut.getAdditions();
+                VariableLong.writePositive(out,additions.size());
+                for (IndexEntry add : additions) writeIndexEntry(out,add);
+                List<IndexEntry> deletions = mut.getDeletions();
+                VariableLong.writePositive(out,deletions.size());
+                for (IndexEntry del: deletions) writeIndexEntry(out,del);
             }
         }
     }

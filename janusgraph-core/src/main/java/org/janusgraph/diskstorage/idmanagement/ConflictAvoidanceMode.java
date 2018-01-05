@@ -71,6 +71,6 @@ public enum ConflictAvoidanceMode {
      * global-quorum-level consistency, so even if two instances happen to
      * select the same ID simultaneously, the conflict will still be detected.
      */
-    GLOBAL_AUTO;
+    GLOBAL_AUTO
 
 }

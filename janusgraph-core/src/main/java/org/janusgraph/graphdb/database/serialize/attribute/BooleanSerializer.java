@@ -27,7 +27,7 @@ public class BooleanSerializer implements OrderPreservingSerializer<Boolean> {
 
     @Override
     public void write(WriteBuffer out, Boolean attribute) {
-        out.putByte(encode(attribute.booleanValue()));
+        out.putByte(encode(attribute));
     }
 
 

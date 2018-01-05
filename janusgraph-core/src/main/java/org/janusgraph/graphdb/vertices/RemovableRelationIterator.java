@@ -26,8 +26,8 @@ public class RemovableRelationIterator<O extends JanusGraphRelation>
     private final Iterator<InternalRelation> iterator;
     private InternalRelation current;
 
-    public RemovableRelationIterator(Iterator<InternalRelation> iter) {
-        iterator = iter;
+    public RemovableRelationIterator(Iterator<InternalRelation> iterator) {
+        this.iterator = iterator;
         current = null;
     }
 

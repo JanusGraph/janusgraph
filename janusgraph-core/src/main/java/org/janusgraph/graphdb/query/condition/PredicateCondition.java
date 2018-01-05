@@ -63,10 +63,10 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
         Preconditions.checkNotNull(type);
 
         if (type.isPropertyKey()) {
-            Iterator<Object> iter = ElementHelper.getValues(element,(PropertyKey)type).iterator();
-            if (iter.hasNext()) {
-                while (iter.hasNext()) {
-                    if (satisfiesCondition(iter.next()))
+            Iterator<Object> iterator = ElementHelper.getValues(element,(PropertyKey)type).iterator();
+            if (iterator.hasNext()) {
+                while (iterator.hasNext()) {
+                    if (satisfiesCondition(iterator.next()))
                         return true;
                 }
                 return false;
@@ -74,7 +74,7 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
             return satisfiesCondition(null);
         } else {
             assert ((InternalRelationType)type).multiplicity().isUnique(Direction.OUT);
-            return satisfiesCondition((JanusGraphVertex)element.value(type.name()));
+            return satisfiesCondition(element.value(type.name()));
         }
     }
 
@@ -113,7 +113,7 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
     }
 
     public static <K, E extends JanusGraphElement> PredicateCondition<K, E> of(K key, JanusGraphPredicate janusgraphPredicate, Object condition) {
-        return new PredicateCondition<K, E>(key, janusgraphPredicate, condition);
+        return new PredicateCondition<>(key, janusgraphPredicate, condition);
     }
 
 }

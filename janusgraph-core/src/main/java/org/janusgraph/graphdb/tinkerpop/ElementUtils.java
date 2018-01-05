@@ -41,7 +41,7 @@ public class ElementUtils {
             if (id instanceof Vertex)
                 return Long.parseLong(((Vertex) id).id().toString());
             else
-                return Long.valueOf(id.toString()).longValue();
+                return Long.valueOf(id.toString());
         } catch (NumberFormatException e) {
             return 0;
         }
@@ -62,11 +62,11 @@ public class ElementUtils {
         return null;
     }
 
-    public static void verifyArgsMustBeEitherIdorElement(Object... ids) {
+    public static void verifyArgsMustBeEitherIdOrElement(Object... ids) {
         assert ids.length>0;
         int numElements = 0;
-        for (int i = 0; i < ids.length; i++) {
-            if (ids[i] instanceof Element) numElements++;
+        for (Object id : ids) {
+            if (id instanceof Element) numElements++;
         }
         if (numElements>0 && numElements<ids.length) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
     }

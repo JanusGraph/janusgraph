@@ -53,7 +53,7 @@ public class VertexIDAssignerTest {
 
     @Parameterized.Parameters
     public static Collection<Object[]> configs() {
-        List<Object[]> configurations = new ArrayList<Object[]>();
+        final List<Object[]> configurations = new ArrayList<>();
 
         for (int maxPerPartition : new int[]{Integer.MAX_VALUE, 100, 300}) {
             for (int numPartitions : new int[]{2, 4, 10}) {
@@ -78,9 +78,9 @@ public class VertexIDAssignerTest {
     /**
      *
      * @param numPartitionsBits The number of partitions bits to use. This means there are exactly (1<<numPartitionBits) partitions.
-     * @param partitionMax The maxium number of ids that can be allocated per partition. This is artifically constraint by the MockIDAuthority
+     * @param partitionMax The maximum number of ids that can be allocated per partition. This is artificially constrained by the MockIDAuthority
      * @param localPartitionDef This array contains three integers: 1+2) lower and upper bounds for the local partition range, and
-     *                          3) the bit width of the local bounds. The bounds will be bitshifted forward to consume the bit width
+     *                          3) the bit width of the local bounds. The bounds will be bit-shifted forward to consume the bit width
      */
     public VertexIDAssignerTest(int numPartitionsBits, int partitionMax, int[] localPartitionDef) {
         MockIDAuthority idAuthority = new MockIDAuthority(11, partitionMax);
@@ -125,10 +125,10 @@ public class VertexIDAssignerTest {
         int totalVertices = 0;
         for (int trial = 0; trial < 10; trial++) {
             for (boolean flush : new boolean[]{true, false}) {
-                JanusGraph graph = getInMemoryGraph(false, false);
+                final JanusGraph graph = getInMemoryGraph(false, false);
                 int numVertices = 1000;
-                List<JanusGraphVertex> vertices = new ArrayList<JanusGraphVertex>(numVertices);
-                List<InternalRelation> relations = new ArrayList<InternalRelation>();
+                final List<JanusGraphVertex> vertices = new ArrayList<>(numVertices);
+                final List<InternalRelation> relations = new ArrayList<>();
                 JanusGraphVertex old = null;
                 totalRelations+=2*numVertices;
                 totalVertices+=numVertices;
@@ -211,9 +211,9 @@ public class VertexIDAssignerTest {
         final long maxCount = idAssigner.getIDManager().getVertexCountBound();
         long count = 1;
         for (int trial = 0; trial < 10; trial++) {
-            JanusGraph graph = getInMemoryGraph(true, true);
+            final JanusGraph graph = getInMemoryGraph(true, true);
             int numVertices = 1000;
-            List<JanusGraphVertex> vertices = new ArrayList<JanusGraphVertex>(numVertices);
+            final List<JanusGraphVertex> vertices = new ArrayList<>(numVertices);
             try {
                 for (int i = 0; i < numVertices; i++, count++) {
                     final long userVertexId;

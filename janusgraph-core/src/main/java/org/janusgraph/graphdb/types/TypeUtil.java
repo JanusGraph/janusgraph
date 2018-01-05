@@ -18,7 +18,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.janusgraph.core.*;
-import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.graphdb.database.management.ModifierType;
 import org.janusgraph.graphdb.internal.ElementCategory;
@@ -40,8 +39,7 @@ import java.util.Set;
 public class TypeUtil {
 
     public static boolean hasSimpleInternalVertexKeyIndex(JanusGraphRelation rel) {
-        if (!(rel instanceof JanusGraphVertexProperty)) return false;
-        else return hasSimpleInternalVertexKeyIndex((JanusGraphVertexProperty)rel);
+        return rel instanceof JanusGraphVertexProperty && hasSimpleInternalVertexKeyIndex((JanusGraphVertexProperty) rel);
     }
 
     public static void checkTypeName(JanusGraphSchemaCategory category, String name) {
@@ -96,7 +94,7 @@ public class TypeUtil {
     }
 
     public static List<CompositeIndexType> getUniqueIndexes(PropertyKey key) {
-        List<CompositeIndexType> indexes = new ArrayList<CompositeIndexType>();
+        final List<CompositeIndexType> indexes = new ArrayList<>();
         for (IndexType index : ((InternalRelationType)key).getKeyIndexes()) {
             if (index.isCompositeIndex()) {
                 CompositeIndexType iIndex = (CompositeIndexType)index;
@@ -135,6 +133,6 @@ public class TypeUtil {
     }
 
     public static int getTTL(final SchemaSource schema) {
-        return getTypeModifier(schema, ModifierType.TTL, 0).intValue();
+        return getTypeModifier(schema, ModifierType.TTL, 0);
     }
 }

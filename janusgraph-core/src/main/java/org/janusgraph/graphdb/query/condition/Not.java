@@ -79,7 +79,7 @@ public class Not<E extends JanusGraphElement> implements Condition<E> {
     }
 
     public static <E extends JanusGraphElement> Not<E> of(Condition<E> element) {
-        return new Not<E>(element);
+        return new Not<>(element);
     }
 
 }

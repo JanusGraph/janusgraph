@@ -27,7 +27,6 @@ import org.janusgraph.graphdb.types.system.SystemRelationType;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -47,8 +46,8 @@ public class StandardSchemaCache implements SchemaCache {
 //    private static final int SCHEMAID_FORW_SHIFT = 4; //Number of bits at the end to append the id of the system type
     private static final int SCHEMAID_TOTALFORW_SHIFT = 3; //Total number of bits appended - the 1 is for the 1 bit direction
     private static final int SCHEMAID_BACK_SHIFT = 2; //Number of bits to remove from end of schema id since its just the padding
-    {
-        assert IDManager.VertexIDType.Schema.removePadding(1l<<SCHEMAID_BACK_SHIFT)==1;
+    static {
+        assert IDManager.VertexIDType.Schema.removePadding(1L<<SCHEMAID_BACK_SHIFT)==1;
         assert SCHEMAID_TOTALFORW_SHIFT-SCHEMAID_BACK_SHIFT>=0;
     }
 
@@ -76,13 +75,13 @@ public class StandardSchemaCache implements SchemaCache {
         typeNamesBackup = CacheBuilder.newBuilder()
                 .concurrencyLevel(CONCURRENCY_LEVEL).initialCapacity(INITIAL_CACHE_SIZE)
                 .maximumSize(maxCachedTypes).build();
-        typeNames = new ConcurrentHashMap<String, Long>(INITIAL_CAPACITY,0.75f,CONCURRENCY_LEVEL);
+        typeNames = new ConcurrentHashMap<>(INITIAL_CAPACITY, 0.75f, CONCURRENCY_LEVEL);
 
         schemaRelationsBackup = CacheBuilder.newBuilder()
                 .concurrencyLevel(CONCURRENCY_LEVEL).initialCapacity(INITIAL_CACHE_SIZE *CACHE_RELATION_MULTIPLIER)
                 .maximumSize(maxCachedRelations).build();
 //        typeRelations = new ConcurrentHashMap<Long, EntryList>(INITIAL_CAPACITY*CACHE_RELATION_MULTIPLIER,0.75f,CONCURRENCY_LEVEL);
-        schemaRelations = new NonBlockingHashMapLong<EntryList>(INITIAL_CAPACITY*CACHE_RELATION_MULTIPLIER); //TODO: Is this data structure safe or should we go with ConcurrentHashMap (line above)?
+        schemaRelations = new NonBlockingHashMapLong<>(INITIAL_CAPACITY * CACHE_RELATION_MULTIPLIER); //TODO: Is this data structure safe or should we go with ConcurrentHashMap (line above)?
     }
 
 
@@ -123,7 +122,7 @@ public class StandardSchemaCache implements SchemaCache {
         int edgeDir = EdgeDirection.position(dir);
         assert edgeDir==0 || edgeDir==1;
 
-        long typeid = (schemaId >>> SCHEMAID_BACK_SHIFT);
+        long typeId = (schemaId >>> SCHEMAID_BACK_SHIFT);
         int systemTypeId;
         if (type== BaseLabel.SchemaDefinitionEdge) systemTypeId=0;
         else if (type== BaseKey.SchemaName) systemTypeId=1;
@@ -133,7 +132,7 @@ public class StandardSchemaCache implements SchemaCache {
 
         //Ensure that there is enough padding
         assert (systemTypeId<(1<<2));
-        return (((typeid<<2)+systemTypeId)<<1)+edgeDir;
+        return (((typeId<<2)+systemTypeId)<<1)+edgeDir;
     }
 
     @Override
@@ -186,27 +185,18 @@ public class StandardSchemaCache implements SchemaCache {
     @Override
     public void expireSchemaElement(final long schemaId) {
         //1) expire relations
-        final long cuttypeid = (schemaId >>> SCHEMAID_BACK_SHIFT);
+        final long cutTypeId = (schemaId >>> SCHEMAID_BACK_SHIFT);
         ConcurrentMap<Long,EntryList> types = schemaRelations;
         if (types!=null) {
-            Iterator<Long> keys = types.keySet().iterator();
-            while (keys.hasNext()) {
-                long key = keys.next();
-                if ((key>>>SCHEMAID_TOTALFORW_SHIFT)==cuttypeid) keys.remove();
-            }
+            types.keySet().removeIf(key -> (key >>> SCHEMAID_TOTALFORW_SHIFT) == cutTypeId);
         }
-        Iterator<Long> keys = schemaRelationsBackup.asMap().keySet().iterator();
-        while (keys.hasNext()) {
-            long key = keys.next();
-            if ((key>>>SCHEMAID_TOTALFORW_SHIFT)==cuttypeid) schemaRelationsBackup.invalidate(key);
+        for (Long key : schemaRelationsBackup.asMap().keySet()) {
+            if ((key >>> SCHEMAID_TOTALFORW_SHIFT) == cutTypeId) schemaRelationsBackup.invalidate(key);
         }
         //2) expire names
         ConcurrentMap<String,Long> names = typeNames;
         if (names!=null) {
-            for (Iterator<Map.Entry<String, Long>> iter = names.entrySet().iterator(); iter.hasNext(); ) {
-                Map.Entry<String, Long> next = iter.next();
-                if (next.getValue().equals(schemaId)) iter.remove();
-            }
+            names.entrySet().removeIf(next -> next.getValue().equals(schemaId));
         }
         for (Map.Entry<String,Long> entry : typeNamesBackup.asMap().entrySet()) {
             if (entry.getValue().equals(schemaId)) typeNamesBackup.invalidate(entry.getKey());

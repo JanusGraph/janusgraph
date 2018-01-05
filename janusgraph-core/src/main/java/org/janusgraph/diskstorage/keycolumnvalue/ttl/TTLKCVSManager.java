@@ -35,7 +35,7 @@ import java.util.Map;
 
 /**
  * Turns a store with fine-grained cell-level TTL support into a store
- * with coarse-grained store-level (columnfamily-level) TTL support.
+ * with coarse-grained store-level (column-family-level) TTL support.
  * Useful when running a KCVSLog atop Cassandra.  Cassandra has
  * cell-level TTL support, but KCVSLog just wants to write all of its
  * data with a fixed, CF-wide TTL.  This class stores a fixed TTL set
@@ -86,10 +86,7 @@ public class TTLKCVSManager extends KCVSManagerProxy {
     @Override
     public KeyColumnValueStore openDatabase(String name, StoreMetaData.Container metaData) throws BackendException {
         KeyColumnValueStore store = manager.openDatabase(name);
-        int storeTTL = -1;
-        if (metaData.contains(StoreMetaData.TTL)) {
-            storeTTL = (Integer) metaData.get(StoreMetaData.TTL);
-        }
+        final int storeTTL = metaData.contains(StoreMetaData.TTL) ? metaData.get(StoreMetaData.TTL) : -1;
         Preconditions.checkArgument(storeTTL>0,"TTL must be positive: %s", storeTTL);
         ttlEnabledStores.put(name, storeTTL);
         return new TTLKCVS(store, storeTTL);

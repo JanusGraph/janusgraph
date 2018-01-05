@@ -30,7 +30,7 @@ public class RandomRemovalList<T> implements Collection<T>, Iterator<T> {
     public static final Random random = new Random();
 
     private List<T> list;
-    private final static int numTriesBeforeCompactification = 13;
+    private final static int numTriesBeforeCompaction = 13;
     private static final double fillFactor = 1.05;
     private int size;
     private int numberOfCompactions;
@@ -44,15 +44,15 @@ public class RandomRemovalList<T> implements Collection<T>, Iterator<T> {
     }
 
     public RandomRemovalList(int capacity) {
-        list = new ArrayList<T>(capacity);
+        list = new ArrayList<>(capacity);
         size = 0;
         numberOfCompactions = 0;
         isIterating = false;
     }
 
-    public RandomRemovalList(Collection<T> objs) {
-        list = new ArrayList<T>(objs);
-        size = objs.size();
+    public RandomRemovalList(Collection<T> objects) {
+        list = new ArrayList<>(objects);
+        size = objects.size();
         numberOfCompactions = 0;
         isIterating = false;
     }
@@ -69,24 +69,24 @@ public class RandomRemovalList<T> implements Collection<T>, Iterator<T> {
         assert size >= 0;
         if (size == 0) throw new NoSuchElementException("List is empty");
         int numTries = 0;
-        T element = null;
-        int pos = -1;
+        T element;
+        int pos;
         do {
             pos = random.nextInt(list.size());
             element = list.get(pos);
             numTries++;
-        } while (element == null && numTries < numTriesBeforeCompactification);
+        } while (element == null && numTries < numTriesBeforeCompaction);
         if (element != null) {
             list.set(pos, null);
             size--;
             return element;
         } else {
             //Compact list
-            List<T> newlist = new ArrayList<T>((int) Math.ceil(fillFactor * size));
+            final List<T> newList = new ArrayList<>((int) Math.ceil(fillFactor * size));
             for (T obj : list) {
-                if (obj != null) newlist.add(obj);
+                if (obj != null) newList.add(obj);
             }
-            list = newlist;
+            list = newList;
             numberOfCompactions++;
             return getRandom();
         }
@@ -127,8 +127,7 @@ public class RandomRemovalList<T> implements Collection<T>, Iterator<T> {
 
     @Override
     public boolean contains(Object o) {
-        if (o == null) return false;
-        return list.contains(o);
+        return o != null && list.contains(o);
     }
 
     @Override

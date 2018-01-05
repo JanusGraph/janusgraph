@@ -20,7 +20,7 @@ package org.janusgraph.diskstorage.configuration;
 public interface SystemConfiguration extends Configuration {
 
     @Override
-    public SystemConfiguration restrictTo(final String... umbrellaElements);
+    SystemConfiguration restrictTo(final String... umbrellaElements);
 
 
 

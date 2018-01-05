@@ -17,9 +17,7 @@ package org.janusgraph.graphdb.database.management;
 import org.janusgraph.core.schema.SchemaStatus;
 
 import java.time.Duration;
-import java.util.Map;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public abstract class AbstractIndexStatusReport {
     protected final boolean success;

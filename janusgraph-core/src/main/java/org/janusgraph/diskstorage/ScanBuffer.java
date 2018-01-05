@@ -22,36 +22,36 @@ package org.janusgraph.diskstorage;
  */
 public interface ScanBuffer {
 
-    public boolean hasRemaining();
+    boolean hasRemaining();
 
-    public byte getByte();
+    byte getByte();
 
-    public boolean getBoolean();
+    boolean getBoolean();
 
-    public short getShort();
+    short getShort();
 
-    public int getInt();
+    int getInt();
 
-    public long getLong();
+    long getLong();
 
-    public char getChar();
+    char getChar();
 
-    public float getFloat();
+    float getFloat();
 
-    public double getDouble();
+    double getDouble();
 
-    public byte[] getBytes(int length);
+    byte[] getBytes(int length);
 
-    public short[] getShorts(int length);
+    short[] getShorts(int length);
 
-    public int[] getInts(int length);
+    int[] getInts(int length);
 
-    public long[] getLongs(int length);
+    long[] getLongs(int length);
 
-    public char[] getChars(int length);
+    char[] getChars(int length);
 
-    public float[] getFloats(int length);
+    float[] getFloats(int length);
 
-    public double[] getDoubles(int length);
+    double[] getDoubles(int length);
 
 }

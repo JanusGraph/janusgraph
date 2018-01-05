@@ -20,10 +20,7 @@ import org.janusgraph.graphdb.database.idassigner.placement.SimpleBulkPlacementS
 import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.engine.ComputerTraversalEngine;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-
-import java.util.stream.Stream;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

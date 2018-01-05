@@ -55,16 +55,16 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
     }
 
     private static int getLimit(long limitAndValuePos) {
-        return (int)(limitAndValuePos>>>32l);
+        return (int)(limitAndValuePos>>> 32L);
     }
 
     private static int getValuePos(long limitAndValuePos) {
         return (int)(limitAndValuePos&Integer.MAX_VALUE);
     }
 
-    private static long getOffsetandValue(long offset, long valuePos) {
+    private static long getOffsetAndValue(long offset, long valuePos) {
         assert valuePos>0;
-        return (offset<<32l) + valuePos;
+        return (offset<< 32L) + valuePos;
     }
 
     private boolean hasMetaData() {
@@ -217,9 +217,8 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             if (this == o) return true;
             if (o == null) return false;
             if (!(o instanceof StaticBuffer)) return false;
-            Entry b = (Entry)o;
-            if (getValuePosition()!=b.getValuePosition()) return false;
-            return compareTo(getValuePosition(),b,getValuePosition())==0;
+            final Entry b = (Entry) o;
+            return getValuePosition() == b.getValuePosition() && compareTo(getValuePosition(), b, getValuePosition()) == 0;
         }
 
         @Override
@@ -271,36 +270,36 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
 
     //############# CONSTRUCTORS #######################
 
-    public static final EntryList of(Entry... entries) {
+    public static EntryList of(Entry... entries) {
         return of(Arrays.asList(entries));
     }
 
 
-    public static final EntryList of(Iterable<Entry> entries) {
+    public static EntryList of(Iterable<Entry> entries) {
         Preconditions.checkNotNull(entries);
         int num=0;
-        int datalen=0;
-        EntryMetaData[] metadataschema = null;
+        int dataLength=0;
+        EntryMetaData[] metadataSchema = null;
         for (Entry entry : entries) {
             num++;
-            datalen+=entry.length();
-            if (metadataschema==null) metadataschema=StaticArrayEntry.ENTRY_GETTER.getMetaSchema(entry);
-            datalen+=getMetaDataSize(metadataschema,entry,StaticArrayEntry.ENTRY_GETTER);
+            dataLength+=entry.length();
+            if (metadataSchema==null) metadataSchema=StaticArrayEntry.ENTRY_GETTER.getMetaSchema(entry);
+            dataLength+=getMetaDataSize(metadataSchema,entry,StaticArrayEntry.ENTRY_GETTER);
         }
         if (num==0) return EMPTY_LIST;
-        byte[] data = new byte[datalen];
+        byte[] data = new byte[dataLength];
         long[] limitAndValuePos = new long[num];
         int pos=0;
         CopyFactory cpf = new CopyFactory(data);
         for (Entry entry : entries) {
-            cpf.addMetaData(metadataschema,entry);
+            cpf.addMetaData(metadataSchema,entry);
             entry.as(cpf);
-            limitAndValuePos[pos]= getOffsetandValue(cpf.dataOffset,entry.getValuePosition());
+            limitAndValuePos[pos]= getOffsetAndValue(cpf.dataOffset,entry.getValuePosition());
             pos++;
         }
         assert cpf.dataOffset==data.length;
         assert pos==limitAndValuePos.length;
-        return new StaticArrayEntryList(data,limitAndValuePos,metadataschema);
+        return new StaticArrayEntryList(data,limitAndValuePos,metadataSchema);
     }
 
     private static class CopyFactory implements StaticBuffer.Factory<Boolean> {
@@ -326,105 +325,105 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         }
     }
 
-    public static final<E>  EntryList ofBytes(Iterable<E> elements, StaticArrayEntry.GetColVal<E,byte[]> getter) {
+    public static <E> EntryList ofBytes(Iterable<E> elements, StaticArrayEntry.GetColVal<E,byte[]> getter) {
         return of(elements, getter, StaticArrayEntry.ByteArrayHandler.INSTANCE);
     }
 
-    public static final<E>  EntryList ofByteBuffer(Iterable<E> elements, StaticArrayEntry.GetColVal<E,ByteBuffer> getter) {
+    public static <E> EntryList ofByteBuffer(Iterable<E> elements, StaticArrayEntry.GetColVal<E,ByteBuffer> getter) {
         return of(elements, getter, StaticArrayEntry.ByteBufferHandler.INSTANCE);
     }
 
-    public static final<E>  EntryList ofStaticBuffer(Iterable<E> elements, StaticArrayEntry.GetColVal<E,StaticBuffer> getter) {
+    public static <E> EntryList ofStaticBuffer(Iterable<E> elements, StaticArrayEntry.GetColVal<E,StaticBuffer> getter) {
         return of(elements, getter, StaticArrayEntry.StaticBufferHandler.INSTANCE);
     }
 
-    public static final<E>  EntryList ofByteBuffer(Iterator<E> elements, StaticArrayEntry.GetColVal<E,ByteBuffer> getter) {
+    public static <E> EntryList ofByteBuffer(Iterator<E> elements, StaticArrayEntry.GetColVal<E,ByteBuffer> getter) {
         return of(elements, getter, StaticArrayEntry.ByteBufferHandler.INSTANCE);
     }
 
-    public static final<E>  EntryList ofStaticBuffer(Iterator<E> elements, StaticArrayEntry.GetColVal<E,StaticBuffer> getter) {
+    public static <E> EntryList ofStaticBuffer(Iterator<E> elements, StaticArrayEntry.GetColVal<E,StaticBuffer> getter) {
         return of(elements, getter, StaticArrayEntry.StaticBufferHandler.INSTANCE);
     }
 
 
-    private static final<E,D>  EntryList of(Iterable<E> elements, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> datahandler) {
-        Preconditions.checkArgument(elements!=null && getter!=null && datahandler!=null);
+    private static <E,D> EntryList of(Iterable<E> elements, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> dataHandler) {
+        Preconditions.checkArgument(elements!=null && getter!=null && dataHandler!=null);
         int num=0;
-        int datalen=0;
-        EntryMetaData[] metadataschema = null;
+        int dataLength=0;
+        EntryMetaData[] metadataSchema = null;
         for (E element : elements) {
             num++;
-            datalen+=datahandler.getSize(getter.getColumn(element));
-            datalen+=datahandler.getSize(getter.getValue(element));
-            if (metadataschema==null) metadataschema=getter.getMetaSchema(element);
-            datalen+=getMetaDataSize(metadataschema,element,getter);
+            dataLength+=dataHandler.getSize(getter.getColumn(element));
+            dataLength+=dataHandler.getSize(getter.getValue(element));
+            if (metadataSchema==null) metadataSchema=getter.getMetaSchema(element);
+            dataLength+=getMetaDataSize(metadataSchema,element,getter);
         }
         if (num==0) return EMPTY_LIST;
-        byte[] data = new byte[datalen];
+        byte[] data = new byte[dataLength];
         long[] limitAndValuePos = new long[num];
         int pos=0;
         int offset=0;
         for (E element : elements) {
             if (element==null) throw new IllegalArgumentException("Unexpected null element in result set");
 
-            offset=writeMetaData(data,offset,metadataschema,element,getter);
+            offset=writeMetaData(data,offset,metadataSchema,element,getter);
 
             D col = getter.getColumn(element);
-            datahandler.copy(col,data,offset);
-            int valuePos = datahandler.getSize(col);
+            dataHandler.copy(col,data,offset);
+            int valuePos = dataHandler.getSize(col);
             offset+=valuePos;
 
             D val = getter.getValue(element);
-            datahandler.copy(val,data,offset);
-            offset+=datahandler.getSize(val);
+            dataHandler.copy(val,data,offset);
+            offset+=dataHandler.getSize(val);
 
-            limitAndValuePos[pos]= getOffsetandValue(offset,valuePos);
+            limitAndValuePos[pos]= getOffsetAndValue(offset,valuePos);
             pos++;
         }
         assert offset==data.length;
         assert pos==limitAndValuePos.length;
-        return new StaticArrayEntryList(data,limitAndValuePos,metadataschema);
+        return new StaticArrayEntryList(data,limitAndValuePos,metadataSchema);
     }
 
-    private static final<E,D>  EntryList of(Iterator<E> elements, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> datahandler) {
-        Preconditions.checkArgument(elements!=null && getter!=null && datahandler!=null);
+    private static <E,D> EntryList of(Iterator<E> elements, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> dataHandler) {
+        Preconditions.checkArgument(elements!=null && getter!=null && dataHandler!=null);
         if (!elements.hasNext()) return EMPTY_LIST;
         long[] limitAndValuePos = new long[10];
         byte[] data = new byte[limitAndValuePos.length*15];
-        EntryMetaData[] metadataschema = null;
+        EntryMetaData[] metadataSchema = null;
         int pos=0;
         int offset=0;
         while (elements.hasNext()) {
             E element = elements.next();
             if (element==null) throw new IllegalArgumentException("Unexpected null element in result set");
-            if (metadataschema==null) metadataschema=getter.getMetaSchema(element);
+            if (metadataSchema==null) metadataSchema=getter.getMetaSchema(element);
 
             D col = getter.getColumn(element);
             D val = getter.getValue(element);
-            int colSize = datahandler.getSize(col);
+            int colSize = dataHandler.getSize(col);
             assert colSize>0;
-            int valsize = datahandler.getSize(val);
-            int metasize = getMetaDataSize(metadataschema,element,getter);
+            int valueSize = dataHandler.getSize(val);
+            int metaDataSize = getMetaDataSize(metadataSchema,element,getter);
 
-            data = ensureSpace(data,offset,colSize+valsize+metasize);
-            offset=writeMetaData(data,offset,metadataschema,element,getter);
+            data = ensureSpace(data,offset,colSize+valueSize+metaDataSize);
+            offset=writeMetaData(data,offset,metadataSchema,element,getter);
 
-            datahandler.copy(col,data,offset);
+            dataHandler.copy(col,data,offset);
             offset+=colSize;
 
-            datahandler.copy(val,data,offset);
-            offset+=valsize;
+            dataHandler.copy(val,data,offset);
+            offset+=valueSize;
 
             limitAndValuePos = ensureSpace(limitAndValuePos,pos,1);
-            limitAndValuePos[pos]= getOffsetandValue(offset,colSize); //valuePosition = colSize
+            limitAndValuePos[pos]= getOffsetAndValue(offset,colSize); //valuePosition = colSize
             pos++;
         }
         assert offset<=data.length;
         if (data.length>offset*3/2) {
             //Resize to preserve memory
-            byte[] newdata = new byte[offset];
-            System.arraycopy(data,0,newdata,0,offset);
-            data=newdata;
+            byte[] newData = new byte[offset];
+            System.arraycopy(data,0,newData,0,offset);
+            data=newData;
         }
         if (pos<limitAndValuePos.length) {
             //Resize so that the the array fits exactly
@@ -434,22 +433,22 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         }
         assert offset<=data.length;
         assert pos==limitAndValuePos.length;
-        return new StaticArrayEntryList(data,limitAndValuePos,metadataschema);
+        return new StaticArrayEntryList(data,limitAndValuePos,metadataSchema);
     }
 
     private static byte[] ensureSpace(byte[] data, int offset, int length) {
         if (offset+length<=data.length) return data;
-        byte[] newdata = new byte[Math.max(data.length*2,offset+length)];
-        System.arraycopy(data,0,newdata,0,offset);
-        return newdata;
+        byte[] newData = new byte[Math.max(data.length*2,offset+length)];
+        System.arraycopy(data,0,newData,0,offset);
+        return newData;
     }
 
     //Copy-pasted from above replacing byte->long
     private static long[] ensureSpace(long[] data, int offset, int length) {
         if (offset+length<=data.length) return data;
-        long[] newdata = new long[Math.max(data.length*2,offset+length)];
-        System.arraycopy(data,0,newdata,0,offset);
-        return newdata;
+        long[] newData = new long[Math.max(data.length*2,offset+length)];
+        System.arraycopy(data,0,newData,0,offset);
+        return newData;
     }
 
     /* #########################################
@@ -468,16 +467,16 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
     }
 
     private static<D,K> int getMetaDataSize(EntryMetaData[] schema, D entry, StaticArrayEntry.GetColVal<D,K> metaGetter) {
-        int datasize = 0;
+        int dataSize = 0;
         if (schema.length>0) {
             assert schema.length==metaGetter.getMetaSchema(entry).length;
             for (EntryMetaData meta : schema) {
                 Object data = metaGetter.getMetaData(entry,meta);
                 assert data!=null;
-                datasize+=getSerializer(meta).getByteLength(data);
+                dataSize+=getSerializer(meta).getByteLength(data);
             }
         }
-        return datasize;
+        return dataSize;
     }
 
     private static<D,K> int writeMetaData(byte[] data, int startPos, EntryMetaData[] schema, D entry, StaticArrayEntry.GetColVal<D,K> metaGetter) {
@@ -504,17 +503,17 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         }
     }
 
-    public static interface MetaDataSerializer<V> {
+    public interface MetaDataSerializer<V> {
 
         int getByteLength(V value);
 
-        public void write(byte[] data, int startPos, V value);
+        void write(byte[] data, int startPos, V value);
 
-        public V read(byte[] data, int startPos);
+        V read(byte[] data, int startPos);
 
     }
 
-    private static enum IntSerializer implements MetaDataSerializer<Integer> {
+    private enum IntSerializer implements MetaDataSerializer<Integer> {
 
         INSTANCE;
 
@@ -537,7 +536,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         }
     }
       
-    private static enum LongSerializer implements MetaDataSerializer<Long> {
+    private enum LongSerializer implements MetaDataSerializer<Long> {
 
         INSTANCE;
 
@@ -560,7 +559,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         }
     }
 
-    private static enum ASCIIStringSerializer implements MetaDataSerializer<String> {
+    private enum ASCIIStringSerializer implements MetaDataSerializer<String> {
 
         INSTANCE;
 

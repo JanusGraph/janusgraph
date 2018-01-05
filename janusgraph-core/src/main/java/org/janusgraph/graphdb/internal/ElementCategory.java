@@ -89,7 +89,7 @@ public enum ElementCategory {
         switch (this) {
             case VERTEX:
                 Preconditions.checkArgument(elementId instanceof Long);
-                return tx.getVertex(((Long) elementId).longValue());
+                return tx.getVertex((Long) elementId);
             case EDGE:
                 Preconditions.checkArgument(elementId instanceof RelationIdentifier);
                 return ((RelationIdentifier)elementId).findEdge(tx);
@@ -100,7 +100,7 @@ public enum ElementCategory {
         }
     }
 
-    public static final ElementCategory getByClazz(Class<? extends Element> clazz) {
+    public static ElementCategory getByClazz(Class<? extends Element> clazz) {
         Preconditions.checkArgument(clazz!=null,"Need to provide a element class argument");
         if (Vertex.class.isAssignableFrom(clazz)) return VERTEX;
         else if (Edge.class.isAssignableFrom(clazz)) return EDGE;
@@ -108,7 +108,7 @@ public enum ElementCategory {
         else throw new IllegalArgumentException("Invalid clazz provided: " + clazz);
     }
 
-    public static final ElementCategory getByName(final String name) {
+    public static ElementCategory getByName(final String name) {
         for (ElementCategory category : values()) {
             if (category.toString().equalsIgnoreCase(name)) return category;
         }

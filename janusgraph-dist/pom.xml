@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.2.1-SNAPSHOT</version>
+        <version>0.3.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
@@ -79,10 +79,6 @@
             <artifactId>spark-gremlin</artifactId>
             <version>${tinkerpop.version}</version>
             <exclusions>
-                <exclusion>
-                    <groupId>net.jpountz.lz4</groupId>
-                    <artifactId>lz4</artifactId>
-                </exclusion>
                 <exclusion>
                     <groupId>org.eclipse.jetty.orbit</groupId>
                     <artifactId>javax.servlet</artifactId>

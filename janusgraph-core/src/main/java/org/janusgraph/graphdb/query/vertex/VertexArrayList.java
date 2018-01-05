@@ -17,6 +17,7 @@ package org.janusgraph.graphdb.query.vertex;
 import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.VertexList;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
@@ -32,12 +33,7 @@ import java.util.*;
  */
 public class VertexArrayList implements VertexListInternal {
 
-    public static final Comparator<JanusGraphVertex> VERTEX_ID_COMPARATOR = new Comparator<JanusGraphVertex>() {
-        @Override
-        public int compare(JanusGraphVertex o1, JanusGraphVertex o2) {
-            return Long.compare(o1.longId(),o2.longId());
-        }
-    };
+    public static final Comparator<JanusGraphVertex> VERTEX_ID_COMPARATOR = Comparator.comparingLong(JanusGraphElement::longId);
 
     private final StandardJanusGraphTx tx;
     private List<JanusGraphVertex> vertices;
@@ -53,7 +49,7 @@ public class VertexArrayList implements VertexListInternal {
     public VertexArrayList(StandardJanusGraphTx tx) {
         Preconditions.checkNotNull(tx);
         this.tx=tx;
-        vertices = new ArrayList<JanusGraphVertex>();
+        vertices = new ArrayList<>();
         sorted = true;
     }
 
@@ -82,7 +78,7 @@ public class VertexArrayList implements VertexListInternal {
     @Override
     public void sort() {
         if (sorted) return;
-        Collections.sort(vertices,VERTEX_ID_COMPARATOR);
+        vertices.sort(VERTEX_ID_COMPARATOR);
         sorted = true;
     }
 
@@ -108,7 +104,7 @@ public class VertexArrayList implements VertexListInternal {
                 ((VertexLongList)vertexlist).toVertexArrayList();
         if (sorted && other.isSorted()) {
             //Merge sort
-            vertices = (ArrayList<JanusGraphVertex>) IterablesUtil.mergeSort(vertices, other.vertices, VERTEX_ID_COMPARATOR);
+            vertices = IterablesUtil.mergeSort(vertices, other.vertices, VERTEX_ID_COMPARATOR);
         } else {
             sorted = false;
             vertices.addAll(other.vertices);
@@ -131,7 +127,7 @@ public class VertexArrayList implements VertexListInternal {
      * @param vertices
      * @return
      */
-    private static final LongArrayList toLongList(List<JanusGraphVertex> vertices) {
+    private static LongArrayList toLongList(List<JanusGraphVertex> vertices) {
         LongArrayList result = new LongArrayList(vertices.size());
         for (JanusGraphVertex n : vertices) {
             result.add(n.longId());

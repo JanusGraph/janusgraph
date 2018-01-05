@@ -80,13 +80,13 @@ public class FulgoraVertexProperty<V> implements JanusGraphVertexProperty<V> {
     }
 
     @Override
-    public <V> Property<V> property(String s, V v) {
+    public <A> Property<A> property(String s, A v) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <V> V valueOrNull(PropertyKey key) {
-        return (V)property(key.name()).orElse(null);
+    public <A> A valueOrNull(PropertyKey key) {
+        return (A) property(key.name()).orElse(null);
     }
 
     @Override
@@ -105,7 +105,7 @@ public class FulgoraVertexProperty<V> implements JanusGraphVertexProperty<V> {
     }
 
     @Override
-    public <V> V value(String key) {
+    public <A> A value(String key) {
         throw Property.Exceptions.propertyDoesNotExist(this,key);
     }
 
@@ -139,7 +139,7 @@ public class FulgoraVertexProperty<V> implements JanusGraphVertexProperty<V> {
     }
 
     @Override
-    public <V> Iterator<Property<V>> properties(String... propertyKeys) {
+    public <A> Iterator<Property<A>> properties(String... propertyKeys) {
         return Collections.emptyIterator();
     }
 }

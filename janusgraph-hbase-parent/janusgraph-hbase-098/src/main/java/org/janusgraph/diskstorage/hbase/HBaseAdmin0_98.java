@@ -24,7 +24,6 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.janusgraph.util.system.IOUtils;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableNotFoundException;
@@ -164,5 +163,15 @@ public class HBaseAdmin0_98 implements AdminMask
     public void close() throws IOException
     {
         adm.close();
+    }
+
+    @Override
+    public void snapshot(String snapshotName, String table) throws IllegalArgumentException, IOException {
+        adm.snapshot(snapshotName, table);
+    }
+
+    @Override
+    public void deleteSnapshot(String snapshotName) throws IOException {
+        adm.deleteSnapshot(snapshotName);
     }
 }

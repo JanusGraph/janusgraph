@@ -94,8 +94,8 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
             for (MessageScope scope : vertexMemory.getPreviousScopes()) {
                 if (scope instanceof MessageScope.Local) {
                     M combinedMsg = null;
-                    for (Iterator<M> msgIter = vh.receiveMessages(scope).iterator(); msgIter.hasNext(); ) {
-                        M msg = msgIter.next();
+                    for (Iterator<M> messageIterator = vh.receiveMessages(scope).iterator(); messageIterator.hasNext(); ) {
+                        M msg = messageIterator.next();
                         if (combinedMsg==null) combinedMsg=msg;
                         else combinedMsg = combiner.combine(combinedMsg,msg);
                     }
@@ -140,7 +140,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
 
     public static<M> Executor getVertexProgramScanJob(StandardJanusGraph graph, FulgoraMemory memory,
                                                   FulgoraVertexMemory vertexMemory, VertexProgram<M> vertexProgram) {
-        VertexProgramScanJob<M> job = new VertexProgramScanJob<M>(graph.getIDManager(),memory,vertexMemory,vertexProgram);
+        final VertexProgramScanJob<M> job = new VertexProgramScanJob<>(graph.getIDManager(), memory, vertexMemory, vertexProgram);
         return new Executor(graph,job);
     }
 

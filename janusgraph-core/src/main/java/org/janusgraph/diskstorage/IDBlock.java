@@ -29,7 +29,7 @@ public interface IDBlock {
      *
      * @return
      */
-    public long numIds();
+    long numIds();
 
     /**
      * Returns the id at the given index. Index must be non-negative and smaller than {@link #numIds()}.
@@ -37,6 +37,6 @@ public interface IDBlock {
      * @param index
      * @return
      */
-    public long getId(long index);
+    long getId(long index);
 
 }

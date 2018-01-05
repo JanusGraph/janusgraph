@@ -29,32 +29,32 @@ public class AttributeUtil {
     private static final Logger log = LoggerFactory.getLogger(AttributeUtil.class);
 
 
-    public static final boolean isWholeNumber(Number n) {
+    public static boolean isWholeNumber(Number n) {
         return isWholeNumber(n.getClass());
     }
 
-    public static final boolean isDecimal(Number n) {
+    public static boolean isDecimal(Number n) {
         return isDecimal(n.getClass());
     }
 
-    public static final boolean isWholeNumber(Class<?> clazz) {
+    public static boolean isWholeNumber(Class<?> clazz) {
         return clazz.equals(Long.class) || clazz.equals(Integer.class) ||
                 clazz.equals(Short.class) || clazz.equals(Byte.class);
     }
 
-    public static final boolean isDecimal(Class<?> clazz) {
+    public static boolean isDecimal(Class<?> clazz) {
         return clazz.equals(Double.class) || clazz.equals(Float.class);
     }
 
-    public static final boolean isString(Object o) {
+    public static boolean isString(Object o) {
         return isString(o.getClass());
     }
 
-    public static final boolean isString(Class<?> clazz) {
+    public static boolean isString(Class<?> clazz) {
         return clazz.equals(String.class);
     }
 
-    public static final boolean isGeo(Class<?> clazz) {
+    public static boolean isGeo(Class<?> clazz) {
         return clazz.equals(Geoshape.class);
     }
 
@@ -66,7 +66,7 @@ public class AttributeUtil {
      * @param b
      * @return
      */
-    public static final Integer compare(Object a, Object b) {
+    public static Integer compare(Object a, Object b) {
         if (a==b) return 0;
         if (a==null || b==null) return null;
         assert a!=null && b!=null;
@@ -80,7 +80,7 @@ public class AttributeUtil {
                 if (an.doubleValue()==bn.doubleValue()) {
                     // Long.compare(long,long) is only available since Java 1.7
                     //return Long.compare(an.longValue(),bn.longValue());
-                    return Long.valueOf(an.longValue()).compareTo(Long.valueOf(bn.longValue()));
+                    return Long.compare(an.longValue(), bn.longValue());
                 } else {
                     return Double.compare(an.doubleValue(),bn.doubleValue());
                 }

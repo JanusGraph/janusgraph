@@ -75,8 +75,7 @@ public class JanusGraphIndexWrapper implements JanusGraphIndex {
 
     @Override
     public boolean isUnique() {
-        if (index.isMixedIndex()) return false;
-        return ((CompositeIndexType)index).getCardinality()== Cardinality.SINGLE;
+        return !index.isMixedIndex() && ((CompositeIndexType) index).getCardinality() == Cardinality.SINGLE;
     }
 
     @Override

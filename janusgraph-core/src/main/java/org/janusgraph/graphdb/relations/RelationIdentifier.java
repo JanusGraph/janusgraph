@@ -59,7 +59,7 @@ public final class RelationIdentifier implements Serializable {
         this.inVertexId = inVertexId;
     }
 
-    static final RelationIdentifier get(InternalRelation r) {
+    static RelationIdentifier get(InternalRelation r) {
         if (r.hasId()) {
             return new RelationIdentifier(r.getVertex(0).longId(),
                     r.getType().longId(),
@@ -84,7 +84,7 @@ public final class RelationIdentifier implements Serializable {
         return inVertexId;
     }
 
-    public static final RelationIdentifier get(long[] ids) {
+    public static RelationIdentifier get(long[] ids) {
         if (ids.length != 3 && ids.length != 4)
             throw new IllegalArgumentException("Not a valid relation identifier: " + Arrays.toString(ids));
         for (int i = 0; i < 3; i++) {
@@ -94,7 +94,7 @@ public final class RelationIdentifier implements Serializable {
         return new RelationIdentifier(ids[1], ids[2], ids[0], ids.length == 4 ? ids[3] : 0);
     }
 
-    public static final RelationIdentifier get(int[] ids) {
+    public static RelationIdentifier get(int[] ids) {
         if (ids.length != 3 && ids.length != 4)
             throw new IllegalArgumentException("Not a valid relation identifier: " + Arrays.toString(ids));
         for (int i = 0; i < 3; i++) {
@@ -135,7 +135,7 @@ public final class RelationIdentifier implements Serializable {
         return s.toString();
     }
 
-    public static final RelationIdentifier parse(String id) {
+    public static RelationIdentifier parse(String id) {
         String[] elements = id.split(TOSTRING_DELIMITER);
         if (elements.length != 3 && elements.length != 4)
             throw new IllegalArgumentException("Not a valid relation identifier: " + id);
@@ -158,7 +158,7 @@ public final class RelationIdentifier implements Serializable {
             throw new IllegalArgumentException("Invalid RelationIdentifier: typeID does not reference a type");
 
         RelationType type = (RelationType) typeVertex;
-        Iterable<? extends JanusGraphRelation> rels;
+        Iterable<? extends JanusGraphRelation> relations;
         if (((RelationType) typeVertex).isEdgeLabel()) {
             Direction dir = Direction.OUT;
             JanusGraphVertex other = ((StandardJanusGraphTx)tx).getInternalVertex(inVertexId);
@@ -169,12 +169,12 @@ public final class RelationIdentifier implements Serializable {
                 v = tmp;
                 dir = Direction.IN;
             }
-            rels = ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types((EdgeLabel) type).direction(dir).adjacent(other).edges();
+            relations = ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types((EdgeLabel) type).direction(dir).adjacent(other).edges();
         } else {
-            rels = ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types((PropertyKey) type).properties();
+            relations = ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types((PropertyKey) type).properties();
         }
 
-        for (JanusGraphRelation r : rels) {
+        for (JanusGraphRelation r : relations) {
             //Find current or previous relation
             if (r.longId() == relationId ||
                     ((r instanceof StandardRelation) && ((StandardRelation) r).getPreviousID() == relationId)) return r;

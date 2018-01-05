@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.tinkerpop.io.graphson;
 
 import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
 
 /**
  * Supports GraphSON 2.0
@@ -23,14 +24,16 @@ public class JanusGraphSONModuleV2d0 extends JanusGraphSONModule {
 
     private JanusGraphSONModuleV2d0() {
         super();
+        addSerializer(RelationIdentifier.class, new RelationIdentifierSerializerV2d0());
         addSerializer(Geoshape.class, new Geoshape.GeoshapeGsonSerializerV2d0());
 
+        addDeserializer(RelationIdentifier.class, new RelationIdentifierDeserializerV2d0());
         addDeserializer(Geoshape.class, new Geoshape.GeoshapeGsonDeserializerV2d0());
     }
 
     private static final JanusGraphSONModuleV2d0 INSTANCE = new JanusGraphSONModuleV2d0();
 
-    public static final JanusGraphSONModuleV2d0 getInstance() {
+    public static JanusGraphSONModuleV2d0 getInstance() {
         return INSTANCE;
     }
 

@@ -51,9 +51,8 @@ public class ConfigurationLint {
     }
 
     public static Status validate(String filename) throws IOException {
-        Properties p = new Properties();
-        try(FileInputStream fis = new FileInputStream(filename)) {
-            p.load(fis);
+        try (final FileInputStream fis = new FileInputStream(filename)) {
+            new Properties().load(fis);
         }
 
         final PropertiesConfiguration apc;
@@ -66,14 +65,14 @@ public class ConfigurationLint {
 //        new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
 //                , BasicConfiguration.Restriction.NONE);
 
-        Iterator<String> iter = apc.getKeys();
+        Iterator<String> iterator = apc.getKeys();
 
         int totalKeys = 0;
         int keysVerified = 0;
 
-        while (iter.hasNext()) {
+        while (iterator.hasNext()) {
             totalKeys++;
-            String key = iter.next();
+            String key = iterator.next();
             String value = apc.getString(key);
             try {
                 ConfigElement.PathIdentifier pid = ConfigElement.parse(GraphDatabaseConfiguration.ROOT_NS, key);

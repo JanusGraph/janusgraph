@@ -90,7 +90,7 @@ public final class Closeables {
     public static void closeQuietly(@Nullable Closeable closeable) {
         try {
             close(closeable, true);
-        } catch (IOException e) {}
+        } catch (IOException ignored) {}
     }
 
     /**

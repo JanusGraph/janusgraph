@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Strings;
 import lombok.Value;
 import software.amazon.awssdk.services.codebuild.model.ComputeType;
-import software.amazon.awssdk.util.StringUtils;
 
 @Value
 public class ParallelBuildAction {

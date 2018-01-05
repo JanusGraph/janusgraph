@@ -17,11 +17,10 @@ package org.janusgraph.diskstorage;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.janusgraph.diskstorage.keycolumnvalue.*;
-import org.janusgraph.diskstorage.keycolumnvalue.KCVSUtil;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.janusgraph.diskstorage.util.WriteByteBuffer;
@@ -31,7 +30,7 @@ public class KeyColumnValueStoreUtil {
     public static void delete(KeyColumnValueStore store, StoreTransaction txn, long key, String col) throws BackendException {
         StaticBuffer k = longToByteBuffer(key);
         StaticBuffer c = stringToByteBuffer(col);
-        store.mutate(k, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(c), txn);
+        store.mutate(k, KeyColumnValueStore.NO_ADDITIONS, Collections.singletonList(c), txn);
     }
 
     public static String get(KeyColumnValueStore store, StoreTransaction txn, long key, String col) throws BackendException {
@@ -47,7 +46,7 @@ public class KeyColumnValueStoreUtil {
         StaticBuffer k = longToByteBuffer(key);
         StaticBuffer c = stringToByteBuffer(col);
         StaticBuffer v = stringToByteBuffer(val);
-        store.mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c, v)), KeyColumnValueStore.NO_DELETIONS, txn);
+        store.mutate(k, Collections.singletonList(StaticArrayEntry.of(c, v)), KeyColumnValueStore.NO_DELETIONS, txn);
     }
 
     public static void loadValues(KeyColumnValueStore store, StoreTransaction tx, String[][] values) throws BackendException {
@@ -58,7 +57,7 @@ public class KeyColumnValueStoreUtil {
                            int shiftSliceLength) throws BackendException {
         for (int i = 0; i < values.length; i++) {
 
-            List<Entry> entries = new ArrayList<Entry>();
+            final List<Entry> entries = new ArrayList<>();
             for (int j = 0; j < values[i].length; j++) {
                 StaticBuffer col;
                 if (0 < shiftEveryNthRow && 0 == i/* +1 */ % shiftEveryNthRow) {

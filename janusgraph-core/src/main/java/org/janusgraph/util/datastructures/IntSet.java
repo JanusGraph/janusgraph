@@ -17,14 +17,14 @@ package org.janusgraph.util.datastructures;
 
 public interface IntSet {
 
-    public boolean add(int value);
+    boolean add(int value);
 
-    public boolean addAll(int[] values);
+    boolean addAll(int[] values);
 
-    public boolean contains(int value);
+    boolean contains(int value);
 
-    public int[] getAll();
+    int[] getAll();
 
-    public int size();
+    int size();
 
 }

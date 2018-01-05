@@ -60,12 +60,12 @@ public class IDManager {
         UserVertex {
             @Override
             final long offset() {
-                return 1l;
+                return 1L;
             }
 
             @Override
             final long suffix() {
-                return 0l;
+                return 0L;
             } // 0b
 
             @Override
@@ -76,12 +76,12 @@ public class IDManager {
         NormalVertex {
             @Override
             final long offset() {
-                return 3l;
+                return 3L;
             }
 
             @Override
             final long suffix() {
-                return 0l;
+                return 0L;
             } // 000b
 
             @Override
@@ -92,12 +92,12 @@ public class IDManager {
         PartitionedVertex {
             @Override
             final long offset() {
-                return 3l;
+                return 3L;
             }
 
             @Override
             final long suffix() {
-                return 2l;
+                return 2L;
             } // 010b
 
             @Override
@@ -108,12 +108,12 @@ public class IDManager {
         UnmodifiableVertex {
             @Override
             final long offset() {
-                return 3l;
+                return 3L;
             }
 
             @Override
             final long suffix() {
-                return 4l;
+                return 4L;
             } // 100b
 
             @Override
@@ -125,12 +125,12 @@ public class IDManager {
         Invisible {
             @Override
             final long offset() {
-                return 1l;
+                return 1L;
             }
 
             @Override
             final long suffix() {
-                return 1l;
+                return 1L;
             } // 1b
 
             @Override
@@ -141,12 +141,12 @@ public class IDManager {
         InvisibleVertex {
             @Override
             final long offset() {
-                return 2l;
+                return 2L;
             }
 
             @Override
             final long suffix() {
-                return 3l;
+                return 3L;
             } // 11b
 
             @Override
@@ -157,12 +157,12 @@ public class IDManager {
         Schema {
             @Override
             final long offset() {
-                return 2l;
+                return 2L;
             }
 
             @Override
             final long suffix() {
-                return 1l;
+                return 1L;
             } // 01b
 
             @Override
@@ -173,12 +173,12 @@ public class IDManager {
         SchemaType {
             @Override
             final long offset() {
-                return 3l;
+                return 3L;
             }
 
             @Override
             final long suffix() {
-                return 5l;
+                return 5L;
             } // 101b
 
             @Override
@@ -189,12 +189,12 @@ public class IDManager {
         RelationType {
             @Override
             final long offset() {
-                return 4l;
+                return 4L;
             }
 
             @Override
             final long suffix() {
-                return 5l;
+                return 5L;
             } // 0101b
 
             @Override
@@ -205,12 +205,12 @@ public class IDManager {
         PropertyKey {
             @Override
             final long offset() {
-                return 5l;
+                return 5L;
             }
 
             @Override
             final long suffix() {
-                return 5l;
+                return 5L;
             }    // 00101b
 
             @Override
@@ -221,12 +221,12 @@ public class IDManager {
         UserPropertyKey {
             @Override
             final long offset() {
-                return 6l;
+                return 6L;
             }
 
             @Override
             final long suffix() {
-                return 5l;
+                return 5L;
             }    // 000101b
 
             @Override
@@ -237,12 +237,12 @@ public class IDManager {
         SystemPropertyKey {
             @Override
             final long offset() {
-                return 6l;
+                return 6L;
             }
 
             @Override
             final long suffix() {
-                return 37l;
+                return 37L;
             }    // 100101b
 
             @Override
@@ -253,12 +253,12 @@ public class IDManager {
         EdgeLabel {
             @Override
             final long offset() {
-                return 5l;
+                return 5L;
             }
 
             @Override
             final long suffix() {
-                return 21l;
+                return 21L;
             } // 10101b
 
             @Override
@@ -269,12 +269,12 @@ public class IDManager {
         UserEdgeLabel {
             @Override
             final long offset() {
-                return 6l;
+                return 6L;
             }
 
             @Override
             final long suffix() {
-                return 21l;
+                return 21L;
             } // 010101b
 
             @Override
@@ -285,12 +285,12 @@ public class IDManager {
         SystemEdgeLabel {
             @Override
             final long offset() {
-                return 6l;
+                return 6L;
             }
 
             @Override
             final long suffix() {
-                return 53l;
+                return 53L;
             } // 110101b
 
             @Override
@@ -302,12 +302,12 @@ public class IDManager {
         VertexLabel {
             @Override
             final long offset() {
-                return 5l;
+                return 5L;
             }
 
             @Override
             final long suffix() {
-                return 13l;
+                return 13L;
             }    // 01101b
 
             @Override
@@ -319,12 +319,12 @@ public class IDManager {
         GenericSchemaType {
             @Override
             final long offset() {
-                return 4l;
+                return 4L;
             }
 
             @Override
             final long suffix() {
-                return 9l;
+                return 9L;
             }    // 1001b
 
             @Override
@@ -341,7 +341,7 @@ public class IDManager {
 
         public final long addPadding(long count) {
             assert offset()>0;
-            Preconditions.checkArgument(count>0 && count<(1l<<(TOTAL_BITS-offset())),"Count out of range for type [%s]: %s",this,count);
+            Preconditions.checkArgument(count>0 && count<(1L <<(TOTAL_BITS-offset())),"Count out of range for type [%s]: %s",this,count);
             return (count << offset()) | suffix();
         }
 
@@ -350,7 +350,7 @@ public class IDManager {
         }
 
         public final boolean is(long id) {
-            return (id & ((1l << offset()) - 1)) == suffix();
+            return (id & ((1L << offset()) - 1)) == suffix();
         }
 
         public final boolean isSubType(VertexIDType type) {
@@ -399,7 +399,7 @@ public class IDManager {
     /**
      * Bound on the maximum count for a schema id
      */
-    private static final long SCHEMA_COUNT_BOUND = (1l << (TOTAL_BITS - MAX_PADDING_BITWIDTH - TYPE_LEN_RESERVE));
+    private static final long SCHEMA_COUNT_BOUND = (1L << (TOTAL_BITS - MAX_PADDING_BITWIDTH - TYPE_LEN_RESERVE));
 
 
     private final long partitionBits;
@@ -416,11 +416,11 @@ public class IDManager {
                 "Partition bits can be at most %s bits", MAX_PARTITION_BITS);
         this.partitionBits = partitionBits;
 
-        partitionIDBound = (1l << (partitionBits));
+        partitionIDBound = (1L << (partitionBits));
 
-        relationCountBound = partitionBits==0?Long.MAX_VALUE:(1l << (TOTAL_BITS - partitionBits));
+        relationCountBound = partitionBits==0?Long.MAX_VALUE:(1L << (TOTAL_BITS - partitionBits));
         assert VertexIDType.NormalVertex.offset()>0;
-        vertexCountBound = (1l << (TOTAL_BITS - partitionBits - USERVERTEX_PADDING_BITWIDTH));
+        vertexCountBound = (1L << (TOTAL_BITS - partitionBits - USERVERTEX_PADDING_BITWIDTH));
 
 
         partitionOffset = Long.SIZE - partitionBits;
@@ -453,43 +453,43 @@ public class IDManager {
         return id;
     }
 
-    private static VertexIDType getUserVertexIDType(long vertexid) {
+    private static VertexIDType getUserVertexIDType(long vertexId) {
         VertexIDType type=null;
-        if (VertexIDType.NormalVertex.is(vertexid)) type=VertexIDType.NormalVertex;
-        else if (VertexIDType.PartitionedVertex.is(vertexid)) type=VertexIDType.PartitionedVertex;
-        else if (VertexIDType.UnmodifiableVertex.is(vertexid)) type=VertexIDType.UnmodifiableVertex;
+        if (VertexIDType.NormalVertex.is(vertexId)) type=VertexIDType.NormalVertex;
+        else if (VertexIDType.PartitionedVertex.is(vertexId)) type=VertexIDType.PartitionedVertex;
+        else if (VertexIDType.UnmodifiableVertex.is(vertexId)) type=VertexIDType.UnmodifiableVertex;
         if (null == type) {
-            throw new InvalidIDException("Vertex ID " + vertexid + " has unrecognized type");
+            throw new InvalidIDException("Vertex ID " + vertexId + " has unrecognized type");
         }
         return type;
     }
 
-    public final boolean isUserVertexId(long vertexid) {
-        return (VertexIDType.NormalVertex.is(vertexid) || VertexIDType.PartitionedVertex.is(vertexid) || VertexIDType.UnmodifiableVertex.is(vertexid))
-                && ((vertexid>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH))>0);
+    public final boolean isUserVertexId(long vertexId) {
+        return (VertexIDType.NormalVertex.is(vertexId) || VertexIDType.PartitionedVertex.is(vertexId) || VertexIDType.UnmodifiableVertex.is(vertexId))
+                && ((vertexId>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH))>0);
     }
 
-    public long getPartitionId(long vertexid) {
-        if (VertexIDType.Schema.is(vertexid)) return SCHEMA_PARTITION;
-        assert isUserVertexId(vertexid) && getUserVertexIDType(vertexid)!=null;
-        long partition = (vertexid>>>USERVERTEX_PADDING_BITWIDTH) & (partitionIDBound-1);
+    public long getPartitionId(long vertexId) {
+        if (VertexIDType.Schema.is(vertexId)) return SCHEMA_PARTITION;
+        assert isUserVertexId(vertexId) && getUserVertexIDType(vertexId)!=null;
+        long partition = (vertexId>>>USERVERTEX_PADDING_BITWIDTH) & (partitionIDBound-1);
         assert partition>=0;
         return partition;
     }
 
-    public StaticBuffer getKey(long vertexid) {
-        if (VertexIDType.Schema.is(vertexid)) {
+    public StaticBuffer getKey(long vertexId) {
+        if (VertexIDType.Schema.is(vertexId)) {
             //No partition for schema vertices
-            return BufferUtil.getLongBuffer(vertexid);
+            return BufferUtil.getLongBuffer(vertexId);
         } else {
-            assert isUserVertexId(vertexid);
-            VertexIDType type = getUserVertexIDType(vertexid);
+            assert isUserVertexId(vertexId);
+            VertexIDType type = getUserVertexIDType(vertexId);
             assert type.offset()==USERVERTEX_PADDING_BITWIDTH;
-            long partition = getPartitionId(vertexid);
-            long count = vertexid>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
+            long partition = getPartitionId(vertexId);
+            long count = vertexId>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
             assert count>0;
-            long keyid = (partition<<partitionOffset) | type.addPadding(count);
-            return BufferUtil.getLongBuffer(keyid);
+            long keyId = (partition<<partitionOffset) | type.addPadding(count);
+            return BufferUtil.getLongBuffer(keyId);
         }
     }
 
@@ -500,7 +500,7 @@ public class IDManager {
         } else {
             VertexIDType type = getUserVertexIDType(value);
             long partition = partitionOffset<Long.SIZE?value>>>partitionOffset:0;
-            long count = (value>>>USERVERTEX_PADDING_BITWIDTH) & ((1l<<(partitionOffset-USERVERTEX_PADDING_BITWIDTH))-1);
+            long count = (value>>>USERVERTEX_PADDING_BITWIDTH) & ((1L <<(partitionOffset-USERVERTEX_PADDING_BITWIDTH))-1);
             return constructId(count,partition,type);
         }
     }
@@ -623,7 +623,7 @@ public class IDManager {
 
     private static long makeTemporary(long id) {
         Preconditions.checkArgument(id>0);
-        return (1l<<63) | id; //make negative but preserve bit pattern
+        return (1L <<63) | id; //make negative but preserve bit pattern
     }
 
     public static boolean isTemporary(long id) {
@@ -668,9 +668,9 @@ public class IDManager {
     }
 
     public static long addRelationTypePadding(long id) {
-        long typeid = VertexIDType.RelationType.addPadding(id);
-        Preconditions.checkArgument(isProperRelationType(typeid));
-        return typeid;
+        long typeId = VertexIDType.RelationType.addPadding(id);
+        Preconditions.checkArgument(isProperRelationType(typeId));
+        return typeId;
     }
 
     public static boolean isSystemRelationTypeId(long id) {

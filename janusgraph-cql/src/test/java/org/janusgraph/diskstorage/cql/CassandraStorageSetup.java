@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.cql;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.PROTOCOL_VERSION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_LOCATION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_PASSWORD;
@@ -97,7 +96,7 @@ public class CassandraStorageSetup {
             s = Joiner.on(File.separator).join(System.getProperty("user.dir"), "target", "cassandra", "byteorderedpartitioner", name);
             LOGGER.info("Set default Cassandra {} directory path {}", name, s);
         } else {
-            LOGGER.info("Loaded Cassandra {} directory path {} from system property {}", new Object[] { name, s, prop });
+            LOGGER.info("Loaded Cassandra {} directory path {} from system property {}", name, s, prop);
         }
 
         if (mustExistAndBeAbsolute) {

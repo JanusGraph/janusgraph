@@ -28,7 +28,7 @@ import org.janusgraph.graphdb.tinkerpop.io.graphson.JanusGraphSONModuleV1d0;
  */
 public class JanusGraphIoRegistryV1d0 extends AbstractIoRegistry {
 
-    private static JanusGraphIoRegistryV1d0 INSTANCE = new JanusGraphIoRegistryV1d0();
+    private static final JanusGraphIoRegistryV1d0 INSTANCE = new JanusGraphIoRegistryV1d0();
 
     // todo: made the constructor temporarily public to workaround an interoperability issue with hadoop in tp3 GA https://issues.apache.org/jira/browse/TINKERPOP3-771
 

@@ -39,7 +39,7 @@ public interface JanusGraphEdge extends JanusGraphRelation, Edge {
      *
      * @return edge label of this edge
      */
-    public default EdgeLabel edgeLabel() {
+    default EdgeLabel edgeLabel() {
         assert getType() instanceof EdgeLabel;
         return (EdgeLabel)getType();
     }
@@ -50,15 +50,15 @@ public interface JanusGraphEdge extends JanusGraphRelation, Edge {
      *
      * @return the vertex for the specified direction
      */
-    public JanusGraphVertex vertex(Direction dir);
+    JanusGraphVertex vertex(Direction dir);
 
     @Override
-    public default JanusGraphVertex outVertex() {
+    default JanusGraphVertex outVertex() {
         return vertex(Direction.OUT);
     }
 
     @Override
-    public default JanusGraphVertex inVertex() {
+    default JanusGraphVertex inVertex() {
         return vertex(Direction.IN);
     }
 
@@ -70,16 +70,16 @@ public interface JanusGraphEdge extends JanusGraphRelation, Edge {
      * @return The vertex at the opposite end of the edge.
      * @throws InvalidElementException if the edge is not incident on the specified vertex
      */
-    public JanusGraphVertex otherVertex(Vertex vertex);
+    JanusGraphVertex otherVertex(Vertex vertex);
 
 
     @Override
-    public default Iterator<Vertex> vertices(Direction direction) {
-        List<Vertex> vertices;
+    default Iterator<Vertex> vertices(Direction direction) {
+        final List<Vertex> vertices;
         if (direction==Direction.BOTH) {
-            vertices = ImmutableList.of((Vertex) vertex(Direction.OUT), vertex(Direction.IN));
+            vertices = ImmutableList.of(vertex(Direction.OUT), vertex(Direction.IN));
         } else {
-            vertices = ImmutableList.of((Vertex) vertex(direction));
+            vertices = ImmutableList.of(vertex(direction));
         }
         return vertices.iterator();
     }

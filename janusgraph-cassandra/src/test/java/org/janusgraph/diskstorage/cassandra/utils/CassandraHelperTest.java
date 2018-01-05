@@ -14,11 +14,7 @@
 
 package org.janusgraph.diskstorage.cassandra.utils;
 
-import static org.junit.Assert.*;
-
 import org.apache.cassandra.dht.BytesToken;
-import org.apache.cassandra.dht.Token;
-import org.apache.cassandra.dht.Token.TokenFactory;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
 import org.junit.Test;
 
@@ -26,7 +22,7 @@ import org.junit.Assert;
 
 public class CassandraHelperTest {
 
-    private static final BytesToken ZERO = new BytesToken(new byte[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0});;
+    private static final BytesToken ZERO = new BytesToken(new byte[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0});
 
     @Test
     public void testTransformRange() {

@@ -25,9 +25,15 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SI
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CLUSTER_NAME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ONLY_USE_LOCAL_CONSISTENCY_FOR_SYSTEM_OPERATIONS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_CORE_CONNECTIONS_PER_HOST;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_DATACENTER;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_MAX_CONNECTIONS_PER_HOST;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_MAX_REQUESTS_PER_CONNECTION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.PROTOCOL_VERSION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.READ_CONSISTENCY;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REMOTE_CORE_CONNECTIONS_PER_HOST;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REMOTE_MAX_CONNECTIONS_PER_HOST;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REMOTE_MAX_REQUESTS_PER_CONNECTION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_FACTOR;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_OPTIONS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_STRATEGY;
@@ -85,8 +91,10 @@ import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.BatchStatement.Type;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Cluster.Builder;
+import com.datastax.driver.core.HostDistance;
 import com.datastax.driver.core.JdkSSLOptions;
 import com.datastax.driver.core.KeyspaceMetadata;
+import com.datastax.driver.core.PoolingOptions;
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
@@ -248,7 +256,25 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             }
         }
 
-        return builder.build();
+        // Build the PoolingOptions based on the configurations
+        PoolingOptions poolingOptions = new PoolingOptions();
+        poolingOptions
+            .setMaxRequestsPerConnection(
+                    HostDistance.LOCAL,
+                    configuration.get(LOCAL_MAX_REQUESTS_PER_CONNECTION))
+            .setMaxRequestsPerConnection(
+                    HostDistance.REMOTE,
+                    configuration.get(REMOTE_MAX_REQUESTS_PER_CONNECTION));
+        poolingOptions
+            .setConnectionsPerHost(
+                    HostDistance.LOCAL,
+                    configuration.get(LOCAL_CORE_CONNECTIONS_PER_HOST),
+                    configuration.get(LOCAL_MAX_CONNECTIONS_PER_HOST))
+            .setConnectionsPerHost(
+                    HostDistance.REMOTE,
+                    configuration.get(REMOTE_CORE_CONNECTIONS_PER_HOST),
+                    configuration.get(REMOTE_MAX_CONNECTIONS_PER_HOST));
+        return builder.withPoolingOptions(poolingOptions).build();
     }
 
     Session initializeSession(final String keyspaceName) {
@@ -393,7 +419,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         sleepAfterWrite(txh, commitTime);
     }
 
-    // Create an async unlogged batch per partition key
+    // Create an async un-logged batch per partition key
     private void mutateManyUnlogged(final Map<String, Map<StaticBuffer, KCVMutation>> mutations, final StoreTransaction txh) throws BackendException {
         final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
 

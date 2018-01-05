@@ -45,7 +45,7 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
     private final Map<String, OrderedKeyValueStoreAdapter> stores;
 
     public OrderedKeyValueStoreManagerAdapter(OrderedKeyValueStoreManager manager) {
-        this(manager, new HashMap<String, Integer>());
+        this(manager, new HashMap<>());
     }
 
     public OrderedKeyValueStoreManagerAdapter(OrderedKeyValueStoreManager manager, Map<String, Integer> keyLengths) {
@@ -54,7 +54,7 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
         ImmutableMap.Builder<String, Integer> mb = ImmutableMap.builder();
         if (keyLengths != null && !keyLengths.isEmpty()) mb.putAll(keyLengths);
         this.keyLengths = mb.build();
-        this.stores = new HashMap<String, OrderedKeyValueStoreAdapter>();
+        this.stores = new HashMap<>();
     }
 
     @Override
@@ -99,7 +99,7 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
 
     @Override
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException {
-        Map<String, KVMutation> converted = new HashMap<String, KVMutation>(mutations.size());
+        final Map<String, KVMutation> converted = new HashMap<>(mutations.size());
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> storeEntry : mutations.entrySet()) {
             OrderedKeyValueStoreAdapter store = openDatabase(storeEntry.getKey());
             Preconditions.checkNotNull(store);
@@ -125,7 +125,7 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
         manager.mutateMany(converted, txh);
     }
 
-    private static final OrderedKeyValueStoreAdapter wrapKeyValueStore(OrderedKeyValueStore store, Map<String, Integer> keyLengths) {
+    private static OrderedKeyValueStoreAdapter wrapKeyValueStore(OrderedKeyValueStore store, Map<String, Integer> keyLengths) {
         String name = store.getName();
         if (keyLengths.containsKey(name)) {
             int keyLength = keyLengths.get(name);

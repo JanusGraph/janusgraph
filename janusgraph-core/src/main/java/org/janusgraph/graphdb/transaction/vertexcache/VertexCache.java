@@ -27,7 +27,7 @@ public interface VertexCache {
      * @param id Vertex id
      * @return true if a vertex with the given id is contained, else false
      */
-    public boolean contains(long id);
+    boolean contains(long id);
 
     /**
      * Returns the vertex with the given id or null if it is not in the cache
@@ -35,7 +35,7 @@ public interface VertexCache {
      * @param id
      * @return
      */
-    public InternalVertex get(long id, Retriever<Long, InternalVertex> retriever);
+    InternalVertex get(long id, Retriever<Long, InternalVertex> retriever);
 
     /**
      * Adds the given vertex with the given id to the cache. The given vertex may already be in the cache.
@@ -45,19 +45,19 @@ public interface VertexCache {
      * @param id
      * @throws IllegalArgumentException if the vertex is null or the id negative
      */
-    public void add(InternalVertex vertex, long id);
+    void add(InternalVertex vertex, long id);
 
     /**
      * Returns an iterable over all new vertices in the cache
      *
      * @return
      */
-    public List<InternalVertex> getAllNew();
+    List<InternalVertex> getAllNew();
 
     /**
      * Closes the cache which allows the cache to release allocated memory.
      * Calling any of the other methods after closing a cache has undetermined behavior.
      */
-    public void close();
+    void close();
 
 }

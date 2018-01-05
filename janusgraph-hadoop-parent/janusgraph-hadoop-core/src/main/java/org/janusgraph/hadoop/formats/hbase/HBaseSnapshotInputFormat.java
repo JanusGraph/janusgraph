@@ -12,18 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.blueprints.process.groovy;
+package org.janusgraph.hadoop.formats.hbase;
 
-import org.janusgraph.blueprints.BerkeleyGraphProvider;
-import org.janusgraph.core.JanusGraph;
-import org.apache.tinkerpop.gremlin.GraphProviderClass;
-import org.apache.tinkerpop.gremlin.process.GroovyProcessStandardSuite;
-import org.junit.runner.RunWith;
+import org.janusgraph.hadoop.formats.util.GiraphInputFormat;
 
-/**
- * @author Bryn Cooke
- */
-@RunWith(GroovyProcessStandardSuite.class)
-@GraphProviderClass(provider = BerkeleyGraphProvider.class, graph = JanusGraph.class)
-public class BerkeleyJanusGraphGroovyProcessStandardTest {
+public class HBaseSnapshotInputFormat extends GiraphInputFormat {
+    public HBaseSnapshotInputFormat() {
+        super(new HBaseSnapshotBinaryInputFormat());
+    }
 }

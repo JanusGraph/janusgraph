@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue.scan;
 
+import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.Configuration;
@@ -33,7 +34,7 @@ public interface ScanJob extends Cloneable {
     /**
      * Invoked before a block of computation (i.e. multiple process() calls) is handed to this particular ScanJob.
      * Can be used to initialize the iteration. This method is called exactly once for each before a block of computation.
-     * This method is semantically aligned with {@link org.tinkerpop.gremlin.process.computer.VertexProgram#workerIterationStart()}
+     * This method is semantically aligned with {@link org.apache.tinkerpop.gremlin.process.computer.VertexProgram#workerIterationStart(Memory)}
      *
      * This method may not be called if there is no data to be processed. Correspondingly, the end method won't be called either.
      *
@@ -43,13 +44,12 @@ public interface ScanJob extends Cloneable {
      * @param graphConfiguration configuration options for the entire graph against which this job is executed
      * @param metrics {@link org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics} for this job
      */
-    public default void workerIterationStart(Configuration jobConfiguration,
-                                             Configuration graphConfiguration, ScanMetrics metrics) {}
+    default void workerIterationStart(Configuration jobConfiguration, Configuration graphConfiguration, ScanMetrics metrics) {}
 
     /**
      * Invoked after a block of computation (i.e. multiple process() calls) is handed to this particular ScanJob.
      * Can be used to close any resources held by this job. This method is called exactly once for each after a block of computation.
-     * This method is semantically aligned with {@link org.tinkerpop.gremlin.process.computer.VertexProgram#workerIterationEnd()}
+     * This method is semantically aligned with {@link org.apache.tinkerpop.gremlin.process.computer.VertexProgram#workerIterationEnd(Memory)}
      *
      * This method may not be called if there is no data to be processed. Correspondingly, the start method won't be called either.
      *
@@ -57,7 +57,7 @@ public interface ScanJob extends Cloneable {
      *
      * @param metrics {@link org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics} for this job
      */
-    public default void workerIterationEnd(ScanMetrics metrics) {}
+    default void workerIterationEnd(ScanMetrics metrics) {}
 
     /**
      * Run this {@code ScanJob}'s computation on the supplied row-key and entries.
@@ -94,7 +94,7 @@ public interface ScanJob extends Cloneable {
      * @param entries
      * @param metrics
      */
-    public void process(StaticBuffer key, Map<SliceQuery,EntryList> entries, ScanMetrics metrics);
+    void process(StaticBuffer key, Map<SliceQuery, EntryList> entries, ScanMetrics metrics);
 
     /**
      * Returns one or more {@code SliceQuery} instances belonging to this {@code ScanJob}.
@@ -111,7 +111,7 @@ public interface ScanJob extends Cloneable {
      *
      * @return one or more queries
      */
-    public List<SliceQuery> getQueries();
+    List<SliceQuery> getQueries();
 
     /**
      * A predicate that determines whether
@@ -129,7 +129,7 @@ public interface ScanJob extends Cloneable {
      *
      * @return a threadsafe predicate for edgestore keys
      */
-    public default Predicate<StaticBuffer> getKeyFilter() {
+    default Predicate<StaticBuffer> getKeyFilter() {
         return b -> true; //No filter by default
     }
 
@@ -139,6 +139,6 @@ public interface ScanJob extends Cloneable {
      *
      * @return A clone of this {@link org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob}
      */
-    public ScanJob clone();
+    ScanJob clone();
 
 }

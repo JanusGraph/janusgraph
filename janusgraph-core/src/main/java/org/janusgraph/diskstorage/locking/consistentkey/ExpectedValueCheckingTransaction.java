@@ -14,9 +14,7 @@
 
 package org.janusgraph.diskstorage.locking.consistentkey;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
@@ -73,8 +71,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     private final StoreTransaction inconsistentTx;
     private final Duration maxReadTime;
 
-    private final Map<ExpectedValueCheckingStore, Map<KeyColumn, StaticBuffer>> expectedValuesByStore =
-            new HashMap<ExpectedValueCheckingStore, Map<KeyColumn, StaticBuffer>>();
+    private final Map<ExpectedValueCheckingStore, Map<KeyColumn, StaticBuffer>> expectedValuesByStore = new HashMap<>();
 
     public ExpectedValueCheckingTransaction(StoreTransaction inconsistentTx, StoreTransaction strongConsistentTx, Duration maxReadTime) {
         this.inconsistentTx = inconsistentTx;
@@ -134,7 +131,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
         assert null != m;
         if (m.containsKey(lockID)) {
             log.debug("Multiple expected values for {}: keeping initial value {} and discarding later value {}",
-                    new Object[]{lockID, m.get(lockID), value});
+                lockID, m.get(lockID), value);
         } else {
             m.put(lockID, value);
             log.debug("Store expected value for {}: {}", lockID, value);
@@ -211,12 +208,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     }
 
     private void lockedOn(ExpectedValueCheckingStore store) {
-        Map<KeyColumn, StaticBuffer> m = expectedValuesByStore.get(store);
-
-        if (null == m) {
-            m = new HashMap<KeyColumn, StaticBuffer>();
-            expectedValuesByStore.put(store, m);
-        }
+        final Map<KeyColumn, StaticBuffer> m = expectedValuesByStore.computeIfAbsent(store, k -> new HashMap<>());
     }
 
     private void checkSingleExpectedValue(final KeyColumn kc,
@@ -242,7 +234,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
         Iterable<Entry> actualEntries = store.getBackingStore().getSlice(ksq, strongConsistentTx);
 
         if (null == actualEntries)
-            actualEntries = ImmutableList.<Entry>of();
+            actualEntries = ImmutableList.of();
 
         /*
          * Discard any columns which do not exactly match kc.getColumn().
@@ -250,43 +242,38 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
          * For example, it's possible that the slice returned columns which for
          * which kc.getColumn() is a prefix.
          */
-        actualEntries = Iterables.filter(actualEntries, new Predicate<Entry>() {
-            @Override
-            public boolean apply(Entry input) {
-                if (!input.getColumn().equals(kc.getColumn())) {
-                    log.debug("Dropping entry {} (only accepting column {})", input, kc.getColumn());
-                    return false;
-                }
-                log.debug("Accepting entry {}", input);
-                return true;
+        actualEntries = Iterables.filter(actualEntries, input -> {
+            if (!input.getColumn().equals(kc.getColumn())) {
+                log.debug("Dropping entry {} (only accepting column {})", input, kc.getColumn());
+                return false;
             }
+            log.debug("Accepting entry {}", input);
+            return true;
         });
 
         // Extract values from remaining Entry instances
-        Iterable<StaticBuffer> actualVals = Iterables.transform(actualEntries, new Function<Entry, StaticBuffer>() {
-            @Override
-            public StaticBuffer apply(Entry e) {
-                StaticBuffer actualCol = e.getColumnAs(StaticBuffer.STATIC_FACTORY);
-                assert null != actualCol;
-                assert null != kc.getColumn();
-                assert 0 >= kc.getColumn().compareTo(actualCol);
-                assert 0  > actualCol.compareTo(nextBuf);
-                return e.getValueAs(StaticBuffer.STATIC_FACTORY);
-            }
+
+        final Iterable<StaticBuffer> actualValues = Iterables.transform(actualEntries, e -> {
+            final StaticBuffer actualCol = e.getColumnAs(StaticBuffer.STATIC_FACTORY);
+            assert null != actualCol;
+            assert null != kc.getColumn();
+            assert 0 >= kc.getColumn().compareTo(actualCol);
+            assert 0  > actualCol.compareTo(nextBuf);
+            return e.getValueAs(StaticBuffer.STATIC_FACTORY);
         });
 
-        final Iterable<StaticBuffer> expectedVals;
+        final Iterable<StaticBuffer> expectedValues;
 
         if (null == ev) {
-            expectedVals = ImmutableList.<StaticBuffer>of();
+            expectedValues = ImmutableList.of();
         } else {
-            expectedVals = ImmutableList.<StaticBuffer>of(ev);
+            expectedValues = ImmutableList.of(ev);
         }
 
-        if (!Iterables.elementsEqual(expectedVals, actualVals)) {
+        if (!Iterables.elementsEqual(expectedValues, actualValues)) {
             throw new PermanentLockingException(
                     "Expected value mismatch for " + kc + ": expected="
-                            + expectedVals + " vs actual=" + actualVals + " (store=" + store.getName() + ")");
+                            + expectedValues + " vs actual=" + actualValues + " (store=" + store.getName() + ")");
         }
     }
 

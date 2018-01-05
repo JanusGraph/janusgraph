@@ -56,7 +56,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *     Having multiple buckets per timeslice allows for load balancing across multiple keys in the storage backend.</li>
  *     <li>The start time of the timeslice: Each time slice is {@link #TIMESLICE_INTERVAL} microseconds long. And all messages that are added between
  *     start-time and start-time+{@link #TIMESLICE_INTERVAL} end up in the same timeslice. For high throughput logs that might be more messages
- *     than the underlying storage backend can handle per key. In that case, ensure that (2^(partition-bit-width) x (num-bucekts) is large enough
+ *     than the underlying storage backend can handle per key. In that case, ensure that (2^(partition-bit-width) x (num-buckets) is large enough
  *     to distribute the load.</li>
  * </ul>
  *
@@ -71,7 +71,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * while reading a batch of messages, a subsequently restarted log reader may therefore read messages twice. Hence, {@link MessageReader} implementations
  * should exhibit correct behavior for the (rare) circumstance that messages are read twice.
  *
- * Note: All time values in this class are in mircoseconds. Hence, there are many cases where milliseconds are converted to microseconds.
+ * Note: All time values in this class are in microseconds. Hence, there are many cases where milliseconds are converted to microseconds.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -95,7 +95,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                     "visible in the storage backend in this amount of time, a log reader might miss the message.",
             ConfigOption.Type.MASKABLE, Duration.ofMillis(500L));
 
-    public static final ConfigOption<Boolean> LOG_KEY_CONSISTENT = new ConfigOption<Boolean>(LOG_NS,"key-consistent",
+    public static final ConfigOption<Boolean> LOG_KEY_CONSISTENT = new ConfigOption<>(LOG_NS, "key-consistent",
             "Whether to require consistency for log reading and writing messages to the storage backend",
             ConfigOption.Type.MASKABLE, false);
 
@@ -200,7 +200,6 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     private final Duration readPollingInterval;
     private final Duration readLagTime;
     private final Duration maxReadTime;
-    private final boolean allowReadMarkerRecovery = true;
 
     /**
      * Thread pool to read messages in the specified interval from the various keys in a time slice AND to process
@@ -255,7 +254,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         maxReadTime = config.get(LOG_MAX_READ_TIME);
 
         if (MIN_DELIVERY_DELAY.compareTo(maxSendDelay) <= 0) { // No need to locally queue messages since they will be sent immediately
-            outgoingMsg = new ArrayBlockingQueue<MessageEnvelope>(sendBatchSize*BATCH_SIZE_MULTIPLIER);
+            outgoingMsg = new ArrayBlockingQueue<>(sendBatchSize * BATCH_SIZE_MULTIPLIER);
             sendThread = new SendThread();
             sendThread.start();
         } else {
@@ -269,7 +268,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
         this.numMsgCounter = new AtomicLong(readSetting(manager.senderId, MESSAGE_COUNTER_COLUMN, 0));
         this.numBucketCounter = new AtomicLong(0);
-        this.readers = new ArrayList<MessageReader>();
+        this.readers = new ArrayList<>();
         this.isOpen = true;
     }
 
@@ -414,10 +413,10 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         Preconditions.checkArgument(partitionId>=0 && partitionId<(1<<manager.partitionBitWidth),"Invalid partition id: %s",partitionId);
         final Instant timestamp = times.getTime();
         KCVSMessage msg = new KCVSMessage(content,timestamp,manager.senderId);
-        FutureMessage fmsg = new FutureMessage(msg);
+        FutureMessage futureMessage = new FutureMessage(msg);
 
         StaticBuffer key=getLogKey(partitionId,(int)(numBucketCounter.incrementAndGet()%numBuckets),getTimeSlice(timestamp));
-        MessageEnvelope envelope = new MessageEnvelope(fmsg,key,writeMessage(msg));
+        MessageEnvelope envelope = new MessageEnvelope(futureMessage,key,writeMessage(msg));
 
         if (persistor!=null) {
             try {
@@ -437,7 +436,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 throw new JanusGraphException("Got interrupted waiting to send message",e);
             }
         }
-        return fmsg;
+        return futureMessage;
     }
 
     /**
@@ -479,7 +478,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                         log.debug("Preparing to write {} to storage with column/timestamp {}", env, times.getTime(ts));
                     }
 
-                    Map<StaticBuffer,KCVMutation> muts = new HashMap<StaticBuffer, KCVMutation>(mutations.keySet().size());
+                    final Map<StaticBuffer,KCVMutation> muts = new HashMap<>(mutations.keySet().size());
                     for (StaticBuffer key : mutations.keySet()) {
                         muts.put(key,new KCVMutation(mutations.get(key),KeyColumnValueStore.NO_DELETIONS));
                         log.debug("Built mutation on key {} with {} additions", key, mutations.get(key).size());
@@ -511,11 +510,11 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
      */
     private class SendThread extends BackgroundThread {
 
-        private List<MessageEnvelope> toSend;
+        private final List<MessageEnvelope> toSend;
 
         public SendThread() {
             super("KCVSLogSend"+name, false);
-            toSend = new ArrayList<MessageEnvelope>(sendBatchSize*3/2);
+            toSend = new ArrayList<>(sendBatchSize * 3 / 2);
         }
 
         private Duration timeSinceFirstMsg() {
@@ -614,13 +613,8 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             if (!this.readers.contains(reader)) this.readers.add(reader);
         }
         if (firstRegistration && !this.readers.isEmpty()) {
-            readExecutor = new ScheduledThreadPoolExecutor(numReadThreads,new RejectedExecutionHandler() {
             //Custom rejection handler so that messages are processed in-thread when executor has been closed
-                @Override
-                public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                    r.run();
-                }
-            });
+            readExecutor = new ScheduledThreadPoolExecutor(numReadThreads, (r, executor) -> r.run());
             msgPullers = new MessagePuller[manager.readPartitionIds.length*numBuckets];
             int pos = 0;
             for (int partitionId : manager.readPartitionIds) {
@@ -667,7 +661,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         @Override
         public void run() {
             try {
-                if (allowReadMarkerRecovery) setReadMarker();
+                setReadMarker();
 
                 final int timeslice = getTimeSlice(messageTimeStart);
 
@@ -745,7 +739,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             } else {
                 long savedTimestamp = readSetting(readMarker.getIdentifier(),getMarkerColumn(partitionId,bucketId),times.getTime(readMarker.getStartTime(times)));
                 this.messageTimeStart = times.getTime(savedTimestamp);
-                log.info("Loaded indentified ReadMarker start time {} into {}", messageTimeStart, this);
+                log.info("Loaded identified ReadMarker start time {} into {}", messageTimeStart, this);
             }
         }
 

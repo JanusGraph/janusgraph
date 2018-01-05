@@ -30,7 +30,7 @@ import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 
 /**
- * A central mechanism for overridding graph configuration parameters during
+ * A central mechanism for overriding graph configuration parameters during
  * unit and integration testing. For example, an EC2 m1.medium used for
  * continuous integration might be much slower than SSD-backed personal
  * workstation, so much that increasing various backend-related timeouts from
@@ -39,7 +39,7 @@ import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
  */
 public class TestGraphConfigs {
 
-    public static String ENV_OVERRIDE_FILE = "JANUSGRAPH_CONFIG";
+    public static final String ENV_OVERRIDE_FILE = "JANUSGRAPH_CONFIG";
 
     private static final CommonsConfiguration overrides;
 
@@ -87,7 +87,7 @@ public class TestGraphConfigs {
     }
 
     // This is used as a timeout argument to a loop that only sleeps briefly and checks
-    // for covergence much more often than the timeout argument; it can safely be set
+    // for convergence much more often than the timeout argument; it can safely be set
     // high without delaying successful tests
     public static long getSchemaConvergenceTime(ChronoUnit u) {
         final long sec = 60L;
@@ -116,13 +116,13 @@ public class TestGraphConfigs {
 //            }
 //
 //            @Override
-//            public <O> O get(String key, Class<O> datatype) {
+//            public <O> O get(String key, Class<O> dataType) {
 //                Object o = null;
 //                if (null != first)
-//                    o = first.get(key, datatype);
+//                    o = first.get(key, dataType);
 //
 //                if (null == o)
-//                    o = second.get(key, datatype);
+//                    o = second.get(key, dataType);
 //
 //                return (O)o;
 //            }

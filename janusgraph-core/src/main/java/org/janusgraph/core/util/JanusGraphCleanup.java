@@ -17,7 +17,6 @@ package org.janusgraph.core.util;
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.JanusGraph;
 
-import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.util.BackendOperation;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -46,7 +45,7 @@ public class JanusGraphCleanup {
      * @deprecated Use {@link org.janusgraph.core.JanusGraphFactory#drop(JanusGraph)}
      */
     @Deprecated
-    public static final void clear(JanusGraph graph) {
+    public static void clear(JanusGraph graph) {
         Preconditions.checkNotNull(graph);
         Preconditions.checkArgument(graph instanceof StandardJanusGraph,"Invalid graph instance detected: %s",graph.getClass());
         StandardJanusGraph g = (StandardJanusGraph)graph;

@@ -18,34 +18,34 @@ class SpeedTestSchema {
     public static final int VERTEX_COUNT = 10 * 100
     public static final int EDGE_COUNT = VERTEX_COUNT * 5
 
-    public static final String VERTEX_KEY_PREFIX = "vp_";
-    public static final String EDGE_KEY_PREFIX = "ep_";
-    public static final String LABEL_PREFIX = "el_";
-    public static final String UID_PROP = "uid";
+    public static final String VERTEX_KEY_PREFIX = "vp_"
+    public static final String EDGE_KEY_PREFIX = "ep_"
+    public static final String LABEL_PREFIX = "el_"
+    public static final String UID_PROP = "uid"
 
-    public static long SUPERNODE_UID = 0L;
-    private static final int SUPERNODE_INDEX = 0;
+    public static long SUPERNODE_UID = 0L
+    private static final int SUPERNODE_INDEX = 0
 
-    private final int edgeCount = EDGE_COUNT;
-    private final int vertexCount = VERTEX_COUNT;
-    private final int maxEdgePropVal = 100;
-    private final int maxVertexPropVal = 100;
+    private final int edgeCount = EDGE_COUNT
+    private final int vertexCount = VERTEX_COUNT
+    private final int maxEdgePropVal = 100
+    private final int maxVertexPropVal = 100
     /*
      * edgeCount must have type int instead of long because
      * DistributionGenerator expects int. It's probably not a great idea to go
      * over 4B per label in memory anyway.
      */
-    private final int vertexPropKeys = 20;
-    private final int edgePropKeys = 10;
-    private final int edgeLabels = 3;
+    private final int vertexPropKeys = 20
+    private final int edgePropKeys = 10
+    private final int edgeLabels = 3
 
-    private final String[] vertexPropNames;
-    private final String[] edgePropNames;
-    private final String[] edgeLabelNames;
-    private final Map<String, String> labelPkeys;
+    private final String[] vertexPropNames
+    private final String[] edgePropNames
+    private final String[] edgeLabelNames
+    private final Map<String, String> labelPkeys
 
     private static final Logger log =
-            LoggerFactory.getLogger(SpeedTestSchema.class);
+            LoggerFactory.getLogger(SpeedTestSchema.class)
 
 
     /*
@@ -163,118 +163,118 @@ class SpeedTestSchema {
 //        }
 //    }
 
-    public static SpeedTestSchema get() {
-        return new SpeedTestSchema(VERTEX_COUNT, EDGE_COUNT);
+    static SpeedTestSchema get() {
+        return new SpeedTestSchema(VERTEX_COUNT, EDGE_COUNT)
     }
 
-    public final String getVertexPropertyName(int i) {
-        return vertexPropNames[i];
+    final String getVertexPropertyName(int i) {
+        return vertexPropNames[i]
     }
 
-    public final String getEdgePropertyName(int i) {
-        return edgePropNames[i];
+    final String getEdgePropertyName(int i) {
+        return edgePropNames[i]
     }
 
-    public final String getEdgeLabelName(int i) {
-        return edgeLabelNames[i];
+    final String getEdgeLabelName(int i) {
+        return edgeLabelNames[i]
     }
 
-    public final String getSortKeyForLabel(String l) {
-        return l.replace("el_", "ep_");
+    static final String getSortKeyForLabel(String l) {
+        return l.replace("el_", "ep_")
     }
 
-    public final int getVertexPropKeys() {
-        return vertexPropKeys;
+    final int getVertexPropKeys() {
+        return vertexPropKeys
     }
 
-    public final int getEdgePropKeys() {
-        return edgePropKeys;
+    final int getEdgePropKeys() {
+        return edgePropKeys
     }
 
-    public final int getMaxEdgePropVal() {
-        return maxEdgePropVal;
+    final int getMaxEdgePropVal() {
+        return maxEdgePropVal
     }
 
-    public final int getMaxVertexPropVal() {
-        return maxVertexPropVal;
+    final int getMaxVertexPropVal() {
+        return maxVertexPropVal
     }
 
-    public final int getEdgeLabels() {
-        return edgeLabels;
+    final int getEdgeLabels() {
+        return edgeLabels
     }
 
-    public final long getSupernodeUid() {
-        return SUPERNODE_UID;
+    static final long getSupernodeUid() {
+        return SUPERNODE_UID
     }
 
-    public final String getSupernodeOutLabel() {
-        return getEdgeLabelName(SUPERNODE_INDEX);
+    final String getSupernodeOutLabel() {
+        return getEdgeLabelName(SUPERNODE_INDEX)
     }
 
-    public final long getMaxUid() {
-        return vertexCount;
+    final long getMaxUid() {
+        return vertexCount
     }
 
-    public final int getVertexCount() {
-        return vertexCount;
+    final int getVertexCount() {
+        return vertexCount
     }
 
-    public final int getEdgeCount() {
-        return edgeCount;
+    final int getEdgeCount() {
+        return edgeCount
     }
 
     private SpeedTestSchema() {
 
-        this.vertexPropNames = generateNames(VERTEX_KEY_PREFIX, this.vertexPropKeys);
-        this.edgePropNames = generateNames(EDGE_KEY_PREFIX, this.edgePropKeys);
-        this.edgeLabelNames = generateNames(LABEL_PREFIX, this.edgeLabels);
+        this.vertexPropNames = generateNames(VERTEX_KEY_PREFIX, this.vertexPropKeys)
+        this.edgePropNames = generateNames(EDGE_KEY_PREFIX, this.edgePropKeys)
+        this.edgeLabelNames = generateNames(LABEL_PREFIX, this.edgeLabels)
 
-        Preconditions.checkArgument(this.edgeLabels <= this.edgePropKeys);
+        Preconditions.checkArgument(this.edgeLabels <= this.edgePropKeys)
 
-        this.labelPkeys = new HashMap<String, String>(this.edgeLabels);
+        this.labelPkeys = new HashMap<String, String>(this.edgeLabels)
         for (int i = 0; i < this.edgeLabels; i++) {
-            labelPkeys.put(edgeLabelNames[i], edgePropNames[i]);
+            labelPkeys.put(edgeLabelNames[i], edgePropNames[i])
         }
     }
 
 
-    public void makeTypes(JanusGraph g) {
-        Preconditions.checkArgument(edgeLabels <= edgePropKeys);
+    void makeTypes(JanusGraph g) {
+        Preconditions.checkArgument(edgeLabels <= edgePropKeys)
 
-        JanusGraphManagement mgmt = g.openManagement();
+        JanusGraphManagement mgmt = g.openManagement()
         for (int i = 0; i < vertexPropKeys; i++) {
-            PropertyKey key = mgmt.makePropertyKey(getVertexPropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
-            mgmt.setConsistency(key, ConsistencyModifier.LOCK);
-            mgmt.buildIndex("v-"+getVertexPropertyName(i),Vertex.class).addKey(key).buildCompositeIndex();
+            PropertyKey key = mgmt.makePropertyKey(getVertexPropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make()
+            mgmt.setConsistency(key, ConsistencyModifier.LOCK)
+            mgmt.buildIndex("v-"+getVertexPropertyName(i),Vertex.class).addKey(key).buildCompositeIndex()
         }
         for (int i = 0; i < edgePropKeys; i++) {
-            PropertyKey key = mgmt.makePropertyKey(getEdgePropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
-            mgmt.setConsistency(key, ConsistencyModifier.LOCK);
-            mgmt.buildIndex("e-"+getEdgePropertyName(i),Edge.class).addKey(key).buildCompositeIndex();
+            PropertyKey key = mgmt.makePropertyKey(getEdgePropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make()
+            mgmt.setConsistency(key, ConsistencyModifier.LOCK)
+            mgmt.buildIndex("e-"+getEdgePropertyName(i),Edge.class).addKey(key).buildCompositeIndex()
         }
         for (int i = 0; i < edgeLabels; i++) {
-            String labelName = getEdgeLabelName(i);
-            String pkName = getSortKeyForLabel(labelName);
-            PropertyKey pk = mgmt.getPropertyKey(pkName);
-            ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel(getEdgeLabelName(i))).sortKey(pk).make();
+            String labelName = getEdgeLabelName(i)
+            String pkName = getSortKeyForLabel(labelName)
+            PropertyKey pk = mgmt.getPropertyKey(pkName)
+            ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel(getEdgeLabelName(i))).sortKey(pk).make()
         }
 
-        PropertyKey uid = mgmt.makePropertyKey(UID_PROP).dataType(Long.class).cardinality(Cardinality.SINGLE).make();
-        mgmt.buildIndex("v-uid",Vertex.class).unique().addKey(uid).buildCompositeIndex();
-        mgmt.setConsistency(uid, ConsistencyModifier.LOCK);
-        mgmt.commit();
-        log.debug("Committed types");
+        PropertyKey uid = mgmt.makePropertyKey(UID_PROP).dataType(Long.class).cardinality(Cardinality.SINGLE).make()
+        mgmt.buildIndex("v-uid",Vertex.class).unique().addKey(uid).buildCompositeIndex()
+        mgmt.setConsistency(uid, ConsistencyModifier.LOCK)
+        mgmt.commit()
+        log.debug("Committed types")
     }
 
-    private String[] generateNames(String prefix, int count) {
-        String[] result = new String[count];
-        StringBuilder sb = new StringBuilder(8);
-        sb.append(prefix);
+    private static String[] generateNames(String prefix, int count) {
+        String[] result = new String[count]
+        StringBuilder sb = new StringBuilder(8)
+        sb.append(prefix)
         for (int i = 0; i < count; i++) {
-            sb.append(i);
-            result[i] = sb.toString();
-            sb.setLength(prefix.length());
+            sb.append(i)
+            result[i] = sb.toString()
+            sb.setLength(prefix.length())
         }
-        return result;
+        return result
     }
 }

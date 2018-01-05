@@ -58,7 +58,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
 
     <V> JanusGraphVertexProperty<V> constructProperty(String key, V value) {
         assert key!=null && value!=null;
-        return new FulgoraVertexProperty<V>(this,vertex,key,value);
+        return new FulgoraVertexProperty<>(this, vertex, key, value);
     }
 
     @Override
@@ -131,7 +131,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
                         M msg = vertexMemory.getMessage(vertexMemory.getCanonicalId(((JanusGraphEdge) e).otherVertex(vertex).longId()), localMessageScope);
                         return msg == null ? null : edgeFct.apply(msg, e);
                     })
-                    .filter(m -> m != null);
+                    .filter(Objects::nonNull);
         }
     }
 

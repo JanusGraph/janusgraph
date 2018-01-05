@@ -32,7 +32,7 @@ public interface PropertyKeyMaker extends RelationTypeMaker {
      * @param cardinality
      * @return this PropertyKeyMaker
      */
-    public PropertyKeyMaker cardinality(Cardinality cardinality);
+    PropertyKeyMaker cardinality(Cardinality cardinality);
 
     /**
      * Configures the data type for this property key.
@@ -48,10 +48,10 @@ public interface PropertyKeyMaker extends RelationTypeMaker {
      * @return this PropertyKeyMaker
      * @see org.janusgraph.core.PropertyKey#dataType()
      */
-    public PropertyKeyMaker dataType(Class<?> clazz);
+    PropertyKeyMaker dataType(Class<?> clazz);
 
     @Override
-    public PropertyKeyMaker signature(PropertyKey... types);
+    PropertyKeyMaker signature(PropertyKey... types);
 
 
     /**
@@ -60,5 +60,5 @@ public interface PropertyKeyMaker extends RelationTypeMaker {
      * @return the created {@link PropertyKey}
      */
     @Override
-    public PropertyKey make();
+    PropertyKey make();
 }

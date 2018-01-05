@@ -165,4 +165,14 @@ public class HBaseAdmin1_0 implements AdminMask
     {
         adm.close();
     }
+
+    @Override
+    public void snapshot(String snapshotName, String table) throws IllegalArgumentException, IOException {
+        adm.snapshot(snapshotName, TableName.valueOf(table));
+    }
+
+    @Override
+    public void deleteSnapshot(String snapshotName) throws IOException {
+        adm.deleteSnapshot(snapshotName);
+    }
 }

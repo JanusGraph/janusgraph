@@ -15,8 +15,6 @@
 package org.janusgraph.diskstorage.configuration.backend;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.janusgraph.core.JanusGraphException;
@@ -41,14 +39,14 @@ import org.janusgraph.util.system.IOUtils;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.lang.StringUtils;
 
-import javax.annotation.Nullable;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 
 /**
@@ -59,7 +57,6 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
     private final BackendOperation.TransactionalProvider txProvider;
     private final TimestampProvider times;
     private final KeyColumnValueStore store;
-    private final String identifier;
     private final StaticBuffer rowKey;
     private final StandardSerializer serializer;
 
@@ -72,8 +69,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         this.txProvider = txProvider;
         this.times = config.get(TIMESTAMP_PROVIDER);
         this.store = store;
-        this.identifier = identifier;
-        this.rowKey = string2StaticBuffer(this.identifier);
+        this.rowKey = string2StaticBuffer(identifier);
         this.serializer = new StandardSerializer();
     }
 
@@ -94,7 +90,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
      * @throws org.janusgraph.diskstorage.BackendException
      */
     @Override
-    public <O> O get(final String key, final Class<O> datatype) {
+    public <O> O get(final String key, final Class<O> dataType) {
         StaticBuffer column = string2StaticBuffer(key);
         final KeySliceQuery query = new KeySliceQuery(rowKey,column, BufferUtil.nextBiggerBuffer(column));
         StaticBuffer result = BackendOperation.execute(new BackendOperation.Transactional<StaticBuffer>() {
@@ -111,7 +107,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
             }
         }, txProvider, times, maxOperationWaitTime);
         if (result==null) return null;
-        return staticBuffer2Object(result, datatype);
+        return staticBuffer2Object(result, dataType);
     }
 
     public<O> void set(String key, O value, O expectedValue) {
@@ -135,7 +131,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         final List<Entry> additions;
         final List<StaticBuffer> deletions;
         if (value!=null) { //Addition
-            additions = new ArrayList<Entry>(1);
+            additions = new ArrayList<>(1);
             deletions = KeyColumnValueStore.NO_DELETIONS;
             StaticBuffer val = object2StaticBuffer(value);
             additions.add(StaticArrayEntry.of(column, val));
@@ -202,20 +198,15 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         final Map<String,Object> entries = toMap();
         return new ReadConfiguration() {
             @Override
-            public <O> O get(String key, Class<O> datatype) {
-                Preconditions.checkArgument(!entries.containsKey(key) || datatype.isAssignableFrom(entries.get(key).getClass()));
+            public <O> O get(String key, Class<O> dataType) {
+                Preconditions.checkArgument(!entries.containsKey(key) || dataType.isAssignableFrom(entries.get(key).getClass()));
                 return (O)entries.get(key);
             }
 
             @Override
             public Iterable<String> getKeys(final String prefix) {
-                return Lists.newArrayList(Iterables.filter(entries.keySet(),new Predicate<String>() {
-                    @Override
-                    public boolean apply(@Nullable String s) {
-                        assert s!=null;
-                        return StringUtils.isBlank(prefix) || s.startsWith(prefix);
-                    }
-                }));
+                final boolean prefixBlank = StringUtils.isBlank(prefix);
+                return entries.keySet().stream().filter(s -> prefixBlank || s.startsWith(prefix)).collect(Collectors.toList());
             }
 
             @Override
@@ -258,9 +249,9 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         return out.getStaticBuffer();
     }
 
-    private<O> O staticBuffer2Object(final StaticBuffer s, Class<O> datatype) {
+    private<O> O staticBuffer2Object(final StaticBuffer s, Class<O> dataType) {
         Object value = serializer.readClassAndObject(s.asReadBuffer());
-        Preconditions.checkArgument(datatype.isInstance(value),"Could not deserialize to [%s], got: %s",datatype,value);
+        Preconditions.checkArgument(dataType.isInstance(value),"Could not deserialize to [%s], got: %s",dataType,value);
         return (O)value;
     }
 

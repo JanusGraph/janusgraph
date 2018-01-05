@@ -37,16 +37,16 @@ public class RelationCacheTest {
     @Test
     public void testMap() {
         int len = 100;
-        LongObjectHashMap<Object> map = new LongObjectHashMap<Object>();
+        final LongObjectHashMap<Object> map = new LongObjectHashMap<>();
         for (int i = 1; i <= len; i++) {
             map.put(i * 1000, "TestValue " + i);
         }
 
-        Map<Long, Object> copy1 = new HashMap<Long, Object>();
+        final Map<Long, Object> copy1 = new HashMap<>();
         for (LongObjectCursor<Object> entry : map) {
             copy1.put(entry.key, entry.value);
         }
-        Map<Long, Object> copy2 = new HashMap<Long, Object>();
+        final Map<Long, Object> copy2 = new HashMap<>();
         for (LongObjectCursor<Object> entry : map) {
             copy2.put(entry.key, entry.value);
         }
@@ -55,15 +55,15 @@ public class RelationCacheTest {
         assertEquals(len, copy2.size());
         for (int i = 1; i <= len; i++) {
             assertEquals("TestValue " + i, map.get(i * 1000));
-            assertEquals("TestValue " + i, copy1.get(i * 1000l));
-            assertEquals("TestValue " + i, copy2.get(i * 1000l));
+            assertEquals("TestValue " + i, copy1.get(i * 1000L));
+            assertEquals("TestValue " + i, copy2.get(i * 1000L));
         }
 
     }
 
     @Test
     public void testEmpty() {
-        LongObjectHashMap<Object> map = new LongObjectHashMap<Object>();
+        final LongObjectHashMap<Object> map = new LongObjectHashMap<>();
         assertEquals(0, map.size());
         assertEquals(0, Iterables.size(map));
     }
@@ -74,7 +74,7 @@ public class RelationCacheTest {
         int iterations = 100000;
         for (int k = 0; k < iterations; k++) {
             int len = random.nextInt(10);
-            LongObjectHashMap<Object> map = new LongObjectHashMap<Object>();
+            final LongObjectHashMap<Object> map = new LongObjectHashMap<>();
             for (int i = 1; i <= len; i++) {
                 map.put(i * 1000, "TestValue " + i);
             }

@@ -24,8 +24,8 @@ import org.apache.hadoop.hbase.client.Delete;
 public interface HBaseCompat {
 
     /**
-     * Configure the compression scheme {@code algo} on a column family
-     * descriptor {@code cd}. The {@code algo} parameter is a string value
+     * Configure the compression scheme {@code algorithm} on a column family
+     * descriptor {@code cd}. The {@code algorithm} parameter is a string value
      * corresponding to one of the values of HBase's Compression enum. The
      * Compression enum has moved between packages as HBase has evolved, which
      * is why this method has a String argument in the signature instead of the
@@ -33,10 +33,10 @@ public interface HBaseCompat {
      *
      * @param cd
      *            column family to configure
-     * @param algo
+     * @param algorithm
      *            compression type to use
      */
-    public void setCompression(HColumnDescriptor cd, String algo);
+    void setCompression(HColumnDescriptor cd, String algorithm);
 
     /**
      * Create and return a HTableDescriptor instance with the given name. The
@@ -50,11 +50,11 @@ public interface HBaseCompat {
      *            HBase table name
      * @return a new table descriptor instance
      */
-    public HTableDescriptor newTableDescriptor(String tableName);
+    HTableDescriptor newTableDescriptor(String tableName);
 
     ConnectionMask createConnection(Configuration conf) throws IOException;
 
-    void addColumnFamilyToTableDescriptor(HTableDescriptor tdesc, HColumnDescriptor cdesc);
+    void addColumnFamilyToTableDescriptor(HTableDescriptor tableDescriptor, HColumnDescriptor columnDescriptor);
 
     void setTimestamp(Delete d, long timestamp);
 }

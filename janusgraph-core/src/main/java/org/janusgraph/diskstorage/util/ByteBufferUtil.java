@@ -30,14 +30,14 @@ public class ByteBufferUtil {
      * ################
      */
 
-    public static final ByteBuffer zeroByteBuffer(int len) {
+    public static ByteBuffer zeroByteBuffer(int len) {
         ByteBuffer res = ByteBuffer.allocate(len);
         for (int i = 0; i < len; i++) res.put((byte) 0);
         res.flip();
         return res;
     }
 
-    public static final ByteBuffer oneByteBuffer(int len) {
+    public static ByteBuffer oneByteBuffer(int len) {
         ByteBuffer res = ByteBuffer.allocate(len);
         for (int i = 0; i < len; i++) res.put((byte) -1);
         res.flip();
@@ -56,7 +56,7 @@ public class ByteBufferUtil {
      * @param b Second ByteBuffer
      * @return true if the first ByteBuffer is smaller than the second
      */
-    public static final boolean isSmallerThan(ByteBuffer a, ByteBuffer b) {
+    public static boolean isSmallerThan(ByteBuffer a, ByteBuffer b) {
         return compare(a, b)<0;
     }
 
@@ -79,7 +79,7 @@ public class ByteBufferUtil {
      * @param b2             Second ByteBuffer
      * @return a negative integer, zero, or a positive integer as the first argument is less than, equal to, or greater than the second.
      */
-    public static final int compare(ByteBuffer b1, ByteBuffer b2) {
+    public static int compare(ByteBuffer b1, ByteBuffer b2) {
         if (b1 == b2) {
             return 0;
         }
@@ -108,15 +108,15 @@ public class ByteBufferUtil {
         final int size = bytes.remaining();
         final char[] c = new char[size * 2];
         for (int i = 0; i < size; i++) {
-            final int bint = bytes.get(i + offset);
-            c[i * 2] = Hex.byteToChar[(bint & 0xf0) >> 4];
-            c[1 + i * 2] = Hex.byteToChar[bint & 0x0f];
+            final int byteAsInteger = bytes.get(i + offset);
+            c[i * 2] = Hex.byteToChar[(byteAsInteger & 0xf0) >> 4];
+            c[1 + i * 2] = Hex.byteToChar[byteAsInteger & 0x0f];
         }
         return Hex.wrapCharArray(c);
     }
 
 
-    public static final String toString(ByteBuffer b, String separator) {
+    public static String toString(ByteBuffer b, String separator) {
         StringBuilder s = new StringBuilder();
         for (int i=b.position();i<b.limit();i++) {
             if (i>b.position()) s.append(separator);

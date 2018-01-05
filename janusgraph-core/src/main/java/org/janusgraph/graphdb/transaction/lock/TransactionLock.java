@@ -22,10 +22,10 @@ import java.time.Duration;
  */
 public interface TransactionLock {
 
-    public void lock(Duration timeout);
+    void lock(Duration timeout);
 
-    public void unlock();
+    void unlock();
 
-    public boolean inUse();
+    boolean inUse();
 
 }

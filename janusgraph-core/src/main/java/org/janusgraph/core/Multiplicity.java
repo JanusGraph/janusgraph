@@ -65,10 +65,8 @@ public enum Multiplicity {
     }
 
     public boolean isConstrained(Direction direction) {
-        if (direction==Direction.BOTH) return isConstrained();
-        if (this==MULTI) return false;
-        if (this==SIMPLE) return true;
-        return isUnique(direction);
+        if (direction == Direction.BOTH) return isConstrained();
+        return this != MULTI && (this == SIMPLE || isUnique(direction));
     }
 
 

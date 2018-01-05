@@ -36,14 +36,14 @@ public interface VertexScanJob extends Cloneable {
      * @param config
      * @param metrics
      */
-    public default void workerIterationStart(JanusGraph graph, Configuration config, ScanMetrics metrics) {}
+    default void workerIterationStart(JanusGraph graph, Configuration config, ScanMetrics metrics) {}
 
     /**
      * @see org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob
      *
      * @param metrics
      */
-    public default void workerIterationEnd(ScanMetrics metrics) {}
+    default void workerIterationEnd(ScanMetrics metrics) {}
 
     /**
      * Process the given vertex with its adjacency list and properties pre-loaded.
@@ -51,7 +51,7 @@ public interface VertexScanJob extends Cloneable {
      * @param vertex
      * @param metrics
      */
-    public void process(JanusGraphVertex vertex, ScanMetrics metrics);
+    void process(JanusGraphVertex vertex, ScanMetrics metrics);
 
 
     /**
@@ -59,7 +59,7 @@ public interface VertexScanJob extends Cloneable {
      *
      * @param queries
      */
-    public void getQueries(QueryContainer queries);
+    void getQueries(QueryContainer queries);
 
     /**
      * Returns a clone of this VertexScanJob. The clone will not yet be initialized for computation but all of
@@ -67,6 +67,6 @@ public interface VertexScanJob extends Cloneable {
      *
      * @return A clone of this job
      */
-    public VertexScanJob clone();
+    VertexScanJob clone();
 
 }

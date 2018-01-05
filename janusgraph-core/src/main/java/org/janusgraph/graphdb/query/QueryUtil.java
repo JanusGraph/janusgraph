@@ -92,41 +92,42 @@ public class QueryUtil {
      * @return
      */
     public static boolean isQueryNormalForm(Condition<?> condition) {
-        if (isQNFLiteralOrNot(condition)) return true;
-        else if (condition instanceof And) {
-            for (Condition<?> child : ((And<?>) condition).getChildren()) {
-                if (isQNFLiteralOrNot(child)) continue;
-                else if (child instanceof Or) {
+        if (isQNFLiteralOrNot(condition)) {
+            return true;
+        }
+        if (!(condition instanceof And)) {
+            return false;
+        }
+        for (final Condition<?> child : ((And<?>) condition).getChildren()) {
+            if (!isQNFLiteralOrNot(child)) {
+                if (child instanceof Or) {
                     for (Condition<?> child2 : ((Or<?>) child).getChildren()) {
                         if (!isQNFLiteralOrNot(child2)) return false;
                     }
-                } else return false;
+                } else {
+                    return false;
+                }
             }
-            return true;
-        } else return false;
+        }
+        return true;
     }
 
-    private static final boolean isQNFLiteralOrNot(Condition<?> condition) {
-        if (condition instanceof Not) {
-            Condition child = ((Not) condition).getChild();
-            if (!isQNFLiteral(child)) return false;
-            else if (child instanceof PredicateCondition) {
-                return !((PredicateCondition) child).getPredicate().hasNegation();
-            } else return true;
-        } else return isQNFLiteral(condition);
+    private static boolean isQNFLiteralOrNot(Condition<?> condition) {
+        if (!(condition instanceof Not)) {
+            return isQNFLiteral(condition);
+        }
+        final Condition child = ((Not) condition).getChild();
+        return isQNFLiteral(child) && (!(child instanceof PredicateCondition) || !((PredicateCondition) child).getPredicate().hasNegation());
     }
 
-    private static final boolean isQNFLiteral(Condition<?> condition) {
-        if (condition.getType() != Condition.Type.LITERAL) return false;
-        if (condition instanceof PredicateCondition) {
-            return ((PredicateCondition) condition).getPredicate().isQNF();
-        } else return true;
+    private static boolean isQNFLiteral(Condition<?> condition) {
+        return condition.getType() == Condition.Type.LITERAL && (!(condition instanceof PredicateCondition) || ((PredicateCondition) condition).getPredicate().isQNF());
     }
 
-    public static final <E extends JanusGraphElement> Condition<E> simplifyQNF(Condition<E> condition) {
+    public static <E extends JanusGraphElement> Condition<E> simplifyQNF(Condition<E> condition) {
         Preconditions.checkArgument(isQueryNormalForm(condition));
         if (condition.numChildren() == 1) {
-            Condition<E> child = ((And) condition).get(0);
+            Condition<E> child = ((And<E>) condition).get(0);
             if (child.getType() == Condition.Type.LITERAL) return child;
         }
         return condition;
@@ -147,7 +148,7 @@ public class QueryUtil {
      * @see #isQueryNormalForm(org.janusgraph.graphdb.query.condition.Condition)
      */
     public static <E extends JanusGraphElement> And<E> constraints2QNF(StandardJanusGraphTx tx, List<PredicateCondition<String, E>> constraints) {
-        And<E> conditions = new And<E>(constraints.size() + 4);
+        final And<E> conditions = new And<>(constraints.size() + 4);
         for (PredicateCondition<String, E> atom : constraints) {
             RelationType type = getType(tx, atom.getKey());
 
@@ -177,8 +178,8 @@ public class QueryUtil {
                 Collection values = (Collection) value;
                 if (predicate == Contain.NOT_IN) {
                     if (values.isEmpty()) continue; //Simply ignore since trivially satisfied
-                    for (Object invalue : values)
-                        addConstraint(type, Cmp.NOT_EQUAL, invalue, conditions, tx);
+                    for (Object inValue : values)
+                        addConstraint(type, Cmp.NOT_EQUAL, inValue, conditions, tx);
                 } else {
                     Preconditions.checkArgument(predicate == Contain.IN);
                     if (values.isEmpty()) {
@@ -186,7 +187,7 @@ public class QueryUtil {
                     } if (values.size() == 1) {
                         addConstraint(type, Cmp.EQUAL, values.iterator().next(), conditions, tx);
                     } else {
-                        Or<E> nested = new Or<E>(values.size());
+                        final Or<E> nested = new Or<>(values.size());
                         for (Object invalue : values)
                             addConstraint(type, Cmp.EQUAL, invalue, nested, tx);
                         conditions.add(nested);
@@ -207,14 +208,14 @@ public class QueryUtil {
         } else { //t.isEdgeLabel()
             Preconditions.checkArgument(value instanceof JanusGraphVertex);
         }
-        PredicateCondition<RelationType, E> pc = new PredicateCondition<RelationType, E>(type, predicate, value);
+        final PredicateCondition<RelationType, E> pc = new PredicateCondition<>(type, predicate, value);
         if (!conditions.contains(pc)) conditions.add(pc);
     }
 
 
     public static Map.Entry<RelationType,Collection> extractOrCondition(Or<JanusGraphRelation> condition) {
         RelationType masterType = null;
-        List<Object> values = new ArrayList<Object>();
+        final List<Object> values = new ArrayList<>();
         for (Condition c : condition.getChildren()) {
             if (!(c instanceof PredicateCondition)) return null;
             PredicateCondition<RelationType, JanusGraphRelation> atom = (PredicateCondition)c;
@@ -243,32 +244,29 @@ public class QueryUtil {
          */
         //TODO: smarter limit estimation
         int multiplier = Math.min(16, (int) Math.pow(2, retrievals.size() - 1));
-        int sublimit = Integer.MAX_VALUE;
-        if (Integer.MAX_VALUE / multiplier >= limit) sublimit = limit * multiplier;
+        int subLimit = Integer.MAX_VALUE;
+        if (Integer.MAX_VALUE / multiplier >= limit) subLimit = limit * multiplier;
         boolean exhaustedResults;
         do {
             exhaustedResults = true;
             results = null;
             for (IndexCall<R> call : retrievals) {
-                Collection<R> subresult;
+                Collection<R> subResult;
                 try {
-                    subresult = call.call(sublimit);
+                    subResult = call.call(subLimit);
                 } catch (Exception e) {
                     throw new JanusGraphException("Could not process individual retrieval call ", e);
                 }
 
-                if (subresult.size() >= sublimit) exhaustedResults = false;
+                if (subResult.size() >= subLimit) exhaustedResults = false;
                 if (results == null) {
-                    results = Lists.newArrayList(subresult);
+                    results = Lists.newArrayList(subResult);
                 } else {
-                    Set<R> subresultset = ImmutableSet.copyOf(subresult);
-                    Iterator riter = results.iterator();
-                    while (riter.hasNext()) {
-                        if (!subresultset.contains(riter.next())) riter.remove();
-                    }
+                    Set<R> subResultSet = ImmutableSet.copyOf(subResult);
+                    results.removeIf(o -> !subResultSet.contains(o));
                 }
             }
-            sublimit = (int) Math.min(Integer.MAX_VALUE - 1, Math.max(Math.pow(sublimit, 1.5),(sublimit+1)*2));
+            subLimit = (int) Math.min(Integer.MAX_VALUE - 1, Math.max(Math.pow(subLimit, 1.5),(subLimit+1)*2));
         } while (results != null && results.size() < limit && !exhaustedResults);
         return results;
     }
@@ -276,7 +274,7 @@ public class QueryUtil {
 
     public interface IndexCall<R> {
 
-        public Collection<R> call(int limit);
+        Collection<R> call(int limit);
 
     }
 

@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -45,17 +46,17 @@ public abstract class IndexUpdateJob {
     protected static final String SUCCESS_TX = "success-tx";
     protected static final String FAILED_TX = "failed-tx";
 
-    public static ConfigNamespace INDEX_JOB_NS = new ConfigNamespace(GraphDatabaseConfiguration.JOB_NS,"index","Configuration options relating to index jobs");
+    public static final ConfigNamespace INDEX_JOB_NS = new ConfigNamespace(GraphDatabaseConfiguration.JOB_NS,"index","Configuration options relating to index jobs");
 
-    public static final ConfigOption<String> INDEX_NAME = new ConfigOption<String>(INDEX_JOB_NS,"index-name",
+    public static final ConfigOption<String> INDEX_NAME = new ConfigOption<>(INDEX_JOB_NS,"index-name",
             "The name of the index to be repaired. For vertex-centric indexes this is the name of " +
                     "the edge label or property key on which the index is installed.",
             ConfigOption.Type.LOCAL, String.class);
 
-    public static final ConfigOption<String> INDEX_RELATION_TYPE = new ConfigOption<String>(INDEX_JOB_NS,"relation-type",
+    public static final ConfigOption<String> INDEX_RELATION_TYPE = new ConfigOption<>(INDEX_JOB_NS,"relation-type",
             "For a vertex-centric index, this is the name of the index associated with the " +
                     "relation type configured under index-name. This should remain empty for global graph indexes.",
-            ConfigOption.Type.LOCAL, "", str -> null != str);
+            ConfigOption.Type.LOCAL, "", Objects::nonNull);
 
 
     protected String indexRelationTypeName = null;
@@ -63,7 +64,7 @@ public abstract class IndexUpdateJob {
 
 
     protected StandardJanusGraph graph;
-    protected ManagementSystem mgmt = null;
+    protected ManagementSystem managementSystem = null;
     protected StandardJanusGraphTx writeTx;
     protected Index index;
     protected RelationType indexRelationType;
@@ -101,14 +102,14 @@ public abstract class IndexUpdateJob {
         }
 
         try {
-            this.mgmt = (ManagementSystem)graph.openManagement();
+            this.managementSystem = (ManagementSystem)graph.openManagement();
 
             if (isGlobalGraphIndex()) {
-                index = mgmt.getGraphIndex(indexName);
+                index = managementSystem.getGraphIndex(indexName);
             } else {
-                indexRelationType = mgmt.getRelationType(indexRelationTypeName);
+                indexRelationType = managementSystem.getRelationType(indexRelationTypeName);
                 Preconditions.checkArgument(indexRelationType!=null,"Could not find relation type: %s", indexRelationTypeName);
-                index = mgmt.getRelationIndex(indexRelationType,indexName);
+                index = managementSystem.getRelationIndex(indexRelationType,indexName);
             }
             Preconditions.checkArgument(index!=null,"Could not find index: %s [%s]",indexName,indexRelationTypeName);
             log.info("Found index {}", indexName);
@@ -118,8 +119,8 @@ public abstract class IndexUpdateJob {
             txb.commitTime(jobStartTime);
             writeTx = (StandardJanusGraphTx)txb.start();
         } catch (final Exception e) {
-            if (null != mgmt && mgmt.isOpen())
-                mgmt.rollback();
+            if (null != managementSystem && managementSystem.isOpen())
+                managementSystem.rollback();
             if (writeTx!=null && writeTx.isOpen())
                 writeTx.rollback();
             metrics.incrementCustom(FAILED_TX);
@@ -129,8 +130,8 @@ public abstract class IndexUpdateJob {
 
     public void workerIterationEnd(ScanMetrics metrics) {
         try {
-            if (null != mgmt && mgmt.isOpen())
-                mgmt.commit();
+            if (null != managementSystem && managementSystem.isOpen())
+                managementSystem.commit();
             if (writeTx!=null && writeTx.isOpen())
                 writeTx.commit();
             metrics.incrementCustom(SUCCESS_TX);

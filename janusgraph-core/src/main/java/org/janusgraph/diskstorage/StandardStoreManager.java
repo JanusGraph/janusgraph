@@ -57,12 +57,12 @@ public enum StandardStoreManager {
 
     static {
         StandardStoreManager backends[] = values();
-        List<String> tempShorthands = new ArrayList<String>();
-        Map<String, String> tempClassMap = new HashMap<String, String>();
-        for (int i = 0; i < backends.length; i++) {
-            tempShorthands.addAll(backends[i].getShorthands());
-            for (String shorthand : backends[i].getShorthands()) {
-                tempClassMap.put(shorthand, backends[i].getManagerClass());
+        final List<String> tempShorthands = new ArrayList<>();
+        final Map<String, String> tempClassMap = new HashMap<>();
+        for (final StandardStoreManager backend : backends) {
+            tempShorthands.addAll(backend.getShorthands());
+            for (final String shorthand : backend.getShorthands()) {
+                tempClassMap.put(shorthand, backend.getManagerClass());
             }
         }
         ALL_SHORTHANDS = ImmutableList.copyOf(tempShorthands);

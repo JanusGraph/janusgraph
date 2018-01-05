@@ -118,9 +118,9 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     private static final String LIMIT_BINDING = "maxRows";
 
     static final Function<? super Throwable, BackendException> EXCEPTION_MAPPER = cause -> Match(cause).of(
-            Case($(instanceOf(QueryValidationException.class)), qve -> new PermanentBackendException(qve)),
-            Case($(instanceOf(UnsupportedFeatureException.class)), ufe -> new PermanentBackendException(ufe)),
-            Case($(), t -> new TemporaryBackendException(t)));
+            Case($(instanceOf(QueryValidationException.class)), PermanentBackendException::new),
+            Case($(instanceOf(UnsupportedFeatureException.class)), PermanentBackendException::new),
+            Case($(), TemporaryBackendException::new));
 
     private final CQLStoreManager storeManager;
     private final ExecutorService executorService;
@@ -273,7 +273,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                         .setInt(LIMIT_BINDING, query.getLimit())
                         .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel())))
                 .map(resultSet -> fromResultSet(resultSet, this.getter));
-        awaitInterruptibly(result);
+        interruptibleWait(result);
         return result.getValue().get().getOrElseThrow(EXCEPTION_MAPPER);
     }
 
@@ -283,14 +283,14 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     /**
-     * Javaslang Future.await will throw InterruptedException wrapped in a FatalException. If the Thread was in Object.wait, the interrupted
+     * VAVR Future.await will throw InterruptedException wrapped in a FatalException. If the Thread was in Object.wait, the interrupted
      * flag will be cleared as a side effect and needs to be reset. This method checks that the underlying cause of the FatalException is
      * InterruptedException and resets the interrupted flag.
      * 
      * @param result the future to wait on
      * @throws PermanentBackendException if the thread was interrupted while waiting for the future result
      */
-    private void awaitInterruptibly(final Future<?> result) throws PermanentBackendException {
+    private void interruptibleWait(final Future<?> result) throws PermanentBackendException {
         try {
             result.await();
         } catch (Exception e) {
@@ -308,8 +308,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         // To ensure that the Iterator instance is recreated, it is created
         // within the closure otherwise
         // the same iterator would be reused and would be exhausted.
-        return StaticArrayEntryList.ofStaticBuffer(() -> Iterator.ofAll(lazyList.get())
-                .<Tuple3<StaticBuffer, StaticBuffer, Row>> map(row -> Tuple.of(
+        return StaticArrayEntryList.ofStaticBuffer(() -> Iterator.ofAll(lazyList.get()).map(row -> Tuple.of(
                         StaticArrayBuffer.of(row.getBytes(COLUMN_COLUMN_NAME)),
                         StaticArrayBuffer.of(row.getBytes(VALUE_COLUMN_NAME)),
                         row)),

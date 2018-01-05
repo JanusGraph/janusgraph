@@ -32,7 +32,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.AbstractMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -127,7 +126,7 @@ public class GeoshapeHelper {
             case MULTILINESTRING:
                 return ((ShapeCollection<?>) shape).getShapes().stream().map(s -> (BufferedLineString) s).mapToInt(s -> s.getPoints().size()).sum();
             case GEOMETRYCOLLECTION:
-                return ((ShapeCollection<?>) shape).getShapes().stream().map(s -> (Shape) s).mapToInt(s -> size(s)).sum();
+                return ((ShapeCollection<?>) shape).getShapes().stream().map(s -> (Shape) s).mapToInt(this::size).sum();
             default: throw new IllegalStateException("size() not supported for type: " + getType(shape));
         }
     }

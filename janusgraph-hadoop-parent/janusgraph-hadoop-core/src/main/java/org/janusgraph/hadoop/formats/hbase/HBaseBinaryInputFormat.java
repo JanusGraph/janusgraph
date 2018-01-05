@@ -18,15 +18,14 @@ import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.hbase.HBaseStoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
 import org.janusgraph.hadoop.formats.util.AbstractBinaryInputFormat;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
@@ -41,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 
 import com.google.common.collect.BiMap;
 
@@ -51,7 +51,6 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
     private final TableInputFormat tableInputFormat = new TableInputFormat();
     private RecordReader<ImmutableBytesWritable, Result> tableReader;
     private byte[] edgeStoreFamily;
-    private RecordReader<StaticBuffer, Iterable<Entry>> janusgraphRecordReader;
 
     @Override
     public List<InputSplit> getSplits(final JobContext jobContext) throws IOException, InterruptedException {
@@ -61,20 +60,24 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
     @Override
     public RecordReader<StaticBuffer, Iterable<Entry>> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
         tableReader = tableInputFormat.createRecordReader(inputSplit, taskAttemptContext);
-        janusgraphRecordReader =
-                new HBaseBinaryRecordReader(tableReader, edgeStoreFamily);
-        return janusgraphRecordReader;
+        return new HBaseBinaryRecordReader(tableReader, edgeStoreFamily);
     }
 
     @Override
     public void setConf(final Configuration config) {
+        HBaseConfiguration.addHbaseResources(config);
         super.setConf(config);
 
-        //config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
+        // Pass the extra pass-through properties directly to HBase/Hadoop config.
+        final Map<String, Object> configSub = janusgraphConf.getSubset(HBaseStoreManager.HBASE_CONFIGURATION_NAMESPACE);
+        for (Map.Entry<String, Object> entry : configSub.entrySet()) {
+            log.info("HBase configuration: setting {}={}", entry.getKey(), entry.getValue());
+            if (entry.getValue() == null) continue;
+            config.set(entry.getKey(), entry.getValue().toString());
+        }
+
         config.set(TableInputFormat.INPUT_TABLE, janusgraphConf.get(HBaseStoreManager.HBASE_TABLE));
-        //config.set(HConstants.ZOOKEEPER_QUORUM, config.get(JANUSGRAPH_HADOOP_GRAPH_INPUT_JANUSGRAPH_STORAGE_HOSTNAME));
         config.set(HConstants.ZOOKEEPER_QUORUM, janusgraphConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
-//        if (basicConf.get(JANUSGRAPH_HADOOP_GRAPH_INPUT_JANUSGRAPH_STORAGE_PORT, null) != null)
         if (janusgraphConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
             config.set(HConstants.ZOOKEEPER_CLIENT_PORT, String.valueOf(janusgraphConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
         config.set("autotype", "none");
@@ -95,6 +98,8 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
 
         //scanner.setFilter(getColumnFilter(janusgraphSetup.inputSlice(this.vertexQuery))); // TODO
         //TODO (minor): should we set other options in http://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Scan.html for optimization?
+        // This is a workaround, to be removed when convertScanToString becomes public in hbase
+        // package.
         Method converter;
         try {
             converter = TableMapReduceUtil.class.getDeclaredMethod("convertScanToString", Scan.class);
@@ -105,19 +110,6 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
         }
 
         this.tableInputFormat.setConf(config);
-    }
-
-    public RecordReader<ImmutableBytesWritable, Result> getTableReader() {
-        return tableReader;
-    }
-
-    public byte[] getEdgeStoreFamily() {
-        return edgeStoreFamily;
-    }
-
-    private Filter getColumnFilter(SliceQuery query) {
-        return null;
-        //TODO: return HBaseKeyColumnValueStore.getFilter(janusgraphSetup.inputSlice(inputFilter));
     }
 
     @Override

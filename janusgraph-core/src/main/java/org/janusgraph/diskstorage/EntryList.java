@@ -27,11 +27,11 @@ public interface EntryList extends List<Entry> {
      * Returns the same iterator as {@link #iterator()} with the only difference
      * that it reuses {@link Entry} objects when calling {@link java.util.Iterator#next()}.
      * Hence, this method should only be used if references to {@link Entry} objects are only
-     * kept and accesed until the next {@link java.util.Iterator#next()} call.
+     * kept and accessed until the next {@link java.util.Iterator#next()} call.
      *
      * @return
      */
-    public Iterator<Entry> reuseIterator();
+    Iterator<Entry> reuseIterator();
 
 
     /**
@@ -39,13 +39,13 @@ public interface EntryList extends List<Entry> {
      *
      * @return
      */
-    public int getByteSize();
+    int getByteSize();
 
 
 
-    public static final EmptyList EMPTY_LIST = new EmptyList();
+    EmptyList EMPTY_LIST = new EmptyList();
 
-    static class EmptyList extends AbstractList<Entry> implements EntryList {
+    class EmptyList extends AbstractList<Entry> implements EntryList {
 
         @Override
         public Entry get(int index) {

@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.keycolumnvalue.inmemory;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import org.janusgraph.diskstorage.BackendException;
@@ -49,7 +48,7 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
     public InMemoryKeyColumnValueStore(final String name) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         this.name = name;
-        this.kcv = new ConcurrentSkipListMap<StaticBuffer, ColumnValueStore>();
+        this.kcv = new ConcurrentSkipListMap<>();
     }
 
     @Override
@@ -118,12 +117,7 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
         public RowIterator(Iterator<Map.Entry<StaticBuffer, ColumnValueStore>> rows,
                            @Nullable SliceQuery columns,
                            final StoreTransaction transaction) {
-            this.rows = Iterators.filter(rows, new Predicate<Map.Entry<StaticBuffer, ColumnValueStore>>() {
-                @Override
-                public boolean apply(@Nullable Map.Entry<StaticBuffer, ColumnValueStore> entry) {
-                    return entry != null && !entry.getValue().isEmpty(transaction);
-                }
-            });
+            this.rows = Iterators.filter(rows, entry -> entry != null && !entry.getValue().isEmpty(transaction));
 
             this.columnSlice = columns;
             this.transaction = transaction;
@@ -173,8 +167,8 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
 
             while (rows.hasNext()) {
                 nextRow = rows.next();
-                List<Entry> ents = nextRow.getValue().getSlice(new KeySliceQuery(nextRow.getKey(), columnSlice), transaction);
-                if (null != ents && 0 < ents.size())
+                List<Entry> entries = nextRow.getValue().getSlice(new KeySliceQuery(nextRow.getKey(), columnSlice), transaction);
+                if (null != entries && 0 < entries.size())
                     break;
             }
 
@@ -189,7 +183,6 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
 
             currentRow = nextRow;
             nextRow = null;
-            ;
 
             return currentRow.getKey();
         }

@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.lucene;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.locationtech.spatial4j.context.SpatialContext;
@@ -33,7 +34,6 @@ import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.Version;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -55,13 +55,15 @@ public abstract class LuceneExample {
 
     private static final int MAX_RESULT = 10000;
 
-    private Map<String,SpatialStrategy> spatial=new HashMap<String,SpatialStrategy>();
-    private SpatialContext ctx = SpatialContext.GEO;
+    final private Map<String,SpatialStrategy> spatial= new HashMap<>();
+    final private SpatialContext ctx = SpatialContext.GEO;
 
     @Before
     public void setup() {
         if (path.exists()) IOUtils.deleteDirectory(path,false);
-        if (!path.exists() && path.isDirectory()) path.mkdirs();
+        if (!path.exists() && path.isDirectory()) {
+            Preconditions.checkState(path.mkdirs());
+        }
     }
 
     private SpatialStrategy getSpatialStrategy(String key) {
@@ -106,7 +108,6 @@ public abstract class LuceneExample {
         //Search
         IndexReader reader = DirectoryReader.open(FSDirectory.open(path.toPath()));
         IndexSearcher searcher = new IndexSearcher(reader);
-        analyzer = new StandardAnalyzer();
 
         //Auesee
         BooleanQuery.Builder filter = new BooleanQuery.Builder();
@@ -138,18 +139,18 @@ public abstract class LuceneExample {
         return found;
     }
 
-    void indexDocs(IndexWriter writer, String docid, Map<String,Object> docMap) throws IOException {
+    void indexDocs(IndexWriter writer, String documentId, Map<String,Object> docMap) throws IOException {
         Document doc = new Document();
 
-        Field docidField = new StringField("docid", docid, Field.Store.YES);
-        doc.add(docidField);
+        Field documentIdField = new StringField("docid", documentId, Field.Store.YES);
+        doc.add(documentIdField);
 
         for (Map.Entry<String,Object> kv : docMap.entrySet()) {
             String key = kv.getKey();
             Object value = kv.getValue();
 
             if (value instanceof Number) {
-                Field field = null;
+                final Field field;
                 if (value instanceof Integer || value instanceof Long) {
                     field = new LongPoint(key, ((Number)value).longValue());
                 } else { //double or float
@@ -171,7 +172,7 @@ public abstract class LuceneExample {
             } else throw new IllegalArgumentException("Unsupported type: " + value);
         }
 
-        writer.updateDocument(new Term("docid", docid), doc);
+        writer.updateDocument(new Term("docid", documentId), doc);
 
     }
 

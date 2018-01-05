@@ -71,7 +71,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     static {
         final SimpleModule module = new SimpleModule();
-        module.addSerializer(new Geoshape.GeoshapeGsonSerializerV1d0());
+        module.addSerializer(new Geoshape.GeoshapeGsonSerializerV2d0());
         mapper = new ObjectMapper();
         mapper.registerModule(module);
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -158,7 +158,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
             try (final InputStream inputStream = response.getEntity().getContent()) {
                 exists = mapper.readValue(inputStream, Map.class).containsKey(indexName);
             }
-        } catch (final IOException e) {
+        } catch (final IOException ignored) {
         }
         return exists;
     }
@@ -169,7 +169,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         try {
             delegate.performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + "_alias" + REQUEST_SEPARATOR + aliasName);
             exists = true;
-        } catch (final IOException e) {
+        } catch (final IOException ignored) {
         }
         return exists;
     }
@@ -262,7 +262,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
                 .map(RestBulkItemResponse::getError).collect(Collectors.toList());
             if (!errors.isEmpty()) {
                 errors.forEach(error -> log.error("Failed to execute ES query: {}", error));
-                throw new IOException("Failure(s) in Elasicsearch bulk request: " + errors);
+                throw new IOException("Failure(s) in Elasticsearch bulk request: " + errors);
             }
         }
     }
@@ -291,10 +291,10 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         final String path;
         final byte[] requestData;
         if (ElasticMajorVersion.ONE == majorVersion) {
-             path = new StringBuilder(REQUEST_SEPARATOR).append("_search").append(REQUEST_SEPARATOR).append("scroll").append(REQUEST_PARAM_BEGINNING).append("scroll=").append(scrollKeepAlive).toString();
+             path = REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll" + REQUEST_PARAM_BEGINNING + "scroll=" + scrollKeepAlive;
              requestData = scrollId.getBytes(UTF8_CHARSET);
         } else {
-            path = new StringBuilder(REQUEST_SEPARATOR).append("_search").append(REQUEST_SEPARATOR).append("scroll").toString();
+            path = REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll";
             final Map<String, Object> request = new HashMap<>();
             request.put("scroll", scrollKeepAlive);
             request.put("scroll_id", scrollId);
@@ -327,7 +327,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         final Response response = delegate.performRequest(
             method,
             path,
-            Collections.<String, String>emptyMap(),
+            Collections.emptyMap(),
             entity);
 
         if (response.getStatusLine().getStatusCode() >= 400) {

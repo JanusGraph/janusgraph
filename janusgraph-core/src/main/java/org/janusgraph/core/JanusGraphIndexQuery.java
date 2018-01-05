@@ -30,19 +30,19 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 public interface JanusGraphIndexQuery {
 
     /**
-     * Specifies the maxium number of elements to return
+     * Specifies the maximum number of elements to return
      *
      * @param limit
      * @return
      */
-    public JanusGraphIndexQuery limit(int limit);
+    JanusGraphIndexQuery limit(int limit);
 
     /**
      * Specifies the offset of the query. Query results will be retrieved starting at the given offset.
      * @param offset
      * @return
      */
-    public JanusGraphIndexQuery offset(int offset);
+    JanusGraphIndexQuery offset(int offset);
 
     /**
      * Adds the given parameter to the list of parameters of this query.
@@ -50,7 +50,7 @@ public interface JanusGraphIndexQuery {
      * @param para
      * @return
      */
-    public JanusGraphIndexQuery addParameter(Parameter para);
+    JanusGraphIndexQuery addParameter(Parameter para);
 
     /**
      * Adds the given parameters to the list of parameters of this query.
@@ -58,7 +58,7 @@ public interface JanusGraphIndexQuery {
      * @param paras
      * @return
      */
-    public JanusGraphIndexQuery addParameters(Iterable<Parameter> paras);
+    JanusGraphIndexQuery addParameters(Iterable<Parameter> paras);
 
     /**
      * Adds the given parameters to the list of parameters of this query.
@@ -66,7 +66,7 @@ public interface JanusGraphIndexQuery {
      * @param paras
      * @return
      */
-    public JanusGraphIndexQuery addParameters(Parameter... paras);
+    JanusGraphIndexQuery addParameters(Parameter... paras);
 
     /**
      * Sets the element identifier string that is used by this query builder as the token to identifier key references
@@ -78,7 +78,7 @@ public interface JanusGraphIndexQuery {
      * @param identifier The element identifier which must not be blank
      * @return This query builder
      */
-    public JanusGraphIndexQuery setElementIdentifier(String identifier);
+    JanusGraphIndexQuery setElementIdentifier(String identifier);
 
     /**
      * Returns all vertices that match the query in the indexing backend.
@@ -88,14 +88,14 @@ public interface JanusGraphIndexQuery {
      * @return
      */
     @Deprecated
-    public Iterable<Result<JanusGraphVertex>> vertices();
+    Iterable<Result<JanusGraphVertex>> vertices();
 
     /**
      * Returns all vertices that match the query in the indexing backend.
      *
      * @return
      */
-    public Stream<Result<JanusGraphVertex>> vertexStream();
+    Stream<Result<JanusGraphVertex>> vertexStream();
 
     /**
      * Returns all edges that match the query in the indexing backend.
@@ -105,14 +105,14 @@ public interface JanusGraphIndexQuery {
      * @return
      */
     @Deprecated
-    public Iterable<Result<JanusGraphEdge>> edges();
+    Iterable<Result<JanusGraphEdge>> edges();
 
     /**
      * Returns all edges that match the query in the indexing backend.
      *
      * @return
      */
-    public Stream<Result<JanusGraphEdge>> edgeStream();
+    Stream<Result<JanusGraphEdge>> edgeStream();
 
     /**
      * Returns all properties that match the query in the indexing backend.
@@ -122,54 +122,54 @@ public interface JanusGraphIndexQuery {
      * @return
      */
     @Deprecated
-    public Iterable<Result<JanusGraphVertexProperty>> properties();
+    Iterable<Result<JanusGraphVertexProperty>> properties();
 
 	/**
      * Returns all properties that match the query in the indexing backend.
      *
      * @return
      */
-    public Stream<Result<JanusGraphVertexProperty>> propertyStream();
+    Stream<Result<JanusGraphVertexProperty>> propertyStream();
 
     /**
      * Returns total vertices that match the query in the indexing backend ignoring limit and offset.
      *
      * @return
      */
-    public Long vertexTotals();
+    Long vertexTotals();
 
     /**
      * Returns total edges that match the query in the indexing backend ignoring limit and offset.
      *
      * @return
      */
-    public Long edgeTotals();
+    Long edgeTotals();
 
     /**
      * Returns total properties that match the query in the indexing backend ignoring limit and offset.
      *
      * @return
      */
-    public Long propertyTotals();
+    Long propertyTotals();
     
     /**
      * Container of a query result with its score.
      * @param <V>
      */
-    public interface Result<V extends Element> {
+    interface Result<V extends Element> {
 
         /**
          * Returns the element that matches the query
          *
          * @return
          */
-        public V getElement();
+        V getElement();
 
         /**
          * Returns the score of the result with respect to the query (if available)
          * @return
          */
-        public double getScore();
+        double getScore();
 
     }
 

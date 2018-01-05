@@ -16,23 +16,16 @@ package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
 import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.es.rest.RestElasticSearchClient;
+import org.janusgraph.diskstorage.es.rest.RestClientSetup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_PORT;
 
 /**
  * Create an ES {@link org.elasticsearch.client.RestClient} from a JanusGraph
@@ -55,31 +48,7 @@ public enum ElasticSearchSetup {
     REST_CLIENT {
         @Override
         public Connection connect(Configuration config) throws IOException {
-            log.debug("Configuring RestClient");
-
-            final List<HttpHost> hosts = new ArrayList<>();
-            final int defaultPort = config.has(INDEX_PORT) ? config.get(INDEX_PORT) : ElasticSearchIndex.HOST_PORT_DEFAULT;
-            for (String host : config.get(INDEX_HOSTS)) {
-                String[] hostparts = host.split(":");
-                String hostname = hostparts[0];
-                int hostport = defaultPort;
-                if (hostparts.length == 2) hostport = Integer.parseInt(hostparts[1]);
-                log.debug("Configured remote host: {} : {}", hostname, hostport);
-                hosts.add(new HttpHost(hostname, hostport, "http"));
-            }
-            final RestClientBuilder rcb = RestClient.builder(hosts.toArray(new HttpHost[hosts.size()]));
-            if (config.has(ElasticSearchIndex.MAX_RETRY_TIMEOUT)) {
-                rcb.setMaxRetryTimeoutMillis(config.get(ElasticSearchIndex.MAX_RETRY_TIMEOUT));
-            }
-            final RestClient rc = rcb.build();
-
-            final int scrollKeepAlive = config.get(ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE);
-            Preconditions.checkArgument(scrollKeepAlive >= 1, "Scroll Keep alive should be greater or equals than 1");
-            final RestElasticSearchClient client = new RestElasticSearchClient(rc, scrollKeepAlive);
-            if (config.has(ElasticSearchIndex.BULK_REFRESH)) {
-                client.setBulkRefresh(config.get(ElasticSearchIndex.BULK_REFRESH));
-            }
-            return new Connection(client);
+            return new Connection(new RestClientSetup().connect(config));
         }
     };
 

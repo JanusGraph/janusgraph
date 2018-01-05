@@ -15,12 +15,10 @@
 package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
 
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,8 +35,8 @@ public class TransactionalConfiguration implements WriteConfiguration {
     public TransactionalConfiguration(WriteConfiguration config) {
         Preconditions.checkNotNull(config);
         this.config = config;
-        this.readValues = new HashMap<String, Object>();
-        this.writtenValues = new HashMap<String, Object>();
+        this.readValues = new HashMap<>();
+        this.writtenValues = new HashMap<>();
     }
 
     @Override
@@ -70,18 +68,8 @@ public class TransactionalConfiguration implements WriteConfiguration {
     @Override
     public Iterable<String> getKeys(final String prefix) {
         return Iterables.concat(
-        Iterables.filter(writtenValues.keySet(),new Predicate<String>() {
-            @Override
-            public boolean apply(@Nullable String s) {
-                return s.startsWith(prefix);
-            }
-        }),
-        Iterables.filter(config.getKeys(prefix),new Predicate<String>() {
-            @Override
-            public boolean apply(@Nullable String s) {
-                return !writtenValues.containsKey(s);
-            }
-        }));
+        Iterables.filter(writtenValues.keySet(), s -> s.startsWith(prefix)),
+        Iterables.filter(config.getKeys(prefix), s -> !writtenValues.containsKey(s)));
     }
 
     public void commit() {

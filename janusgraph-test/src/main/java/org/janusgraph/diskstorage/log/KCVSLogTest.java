@@ -24,7 +24,7 @@ import org.janusgraph.diskstorage.log.kcvs.KCVSLogManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
- * Implemention of the {@link LogTest} for {@link KCVSLogManager} based log implementations.
+ * Implementation of the {@link LogTest} for {@link KCVSLogManager} based log implementations.
  * This test only requires getting instances of {@link KeyColumnValueStoreManager}.
  *
  * @author Matthias Broecheler (me@matthiasb.com)

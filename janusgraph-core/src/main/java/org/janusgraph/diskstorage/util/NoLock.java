@@ -30,7 +30,7 @@ public class NoLock implements Lock {
 
     private NoLock() {}
 
-    public static final Lock getLock() {
+    public static Lock getLock() {
         return INSTANCE;
     }
 

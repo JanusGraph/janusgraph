@@ -46,9 +46,8 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean test(Object value, Object condition) {
-            this.preevaluate(value,condition);
-            if (value == null) return false;
-            return evaluateRaw(value.toString(),(String)condition);
+            this.preevaluate(value, condition);
+            return value != null && evaluateRaw(value.toString(), (String) condition);
         }
 
         @Override
@@ -66,9 +65,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean isValidCondition(Object condition) {
-            if (condition == null) return false;
-            else if (condition instanceof String && StringUtils.isNotBlank((String) condition)) return true;
-            else return false;
+            return condition != null && condition instanceof String && StringUtils.isNotBlank((String) condition);
         }
         @Override
         public String toString() {
@@ -82,9 +79,8 @@ public enum Text implements JanusGraphPredicate {
     CONTAINS_PREFIX {
         @Override
         public boolean test(Object value, Object condition) {
-            this.preevaluate(value,condition);
-            if (value == null) return false;
-            return evaluateRaw(value.toString(),(String)condition);
+            this.preevaluate(value, condition);
+            return value != null && evaluateRaw(value.toString(), (String) condition);
         }
 
         @Override
@@ -113,9 +109,8 @@ public enum Text implements JanusGraphPredicate {
     CONTAINS_REGEX {
         @Override
         public boolean test(Object value, Object condition) {
-            this.preevaluate(value,condition);
-            if (value == null) return false;
-            return evaluateRaw(value.toString(),(String)condition);
+            this.preevaluate(value, condition);
+            return value != null && evaluateRaw(value.toString(), (String) condition);
         }
 
         @Override
@@ -144,9 +139,8 @@ public enum Text implements JanusGraphPredicate {
     PREFIX {
         @Override
         public boolean test(Object value, Object condition) {
-            this.preevaluate(value,condition);
-            if (value==null) return false;
-            return evaluateRaw(value.toString(),(String)condition);
+            this.preevaluate(value, condition);
+            return value != null && evaluateRaw(value.toString(), (String) condition);
         }
 
         @Override
@@ -172,9 +166,8 @@ public enum Text implements JanusGraphPredicate {
     REGEX {
         @Override
         public boolean test(Object value, Object condition) {
-            this.preevaluate(value,condition);
-            if (value == null) return false;
-            return evaluateRaw(value.toString(),(String)condition);
+            this.preevaluate(value, condition);
+            return value != null && evaluateRaw(value.toString(), (String) condition);
         }
 
         public boolean evaluateRaw(String value, String regex) {
@@ -204,9 +197,7 @@ public enum Text implements JanusGraphPredicate {
         @Override
         public boolean test(Object value, Object condition) {
             this.preevaluate(value, condition);
-            if (value == null)
-                return false;
-            return evaluateRaw(value.toString(), (String) condition);
+            return value != null && evaluateRaw(value.toString(), (String) condition);
         }
 
         @Override
@@ -236,9 +227,7 @@ public enum Text implements JanusGraphPredicate {
         @Override
         public boolean test(Object value, Object condition) {
             this.preevaluate(value, condition);
-            if (value == null)
-                return false;
-            return evaluateRaw(value.toString(), (String) condition);
+            return value != null && evaluateRaw(value.toString(), (String) condition);
         }
 
         @Override
@@ -295,7 +284,7 @@ public enum Text implements JanusGraphPredicate {
     private static final int MIN_TOKEN_LENGTH = 1;
 
     public static List<String> tokenize(String str) {
-        ArrayList<String> tokens = new ArrayList<String>();
+        final ArrayList<String> tokens = new ArrayList<>();
         int previous = 0;
         for (int p = 0; p < str.length(); p++) {
             if (!Character.isLetterOrDigit(str.charAt(p))) {

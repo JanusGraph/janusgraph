@@ -59,55 +59,58 @@ public class CommonsConfiguration implements WriteConfiguration {
     }
 
     @Override
-    public<O> O get(String key, Class<O> datatype) {
+    public<O> O get(String key, Class<O> dataType) {
         if (!config.containsKey(key)) return null;
 
-        if (datatype.isArray()) {
-            Preconditions.checkArgument(datatype.getComponentType()==String.class,"Only string arrays are supported: %s",datatype);
+        if (dataType.isArray()) {
+            Preconditions.checkArgument(dataType.getComponentType()==String.class,"Only string arrays are supported: %s",dataType);
             return (O)config.getStringArray(key);
-        } else if (Number.class.isAssignableFrom(datatype)) {
+        } else if (Number.class.isAssignableFrom(dataType)) {
             // A properties file configuration returns Strings even for numeric
             // values small enough to fit inside Integer (e.g. 5000). In-memory
-            // configuration impls seem to be able to store and return actual
+            // configuration implementations seem to be able to store and return actual
             // numeric types rather than String
             //
             // We try to handle either case here
             Object o = config.getProperty(key);
-            if (datatype.isInstance(o)) {
+            if (dataType.isInstance(o)) {
                 return (O)o;
             } else {
-                return constructFromStringArgument(datatype, o.toString());
+                return constructFromStringArgument(dataType, o.toString());
             }
-        } else if (datatype==String.class) {
+        } else if (dataType==String.class) {
             return (O)config.getString(key);
-        } else if (datatype==Boolean.class) {
-            return (O)new Boolean(config.getBoolean(key));
-        } else if (datatype.isEnum()) {
-            Enum[] constants = (Enum[])datatype.getEnumConstants();
+        } else if (dataType==Boolean.class) {
+            return (O) Boolean.valueOf(config.getBoolean(key));
+        } else if (dataType.isEnum()) {
+            Enum[] constants = (Enum[])dataType.getEnumConstants();
             Preconditions.checkState(null != constants && 0 < constants.length, "Zero-length or undefined enum");
 
-            String estr = config.getProperty(key).toString();
+            String enumString = config.getProperty(key).toString();
             for (Enum ec : constants)
-                if (ec.toString().equals(estr))
+                if (ec.toString().equals(enumString))
                     return (O)ec;
-            throw new IllegalArgumentException("No match for string \"" + estr + "\" in enum " + datatype);
-        } else if (datatype==Object.class) {
+            throw new IllegalArgumentException("No match for string \"" + enumString + "\" in enum " + dataType);
+        } else if (dataType==Object.class) {
             return (O)config.getProperty(key);
-        } else if (Duration.class.isAssignableFrom(datatype)) {
+        } else if (Duration.class.isAssignableFrom(dataType)) {
             // This is a conceptual leak; the config layer should ideally only handle standard library types
             Object o = config.getProperty(key);
             if (Duration.class.isInstance(o)) {
                 return (O) o;
             } else {
                 String[] comps = o.toString().split("\\s");
-                TemporalUnit unit = null;
-                if (comps.length == 1) {
-                    //By default, times are in milli seconds
-                    unit = ChronoUnit.MILLIS;
-                } else if (comps.length == 2) {
-                    unit = Durations.parse(comps[1]);
-                } else {
-                    throw new IllegalArgumentException("Cannot parse time duration from: " + o.toString());
+                final TemporalUnit unit;
+                switch (comps.length) {
+                    case 1:
+                        //By default, times are in milli seconds
+                        unit = ChronoUnit.MILLIS;
+                        break;
+                    case 2:
+                        unit = Durations.parse(comps[1]);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Cannot parse time duration from: " + o.toString());
                 }
                 return (O) Duration.of(Long.valueOf(comps[0]), unit);
             }
@@ -120,19 +123,19 @@ public class CommonsConfiguration implements WriteConfiguration {
         // We could theoretically get around this by adding a type token to
         // every declaration of a List-typed ConfigOption, but it's just
         // not worth doing since we only actually use String[] anyway.
-//        } else if (List.class.isAssignableFrom(datatype)) {
+//        } else if (List.class.isAssignableFrom(dataType)) {
 //            return (O) config.getProperty(key);
-        } else throw new IllegalArgumentException("Unsupported data type: " + datatype);
+        } else throw new IllegalArgumentException("Unsupported data type: " + dataType);
     }
 
-    private <O> O constructFromStringArgument(Class<O> datatype, String arg) {
+    private <O> O constructFromStringArgument(Class<O> dataType, String arg) {
         try {
-            Constructor<O> ctor = datatype.getConstructor(String.class);
+            Constructor<O> ctor = dataType.getConstructor(String.class);
             return ctor.newInstance(arg);
         // ReflectiveOperationException is narrower and more appropriate than Exception, but only @since 1.7
         //} catch (ReflectiveOperationException e) {
         } catch (Exception e) {
-            log.error("Failed to parse configuration string \"{}\" into type {} due to the following reflection exception", arg, datatype, e);
+            log.error("Failed to parse configuration string \"{}\" into type {} due to the following reflection exception", arg, dataType, e);
             throw new RuntimeException(e);
         }
     }

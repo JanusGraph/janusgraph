@@ -78,10 +78,10 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         host = new HttpHost(InetAddress.getByName(esr.getHostname()), ElasticsearchRunner.PORT);
         if (esr.getEsMajorVersion().value > 2) {
             IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("_ingest/pipeline/pipeline_1")));
-            final HttpPut newpipeline = new HttpPut("_ingest/pipeline/pipeline_1");
-            newpipeline.setHeader("Content-Type", "application/json");
-            newpipeline.setEntity(new StringEntity("{\"description\":\"Test pipeline\",\"processors\":[{\"set\":{\"field\":\"" +STRING+ "\",\"value\":\"hello\"}}]}", Charset.forName("UTF-8")));
-            IOUtils.closeQuietly(httpClient.execute(host, newpipeline));
+            final HttpPut newPipeline = new HttpPut("_ingest/pipeline/pipeline_1");
+            newPipeline.setHeader("Content-Type", "application/json");
+            newPipeline.setEntity(new StringEntity("{\"description\":\"Test pipeline\",\"processors\":[{\"set\":{\"field\":\"" +STRING+ "\",\"value\":\"hello\"}}]}", Charset.forName("UTF-8")));
+            IOUtils.closeQuietly(httpClient.execute(host, newPipeline));
         }
     }
 
@@ -233,10 +233,10 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
     }
 
     /**
-     * Test injest pipeline.
+     * Test ingest pipeline.
      */
     @Test
-    public void testInjestPipeline() throws Exception {
+    public void testIngestPipeline() throws Exception {
         if (esr.getEsMajorVersion().value > 2) {
             initialize("ingestvertex");
             final Multimap<String, Object> docs = HashMultimap.create();

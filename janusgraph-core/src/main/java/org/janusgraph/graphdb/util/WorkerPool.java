@@ -30,7 +30,7 @@ public class WorkerPool implements AutoCloseable {
     private final ThreadPoolExecutor processor;
 
     public WorkerPool(int numThreads) {
-        processor = new ThreadPoolExecutor(numThreads, numThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(128));
+        processor = new ThreadPoolExecutor(numThreads, numThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(128));
         processor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
     }
 

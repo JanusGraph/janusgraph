@@ -60,7 +60,7 @@ public class ConfigurationFileFilter {
             outputContextDir.mkdirs(); // may fail if path exists as a file
         }
 
-        Queue<InputRecord> dirQueue = new LinkedList<InputRecord>();
+        final Queue<InputRecord> dirQueue = new LinkedList<>();
         dirQueue.add(new InputRecord(inputContextDir, File.separator));
         int parseErrors = 0;
         int visitedDirs = 0;
@@ -93,7 +93,8 @@ public class ConfigurationFileFilter {
                     File outputDir = new File(outputContextDir.getPath() + contextPath);
 
                     if (!outputDir.exists()) {
-                        outputDir.mkdirs();
+                        Preconditions.checkState(outputDir.mkdirs(), "Unable to create output directory {}",
+                            outputDir.getAbsolutePath());
                     }
 
                     parseErrors += processFile(f, new File(outputContextDir.getPath() + contextPath + f.getName()));
@@ -157,7 +158,7 @@ public class ConfigurationFileFilter {
                         ConfigOption<?> opt = (ConfigOption<?>) pid.element;
                         //opt.verify(cfgVal);
                         String kvPair = m.group(1);
-                        String descr = "# " + WordUtils.wrap(opt.getDescription(), WRAP_COLUMNS, "\n# ", false);
+                        String description = "# " + WordUtils.wrap(opt.getDescription(), WRAP_COLUMNS, "\n# ", false);
                         String dt = "# Data Type:  ";
                         if (opt.getDatatype().isArray()) {
                             dt += opt.getDatatype().getComponentType().toString() + "[]";
@@ -172,15 +173,15 @@ public class ConfigurationFileFilter {
                         } else {
                             dt += opt.getDatatype().getSimpleName();
                         }
-                        String defval = "# Default:    ";
+                        String defaultValue = "# Default:    ";
                         if (null == opt.getDefaultValue()) {
-                            defval += "(no default value)";
+                            defaultValue += "(no default value)";
                         } else if (opt.getDatatype().isArray()) {
-                            defval += Joiner.on(", ").join((Object[]) opt.getDefaultValue());
+                            defaultValue += Joiner.on(", ").join((Object[]) opt.getDefaultValue());
                         } else if (opt.getDatatype().isEnum()) {
-                            defval += ((Enum)opt.getDefaultValue()).name();
+                            defaultValue += ((Enum)opt.getDefaultValue()).name();
                         } else {
-                            defval += opt.getDefaultValue();
+                            defaultValue += opt.getDefaultValue();
                         }
                         String mut = "# Mutability: " + opt.getType();
                         if (opt.isManaged()) {
@@ -198,9 +199,9 @@ public class ConfigurationFileFilter {
                             }
                         }
 
-                        out.println(descr);
+                        out.println(description);
                         out.println("#");
-                        out.println(defval);
+                        out.println(defaultValue);
                         out.println(dt);
                         out.println(mut);
                         out.println(kvPair);

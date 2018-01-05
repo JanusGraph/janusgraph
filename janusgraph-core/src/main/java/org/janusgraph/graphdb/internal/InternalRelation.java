@@ -34,37 +34,37 @@ public interface InternalRelation extends JanusGraphRelation, InternalElement {
      * @return
      */
     @Override
-    public InternalRelation it();
+    InternalRelation it();
 
     /**
      * Returns the vertex at the given position (0=OUT, 1=IN) of this relation
      * @param pos
      * @return
      */
-    public InternalVertex getVertex(int pos);
+    InternalVertex getVertex(int pos);
 
     /**
      * Number of vertices on this relation.
      *
      * @return
      */
-    public int getArity();
+    int getArity();
 
     /**
      * Number of vertices on this relation that are aware of its existence. This number will
      * differ from {@link #getArity()}
      *
      */
-    public int getLen();
+    int getLen();
 
 
 
-    public <O> O getValueDirect(PropertyKey key);
+    <O> O getValueDirect(PropertyKey key);
 
-    public void setPropertyDirect(PropertyKey key, Object value);
+    void setPropertyDirect(PropertyKey key, Object value);
 
-    public Iterable<PropertyKey> getPropertyKeysDirect();
+    Iterable<PropertyKey> getPropertyKeysDirect();
 
-    public <O> O removePropertyDirect(PropertyKey key);
+    <O> O removePropertyDirect(PropertyKey key);
 
 }

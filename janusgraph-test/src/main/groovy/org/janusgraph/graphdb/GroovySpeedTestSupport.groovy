@@ -8,8 +8,8 @@ import static org.junit.Assert.*
 
 import org.junit.After
 import org.junit.Before
-import org.junit.Rule;
-import org.junit.rules.TestName;
+import org.junit.Rule
+import org.junit.rules.TestName
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -88,9 +88,9 @@ abstract class GroovySpeedTestSupport {
             graph.shutdown()
     }
 
-    protected abstract StandardJanusGraph getGraph() throws BackendException;
+    protected abstract StandardJanusGraph getGraph() throws BackendException
 
-    protected abstract SpeedTestSchema getSchema();
+    protected abstract SpeedTestSchema getSchema()
 
     /*
      * Helper methods
@@ -190,16 +190,16 @@ abstract class GroovySpeedTestSupport {
     }
 
     protected void initializeGraph(JanusGraph g) throws BackendException {
-        log.info("Initializing graph...");
+        log.info("Initializing graph...")
         long before = System.currentTimeMillis()
-        SpeedTestSchema schema = getSchema();
+        SpeedTestSchema schema = getSchema()
 
         try {
-            InputStream data = new GZIPInputStream(new FileInputStream(RELATION_FILE));
-            schema.makeTypes(g);
-            GraphMLReader.inputGraph(g, data);
+            InputStream data = new GZIPInputStream(new FileInputStream(RELATION_FILE))
+            schema.makeTypes(g)
+            GraphMLReader.inputGraph(g, data)
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(e)
         }
         long after = System.currentTimeMillis()
         long duration = after - before

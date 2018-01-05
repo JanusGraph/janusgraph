@@ -69,7 +69,7 @@ public abstract class IDAuthorityTest {
 
     @Parameterized.Parameters
     public static Collection<Object[]> configs() {
-        List<Object[]> configurations = new ArrayList<Object[]>();
+        final List<Object[]> configurations = new ArrayList<>();
 
         ModifiableConfiguration c = getBasicConfig();
         configurations.add(new Object[]{c.getConfiguration()});
@@ -100,7 +100,7 @@ public abstract class IDAuthorityTest {
     public KeyColumnValueStoreManager[] manager;
     public IDAuthority[] idAuthorities;
 
-    public WriteConfiguration baseStoreConfiguration;
+    public final WriteConfiguration baseStoreConfiguration;
 
     public final int uidBitWidth;
     public final boolean hasFixedUid;
@@ -120,7 +120,7 @@ public abstract class IDAuthorityTest {
         hasEmptyUid = uidBitWidth==0;
         blockSize = config.get(IDS_BLOCK_SIZE);
         idUpperBoundBitWidth = 30;
-        idUpperBound = 1l<<idUpperBoundBitWidth;
+        idUpperBound = 1L <<idUpperBoundBitWidth;
     }
 
     @Before
@@ -199,7 +199,7 @@ public abstract class IDAuthorityTest {
         try {
             block.getId(blockSize);
             fail();
-        } catch (ArrayIndexOutOfBoundsException e) {}
+        } catch (ArrayIndexOutOfBoundsException ignored) {}
     }
 
 //    private void checkIdList(List<Long> ids) {
@@ -227,14 +227,14 @@ public abstract class IDAuthorityTest {
          * values reflect a problem in either this test or the
          * implementation-under-test.
          */
-        Set<String> uids = new HashSet<String>();
-        String uidErrorMessage = "Uniqueness failure detected for config option " + UNIQUE_INSTANCE_ID.getName();
+        final Set<String> uniqueIds = new HashSet<>();
+        final String uidErrorMessage = "Uniqueness failure detected for config option " + UNIQUE_INSTANCE_ID.getName();
         for (int i = 0; i < CONCURRENCY; i++) {
             String uid = idAuthorities[i].getUniqueID();
-            Assert.assertTrue(uidErrorMessage, !uids.contains(uid));
-            uids.add(uid);
+            Assert.assertTrue(uidErrorMessage, !uniqueIds.contains(uid));
+            uniqueIds.add(uid);
         }
-        assertEquals(uidErrorMessage, CONCURRENCY, uids.size());
+        assertEquals(uidErrorMessage, CONCURRENCY, uniqueIds.size());
     }
 
     @Test
@@ -261,7 +261,7 @@ public abstract class IDAuthorityTest {
         final IDBlockSizer blockSizer = new IDBlockSizer() {
             @Override
             public long getBlockSize(int idNamespace) {
-                return ((1l<<(idUpperBoundBitWidth-uidBitWidth))-1)/chunks;
+                return ((1L <<(idUpperBoundBitWidth-uidBitWidth))-1)/chunks;
             }
 
             @Override
@@ -277,7 +277,7 @@ public abstract class IDAuthorityTest {
             try {
                 idAuthorities[0].getIDBlock(0,0,GET_ID_BLOCK_TIMEOUT);
                 Assert.fail();
-            } catch (IDPoolExhaustedException e) {}
+            } catch (IDPoolExhaustedException ignored) {}
         } else {
             for (int i=0;i<(chunks*Math.max(1,(1<<uidBitWidth)/10));i++) {
                 idAuthorities[0].getIDBlock(0,0,GET_ID_BLOCK_TIMEOUT);
@@ -287,7 +287,7 @@ public abstract class IDAuthorityTest {
                     idAuthorities[0].getIDBlock(0,0,GET_ID_BLOCK_TIMEOUT);
                 }
                 Assert.fail();
-            } catch (IDPoolExhaustedException e) {}
+            } catch (IDPoolExhaustedException ignored) {}
         }
     }
 
@@ -320,10 +320,9 @@ public abstract class IDAuthorityTest {
         final int targetPartition = 0;
         final int targetNamespace = 2;
 
-        final ConcurrentLinkedQueue<IDBlock> blocks = new ConcurrentLinkedQueue<IDBlock>();
+        final ConcurrentLinkedQueue<IDBlock> blocks = new ConcurrentLinkedQueue<>();
         final int blocksPerThread = 40;
-        Assert.assertTrue(0 < blocksPerThread);
-        List <Future<Void>> futures = new ArrayList<Future<Void>>(CONCURRENCY);
+        final List <Future<Void>> futures = new ArrayList<>(CONCURRENCY);
 
         // Start some concurrent threads getting blocks the same ID authority and same partition in that authority
         for (int c = 0; c < CONCURRENCY; c++) {
@@ -350,11 +349,7 @@ public abstract class IDAuthorityTest {
         }
 
         for (Future<Void> f : futures) {
-            try {
-                f.get();
-            } catch (ExecutionException e) {
-                throw e;
-            }
+            f.get();
         }
 
         es.shutdownNow();
@@ -370,28 +365,28 @@ public abstract class IDAuthorityTest {
         final int numAcquisitionsPerThreadPartition = 100;
         final IDBlockSizer blockSizer = new InnerIDBlockSizer();
         for (int i = 0; i < CONCURRENCY; i++) idAuthorities[i].setIDBlockSizer(blockSizer);
-        final List<ConcurrentLinkedQueue<IDBlock>> ids = new ArrayList<ConcurrentLinkedQueue<IDBlock>>(numPartitions);
+        final List<ConcurrentLinkedQueue<IDBlock>> ids = new ArrayList<>(numPartitions);
         for (int i = 0; i < numPartitions; i++) {
-            ids.add(new ConcurrentLinkedQueue<IDBlock>());
+            ids.add(new ConcurrentLinkedQueue<>());
         }
 
         final int maxIterations = numAcquisitionsPerThreadPartition * numPartitions * 2;
-        final Collection<Future<?>> futures = new ArrayList<Future<?>>(CONCURRENCY);
+        final Collection<Future<?>> futures = new ArrayList<>(CONCURRENCY);
         ExecutorService es = Executors.newFixedThreadPool(CONCURRENCY);
 
-        Set<String> uids = new HashSet<String>(CONCURRENCY);
+        final Set<String> uniqueIds = new HashSet<>(CONCURRENCY);
         for (int i = 0; i < CONCURRENCY; i++) {
             final IDAuthority idAuthority = idAuthorities[i];
             final IDStressor stressRunnable = new IDStressor(
                     numAcquisitionsPerThreadPartition, numPartitions,
                     maxIterations, idAuthority, ids);
-            uids.add(idAuthority.getUniqueID());
+            uniqueIds.add(idAuthority.getUniqueID());
             futures.add(es.submit(stressRunnable));
         }
 
         // If this fails, it's likely to be a bug in the test rather than the
         // IDAuthority (the latter is technically possible, just less likely)
-        assertEquals(CONCURRENCY, uids.size());
+        assertEquals(CONCURRENCY, uniqueIds.size());
 
         for (Future<?> f : futures) {
             try {
@@ -404,8 +399,8 @@ public abstract class IDAuthorityTest {
         for (int i = 0; i < numPartitions; i++) {
             ConcurrentLinkedQueue<IDBlock> list = ids.get(i);
             assertEquals(numAcquisitionsPerThreadPartition * CONCURRENCY, list.size());
-            LongSet idset = new LongHashSet((int)blockSize*list.size());
-            for (IDBlock block : list) checkBlock(block,idset);
+            LongSet idSet = new LongHashSet((int)blockSize*list.size());
+            for (IDBlock block : list) checkBlock(block,idSet);
         }
 
         es.shutdownNow();
@@ -480,10 +475,10 @@ public abstract class IDAuthorityTest {
                 return null;
             }
             /*
-             * This is not guaranteed in the consistentkey implementation.
+             * This is not guaranteed in the consistent-key implementation.
              * Writers of ID block claims in that implementation delete their
              * writes if they take too long. A peek can see this short-lived
-             * block claim even though a subsequent getblock does not.
+             * block claim even though a subsequent getIDBlock() does not.
              */
 //            Assert.assertTrue(nextId <= block[0]);
             if (hasEmptyUid) assertEquals(block.getId(0)+ blockSize-1, block.getId(blockSize-1));

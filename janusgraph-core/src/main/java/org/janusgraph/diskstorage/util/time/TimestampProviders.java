@@ -127,7 +127,7 @@ public enum TimestampProviders implements TimestampProvider {
          * least significant bit in timestamp longs, turning it on or off to
          * ensure that deletions are logically ordered before additions within a
          * single batch mutation. This is not a problem at microsecond
-         * resolution because we pretendulate microsecond resolution by
+         * resolution because we pretend to have microsecond resolution by
          * multiplying currentTimeMillis by 1000, so the LSB can vary freely.
          * It's also not a problem with nanosecond resolution because the
          * resolution is just too fine, relative to how long a mutation takes,
@@ -145,8 +145,7 @@ public enum TimestampProviders implements TimestampProvider {
                 delta = 1L;
 
             if (log.isTraceEnabled()) {
-                log.trace("Sleeping: now={} targettime={} delta={} {}",
-                        new Object[] { now, futureTime, delta, unit });
+                log.trace("Sleeping: now={} targettime={} delta={} {}", now, futureTime, delta, unit);
             }
 
             Temporals.timeUnit(unit).sleep(delta);

@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.2.1-SNAPSHOT</version>
+        <version>0.3.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-test</artifactId>
@@ -56,12 +56,6 @@
             <artifactId>gremlin-server</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.tinkerpop</groupId>
-            <artifactId>gremlin-groovy-test</artifactId>
-            <version>${tinkerpop.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math</artifactId>

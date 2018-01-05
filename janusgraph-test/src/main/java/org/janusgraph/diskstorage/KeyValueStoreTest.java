@@ -36,10 +36,10 @@ import org.janusgraph.diskstorage.util.RecordIterator;
 
 public abstract class KeyValueStoreTest extends AbstractKCVSTest {
 
-    private Logger log = LoggerFactory.getLogger(KeyValueStoreTest.class);
+    private final Logger log = LoggerFactory.getLogger(KeyValueStoreTest.class);
 
-    private int numKeys = 2000;
-    private String storeName = "testStore1";
+    private final int numKeys = 2000;
+    private final String storeName = "testStore1";
 
 
     protected OrderedKeyValueStoreManager manager;
@@ -95,7 +95,7 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
     }
 
     public Set<Integer> deleteValues(int start, int every) throws BackendException {
-        Set<Integer> removed = new HashSet<Integer>();
+        final Set<Integer> removed = new HashSet<>();
         for (int i = start; i < numKeys; i = i + every) {
             removed.add(i);
             store.delete(KeyValueStoreUtil.getBuffer(i), tx);
@@ -104,7 +104,7 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
     }
 
     public void checkValueExistence(String[] values) throws BackendException {
-        checkValueExistence(values, new HashSet<Integer>());
+        checkValueExistence(values, new HashSet<>());
     }
 
     public void checkValueExistence(String[] values, Set<Integer> removed) throws BackendException {
@@ -119,7 +119,7 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
     }
 
     public void checkValues(String[] values) throws BackendException {
-        checkValues(values, new HashSet<Integer>());
+        checkValues(values, new HashSet<>());
     }
 
     public void checkValues(String[] values, Set<Integer> removed) throws BackendException {

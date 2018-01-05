@@ -81,7 +81,7 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     /**
      * Name to use for unknown keys, i.e. key references that could not be resolved to an actual type in the database.
      */
-    private final String unkownKeyName;
+    private final String unknownKeyName;
     /**
      * In addition to limit, this type of query supports offsets.
      */
@@ -95,7 +95,7 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
         this.serializer = serializer;
 
         parameters = Lists.newArrayList();
-        unkownKeyName = tx.getGraph().getConfiguration().getUnknownIndexKeyName();
+        unknownKeyName = tx.getGraph().getConfiguration().getUnknownIndexKeyName();
         this.offset=0;
     }
 
@@ -131,7 +131,7 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     }
 
     public String getUnknownKeyName() {
-        return unkownKeyName;
+        return unknownKeyName;
     }
 
 
@@ -198,7 +198,8 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
             log.warn("Modifications in this transaction might not be accurately reflected in this index query: {}",query);
         return serializer.executeTotals(this,resultType,tx.getTxHandle(),tx);
     }
-    
+
+    @Deprecated
     @Override
     public Iterable<Result<JanusGraphVertex>> vertices() {
         return new StreamIterable<>(vertexStream());
@@ -210,6 +211,7 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
         return execute(ElementCategory.VERTEX, JanusGraphVertex.class);
     }
 
+    @Deprecated
     @Override
     public Iterable<Result<JanusGraphEdge>> edges() {
         return new StreamIterable<>(edgeStream());
@@ -221,6 +223,7 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
         return execute(ElementCategory.EDGE, JanusGraphEdge.class);
     }
 
+    @Deprecated
     @Override
     public Iterable<Result<JanusGraphVertexProperty>> properties() {
         return new StreamIterable<>(propertyStream());

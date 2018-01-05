@@ -26,6 +26,6 @@ public interface Namifiable {
      *
      * @return Name of this entity.
      */
-    public String name();
+    String name();
 
 }

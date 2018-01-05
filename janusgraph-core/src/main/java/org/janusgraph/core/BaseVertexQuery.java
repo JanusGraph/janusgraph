@@ -50,7 +50,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param vertex
      * @return this query builder
      */
-    public Q adjacent(Vertex vertex);
+    Q adjacent(Vertex vertex);
 
     /**
      * Query for only those relations matching one of the given relation types.
@@ -59,7 +59,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param type relation types to query for
      * @return this query
      */
-    public Q types(String... type);
+    Q types(String... type);
 
     /**
      * Query for only those relations matching one of the given relation types.
@@ -68,7 +68,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param type relation types to query for
      * @return this query
      */
-    public Q types(RelationType... type);
+    Q types(RelationType... type);
 
     /**
      * Query for only those edges matching one of the given edge labels.
@@ -77,7 +77,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param labels edge labels to query for
      * @return this query
      */
-    public Q labels(String... labels);
+    Q labels(String... labels);
 
     /**
      * Query for only those properties having one of the given property keys.
@@ -86,7 +86,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param keys property keys to query for
      * @return this query
      */
-    public Q keys(String... keys);
+    Q keys(String... keys);
 
     /**
      * Query only for relations in the given direction.
@@ -95,7 +95,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param d Direction to query for
      * @return this query
      */
-    public Q direction(Direction d);
+    Q direction(Direction d);
 
     /**
      * Query only for edges or properties that have an incident property or unidirected edge matching the given value.
@@ -110,7 +110,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param value Value for the property of the given key to match, or vertex to point unidirectional edge to
      * @return this query
      */
-    public Q has(String type, Object value);
+    Q has(String type, Object value);
 
     /**
      * Query for edges or properties that have defined property with the given key
@@ -118,7 +118,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param key
      * @return this query
      */
-    public Q has(String key);
+    Q has(String key);
 
     /**
      * Query for edges or properties that DO NOT have a defined property with the given key
@@ -126,7 +126,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param key
      * @return this query
      */
-    public Q hasNot(String key);
+    Q hasNot(String key);
 
     /**
      * Identical to {@link #has(String, Object)} but negates the condition, i.e. matches those edges or properties
@@ -136,9 +136,9 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param value
      * @return
      */
-    public Q hasNot(String key, Object value);
+    Q hasNot(String key, Object value);
 
-    public Q has(String key, JanusGraphPredicate predicate, Object value);
+    Q has(String key, JanusGraphPredicate predicate, Object value);
 
     /**
      * Query for those edges or properties that have a property for the given key
@@ -149,7 +149,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param end   value defining the end of the interval (exclusive)
      * @return this query
      */
-    public <T extends Comparable<?>> Q interval(String key, T start, T end);
+    <T extends Comparable<?>> Q interval(String key, T start, T end);
 
     /**
      * Sets the retrieval limit for this query.
@@ -160,7 +160,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param limit maximum number of relations to retrieve for this query
      * @return this query
      */
-    public Q limit(int limit);
+    Q limit(int limit);
 
 
     /**
@@ -174,7 +174,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param order the ordering direction
      * @return
      */
-    public Q orderBy(String key, Order order);
+    Q orderBy(String key, Order order);
 
 
 }

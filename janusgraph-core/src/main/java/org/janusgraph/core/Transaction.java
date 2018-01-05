@@ -53,16 +53,16 @@ public interface Transaction extends Graph, SchemaManager {
      * @param vertexLabel the name of the vertex label to use
      * @return a new vertex in the graph created in the context of this transaction
      */
-    public JanusGraphVertex addVertex(String vertexLabel);
+    JanusGraphVertex addVertex(String vertexLabel);
 
     @Override
-    public JanusGraphVertex addVertex(Object... objects);
+    JanusGraphVertex addVertex(Object... objects);
 
     /**
      * @return
      * @see JanusGraph#query()
      */
-    public JanusGraphQuery<? extends JanusGraphQuery> query();
+    JanusGraphQuery<? extends JanusGraphQuery> query();
 
     /**
      * Returns a {@link org.janusgraph.core.JanusGraphIndexQuery} to query for vertices or edges against the specified indexing backend using
@@ -74,24 +74,24 @@ public interface Transaction extends Graph, SchemaManager {
      * @param query Query string
      * @return JanusGraphIndexQuery object to query the index directly
      */
-    public JanusGraphIndexQuery indexQuery(String indexName, String query);
+    JanusGraphIndexQuery indexQuery(String indexName, String query);
 
     /**
      * @return
      * @see JanusGraph#multiQuery(org.janusgraph.core.JanusGraphVertex...)
      */
     @Deprecated
-    public JanusGraphMultiVertexQuery<? extends JanusGraphMultiVertexQuery> multiQuery(JanusGraphVertex... vertices);
+    JanusGraphMultiVertexQuery<? extends JanusGraphMultiVertexQuery> multiQuery(JanusGraphVertex... vertices);
 
     /**
      * @return
      * @see JanusGraph#multiQuery(java.util.Collection)
      */
     @Deprecated
-    public JanusGraphMultiVertexQuery<? extends JanusGraphMultiVertexQuery> multiQuery(Collection<JanusGraphVertex> vertices);
+    JanusGraphMultiVertexQuery<? extends JanusGraphMultiVertexQuery> multiQuery(Collection<JanusGraphVertex> vertices);
 
     @Override
-    public void close();
+    void close();
 
 
 }

@@ -51,8 +51,8 @@ public class KCVSUtil {
         KeySliceQuery query = new KeySliceQuery(key, column, BufferUtil.nextBiggerBuffer(column)).setLimit(2);
         List<Entry> result = store.getSlice(query, txh);
         if (result.size() > 1)
-            log.warn("GET query returned more than 1 result: store {} | key {} | column {}", new Object[]{store.getName(),
-                    key, column});
+            log.warn("GET query returned more than 1 result: store {} | key {} | column {}", store.getName(),
+                key, column);
 
         if (result.isEmpty()) return null;
         else return result.get(0).getValueAs(StaticBuffer.STATIC_FACTORY);
@@ -91,14 +91,13 @@ public class KCVSUtil {
     }
 
     public static boolean containsKey(KeyColumnValueStore store, StaticBuffer key, int maxColumnLength, StoreTransaction txh) throws BackendException {
-        final StaticBuffer start = START;
         final StaticBuffer end;
         if (maxColumnLength>32) {
             end = BufferUtil.oneBuffer(maxColumnLength);
         } else {
             end = END;
         }
-        return !store.getSlice(new KeySliceQuery(key, start, end).setLimit(1),txh).isEmpty();
+        return !store.getSlice(new KeySliceQuery(key, START, end).setLimit(1),txh).isEmpty();
     }
 
     public static boolean matches(SliceQuery query, StaticBuffer column) {
@@ -112,7 +111,7 @@ public class KCVSUtil {
 
 
     public static Map<StaticBuffer,EntryList> emptyResults(List<StaticBuffer> keys) {
-        Map<StaticBuffer,EntryList> result = new HashMap<StaticBuffer, EntryList>(keys.size());
+        final Map<StaticBuffer,EntryList> result = new HashMap<>(keys.size());
         for (StaticBuffer key : keys) {
             result.put(key,EntryList.EMPTY_LIST);
         }

@@ -47,7 +47,7 @@ public interface JanusGraphRelation extends JanusGraphElement {
      * @param key string identifying a key
      * @return value or list of values associated with key
      */
-    public <V> V value(String key);
+    <V> V value(String key);
 
     /**
      * Returns the type of this relation.
@@ -57,7 +57,7 @@ public interface JanusGraphRelation extends JanusGraphElement {
      *
      * @return Type of this relation
      */
-    public RelationType getType();
+    RelationType getType();
 
     /**
      * Returns the direction of this relation from the perspective of the specified vertex.
@@ -66,7 +66,7 @@ public interface JanusGraphRelation extends JanusGraphElement {
      * @return The direction of this relation from the perspective of the specified vertex.
      * @throws InvalidElementException if this relation is not incident on the vertex
      */
-    public Direction direction(Vertex vertex);
+    Direction direction(Vertex vertex);
 
     /**
      * Checks whether this relation is incident on the specified vertex.
@@ -74,7 +74,7 @@ public interface JanusGraphRelation extends JanusGraphElement {
      * @param vertex vertex to check incidence for
      * @return true, if this relation is incident on the vertex, else false
      */
-    public boolean isIncidentOn(Vertex vertex);
+    boolean isIncidentOn(Vertex vertex);
 
     /**
      * Checks whether this relation is a loop.

@@ -23,7 +23,6 @@ import org.janusgraph.core.schema.*;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
@@ -71,22 +70,12 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
         super(indexName,indexType);
     }
 
-    @Override
-    public void workerIterationEnd(ScanMetrics metrics) {
-        super.workerIterationEnd(metrics);
-    }
-
-    @Override
-    public void workerIterationStart(final JanusGraph graph, Configuration config, ScanMetrics metrics) {
-        super.workerIterationStart(graph, config, metrics);
-    }
-
     /**
      * Check that our target index is in either the ENABLED or REGISTERED state.
      */
     @Override
     protected void validateIndexStatus() {
-        JanusGraphSchemaVertex schemaVertex = mgmt.getSchemaVertex(index);
+        JanusGraphSchemaVertex schemaVertex = managementSystem.getSchemaVertex(index);
         Set<SchemaStatus> acceptableStatuses = SchemaAction.REINDEX.getApplicableStatus();
         boolean isValidIndex = true;
         String invalidIndexHint;
@@ -99,12 +88,12 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                     actualStatus, acceptableStatuses);
         } else {
             Preconditions.checkArgument(index instanceof JanusGraphIndex,"Unexpected index: %s",index);
-            JanusGraphIndex gindex = (JanusGraphIndex)index;
-            Preconditions.checkArgument(gindex.isMixedIndex());
+            JanusGraphIndex graphIndex = (JanusGraphIndex)index;
+            Preconditions.checkArgument(graphIndex.isMixedIndex());
             Map<String, SchemaStatus> invalidKeyStatuses = new HashMap<>();
             int acceptableFields = 0;
-            for (PropertyKey key : gindex.getFieldKeys()) {
-                SchemaStatus status = gindex.getIndexStatus(key);
+            for (PropertyKey key : graphIndex.getFieldKeys()) {
+                SchemaStatus status = graphIndex.getIndexStatus(key);
                 if (status!=SchemaStatus.DISABLED && !acceptableStatuses.contains(status)) {
                     isValidIndex=false;
                     invalidKeyStatuses.put(key.name(), status);
@@ -149,7 +138,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                 mutator.mutateEdges(vertexKey, additions, KCVSCache.NO_DELETIONS);
                 metrics.incrementCustom(ADDED_RECORDS_COUNT, additions.size());
             } else if (index instanceof JanusGraphIndex) {
-                IndexType indexType = mgmt.getSchemaVertex(index).asIndexType();
+                IndexType indexType = managementSystem.getSchemaVertex(index).asIndexType();
                 assert indexType!=null;
                 IndexSerializer indexSerializer = graph.getIndexSerializer();
                 //Gather elements to index
@@ -194,7 +183,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
 
             } else throw new UnsupportedOperationException("Unsupported index found: "+index);
         } catch (final Exception e) {
-            mgmt.rollback();
+            managementSystem.rollback();
             writeTx.rollback();
             metrics.incrementCustom(FAILED_TX);
             throw new JanusGraphException(e.getMessage(), e);
@@ -206,7 +195,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
         if (index instanceof RelationTypeIndex) {
             queries.addQuery().types(indexRelationTypeName).direction(Direction.OUT).relations();
         } else if (index instanceof JanusGraphIndex) {
-            IndexType indexType = mgmt.getSchemaVertex(index).asIndexType();
+            IndexType indexType = managementSystem.getSchemaVertex(index).asIndexType();
             switch (indexType.getElement()) {
                 case PROPERTY:
                     addIndexSchemaConstraint(queries.addQuery(),indexType).properties();

@@ -56,15 +56,12 @@ public class VariableLongTest {
         ReadBuffer rb = wb.getStaticBuffer().asReadBuffer();
         log.info("Writing " + num + " longs in " + rb.length() + " bytes. in time: " + w.getTime());
 
-        final ReadVerify read = new ReadVerify() {
-            @Override
-            public void next(ReadBuffer rb, long expected) {
-                int beforePos = rb.getPosition();
-                long value = impl.read(rb);
-                assertEquals(expected, value);
-                int length = Math.abs(rb.getPosition()-beforePos);
-                assertEquals("On: " + expected,length,impl.length(expected));
-            }
+        final ReadVerify read = (rb1, expected) -> {
+            int beforePos = rb1.getPosition();
+            long value = impl.read(rb1);
+            assertEquals(expected, value);
+            int length = Math.abs(rb1.getPosition()-beforePos);
+            assertEquals("On: " + expected,length,impl.length(expected));
         };
 
         if (backward) {
@@ -97,7 +94,7 @@ public class VariableLongTest {
     }
 
     private interface ReadVerify {
-        public void next(ReadBuffer rb, long expected);
+        void next(ReadBuffer rb, long expected);
     }
 
 
@@ -172,11 +169,11 @@ public class VariableLongTest {
 
     public interface ReadWriteLong {
 
-        public void write(WriteBuffer out, long value);
+        void write(WriteBuffer out, long value);
 
-        public int length(long value);
+        int length(long value);
 
-        public long read(ReadBuffer in);
+        long read(ReadBuffer in);
 
     }
 
@@ -288,7 +285,7 @@ public class VariableLongTest {
 
     @Test
     public void byteOrderPreservingPositiveBackward() {
-        long[] scalingFactors = { Long.MAX_VALUE, 1000, 1000000000l};
+        long[] scalingFactors = { Long.MAX_VALUE, 1000, 1000000000L};
         for (int t=0;t<10000000;t++) {
             StaticBuffer[] b = new StaticBuffer[2];
             long[] l = new long[2];

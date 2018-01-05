@@ -22,10 +22,10 @@ import org.janusgraph.core.JanusGraphVertexProperty;
  */
 public interface IndexCache {
 
-    public void add(JanusGraphVertexProperty property);
+    void add(JanusGraphVertexProperty property);
 
-    public void remove(JanusGraphVertexProperty property);
+    void remove(JanusGraphVertexProperty property);
 
-    public Iterable<JanusGraphVertexProperty> get(Object value, PropertyKey key);
+    Iterable<JanusGraphVertexProperty> get(Object value, PropertyKey key);
 
 }

@@ -30,12 +30,12 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      *
      * @return True, if the transaction is configured as read-only, else false.
      */
-    public boolean isReadOnly();
+    boolean isReadOnly();
 
     /**
      * @return Whether this transaction is configured to assign idAuthorities immediately.
      */
-    public boolean hasAssignIDsImmediately();
+    boolean hasAssignIDsImmediately();
 
 
     /**
@@ -44,7 +44,7 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      * up to the caller.
      * @return
      */
-    public boolean hasPreloadedData();
+    boolean hasPreloadedData();
 
 
     /**
@@ -52,7 +52,7 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      *
      * @return
      */
-    public boolean hasEnabledBatchLoading();
+    boolean hasEnabledBatchLoading();
 
     /**
      * Whether the graph transaction is configured to verify that a vertex with the id GIVEN BY THE USER actually exists
@@ -61,7 +61,7 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      *
      * @return True, if vertex existence is verified, else false
      */
-    public boolean hasVerifyExternalVertexExistence();
+    boolean hasVerifyExternalVertexExistence();
 
     /**
      * Whether the graph transaction is configured to verify that a vertex with the id actually exists
@@ -77,26 +77,26 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      *
      * @return True, if vertex existence is verified, else false
      */
-    public boolean hasVerifyInternalVertexExistence();
+    boolean hasVerifyInternalVertexExistence();
 
     /**
      * Whether the persistence layer should acquire locks for this transaction during persistence.
      *
      * @return True, if locks should be acquired, else false
      */
-    public boolean hasAcquireLocks();
+    boolean hasAcquireLocks();
 
     /**
      * @return The default edge type maker used to automatically create not yet existing edge types.
      */
-    public DefaultSchemaMaker getAutoSchemaMaker();
+    DefaultSchemaMaker getAutoSchemaMaker();
 
     /**
      * Whether the graph transaction is configured to verify that an added key does not yet exist in the database.
      *
      * @return True, if vertex existence is verified, else false
      */
-    public boolean hasVerifyUniqueness();
+    boolean hasVerifyUniqueness();
 
     /**
      * Whether this transaction loads all properties on a vertex when a single property is requested. This can be highly beneficial
@@ -105,7 +105,7 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      *
      * @return True, if this transaction pre-fetches all properties
      */
-    public boolean hasPropertyPrefetching();
+    boolean hasPropertyPrefetching();
 
     /**
      * Whether this transaction is only accessed by a single thread.
@@ -113,7 +113,7 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      *
      * @return
      */
-    public boolean isSingleThreaded();
+    boolean isSingleThreaded();
 
     /**
      * Whether this transaction is bound to a running thread.
@@ -121,7 +121,7 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      *
      * @return
      */
-    public boolean isThreadBound();
+    boolean isThreadBound();
 
     /**
      * The maximum number of recently-used vertices to cache in this transaction.
@@ -129,21 +129,21 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      *
      * @return
      */
-    public int getVertexCacheSize();
+    int getVertexCacheSize();
 
     /**
      * The initial size of the dirty (modified) vertex map used by a transaction.
      *
      * @return
      */
-    public int getDirtyVertexSize();
+    int getDirtyVertexSize();
 
     /**
      * The maximum weight for the index cache store used in this particular transaction
      *
      * @return
      */
-    public long getIndexCacheWeight();
+    long getIndexCacheWeight();
 
     /**
      * The name of the log to be used for logging the mutations in this transaction.
@@ -151,7 +151,7 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      *
      * @return
      */
-    public String getLogIdentifier();
+    String getLogIdentifier();
 
 
     /**
@@ -159,7 +159,7 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      * with any existing index but instead requires a full graph-scan.
      * @return
      */
-    public boolean hasForceIndexUsage();
+    boolean hasForceIndexUsage();
 
 
     /**
@@ -168,11 +168,11 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      *
      * @return
      */
-    public int[] getRestrictedPartitions();
+    int[] getRestrictedPartitions();
 
     /**
-     * Returns true of the queryied partitions should be restricted in this transaction
+     * Returns true if the queried partitions should be restricted in this transaction
      */
-    public boolean hasRestrictedPartitions();
+    boolean hasRestrictedPartitions();
 
 }

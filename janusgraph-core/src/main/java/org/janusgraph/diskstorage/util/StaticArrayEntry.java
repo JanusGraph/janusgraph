@@ -92,24 +92,24 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
         return new StaticArrayEntry(buffer,buffer.length());
     }
 
-    public static final<E> Entry ofBytes(E element, StaticArrayEntry.GetColVal<E,byte[]> getter) {
+    public static <E> Entry ofBytes(E element, StaticArrayEntry.GetColVal<E,byte[]> getter) {
         return of(element, getter, ByteArrayHandler.INSTANCE);
     }
 
-    public static final<E>  Entry ofByteBuffer(E element, StaticArrayEntry.GetColVal<E,ByteBuffer> getter) {
+    public static <E> Entry ofByteBuffer(E element, StaticArrayEntry.GetColVal<E,ByteBuffer> getter) {
         return of(element, getter, ByteBufferHandler.INSTANCE);
     }
 
-    public static final<E>  Entry ofStaticBuffer(E element, StaticArrayEntry.GetColVal<E,StaticBuffer> getter) {
+    public static <E> Entry ofStaticBuffer(E element, StaticArrayEntry.GetColVal<E,StaticBuffer> getter) {
         return of(element, getter, StaticBufferHandler.INSTANCE);
     }
 
-    public static final<E>  Entry of(StaticBuffer column, StaticBuffer value) {
+    public static <E> Entry of(StaticBuffer column, StaticBuffer value) {
         return of(column, value, StaticBufferHandler.INSTANCE);
     }
 
-    private static final<E,D>  Entry of(E element, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> datahandler) {
-        StaticArrayEntry entry = of(getter.getColumn(element),getter.getValue(element),datahandler);
+    private static <E,D> Entry of(E element, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> dataHandler) {
+        StaticArrayEntry entry = of(getter.getColumn(element),getter.getValue(element),dataHandler);
         //Add meta data if exists
         if (getter.getMetaSchema(element).length>0) {
             for (EntryMetaData meta : getter.getMetaSchema(element)) {
@@ -119,29 +119,29 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
         return entry;
     }
 
-    private static final<E,D>  StaticArrayEntry of(D column, D value, StaticArrayEntry.DataHandler<D> datahandler) {
-        int valuePos = datahandler.getSize(column);
-        byte[] data = new byte[valuePos+datahandler.getSize(value)];
-        datahandler.copy(column,data,0);
-        datahandler.copy(value,data,valuePos);
+    private static <E,D> StaticArrayEntry of(D column, D value, StaticArrayEntry.DataHandler<D> dataHandler) {
+        int valuePos = dataHandler.getSize(column);
+        byte[] data = new byte[valuePos+dataHandler.getSize(value)];
+        dataHandler.copy(column,data,0);
+        dataHandler.copy(value,data,valuePos);
         return new StaticArrayEntry(data,valuePos);
     }
 
-    public static interface GetColVal<E,D> {
+    public interface GetColVal<E,D> {
 
-        public D getColumn(E element);
+        D getColumn(E element);
 
-        public D getValue(E element);
+        D getValue(E element);
 
-        public EntryMetaData[] getMetaSchema(E element);
+        EntryMetaData[] getMetaSchema(E element);
 
-        public Object getMetaData(E element, EntryMetaData meta);
+        Object getMetaData(E element, EntryMetaData meta);
 
     }
 
     public static final EntryMetaData[] EMPTY_SCHEMA = new EntryMetaData[0];
 
-    public static GetColVal<Entry,StaticBuffer> ENTRY_GETTER = new GetColVal<Entry, StaticBuffer>() {
+    public static final GetColVal<Entry,StaticBuffer> ENTRY_GETTER = new GetColVal<Entry, StaticBuffer>() {
         @Override
         public StaticBuffer getColumn(Entry entry) {
             return entry.getColumn();
@@ -167,16 +167,16 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
 
     };
 
-    public static interface DataHandler<D> {
+    public interface DataHandler<D> {
 
-        public int getSize(D data);
+        int getSize(D data);
 
-        public void copy(D data, byte[] dest, int destOffset);
+        void copy(D data, byte[] dest, int destOffset);
 
     }
 
 
-    static enum ByteArrayHandler implements DataHandler<byte[]> {
+    enum ByteArrayHandler implements DataHandler<byte[]> {
 
         INSTANCE;
 
@@ -191,7 +191,7 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
         }
     }
 
-    static enum ByteBufferHandler implements DataHandler<ByteBuffer> {
+    enum ByteBufferHandler implements DataHandler<ByteBuffer> {
 
         INSTANCE;
 
@@ -212,7 +212,7 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
         }
     }
 
-    static enum StaticBufferHandler implements DataHandler<StaticBuffer> {
+    enum StaticBufferHandler implements DataHandler<StaticBuffer> {
 
         INSTANCE;
 
@@ -295,9 +295,8 @@ class BaseStaticArrayEntry extends StaticArrayBuffer implements Entry {
         if (this == o) return true;
         if (o == null) return false;
         if (!(o instanceof StaticBuffer)) return false;
-        Entry b = (Entry)o;
-        if (getValuePosition()!=b.getValuePosition()) return false;
-        return compareTo(getValuePosition(),b,getValuePosition())==0;
+        final Entry b = (Entry) o;
+        return getValuePosition() == b.getValuePosition() && compareTo(getValuePosition(), b, getValuePosition()) == 0;
     }
 
     @Override

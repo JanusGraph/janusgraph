@@ -57,17 +57,17 @@ public class VertexListTest {
         assertTrue(val.isSorted());
 
         for (Iterable<JanusGraphVertex> iterable : new Iterable[]{val,vll}) {
-            Iterator<JanusGraphVertex> iter = iterable.iterator();
+            Iterator<JanusGraphVertex> iterator = iterable.iterator();
             JanusGraphVertex previous = null;
             for (int i = 0; i < num; i++) {
-                JanusGraphVertex next = iter.next();
+                JanusGraphVertex next = iterator.next();
                 if (previous!=null) assertTrue(previous.longId()<next.longId());
                 previous = next;
             }
             try {
-                iter.next();
+                iterator.next();
                 fail();
-            } catch (NoSuchElementException ex) {
+            } catch (NoSuchElementException ignored) {
 
             }
         }

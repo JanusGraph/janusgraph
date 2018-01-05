@@ -16,10 +16,11 @@ package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -39,15 +40,14 @@ public class MixedConfiguration extends AbstractConfiguration {
 
     @Override
     public boolean has(ConfigOption option, String... umbrellaElements) {
-        String key = super.getPath(option,umbrellaElements);
-        if (option.isLocal() && local.get(key,option.getDatatype())!=null) return true;
-        if (option.isGlobal() && global.get(key,option.getDatatype())!=null) return true;
-        return false;
+        final String key = super.getPath(option, umbrellaElements);
+        return option.isLocal() && local.get(key, option.getDatatype()) != null
+              || option.isGlobal() && global.get(key, option.getDatatype()) != null;
     }
 
     @Override
     public<O> O get(ConfigOption<O> option, String... umbrellaElements) {
-        String key = super.getPath(option,umbrellaElements);
+        final String key = super.getPath(option,umbrellaElements);
         Object result = null;
         if (option.isLocal()) {
             result = local.get(key,option.getDatatype());
@@ -60,11 +60,10 @@ public class MixedConfiguration extends AbstractConfiguration {
 
     @Override
     public Set<String> getContainedNamespaces(ConfigNamespace umbrella, String... umbrellaElements) {
-        Set<String> result = Sets.newHashSet();
-        for (ReadConfiguration config : new ReadConfiguration[]{global,local}) {
-            result.addAll(super.getContainedNamespaces(config,umbrella,umbrellaElements));
-        }
-        return result;
+        return Arrays.stream(new ReadConfiguration[]{global,local})
+            .map(config -> super.getContainedNamespaces(config, umbrella, umbrellaElements))
+            .flatMap(Set::stream)
+            .collect(Collectors.toSet());
     }
 
     public Map<String,Object> getSubset(ConfigNamespace umbrella, String... umbrellaElements) {

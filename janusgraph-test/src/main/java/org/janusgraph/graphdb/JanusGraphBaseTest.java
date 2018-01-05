@@ -17,7 +17,6 @@ package org.janusgraph.graphdb;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.janusgraph.core.*;
-import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.BackendException;
@@ -98,7 +97,7 @@ public abstract class JanusGraphBaseTest {
         this.config = getConfiguration();
         TestGraphConfigs.applyOverrides(config);
         Preconditions.checkNotNull(config);
-        logManagers = new HashMap<String,LogManager>();
+        logManagers = new HashMap<>();
         clearGraph(config);
         readConfig = new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS, config, BasicConfiguration.Restriction.NONE);
         open(config);
@@ -160,18 +159,18 @@ public abstract class JanusGraphBaseTest {
         if (null != tx && tx.isOpen()) tx.commit();
         if (settings!=null && settings.length>0) {
             Map<TestConfigOption,Object> options = validateConfigOptions(settings);
-            JanusGraphManagement gconf = null;
-            ModifiableConfiguration lconf = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.LOCAL);
+            JanusGraphManagement janusGraphManagement = null;
+            ModifiableConfiguration modifiableConfiguration = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.LOCAL);
             for (Map.Entry<TestConfigOption,Object> option : options.entrySet()) {
                 if (option.getKey().option.isLocal()) {
-                    lconf.set(option.getKey().option,option.getValue(),option.getKey().umbrella);
+                    modifiableConfiguration.set(option.getKey().option,option.getValue(),option.getKey().umbrella);
                 } else {
-                    if (gconf==null) gconf = graph.openManagement();
-                    gconf.set(ConfigElement.getPath(option.getKey().option,option.getKey().umbrella),option.getValue());
+                    if (janusGraphManagement==null) janusGraphManagement = graph.openManagement();
+                    janusGraphManagement.set(ConfigElement.getPath(option.getKey().option,option.getKey().umbrella),option.getValue());
                 }
             }
-            if (gconf!=null) gconf.commit();
-            lconf.close();
+            if (janusGraphManagement!=null) janusGraphManagement.commit();
+            modifiableConfiguration.close();
         }
         if (null != graph && null != graph.tx() && graph.tx().isOpen())
             graph.tx().commit();
@@ -182,7 +181,7 @@ public abstract class JanusGraphBaseTest {
     }
 
 
-    public static final TestConfigOption option(ConfigOption option, String... umbrella) {
+    public static TestConfigOption option(ConfigOption option, String... umbrella) {
         return new TestConfigOption(option,umbrella);
     }
 
@@ -247,8 +246,8 @@ public abstract class JanusGraphBaseTest {
             StoreFeatures f = logStoreManager.getFeatures();
             boolean part = f.isDistributed() && f.isKeyOrdered();
             if (part) {
-                for (String logname : new String[]{USER_LOG,TRANSACTION_LOG,MANAGEMENT_LOG})
-                configuration.set(KCVSLogManager.LOG_MAX_PARTITIONS,8,logname);
+                for (String partitionedLogName : new String[]{USER_LOG,TRANSACTION_LOG,MANAGEMENT_LOG})
+                configuration.set(KCVSLogManager.LOG_MAX_PARTITIONS,8,partitionedLogName);
             }
             assert logStoreManager!=null;
             if (!logManagers.containsKey(logManagerName)) {
@@ -268,14 +267,14 @@ public abstract class JanusGraphBaseTest {
     ========= Schema Type Definition Helpers ============
      */
 
-    public PropertyKey makeVertexIndexedKey(String name, Class datatype) {
-        PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
+    public PropertyKey makeVertexIndexedKey(String name, Class dataType) {
+        PropertyKey key = mgmt.makePropertyKey(name).dataType(dataType).cardinality(Cardinality.SINGLE).make();
         mgmt.buildIndex(name,Vertex.class).addKey(key).buildCompositeIndex();
         return key;
     }
 
-    public PropertyKey makeVertexIndexedUniqueKey(String name, Class datatype) {
-        PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
+    public PropertyKey makeVertexIndexedUniqueKey(String name, Class dataType) {
+        PropertyKey key = mgmt.makePropertyKey(name).dataType(dataType).cardinality(Cardinality.SINGLE).make();
         mgmt.buildIndex(name,Vertex.class).addKey(key).unique().buildCompositeIndex();
         return key;
     }
@@ -307,9 +306,8 @@ public abstract class JanusGraphBaseTest {
         mgmt.addIndexKey(getExternalIndex(clazz,backingIndex),key);
     }
 
-    public PropertyKey makeKey(String name, Class datatype) {
-        PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
-        return key;
+    public PropertyKey makeKey(String name, Class dataType) {
+        return mgmt.makePropertyKey(name).dataType(dataType).cardinality(Cardinality.SINGLE).make();
     }
 
     public EdgeLabel makeLabel(String name) {
@@ -317,9 +315,7 @@ public abstract class JanusGraphBaseTest {
     }
 
     public EdgeLabel makeKeyedEdgeLabel(String name, PropertyKey sort, PropertyKey signature) {
-        EdgeLabel relType = ((StandardEdgeLabelMaker)tx.makeEdgeLabel(name)).
-                sortKey(sort).signature(signature).directed().make();
-        return relType;
+        return ((StandardEdgeLabelMaker) tx.makeEdgeLabel(name)).sortKey(sort).signature(signature).directed().make();
     }
 
     /*
@@ -351,7 +347,7 @@ public abstract class JanusGraphBaseTest {
     }
 
     public static JanusGraphVertex getVertex(JanusGraphTransaction tx, String key, Object value) {
-        return (JanusGraphVertex)getOnlyElement(tx.query().has(key,value).vertices(),null);
+        return getOnlyElement(tx.query().has(key,value).vertices(),null);
     }
 
     public static JanusGraphVertex getVertex(JanusGraphTransaction tx, PropertyKey key, Object value) {
@@ -363,11 +359,11 @@ public abstract class JanusGraphBaseTest {
     }
 
     public static JanusGraphVertex getOnlyVertex(JanusGraphQuery<?> query) {
-        return (JanusGraphVertex)getOnlyElement(query.vertices());
+        return getOnlyElement(query.vertices());
     }
 
     public static JanusGraphEdge getOnlyEdge(JanusGraphVertexQuery<?> query) {
-        return (JanusGraphEdge)getOnlyElement(query.edges());
+        return getOnlyElement(query.edges());
     }
 
     public static<E> E getOnlyElement(Iterable<E> traversal) {

@@ -21,6 +21,6 @@ package org.janusgraph.util.datastructures;
  */
 public interface Removable {
 
-    public void remove();
+    void remove();
 
 }

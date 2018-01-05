@@ -87,7 +87,7 @@ public enum ReflectiveConfigOptionLoader {
     /**
      * Reflectively load types at most once over the life of this class. This
      * method is synchronized and uses a static class field to ensure that it
-     * calls {@link #load()} only on the first invocation and does nothing
+     * calls {@link #load(LoaderConfiguration, Class)} only on the first invocation and does nothing
      * thereafter. This is the right behavior as long as the classpath doesn't
      * change in the middle of the enclosing JVM's lifetime.
      */
@@ -178,7 +178,7 @@ public enum ReflectiveConfigOptionLoader {
 
     private List<ClassLoader> getClassLoaders(LoaderConfiguration cfg, Class<?> caller) {
 
-        ImmutableList.Builder<ClassLoader> builder = ImmutableList.<ClassLoader>builder();
+        final ImmutableList.Builder<ClassLoader> builder = ImmutableList.builder();
 
         builder.addAll(cfg.preferredLoaders);
         for (ClassLoader c : cfg.preferredLoaders)
@@ -254,7 +254,7 @@ public enum ReflectiveConfigOptionLoader {
             }
         }
 
-        log.debug("Preloaded {} config option(s) via Reflections ({} class(es) with errors)", loadCount, errorCount);
+        log.debug("Pre-loaded {} config option(s) via Reflections ({} class(es) with errors)", loadCount, errorCount);
 
     }
 
@@ -302,9 +302,7 @@ public enum ReflectiveConfigOptionLoader {
                     Preconditions.checkNotNull(o);
                     log.debug("Initialized {}={}", f, o);
                     loadCount++;
-                } catch (IllegalArgumentException e) {
-                    log.warn("ConfigOption initialization error", e);
-                } catch (IllegalAccessException e) {
+                } catch (IllegalArgumentException | IllegalAccessException e) {
                     log.warn("ConfigOption initialization error", e);
                 }
             }

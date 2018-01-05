@@ -37,7 +37,8 @@ import java.util.Map;
 public class PropertyPlacementStrategy extends SimpleBulkPlacementStrategy {
 
     public static final ConfigOption<String> PARTITION_KEY = new ConfigOption<String>(GraphDatabaseConfiguration.IDS_NS,
-            "partition-key","Partitions the graph by properties of this key", ConfigOption.Type.MASKABLE, String.class, key -> StringUtils.isNotBlank(key));
+            "partition-key","Partitions the graph by properties of this key", ConfigOption.Type.MASKABLE,
+            String.class, StringUtils::isNotBlank);
 
 
     private String key;
@@ -84,10 +85,11 @@ public class PropertyPlacementStrategy extends SimpleBulkPlacementStrategy {
     }
 
     private int getPartitionIDbyKey(JanusGraphVertex vertex) {
-        Preconditions.checkState(idManager!=null && key!=null,"PropertyPlacementStrategy has not been initialized correctly");
+        Preconditions.checkState(idManager!=null && key!=null,
+                "PropertyPlacementStrategy has not been initialized correctly");
         assert idManager.getPartitionBound()<=Integer.MAX_VALUE;
         int partitionBound = (int)idManager.getPartitionBound();
-        JanusGraphVertexProperty p = (JanusGraphVertexProperty)Iterables.getFirst(vertex.query().keys(key).properties(),null);
+        final JanusGraphVertexProperty p = Iterables.getFirst(vertex.query().keys(key).properties(), null);
         if (p==null) return -1;
         int hashPid = Math.abs(p.value().hashCode())%partitionBound;
         assert hashPid>=0 && hashPid<partitionBound;
