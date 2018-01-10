@@ -32,6 +32,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -79,7 +80,7 @@ public class JtsGeoshapeHelper extends GeoshapeHelper {
     @Override
     public Geoshape polygon(List<double[]> coordinates) {
         Preconditions.checkArgument(coordinates.size() >= 4, "Too few coordinate pairs provided");
-        Preconditions.checkArgument(coordinates.get(0) != coordinates.get(coordinates.size()-1), "Polygon is not closed");
+        Preconditions.checkArgument(Arrays.equals(coordinates.get(0), coordinates.get(coordinates.size()-1)), "Polygon is not closed");
         final PolygonBuilder builder = this.getContext().getShapeFactory().polygon();
         for (double[] coordinate : coordinates) {
             Preconditions.checkArgument(coordinate.length==2 && Geoshape.isValidCoordinate(coordinate[1], coordinate[0]), "Invalid coordinate provided");
