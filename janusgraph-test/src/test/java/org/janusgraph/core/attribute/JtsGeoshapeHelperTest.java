@@ -16,10 +16,19 @@ package org.janusgraph.core.attribute;
 
 import org.janusgraph.core.attribute.GeoshapeHelper;
 import org.janusgraph.core.attribute.JtsGeoshapeHelper;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory;
 import org.locationtech.spatial4j.shape.ShapeFactory;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test of JtsGeoshapeHelper.
@@ -41,5 +50,36 @@ public class JtsGeoshapeHelperTest extends GeoshapeHelperTest {
     @Override
     public ShapeFactory getShapeFactory() {
         return new JtsShapeFactory((JtsSpatialContext) getHelper().context, (JtsSpatialContextFactory) getHelper().factory);
+    }
+
+    @Test
+    public void testPolygonIsClosed() {
+        if (supportJts()) {
+            List<double[]> coordinates = new ArrayList<>();
+            coordinates.add(new double[]{1.0,1.0});
+            coordinates.add(new double[]{3.0,1.0});
+            coordinates.add(new double[]{2.0,4.0});
+            coordinates.add(new double[]{1.0,1.0});
+            Geoshape polygon = getHelper().polygon(coordinates);
+
+            assertEquals(4, polygon.size());
+        }
+    }
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
+
+    @Test
+    public void testInvalidPolygon() {
+        if (supportJts()) {
+            List<double[]> coordinates = new ArrayList<>();
+            coordinates.add(new double[]{1.0,1.0});
+            coordinates.add(new double[]{3.0,1.0});
+            coordinates.add(new double[]{2.0,4.0});
+            coordinates.add(new double[]{1.0,2.0});
+            thrown.expect(IllegalArgumentException.class);
+            thrown.expectMessage(equalTo("Polygon is not closed"));
+            getHelper().polygon(coordinates);
+        }
     }
 }
