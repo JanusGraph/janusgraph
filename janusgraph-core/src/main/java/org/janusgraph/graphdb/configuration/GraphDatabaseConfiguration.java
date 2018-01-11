@@ -704,7 +704,7 @@ public class GraphDatabaseConfiguration {
      */
     public static final ConfigOption<Boolean> IDS_FLUSH = new ConfigOption<>(IDS_NS,"flush",
             "When true, vertices and edges are assigned IDs immediately upon creation.  When false, " +
-            "IDs are assigned only when the transaction commits. Must be disabled for graph partitioning to work.",
+            "IDs are assigned only when the transaction commits.",
             ConfigOption.Type.MASKABLE, true);
 
     /**
