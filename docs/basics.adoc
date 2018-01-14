@@ -507,7 +507,7 @@ Run gremlin.sh to connect.
 [[first-example-connecting-gremlin-server]]
 ===== Connecting to Gremlin Server
 
-After running janusgraph.sh, Gremlin Server will be ready to listen for WebSocket connections.  The easiest way to test the connection is with Gremlin Console.
+After running `janusgraph.sh`, Gremlin Server will be ready to listen for WebSocket connections.  The easiest way to test the connection is with Gremlin Console.
 
 Start http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-console[Gremlin Console] with `bin/gremlin.sh` and use the `:remote` and `:>` commands to issue Gremlin to Gremlin Server:
 
@@ -537,25 +537,25 @@ The `:remote` command tells the console to configure a remote connection to Grem
 The default configuration described in <<server-getting-started>> is already a WebSocket configuration.  If you want to alter the default configuration to work with your own Cassandra or HBase environment rather than use the quick start environment, follow these steps:
 
 .To Configure JanusGraph Server For WebSocket
-. Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/janusgraph-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line:
+. Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the `./conf` directory for your environment.  For example, edit `./conf/janusgraph-hbase.properties` and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line:
 +
 ```
 gremlin.graph=org.janusgraph.core.JanusGraphFactory
 ```
 
-. Once a local configuration is tested and you have a working properties file, copy the properties file from the ./conf directory to the ./conf/gremlin-server directory.
+. Once a local configuration is tested and you have a working properties file, copy the properties file from the `./conf` directory to the `./conf/gremlin-server` directory.
 +
 ```
 cp conf/janusgraph-hbase.properties conf/gremlin-server/socket-janusgraph-hbase-server.properties
 ```
 +
-. Copy ./conf/gremlin-server/gremlin-server.yaml to a new file called socket-gremlin-server.yaml.  Do this in case you need to refer to the original version of the file
+. Copy `./conf/gremlin-server/gremlin-server.yaml` to a new file called `socket-gremlin-server.yaml`.  Do this in case you need to refer to the original version of the file
 +
 ```
 cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/socket-gremlin-server.yaml
 ```
 +
-. Edit the socket-gremlin-server.yaml file and make the following updates:
+. Edit the `socket-gremlin-server.yaml` file and make the following updates:
 .. If you are planning to connect to JanusGraph Server from something other than localhost, update the IP address for host:
 +
 ```
@@ -574,7 +574,7 @@ graphs: {
 ```
 bin/gremlin-server.sh ./conf/gremlin-server/socket-gremlin-server.yaml
 ```
-IMPORTANT: Do not use bin/janusgraph.sh.  That starts the default configuration, which starts a separate Cassandra/Elasticsearch environment.
+IMPORTANT: Do not use `bin/janusgraph.sh`.  That starts the default configuration, which starts a separate Cassandra/Elasticsearch environment.
 +
 . The JanusGraph Server should now be running in WebSocket mode and can be tested by following the instructions in <<first-example-connecting-gremlin-server>>
 
@@ -585,25 +585,25 @@ IMPORTANT: Do not use bin/janusgraph.sh.  That starts the default configuration,
 The default configuration described in <<server-getting-started>> is a WebSocket configuration.  If you want to alter the default configuration in order to use JanusGraph Server as an HTTP endpoint for your JanusGraph database, follow these steps:
 
 .To Configure JanusGraph Server for HTTP
-. Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/janusgraph-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line:
+. Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the `./conf` directory for your environment.  For example, edit `./conf/janusgraph-hbase.properties` and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line:
 +
 ```
 gremlin.graph=org.janusgraph.core.JanusGraphFactory
 ```
 
-. Once a local configuration is tested and you have a working properties file, copy the properties file from the ./conf directory to the ./conf/gremlin-server directory.
+. Once a local configuration is tested and you have a working properties file, copy the properties file from the `./conf` directory to the `./conf/gremlin-server` directory.
 +
 ```
 cp conf/janusgraph-hbase.properties conf/gremlin-server/http-janusgraph-hbase-server.properties
 ```
 +
-. Copy ./conf/gremlin-server/gremlin-server.yaml to a new file called http-gremlin-server.yaml.  Do this in case you need to refer to the original version of the file
+. Copy `./conf/gremlin-server/gremlin-server.yaml` to a new file called `http-gremlin-server.yaml`.  Do this in case you need to refer to the original version of the file
 +
 ```
 cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/http-gremlin-server.yaml
 ```
 +
-. Edit the http-gremlin-server.yaml file and make the following updates:
+. Edit the `http-gremlin-server.yaml` file and make the following updates:
 .. If you are planning to connect to JanusGraph Server from something other than localhost, update the IP address for host:
 +
 ```
@@ -637,7 +637,7 @@ curl -XPOST -Hcontent-type:application/json -d '{"gremlin":"g.V().count()"}' htt
 
 === JanusGraph Server as Both a WebSocket and HTTP Endpoint
 
-As of JanusGraph 0.2.0, you can configure your gremlin-server.yaml to accept both WebSocket and HTTP connections over the same port. This can be achieved by changing the channelizer in any of the previous examples as follows.
+As of JanusGraph 0.2.0, you can configure your `gremlin-server.yaml` to accept both WebSocket and HTTP connections over the same port. This can be achieved by changing the channelizer in any of the previous examples as follows.
 
 ```
 channelizer: org.apache.tinkerpop.gremlin.server.channel.WsAndHttpChannelizer
@@ -650,7 +650,7 @@ channelizer: org.apache.tinkerpop.gremlin.server.channel.WsAndHttpChannelizer
 IMPORTANT: In the following example, credentialsDb should be different from the graph(s) you are using. It should be configured with the correct backend and a different keyspace, table, or storage directory as appropriate for the configured backend. This graph will be used for storing usernames and passwords.
 
 ===== HTTP Basic authentication
-To enable Basic authentication in JanusGraph Server include the following configuration in your gremlin-server.yaml.
+To enable Basic authentication in JanusGraph Server include the following configuration in your `gremlin-server.yaml`.
 
 ```
  authentication: {
@@ -681,7 +681,7 @@ should return a 200 and the result of 4 if authentication is configured correctl
 Authentication over WebSocket occurs through a Simple Authentication and Security Layer (https://en.wikipedia.org/wiki/Simple_Authentication_and_Security_Layer[SASL]) mechanism.
 
 
-To enable SASL authentication include the following configuration in the gremlin-server.yaml
+To enable SASL authentication include the following configuration in the `gremlin-server.yaml`
 
 ```
 authentication: {
@@ -707,7 +707,7 @@ password: password
 ==== Authentication over HTTP and WebSocket
 If you are using the combined channelizer for both HTTP and WebSocket you can use the SaslAndHMACAuthenticator to authorize through either WebSocket through SASL, HTTP through basic auth, and HTTP through hash-based messsage authentication code (https://en.wikipedia.org/wiki/Hash-based_message_authentication_code[HMAC]) Auth. HMAC is a token based authentication designed to be used over HTTP. You first acquire a token via the `/session` endpoint and then use that to authenticate. It is used to amortize the time spent encrypting the password using basic auth.
 
-The gremlin-server.yaml should include the following configurations
+The `gremlin-server.yaml` should include the following configurations
 
 ```
 authentication: {
@@ -1554,7 +1554,7 @@ When launching JanusGraph with embedded Cassandra, the following warnings may be
 
 `958 [MutationStage:25] WARN  org.apache.cassandra.db.Memtable  - MemoryMeter uninitialized (jamm not specified as java agent); assuming liveRatio of 10.0.  Usually this means cassandra-env.sh disabled jamm because you are using a buggy JRE; upgrade to the Sun JRE instead`
 
-Cassandra uses a Java agent called `MemoryMeter` which allows it to measure the actual memory use of an object, including JVM overhead.  To use https://github.com/jbellis/jamm[JAMM] (Java Agent for Memory Measurements), the path to the JAMM jar must be specific in the Java javaagent parameter when launching the JVM (e.g. `-javaagent:path/to/jamm.jar`) through either janusgraph.sh, gremlin.sh, or Gremlin Server:
+Cassandra uses a Java agent called `MemoryMeter` which allows it to measure the actual memory use of an object, including JVM overhead.  To use https://github.com/jbellis/jamm[JAMM] (Java Agent for Memory Measurements), the path to the JAMM jar must be specific in the Java javaagent parameter when launching the JVM (e.g. `-javaagent:path/to/jamm.jar`) through either `janusgraph.sh`, `gremlin.sh`, or Gremlin Server:
 
 [source, bash]
 export JANUSGRAPH_JAVA_OPTS=-javaagent:$JANUSGRAPH_HOME/lib/jamm-$MAVEN{jamm.version}.jar
