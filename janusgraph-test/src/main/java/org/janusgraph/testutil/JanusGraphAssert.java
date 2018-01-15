@@ -18,7 +18,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
@@ -56,6 +60,13 @@ public class JanusGraphAssert {
 
     public static<V extends Element> void assertNotEmpty(Object object) {
         org.junit.Assert.assertFalse(isEmpty(object));
+    }
+
+    public static<E extends Element> void assertTraversal(GraphTraversal<?, E> req, E... expectedElements) {
+        for (final E expectedElement : expectedElements) {
+            assertEquals(expectedElement, req.next());
+        }
+        assertFalse(req.hasNext());
     }
 
     private static boolean isEmpty(Object obj) {

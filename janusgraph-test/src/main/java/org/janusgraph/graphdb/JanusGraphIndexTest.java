@@ -40,10 +40,12 @@ import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.schema.SchemaAction;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.util.ManagementUtil;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
 import org.janusgraph.diskstorage.indexing.IndexInformation;
@@ -56,14 +58,21 @@ import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
+import org.janusgraph.graphdb.query.condition.Not;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.testcategory.BrittleTests;
 import org.janusgraph.testutil.TestGraphConfigs;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.junit.Assert;
@@ -101,7 +110,13 @@ import static org.junit.Assert.*;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
+
+    private static final ElementValueComparator ORDER_AGE_DECR = new ElementValueComparator("age", org.apache.tinkerpop.gremlin.process.traversal.Order.decr);
+    private static final ElementValueComparator ORDER_AGE_INCR = new ElementValueComparator("age", org.apache.tinkerpop.gremlin.process.traversal.Order.incr);
+    private static final ElementValueComparator ORDER_LENGTH_DECR = new ElementValueComparator("length", org.apache.tinkerpop.gremlin.process.traversal.Order.decr);
+    private static final ElementValueComparator ORDER_LENGTH_INCR = new ElementValueComparator("length", org.apache.tinkerpop.gremlin.process.traversal.Order.incr);
 
     public static final String INDEX = GraphOfTheGodsFactory.INDEX_NAME;
     public static final String VINDEX = "v" + INDEX;
@@ -175,7 +190,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     public static void assertGraphOfTheGods(JanusGraph graphOfTheGods) {
         assertCount(12, graphOfTheGods.query().vertices());
         assertCount(3, graphOfTheGods.query().has(LABEL_NAME, "god").vertices());
-        JanusGraphVertex h = getOnlyVertex(graphOfTheGods.query().has("name", "hercules"));
+        final JanusGraphVertex h = getOnlyVertex(graphOfTheGods.query().has("name", "hercules"));
         assertEquals(30, h.<Integer>value("age").intValue());
         assertEquals("demigod", h.label());
         assertCount(5, h.query().direction(Direction.BOTH).edges());
@@ -194,7 +209,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         final Backend backend = getBackend(config, false);
         assertStorageExists(backend, true);
         clearGraph(config);
-        try { backend.close(); } catch (Exception e) { /* Most backends do not support closing after clearing */}
+        try { backend.close(); } catch (final Exception e) { /* Most backends do not support closing after clearing */}
         try (final Backend newBackend = getBackend(config, false)) {
             assertStorageExists(newBackend, false);
         }
@@ -210,7 +225,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     @Test
     public void testSimpleUpdate() {
-        PropertyKey name = makeKey("name", String.class);
+        final PropertyKey name = makeKey("name", String.class);
         makeLabel("knows");
         mgmt.buildIndex("namev", Vertex.class).addKey(name).buildMixedIndex(INDEX);
         mgmt.buildIndex("namee", Edge.class).addKey(name).buildMixedIndex(INDEX);
@@ -220,11 +235,11 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         Edge e = v.addEdge("knows", v, "name", "Hulu Bubab");
         assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
         assertCount(1, tx.query().has("name", Text.CONTAINS, "Hulu").edges());
-        for (Vertex u : tx.getVertices()) assertEquals("Marko Rodriguez", u.value("name"));
+        for (final Vertex u : tx.getVertices()) assertEquals("Marko Rodriguez", u.value("name"));
         clopen();
         assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
         assertCount(1, tx.query().has("name", Text.CONTAINS, "Hulu").edges());
-        for (Vertex u : tx.getVertices()) assertEquals("Marko Rodriguez", u.value("name"));
+        for (final Vertex u : tx.getVertices()) assertEquals("Marko Rodriguez", u.value("name"));
         v = getOnlyVertex(tx.query().has("name", Text.CONTAINS, "marko"));
         v.property(VertexProperty.Cardinality.single, "name", "Marko");
         e = getOnlyEdge(v.query().direction(Direction.OUT));
@@ -232,12 +247,12 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
         assertCount(1, tx.query().has("name", Text.CONTAINS, "Rubu").edges());
         assertCount(0, tx.query().has("name", Text.CONTAINS, "Hulu").edges());
-        for (Vertex u : tx.getVertices()) assertEquals("Marko", u.value("name"));
+        for (final Vertex u : tx.getVertices()) assertEquals("Marko", u.value("name"));
         clopen();
         assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
         assertCount(1, tx.query().has("name", Text.CONTAINS, "Rubu").edges());
         assertCount(0, tx.query().has("name", Text.CONTAINS, "Hulu").edges());
-        for (Vertex u : tx.getVertices()) assertEquals("Marko", u.value("name"));
+        for (final Vertex u : tx.getVertices()) assertEquals("Marko", u.value("name"));
     }
 
     @Test
@@ -245,11 +260,11 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         if (!indexFeatures.supportsCardinality(Cardinality.LIST)) {
             return;
         }
-        PropertyKey name = makeKey("name", String.class);
+        final PropertyKey name = makeKey("name", String.class);
         if (!indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) {
-            
+
         }
-        PropertyKey alias = mgmt.makePropertyKey("alias") .dataType(String.class).cardinality(Cardinality.LIST).make();
+        final PropertyKey alias = mgmt.makePropertyKey("alias") .dataType(String.class).cardinality(Cardinality.LIST).make();
         mgmt.buildIndex("namev", Vertex.class).addKey(name).addKey(alias, indexFeatures.supportsStringMapping(Mapping.TEXTSTRING) ?Mapping.TEXTSTRING.asParameter(): Mapping.DEFAULT.asParameter()).buildMixedIndex(INDEX);
         finishSchema();
         JanusGraphVertex v = tx.addVertex("name", "Marko Rodriguez");
@@ -272,14 +287,14 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             assertCount(1, tx.query().has("alias", Cmp.EQUAL, "mRodriguez").vertices());
         }
     }
-    
+
     @Test
     public void testSetUpdate() {
         if (!indexFeatures.supportsCardinality(Cardinality.SET)) {
             return;
         }
-        PropertyKey name = makeKey("name", String.class);
-        PropertyKey alias = mgmt.makePropertyKey("alias").dataType(String.class).cardinality(Cardinality.SET).make();
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey alias = mgmt.makePropertyKey("alias").dataType(String.class).cardinality(Cardinality.SET).make();
         mgmt.buildIndex("namev", Vertex.class).addKey(name).addKey(alias, indexFeatures.supportsStringMapping(Mapping.TEXTSTRING) ?Mapping.TEXTSTRING.asParameter(): Mapping.DEFAULT.asParameter()).buildMixedIndex(INDEX);
         finishSchema();
         JanusGraphVertex v = tx.addVertex("name", "Marko Rodriguez");
@@ -307,7 +322,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     @Test
     public void testIndexing() throws InterruptedException {
 
-        PropertyKey text = makeKey("text", String.class);
+        final PropertyKey text = makeKey("text", String.class);
         createExternalVertexIndex(text, INDEX);
         createExternalEdgeIndex(text, INDEX);
 
@@ -315,23 +330,23 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         mgmt.addIndexKey(getExternalIndex(Vertex.class,INDEX),name, Parameter.of("mapping", Mapping.TEXT));
         mgmt.addIndexKey(getExternalIndex(Edge.class,INDEX),name, Parameter.of("mapping", Mapping.TEXT));
 
-        PropertyKey location = makeKey("location", Geoshape.class);
+        final PropertyKey location = makeKey("location", Geoshape.class);
         createExternalVertexIndex(location, INDEX);
         createExternalEdgeIndex(location, INDEX);
 
-        PropertyKey boundary = makeKey("boundary", Geoshape.class);
+        final PropertyKey boundary = makeKey("boundary", Geoshape.class);
         mgmt.addIndexKey(getExternalIndex(Vertex.class,INDEX),boundary, Parameter.of("mapping", Mapping.PREFIX_TREE), Parameter.of("index-geo-dist-error-pct", 0.0025));
         mgmt.addIndexKey(getExternalIndex(Edge.class,INDEX),boundary, Parameter.of("mapping", Mapping.PREFIX_TREE), Parameter.of("index-geo-dist-error-pct", 0.0025));
 
-        PropertyKey time = makeKey("time", Long.class);
+        final PropertyKey time = makeKey("time", Long.class);
         createExternalVertexIndex(time, INDEX);
         createExternalEdgeIndex(time, INDEX);
 
-        PropertyKey category = makeKey("category", Integer.class);
+        final PropertyKey category = makeKey("category", Integer.class);
         mgmt.buildIndex("vcategory", Vertex.class).addKey(category).buildCompositeIndex();
         mgmt.buildIndex("ecategory", Edge.class).addKey(category).buildCompositeIndex();
 
-        PropertyKey group = makeKey("group", Byte.class);
+        final PropertyKey group = makeKey("group", Byte.class);
         createExternalVertexIndex(group, INDEX);
         createExternalEdgeIndex(group, INDEX);
 
@@ -340,14 +355,14 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         finishSchema();
 
         clopen();
-        String[] words = {"world", "aurelius", "janusgraph", "graph"};
-        int numCategories = 5;
-        int numGroups = 10;
-        double distance, offset;
+        final String[] words = {"world", "aurelius", "janusgraph", "graph"};
+        final int numCategories = 5;
+        final int numGroups = 10;
+        double offset;
         int numV = 100;
         final int originalNumV = numV;
         for (int i = 0; i < numV; i++) {
-            JanusGraphVertex v = tx.addVertex();
+            final JanusGraphVertex v = tx.addVertex();
             v.property(VertexProperty.Cardinality.single, "uid", i);
             v.property(VertexProperty.Cardinality.single, "category", i % numCategories);
             v.property(VertexProperty.Cardinality.single, "group", i % numGroups);
@@ -363,7 +378,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 v.property(VertexProperty.Cardinality.single, "boundary", Geoshape.polygon(Arrays.asList(new double[][]
                         {{offset-0.1,offset-0.1},{offset+0.1,offset-0.1},{offset+0.1,offset+0.1},{offset-0.1,offset+0.1},{offset-0.1,offset-0.1}})));
             }
-            Edge e = v.addEdge("knows", getVertex("uid", Math.max(0, i - 1)));
+            final Edge e = v.addEdge("knows", getVertex("uid", Math.max(0, i - 1)));
             e.property("text", "Vertex " + words[i % words.length]);
             e.property("name",words[i % words.length]);
             e.property("time", i);
@@ -389,7 +404,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             try {
                 checkIndexingCounts(words, numV, originalNumV, true);
                 status = 0;
-            } catch (AssertionError e) {
+            } catch (final AssertionError e) {
                 if (retry >= RETRY_COUNT-1) throw e;
                 Thread.sleep(RETRY_INTERVAL);
             }
@@ -397,7 +412,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         newTx();
 
-        int numDelete = 12;
+        final int numDelete = 12;
         for (int i = numV - numDelete; i < numV; i++) {
             getVertex("uid", i).remove();
         }
@@ -415,9 +430,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
             //Test ordering
             if (checkOrder) {
-                for (String orderKey : new String[]{"time", "category"}) {
-                    for (Order order : Order.values()) {
-                        for (JanusGraphQuery traversal : ImmutableList.of(
+                for (final String orderKey : new String[]{"time", "category"}) {
+                    for (final Order order : Order.values()) {
+                        for (final JanusGraphQuery traversal : ImmutableList.of(
                             tx.query().has("text", Text.CONTAINS, word).orderBy(orderKey, order.getTP()),
                             tx.query().has("text", Text.CONTAINS, word).orderBy(orderKey, order.getTP())
                         )) {
@@ -445,8 +460,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertCount(4, tx.query().has("category", 1).interval("time", 10, 28).edges());
 
         assertCount(5, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]).vertices());
-        double offset = (19 * 50.0 / originalNumV);
-        double distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
+        final double offset = (19 * 50.0 / originalNumV);
+        final double distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
         assertCount(5, tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Text.CONTAINS, words[0]).vertices());
         assertCount(5, tx.query().has("boundary", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Text.CONTAINS, words[0]).vertices());
 
@@ -471,16 +486,16 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
      */
     @Test
     public void testBooleanIndexing() {
-        PropertyKey name = makeKey("visible", Boolean.class);
+        final PropertyKey name = makeKey("visible", Boolean.class);
         mgmt.buildIndex("booleanIndex", Vertex.class).
                 addKey(name).buildMixedIndex(INDEX);
         finishSchema();
         clopen();
 
-        JanusGraphVertex v1 = graph.addVertex();
+        final JanusGraphVertex v1 = graph.addVertex();
         v1.property("visible", true);
 
-        JanusGraphVertex v2 = graph.addVertex();
+        final JanusGraphVertex v2 = graph.addVertex();
         v2.property("visible", false);
 
         assertCount(2, graph.vertices());
@@ -503,16 +518,16 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
      */
     @Test
     public void testDateIndexing() {
-        PropertyKey name = makeKey("date", Date.class);
+        final PropertyKey name = makeKey("date", Date.class);
         mgmt.buildIndex("dateIndex", Vertex.class).
                 addKey(name).buildMixedIndex(INDEX);
         finishSchema();
         clopen();
 
-        JanusGraphVertex v1 = graph.addVertex();
+        final JanusGraphVertex v1 = graph.addVertex();
         v1.property("date", new Date(1));
 
-        JanusGraphVertex v2 = graph.addVertex();
+        final JanusGraphVertex v2 = graph.addVertex();
         v2.property("date", new Date(2000));
 
 
@@ -540,18 +555,18 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
      */
     @Test
     public void testInstantIndexing() {
-        PropertyKey name = makeKey("instant", Instant.class);
+        final PropertyKey name = makeKey("instant", Instant.class);
         mgmt.buildIndex("instantIndex", Vertex.class).
                 addKey(name).buildMixedIndex(INDEX);
         finishSchema();
         clopen();
         Instant firstTimestamp = Instant.ofEpochMilli(1);
-        Instant secondTimestamp = Instant.ofEpochMilli(2000);
+        final Instant secondTimestamp = Instant.ofEpochMilli(2000);
 
         JanusGraphVertex v1 = graph.addVertex();
         v1.property("instant", firstTimestamp);
 
-        JanusGraphVertex v2 = graph.addVertex();
+        final JanusGraphVertex v2 = graph.addVertex();
         v2.property("instant", secondTimestamp);
 
         testInstant(firstTimestamp, secondTimestamp, v1, v2);
@@ -566,7 +581,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             try {
                 assertEquals(v1, getOnlyVertex(graph.query().has("instant", Cmp.EQUAL, firstTimestamp)));
                 Assert.fail("Should have failed to update the index");
-            } catch (Exception ignored) {
+            } catch (final Exception ignored) {
 
             }
         }
@@ -596,19 +611,19 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
      */
     @Test
     public void testUUIDIndexing() {
-        PropertyKey name = makeKey("uid", UUID.class);
+        final PropertyKey name = makeKey("uid", UUID.class);
         mgmt.buildIndex("uuidIndex", Vertex.class).
                 addKey(name).buildMixedIndex(INDEX);
         finishSchema();
         clopen();
 
-        UUID uid1 = UUID.randomUUID();
-        UUID uid2 = UUID.randomUUID();
+        final UUID uid1 = UUID.randomUUID();
+        final UUID uid2 = UUID.randomUUID();
 
-        JanusGraphVertex v1 = graph.addVertex();
+        final JanusGraphVertex v1 = graph.addVertex();
         v1.property("uid", uid1);
 
-        JanusGraphVertex v2 = graph.addVertex();
+        final JanusGraphVertex v2 = graph.addVertex();
         v2.property("uid", uid2);
 
         assertCount(2, graph.query().vertices());
@@ -676,19 +691,19 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             //Already exists
             mgmt.buildIndex("index2", Vertex.class).addKey(weight).buildMixedIndex(INDEX);
             fail();
-        } catch (IllegalArgumentException ignored) {
+        } catch (final IllegalArgumentException ignored) {
         }
         try {
             //Already exists
             mgmt.buildIndex("index2", Vertex.class).addKey(weight).buildCompositeIndex();
             fail();
-        } catch (IllegalArgumentException ignored) {
+        } catch (final IllegalArgumentException ignored) {
         }
         try {
             //Key is already added
             mgmt.addIndexKey(index2, weight);
             fail();
-        } catch (IllegalArgumentException ignored) {
+        } catch (final IllegalArgumentException ignored) {
         }
 
         finishSchema();
@@ -722,19 +737,19 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             //Already exists
             mgmt.buildIndex("index2", Vertex.class).addKey(weight).buildMixedIndex(INDEX);
             fail();
-        } catch (IllegalArgumentException ignored) {
+        } catch (final IllegalArgumentException ignored) {
         }
         try {
             //Already exists
             mgmt.buildIndex("index2", Vertex.class).addKey(weight).buildCompositeIndex();
             fail();
-        } catch (IllegalArgumentException ignored) {
+        } catch (final IllegalArgumentException ignored) {
         }
         try {
             //Key is already added
             mgmt.addIndexKey(index2, weight);
             fail();
-        } catch (IllegalArgumentException ignored) {
+        } catch (final IllegalArgumentException ignored) {
         }
 
 
@@ -743,14 +758,14 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
 
         final int numV = 200;
-        String[] strings = {"houseboat", "humanoid", "differential", "extraordinary"};
-        String[] stringsTwo = new String[strings.length];
+        final String[] strings = {"houseboat", "humanoid", "differential", "extraordinary"};
+        final String[] stringsTwo = new String[strings.length];
         for (int i = 0; i < strings.length; i++) stringsTwo[i] = strings[i] + " " + strings[i];
         final int modulo = 5;
         assert numV % (modulo * strings.length * 2) == 0;
 
         for (int i = 0; i < numV; i++) {
-            JanusGraphVertex v = tx.addVertex(i % 2 == 0 ? "person" : "org");
+            final JanusGraphVertex v = tx.addVertex(i % 2 == 0 ? "person" : "org");
             v.property("name", strings[i % strings.length]);
             v.property("text", strings[i % strings.length]);
             v.property("weight", (i % modulo) + 0.5);
@@ -816,27 +831,27 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     @Test
     public void testCompositeAndMixedIndexing() {
-        PropertyKey name = makeKey("name", String.class);
-        PropertyKey weight = makeKey("weight", Double.class);
-        PropertyKey text = makeKey("text", String.class);
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey weight = makeKey("weight", Double.class);
+        final PropertyKey text = makeKey("text", String.class);
         makeKey("flag", Boolean.class);
 
-        JanusGraphIndex composite = mgmt.buildIndex("composite", Vertex.class).addKey(name).addKey(weight).buildCompositeIndex();
-        JanusGraphIndex mixed = mgmt.buildIndex("mixed", Vertex.class).addKey(weight)
+        final JanusGraphIndex composite = mgmt.buildIndex("composite", Vertex.class).addKey(name).addKey(weight).buildCompositeIndex();
+        final JanusGraphIndex mixed = mgmt.buildIndex("mixed", Vertex.class).addKey(weight)
                 .addKey(text, getTextMapping()).buildMixedIndex(INDEX);
         mixed.name();
         composite.name();
         finishSchema();
 
         final int numV = 100;
-        String[] strings = {"houseboat", "humanoid", "differential", "extraordinary"};
-        String[] stringsTwo = new String[strings.length];
+        final String[] strings = {"houseboat", "humanoid", "differential", "extraordinary"};
+        final String[] stringsTwo = new String[strings.length];
         for (int i = 0; i < strings.length; i++) stringsTwo[i] = strings[i] + " " + strings[i];
         final int modulo = 5;
         final int divisor = modulo * strings.length;
 
         for (int i = 0; i < numV; i++) {
-            JanusGraphVertex v = tx.addVertex();
+            final JanusGraphVertex v = tx.addVertex();
             v.property("name", strings[i % strings.length]);
             v.property("text", strings[i % strings.length]);
             v.property("weight", (i % modulo) + 0.5);
@@ -889,15 +904,15 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     private void setupChainGraph(int numV, String[] strings, boolean sameNameMapping) {
         clopen(option(INDEX_NAME_MAPPING, INDEX), sameNameMapping);
-        JanusGraphIndex vindex = getExternalIndex(Vertex.class, INDEX);
-        JanusGraphIndex eindex = getExternalIndex(Edge.class, INDEX);
-        JanusGraphIndex pindex = getExternalIndex(JanusGraphVertexProperty.class, INDEX);
-        PropertyKey name = makeKey("name", String.class);
+        final JanusGraphIndex vindex = getExternalIndex(Vertex.class, INDEX);
+        final JanusGraphIndex eindex = getExternalIndex(Edge.class, INDEX);
+        final JanusGraphIndex pindex = getExternalIndex(JanusGraphVertexProperty.class, INDEX);
+        final PropertyKey name = makeKey("name", String.class);
 
         mgmt.addIndexKey(vindex, name, getStringMapping());
         mgmt.addIndexKey(eindex, name, getStringMapping());
         mgmt.addIndexKey(pindex, name, getStringMapping(), Parameter.of("mapped-name", "xstr"));
-        PropertyKey text = makeKey("text", String.class);
+        final PropertyKey text = makeKey("text", String.class);
         mgmt.addIndexKey(vindex, text, getTextMapping(), Parameter.of("mapped-name", "xtext"));
         mgmt.addIndexKey(eindex, text, getTextMapping());
         mgmt.addIndexKey(pindex, text, getTextMapping());
@@ -906,7 +921,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         finishSchema();
         JanusGraphVertex previous = null;
         for (int i = 0; i < numV; i++) {
-            JanusGraphVertex v = graph.addVertex("name", strings[i % strings.length], "text", strings[i % strings.length]);
+            final JanusGraphVertex v = graph.addVertex("name", strings[i % strings.length], "text", strings[i % strings.length]);
             v.addEdge("knows", previous == null ? v : previous,
                     "name", strings[i % strings.length], "text", strings[i % strings.length]);
             v.property("uid", "v" + i,
@@ -920,8 +935,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
      */
     @Test
     public void testIndexParameters() {
-        int numV = 1000;
-        String[] strings = {"Uncle Berry has a farm", "and on his farm he has five ducks", "ducks are beautiful animals", "the sky is very blue today"};
+        final int numV = 1000;
+        final String[] strings = {"Uncle Berry has a farm", "and on his farm he has five ducks", "ducks are beautiful animals", "the sky is very blue today"};
         setupChainGraph(numV, strings, false);
 
         evaluateQuery(graph.query().has("text", Text.CONTAINS, "ducks"),
@@ -1043,8 +1058,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     public void testRawQueries() {
         if (!supportsLuceneStyleQueries()) return;
 
-        int numV = 1000;
-        String[] strings = {"Uncle Berry has a farm", "and on his farm he has five ducks", "ducks are beautiful animals", "the sky is very blue today"};
+        final int numV = 1000;
+        final String[] strings = {"Uncle Berry has a farm", "and on his farm he has five ducks", "ducks are beautiful animals", "the sky is very blue today"};
         setupChainGraph(numV, strings, true);
         clopen();
 
@@ -1114,7 +1129,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         Parameter desc_sort_p = null;
 
         // ElasticSearch and Solr have different formats for sort parameters
-        String backend = readConfig.get(INDEX_BACKEND, INDEX);
+        final String backend = readConfig.get(INDEX_BACKEND, INDEX);
         switch (backend) {
             case "elasticsearch":
                 final Map<String, String> sortAsc = new HashMap<>();
@@ -1140,9 +1155,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         mgmt.buildIndex("store1", Vertex.class).addKey(field1Key).buildMixedIndex(INDEX);
         mgmt.commit();
 
-        JanusGraphVertex v1 = tx.addVertex();
-        JanusGraphVertex v2 = tx.addVertex();
-        JanusGraphVertex v3 = tx.addVertex();
+        final JanusGraphVertex v1 = tx.addVertex();
+        final JanusGraphVertex v2 = tx.addVertex();
+        final JanusGraphVertex v3 = tx.addVertex();
 
         v1.property("field1", "Hello Hello Hello Hello Hello Hello Hello Hello world");
         v2.property("field1", "Hello blue and yellow meet green");
@@ -1166,8 +1181,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     public void testDualMapping() {
         if (!indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) return;
 
-        PropertyKey name = makeKey("name", String.class);
-        JanusGraphIndex mixed = mgmt.buildIndex("mixed", Vertex.class).addKey(name, Mapping.TEXTSTRING.asParameter()).buildMixedIndex(INDEX);
+        final PropertyKey name = makeKey("name", String.class);
+        final JanusGraphIndex mixed = mgmt.buildIndex("mixed", Vertex.class).addKey(name, Mapping.TEXTSTRING.asParameter()).buildMixedIndex(INDEX);
         mixed.name();
         finishSchema();
 
@@ -1234,11 +1249,11 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 , option(TestMockIndexProvider.INDEX_MOCK_FAILADD, INDEX), true
         );
 
-        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-        PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
+        final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        final PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
         mgmt.buildIndex("mi", Vertex.class).addKey(name, getTextMapping()).addKey(age).buildMixedIndex(INDEX);
         finishSchema();
-        Vertex vs[] = new JanusGraphVertex[4];
+        final Vertex vs[] = new JanusGraphVertex[4];
 
         vs[0] = tx.addVertex("name", "Big Boy Bobson", "age", 55);
         newTx();
@@ -1263,12 +1278,12 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         /*
         Transaction Recovery
          */
-        TransactionRecovery recovery = JanusGraphFactory.startTransactionRecovery(graph, startTime);
+        final TransactionRecovery recovery = JanusGraphFactory.startTransactionRecovery(graph, startTime);
         //wait
         Thread.sleep(12000L);
 
         recovery.shutdown();
-        long[] recoveryStats = ((StandardTransactionLogProcessor) recovery).getStatistics();
+        final long[] recoveryStats = ((StandardTransactionLogProcessor) recovery).getStatistics();
 
         clopen();
 
@@ -1294,7 +1309,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     @Test
     public void testIndexUpdatesWithoutReindex() throws InterruptedException, ExecutionException {
-        Object[] settings = new Object[]{option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
+        final Object[] settings = new Object[]{option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
                 option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
                 option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250)
         };
@@ -1307,7 +1322,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         //Creates types and index only two keys key
         mgmt.makePropertyKey("time").dataType(Integer.class).make();
-        PropertyKey text = mgmt.makePropertyKey("text").dataType(String.class).make();
+        final PropertyKey text = mgmt.makePropertyKey("text").dataType(String.class).make();
 
         mgmt.makePropertyKey("height").dataType(Double.class).make();
         if (indexFeatures.supportsCardinality(Cardinality.LIST)) {
@@ -1341,7 +1356,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         //Add another key to index ------------------------------------------------------
         finishSchema();
-        PropertyKey time = mgmt.getPropertyKey("time");
+        final PropertyKey time = mgmt.getPropertyKey("time");
         mgmt.addIndexKey(mgmt.getGraphIndex("theIndex"), time, getFieldMap(time));
         finishSchema();
         newTx();
@@ -1386,10 +1401,10 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         //Add another key to index ------------------------------------------------------
         finishSchema();
-        PropertyKey height = mgmt.getPropertyKey("height");
+        final PropertyKey height = mgmt.getPropertyKey("height");
         mgmt.addIndexKey(mgmt.getGraphIndex("theIndex"), height);
         if (indexFeatures.supportsCardinality(Cardinality.LIST)) {
-            PropertyKey phone = mgmt.getPropertyKey("phone");
+            final PropertyKey phone = mgmt.getPropertyKey("phone");
             mgmt.addIndexKey(mgmt.getGraphIndex("theIndex"), phone, new Parameter("mapping", Mapping.STRING));
         }
         finishSchema();
@@ -1406,7 +1421,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         finishSchema();
 
         JanusGraphIndex index = mgmt.getGraphIndex("theIndex");
-        for (PropertyKey key : index.getFieldKeys()) {
+        for (final PropertyKey key : index.getFieldKeys()) {
             assertEquals(SchemaStatus.ENABLED, index.getIndexStatus(key));
         }
 
@@ -1466,7 +1481,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         finishSchema();
 
         index = mgmt.getGraphIndex("theIndex");
-        for (PropertyKey key : index.getFieldKeys()) {
+        for (final PropertyKey key : index.getFieldKeys()) {
             assertEquals(SchemaStatus.DISABLED, index.getIndexStatus(key));
         }
 
@@ -1479,8 +1494,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     private void addVertex(int time, String text, double height, String[] phones) {
         newTx();
-        JanusGraphVertex v = tx.addVertex("text", text, "time", time, "height", height);
-        for (String phone : phones) {
+        final JanusGraphVertex v = tx.addVertex("text", text, "time", time, "height", height);
+        for (final String phone : phones) {
             v.property("phone", phone);
         }
 
@@ -1499,11 +1514,11 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             return;
         }
 
-        PropertyKey name = makeKey("name", String.class);
-        PropertyKey time = makeKey("time", Long.class);
-        PropertyKey text = makeKey("text", String.class);
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey time = makeKey("time", Long.class);
+        final PropertyKey text = makeKey("text", String.class);
 
-        VertexLabel event = mgmt.makeVertexLabel("event").setStatic().make();
+        final VertexLabel event = mgmt.makeVertexLabel("event").setStatic().make();
         final int eventTTLSeconds = (int) TestGraphConfigs.getTTL(TimeUnit.SECONDS);
         mgmt.setTTL(event, Duration.ofSeconds(eventTTLSeconds));
 
@@ -1520,12 +1535,12 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         JanusGraphVertex v1 = tx.addVertex("event");
         v1.property(VertexProperty.Cardinality.single, "name", "first event");
         v1.property(VertexProperty.Cardinality.single, "text", "this text will help to identify the first event");
-        long time1 = System.currentTimeMillis();
+        final long time1 = System.currentTimeMillis();
         v1.property(VertexProperty.Cardinality.single, "time", time1);
         JanusGraphVertex v2 = tx.addVertex("event");
         v2.property(VertexProperty.Cardinality.single, "name", "second event");
         v2.property(VertexProperty.Cardinality.single, "text", "this text won't match");
-        long time2 = time1 + 1;
+        final long time2 = time1 + 1;
         v2.property(VertexProperty.Cardinality.single, "time", time2);
 
         evaluateQuery(tx.query().has("name", "first event").orderBy("time", decr),
@@ -1535,8 +1550,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         clopen();
 
-        Object v1Id = v1.id();
-        Object v2Id = v2.id();
+        final Object v1Id = v1.id();
+        final Object v2Id = v2.id();
 
         evaluateQuery(tx.query().has("name", "first event").orderBy("time", decr),
                 ElementCategory.VERTEX, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC, "index1");
@@ -1572,11 +1587,11 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             return;
         }
 
-        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-        PropertyKey text = mgmt.makePropertyKey("text").dataType(String.class).make();
-        PropertyKey time = makeKey("time", Long.class);
+        final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        final PropertyKey text = mgmt.makePropertyKey("text").dataType(String.class).make();
+        final PropertyKey time = makeKey("time", Long.class);
 
-        EdgeLabel label = mgmt.makeEdgeLabel("likes").make();
+        final EdgeLabel label = mgmt.makeEdgeLabel("likes").make();
         final int likesTTLSeconds = (int) TestGraphConfigs.getTTL(TimeUnit.SECONDS);
         mgmt.setTTL(label, Duration.ofSeconds(likesTTLSeconds));
 
@@ -1592,16 +1607,16 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         JanusGraphVertex v1 = tx.addVertex(), v2 = tx.addVertex(), v3 = tx.addVertex();
 
         Edge e1 = v1.addEdge("likes", v2, "name", "v1 likes v2", "text", "this will help to identify the edge");
-        long time1 = System.currentTimeMillis();
+        final long time1 = System.currentTimeMillis();
         e1.property("time", time1);
         Edge e2 = v2.addEdge("likes", v3, "name", "v2 likes v3", "text", "this won't match anything");
-        long time2 = time1 + 1;
+        final long time2 = time1 + 1;
         e2.property("time", time2);
 
         tx.commit();
 
         clopen();
-        Object e1Id = e1.id();
+        final Object e1Id = e1.id();
         e2.id();
 
         evaluateQuery(tx.query().has("text", Text.CONTAINS, "help").has(LABEL_NAME, "likes"),
@@ -1681,14 +1696,14 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     @Test
-    public void testIndexQueryWithScore() {
-        PropertyKey textKey = mgmt.makePropertyKey("text").dataType(String.class).make();
+    public void testIndexQueryWithScore() throws InterruptedException {
+        final PropertyKey textKey = mgmt.makePropertyKey("text").dataType(String.class).make();
         mgmt.buildIndex("store1", Vertex.class).addKey(textKey).buildMixedIndex(INDEX);
         mgmt.commit();
 
-        JanusGraphVertex v1 = tx.addVertex();
-        JanusGraphVertex v2 = tx.addVertex();
-        JanusGraphVertex v3 = tx.addVertex();
+        final JanusGraphVertex v1 = tx.addVertex();
+        final JanusGraphVertex v2 = tx.addVertex();
+        final JanusGraphVertex v3 = tx.addVertex();
 
         v1.property("text", "Hello Hello Hello Hello Hello Hello Hello Hello world");
         v2.property("text", "Hello abab abab fsdfsd sfdfsd sdffs fsdsdf fdf fsdfsd aera fsad abab abab fsdfsd sfdf");
@@ -1707,13 +1722,13 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     // this tests a case when there as AND with a single CONTAINS condition inside AND(name:(was here))
     // which (in case of Solr) spans multiple conditions such as AND(AND(name:was, name:here))
     // so we need to make sure that we don't apply AND twice.
-    public void testContainsWithMultipleValues() {
-        PropertyKey name = makeKey("name", String.class);
+    public void testContainsWithMultipleValues() throws Exception {
+        final PropertyKey name = makeKey("name", String.class);
 
         mgmt.buildIndex("store1", Vertex.class).addKey(name).buildMixedIndex(INDEX);
         mgmt.commit();
 
-        JanusGraphVertex v1 = tx.addVertex();
+        final JanusGraphVertex v1 = tx.addVertex();
         v1.property("name", "hercules was here");
 
         tx.commit();
@@ -1745,20 +1760,20 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         final String propName = "foo";
 
         // Write schema and one vertex
-        PropertyKey prop = makeKey(propName, String.class);
+        final PropertyKey prop = makeKey(propName, String.class);
         createExternalVertexIndex(prop, INDEX);
         finishSchema();
 
-        JanusGraphVertex v = graph.addVertex();
+        final JanusGraphVertex v = graph.addVertex();
         if (null != initialValue)
             v.property(VertexProperty.Cardinality.single, propName, initialValue);
         graph.tx().commit();
 
-        Object id = v.id();
+        final Object id = v.id();
 
         // Open two transactions and modify the same vertex
-        JanusGraphTransaction vertexDeleter = graph.newTransaction();
-        JanusGraphTransaction propDeleter = graph.newTransaction();
+        final JanusGraphTransaction vertexDeleter = graph.newTransaction();
+        final JanusGraphTransaction propDeleter = graph.newTransaction();
 
         getV(vertexDeleter, id).remove();
         if (null == updatedValue)
@@ -1784,14 +1799,14 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     @Test
     public void testWidcardQuery() {
         if (supportsWildcardQuery()) {
-            PropertyKey p1 = makeKey("p1", String.class);
-            PropertyKey p2 = makeKey("p2", String.class);
+            final PropertyKey p1 = makeKey("p1", String.class);
+            final PropertyKey p2 = makeKey("p2", String.class);
             mgmt.buildIndex("mixedIndex", Vertex.class).addKey(p1).addKey(p2).buildMixedIndex(INDEX);
 
             finishSchema();
             clopen();
 
-            JanusGraphVertex v1 = graph.addVertex();
+            final JanusGraphVertex v1 = graph.addVertex();
             v1.property("p1", "test1");
             v1.property("p2", "test2");
 
@@ -1824,11 +1839,11 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     private void testIndexing(Cardinality cardinality) {
         if (supportsCollections()) {
-            PropertyKey stringProperty = mgmt.makePropertyKey("name").dataType(String.class).cardinality(cardinality).make();
-            PropertyKey intProperty = mgmt.makePropertyKey("age").dataType(Integer.class).cardinality(cardinality).make();
-            PropertyKey longProperty = mgmt.makePropertyKey("long").dataType(Long.class).cardinality(cardinality).make();
-            PropertyKey uuidProperty = mgmt.makePropertyKey("uuid").dataType(UUID.class).cardinality(cardinality).make();
-            PropertyKey geopointProperty = mgmt.makePropertyKey("geopoint").dataType(Geoshape.class).cardinality(cardinality).make();
+            final PropertyKey stringProperty = mgmt.makePropertyKey("name").dataType(String.class).cardinality(cardinality).make();
+            final PropertyKey intProperty = mgmt.makePropertyKey("age").dataType(Integer.class).cardinality(cardinality).make();
+            final PropertyKey longProperty = mgmt.makePropertyKey("long").dataType(Long.class).cardinality(cardinality).make();
+            final PropertyKey uuidProperty = mgmt.makePropertyKey("uuid").dataType(UUID.class).cardinality(cardinality).make();
+            final PropertyKey geopointProperty = mgmt.makePropertyKey("geopoint").dataType(Geoshape.class).cardinality(cardinality).make();
             mgmt.buildIndex("collectionIndex", Vertex.class).addKey(stringProperty, getStringMapping()).addKey(intProperty).addKey(longProperty).addKey(uuidProperty).addKey(geopointProperty).buildMixedIndex(INDEX);
 
             finishSchema();
@@ -1836,19 +1851,19 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             testCollection(cardinality, "age", 1, 2);
             testCollection(cardinality, "long", 1L, 2L);
             testCollection(cardinality, "geopoint", Geoshape.point(1.0, 1.0), Geoshape.point(2.0, 2.0));
-            String backend = readConfig.get(INDEX_BACKEND, INDEX);
-            // Solr 6 has issues processing UUIDs with Multivalues 
+            final String backend = readConfig.get(INDEX_BACKEND, INDEX);
+            // Solr 6 has issues processing UUIDs with Multivalues
             // https://issues.apache.org/jira/browse/SOLR-11264
             if (!"solr".equals(backend)) {
                 testCollection(cardinality, "uuid", UUID.randomUUID(), UUID.randomUUID());
             }
         } else {
             try {
-                PropertyKey stringProperty = mgmt.makePropertyKey("name").dataType(String.class).cardinality(cardinality).make();
+                final PropertyKey stringProperty = mgmt.makePropertyKey("name").dataType(String.class).cardinality(cardinality).make();
                 //This should throw an exception
                 mgmt.buildIndex("collectionIndex", Vertex.class).addKey(stringProperty, getStringMapping()).buildMixedIndex(INDEX);
                 Assert.fail("Should have thrown an exception");
-            } catch (JanusGraphException ignored) {
+            } catch (final JanusGraphException ignored) {
 
             }
         }
@@ -1930,7 +1945,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         clopen(); // Flush the index
         g = graph.traversal();
         v1 = g.addV().property(property, value1).property(property, value2).next();
-        Vertex v2 = g.addV().property(property, value1).property(property, value2).next();
+        g.addV().property(property, value1).property(property, value2).next();
         clopen(); // Flush the index
         g = graph.traversal();
         assertEquals(2, g.V().has(property, value1).toList().size());
@@ -1942,9 +1957,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     private void testGeo(int i, int origNumV, int numV) {
-        double offset = (i * 50.0 / origNumV);
-        double bufferKm = 20;
-        double distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + bufferKm;
+        final double offset = (i * 50.0 / origNumV);
+        final double bufferKm = 20;
+        final double distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + bufferKm;
 
         assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).vertices());
         assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges());
@@ -1966,10 +1981,10 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             assertCount(i % 2, tx.query().has("boundary", Geo.CONTAINS, Geoshape.point(-offset, -offset)).edges());
         }
 
-        double buffer = bufferKm/111.;
-        double min = -Math.abs(offset);
-        double max = Math.abs(offset);
-        Geoshape bufferedBox = Geoshape.box(min-buffer, min-buffer, max+buffer, max+buffer);
+        final double buffer = bufferKm/111.;
+        final double min = -Math.abs(offset);
+        final double max = Math.abs(offset);
+        final Geoshape bufferedBox = Geoshape.box(min-buffer, min-buffer, max+buffer, max+buffer);
         assertCount(i + 1, tx.query().has("location", Geo.WITHIN, bufferedBox).vertices());
         assertCount(i + 1, tx.query().has("location", Geo.WITHIN, bufferedBox).edges());
         assertCount(i + 1, tx.query().has("location", Geo.INTERSECT, bufferedBox).vertices());
@@ -1977,7 +1992,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertCount(numV-(i + 1), tx.query().has("location", Geo.DISJOINT, bufferedBox).vertices());
         assertCount(numV-(i + 1), tx.query().has("location", Geo.DISJOINT, bufferedBox).edges());
         if (i > 0) {
-            Geoshape exactBox = Geoshape.box(min, min, max, max);
+            final Geoshape exactBox = Geoshape.box(min, min, max, max);
             assertCount(i, tx.query().has("boundary", Geo.WITHIN, exactBox).vertices());
             assertCount(i, tx.query().has("boundary", Geo.WITHIN, exactBox).edges());
         }
@@ -1986,10 +2001,10 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertCount(numV-(i + 1), tx.query().has("boundary", Geo.DISJOINT, bufferedBox).vertices());
         assertCount(numV-(i + 1), tx.query().has("boundary", Geo.DISJOINT, bufferedBox).edges());
 
-        Geoshape bufferedPoly = Geoshape.polygon(Arrays.asList(new double[][]
+        final Geoshape bufferedPoly = Geoshape.polygon(Arrays.asList(new double[][]
                 {{min-buffer,min-buffer},{max+buffer,min-buffer},{max+buffer,max+buffer},{min-buffer,max+buffer},{min-buffer,min-buffer}}));
         if (i > 0) {
-            Geoshape exactPoly = Geoshape.polygon(Arrays.asList(new double[][]
+            final Geoshape exactPoly = Geoshape.polygon(Arrays.asList(new double[][]
                     {{min,min},{max,min},{max,max},{min,max},{min,min}}));
             assertCount(i, tx.query().has("boundary", Geo.WITHIN, exactPoly).vertices());
             assertCount(i, tx.query().has("boundary", Geo.WITHIN, exactPoly).edges());
@@ -2002,22 +2017,201 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     @Test
     public void shouldAwaitMultipleStatuses() throws InterruptedException, ExecutionException {
-        PropertyKey key1 = makeKey("key1", String.class);
-        JanusGraphIndex index = mgmt.buildIndex("randomMixedIndex", Vertex.class).addKey(key1).buildMixedIndex(INDEX);
+        final PropertyKey key1 = makeKey("key1", String.class);
+        final JanusGraphIndex index = mgmt.buildIndex("randomMixedIndex", Vertex.class).addKey(key1).buildMixedIndex(INDEX);
         if (index.getIndexStatus(key1) == SchemaStatus.INSTALLED) {
             mgmt.updateIndex(mgmt.getGraphIndex("randomMixedIndex"), SchemaAction.REGISTER_INDEX).get();
             mgmt.updateIndex(mgmt.getGraphIndex("randomMixedIndex"), SchemaAction.ENABLE_INDEX).get();
         } else if (index.getIndexStatus(key1) == SchemaStatus.REGISTERED) {
             mgmt.updateIndex(mgmt.getGraphIndex("randomMixedIndex"), SchemaAction.ENABLE_INDEX).get();
         }
-        PropertyKey key2 = makeKey("key2", String.class);
+        final PropertyKey key2 = makeKey("key2", String.class);
         mgmt.addIndexKey(index, key2);
         mgmt.commit();
         //key1 now has status ENABLED, let's ensure we can watch for REGISTERED and ENABLED
         try {
             ManagementSystem.awaitGraphIndexStatus(graph, "randomMixedIndex").status(SchemaStatus.REGISTERED, SchemaStatus.ENABLED).call();
-        } catch (Exception e) {
+        } catch (final Exception e) {
             Assert.fail("Failed to awaitGraphIndexStatus on multiple statuses.");
+        }
+    }
+
+    @Test
+    public void testAndForceIndex() throws Exception {
+        JanusGraph customGraph = null;
+        try {
+            customGraph = this.getForceIndexGraph();
+            final JanusGraphManagement management = customGraph.openManagement();
+            final PropertyKey nameProperty = management.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+            final PropertyKey ageProperty = management.makePropertyKey("age").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+            management.buildIndex("oridx", Vertex.class).addKey(nameProperty, getStringMapping()).addKey(ageProperty).buildMixedIndex(INDEX);
+            management.commit();
+            customGraph.tx().commit();
+            final GraphTraversalSource g = customGraph.traversal();
+            g.addV().property("name", "Hiro").property("age", 2).next();
+            g.addV().property("name", "Totoro").property("age", 1).next();
+            customGraph.tx().commit();
+            assertCount(1, g.V().has("name", "Totoro"));
+            assertCount(1, g.V().has("age", 2));
+            assertCount(1, g.V().and(__.has("name", "Hiro"),__.has("age", 2)));
+            assertCount(0, g.V().and(__.has("name", "Totoro"),__.has("age", 2)));
+        } finally {
+            if (customGraph != null) {
+                JanusGraphFactory.close(customGraph);
+            }
+        }
+    }
+
+    @Test
+    public void testOrForceIndexUniqueMixedIndex() throws Exception {
+        JanusGraph customGraph = null;
+        try {
+            customGraph = this.getForceIndexGraph();
+            final JanusGraphManagement management = customGraph.openManagement();
+            final PropertyKey nameProperty = management.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+            final PropertyKey ageProperty = management.makePropertyKey("age").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+            final PropertyKey lengthProperty = management.makePropertyKey("length").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+            management.buildIndex("oridx", Vertex.class).addKey(nameProperty, getStringMapping()).addKey(ageProperty).addKey(lengthProperty).buildMixedIndex(INDEX);
+            management.commit();
+            customGraph.tx().commit();
+            testOr(customGraph);
+        } finally {
+            if (customGraph != null) {
+                JanusGraphFactory.close(customGraph);
+            }
+        }
+    }
+
+    @Test
+    public void testOrForceIndexMixedAndCompositeIndex() throws Exception {
+        JanusGraph customGraph = null;
+        try {
+            customGraph = this.getForceIndexGraph();
+            final JanusGraphManagement management = customGraph.openManagement();
+            final PropertyKey nameProperty = management.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+            final PropertyKey ageProperty = management.makePropertyKey("age").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+            final PropertyKey lengthProperty = management.makePropertyKey("length").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+            management.buildIndex("nameidx", Vertex.class).addKey(nameProperty, getStringMapping()).buildMixedIndex(INDEX);
+            management.buildIndex("ageridx", Vertex.class).addKey(ageProperty).buildCompositeIndex();
+            management.buildIndex("lengthidx", Vertex.class).addKey(lengthProperty).buildMixedIndex(INDEX);
+            management.commit();
+            customGraph.tx().commit();
+            testOr(customGraph);
+        } finally {
+            if (customGraph != null) {
+                JanusGraphFactory.close(customGraph);
+            }
+        }
+    }
+
+    @Test
+    public void testOrPartialIndex() {
+        final PropertyKey nameProperty = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makePropertyKey("age").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        final PropertyKey lengthProperty = mgmt.makePropertyKey("length").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex("otheridx", Vertex.class).addKey(nameProperty, getStringMapping()).addKey(lengthProperty).buildMixedIndex(INDEX);
+        finishSchema();
+        clopen();
+        testOr(graph);
+    }
+
+    private void testOr(final Graph aGraph) {
+        final GraphTraversalSource g = aGraph.traversal();
+        final Vertex hiro = g.addV().property("name", "Hiro").property("age", 2).property("length", 90).next();
+        final Vertex totoro = g.addV().property("name", "Totoro").property("age", 1).next();
+        final Vertex john = g.addV().property("name", "John").property("age", 3).property("length", 110).next();
+        final Vertex mike = g.addV().property("name", "Mike").property("age", 4).property("length", 130).next();
+        aGraph.tx().commit();
+
+        assertCount(1, g.V().has("name", "Totoro"));
+        assertCount(1, g.V().has("age", 2));
+        assertCount(1, g.V().or(__.has("name", "Hiro"),__.has("age", 2)));
+        assertCount(2, g.V().or(__.has("name", "Totoro"),__.has("age", 2)));
+        assertCount(2, g.V().or(__.has("name", "Totoro").has("age", 1),__.has("age", 2)));
+        assertCount(2, g.V().or(__.and(__.has("name", "Totoro"), __.has("age", 1)),__.has("age", 2)));
+
+        assertTraversal(g.V().has("length", P.lte(100)).or(__.has("name", "Totoro"),__.has("age", P.gte(2))), hiro);
+        assertTraversal(g.V().or(__.has("name", "Totoro"),__.has("age", P.gte(2))).has("length", P.lte(100)), hiro);
+
+        assertTraversal(g.V().or(__.has("name", "Totoro"),__.has("age", 2)).order().by(ORDER_AGE_DECR), hiro, totoro);
+        assertTraversal(g.V().or(__.has("name", "Totoro"),__.has("age", 2)).order().by(ORDER_AGE_INCR), totoro, hiro);
+        assertTraversal(g.V().or(__.has("name", "Hiro"),__.has("age", 2)).order().by(ORDER_AGE_INCR), hiro);
+
+        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(120)).order().by(ORDER_LENGTH_DECR)), totoro, john, hiro);
+        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(120)).order().by(ORDER_LENGTH_INCR)), totoro, hiro, john);
+        assertTraversal(g.V().or(__.has("name", "John"), __.has("length", P.lte(120)).order().by(ORDER_LENGTH_INCR)), john, hiro);
+
+        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(120)).order().by(ORDER_AGE_DECR)), totoro, john, hiro);
+        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(120)).order().by(ORDER_AGE_INCR)), totoro, hiro, john);
+
+        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(120)).order().by(ORDER_LENGTH_DECR)).order().by(ORDER_AGE_INCR), totoro, hiro, john);
+        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(120)).order().by(ORDER_LENGTH_INCR)).order().by(ORDER_AGE_DECR), john, hiro, totoro);
+
+        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(120))).order().by(ORDER_AGE_INCR).limit(2), totoro, hiro);
+        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(120))).order().by(ORDER_AGE_INCR).range(2, 3), john);
+
+        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(130)).order().by(ORDER_LENGTH_INCR).limit(1)), totoro, hiro);
+        assertTraversal(g.V().or(__.has("name", "Hiro"), __.has("length", P.lte(130)).order().by(ORDER_LENGTH_INCR).limit(1)), hiro);
+        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(130)).order().by(ORDER_LENGTH_INCR).range(1, 2)), totoro, john);
+        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(130)).order().by(ORDER_LENGTH_INCR).range(1, 3)).limit(2), totoro, john);
+
+        assertTraversal(g.V().has("length", P.gte(130).or(P.lt(100))).order().by(ORDER_AGE_INCR), hiro, mike);
+        assertTraversal(g.V().has("length", P.gte(80).and(P.gte(130).or(P.lt(100)))).order().by(ORDER_AGE_INCR), hiro, mike);
+        if (indexFeatures.supportNotQueryNormalForm()) {
+            assertTraversal(g.V().has("length", P.gte(80).and(P.gte(130)).or(P.gte(80).and(P.lt(100)))).order().by(ORDER_AGE_INCR), hiro, mike);
+        }
+
+    }
+
+    @Test
+    public void testOrForceIndexPartialIndex() throws Exception {
+        JanusGraph customGraph = null;
+        try {
+            customGraph = this.getForceIndexGraph();
+            final JanusGraphManagement management = customGraph.openManagement();
+            final PropertyKey stringProperty = management.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+            management.makePropertyKey("age").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+            management.buildIndex("oridx", Vertex.class).addKey(stringProperty, getStringMapping()).buildMixedIndex(INDEX);
+            management.commit();
+            customGraph.tx().commit();
+            final GraphTraversalSource g = customGraph.traversal();
+            g.addV().property("name", "Hiro").property("age", 2).next();
+            g.addV().property("name", "Totoro").property("age", 1).next();
+            customGraph.tx().commit();
+            g.V().or(__.has("name", "Totoro"),__.has("age", 2)).hasNext();
+            fail("should fail");
+        } catch (final JanusGraphException e){
+            assertTrue(e.getMessage().contains("Could not find a suitable index to answer graph query and graph scans are disabled"));
+        } finally {
+            if (customGraph != null) {
+                JanusGraphFactory.close(customGraph);
+            }
+        }
+    }
+
+    @Test
+    public void testOrForceIndexComposite() throws Exception {
+        JanusGraph customGraph = null;
+        try {
+            customGraph = this.getForceIndexGraph();
+            final JanusGraphManagement management = customGraph.openManagement();
+            management.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+            final PropertyKey ageProperty = management.makePropertyKey("age").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+            management.buildIndex("ageridx", Vertex.class).addKey(ageProperty).buildCompositeIndex();
+            management.commit();
+            customGraph.tx().commit();
+            final GraphTraversalSource g = customGraph.traversal();
+            g.addV().property("name", "Hiro").property("age", 2).next();
+            g.addV().property("name", "Totoro").property("age", 1).next();
+            customGraph.tx().commit();
+            g.V().has("age", P.gte(4).or(P.lt(2))).hasNext();
+            fail("should fail");
+        } catch (final JanusGraphException e){
+            assertTrue(e.getMessage().contains("Could not find a suitable index to answer graph query and graph scans are disabled"));
+        } finally {
+            if (customGraph != null) {
+                JanusGraphFactory.close(customGraph);
+            }
         }
     }
 }

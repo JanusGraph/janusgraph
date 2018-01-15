@@ -55,6 +55,8 @@ public interface JanusGraphQuery<Q extends JanusGraphQuery<Q>> {
 
     Q hasNot(String key, Object value);
 
+    Q or(Q subQuery);
+
     <T extends Comparable<?>> Q interval(String key, T startValue, T endValue);
 
     /**
