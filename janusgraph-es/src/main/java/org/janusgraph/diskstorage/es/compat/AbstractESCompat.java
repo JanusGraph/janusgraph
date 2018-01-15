@@ -55,6 +55,7 @@ public abstract class AbstractESCompat {
             .supportsCardinality(Cardinality.SET)
             .supportsNanoseconds()
             .supportsCustomAnalyzer()
+            .supportNotQueryNormalForm()
         ;
     }
 
@@ -180,7 +181,7 @@ public abstract class AbstractESCompat {
         if (!request.getSorts().isEmpty()) {
             requestBody.put("sort", request.getSorts());
         }
-        
+
         Optional.ofNullable(request.getQuery()).ifPresent(parameter -> requestBody.put("query", parameter));
         Optional.ofNullable(parameters).ifPresent(p -> Arrays.stream(p).forEachOrdered(parameter -> requestBody.put(parameter.key(), parameter.value())));
         return requestBody;

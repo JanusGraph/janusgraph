@@ -21,7 +21,6 @@ import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.BackendQueryHolder;
 import org.janusgraph.graphdb.query.BaseQuery;
 import org.janusgraph.graphdb.query.ElementQuery;
-import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.FixedCondition;
 import org.janusgraph.graphdb.query.profile.ProfileObservable;
@@ -64,7 +63,6 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGr
         super(limit);
         Preconditions.checkNotNull(condition);
         Preconditions.checkArgument(orders != null && orders.isImmutable());
-        Preconditions.checkArgument(QueryUtil.isQueryNormalForm(condition));
         Preconditions.checkNotNull(resultType);
         Preconditions.checkNotNull(indexQuery);
         this.condition = condition;
@@ -94,7 +92,7 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGr
 
     @Override
     public String toString() {
-        StringBuilder b = new StringBuilder();
+        final StringBuilder b = new StringBuilder();
         b.append("[").append(condition.toString()).append("]");
         if (!orders.isEmpty()) b.append(getLimit());
         if (hasLimit()) b.append("(").append(getLimit()).append(")");
@@ -112,7 +110,7 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGr
         if (this == other) return true;
         else if (other == null) return false;
         else if (!getClass().isInstance(other)) return false;
-        GraphCentricQuery oth = (GraphCentricQuery) other;
+        final GraphCentricQuery oth = (GraphCentricQuery) other;
         return resultType == oth.resultType && condition.equals(oth.condition) &&
                 orders.equals(oth.getOrder()) && getLimit() == oth.getLimit();
     }
