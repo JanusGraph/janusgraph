@@ -92,6 +92,7 @@ public class LuceneIndex implements IndexProvider {
         .supportsCustomAnalyzer()
         .supportsNanoseconds()
         .supportsGeoContains()
+        .supportNotQueryNormalForm()
         .build();
 
     /**
@@ -821,8 +822,8 @@ public class LuceneIndex implements IndexProvider {
     @Override
     public void close() throws BackendException {
         try {
-            for (IndexWriter w : writers.values()) w.close();
-        } catch (IOException e) {
+            for (final IndexWriter w : writers.values()) w.close();
+        } catch (final IOException e) {
             throw new PermanentBackendException("Could not close writers", e);
         }
     }

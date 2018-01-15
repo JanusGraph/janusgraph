@@ -25,6 +25,7 @@ In the above configuration, the index backend is named `search`. Replace `search
 * *Numeric Range*: Supports all numeric comparisons in `Compare`.
 * *Temporal*: Nanosecond granularity temporal indexing.
 * *Custom Analyzer*: Choose to use a custom analyzer
+* *Not Query-normal-form*: Supports queries other than Query-normal-form (QNF). QNF for JanusGraph is a variant of CNF (conjunctive normal form) with negation inlined where possible.
 
 === Configuration Options
 

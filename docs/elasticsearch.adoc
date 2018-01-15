@@ -12,7 +12,8 @@ JanusGraph supports https://www.elastic.co/[Elasticsearch] as an index backend. 
 * *Flexible Configuration*: Supports remote operation and open-ended settings customization.
 * *Collections*: Supports indexing SET and LIST cardinality properties.
 * *Temporal*: Nanosecond granularity temporal indexing.
-* *Custom Analyzer*: Choose to use a custom analyzer
+* *Custom Analyzer*: Choose to use a custom analyzer.
+* *Not Query-normal-form*: Supports queries other than Query-normal-form (QNF). QNF for JanusGraph is a variant of CNF (conjunctive normal form) with negation inlined where possible.
 
 Please see <<version-compat>> for details on what versions of Elasticsearch will work with JanusGraph.
 

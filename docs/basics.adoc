@@ -1075,6 +1075,9 @@ While the index definition example looks similar to the composite index above, i
 g.V().has('name', textContains('hercules')).has('age', inside(20, 50))
 g.V().has('name', textContains('hercules'))
 g.V().has('age', lt(50))
+g.V().has('age', outside(20, 50))
+g.V().has('age', lt(50).or(gte(60)))
+g.V().or(__.has('name', textContains('hercules')), __.has('age', inside(20, 50)))
 
 Mixed indexes support full-text search, range search, geo search and others. Refer to <<search-predicates>> for a list of predicates supported by a particular indexing backend.
 
