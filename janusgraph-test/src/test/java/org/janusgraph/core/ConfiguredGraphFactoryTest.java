@@ -189,7 +189,7 @@ public class ConfiguredGraphFactoryTest {
     }
 
     @Test
-    public void updateConfigurationShouldOnlyUpdateForGraphAfterWeCloseAndReOpen() throws Exception {
+    public void updateConfigurationShouldRemoveGraphFromCache() throws Exception {
         try {
             final Map<String, Object> map = new HashMap<>();
             map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
@@ -200,17 +200,44 @@ public class ConfiguredGraphFactoryTest {
 
             map.put(STORAGE_BACKEND.toStringWithoutRoot(), "bogusBackend");
             ConfiguredGraphFactory.updateConfiguration("graph1", new MapConfiguration(map));
-
-            final StandardJanusGraph graph1 = (StandardJanusGraph) ConfiguredGraphFactory.open("graph1");
-            assertNotNull(graph);
-
-            ConfiguredGraphFactory.close("graph1");
-
+            assertNull(gm.getGraph("graph1"));
             // we should throw an error since the config has been updated and we are attempting
             // to open a bogus backend
             thrown.expect(IllegalArgumentException.class);
             thrown.expectMessage(equalTo("Could not find implementation class: bogusBackend"));
             final StandardJanusGraph graph2 = (StandardJanusGraph) ConfiguredGraphFactory.open("graph1");
+        } finally {
+            ConfiguredGraphFactory.removeConfiguration("graph1");
+            ConfiguredGraphFactory.close("graph1");
+        }
+    }
+
+    @Test
+    public void removeConfigurationShouldRemoveGraphFromCache() throws Exception {
+        try {
+            final Map<String, Object> map = new HashMap<>();
+            map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
+            map.put(GRAPH_NAME.toStringWithoutRoot(), "graph1");
+            ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
+            final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.open("graph1");
+            assertNotNull(graph);
+
+            ConfiguredGraphFactory.removeConfiguration("graph1");
+            assertNull(gm.getGraph("graph1"));
+        } finally {
+            ConfiguredGraphFactory.removeConfiguration("graph1");
+            ConfiguredGraphFactory.close("graph1");
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToRemoveBogusConfiguration() throws Exception {
+        try {
+            final Map<String, Object> map = new HashMap<>();
+            map.put(STORAGE_BACKEND.toStringWithoutRoot(), "bogusBackend");
+            map.put(GRAPH_NAME.toStringWithoutRoot(), "graph1");
+            ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
+            ConfiguredGraphFactory.removeConfiguration("graph1");
         } finally {
             ConfiguredGraphFactory.removeConfiguration("graph1");
             ConfiguredGraphFactory.close("graph1");

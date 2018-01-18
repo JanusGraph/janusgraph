@@ -1775,7 +1775,7 @@ public class GraphDatabaseConfiguration {
     }
 
     public String getGraphName() {
-        return getConfigurationAtOpen().getString(GRAPH_NAME.toString());
+        return getConfigurationAtOpen().getString(GRAPH_NAME.toStringWithoutRoot());
     }
 
     public StoreFeatures getStoreFeatures() {
