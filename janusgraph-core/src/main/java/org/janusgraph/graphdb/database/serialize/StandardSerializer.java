@@ -28,6 +28,7 @@ import org.janusgraph.diskstorage.util.WriteByteBuffer;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.log.LogTxStatus;
+import org.janusgraph.graphdb.database.management.GraphCacheEvictionAction;
 import org.janusgraph.graphdb.database.management.MgmtLogType;
 import org.janusgraph.graphdb.database.serialize.attribute.*;
 import org.janusgraph.graphdb.internal.ElementCategory;
@@ -130,6 +131,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(66,StandardTransactionId.class, new StandardTransactionIdSerializer());
         registerClassInternal(67,TraverserSet.class, new SerializableSerializer());
         registerClassInternal(68,HashMap.class, new SerializableSerializer());
+        registerClassInternal(69,GraphCacheEvictionAction.class, new EnumSerializer<>(GraphCacheEvictionAction.class));
 
     }
 

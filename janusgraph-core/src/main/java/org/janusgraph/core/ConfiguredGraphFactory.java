@@ -16,6 +16,7 @@ package org.janusgraph.core;
 
 import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
 import org.janusgraph.graphdb.management.JanusGraphManager;
+import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.diskstorage.BackendException;
@@ -34,6 +35,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class provides static methods to: 1) create graph references denoted by a
@@ -52,6 +55,9 @@ import java.util.stream.Collectors;
  * according to the file supplied along with the "ConfigurationManagementGraph" key.</p>
  */
 public class ConfiguredGraphFactory {
+
+    private static final Logger log =
+    LoggerFactory.getLogger(ConfiguredGraphFactory.class);
 
     /**
      * Creates a {@link JanusGraph} configuration stored in the {@ConfigurationGraphManagament}
@@ -152,7 +158,7 @@ public class ConfiguredGraphFactory {
     public static void drop(String graphName) throws BackendException, ConfigurationManagementGraphNotEnabledException, Exception {
         final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.close(graphName);
         JanusGraphFactory.drop(graph);
-        ConfigurationManagementGraph.getInstance().removeConfiguration(graphName);
+        removeConfiguration(graphName);
     }
 
     private static ConfigurationManagementGraph getConfigGraphManagementInstance() {
@@ -197,6 +203,14 @@ public class ConfiguredGraphFactory {
      */
     public static void updateConfiguration(final String graphName, final Configuration config) {
         final ConfigurationManagementGraph configManagementGraph = getConfigGraphManagementInstance();
+        try {
+            final JanusGraph graph = open(graphName);
+            removeGraphFromCache(graph);
+        } catch (Exception e) {
+            // cannot open graph, do nothing
+            log.error(String.format("Failed to open graph %s with the following error:\n %s.\n" +
+            "Thus, it and its traversal will not be bound on this server.", graphName, e.toString()));
+        }
         configManagementGraph.updateConfiguration(graphName, config);
     }
 
@@ -217,7 +231,24 @@ public class ConfiguredGraphFactory {
      */
     public static void removeConfiguration(final String graphName) {
         final ConfigurationManagementGraph configManagementGraph = getConfigGraphManagementInstance();
+        try {
+            final JanusGraph graph = open(graphName);
+            removeGraphFromCache(graph);
+        } catch (Exception e) {
+            // cannot open graph, do nothing
+            log.error(String.format("Failed to open graph %s with the following error:\n %s.\n" +
+            "Thus, it and its traversal will not be bound on this server.", graphName, e.toString()));
+        }
         configManagementGraph.removeConfiguration(graphName);
+    }
+
+    private static void removeGraphFromCache(final JanusGraph graph) {
+        final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
+        Preconditions.checkState(jgm != null, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
+        jgm.removeGraph(((StandardJanusGraph) graph).getGraphName());
+        final ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
+        mgmt.evictGraphFromCache();
+        mgmt.commit();
     }
 
     /**

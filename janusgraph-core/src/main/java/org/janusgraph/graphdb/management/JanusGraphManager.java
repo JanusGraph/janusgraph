@@ -131,6 +131,11 @@ public class JanusGraphManager implements GraphManager {
         }
     }
 
+    // To be used for testing purposes
+    protected static void shutdownJanusGraphManager() {
+        instance = null;
+    }
+
     /**
      * @Deprecated
      */
