@@ -169,18 +169,18 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
     }
 
     private long getCurrentID(final StaticBuffer partitionKey) throws BackendException {
-        List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
+        final List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
             @Override
             public List<Entry> call(StoreTransaction txh) throws BackendException {
-                return idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE).setLimit(5), txh);
+                return idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE, idStore.getName()).setLimit(5), txh);
             }
         },this,times);
 
         if (blocks == null) throw new TemporaryBackendException("Could not read from storage");
         long latest = BASE_ID;
 
-        for (Entry e : blocks) {
-            long counterVal = getBlockValue(e);
+        for (final Entry e : blocks) {
+            final long counterVal = getBlockValue(e);
             if (latest < counterVal) {
                 latest = counterVal;
             }
@@ -202,7 +202,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         assert idNamespace>=0;
         assert uniqueId>=0 && uniqueId<(1<<uniqueIdBitWidth);
 
-        int[] components = new int[2];
+        final int[] components = new int[2];
         components[0] = (partitionBitWdith>0?(partition<<(Integer.SIZE-partitionBitWdith)):0) + uniqueId;
         components[1]=idNamespace;
         return BufferUtil.getIntBuffer(components);
@@ -234,7 +234,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
             final int uniquePID = getUniquePartitionID();
             final StaticBuffer partitionKey = getPartitionKey(partition,idNamespace,uniquePID);
             try {
-                long nextStart = getCurrentID(partitionKey);
+                final long nextStart = getCurrentID(partitionKey);
                 if (idBlockUpperBound - blockSize <= nextStart) {
                     log.info("ID overflow detected on partition({})-namespace({}) with uniqueid {}. Current id {}, block size {}, and upper bound {} for bit width {}.",
                             partition, idNamespace, uniquePID, nextStart, blockSize, idBlockUpperBound, uniqueIdBitWidth);
@@ -253,13 +253,13 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
 
                 // calculate the start (inclusive) and end (exclusive) of the allocation we're about to attempt
                 assert idBlockUpperBound - blockSize > nextStart;
-                long nextEnd = nextStart + blockSize;
+                final long nextEnd = nextStart + blockSize;
                 StaticBuffer target = null;
 
                 // attempt to write our claim on the next id block
                 boolean success = false;
                 try {
-                    Timer writeTimer = times.getTimer().start();
+                    final Timer writeTimer = times.getTimer().start();
                     target = getBlockApplication(nextEnd, writeTimer.getStartTime());
                     final StaticBuffer finalTarget = target; // copy for the inner class
                     BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
@@ -271,7 +271,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                     },this,times);
                     writeTimer.stop();
 
-                    Duration writeElapsed = writeTimer.elapsed();
+                    final Duration writeElapsed = writeTimer.elapsed();
                     if (idApplicationWaitMS.compareTo(writeElapsed) < 0) {
                         throw new TemporaryBackendException("Wrote claim for id block [" + nextStart + ", " + nextEnd + ") in " + (writeElapsed) + " => too slow, threshold is: " + idApplicationWaitMS);
                     } else {
@@ -287,10 +287,10 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                         sleepAndConvertInterrupts(idApplicationWaitMS.plus(waitGracePeriod));
 
                         // Read all id allocation claims on this partition, for the counter value we're claiming
-                        List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
+                        final List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
                             @Override
                             public List<Entry> call(StoreTransaction txh) throws BackendException {
-                                return idStore.getSlice(new KeySliceQuery(partitionKey, slice[0], slice[1]), txh);
+                                return idStore.getSlice(new KeySliceQuery(partitionKey, slice[0], slice[1], idStore.getName()), txh);
                             }
                         },this,times);
                         if (blocks == null) throw new TemporaryBackendException("Could not read from storage");
@@ -303,7 +303,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                          */
                         if (target.equals(blocks.get(0).getColumnAs(StaticBuffer.STATIC_FACTORY))) {
 
-                            ConsistentKeyIDBlock idblock = new ConsistentKeyIDBlock(nextStart,blockSize,uniqueIdBitWidth,uniquePID);
+                            final ConsistentKeyIDBlock idblock = new ConsistentKeyIDBlock(nextStart,blockSize,uniqueIdBitWidth,uniquePID);
 
                             if (log.isDebugEnabled()) {
                                 log.debug("Acquired ID block [{}] on partition({})-namespace({}) (my rid is {})",
@@ -339,7 +339,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                                 },times);
 
                                 break;
-                            } catch (BackendException e) {
+                            } catch (final BackendException e) {
                                 log.warn("Storage exception while deleting old block application - retrying in {}", rollbackWaitTime, e);
                                 if (!rollbackWaitTime.isZero())
                                     sleepAndConvertInterrupts(rollbackWaitTime);
@@ -347,10 +347,10 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                         }
                     }
                 }
-            } catch (UniqueIDExhaustedException e) {
+            } catch (final UniqueIDExhaustedException e) {
                 // No need to increment the backoff wait time or to sleep
                 log.warn(e.getMessage());
-            } catch (TemporaryBackendException e) {
+            } catch (final TemporaryBackendException e) {
                 backoffMS = Durations.min(backoffMS.multipliedBy(2), idApplicationWaitMS.multipliedBy(32));
                 log.warn("Temporary storage exception while acquiring id block - retrying in {}: {}", backoffMS, e);
                 sleepAndConvertInterrupts(backoffMS);
@@ -363,14 +363,14 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
 
 
     private final StaticBuffer[] getBlockSlice(long blockValue) {
-        StaticBuffer[] slice = new StaticBuffer[2];
+        final StaticBuffer[] slice = new StaticBuffer[2];
         slice[0] = new WriteByteBuffer(16).putLong(-blockValue).putLong(0).getStaticBuffer();
         slice[1] = new WriteByteBuffer(16).putLong(-blockValue).putLong(-1).getStaticBuffer();
         return slice;
     }
 
     private final StaticBuffer getBlockApplication(long blockValue, Instant timestamp) {
-        WriteByteBuffer bb = new WriteByteBuffer(
+        final WriteByteBuffer bb = new WriteByteBuffer(
                 8 // counter long
                         + 8 // time in ms
                         + uidBytes.length);
@@ -387,7 +387,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
     private void sleepAndConvertInterrupts(Duration d) throws BackendException {
         try {
             times.sleepPast(times.getTime().plus(d));
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
             throw new PermanentBackendException(e);
         }
     }
@@ -427,7 +427,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         public long getId(long index) {
             if (index<0 || index>= numIds) throw new ArrayIndexOutOfBoundsException((int)index);
             assert uniqueID<(1<<uniqueIDBitWidth);
-            long id = ((startIDCound+index)<<uniqueIDBitWidth) + uniqueID;
+            final long id = ((startIDCound+index)<<uniqueIDBitWidth) + uniqueID;
             return id;
         }
 

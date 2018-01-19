@@ -16,6 +16,7 @@ package org.janusgraph.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
@@ -27,7 +28,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  * The limit of a KeyRangeQuery applies to the maximum number of columns
  * returned per key which fall into the specified slice range and NOT to the
  * maximum number of keys returned.
- * 
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
@@ -37,8 +38,8 @@ public class KeyRangeQuery extends SliceQuery {
     private final StaticBuffer keyEnd;
 
 
-    public KeyRangeQuery(StaticBuffer keyStart, StaticBuffer keyEnd, StaticBuffer sliceStart, StaticBuffer sliceEnd) {
-        super(sliceStart, sliceEnd);
+    public KeyRangeQuery(StaticBuffer keyStart, StaticBuffer keyEnd, StaticBuffer sliceStart, StaticBuffer sliceEnd, final String type) {
+        super(sliceStart, sliceEnd, type);
         Preconditions.checkNotNull(keyStart);
         Preconditions.checkNotNull(keyEnd);
         this.keyStart=keyStart;
@@ -85,7 +86,7 @@ public class KeyRangeQuery extends SliceQuery {
         if (this==other) return true;
         else if (other==null) return false;
         else if (!getClass().isInstance(other)) return false;
-        KeyRangeQuery oth = (KeyRangeQuery)other;
+        final KeyRangeQuery oth = (KeyRangeQuery)other;
         return keyStart.equals(oth.keyStart) && keyEnd.equals(oth.keyEnd) && super.equals(oth);
     }
 

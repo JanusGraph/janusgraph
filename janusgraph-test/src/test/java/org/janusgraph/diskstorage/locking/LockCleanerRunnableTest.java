@@ -59,7 +59,7 @@ public class LockCleanerRunnableTest {
             new StaticArrayBuffer(new byte[]{(byte) 1}),
             new StaticArrayBuffer(new byte[]{(byte) 2}));
     private final StaticBuffer key = codec.toLockKey(kc.getKey(), kc.getColumn());
-    private final KeySliceQuery ksq = new KeySliceQuery(key, LOCK_COL_START, LOCK_COL_END);
+    private final KeySliceQuery ksq = new KeySliceQuery(key, LOCK_COL_START, LOCK_COL_END, "LockCleanerRunnableTest");
     private final StaticBuffer defaultLockRid = new StaticArrayBuffer(new byte[]{(byte) 32});
 
     @Before
@@ -83,9 +83,9 @@ public class LockCleanerRunnableTest {
     public void testDeleteSingleLock() throws BackendException {
         Instant now = Instant.ofEpochMilli(1L);
 
-        Entry expiredLockCol = StaticArrayEntry.of(codec.toLockCol(now,
+        final Entry expiredLockCol = StaticArrayEntry.of(codec.toLockCol(now,
                 defaultLockRid, TimestampProviders.MILLI), BufferUtil.getIntBuffer(0));
-        EntryList expiredSingleton = StaticArrayEntryList.of(expiredLockCol);
+        final EntryList expiredSingleton = StaticArrayEntryList.of(expiredLockCol);
 
         now = now.plusMillis(1);
         del = new StandardLockCleanerRunnable(store, kc, tx, codec, now, TimestampProviders.MILLI);
@@ -118,12 +118,12 @@ public class LockCleanerRunnableTest {
         final Instant timeStart = Instant.EPOCH;
         final Instant timeCutoff = timeStart.plusMillis(expiredCount * timeIncr);
 
-        ImmutableList.Builder<Entry> locksBuilder = ImmutableList.builder();
-        ImmutableList.Builder<Entry> delsBuilder  = ImmutableList.builder();
+        final ImmutableList.Builder<Entry> locksBuilder = ImmutableList.builder();
+        final ImmutableList.Builder<Entry> delsBuilder  = ImmutableList.builder();
 
         for (int i = 0; i < lockCount; i++) {
             final Instant ts = timeStart.plusMillis(timeIncr * i);
-            Entry lock = StaticArrayEntry.of(
+            final Entry lock = StaticArrayEntry.of(
                     codec.toLockCol(ts, defaultLockRid, TimestampProviders.MILLI),
                     BufferUtil.getIntBuffer(0));
 
@@ -134,8 +134,8 @@ public class LockCleanerRunnableTest {
             locksBuilder.add(lock);
         }
 
-        EntryList locks = StaticArrayEntryList.of(locksBuilder.build());
-        EntryList dels  = StaticArrayEntryList.of(delsBuilder.build());
+        final EntryList locks = StaticArrayEntryList.of(locksBuilder.build());
+        final EntryList dels  = StaticArrayEntryList.of(delsBuilder.build());
         assertTrue(expiredCount == dels.size());
 
         del = new StandardLockCleanerRunnable(store, kc, tx, codec, timeCutoff, TimestampProviders.MILLI);
@@ -161,11 +161,11 @@ public class LockCleanerRunnableTest {
     public void testPreservesLocksAtOrAfterCutoff() throws BackendException {
         final Instant cutoff = Instant.ofEpochMilli(10L);
 
-        Entry currentLock = StaticArrayEntry.of(codec.toLockCol(cutoff,
+        final Entry currentLock = StaticArrayEntry.of(codec.toLockCol(cutoff,
                 defaultLockRid, TimestampProviders.MILLI), BufferUtil.getIntBuffer(0));
-        Entry futureLock = StaticArrayEntry.of(codec.toLockCol(cutoff.plusMillis(1),
+        final Entry futureLock = StaticArrayEntry.of(codec.toLockCol(cutoff.plusMillis(1),
                 defaultLockRid, TimestampProviders.MILLI), BufferUtil.getIntBuffer(0));
-        EntryList locks = StaticArrayEntryList.of(currentLock, futureLock);
+        final EntryList locks = StaticArrayEntryList.of(currentLock, futureLock);
 
         // Don't increment cutoff: lockCol is exactly at the cutoff timestamp
         del = new StandardLockCleanerRunnable(store, kc, tx, codec, cutoff, TimestampProviders.MILLI);

@@ -292,14 +292,14 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         if (readExecutor!=null) {
             try {
                 readExecutor.awaitTermination(1,TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
+            } catch (final InterruptedException e) {
                 log.error("Could not terminate reader thread pool for KCVSLog "+name+" due to interruption");
             }
             if (!readExecutor.isTerminated()) {
                 readExecutor.shutdownNow();
                 log.error("Reader thread pool for KCVSLog "+name+" did not shut down in time - could not clean up or set read markers");
             } else {
-                for (MessagePuller puller : msgPullers) {
+                for (final MessagePuller puller : msgPullers) {
                     puller.close();
                 }
             }
@@ -327,7 +327,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
      */
 
     private int getTimeSlice(Instant timestamp) {
-        long value = times.getTime(timestamp) / TIMESLICE_INTERVAL;
+        final long value = times.getTime(timestamp) / TIMESLICE_INTERVAL;
         if (value>Integer.MAX_VALUE || value<0) throw new IllegalArgumentException("Timestamp overflow detected: " + timestamp);
         return (int)value;
     }
@@ -335,7 +335,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     private StaticBuffer getLogKey(final int partitionId, final int bucketId, final int timeslice) {
         Preconditions.checkArgument(partitionId>=0 && partitionId<(1<<manager.partitionBitWidth));
         Preconditions.checkArgument(bucketId>=0 && bucketId<numBuckets);
-        DataOutput o = manager.serializer.getDataOutput(3 * 4);
+        final DataOutput o = manager.serializer.getDataOutput(3 * 4);
         o.putInt((partitionId<<(32-manager.partitionBitWidth))); //Offset to put significant bits in front
         o.putInt(bucketId);
         o.putInt(timeslice);
@@ -343,9 +343,9 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     }
 
     private Entry writeMessage(KCVSMessage msg) {
-        StaticBuffer content = msg.getContent();
-        DataOutput out = manager.serializer.getDataOutput(8 + 8 + manager.senderId.length() + 2 + content.length());
-        Instant rawTimestamp = msg.getTimestamp();
+        final StaticBuffer content = msg.getContent();
+        final DataOutput out = manager.serializer.getDataOutput(8 + 8 + manager.senderId.length() + 2 + content.length());
+        final Instant rawTimestamp = msg.getTimestamp();
         Preconditions.checkArgument(rawTimestamp.isAfter(Instant.EPOCH));
         out.putLong(times.getTime(rawTimestamp));
         out.writeObjectNotNull(manager.senderId);
@@ -356,9 +356,9 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     }
 
     private KCVSMessage parseMessage(Entry msg) {
-        ReadBuffer r = msg.asReadBuffer();
-        Instant timestamp = times.getTime(r.getLong());
-        String senderId = manager.serializer.readObjectNotNull(r,String.class);
+        final ReadBuffer r = msg.asReadBuffer();
+        final Instant timestamp = times.getTime(r.getLong());
+        final String senderId = manager.serializer.readObjectNotNull(r,String.class);
         return new KCVSMessage(msg.getValue(),timestamp,senderId);
     }
 
@@ -413,17 +413,17 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         Preconditions.checkArgument(content!=null && content.length()>0,"Content is empty");
         Preconditions.checkArgument(partitionId>=0 && partitionId<(1<<manager.partitionBitWidth),"Invalid partition id: %s",partitionId);
         final Instant timestamp = times.getTime();
-        KCVSMessage msg = new KCVSMessage(content,timestamp,manager.senderId);
-        FutureMessage fmsg = new FutureMessage(msg);
+        final KCVSMessage msg = new KCVSMessage(content,timestamp,manager.senderId);
+        final FutureMessage fmsg = new FutureMessage(msg);
 
-        StaticBuffer key=getLogKey(partitionId,(int)(numBucketCounter.incrementAndGet()%numBuckets),getTimeSlice(timestamp));
-        MessageEnvelope envelope = new MessageEnvelope(fmsg,key,writeMessage(msg));
+        final StaticBuffer key=getLogKey(partitionId,(int)(numBucketCounter.incrementAndGet()%numBuckets),getTimeSlice(timestamp));
+        final MessageEnvelope envelope = new MessageEnvelope(fmsg,key,writeMessage(msg));
 
         if (persistor!=null) {
             try {
                 persistor.add(envelope.key,envelope.entry);
                 envelope.message.delivered();
-            } catch (JanusGraphException e) {
+            } catch (final JanusGraphException e) {
                 envelope.message.failed(e);
                 throw e;
             }
@@ -433,7 +433,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             try {
                 outgoingMsg.put(envelope); //Produces back pressure when full
                 log.debug("Enqueued {} for partition {}", envelope, partitionId);
-            } catch (InterruptedException e) {
+            } catch (final InterruptedException e) {
                 throw new JanusGraphException("Got interrupted waiting to send message",e);
             }
         }
@@ -469,18 +469,18 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
      */
     private void sendMessages(final List<MessageEnvelope> msgEnvelopes) {
         try {
-            boolean success=BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
+            final boolean success=BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
                 @Override
                 public Boolean call(StoreTransaction txh) throws BackendException {
-                    ListMultimap<StaticBuffer,Entry> mutations = ArrayListMultimap.create();
-                    for (MessageEnvelope env : msgEnvelopes) {
+                    final ListMultimap<StaticBuffer,Entry> mutations = ArrayListMultimap.create();
+                    for (final MessageEnvelope env : msgEnvelopes) {
                         mutations.put(env.key,env.entry);
-                        long ts = env.entry.getColumn().getLong(0);
+                        final long ts = env.entry.getColumn().getLong(0);
                         log.debug("Preparing to write {} to storage with column/timestamp {}", env, times.getTime(ts));
                     }
 
-                    Map<StaticBuffer,KCVMutation> muts = new HashMap<StaticBuffer, KCVMutation>(mutations.keySet().size());
-                    for (StaticBuffer key : mutations.keySet()) {
+                    final Map<StaticBuffer,KCVMutation> muts = new HashMap<StaticBuffer, KCVMutation>(mutations.keySet().size());
+                    for (final StaticBuffer key : mutations.keySet()) {
                         muts.put(key,new KCVMutation(mutations.get(key),KeyColumnValueStore.NO_DELETIONS));
                         log.debug("Built mutation on key {} with {} additions", key, mutations.get(key).size());
                     }
@@ -495,10 +495,10 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             },this, times, maxWriteTime);
             Preconditions.checkState(success);
             log.debug("Wrote {} messages to backend",msgEnvelopes.size());
-            for (MessageEnvelope msgEnvelope : msgEnvelopes)
+            for (final MessageEnvelope msgEnvelope : msgEnvelopes)
                 msgEnvelope.message.delivered();
-        } catch (JanusGraphException e) {
-            for (MessageEnvelope msgEnvelope : msgEnvelopes)
+        } catch (final JanusGraphException e) {
+            for (final MessageEnvelope msgEnvelope : msgEnvelopes)
                 msgEnvelope.message.failed(e);
             throw e;
         }
@@ -511,7 +511,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
      */
     private class SendThread extends BackgroundThread {
 
-        private List<MessageEnvelope> toSend;
+        private final List<MessageEnvelope> toSend;
 
         public SendThread() {
             super("KCVSLogSend"+name, false);
@@ -523,8 +523,8 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             Duration sinceFirst =  Duration.ZERO;
 
             if (!toSend.isEmpty()) {
-                Instant firstTimestamp = toSend.get(0).message.getMessage().getTimestamp();
-                Instant nowTimestamp   = times.getTime();
+                final Instant firstTimestamp = toSend.get(0).message.getMessage().getTimestamp();
+                final Instant nowTimestamp   = times.getTime();
 
                 if (firstTimestamp.compareTo(nowTimestamp) < 0) {
                     sinceFirst = Duration.between(firstTimestamp, nowTimestamp);
@@ -545,7 +545,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         @Override
         protected void waitCondition() throws InterruptedException {
 
-            MessageEnvelope msg = outgoingMsg.poll(maxWaitTime().toNanos(), TimeUnit.NANOSECONDS);
+            final MessageEnvelope msg = outgoingMsg.poll(maxWaitTime().toNanos(), TimeUnit.NANOSECONDS);
             if (msg!=null) toSend.add(msg);
         }
 
@@ -573,10 +573,10 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 //There are still messages waiting to be sent
                 toSend.addAll(outgoingMsg);
                 for (int i=0;i<toSend.size();i=i+sendBatchSize) {
-                    List<MessageEnvelope> subset = toSend.subList(i,Math.min(toSend.size(),i+sendBatchSize));
+                    final List<MessageEnvelope> subset = toSend.subList(i,Math.min(toSend.size(),i+sendBatchSize));
                     try {
                         sendMessages(subset);
-                    } catch (RuntimeException e) {
+                    } catch (final RuntimeException e) {
                         //Fail all remaining messages
                         for (int j=i+sendBatchSize;j<toSend.size();j++) {
                             toSend.get(j).message.failed(e);
@@ -608,8 +608,8 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         Preconditions.checkArgument(this.readMarker==null || this.readMarker.isCompatible(readMarker),
                 "Provided read marker is not compatible with existing read marker for previously registered readers");
         if (this.readMarker==null) this.readMarker=readMarker;
-        boolean firstRegistration = this.readers.isEmpty();
-        for (MessageReader reader : readers) {
+        final boolean firstRegistration = this.readers.isEmpty();
+        for (final MessageReader reader : readers) {
             Preconditions.checkNotNull(reader);
             if (!this.readers.contains(reader)) this.readers.add(reader);
         }
@@ -623,7 +623,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             });
             msgPullers = new MessagePuller[manager.readPartitionIds.length*numBuckets];
             int pos = 0;
-            for (int partitionId : manager.readPartitionIds) {
+            for (final int partitionId : manager.readPartitionIds) {
                 for (int bucketId = 0; bucketId < numBuckets; bucketId++) {
                     msgPullers[pos]=new MessagePuller(partitionId,bucketId);
 
@@ -709,29 +709,29 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 Preconditions.checkState(messageTimeStart.compareTo(messageTimeEnd) < 0);
                 Preconditions.checkState(messageTimeEnd.compareTo(currentTime) <= 0, "Attempting to read messages from the future: messageTimeEnd=% vs currentTime=%s", messageTimeEnd, currentTime);
 
-                StaticBuffer logKey = getLogKey(partitionId,bucketId,timeslice);
-                KeySliceQuery query = new KeySliceQuery(logKey, BufferUtil.getLongBuffer(times.getTime(messageTimeStart)), BufferUtil.getLongBuffer(times.getTime(messageTimeEnd)));
+                final StaticBuffer logKey = getLogKey(partitionId,bucketId,timeslice);
+                KeySliceQuery query = new KeySliceQuery(logKey, BufferUtil.getLongBuffer(times.getTime(messageTimeStart)), BufferUtil.getLongBuffer(times.getTime(messageTimeEnd)), store.getName());
                 query.setLimit(maxReadMsg);
                 log.trace("Converted MessagePuller time window to {}", query);
 
-                List<Entry> entries= BackendOperation.execute(getOperation(query),KCVSLog.this,times,maxReadTime);
+                final List<Entry> entries= BackendOperation.execute(getOperation(query),KCVSLog.this,times,maxReadTime);
                 prepareMessageProcessing(entries);
                 if (entries.size()>=maxReadMsg) {
                     /*Read another set of messages to ensure that we have exhausted all messages to the next timestamp.
                     Since we have reached the request limit, it may be possible that there are additional messages
                     with the same timestamp which we would miss on subsequent iterations */
-                    Entry lastEntry = entries.get(entries.size()-1);
+                    final Entry lastEntry = entries.get(entries.size()-1);
                     //Adding 2 microseconds (=> very few extra messages), not adding one to avoid that the slice is possibly empty
                     messageTimeEnd = messageTimeEnd.plus(TWO_MICROSECONDS);
                     log.debug("Extended time window to {}", messageTimeEnd);
                     //Retrieve all messages up to this adjusted timepoint (no limit this time => get all entries to that point)
-                    query = new KeySliceQuery(logKey, BufferUtil.nextBiggerBuffer(lastEntry.getColumn()), BufferUtil.getLongBuffer(times.getTime(messageTimeEnd)));
+                    query = new KeySliceQuery(logKey, BufferUtil.nextBiggerBuffer(lastEntry.getColumn()), BufferUtil.getLongBuffer(times.getTime(messageTimeEnd)), store.getName());
                     log.debug("Converted extended MessagePuller time window to {}", query);
-                    List<Entry> extraEntries = BackendOperation.execute(getOperation(query),KCVSLog.this,times,maxReadTime);
+                    final List<Entry> extraEntries = BackendOperation.execute(getOperation(query),KCVSLog.this,times,maxReadTime);
                     prepareMessageProcessing(extraEntries);
                 }
                 messageTimeStart = messageTimeEnd;
-            } catch (Throwable e) {
+            } catch (final Throwable e) {
                 log.warn("Could not read messages for timestamp ["+messageTimeStart+"] (this read will be retried)",e);
             }
         }
@@ -743,17 +743,17 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 this.messageTimeStart = readMarker.getStartTime(times);
                 log.info("Loaded unidentified ReadMarker start time {} into {}", messageTimeStart, this);
             } else {
-                long savedTimestamp = readSetting(readMarker.getIdentifier(),getMarkerColumn(partitionId,bucketId),times.getTime(readMarker.getStartTime(times)));
+                final long savedTimestamp = readSetting(readMarker.getIdentifier(),getMarkerColumn(partitionId,bucketId),times.getTime(readMarker.getStartTime(times)));
                 this.messageTimeStart = times.getTime(savedTimestamp);
                 log.info("Loaded indentified ReadMarker start time {} into {}", messageTimeStart, this);
             }
         }
 
         private void prepareMessageProcessing(List<Entry> entries) {
-            for (Entry entry : entries) {
-                KCVSMessage message = parseMessage(entry);
+            for (final Entry entry : entries) {
+                final KCVSMessage message = parseMessage(entry);
                 log.debug("Parsed message {}, about to submit this message to the reader executor", message);
-                for (MessageReader reader : readers) {
+                for (final MessageReader reader : readers) {
                     readExecutor.submit(new ProcessMessageJob(message,reader));
                 }
             }
@@ -766,7 +766,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                     writeSetting(readMarker.getIdentifier(), getMarkerColumn(partitionId, bucketId), times.getTime(messageTimeStart));
                     log.debug("Persisted read marker: identifier={} partitionId={} buckedId={} nextTimepoint={}",
                             readMarker.getIdentifier(), partitionId, bucketId, messageTimeStart);
-                } catch (Throwable e) {
+                } catch (final Throwable e) {
                     log.error("Could not persist read marker [" + readMarker.getIdentifier() + "] on bucket ["+bucketId+"] + partition ["+partitionId+"]",e);
                 }
             }
@@ -798,7 +798,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
      */
 
     private StaticBuffer getMarkerColumn(int partitionId, int bucketId) {
-        DataOutput out = manager.serializer.getDataOutput(1+ 4 + 4);
+        final DataOutput out = manager.serializer.getDataOutput(1+ 4 + 4);
         out.putByte(MARKER_PREFIX);
         out.putInt(partitionId);
         out.putInt(bucketId);
@@ -807,7 +807,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
 
     private StaticBuffer getSettingKey(String identifier) {
-        DataOutput out = manager.serializer.getDataOutput(4 + 2 + identifier.length());
+        final DataOutput out = manager.serializer.getDataOutput(4 + 2 + identifier.length());
         out.putInt(SYSTEM_PARTITION_ID);
         out.writeObjectNotNull(identifier);
         return out.getStaticBuffer();
@@ -815,7 +815,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
     private long readSetting(String identifier, final StaticBuffer column, long defaultValue) {
         final StaticBuffer key = getSettingKey(identifier);
-        StaticBuffer value = BackendOperation.execute(new BackendOperation.Transactional<StaticBuffer>() {
+        final StaticBuffer value = BackendOperation.execute(new BackendOperation.Transactional<StaticBuffer>() {
             @Override
             public StaticBuffer call(StoreTransaction txh) throws BackendException {
                 return KCVSUtil.get(store,key,column,txh);
@@ -835,7 +835,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     private void writeSetting(String identifier, final StaticBuffer column, long value) {
         final StaticBuffer key = getSettingKey(identifier);
         final Entry add = StaticArrayEntry.of(column, BufferUtil.getLongBuffer(value));
-        Boolean status = BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
+        final Boolean status = BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
             @Override
             public Boolean call(StoreTransaction txh) throws BackendException {
                 store.mutate(key,ImmutableList.of(add),KeyColumnValueStore.NO_DELETIONS,txh);

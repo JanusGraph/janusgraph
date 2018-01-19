@@ -95,12 +95,12 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
      */
     @Override
     public <O> O get(final String key, final Class<O> datatype) {
-        StaticBuffer column = string2StaticBuffer(key);
-        final KeySliceQuery query = new KeySliceQuery(rowKey,column, BufferUtil.nextBiggerBuffer(column));
-        StaticBuffer result = BackendOperation.execute(new BackendOperation.Transactional<StaticBuffer>() {
+        final StaticBuffer column = string2StaticBuffer(key);
+        final KeySliceQuery query = new KeySliceQuery(rowKey,column, BufferUtil.nextBiggerBuffer(column), store.getName());
+        final StaticBuffer result = BackendOperation.execute(new BackendOperation.Transactional<StaticBuffer>() {
             @Override
             public StaticBuffer call(StoreTransaction txh) throws BackendException {
-                List<Entry> entries = store.getSlice(query,txh);
+                final List<Entry> entries = store.getSlice(query,txh);
                 if (entries.isEmpty()) return null;
                 return entries.get(0).getValueAs(StaticBuffer.STATIC_FACTORY);
             }
@@ -114,6 +114,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         return staticBuffer2Object(result, datatype);
     }
 
+    @Override
     public<O> void set(String key, O value, O expectedValue) {
         set(key,value,expectedValue,true);
     }
@@ -137,7 +138,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         if (value!=null) { //Addition
             additions = new ArrayList<Entry>(1);
             deletions = KeyColumnValueStore.NO_DELETIONS;
-            StaticBuffer val = object2StaticBuffer(value);
+            final StaticBuffer val = object2StaticBuffer(value);
             additions.add(StaticArrayEntry.of(column, val));
         } else { //Deletion
             additions = KeyColumnValueStore.NO_ADDITIONS;
@@ -177,11 +178,11 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
     }
 
     private Map<String,Object> toMap() {
-        Map<String,Object> entries = Maps.newHashMap();
-        List<Entry> result = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
+        final Map<String,Object> entries = Maps.newHashMap();
+        final List<Entry> result = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
             @Override
             public List<Entry> call(StoreTransaction txh) throws BackendException {
-                return store.getSlice(new KeySliceQuery(rowKey, BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(128)),txh);
+                return store.getSlice(new KeySliceQuery(rowKey, BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(128), store.getName()),txh);
             }
 
             @Override
@@ -190,9 +191,9 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
             }
         },txProvider, times, maxOperationWaitTime);
 
-        for (Entry entry : result) {
-            String key = staticBuffer2String(entry.getColumnAs(StaticBuffer.STATIC_FACTORY));
-            Object value = staticBuffer2Object(entry.getValueAs(StaticBuffer.STATIC_FACTORY), Object.class);
+        for (final Entry entry : result) {
+            final String key = staticBuffer2String(entry.getColumnAs(StaticBuffer.STATIC_FACTORY));
+            final Object value = staticBuffer2Object(entry.getValueAs(StaticBuffer.STATIC_FACTORY), Object.class);
             entries.put(key,value);
         }
         return entries;
@@ -236,13 +237,13 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
             store.close();
             txProvider.close();
             IOUtils.closeQuietly(serializer);
-        } catch (BackendException e) {
+        } catch (final BackendException e) {
             throw new JanusGraphException("Could not close configuration store",e);
         }
     }
 
     private StaticBuffer string2StaticBuffer(final String s) {
-        ByteBuffer out = ByteBuffer.wrap(s.getBytes(Charset.forName("UTF-8")));
+        final ByteBuffer out = ByteBuffer.wrap(s.getBytes(Charset.forName("UTF-8")));
         return StaticArrayBuffer.of(out);
     }
 
@@ -253,13 +254,13 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
     private<O> StaticBuffer object2StaticBuffer(final O value) {
         if (value==null) throw Graph.Variables.Exceptions.variableValueCanNotBeNull();
         if (!serializer.validDataType(value.getClass())) throw Graph.Variables.Exceptions.dataTypeOfVariableValueNotSupported(value);
-        DataOutput out = serializer.getDataOutput(128);
+        final DataOutput out = serializer.getDataOutput(128);
         out.writeClassAndObject(value);
         return out.getStaticBuffer();
     }
 
     private<O> O staticBuffer2Object(final StaticBuffer s, Class<O> datatype) {
-        Object value = serializer.readClassAndObject(s.asReadBuffer());
+        final Object value = serializer.readClassAndObject(s.asReadBuffer());
         Preconditions.checkArgument(datatype.isInstance(value),"Could not deserialize to [%s], got: %s",datatype,value);
         return (O)value;
     }

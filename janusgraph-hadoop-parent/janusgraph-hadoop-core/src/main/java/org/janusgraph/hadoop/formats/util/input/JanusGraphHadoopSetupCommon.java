@@ -24,7 +24,7 @@ import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 public abstract class JanusGraphHadoopSetupCommon implements JanusGraphHadoopSetup {
 
     private static final StaticBuffer DEFAULT_COLUMN = StaticArrayBuffer.of(new byte[0]);
-    public static final SliceQuery DEFAULT_SLICE_QUERY = new SliceQuery(DEFAULT_COLUMN, DEFAULT_COLUMN);
+    public static final SliceQuery DEFAULT_SLICE_QUERY = new SliceQuery(DEFAULT_COLUMN, DEFAULT_COLUMN, "JanusGraphHadoopSetupCommon");
 
 
     public static final String SETUP_PACKAGE_PREFIX = "org.janusgraph.hadoop.formats.util.input.";

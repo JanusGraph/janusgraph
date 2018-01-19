@@ -155,7 +155,7 @@ public class ExpectedValueCheckingTest {
 
         // Check capture created in the @Before method
         assertTrue(txConfigCapture.hasCaptured());
-        List<BaseTransactionConfig> txCfgs = txConfigCapture.getValues();
+        final List<BaseTransactionConfig> txCfgs = txConfigCapture.getValues();
         assertEquals(2, txCfgs.size());
         // First backing store transaction should use default tx config
         assertEquals("default", txCfgs.get(0).getCustomOption(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID));
@@ -180,8 +180,8 @@ public class ExpectedValueCheckingTest {
         // N.B. mutation coordinates do not overlap with the lock, but consistentTx should be used anyway
         // 2.1. Check locks & expected values before mutating data
         backingLocker.checkLocks(consistentTx);
-        StaticBuffer nextBuf = BufferUtil.nextBiggerBuffer(kc.getColumn());
-        KeySliceQuery expectedValueQuery = new KeySliceQuery(kc.getKey(), kc.getColumn(), nextBuf);
+        final StaticBuffer nextBuf = BufferUtil.nextBiggerBuffer(kc.getColumn());
+        final KeySliceQuery expectedValueQuery = new KeySliceQuery(kc.getKey(), kc.getColumn(), nextBuf, "testMutateWithLockUsesConsistentTx");
         expect(backingStore.getSlice(expectedValueQuery, consistentTx)) // expected value read must use strong consistency
             .andReturn(StaticArrayEntryList.of(StaticArrayEntry.of(LOCK_COL, LOCK_VAL)));
         // 2.2. Mutate data
@@ -210,7 +210,7 @@ public class ExpectedValueCheckingTest {
         final ImmutableList<Entry> adds = ImmutableList.of(StaticArrayEntry.of(DATA_COL, DATA_VAL));
         final ImmutableList<StaticBuffer> dels = ImmutableList.<StaticBuffer>of();
 
-        Map<String, Map<StaticBuffer, KCVMutation>> mutations =
+        final Map<String, Map<StaticBuffer, KCVMutation>> mutations =
                 ImmutableMap.<String, Map<StaticBuffer, KCVMutation>>of(STORE_NAME,
                         ImmutableMap.<StaticBuffer, KCVMutation>of(DATA_KEY, new KCVMutation(adds, dels)));
         final KeyColumn kc = new KeyColumn(LOCK_KEY, LOCK_COL);
@@ -221,8 +221,8 @@ public class ExpectedValueCheckingTest {
         // 2. Run mutateMany
         // 2.1. Check locks & expected values before mutating data
         backingLocker.checkLocks(consistentTx);
-        StaticBuffer nextBuf = BufferUtil.nextBiggerBuffer(kc.getColumn());
-        KeySliceQuery expectedValueQuery = new KeySliceQuery(kc.getKey(), kc.getColumn(), nextBuf);
+        final StaticBuffer nextBuf = BufferUtil.nextBiggerBuffer(kc.getColumn());
+        final KeySliceQuery expectedValueQuery = new KeySliceQuery(kc.getKey(), kc.getColumn(), nextBuf, "testMutateManyWithLockUsesConsistentTx");
         expect(backingStore.getSlice(expectedValueQuery, consistentTx)) // expected value read must use strong consistency
             .andReturn(StaticArrayEntryList.of(StaticArrayEntry.of(LOCK_COL, LOCK_VAL)));
         // 2.2. Run mutateMany on backing manager to modify data
@@ -240,7 +240,7 @@ public class ExpectedValueCheckingTest {
         final ImmutableList<Entry> adds = ImmutableList.of(StaticArrayEntry.of(DATA_COL, DATA_VAL));
         final ImmutableList<StaticBuffer> dels = ImmutableList.<StaticBuffer>of();
 
-        Map<String, Map<StaticBuffer, KCVMutation>> mutations =
+        final Map<String, Map<StaticBuffer, KCVMutation>> mutations =
                 ImmutableMap.<String, Map<StaticBuffer, KCVMutation>>of(STORE_NAME,
                         ImmutableMap.<StaticBuffer, KCVMutation>of(DATA_KEY, new KCVMutation(adds, dels)));
 
