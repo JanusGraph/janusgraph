@@ -90,12 +90,4 @@ mgmt = graph.openManagement()
 mgmt.makeEdgeLabel('author').unidirected().make()
 mgmt.commit()
 
-Unidirected edges can be added on edges and properties, thereby giving JanusGraph limited support for hyper-edges. For example, this can be useful for capturing authorship provenance information for edges as shown in the following example, where we add a unidirected `author` edge on the `knows` edge to store the fact that `user` added this edge to the graph.
-
-[source, gremlin]
-user = graph.addVertex()
-book = graph.addVertex()
-author = graph.addVertex()
-user.addE('knows', book).property('author', author)
-
 Note, that unidirected edges do not get automatically deleted when their in-vertices are deleted. The user must ensure that such inconsistencies do not arise or resolve them at query time by explicitly checking vertex existence in a transaction. See the discussion in <<ghost-vertices>> for more information.
