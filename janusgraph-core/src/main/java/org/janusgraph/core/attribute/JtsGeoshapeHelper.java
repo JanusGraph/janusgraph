@@ -27,7 +27,7 @@ import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsGeometry;
 
 import com.google.common.base.Preconditions;
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -58,7 +58,7 @@ public class JtsGeoshapeHelper extends GeoshapeHelper {
         binaryCodec = new JtsBinaryCodec(context, jtsFactory);
     }
 
-    public Geoshape geoshape(com.vividsolutions.jts.geom.Geometry geometry) {
+    public Geoshape geoshape(org.locationtech.jts.geom.Geometry geometry) {
         return new Geoshape(((JtsSpatialContext) context).getShapeFactory().makeShapeFromGeometry(geometry));
     }
 
