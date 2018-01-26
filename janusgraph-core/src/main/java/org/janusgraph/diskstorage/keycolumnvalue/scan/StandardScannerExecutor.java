@@ -183,7 +183,12 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
             if (!Threads.waitForCompletion(processors,TIMEOUT_MS)) log.error("Processor did not terminate in time");
 
             cleanup();
-            job.workerIterationEnd(metrics);
+            try {
+                job.workerIterationEnd(metrics);
+            } catch (IllegalArgumentException e) {
+                // https://github.com/JanusGraph/janusgraph/pull/891
+                log.warn("Exception occurred processing worker iteration end. See PR 891.", e);
+            }
 
             if (interrupted) {
                 setException(new InterruptedException("Scanner got interrupted"));
