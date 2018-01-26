@@ -53,7 +53,10 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.isStartStep(), originalStep.getIds());
         originalStep.getLabels().forEach(this::addLabel);
         this.setIteratorSupplier(() -> {
-            if (this.ids != null && this.ids.length > 0) {
+            if (this.ids == null) {
+                return Collections.emptyIterator();
+            }
+            else if (this.ids.length > 0) {
                 final Graph graph = (Graph)traversal.asAdmin().getGraph().get();
                 return iteratorList((Iterator)graph.vertices(this.ids));
             }
