@@ -102,7 +102,6 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         while (true) {
             if (currentStep instanceof HasContainerHolder) {
                 final HasContainerHolder hasContainerHolder = (HasContainerHolder) currentStep;
-                final Set<Object> ids = new HashSet<>();
                 final GraphStep graphStep = (GraphStep) janusgraphStep;
                 // HasContainer collection that we get back is immutable so we keep track of which containers
                 // need to be deleted after they've been folded into the JanusGraphStep and then remove them from their
@@ -114,16 +113,6 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                         stepLabels.forEach(janusgraphStep::addLabel);
                         // this has container is no longer needed because its ids will be folded into the JanusGraphStep
                         removableHasContainers.add(hasContainer);
-                        if (!ids.isEmpty()) {
-                            // intersect ids (shouldn't this be handled in TP GraphStep.processHasContainerIds?)
-                            ids.stream().filter(id -> Arrays.stream(graphStep.getIds()).noneMatch(id::equals))
-                                .collect(Collectors.toSet()).forEach(ids::remove);
-                            if (ids.isEmpty()) {
-                                return;
-                            }
-                        } else {
-                            Arrays.stream(graphStep.getIds()).forEach(ids::add);
-                        }
                     }
                 });
                 if (!removableHasContainers.isEmpty()) {
