@@ -120,6 +120,7 @@
             <groupId>org.locationtech.spatial4j</groupId>
             <artifactId>spatial4j</artifactId>
         </dependency>
+        <!-- This is here for solr testing -->
         <dependency>
             <groupId>com.vividsolutions</groupId>
             <artifactId>jts</artifactId>
