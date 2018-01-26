@@ -77,15 +77,7 @@ public class Geoshape {
     private static String FIELD_TYPE = "type";
     private static String FIELD_COORDINATES = "coordinates";
 
-    public static final GeoshapeHelper HELPER;
-    static {
-        boolean haveJts = false;
-        try {
-            haveJts = Class.forName("com.vividsolutions.jts.geom.Geometry") != null;
-        } catch (ClassNotFoundException e) { }
-
-        HELPER = haveJts ? new JtsGeoshapeHelper() : new GeoshapeHelper();
-    }
+    public static final GeoshapeHelper HELPER = new JtsGeoshapeHelper();
 
     private static final ObjectReader mapReader;
     private static final ObjectWriter mapWriter;
