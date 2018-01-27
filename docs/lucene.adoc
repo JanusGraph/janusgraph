@@ -24,6 +24,7 @@ In the above configuration, the index backend is named `search`. Replace `search
 * *Geo*: Supports `Geo` predicates to search for geo properties that are intersecting, within, or contained in a given query geometry. Supports points, lines and polygons for indexing. Supports circles and boxes for querying point properties and all shapes for querying non-point properties. Note that JTS is required when using line and polygon shapes (see <<search-predicates#geoshape,Geoshape documentation>> for more information).
 * *Numeric Range*: Supports all numeric comparisons in `Compare`.
 * *Temporal*: Nanosecond granularity temporal indexing.
+* *Custom Analyzer*: Choose to use a custom analyzer
 
 === Configuration Options
 
