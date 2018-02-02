@@ -165,3 +165,21 @@ mgmt.buildIndex('text', Vertex.class).addKey(text, Mapping.TEXT.asParameter(), P
 mgmt.commit()
 
 With these settings, JanusGraph will use the 'standard' tokenizer for property key 'string' and the 'whitespace' tokenizer for property key 'text'.
+
+===== For Lucene
+
+The name of the analyzer must be set as parameter value or it defaults to KeywordAnalyzer for Mapping.STRING and to StandardAnalyzer for Mapping.TEXT.
+
+[source, gremlin]
+mgmt = graph.openManagement()
+string = mgmt.makePropertyKey('string').dataType(String.class).make()
+text = mgmt.makePropertyKey('text').dataType(String.class).make()
+name = mgmt.makePropertyKey('name').dataType(String.class).make()
+document = mgmt.makePropertyKey('document').dataType(String.class).make()
+mgmt.buildIndex('string', Vertex.class).addKey(string, Mapping.STRING.asParameter(), Parameter.of(ParameterType.STRING_ANALYZER.getName(), org.apache.lucene.analysis.core.SimpleAnalyzer.class.getName())).buildMixedIndex("search")
+mgmt.buildIndex('text', Vertex.class).addKey(text, Mapping.TEXT.asParameter(), Parameter.of(ParameterType.TEXT_ANALYZER.getName(), org.apache.lucene.analysis.en.EnglishAnalyzer.class.getName())).buildMixedIndex("search")
+mgmt.buildIndex('name', Vertex.class).addKey(string, Mapping.STRING.asParameter()).buildMixedIndex("search")
+mgmt.buildIndex('document', Vertex.class).addKey(text, Mapping.TEXT.asParameter()).buildMixedIndex("search")
+mgmt.commit()
+
+With these settings, JanusGraph will use a SimpleAnalyzer analyzer for property key 'string', an EnglishAnalyzer analyzer for property key 'text',  a KeywordAnalyzer analyzer for property 'name' and a StandardAnalyzer analyzer for property 'document'.
