@@ -70,3 +70,7 @@ To avoid such identifier collisions, use the `setElementIdentifier` method to de
 
 [source, java]
 graph.indexQuery("vertexByText", "$v$name:v.john").setElementIdentifier("$v$").vertices()
+
+==== Mixed Index Availability Delay
+
+When a query traverses a <<index-mixed, mixed index>> immediately after data is inserted the changes may not be visible. In <<elasticsearch, Elasticsearch>> the configuration option that determines this delay is https://www.elastic.co/guide/en/elasticsearch/reference/5.4/index-modules.html#dynamic-index-settings[index refresh interval]. In <<solr, Solr>> the primary configuration option is https://lucene.apache.org/solr/guide/6_6/near-real-time-searching.html[max time].
