@@ -812,8 +812,8 @@ mgmt.buildIndex('byNameComposite', Vertex.class).addKey(name).buildCompositeInde
 mgmt.buildIndex('byNameAndAgeComposite', Vertex.class).addKey(name).addKey(age).buildCompositeIndex()
 mgmt.commit()
 //Wait for the index to become available
-mgmt.awaitGraphIndexStatus(graph, 'byNameComposite').call()
-mgmt.awaitGraphIndexStatus(graph, 'byNameAndAgeComposite').call()
+ManagementSystem.awaitGraphIndexStatus(graph, 'byNameComposite').call()
+ManagementSystem.awaitGraphIndexStatus(graph, 'byNameAndAgeComposite').call()
 //Reindex the existing data
 mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("byNameComposite"), SchemaAction.REINDEX).get()
@@ -858,7 +858,7 @@ name = mgmt.getPropertyKey('name')
 mgmt.buildIndex('byNameUnique', Vertex.class).addKey(name).unique().buildCompositeIndex()
 mgmt.commit()
 //Wait for the index to become available
-mgmt.awaitGraphIndexStatus(graph, 'byNameUnique').call()
+ManagementSystem.awaitGraphIndexStatus(graph, 'byNameUnique').call()
 //Reindex the existing data
 mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("byNameUnique"), SchemaAction.REINDEX).get()
@@ -883,7 +883,7 @@ age = mgmt.getPropertyKey('age')
 mgmt.buildIndex('nameAndAge', Vertex.class).addKey(name).addKey(age).buildMixedIndex("search")
 mgmt.commit()
 //Wait for the index to become available
-mgmt.awaitGraphIndexStatus(graph, 'nameAndAge').call()
+ManagementSystem.awaitGraphIndexStatus(graph, 'nameAndAge').call()
 //Reindex the existing data
 mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("nameAndAge"), SchemaAction.REINDEX).get()
@@ -923,7 +923,7 @@ mgmt.addIndexKey(nameAndAge, location)
 mgmt.commit()
 //Previously created property keys already have the status ENABLED, but
 //our newly created property key "location" needs to REGISTER so we wait for both statuses
-mgmt.awaitGraphIndexStatus(graph, 'nameAndAge').status(REGISTERED, ENABLED).call()
+ManagementSystem.awaitGraphIndexStatus(graph, 'nameAndAge').status(SchemaStatus.REGISTERED, SchemaStatus.ENABLED).call()
 //Reindex the existing data
 mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("nameAndAge"), SchemaAction.REINDEX).get()
@@ -965,7 +965,7 @@ god = mgmt.getVertexLabel('god')
 mgmt.buildIndex('byNameAndLabel', Vertex.class).addKey(name).indexOnly(god).buildCompositeIndex()
 mgmt.commit()
 //Wait for the index to become available
-mgmt.awaitGraphIndexStatus(graph, 'byNameAndLabel').call()
+ManagementSystem.awaitGraphIndexStatus(graph, 'byNameAndLabel').call()
 //Reindex the existing data
 mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("byNameAndLabel"), SchemaAction.REINDEX).get()
@@ -1002,7 +1002,7 @@ battled = mgmt.getEdgeLabel('battled')
 mgmt.buildEdgeIndex(battled, 'battlesByTime', Direction.BOTH, Order.decr, time)
 mgmt.commit()
 //Wait for the index to become available
-mgmt.awaitGraphIndexStatus(graph, 'battlesByTime').call()
+ManagementSystem.awaitGraphIndexStatus(graph, 'battlesByTime').call()
 //Reindex the existing data
 mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("battlesByTime"), SchemaAction.REINDEX).get()
@@ -1021,7 +1021,7 @@ battled = mgmt.getEdgeLabel('battled')
 mgmt.buildEdgeIndex(battled, 'battlesByRatingAndTime', Direction.OUT, Order.decr, rating, time)
 mgmt.commit()
 //Wait for the index to become available
-mgmt.awaitRelationIndexStatus(graph, 'battlesByRatingAndTime', 'battled').call()
+ManagementSystem.awaitRelationIndexStatus(graph, 'battlesByRatingAndTime', 'battled').call()
 //Reindex the existing data
 mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getRelationIndex(battled, 'battlesByRatingAndTime'), SchemaAction.REINDEX).get()
