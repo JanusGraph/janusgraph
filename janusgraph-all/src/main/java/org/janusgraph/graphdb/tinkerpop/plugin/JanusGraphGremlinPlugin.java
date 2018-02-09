@@ -41,6 +41,7 @@ public class JanusGraphGremlinPlugin implements GremlinPlugin {
         add(IMPORT + "org.janusgraph.core" + DOT_STAR);
         add(IMPORT + "org.janusgraph.core.attribute" + DOT_STAR);
         add(IMPORT + "org.janusgraph.core.schema" + DOT_STAR);
+        add(IMPORT + "org.janusgraph.graphdb.database.management.ManagementSystem");
         add(IMPORT + GraphOfTheGodsFactory.class.getName());
         add(IMPORT + "org.janusgraph.hadoop.MapReduceIndexManagement");
         add(IMPORT + "java.time" + DOT_STAR);
