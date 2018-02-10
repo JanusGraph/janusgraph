@@ -74,6 +74,7 @@ import org.janusgraph.core.schema.SchemaManager;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.core.schema.VertexLabelMaker;
 import org.janusgraph.example.GraphOfTheGodsFactory;
+import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 
@@ -179,6 +180,7 @@ public class JanusGraphGremlinPlugin extends AbstractGremlinPlugin {
         CLASS_IMPORTS.add(GraphOfTheGodsFactory.class);
         CLASS_IMPORTS.add(JanusGraphIoRegistry.class);
         CLASS_IMPORTS.add(ConfigurationManagementGraph.class);
+        CLASS_IMPORTS.add(ManagementSystem.class);
 
         CLASS_IMPORTS.add(Instant.class);
         CLASS_IMPORTS.add(Clock.class);
