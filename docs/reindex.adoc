@@ -85,7 +85,7 @@ mgmt.commit()
 graph.tx().rollback()
 
 // Block until the SchemaStatus transitions from INSTALLED to REGISTERED
-report = mgmt.awaitGraphIndexStatus(graph, "mixedExample").call()
+report = ManagementSystem.awaitGraphIndexStatus(graph, "mixedExample").call()
 
 // Run a JanusGraph-Hadoop job to reindex
 mgmt = graph.openManagement()
@@ -99,7 +99,7 @@ mgmt.commit()
 
 // Block until the SchemaStatus is ENABLED
 mgmt = graph.openManagement()
-report = mgmt.awaitGraphIndexStatus(graph, "mixedExample").status(SchemaStatus.ENABLED).call()
+report = ManagementSystem.awaitGraphIndexStatus(graph, "mixedExample").status(SchemaStatus.ENABLED).call()
 mgmt.rollback()
 
 // Run a query -- JanusGraph will use the new index, no planner warning
