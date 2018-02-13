@@ -572,6 +572,9 @@
     <field name="string" type="text_en" indexed="true" stored="true" multiValued="false" />
     <field name="full_text" type="text_en" indexed="true" stored="true" multiValued="false" />
     <field name="keyword" type="text_en" indexed="true" stored="true" multiValued="false" />
+    <field name="true_date" type="date" indexed="true" stored="true" multiValued="false" />
+    <field name="uuid" type="uuid" indexed="true" stored="true" multiValued="false" /> 
+    <field name="boolean" type="boolean" indexed="true" stored="true" multiValued="false" />   
     <!-- JanusGraphIndexTest -->
     <field name="xtext" type="text_general" indexed="true" stored="true" multiValued="false" />
     <field name="xstr" type="string" indexed="true" stored="true"/>

@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.lucene;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
@@ -32,11 +31,8 @@ import org.janusgraph.graphdb.database.serialize.AttributeUtil;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.types.ParameterType;
-import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -44,8 +40,6 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.queryparser.xml.builders.BooleanQueryBuilder;
-import org.apache.lucene.queryparser.xml.builders.RangeQueryBuilder;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanQuery.Builder;
 import org.apache.lucene.spatial.SpatialStrategy;
@@ -58,7 +52,6 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +66,7 @@ import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -90,6 +84,8 @@ public class LuceneIndex implements IndexProvider {
         .supportedStringMappings(Mapping.TEXT, Mapping.STRING)
         .supportsCardinality(Cardinality.SINGLE)
         .supportsCustomAnalyzer()
+        .supportsCardinality(Cardinality.LIST)
+        .supportsCardinality(Cardinality.SET)
         .supportsNanoseconds()
         .supportsGeoContains()
         .build();
@@ -221,50 +217,261 @@ public class LuceneIndex implements IndexProvider {
         }
     }
 
-    private void mutateStores(Map.Entry<String, Map<String, IndexMutation>> stores, KeyInformation.IndexRetriever information) throws IOException, BackendException {
-        IndexReader reader = null;
-        try {
-            final String storeName = stores.getKey();
-            final IndexWriter writer = getWriter(storeName, information);
-            reader = DirectoryReader.open(writer, true, true);
+    private void mutateStores(Map.Entry<String, Map<String, IndexMutation>> stores, KeyInformation.IndexRetriever informations) throws IOException, BackendException {
+        final String storename = stores.getKey();
+        final IndexWriter writer = getWriter(storename, informations);
+        try (final IndexReader reader = DirectoryReader.open(writer, true, true)) {
             final IndexSearcher searcher = new IndexSearcher(reader);
             for (final Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
-                final String documentId = entry.getKey();
+                final String docid = entry.getKey();
                 final IndexMutation mutation = entry.getValue();
-
-                if (mutation.isDeleted()) {
-                    if (log.isTraceEnabled())
-                        log.trace("Deleted entire document [{}]", documentId);
-
-                    writer.deleteDocuments(new Term(DOCID, documentId));
-                    continue;
-                }
-
-                final Pair<Document, Map<String, Shape>> docAndGeo = retrieveOrCreate(documentId, searcher);
-                final Document doc = docAndGeo.getKey();
-                final Map<String, Shape> geoFields = docAndGeo.getValue();
-
-                Preconditions.checkNotNull(doc);
-                for (final IndexEntry del : mutation.getDeletions()) {
-                    Preconditions.checkArgument(!del.hasMetaData(), "Lucene index does not support indexing meta data: %s", del);
-                    final String key = del.field;
-                    if (doc.getField(key) != null) {
-                        if (log.isTraceEnabled())
-                            log.trace("Removing field [{}] on document [{}]", key, documentId);
-
-                        doc.removeFields(key);
-                        geoFields.remove(key);
-                    }
-                }
-
-                addToDocument(storeName, documentId, doc, mutation.getAdditions(), geoFields, information);
-
-                //write the old document to the index with the modifications
-                writer.updateDocument(new Term(DOCID, documentId), doc);
+                updateDocumentForIndexing(writer, searcher, storename, informations, docid, mutation.isDeleted(), mutation.getDeletions(), mutation.getAdditions());
             }
             writer.commit();
-        } finally {
-            IOUtils.closeQuietly(reader);
+        }
+    }
+
+    private Document retrieveOrCreateDocument(String docID, IndexSearcher searcher) throws IOException {
+        final Document doc;
+        // we only need 2 results for what we do
+        final TopDocs hits = searcher.search(new TermQuery(new Term(DOCID, docID)), 2);
+
+        if (hits.scoreDocs.length > 1)
+            throw new IllegalArgumentException("More than one document found for document id: " + docID);
+
+        if (hits.scoreDocs.length == 0) {
+            if (log.isTraceEnabled())
+                log.trace("Creating new document for [{}]", docID);
+
+            doc = new Document();
+            doc.add(new StringField(DOCID, docID, Field.Store.YES));
+        } else {
+            if (log.isTraceEnabled())
+                log.trace("Updating existing document for [{}]", docID);
+
+            int docId = hits.scoreDocs[0].doc;
+            //retrieve the old document
+            doc = searcher.doc(docId);
+        }
+        return doc;
+    }
+
+    private FieldPair fieldPair(IndexableField indexableField) {
+        return new FieldPair(indexableField.name(), indexableField.stringValue());
+    }
+
+    private void updateDocumentForIndexing(IndexWriter writer, IndexSearcher searcher, String storename, KeyInformation.IndexRetriever informations, String docid, boolean isDeleted, List<IndexEntry> deletions, List<IndexEntry> additions) throws IOException {
+        if (isDeleted) {
+            if (log.isTraceEnabled())
+                log.trace("Deleted entire document [{}]", docid);
+
+            writer.deleteDocuments(new Term(DOCID, docid));
+            return;
+        }
+
+        // before mutation, restore the old document with it's stored fields
+        final Document doc = retrieveOrCreateDocument(docid, searcher);
+        Preconditions.checkNotNull(doc);
+
+        // lazy mapping lookup, needed for string values
+        final Function<String, Mapping> mappingFactory = (f) -> Mapping.getMapping(storename, f, informations);
+
+        final Set<String> singleCardinalityDeletions = new HashSet<>();
+        final Map<String, Object> singleCardinalityAdditions = new HashMap<>();
+        final Map<String, Set<FieldPair>> setAndListCardinalityDeletions = new HashMap<>();
+        final Map<String, List<IndexableField>> listAndSetCardinalityGroupedAdditions = new HashMap<>();
+        for (IndexEntry indexEntry : additions) {
+            Cardinality cardinality = informations.get(storename, indexEntry.field).getCardinality();
+            if (cardinality == Cardinality.SINGLE) {
+                // we will remove this field from the old document
+                singleCardinalityDeletions.add(indexEntry.field);
+                // and later re-add the last such field to the new document
+                singleCardinalityAdditions.put(indexEntry.field, indexEntry.value);
+            } else if (cardinality == Cardinality.LIST || cardinality == Cardinality.SET) {
+                // we collect a list of the values that should be added
+                if (!listAndSetCardinalityGroupedAdditions.containsKey(indexEntry.field)) {
+                    listAndSetCardinalityGroupedAdditions.put(indexEntry.field, new ArrayList<>());
+                }
+                listAndSetCardinalityGroupedAdditions.get(indexEntry.field).add(storedField(indexEntry.field, indexEntry.value, false, mappingFactory));
+            } else throw new IllegalArgumentException("cardinality not supported: " + cardinality);
+        }
+
+        for (IndexEntry indexEntry : deletions) {
+            Cardinality cardinality = informations.get(storename, indexEntry.field).getCardinality();
+            if (cardinality == Cardinality.SINGLE) {
+                // we will remove this field from the old document and later re-add the last such field to the new document
+                singleCardinalityDeletions.add(indexEntry.field);
+            } else if (cardinality == Cardinality.LIST || cardinality == Cardinality.SET) {
+                // we collect a set of values that should be removed
+                if (!setAndListCardinalityDeletions.containsKey(indexEntry.field)) {
+                    setAndListCardinalityDeletions.put(indexEntry.field, new HashSet<>());
+                }
+                setAndListCardinalityDeletions.get(indexEntry.field).add(new FieldPair(indexEntry.field, indexEntry.value.toString()));
+            } else throw new IllegalArgumentException("cardinality not supported: " + cardinality);
+        }
+        final Map<String, Set<FieldPair>> encounteredSetValues = new HashMap<>();
+
+        // remove deleted values from the old restored document (and all Cardinality.Single values that are updated)
+        final Iterator<IndexableField> iterator = doc.iterator();
+        while (iterator.hasNext()) {
+            final IndexableField storedField = iterator.next();
+            final String fieldName = storedField.name();
+            if (DOCID.equals(fieldName)) continue;
+
+            final KeyInformation kinfo = informations.get(storename, fieldName);
+            final Cardinality cardinality = kinfo.getCardinality();
+
+            if (cardinality == Cardinality.SINGLE && !singleCardinalityDeletions.contains(fieldName)) continue;
+            if (cardinality != Cardinality.SINGLE) {
+                Set<FieldPair> set = setAndListCardinalityDeletions.get(fieldName);
+                if (set == null || !set.contains(fieldPair(storedField))) {
+                    if (cardinality == Cardinality.SET) {
+                        // we collect encountered set values that aren't removed
+                        if (!encounteredSetValues.containsKey(fieldName)) {
+                            encounteredSetValues.put(fieldName, new HashSet<>());
+                        }
+                        encounteredSetValues.get(fieldName).add(fieldPair(storedField));
+                    }
+                    continue;
+                }
+            }
+            iterator.remove();
+            // for Cardinality.Single, we remove all fields with the same name in the additions and deletions
+            // for other cardinality, we remove only fields that have the same name and the same value, in the deletions
+            // potential issue, what if there are multiple instances of the same value in a field with Cardinality.LIST
+            // but I'm not sure janus graph cares about that, given how IndexMutation is designed
+        }
+
+        // now handle the additions with respect to the cardinality
+        // first handle single additions
+        for (final Map.Entry<String, Object> entry:singleCardinalityAdditions.entrySet()) {
+            doc.add(storedField(entry.getKey(), entry.getValue(), true, mappingFactory));
+        }
+
+        // next handle set and list additions
+        for (final Map.Entry<String, List<IndexableField>> entry:listAndSetCardinalityGroupedAdditions.entrySet()) {
+            final KeyInformation keyInformation = informations.get(storename, entry.getKey());
+            final Cardinality cardinality = keyInformation.getCardinality();
+            final String fieldName = entry.getKey();
+            final List<IndexableField> list = entry.getValue();
+            if (cardinality == Cardinality.LIST) {
+                for (IndexableField indexableField : list) {
+                    doc.add(indexableField);
+                }
+            } else {
+                // cardinality == Cardinality.SET
+                if (!encounteredSetValues.containsKey(fieldName)) encounteredSetValues.put(fieldName, new HashSet<>());
+                final Set<FieldPair> set = encounteredSetValues.get(fieldName);
+                for (IndexableField indexableField : list) {
+                    // only add the field to the doc if it hasn't already been added
+                    FieldPair fieldPair = fieldPair(indexableField);
+                    if (!set.contains(fieldPair)) {
+                        doc.add(indexableField);
+                        set.add(fieldPair);
+                    }
+                }
+            }
+        }
+
+        // at this point the document should only hold stored (persistent) IndexableFields
+        // now add (non-persistent) fields that are used for lookups in the document (except for DOCID)
+        // the copy is necessary to avoid concurrent modifications
+        final List<IndexableField> fields = doc.getFields();
+        final List<IndexableField> copy = new ArrayList<>(fields.size());
+        copy.addAll(fields);
+        for (IndexableField field : copy) {
+            if (!field.name().equals(DOCID)) addNonPersistantField(doc, storename, field, informations);
+        }
+
+        writer.updateDocument(new Term(DOCID, docid), doc);
+    }
+
+    // we should be able to restore all fields (except DOCID) from an old document, which means they must have a stored counterpart
+    private IndexableField storedField(final String fieldName, final Object value, boolean isCardinalitySingle, final Function<String, Mapping> mappingFactory) {
+        if (value instanceof Number) {
+            if (AttributeUtil.isWholeNumber((Number) value)) {
+                return new StoredField(fieldName, ((Number) value).longValue());
+            } else { //double or float
+                return new StoredField(fieldName, ((Number) value).doubleValue());
+            }
+        } else if (AttributeUtil.isString(value)) {
+            String str = (String) value;
+            // we only need a mapping when we have a String value
+            Mapping mapping = mappingFactory.apply(fieldName);
+            switch (mapping) {
+                case DEFAULT:
+                case TEXT:
+                    return new TextField(fieldName, str.toLowerCase(), Field.Store.YES);
+                case STRING:
+                    return new TextField(fieldName, str, Field.Store.YES);
+
+                default:
+                    throw new IllegalArgumentException("Illegal mapping specified: " + mapping);
+            }
+        } else if (value instanceof Geoshape) {
+            return new StoredField(fieldName, GEOID + value.toString());
+        } else if (value instanceof Date) {
+            return new StoredField(fieldName, (((Date) value).getTime()));
+        } else if (value instanceof Instant) {
+            return new StoredField(fieldName, (((Instant) value).toEpochMilli()));
+        } else if (value instanceof Boolean) {
+            return new StoredField(fieldName, ((Boolean) value) ? 1 : 0);
+        } else if (value instanceof UUID) {
+            // We store UUID as TextField analyzed with the KeywordAnalyzer
+            // With the current design of LuceneIndex, this removes complexity when making sure
+            // that values are not lost when mutating the index
+            return new TextField(fieldName, value.toString(), Field.Store.YES);
+        } else {
+            throw new IllegalArgumentException("Unsupported type for field " + fieldName + " with value :" + value + "and class " + value.getClass());
+        }
+    }
+
+
+    /**
+     * compute a field (for lookup purposes) from a restorable field (or return null if it is not necessary)
+     */
+    private void addNonPersistantField(final Document doc, final String store, final IndexableField field, final KeyInformation.IndexRetriever informations) {
+        final String fieldName = field.name();
+        final KeyInformation keyInformation = informations.get(store, fieldName);
+        final Class clazz = keyInformation.getDataType();
+        if (Number.class.isAssignableFrom(clazz)) {
+            if (AttributeUtil.isWholeNumber(clazz)) {
+                long value = field.numericValue().longValue();
+                if (keyInformation.getCardinality() == Cardinality.SINGLE) {
+                    doc.add(new NumericDocValuesField(fieldName, value));
+                }
+                doc.add(new LongPoint(fieldName, value));
+            } else {
+                double value = field.numericValue().doubleValue();
+                if (keyInformation.getCardinality() == Cardinality.SINGLE) {
+                    doc.add(new DoubleDocValuesField(fieldName, value));
+                }
+                doc.add(new DoublePoint(fieldName, value));
+            }
+        } else if (AttributeUtil.isString(clazz)) {
+            // string fields are stored as TextField, no need to add stuff
+        } else if (Geoshape.class.isAssignableFrom(clazz)) {
+            final Shape shape;
+            try {
+                shape = Geoshape.fromWkt(field.stringValue().substring(GEOID.length())).getShape();
+            } catch (java.text.ParseException e) {
+                throw new IllegalArgumentException("Geoshape was unparsable", e);
+            }
+            final SpatialStrategy spatialStrategy = getSpatialStrategy(fieldName, keyInformation);
+
+            for (Field f : spatialStrategy.createIndexableFields(shape)) {
+                doc.add(f);
+            }
+        } else if (Date.class.isAssignableFrom(clazz)) {
+            doc.add(new LongPoint(fieldName, field.numericValue().longValue()));
+        } else if (Instant.class.isAssignableFrom(clazz)) {
+            doc.add(new LongPoint(fieldName, field.numericValue().longValue()));
+        } else if (Boolean.class.isAssignableFrom(clazz)) {
+            doc.add(new IntPoint(fieldName, field.numericValue().intValue()));
+        } else if (UUID.class.isAssignableFrom(clazz)) {
+            // nothing to do, this is stored as a TextField
+        } else {
+            throw new IllegalArgumentException("Unsupported type for class: " + clazz);
         }
     }
 
@@ -290,11 +497,7 @@ public class LuceneIndex implements IndexProvider {
                         continue;
                     }
 
-                    final Pair<Document, Map<String, Shape>> docAndGeo = retrieveOrCreate(docID, searcher);
-                    addToDocument(store, docID, docAndGeo.getKey(), content, docAndGeo.getValue(), information);
-
-                    //write the old document to the index with the modifications
-                    writer.updateDocument(new Term(DOCID, docID), docAndGeo.getKey());
+                    updateDocumentForIndexing(writer, searcher, store, information, docID, false, Collections.emptyList(), content);
                 }
                 writer.commit();
             }
@@ -303,124 +506,6 @@ public class LuceneIndex implements IndexProvider {
             throw new TemporaryBackendException("Could not update Lucene index", e);
         } finally {
             writerLock.unlock();
-        }
-    }
-
-    private Pair<Document, Map<String, Shape>> retrieveOrCreate(String docID, IndexSearcher searcher) throws IOException {
-        final Document doc;
-        final TopDocs hits = searcher.search(new TermQuery(new Term(DOCID, docID)), 10);
-        final Map<String, Shape> geoFields = Maps.newHashMap();
-
-        if (hits.scoreDocs.length > 1)
-            throw new IllegalArgumentException("More than one document found for document id: " + docID);
-
-        if (hits.scoreDocs.length == 0) {
-            if (log.isTraceEnabled())
-                log.trace("Creating new document for [{}]", docID);
-
-            doc = new Document();
-            doc.add(new StringField(DOCID, docID, Field.Store.YES));
-        } else {
-            if (log.isTraceEnabled())
-                log.trace("Updating existing document for [{}]", docID);
-
-            final int docId = hits.scoreDocs[0].doc;
-            //retrieve the old document
-            doc = searcher.doc(docId);
-            for (final IndexableField field : doc.getFields()) {
-                if (field.stringValue().startsWith(GEOID)) {
-                    try {
-                        geoFields.put(field.name(), Geoshape.fromWkt(field.stringValue().substring(GEOID.length())).getShape());
-                    } catch (final java.text.ParseException e) {
-                        throw new IllegalArgumentException("Geoshape was not parsable");
-                    }
-                }
-            }
-        }
-
-        return new ImmutablePair<>(doc, geoFields);
-    }
-
-    private void addToDocument(String store,
-                               String docID,
-                               Document doc,
-                               List<IndexEntry> content,
-                               Map<String, Shape> geoFields,
-                               KeyInformation.IndexRetriever information) {
-        Preconditions.checkNotNull(doc);
-        for (final IndexEntry e : content) {
-            Preconditions.checkArgument(!e.hasMetaData(), "Lucene index does not support indexing meta data: %s", e);
-            if (log.isTraceEnabled())
-                log.trace("Adding field [{}] on document [{}]", e.field, docID);
-
-            if (doc.getField(e.field) != null)
-                doc.removeFields(e.field);
-
-            if (e.value instanceof Number) {
-                final Field field;
-                final Field sortField;
-                if (AttributeUtil.isWholeNumber((Number) e.value)) {
-                    field = new LongPoint(e.field, ((Number) e.value).longValue());
-                    sortField = new NumericDocValuesField(e.field, ((Number) e.value).longValue());
-                } else { //double or float
-                    field = new DoublePoint(e.field, ((Number) e.value).doubleValue());
-                    sortField = new DoubleDocValuesField(e.field, ((Number) e.value).doubleValue());
-                }
-                doc.add(field);
-                doc.add(sortField);
-            } else if (AttributeUtil.isString(e.value)) {
-                final String str = (String) e.value;
-                final Mapping mapping = Mapping.getMapping(store, e.field, information);
-                final Field field;
-                switch (mapping) {
-                    case DEFAULT:
-                    case TEXT:
-                        // lowering the case for case insensitive text search
-                        field = new TextField(e.field, str.toLowerCase(), Field.Store.YES);
-                        break;
-                    case STRING:
-                        // if this field uses a custom analyzer, it must be stored as a TextField
-                        // (or the analyzer, even if it is a KeywordAnalyzer won't be used)
-                        field = new TextField(e.field, str, Field.Store.YES);
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Illegal mapping specified: " + mapping);
-                }
-                doc.add(field);
-            } else if (e.value instanceof Geoshape) {
-                final Shape shape = ((Geoshape) e.value).getShape();
-                geoFields.put(e.field, shape);
-                doc.add(new StoredField(e.field, GEOID + e.value.toString()));
-            } else if (e.value instanceof Date) {
-                doc.add(new LongPoint(e.field, (((Date) e.value).getTime())));
-            } else if (e.value instanceof Instant) {
-                doc.add(new LongPoint(e.field, (((Instant) e.value).toEpochMilli())));
-            } else if (e.value instanceof Boolean) {
-                doc.add(new IntPoint(e.field, ((Boolean) e.value) ? 1 : 0));
-            } else if (e.value instanceof UUID) {
-                //Solr stores UUIDs as strings, we we do the same.
-                final Field field = new StringField(e.field, e.value.toString(), Field.Store.YES);
-                doc.add(field);
-            } else {
-                throw new IllegalArgumentException("Unsupported type: " + e.value);
-            }
-        }
-
-        for (final Map.Entry<String, Shape> geo : geoFields.entrySet()) {
-            if (log.isTraceEnabled())
-                log.trace("Updating geo-indexes for key {}", geo.getKey());
-
-            final KeyInformation ki = information.get(store, geo.getKey());
-            final SpatialStrategy spatialStrategy = getSpatialStrategy(geo.getKey(), ki);
-            for (final IndexableField f : spatialStrategy.createIndexableFields(geo.getValue())) {
-                if (doc.getField(f.name()) != null) {
-                    doc.removeFields(f.name());
-                }
-                doc.add(f);
-                if (spatialStrategy instanceof PointVectorStrategy) {
-                    doc.add(new DoubleDocValuesField(f.name(), f.numericValue() == null ? null : f.numericValue().doubleValue()));
-                }
-            }
         }
     }
 
@@ -530,19 +615,8 @@ public class LuceneIndex implements IndexProvider {
 
     private void tokenize(SearchParams params, final Mapping mapping, final LuceneCustomAnalyzer delegatingAnalyzer, String value, String key, JanusGraphPredicate janusgraphPredicate) {
         final Analyzer analyzer = delegatingAnalyzer.getWrappedAnalyzer(key);
-        final List<String>    terms = customTokenize(analyzer, key, value);
-        if (terms.isEmpty()) {
-            // This might happen with very short terms
-            if (janusgraphPredicate == Text.CONTAINS_PREFIX ) {
-                final Term term;
-                if (mapping == Mapping.STRING) {
-                    term = new Term(key, value);
-                } else {
-                    term = new Term(key, value.toLowerCase());
-                }
-                params.addQuery(new PrefixQuery(term), BooleanClause.Occur.MUST);
-            }
-        } else if (terms.size() == 1) {
+        final List<String> terms = customTokenize(analyzer, key, value);
+        if (terms.size() == 1) {
             if (janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate == Text.CONTAINS) {
                 params.addQuery(new TermQuery(new Term(key, value)));
             } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
@@ -551,14 +625,10 @@ public class LuceneIndex implements IndexProvider {
                 q.add(new TermQuery(new Term(key, value)), BooleanClause.Occur.MUST_NOT);
                 params.addQuery(q.build(), BooleanClause.Occur.MUST);
             } else if (janusgraphPredicate == Text.CONTAINS_PREFIX) {
-                final Term term;
-                if (mapping == Mapping.STRING) {
-                    term = new Term(key, terms.get(0));
-                } else {
-                    term = new Term(key, terms.get(0).toLowerCase());
-                }
+                final Term term = new Term(key, terms.get(0).toLowerCase());
                 params.addQuery(new PrefixQuery(term), BooleanClause.Occur.MUST);
-            } else throw new IllegalArgumentException("LuceneIndex does not support this predicate with 1 token : " + janusgraphPredicate);
+            } else
+                throw new IllegalArgumentException("LuceneIndex does not support this predicate with 1 token : " + janusgraphPredicate);
         } else {
             // at the moment, this is only walked for EQUAL and Text.CONTAINS (String and Text mappings)
             final BooleanQuery.Builder q = new BooleanQuery.Builder();
@@ -596,43 +666,43 @@ public class LuceneIndex implements IndexProvider {
                 } else if (janusgraphPredicate == Cmp.GREATER_THAN_EQUAL) {
                     params.addQuery(TermRangeQuery.newStringRange(key, value.toString(), null, true, false));
                 } else {
-                        final Mapping map = Mapping.getMapping(information.get(key));
-                        if ((map == Mapping.DEFAULT || map == Mapping.TEXT) && !Text.HAS_CONTAINS.contains(janusgraphPredicate))
-                            throw new IllegalArgumentException("Text mapped string values only support CONTAINS queries and not: " + janusgraphPredicate);
-                        if (map == Mapping.STRING && Text.HAS_CONTAINS.contains(janusgraphPredicate))
-                            throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + janusgraphPredicate);
-                        if (janusgraphPredicate == Text.CONTAINS) {
-                            tokenize(params, map, delegatingAnalyzer, ((String) value).toLowerCase(), key, janusgraphPredicate);
-                        } else if (janusgraphPredicate == Text.CONTAINS_PREFIX) {
-                            tokenize(params, map, delegatingAnalyzer, (String) value, key, janusgraphPredicate);
-                        } else if (janusgraphPredicate == Text.PREFIX) {
-                            params.addQuery(new PrefixQuery(new Term(key, (String) value)));
-                        } else if (janusgraphPredicate == Text.REGEX) {
-                            final RegexpQuery rq = new RegexpQuery(new Term(key, (String) value));
-                            params.addQuery(rq);
-                        } else if (janusgraphPredicate == Text.CONTAINS_REGEX) {
-                            // This is terrible -- there is probably a better way
-                            // putting this to lowercase because Text search is supposed to be case insensitive
-                            final RegexpQuery rq = new RegexpQuery(new Term(key, ".*" + (((String) value).toLowerCase()) + ".*"));
-                            params.addQuery(rq);
-                        } else if (janusgraphPredicate == Cmp.EQUAL) {
-                            tokenize(params, map, delegatingAnalyzer, (String) value, key, janusgraphPredicate);
-                        } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
-                            final BooleanQuery.Builder q = new BooleanQuery.Builder();
-                            q.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
-                            q.add(new TermQuery(new Term(key, (String) value)), BooleanClause.Occur.MUST_NOT);
-                            params.addQuery(q.build());
-                        } else if (janusgraphPredicate == Text.FUZZY) {
-                            params.addQuery(new FuzzyQuery(new Term(key, (String) value)));
-                        } else if (janusgraphPredicate == Text.CONTAINS_FUZZY) {
-                            value = ((String) value).toLowerCase();
-                            final Builder b = new BooleanQuery.Builder();
-                            for (final String term : Text.tokenize((String) value)) {
-                                b.add(new FuzzyQuery(new Term(key, term)), BooleanClause.Occur.MUST);
-                            }
-                            params.addQuery(b.build());
-                        } else
-                            throw new IllegalArgumentException("Relation is not supported for string value: " + janusgraphPredicate);
+                    final Mapping map = Mapping.getMapping(information.get(key));
+                    if ((map == Mapping.DEFAULT || map == Mapping.TEXT) && !Text.HAS_CONTAINS.contains(janusgraphPredicate))
+                        throw new IllegalArgumentException("Text mapped string values only support CONTAINS queries and not: " + janusgraphPredicate);
+                    if (map == Mapping.STRING && Text.HAS_CONTAINS.contains(janusgraphPredicate))
+                        throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + janusgraphPredicate);
+                    if (janusgraphPredicate == Text.CONTAINS) {
+                        tokenize(params, map, delegatingAnalyzer, ((String) value).toLowerCase(), key, janusgraphPredicate);
+                    } else if (janusgraphPredicate == Text.CONTAINS_PREFIX) {
+                        tokenize(params, map, delegatingAnalyzer, (String) value, key, janusgraphPredicate);
+                    } else if (janusgraphPredicate == Text.PREFIX) {
+                        params.addQuery(new PrefixQuery(new Term(key, (String) value)));
+                    } else if (janusgraphPredicate == Text.REGEX) {
+                        final RegexpQuery rq = new RegexpQuery(new Term(key, (String) value));
+                        params.addQuery(rq);
+                    } else if (janusgraphPredicate == Text.CONTAINS_REGEX) {
+                        // This is terrible -- there is probably a better way
+                        // putting this to lowercase because Text search is supposed to be case insensitive
+                        final RegexpQuery rq = new RegexpQuery(new Term(key, ".*" + (((String) value).toLowerCase()) + ".*"));
+                        params.addQuery(rq);
+                    } else if (janusgraphPredicate == Cmp.EQUAL) {
+                        tokenize(params, map, delegatingAnalyzer, (String) value, key, janusgraphPredicate);
+                    } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
+                        final BooleanQuery.Builder q = new BooleanQuery.Builder();
+                        q.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
+                        q.add(new TermQuery(new Term(key, (String) value)), BooleanClause.Occur.MUST_NOT);
+                        params.addQuery(q.build());
+                    } else if (janusgraphPredicate == Text.FUZZY) {
+                        params.addQuery(new FuzzyQuery(new Term(key, (String) value)));
+                    } else if (janusgraphPredicate == Text.CONTAINS_FUZZY) {
+                        value = ((String) value).toLowerCase();
+                        final Builder b = new BooleanQuery.Builder();
+                        for (final String term : Text.tokenize((String) value)) {
+                            b.add(new FuzzyQuery(new Term(key, term)), BooleanClause.Occur.MUST);
+                        }
+                        params.addQuery(b.build());
+                    } else
+                        throw new IllegalArgumentException("Relation is not supported for string value: " + janusgraphPredicate);
                 }
             } else if (value instanceof Geoshape) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Geo, "Relation not supported on geo types: " + janusgraphPredicate);
@@ -738,7 +808,7 @@ public class LuceneIndex implements IndexProvider {
             final Analyzer analyzer = delegatingAnalyzerFor(query.getStore(), information);//writers.get(query.getStore()).getAnalyzer();
             q = new QueryParser("_all", analyzer).parse(query.getQuery());
         } catch (final ParseException e) {
-            throw new PermanentBackendException("Could not parse raw query: "+query.getQuery(),e);
+            throw new PermanentBackendException("Could not parse raw query: " + query.getQuery(), e);
         }
 
         try {
@@ -764,7 +834,6 @@ public class LuceneIndex implements IndexProvider {
 
     @Override
     public boolean supports(KeyInformation information, JanusGraphPredicate janusgraphPredicate) {
-        if (information.getCardinality() != Cardinality.SINGLE) return false;
         final Class<?> dataType = information.getDataType();
         final Mapping mapping = Mapping.getMapping(information);
         if (mapping != Mapping.DEFAULT && !AttributeUtil.isString(dataType) &&
@@ -773,6 +842,7 @@ public class LuceneIndex implements IndexProvider {
         if (Number.class.isAssignableFrom(dataType)) {
             return janusgraphPredicate instanceof Cmp;
         } else if (dataType == Geoshape.class) {
+            if (information.getCardinality() != Cardinality.SINGLE) return false;
             return janusgraphPredicate == Geo.INTERSECT || janusgraphPredicate == Geo.WITHIN || janusgraphPredicate == Geo.CONTAINS;
         } else if (AttributeUtil.isString(dataType)) {
             switch (mapping) {
@@ -794,7 +864,6 @@ public class LuceneIndex implements IndexProvider {
 
     @Override
     public boolean supports(KeyInformation information) {
-        if (information.getCardinality() != Cardinality.SINGLE) return false;
         final Class<?> dataType = information.getDataType();
         final Mapping mapping = Mapping.getMapping(information);
         if (Number.class.isAssignableFrom(dataType) || dataType == Date.class || dataType == Instant.class || dataType == Boolean.class || dataType == UUID.class) {
@@ -935,6 +1004,42 @@ public class LuceneIndex implements IndexProvider {
                 return null;
             }
             return q;
+        }
+    }
+
+    private static class FieldPair {
+        public final String fieldName;
+        public final String value;
+
+        public FieldPair(String field, String value) {
+            this.fieldName = field;
+            this.value = value;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            final FieldPair that = (FieldPair) o;
+
+            if (fieldName != null ? !fieldName.equals(that.fieldName) : that.fieldName != null) return false;
+            return value != null ? value.equals(that.value) : that.value == null;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = fieldName != null ? fieldName.hashCode() : 0;
+            result = 31 * result + (value != null ? value.hashCode() : 0);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "FieldPair{" +
+                "fieldName='" + fieldName + '\'' +
+                ", value='" + value + '\'' +
+                '}';
         }
     }
 }

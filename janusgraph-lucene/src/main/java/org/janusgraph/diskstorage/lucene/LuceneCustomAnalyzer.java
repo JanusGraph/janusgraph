@@ -25,6 +25,7 @@ import org.janusgraph.graphdb.types.ParameterType;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * An Analyzer that allows delegating analysis to custom analyzers. The class names for the custom analyzers are
@@ -58,28 +59,32 @@ public class LuceneCustomAnalyzer extends DelegatingAnalyzerWrapper {
     @Override
     final protected Analyzer getWrappedAnalyzer(String fieldName) {
         final KeyInformation keyInformation = informations.get(store, fieldName);
-        if (keyInformation == null || !String.class.isAssignableFrom(keyInformation.getDataType())) {
+        if (keyInformation == null)
             return analyzerFor(STANDARD_ANALYZER);
-        }
+        final Class<?> dataType = keyInformation.getDataType();
+        if (UUID.class.isAssignableFrom(dataType))
+            return analyzerFor(KEYWORD_ANALYZER);
+        if (!String.class.isAssignableFrom(dataType))
+            return analyzerFor(STANDARD_ANALYZER);
         final Parameter[] parameters = keyInformation.getParameters();
         // if mapping isn't present in parameters, we use Mapping.DEFAULT
         final Mapping mapping = ParameterType.MAPPING.findParameter(parameters, Mapping.DEFAULT);
         // at the moment, we only try to support custom analyzers for string data.
         // everything else falls through a StandardAnalyzer as was the case before
-        return analyzerFor(analyzerNameFor(parameters, mapping, KEYWORD_ANALYZER, STANDARD_ANALYZER));
+        return analyzerFor(analyzerNameFor(parameters, mapping));
     }
 
-    private static String analyzerNameFor(final Parameter[] parameters, final Mapping mapping, final String defaultStringAnalyzer, final String defaultTextAnalyzer) {
+    private static String analyzerNameFor(final Parameter[] parameters, final Mapping mapping) {
         switch (mapping) {
             case TEXTSTRING:
                 throw new RuntimeException("TextString is an unsupported mapping for string data & custom analyzers");
             case PREFIX_TREE:
                 throw new RuntimeException("Prefix-tree is an unsupported mapping for string data & custom analyzers");
             case STRING:
-                return ParameterType.STRING_ANALYZER.findParameter(parameters, defaultStringAnalyzer);
+                return ParameterType.STRING_ANALYZER.findParameter(parameters, KEYWORD_ANALYZER);
             case TEXT:
             case DEFAULT:// TEXT
-                return ParameterType.TEXT_ANALYZER.findParameter(parameters, defaultTextAnalyzer);
+                return ParameterType.TEXT_ANALYZER.findParameter(parameters, STANDARD_ANALYZER);
             default:
                 throw new RuntimeException("Not supported");
         }

@@ -55,6 +55,6 @@ public class BerkeleyLuceneTest extends JanusGraphIndexTest {
 
     @Override
     protected boolean supportsCollections() {
-        return false;
+        return true;
     }
 }
