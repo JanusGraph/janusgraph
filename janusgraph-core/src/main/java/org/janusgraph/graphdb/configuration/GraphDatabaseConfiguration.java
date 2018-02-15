@@ -667,7 +667,7 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<Integer> CLUSTER_MAX_PARTITIONS = new ConfigOption<>(CLUSTER_NS,"max-partitions",
             "The number of virtual partition blocks created in the partitioned graph. This should be larger than the maximum expected number of nodes" +
-                    "in the JanusGraph graph cluster. Must be bigger than 1 and a power of 2.",
+                    " in the JanusGraph graph cluster. Must be greater than 1 and a power of 2.",
             ConfigOption.Type.FIXED, 32, integer -> integer!=null && integer>1 && NumberUtil.isPowerOf2(integer));
 
 
