@@ -1,7 +1,7 @@
 host: 0.0.0.0
 port: 8182
 scriptEvaluationTimeout: 30000
-channelizer: org.apache.tinkerpop.gremlin.server.channel.WebSocketChannelizer
+channelizer: org.janusgraph.channelizers.JanusGraphWebSocketChannelizer
 graphManager: org.janusgraph.graphdb.management.JanusGraphManager
 graphs: {
   ConfigurationManagementGraph: conf/janusgraph-cassandra-configurationgraph.properties
@@ -12,7 +12,7 @@ scriptEngines: {
                org.apache.tinkerpop.gremlin.server.jsr223.GremlinServerGremlinPlugin: {},
                org.apache.tinkerpop.gremlin.tinkergraph.jsr223.TinkerGraphGremlinPlugin: {},
                org.apache.tinkerpop.gremlin.jsr223.ImportGremlinPlugin: {classImports: [java.lang.Math], methodImports: [java.lang.Math#*]},
-               org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: {files: [scripts/empty-sample.groovy]}},
+               org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: {files: []}},
     imports: [java.lang.Math],
     staticImports: [java.lang.Math.PI],
     scripts: [scripts/empty-sample.groovy]}}
