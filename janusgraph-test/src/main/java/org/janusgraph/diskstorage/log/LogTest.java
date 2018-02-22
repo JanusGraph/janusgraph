@@ -303,6 +303,9 @@ public abstract class LogTest {
             latch.countDown();
         }
 
+        @Override
+        public void updateState() {}
+
         /**
          * Subclasses can override this method to perform additional processing on the message.
          */
