@@ -28,6 +28,11 @@ public interface MessageReader {
     public void read(Message message);
 
     /**
+     * Updates the state of the MessageReader.
+     */
+    public void updateState();
+
+    /**
      * Need to override this method because the {@link Log} uses this comparison
      * when unregistering readers
      *
