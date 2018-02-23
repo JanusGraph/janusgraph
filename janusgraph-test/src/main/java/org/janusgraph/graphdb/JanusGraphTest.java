@@ -64,6 +64,7 @@ import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.diskstorage.log.Log;
+import org.janusgraph.diskstorage.log.Message;
 import org.janusgraph.diskstorage.log.MessageReader;
 import org.janusgraph.diskstorage.log.ReadMarker;
 import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
@@ -1756,6 +1757,66 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         graph2.close();
 
+    }
+
+    @Category({BrittleTests.class})
+    @Test
+    public void testIndexShouldRegisterWhenWeRemoveAnInstance() throws InterruptedException {
+        clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
+                option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250)
+        );
+
+        StandardJanusGraph graph2 = (StandardJanusGraph) JanusGraphFactory.open(config);
+        JanusGraphTransaction tx2;
+
+        mgmt.makePropertyKey("name").dataType(String.class).make();
+        finishSchema();
+
+        tx.addVertex("name", "v1");
+        newTx();
+        evaluateQuery(tx.query().has("name", "v1"), ElementCategory.VERTEX, 1, new boolean[]{false, true});
+        tx2 = graph2.newTransaction();
+        evaluateQuery(tx2.query().has("name", "v1"), ElementCategory.VERTEX, 1, new boolean[]{false, true});
+        //Leave tx2 open to delay acknowledgement
+
+        mgmt.buildIndex("theIndex", Vertex.class).addKey(mgmt.getPropertyKey("name")).buildCompositeIndex();
+        mgmt.commit();
+
+        JanusGraphTransaction tx3 = graph2.newTransaction();
+        tx3.addVertex("name", "v2");
+        tx3.commit();
+        newTx();
+        tx.addVertex("name", "v3");
+        tx.commit();
+
+        finishSchema();
+        try {
+            mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
+            fail(); //Open tx2 should not make this possible
+        } catch (IllegalArgumentException e) {
+        }
+        finishSchema();
+
+        //close second graph instance, so index can move to REGISTERED
+        Set<String> openInstances = mgmt.getOpenInstances();
+        assertEquals(2, openInstances.size());
+        assertTrue(openInstances.contains(graph.getConfiguration().getUniqueGraphId() + "(current)"));
+        assertTrue(openInstances.contains(graph2.getConfiguration().getUniqueGraphId()));
+        try {
+            mgmt.forceCloseInstance(graph.getConfiguration().getUniqueGraphId());
+            fail(); //Cannot close current instance
+        } catch (IllegalArgumentException e) {
+        }
+        mgmt.forceCloseInstance(graph2.getConfiguration().getUniqueGraphId());
+
+        mgmt.commit();
+        assertTrue(ManagementSystem.awaitGraphIndexStatus(graph, "theIndex").status(SchemaStatus.REGISTERED)
+                .timeout(TestGraphConfigs.getSchemaConvergenceTime(ChronoUnit.SECONDS), ChronoUnit.SECONDS)
+                .call().getSucceeded());
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
+        finishSchema();
     }
 
    /* ==================================================================================
@@ -3725,60 +3786,70 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         final EnumMap<LogTxStatus, AtomicInteger> txMsgCounter = new EnumMap<>(LogTxStatus.class);
         for (final LogTxStatus status : LogTxStatus.values()) txMsgCounter.put(status, new AtomicInteger(0));
         final AtomicInteger userLogMeta = new AtomicInteger(0);
-        transactionLog.registerReader(startMarker, (MessageReader) message -> {
-            final Instant msgTime = message.getTimestamp();
-            assertTrue(msgTime.isAfter(startTime) || msgTime.equals(startTime));
-            assertNotNull(message.getSenderId());
-            final TransactionLogHeader.Entry txEntry = TransactionLogHeader.parse(message.getContent(), serializer, times);
-            final TransactionLogHeader header = txEntry.getHeader();
-//                System.out.println(header.getTimestamp(TimeUnit.MILLISECONDS));
-            assertTrue(header.getTimestamp().isAfter(startTime) || header.getTimestamp().equals(startTime));
-            assertTrue(header.getTimestamp().isBefore(msgTime) || header.getTimestamp().equals(msgTime));
-            assertNotNull(txEntry.getMetadata());
-            assertNull(txEntry.getMetadata().get(LogTxMeta.GROUPNAME));
-            final LogTxStatus status = txEntry.getStatus();
-            if (status == LogTxStatus.PRECOMMIT) {
-                assertTrue(txEntry.hasContent());
-                final Object logId = txEntry.getMetadata().get(LogTxMeta.LOG_ID);
-                if (logId != null) {
-                    assertTrue(logId instanceof String);
-                    assertEquals(userLogName, logId);
-                    userLogMeta.incrementAndGet();
+        transactionLog.registerReader(startMarker, new MessageReader() {
+            @Override
+            public void read(Message message) {
+                final Instant msgTime = message.getTimestamp();
+                assertTrue(msgTime.isAfter(startTime) || msgTime.equals(startTime));
+                assertNotNull(message.getSenderId());
+                final TransactionLogHeader.Entry txEntry = TransactionLogHeader.parse(message.getContent(), serializer, times);
+                final TransactionLogHeader header = txEntry.getHeader();
+//                    System.out.println(header.getTimestamp(TimeUnit.MILLISECONDS));
+                assertTrue(header.getTimestamp().isAfter(startTime) || header.getTimestamp().equals(startTime));
+                assertTrue(header.getTimestamp().isBefore(msgTime) || header.getTimestamp().equals(msgTime));
+                assertNotNull(txEntry.getMetadata());
+                assertNull(txEntry.getMetadata().get(LogTxMeta.GROUPNAME));
+                final LogTxStatus status = txEntry.getStatus();
+                if (status == LogTxStatus.PRECOMMIT) {
+                    assertTrue(txEntry.hasContent());
+                    final Object logId = txEntry.getMetadata().get(LogTxMeta.LOG_ID);
+                    if (logId != null) {
+                        assertTrue(logId instanceof String);
+                        assertEquals(userLogName, logId);
+                        userLogMeta.incrementAndGet();
+                    }
+                } else if (withLogFailure) {
+                    assertTrue(status.isPrimarySuccess() || status == LogTxStatus.SECONDARY_FAILURE);
+                    if (status == LogTxStatus.SECONDARY_FAILURE) {
+                        final TransactionLogHeader.SecondaryFailures secFail = txEntry.getContentAsSecondaryFailures(serializer);
+                        assertTrue(secFail.failedIndexes.isEmpty());
+                        assertTrue(secFail.userLogFailure);
+                    }
+                } else {
+                    assertFalse(txEntry.hasContent());
+                    assertTrue(status.isSuccess());
                 }
-            } else if (withLogFailure) {
-                assertTrue(status.isPrimarySuccess() || status == LogTxStatus.SECONDARY_FAILURE);
-                if (status == LogTxStatus.SECONDARY_FAILURE) {
-                    final TransactionLogHeader.SecondaryFailures secFail = txEntry.getContentAsSecondaryFailures(serializer);
-                    assertTrue(secFail.failedIndexes.isEmpty());
-                    assertTrue(secFail.userLogFailure);
-                }
-            } else {
-                assertFalse(txEntry.hasContent());
-                assertTrue(status.isSuccess());
+                txMsgCounter.get(txEntry.getStatus()).incrementAndGet();
             }
-            txMsgCounter.get(txEntry.getStatus()).incrementAndGet();
+
+            @Override public void updateState() {}
         });
         final EnumMap<Change, AtomicInteger> userChangeCounter = new EnumMap<>(Change.class);
         for (final Change change : Change.values()) userChangeCounter.put(change, new AtomicInteger(0));
         final AtomicInteger userLogMsgCounter = new AtomicInteger(0);
-        userLog.registerReader(startMarker, (MessageReader) message -> {
-            final Instant msgTime = message.getTimestamp();
-            assertTrue(msgTime.isAfter(startTime) || msgTime.equals(startTime));
-            assertNotNull(message.getSenderId());
-            final StaticBuffer content = message.getContent();
-            assertTrue(content != null && content.length() > 0);
-            final TransactionLogHeader.Entry transactionEntry = TransactionLogHeader.parse(content, serializer, times);
+        userLog.registerReader(startMarker, new MessageReader() {
+            @Override
+            public void read(Message message) {
+                final Instant msgTime = message.getTimestamp();
+                assertTrue(msgTime.isAfter(startTime) || msgTime.equals(startTime));
+                assertNotNull(message.getSenderId());
+                final StaticBuffer content = message.getContent();
+                assertTrue(content != null && content.length() > 0);
+                final TransactionLogHeader.Entry transactionEntry = TransactionLogHeader.parse(content, serializer, times);
 
-            final Instant txTime = transactionEntry.getHeader().getTimestamp();
-            assertTrue(txTime.isBefore(msgTime) || txTime.equals(msgTime));
-            assertTrue(txTime.isAfter(startTime) || txTime.equals(msgTime));
-            final long transactionId = transactionEntry.getHeader().getId();
-            assertTrue(transactionId > 0);
-            transactionEntry.getContentAsModifications(serializer).forEach(modification -> {
-                assertTrue(modification.state == Change.ADDED || modification.state == Change.REMOVED);
-                userChangeCounter.get(modification.state).incrementAndGet();
-            });
-            userLogMsgCounter.incrementAndGet();
+                final Instant txTime = transactionEntry.getHeader().getTimestamp();
+                assertTrue(txTime.isBefore(msgTime) || txTime.equals(msgTime));
+                assertTrue(txTime.isAfter(startTime) || txTime.equals(msgTime));
+                final long transactionId = transactionEntry.getHeader().getId();
+                assertTrue(transactionId > 0);
+                transactionEntry.getContentAsModifications(serializer).forEach(modification -> {
+                    assertTrue(modification.state == Change.ADDED || modification.state == Change.REMOVED);
+                    userChangeCounter.get(modification.state).incrementAndGet();
+                });
+                userLogMsgCounter.incrementAndGet();
+            }
+
+            @Override public void updateState() {}
         });
         Thread.sleep(4000);
         assertEquals(5, txMsgCounter.get(LogTxStatus.PRECOMMIT).get());
