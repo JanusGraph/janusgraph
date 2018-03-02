@@ -18,19 +18,25 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import org.janusgraph.core.*;
+import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.graphdb.JanusGraphBaseTest;
 import org.janusgraph.graphdb.olap.*;
 import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.janusgraph.graphdb.olap.job.GhostVertexRemover;
+import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.*;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer.Persist;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer.ResultGraph;
+import org.apache.tinkerpop.gremlin.process.computer.util.AbstractVertexProgramBuilder;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.Operator;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -292,6 +298,169 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
             }
         }
     }
+    
+    /**
+     * Tests OLAP using VertexPrograms that modify properties with SET cardinality.
+     * @throws Exception
+     */
+    @Test public void testSETProperties() throws Exception {
+    	generateRandomGraph(12);
+    	clopen();
+
+    	JanusGraphManagement mgmt = graph.openManagement();
+    	mgmt.makePropertyKey(MultiPropertyVertexProgram.PROPERTY_KEY).cardinality(Cardinality.SET).dataType(Object.class).make();
+    	mgmt.commit();
+    	graph.tx().commit();
+
+    	try {
+    		graph.compute().program(MultiPropertyVertexProgram.builder().create(null)).persist(Persist.VERTEX_PROPERTIES).result(ResultGraph.ORIGINAL)
+    		.submit().get();
+    	} catch(Exception e) {
+    		e.printStackTrace();
+    		fail();
+    	}
+
+    	graph.tx().commit();
+    	graph.traversal().V().forEachRemaining(v -> {
+    		assertEquals(IteratorUtils.count(v.property(MultiPropertyVertexProgram.PROPERTY_KEY).values()), 2);
+    	});
+    	
+    }
+    
+    /**
+     * Tests OLAP using VertexPrograms that modify properties with LIST cardinality.
+     * @throws Exception
+     */
+    @Test public void testLISTProperties() throws Exception {
+    	generateRandomGraph(12);
+    	clopen();
+
+    	JanusGraphManagement mgmt = graph.openManagement();
+    	mgmt.makePropertyKey(MultiPropertyVertexProgram.PROPERTY_KEY).cardinality(Cardinality.LIST).dataType(Object.class).make();
+    	mgmt.commit();
+    	graph.tx().commit();
+
+    	try {
+    		graph.compute().program(MultiPropertyVertexProgram.builder().create(null)).persist(Persist.VERTEX_PROPERTIES).result(ResultGraph.ORIGINAL)
+    		.submit().get();
+    	} catch(Exception e) {
+    		e.printStackTrace();
+    		fail();
+    	}
+
+    	graph.tx().commit();
+    	graph.traversal().V().forEachRemaining(v -> {
+    		assertEquals(IteratorUtils.count(v.property(MultiPropertyVertexProgram.PROPERTY_KEY).values()), 3);
+    	});
+    	
+    }
+
+    private static final class MultiPropertyVertexProgram implements VertexProgram<Void> {
+    	public static final String PROPERTY_KEY = "dummy_property";
+    	 private Set<VertexComputeKey> vertexComputeKeys;
+    	  @SuppressWarnings("rawtypes")
+    	  private Set<MemoryComputeKey> memoryComputeKeys;
+
+    	  /**
+    	   * Clones this vertex program.
+    	   * 
+    	   * @return a clone of this vertex program
+    	   */
+    	  public MultiPropertyVertexProgram clone() {
+    	    try {
+    	      super.clone();
+    	    } catch (CloneNotSupportedException e) {
+    	      throw new IllegalStateException(e.getMessage(), e);
+    	    }
+    	    return MultiPropertyVertexProgram.builder().create(null);
+    	  }
+
+    	  @Override
+    	  public void setup(Memory memory) {
+    	    // no-op
+    	  }
+    	  
+    	  @Override
+    	  public void loadState(final Graph graph, final Configuration configuration) {
+    	    this.vertexComputeKeys = new HashSet<>(Arrays.asList(VertexComputeKey.of(PROPERTY_KEY, false)));
+    	    this.memoryComputeKeys = Collections.emptySet();
+    	  }
+
+    	  @Override
+    	  public void storeState(final Configuration configuration) {
+    	    VertexProgram.super.storeState(configuration);
+    	  }
+    	  
+    	  @Override
+    	  public void execute(Vertex vertex, Messenger<Void> messenger, Memory memory) {
+    		vertex.property(VertexProperty.Cardinality.set, PROPERTY_KEY, "value1");
+    		vertex.property(VertexProperty.Cardinality.set, PROPERTY_KEY, "value2");
+    		vertex.property(VertexProperty.Cardinality.set, PROPERTY_KEY, "value2");
+    	  }
+    	  
+    	  @Override public boolean terminate(Memory memory) {
+    		  return memory.isInitialIteration();
+    	  }
+    	  
+    	  @Override
+    	  public Set<MessageScope> getMessageScopes(Memory memory) {
+    	    return Collections.emptySet();
+    	  }
+
+    	  @Override
+    	  public ResultGraph getPreferredResultGraph() {
+    	    return ResultGraph.NEW;
+    	  }
+
+    	  @Override
+    	  public Persist getPreferredPersist() {
+    	    return Persist.EDGES;
+    	  }
+
+    	  @Override
+    	  public Set<VertexComputeKey> getVertexComputeKeys() {
+    	    return this.vertexComputeKeys;
+    	  }
+
+    	  @SuppressWarnings("rawtypes")
+    	  @Override
+    	  public Set<MemoryComputeKey> getMemoryComputeKeys() {
+    	    return this.memoryComputeKeys;
+    	  }
+
+    	  @Override
+    	  public Features getFeatures() {
+    	    return MultiPropertyFeatures.INSTANCE;
+    	  }
+    	  
+    	  public static Builder builder() {
+    		  return new Builder();
+    	  }
+    	  
+    	  private static final class MultiPropertyFeatures implements Features {
+    		    private static final Features INSTANCE = new MultiPropertyFeatures();
+
+    		    private MultiPropertyFeatures() {
+    		    }
+
+    		    @Override
+    		    public boolean requiresLocalMessageScopes() {
+    		      return false;
+    		    }
+
+    		    @Override
+    		    public boolean requiresVertexPropertyAddition() {
+    		      return true;
+    		    }
+    		  }
+    	  
+    	  	public static final class Builder extends AbstractVertexProgramBuilder<Builder> {
+    		    private Builder() {
+    		      super(MultiPropertyVertexProgram.class);
+    		    }
+    		  }
+    }
+
 
     public static class ExceptionProgram extends StaticVertexProgram<Integer>
     {

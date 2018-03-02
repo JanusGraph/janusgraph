@@ -18,8 +18,10 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphComputer;
 import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.SchemaViolationException;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
@@ -311,9 +313,9 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
                     try (WorkerPool workers = new WorkerPool(numThreads)) {
                         List<Map.Entry<Long, Map<String, Object>>> subset = new ArrayList<>(writeBatchSize / vertexProgram.getVertexComputeKeys().size());
                         int currentSize = 0;
-                        for (Map.Entry<Long, Map<String, Object>> entry : mutatedProperties.entrySet()) {
-                            subset.add(entry);
-                            currentSize += entry.getValue().size();
+                        for (Map.Entry<Long, Map<String, Object>> vertexProperty : mutatedProperties.entrySet()) {
+                            subset.add(vertexProperty);
+                            currentSize += vertexProperty.getValue().size();
                             if (currentSize >= writeBatchSize) {
                                 workers.submit(new VertexPropertyWriter(subset, failures));
                                 subset = new ArrayList<>(subset.size());
@@ -327,13 +329,25 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
                     if (failures.get() > 0)
                         throw new JanusGraphException("Could not persist program results to graph. Check log for details.");
                 } else if (resultGraphMode == ResultGraph.NEW) {
-                    resultgraph = graph.newTransaction();
+                    final JanusGraphTransaction tx = graph.newTransaction();
+                    resultgraph = tx;
                     for (Map.Entry<Long, Map<String, Object>> vertexProperty : mutatedProperties.entrySet()) {
                         Vertex v = resultgraph.vertices(vertexProperty.getKey()).next();
                         for (Map.Entry<String, Object> prop : vertexProperty.getValue().entrySet()) {
                             if (prop.getValue() instanceof List) {
-                                ((List) prop.getValue())
-                                    .forEach(value -> v.property(VertexProperty.Cardinality.list, prop.getKey(), value));
+                                ((List<Object>) prop.getValue())
+                                    .forEach(p -> {
+                                    	Cardinality cardinality = tx.getPropertyKey(prop.getKey()).cardinality();
+	                        			if(cardinality.equals(Cardinality.LIST)) {
+	                        				v.property(VertexProperty.Cardinality.list, prop.getKey(), p);
+	                        			}
+	                        			else if(cardinality.equals(Cardinality.SET)) {
+	                        				v.property(VertexProperty.Cardinality.set, prop.getKey(), p);
+	                        			}
+	                        			else {
+	                        				throw new SchemaViolationException("Attempted list or set operation on key with Cardinality SINGLE");
+	                        			}
+                                });
                             } else {
                                 v.property(VertexProperty.Cardinality.single, prop.getKey(), prop.getValue());
                             }
@@ -370,7 +384,23 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
                         continue;
                     }
                     for (Map.Entry<String, Object> prop : vertexProperty.getValue().entrySet()) {
-                        v.property(VertexProperty.Cardinality.single, prop.getKey(), prop.getValue());
+                    	if(prop.getValue() instanceof List) {
+                    		((List<Object>)prop.getValue()).forEach(p -> {
+                    			Cardinality cardinality = tx.getPropertyKey(prop.getKey()).cardinality();
+                    			if(cardinality.equals(Cardinality.LIST)) {
+                    				v.property(VertexProperty.Cardinality.list, prop.getKey(), p);
+                    			}
+                    			else if(cardinality.equals(Cardinality.SET)) {
+                    				v.property(VertexProperty.Cardinality.set, prop.getKey(), p);
+                    			}
+                    			else {
+                    				throw new SchemaViolationException("Attempted list or set operation on key with Cardinality SINGLE");
+                    			}
+                    		});
+                    	}
+                    	else {
+                    		v.property(VertexProperty.Cardinality.single, prop.getKey(), prop.getValue());
+                    	}
                     }
                 }
                 tx.commit();
