@@ -322,7 +322,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
 
     	graph.tx().commit();
     	graph.traversal().V().forEachRemaining(v -> {
-    		assertEquals(IteratorUtils.count(v.property(MultiPropertyVertexProgram.PROPERTY_KEY).values()), 2);
+    		assertEquals(IteratorUtils.count(v.values(MultiPropertyVertexProgram.PROPERTY_KEY)), 2);
     	});
     	
     }
@@ -350,7 +350,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
 
     	graph.tx().commit();
     	graph.traversal().V().forEachRemaining(v -> {
-    		assertEquals(IteratorUtils.count(v.property(MultiPropertyVertexProgram.PROPERTY_KEY).values()), 3);
+    		assertEquals(IteratorUtils.count(v.values(MultiPropertyVertexProgram.PROPERTY_KEY)), 3);
     	});
     	
     }
