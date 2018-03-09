@@ -773,6 +773,8 @@ It is possible to extend Gremlin Server with other means of communication by imp
 
 include::configuredgraphfactory.adoc[]
 
+include::multinodejanusgraphcluster.adoc[]
+
 [[indexes]]
 == Indexing for Better Performance
 
