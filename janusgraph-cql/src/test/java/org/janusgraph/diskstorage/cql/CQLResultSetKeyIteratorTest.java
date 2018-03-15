@@ -43,7 +43,7 @@ import io.vavr.collection.Seq;
 
 public class CQLResultSetKeyIteratorTest {
 
-    private static final SliceQuery ALL_COLUMNS = new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(128));
+    private static final SliceQuery ALL_COLUMNS = new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(128), "CQLResultSetKeyIteratorTest");
 
     @Test
     public void testIterator() throws IOException {

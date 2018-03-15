@@ -80,9 +80,9 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
 
     @Override
     public void process(JanusGraphVertex vertex, ScanMetrics metrics) {
-        PreloadedVertex v = (PreloadedVertex)vertex;
-        long vertexId = v.longId();
-        VertexMemoryHandler<M> vh = new VertexMemoryHandler(vertexMemory,v);
+        final PreloadedVertex v = (PreloadedVertex)vertex;
+        final long vertexId = v.longId();
+        final VertexMemoryHandler<M> vh = new VertexMemoryHandler(vertexMemory,v);
         vh.setInExecute(true);
         v.setAccessCheck(PreloadedVertex.OPENSTAR_CHECK);
         if (idManager.isPartitionedVertex(vertexId)) {
@@ -91,11 +91,11 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
                 if (results == null) results = EntryList.EMPTY_LIST;
                 vertexMemory.setLoadedProperties(vertexId,results);
             }
-            for (MessageScope scope : vertexMemory.getPreviousScopes()) {
+            for (final MessageScope scope : vertexMemory.getPreviousScopes()) {
                 if (scope instanceof MessageScope.Local) {
                     M combinedMsg = null;
-                    for (Iterator<M> msgIter = vh.receiveMessages(scope).iterator(); msgIter.hasNext(); ) {
-                        M msg = msgIter.next();
+                    for (final Iterator<M> msgIter = vh.receiveMessages(scope).iterator(); msgIter.hasNext(); ) {
+                        final M msg = msgIter.next();
                         if (combinedMsg==null) combinedMsg=msg;
                         else combinedMsg = combiner.combine(combinedMsg,msg);
                     }
@@ -106,7 +106,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
             v.setPropertyMixing(vh);
             try {
                 vertexProgram.execute(v, vh, memory);
-            } catch (ReadOnlyTransactionException e) {
+            } catch (final ReadOnlyTransactionException e) {
                 // Ignore read-only transaction errors in FulgoraGraphComputer. In testing these errors are associated
                 // with cleanup of TraversalVertexProgram.HALTED_TRAVERSALS properties which can safely remain in graph.
             }
@@ -124,13 +124,13 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
             return;
         }
 
-        for (MessageScope scope : vertexMemory.getPreviousScopes()) {
+        for (final MessageScope scope : vertexMemory.getPreviousScopes()) {
             if (scope instanceof MessageScope.Global) {
                 queries.addQuery().direction(Direction.BOTH).edges();
             } else {
                 assert scope instanceof MessageScope.Local;
-                JanusGraphVertexStep<Vertex> startStep = FulgoraUtil.getReverseJanusGraphVertexStep((MessageScope.Local) scope,queries.getTransaction());
-                QueryContainer.QueryBuilder qb = queries.addQuery();
+                final JanusGraphVertexStep<Vertex> startStep = FulgoraUtil.getReverseJanusGraphVertexStep((MessageScope.Local) scope,queries.getTransaction());
+                final QueryContainer.QueryBuilder qb = queries.addQuery();
                 startStep.makeQuery(qb);
                 qb.edges();
             }
@@ -140,14 +140,14 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
 
     public static<M> Executor getVertexProgramScanJob(StandardJanusGraph graph, FulgoraMemory memory,
                                                   FulgoraVertexMemory vertexMemory, VertexProgram<M> vertexProgram) {
-        VertexProgramScanJob<M> job = new VertexProgramScanJob<M>(graph.getIDManager(),memory,vertexMemory,vertexProgram);
+        final VertexProgramScanJob<M> job = new VertexProgramScanJob<M>(graph.getIDManager(),memory,vertexMemory,vertexProgram);
         return new Executor(graph,job);
     }
 
     //Query for all system properties+edges and normal properties
     static final SliceQuery SYSTEM_PROPS_QUERY = new SliceQuery(
             IDHandler.getBounds(RelationCategory.PROPERTY, true)[0],
-            IDHandler.getBounds(RelationCategory.PROPERTY,false)[1]);
+            IDHandler.getBounds(RelationCategory.PROPERTY,false)[1], "systemPropsQuery");
 
     public static class Executor extends VertexJobConverter implements Closeable {
 
@@ -163,7 +163,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
 
         @Override
         public List<SliceQuery> getQueries() {
-            List<SliceQuery> queries = super.getQueries();
+            final List<SliceQuery> queries = super.getQueries();
             queries.add(SYSTEM_PROPS_QUERY);
             return queries;
         }

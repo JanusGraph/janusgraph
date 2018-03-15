@@ -16,6 +16,7 @@ package org.janusgraph.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
@@ -27,8 +28,8 @@ public class KeySliceQuery extends SliceQuery {
 
     private final StaticBuffer key;
 
-    public KeySliceQuery(StaticBuffer key, StaticBuffer sliceStart, StaticBuffer sliceEnd) {
-        super(sliceStart, sliceEnd);
+    public KeySliceQuery(StaticBuffer key, StaticBuffer sliceStart, StaticBuffer sliceEnd, final String type) {
+        super(sliceStart, sliceEnd, type);
         Preconditions.checkNotNull(key);
         this.key=key;
     }
@@ -69,7 +70,7 @@ public class KeySliceQuery extends SliceQuery {
         if (this==other) return true;
         else if (other==null) return false;
         else if (!getClass().isInstance(other)) return false;
-        KeySliceQuery oth = (KeySliceQuery)other;
+        final KeySliceQuery oth = (KeySliceQuery)other;
         return key.equals(oth.key) && super.equals(oth);
     }
 

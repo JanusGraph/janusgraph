@@ -66,13 +66,13 @@ public abstract class KCVSCacheTest {
     public StoreTransaction getStoreTx() {
         try {
         return storeManager.beginTransaction(StandardBaseTransactionConfig.of(times));
-        } catch (BackendException se) {
+        } catch (final BackendException se) {
             throw new RuntimeException(se);
         }
     }
 
     public CacheTransaction getCacheTx() {
-        CacheTransaction cacheTx = new CacheTransaction(getStoreTx(), storeManager, 1024, MAX_WRITE_TIME, false);
+        final CacheTransaction cacheTx = new CacheTransaction(getStoreTx(), storeManager, 1024, MAX_WRITE_TIME, false);
         return cacheTx;
     }
 
@@ -83,15 +83,15 @@ public abstract class KCVSCacheTest {
     }
 
     public void loadStore(int numKeys, int numCols) {
-        StoreTransaction tx = getStoreTx();
+        final StoreTransaction tx = getStoreTx();
         try {
             for (int i=1;i<=numKeys;i++) {
-                List<Entry> adds = new ArrayList<Entry>(numCols);
+                final List<Entry> adds = new ArrayList<Entry>(numCols);
                 for (int j=1;j<=numCols;j++) adds.add(getEntry(j,j));
                 store.mutate(BufferUtil.getIntBuffer(i),adds,KeyColumnValueStore.NO_DELETIONS,tx);
             }
             tx.commit();
-        } catch (BackendException e) {
+        } catch (final BackendException e) {
             throw new RuntimeException(e);
         }
     }
@@ -111,18 +111,18 @@ public abstract class KCVSCacheTest {
                 cache.clearCache();
                 calls+=numKeys*2+1;
             }
-            CacheTransaction tx = getCacheTx();
+            final CacheTransaction tx = getCacheTx();
             for (int i=1;i<=numKeys;i++) {
                 assertEquals(10,cache.getSlice(getQuery(i,0,numCols+1).setLimit(10),tx).size());
                 assertEquals(3,cache.getSlice(getQuery(i,2,5),tx).size());
             }
             //Multi-query
-            List<StaticBuffer> keys = new ArrayList<StaticBuffer>();
+            final List<StaticBuffer> keys = new ArrayList<StaticBuffer>();
             for (int i=10;i<10+numMulti;i++) keys.add(BufferUtil.getIntBuffer(i));
-            Map<StaticBuffer,EntryList> result = cache.getSlice(keys,getQuery(4,9),tx);
+            final Map<StaticBuffer,EntryList> result = cache.getSlice(keys,getQuery(4,9),tx);
             assertEquals(keys.size(),result.size());
-            for (StaticBuffer key : keys) assertTrue(result.containsKey(key));
-            for (EntryList r : result.values()) {
+            for (final StaticBuffer key : keys) assertTrue(result.containsKey(key));
+            for (final EntryList r : result.values()) {
                 assertEquals(5,r.size());
             }
             tx.commit();
@@ -131,8 +131,8 @@ public abstract class KCVSCacheTest {
         store.resetCounter();
 
         //Check invalidation
-        StaticBuffer key = BufferUtil.getIntBuffer(23);
-        List<StaticBuffer> keys = new ArrayList<StaticBuffer>();
+        final StaticBuffer key = BufferUtil.getIntBuffer(23);
+        final List<StaticBuffer> keys = new ArrayList<StaticBuffer>();
         keys.add(key);
         keys.add(BufferUtil.getIntBuffer(12));
         keys.add(BufferUtil.getIntBuffer(5));
@@ -144,7 +144,7 @@ public abstract class KCVSCacheTest {
         assertEquals(keys.size(),result.size());
         assertEquals(6,result.get(key).size());
         //Update
-        List<Entry> dels = new ArrayList<Entry>(numCols/2);
+        final List<Entry> dels = new ArrayList<Entry>(numCols/2);
         for (int j=1;j<=numCols;j=j+2) dels.add(getEntry(j,j));
         cache.mutateEntries(key, KeyColumnValueStore.NO_ADDITIONS, dels, tx);
         tx.commit();
@@ -166,7 +166,7 @@ public abstract class KCVSCacheTest {
     }
 
     public static SliceQuery getQuery(int startCol, int endCol) {
-        return new SliceQuery(BufferUtil.getIntBuffer(startCol),BufferUtil.getIntBuffer(endCol));
+        return new SliceQuery(BufferUtil.getIntBuffer(startCol),BufferUtil.getIntBuffer(endCol), "kcvsCacheTest");
     }
 
     public static Entry getEntry(int col, int val) {

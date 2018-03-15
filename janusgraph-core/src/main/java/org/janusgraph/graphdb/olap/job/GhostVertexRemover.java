@@ -46,7 +46,7 @@ public class GhostVertexRemover extends VertexJobConverter {
 
     private static final int RELATION_COUNT_LIMIT = 10000;
 
-    private static final SliceQuery EVERYTHING_QUERY = new SliceQuery(BufferUtil.zeroBuffer(1),BufferUtil.oneBuffer(4));
+    private static final SliceQuery EVERYTHING_QUERY = new SliceQuery(BufferUtil.zeroBuffer(1),BufferUtil.oneBuffer(4), "everythingQuery");
 
     public static final String REMOVED_RELATION_COUNT = "removed-relations";
     public static final String REMOVED_VERTEX_COUNT = "removed-vertices";
@@ -77,7 +77,7 @@ public class GhostVertexRemover extends VertexJobConverter {
 
         assert tx!=null && tx.isOpen();
         tx.rollback();
-        StandardTransactionBuilder txb = graph.get().buildTransaction();
+        final StandardTransactionBuilder txb = graph.get().buildTransaction();
         txb.commitTime(jobStartTime);
         txb.checkExternalVertexExistence(false);
         txb.checkInternalVertexExistence(false);
@@ -86,7 +86,7 @@ public class GhostVertexRemover extends VertexJobConverter {
 
     @Override
     public void process(StaticBuffer key, Map<SliceQuery, EntryList> entries, ScanMetrics metrics) {
-        long vertexId = getVertexId(key);
+        final long vertexId = getVertexId(key);
         assert entries.size()==1;
         assert entries.get(everythingQueryLimit)!=null;
         final EntryList everything = entries.get(everythingQueryLimit);
@@ -98,10 +98,10 @@ public class GhostVertexRemover extends VertexJobConverter {
             return;
         }
 
-        JanusGraphVertex vertex = tx.getInternalVertex(vertexId);
+        final JanusGraphVertex vertex = tx.getInternalVertex(vertexId);
         Preconditions.checkArgument(vertex instanceof CacheVertex,
                 "The bounding transaction is not configured correctly");
-        CacheVertex v = (CacheVertex)vertex;
+        final CacheVertex v = (CacheVertex)vertex;
         v.loadRelations(EVERYTHING_QUERY,new Retriever<SliceQuery, EntryList>() {
             @Override
             public EntryList get(SliceQuery input) {
@@ -110,7 +110,7 @@ public class GhostVertexRemover extends VertexJobConverter {
         });
 
         int removedRelations = 0;
-        Iterator<JanusGraphRelation> iter = v.query().noPartitionRestriction().relations().iterator();
+        final Iterator<JanusGraphRelation> iter = v.query().noPartitionRestriction().relations().iterator();
         while (iter.hasNext()) {
             iter.next();
             iter.remove();

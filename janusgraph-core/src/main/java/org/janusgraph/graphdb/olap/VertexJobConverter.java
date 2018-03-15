@@ -45,7 +45,7 @@ import java.util.function.Predicate;
  */
 public class VertexJobConverter implements ScanJob {
 
-    protected static final SliceQuery VERTEX_EXISTS_QUERY = new SliceQuery(BufferUtil.zeroBuffer(1),BufferUtil.oneBuffer(4)).setLimit(1);
+    protected static final SliceQuery VERTEX_EXISTS_QUERY = new SliceQuery(BufferUtil.zeroBuffer(1),BufferUtil.oneBuffer(4), "vertexExistsQuery").setLimit(1);
 
     public static final String GHOST_VERTEX_COUNT = "ghost-vertices";
     /**
@@ -82,7 +82,7 @@ public class VertexJobConverter implements ScanJob {
     }
 
     public static StandardJanusGraphTx startTransaction(StandardJanusGraph graph) {
-        StandardTransactionBuilder txb = graph.buildTransaction().readOnly();
+        final StandardTransactionBuilder txb = graph.buildTransaction().readOnly();
         txb.setPreloadedData(true);
         txb.checkInternalVertexExistence(false);
         txb.dirtyVertexSize(0);
@@ -95,7 +95,7 @@ public class VertexJobConverter implements ScanJob {
         try {
             open(graphConfig);
             job.workerIterationStart(graph.get(), jobConfig, metrics);
-        } catch (Throwable e) {
+        } catch (final Throwable e) {
             close();
             throw e;
         }
@@ -121,21 +121,21 @@ public class VertexJobConverter implements ScanJob {
 
     @Override
     public void process(StaticBuffer key, Map<SliceQuery, EntryList> entries, ScanMetrics metrics) {
-        long vertexId = getVertexId(key);
+        final long vertexId = getVertexId(key);
         assert entries.get(VERTEX_EXISTS_QUERY)!=null;
         if (isGhostVertex(vertexId, entries.get(VERTEX_EXISTS_QUERY))) {
             metrics.incrementCustom(GHOST_VERTEX_COUNT);
             return;
         }
-        JanusGraphVertex vertex = tx.getInternalVertex(vertexId);
+        final JanusGraphVertex vertex = tx.getInternalVertex(vertexId);
         Preconditions.checkArgument(vertex instanceof PreloadedVertex,
                 "The bounding transaction is not configured correctly");
-        PreloadedVertex v = (PreloadedVertex)vertex;
+        final PreloadedVertex v = (PreloadedVertex)vertex;
         v.setAccessCheck(PreloadedVertex.OPENSTAR_CHECK);
-        for (Map.Entry<SliceQuery,EntryList> entry : entries.entrySet()) {
-            SliceQuery sq = entry.getKey();
+        for (final Map.Entry<SliceQuery,EntryList> entry : entries.entrySet()) {
+            final SliceQuery sq = entry.getKey();
             if (sq.equals(VERTEX_EXISTS_QUERY)) continue;
-            EntryList entryList = entry.getValue();
+            final EntryList entryList = entry.getValue();
             if (entryList.size()>=sq.getLimit()) metrics.incrementCustom(TRUNCATED_ENTRY_LISTS);
             v.addToQueryCache(sq.updateLimit(Query.NO_LIMIT),entryList);
         }
@@ -145,7 +145,7 @@ public class VertexJobConverter implements ScanJob {
     protected boolean isGhostVertex(long vertexId, EntryList firstEntries) {
         if (idManager.isPartitionedVertex(vertexId) && !idManager.isCanonicalVertexId(vertexId)) return false;
 
-        RelationCache relCache = tx.getEdgeSerializer().parseRelation(
+        final RelationCache relCache = tx.getEdgeSerializer().parseRelation(
                 firstEntries.get(0),true,tx);
         return relCache.typeId != BaseKey.VertexExists.longId();
     }
@@ -153,14 +153,14 @@ public class VertexJobConverter implements ScanJob {
     @Override
     public List<SliceQuery> getQueries() {
         try {
-            QueryContainer qc = new QueryContainer(tx);
+            final QueryContainer qc = new QueryContainer(tx);
             job.getQueries(qc);
 
-            List<SliceQuery> slices = new ArrayList<>();
+            final List<SliceQuery> slices = new ArrayList<>();
             slices.add(VERTEX_EXISTS_QUERY);
             slices.addAll(qc.getSliceQueries());
             return slices;
-        } catch (Throwable e) {
+        } catch (final Throwable e) {
             close();
             throw e;
         }
@@ -169,7 +169,7 @@ public class VertexJobConverter implements ScanJob {
     @Override
     public Predicate<StaticBuffer> getKeyFilter() {
         return buffer -> {
-            long vertexId = getVertexId(buffer);
+            final long vertexId = getVertexId(buffer);
             if (IDManager.VertexIDType.Invisible.is(vertexId)) return false;
             else return true;
         };

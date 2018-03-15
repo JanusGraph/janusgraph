@@ -20,6 +20,7 @@ import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.StaticArrayEntryList;
+import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.query.BackendQuery;
 import org.janusgraph.graphdb.query.BaseQuery;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -42,16 +43,18 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
     private final StaticBuffer sliceStart;
     private final StaticBuffer sliceEnd;
+    private final String type;
 
-    public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd) {
-        assert sliceStart != null && sliceEnd != null;
+    public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd, final String type) {
+        assert sliceStart != null && sliceEnd != null && type !=null;
 
         this.sliceStart = sliceStart;
         this.sliceEnd = sliceEnd;
+        this.type = type;
     }
 
     public SliceQuery(final SliceQuery query) {
-        this(query.getSliceStart(), query.getSliceEnd());
+        this(query.getSliceStart(), query.getSliceEnd(), query.getType());
         setLimit(query.getLimit());
     }
 
@@ -86,7 +89,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
         if (other == null && !getClass().isInstance(other))
             return false;
 
-        SliceQuery oth = (SliceQuery) other;
+        final SliceQuery oth = (SliceQuery) other;
         return sliceStart.equals(oth.sliceStart)
                 && sliceEnd.equals(oth.sliceEnd)
                 && getLimit() == oth.getLimit();
@@ -108,9 +111,9 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
         int pos = Collections.binarySearch(otherResult, sliceStart);
         if (pos < 0) pos = -pos - 1;
 
-        List<Entry> result = new ArrayList<Entry>();
+        final List<Entry> result = new ArrayList<Entry>();
         for (; pos < otherResult.size() && result.size() < getLimit(); pos++) {
-            Entry e = otherResult.get(pos);
+            final Entry e = otherResult.get(pos);
             if (e.getColumnAs(StaticBuffer.STATIC_FACTORY).compareTo(sliceEnd) < 0) result.add(e);
             else break;
         }
@@ -134,7 +137,18 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
     @Override
     public SliceQuery updateLimit(int newLimit) {
-        return new SliceQuery(sliceStart, sliceEnd).setLimit(newLimit);
+        return new SliceQuery(sliceStart, sliceEnd, type).setLimit(newLimit);
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder(this.getType());
+        sb.append("(").append(this.getSliceStart()).append("=>").append(this.getSliceEnd()).append(")");
+        return sb.toString();
     }
 
 }

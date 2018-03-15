@@ -48,8 +48,8 @@ public class KCVSUtil {
      * @return Value for key and column or NULL if such does not exist
      */
     public static StaticBuffer get(KeyColumnValueStore store, StaticBuffer key, StaticBuffer column, StoreTransaction txh) throws BackendException {
-        KeySliceQuery query = new KeySliceQuery(key, column, BufferUtil.nextBiggerBuffer(column)).setLimit(2);
-        List<Entry> result = store.getSlice(query, txh);
+        final KeySliceQuery query = new KeySliceQuery(key, column, BufferUtil.nextBiggerBuffer(column), store.getName()).setLimit(2);
+        final List<Entry> result = store.getSlice(query, txh);
         if (result.size() > 1)
             log.warn("GET query returned more than 1 result: store {} | key {} | column {}", new Object[]{store.getName(),
                     key, column});
@@ -59,7 +59,7 @@ public class KCVSUtil {
     }
 
     public static KeyIterator getKeys(KeyColumnValueStore store, StoreFeatures features, int keyLength, int sliceLength, StoreTransaction txh) throws BackendException {
-        return getKeys(store,new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(sliceLength)).setLimit(1),
+        return getKeys(store,new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(sliceLength), store.getName()).setLimit(1),
                 features,keyLength,txh);
     }
 
@@ -98,7 +98,7 @@ public class KCVSUtil {
         } else {
             end = END;
         }
-        return !store.getSlice(new KeySliceQuery(key, start, end).setLimit(1),txh).isEmpty();
+        return !store.getSlice(new KeySliceQuery(key, start, end, store.getName()).setLimit(1),txh).isEmpty();
     }
 
     public static boolean matches(SliceQuery query, StaticBuffer column) {
@@ -112,8 +112,8 @@ public class KCVSUtil {
 
 
     public static Map<StaticBuffer,EntryList> emptyResults(List<StaticBuffer> keys) {
-        Map<StaticBuffer,EntryList> result = new HashMap<StaticBuffer, EntryList>(keys.size());
-        for (StaticBuffer key : keys) {
+        final Map<StaticBuffer,EntryList> result = new HashMap<StaticBuffer, EntryList>(keys.size());
+        for (final StaticBuffer key : keys) {
             result.put(key,EntryList.EMPTY_LIST);
         }
         return result;

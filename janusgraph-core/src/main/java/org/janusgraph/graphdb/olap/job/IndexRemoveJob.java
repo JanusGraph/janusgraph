@@ -89,7 +89,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
         idManager = graph.get().getIDManager();
         try {
             super.workerIterationStart(graph.get(), config, metrics);
-        } catch (Throwable e) {
+        } catch (final Throwable e) {
             graph.close();
             throw e;
         }
@@ -100,17 +100,17 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
         if (index instanceof RelationTypeIndex) {
             //Nothing specific to be done
         } else if (index instanceof JanusGraphIndex) {
-            JanusGraphIndex gindex = (JanusGraphIndex)index;
+            final JanusGraphIndex gindex = (JanusGraphIndex)index;
             if (gindex.isMixedIndex())
                 throw new UnsupportedOperationException("Cannot remove mixed indexes through JanusGraph. This can " +
                         "only be accomplished in the indexing system directly.");
-            CompositeIndexType indexType = (CompositeIndexType)mgmt.getSchemaVertex(index).asIndexType();
+            final CompositeIndexType indexType = (CompositeIndexType)mgmt.getSchemaVertex(index).asIndexType();
             graphIndexId = indexType.getID();
         } else throw new UnsupportedOperationException("Unsupported index found: "+index);
 
         //Must be a relation type index or a composite graph index
-        JanusGraphSchemaVertex schemaVertex = mgmt.getSchemaVertex(index);
-        SchemaStatus actualStatus = schemaVertex.getStatus();
+        final JanusGraphSchemaVertex schemaVertex = mgmt.getSchemaVertex(index);
+        final SchemaStatus actualStatus = schemaVertex.getStatus();
         Preconditions.checkArgument(actualStatus==SchemaStatus.DISABLED,"The index [%s] must be disabled before it can be removed",indexName);
     }
 
@@ -118,11 +118,11 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
     public void process(StaticBuffer key, Map<SliceQuery, EntryList> entries, ScanMetrics metrics) {
         //The queries are already tailored enough => everything should be removed
         try {
-            BackendTransaction mutator = writeTx.getTxHandle();
+            final BackendTransaction mutator = writeTx.getTxHandle();
             final List<Entry> deletions;
             if (entries.size()==1) deletions = Iterables.getOnlyElement(entries.values());
             else {
-                int size = IteratorUtils.stream(entries.values().iterator()).map( e -> e.size()).reduce(0, (x,y) -> x+y);
+                final int size = IteratorUtils.stream(entries.values().iterator()).map( e -> e.size()).reduce(0, (x,y) -> x+y);
                 deletions = new ArrayList<>(size);
                 entries.values().forEach(e -> deletions.addAll(e));
             }
@@ -144,17 +144,17 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
     public List<SliceQuery> getQueries() {
         if (isGlobalGraphIndex()) {
             //Everything
-            return ImmutableList.of(new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(128)));
+            return ImmutableList.of(new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(128), indexRelationTypeName));
         } else {
-            RelationTypeIndexWrapper wrapper = (RelationTypeIndexWrapper)index;
-            InternalRelationType wrappedType = wrapper.getWrappedType();
+            final RelationTypeIndexWrapper wrapper = (RelationTypeIndexWrapper)index;
+            final InternalRelationType wrappedType = wrapper.getWrappedType();
             Direction direction=null;
-            for (Direction dir : Direction.values()) if (wrappedType.isUnidirected(dir)) direction=dir;
+            for (final Direction dir : Direction.values()) if (wrappedType.isUnidirected(dir)) direction=dir;
             assert direction!=null;
 
-            StandardJanusGraphTx tx = (StandardJanusGraphTx)graph.get().buildTransaction().readOnly().start();
+            final StandardJanusGraphTx tx = (StandardJanusGraphTx)graph.get().buildTransaction().readOnly().start();
             try {
-                QueryContainer qc = new QueryContainer(tx);
+                final QueryContainer qc = new QueryContainer(tx);
                 qc.addQuery().type(wrappedType).direction(direction).relations();
                 return qc.getSliceQueries();
             } finally {
@@ -170,14 +170,14 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
             return (k -> {
                 try {
                     return indexSerializer.getIndexIdFromKey(k) == graphIndexId;
-                } catch (RuntimeException e) {
+                } catch (final RuntimeException e) {
                     log.error("Filtering key {} due to exception", k, e);
                     return false;
                 }
             });
         } else {
             return buffer -> {
-                long vertexId = idManager.getKeyID(buffer);
+                final long vertexId = idManager.getKeyID(buffer);
                 if (IDManager.VertexIDType.Invisible.is(vertexId)) return false;
                 else return true;
             };

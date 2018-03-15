@@ -58,17 +58,17 @@ public abstract class JanusGraphIterativeBenchmark extends JanusGraphBaseTest {
     public void testDataSequential() throws Exception {
         loadData(200000,2);
         close();
-        KeyColumnValueStoreManager manager = openStorageManager();
-        KeyColumnValueStore store = manager.openDatabase(Backend.EDGESTORE_NAME);
-        SliceQuery query = new SliceQuery(BufferUtil.zeroBuffer(8),BufferUtil.oneBuffer(8));
+        final KeyColumnValueStoreManager manager = openStorageManager();
+        final KeyColumnValueStore store = manager.openDatabase(Backend.EDGESTORE_NAME);
+        final SliceQuery query = new SliceQuery(BufferUtil.zeroBuffer(8),BufferUtil.oneBuffer(8), "testDataSequential");
         query.setLimit(2);
-        Stopwatch watch = Stopwatch.createStarted();
-        StoreTransaction txh = manager.beginTransaction(StandardBaseTransactionConfig.of(TimestampProviders.MILLI));
-        KeyIterator iter = store.getKeys(query,txh);
+        final Stopwatch watch = Stopwatch.createStarted();
+        final StoreTransaction txh = manager.beginTransaction(StandardBaseTransactionConfig.of(TimestampProviders.MILLI));
+        final KeyIterator iter = store.getKeys(query,txh);
         int numV = 0;
         while(iter.hasNext()) {
             iter.next();
-            RecordIterator<Entry> entries = iter.getEntries();
+            final RecordIterator<Entry> entries = iter.getEntries();
             assertEquals(2, Iterators.size(entries));
             numV++;
         }
@@ -89,7 +89,7 @@ public abstract class JanusGraphIterativeBenchmark extends JanusGraphBaseTest {
 
     public void loadData(final int numVertices, final int numThreads) throws Exception {
         makeKey("w",Integer.class);
-        PropertyKey time = makeKey("t",Long.class);
+        final PropertyKey time = makeKey("t",Long.class);
         ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("l")).sortKey(time).make();
         finishSchema();
 
@@ -97,22 +97,22 @@ public abstract class JanusGraphIterativeBenchmark extends JanusGraphBaseTest {
         final int verticesPerTask = 1000;
         final int maxWeight = 10;
         final int maxTime = 10000;
-        BlockingQueue<Runnable> tasks = new ArrayBlockingQueue<Runnable>(maxQueue);
-        ExecutorService exe = Executors.newFixedThreadPool(numThreads);
+        final BlockingQueue<Runnable> tasks = new ArrayBlockingQueue<Runnable>(maxQueue);
+        final ExecutorService exe = Executors.newFixedThreadPool(numThreads);
         for (int i=0;i<numVertices/verticesPerTask;i++) {
             while (tasks.size()>=maxQueue) Thread.sleep(maxQueue);
             assert tasks.size()<maxQueue;
             exe.submit(new Runnable() {
                 @Override
                 public void run() {
-                    JanusGraphTransaction tx = graph.newTransaction();
-                    JanusGraphVertex[] vs = new JanusGraphVertex[verticesPerTask];
+                    final JanusGraphTransaction tx = graph.newTransaction();
+                    final JanusGraphVertex[] vs = new JanusGraphVertex[verticesPerTask];
                     for (int j=0;j<verticesPerTask;j++) {
                         vs[j]=tx.addVertex();
                         vs[j].property(VertexProperty.Cardinality.single, "w",  random.nextInt(maxWeight));
                     }
                     for (int j=0;j<verticesPerTask*10;j++) {
-                        JanusGraphEdge e = vs[random.nextInt(verticesPerTask)].addEdge("l",vs[random.nextInt(verticesPerTask)]);
+                        final JanusGraphEdge e = vs[random.nextInt(verticesPerTask)].addEdge("l",vs[random.nextInt(verticesPerTask)]);
                         e.property("t",random.nextInt(maxTime));
                     }
                     System.out.print(".");

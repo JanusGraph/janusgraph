@@ -48,7 +48,7 @@ public class StandardLockCleanerRunnable implements Runnable {
     private final ConsistentKeyLockerSerializer serializer;
     private final StoreTransaction tx;
     private final Instant cutoff;
-    private TimestampProvider times;
+    private final TimestampProvider times;
 
     private static final Logger log = LoggerFactory.getLogger(StandardLockCleanerRunnable.class);
 
@@ -65,19 +65,19 @@ public class StandardLockCleanerRunnable implements Runnable {
     public void run() {
         try {
             runWithExceptions();
-        } catch (BackendException e) {
+        } catch (final BackendException e) {
             log.warn("Expired lock cleaner failed", e);
         }
     }
 
     private void runWithExceptions() throws BackendException {
-        StaticBuffer lockKey = serializer.toLockKey(target.getKey(), target.getColumn());
-        List<Entry> locks = store.getSlice(new KeySliceQuery(lockKey, LOCK_COL_START, LOCK_COL_END), tx); // TODO reduce LOCK_COL_END based on cutoff
+        final StaticBuffer lockKey = serializer.toLockKey(target.getKey(), target.getColumn());
+        final List<Entry> locks = store.getSlice(new KeySliceQuery(lockKey, LOCK_COL_START, LOCK_COL_END, store.getName()), tx); // TODO reduce LOCK_COL_END based on cutoff
 
-        ImmutableList.Builder<StaticBuffer> b = ImmutableList.builder();
+        final ImmutableList.Builder<StaticBuffer> b = ImmutableList.builder();
 
-        for (Entry lc : locks) {
-            TimestampRid tr = serializer.fromLockColumn(lc.getColumn(), times);
+        for (final Entry lc : locks) {
+            final TimestampRid tr = serializer.fromLockColumn(lc.getColumn(), times);
             if (tr.getTimestamp().isBefore(cutoff)) {
                 log.info("Deleting expired lock on {} by rid {} with timestamp {} (before or at cutoff {})",
                         new Object[] { target, tr.getRid(), tr.getTimestamp(), cutoff });
@@ -88,7 +88,7 @@ public class StandardLockCleanerRunnable implements Runnable {
             }
         }
 
-        List<StaticBuffer> dels = b.build();
+        final List<StaticBuffer> dels = b.build();
 
         if (!dels.isEmpty()) {
             store.mutate(lockKey, ImmutableList.<Entry>of(), dels, tx);
@@ -116,7 +116,7 @@ public class StandardLockCleanerRunnable implements Runnable {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        StandardLockCleanerRunnable other = (StandardLockCleanerRunnable) obj;
+        final StandardLockCleanerRunnable other = (StandardLockCleanerRunnable) obj;
         if (cutoff == null) {
             if (other.cutoff != null)
                 return false;
