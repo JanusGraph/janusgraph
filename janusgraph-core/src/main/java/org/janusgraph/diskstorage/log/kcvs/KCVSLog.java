@@ -20,6 +20,7 @@ import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.util.time.*;
 
+import org.janusgraph.graphdb.database.management.ManagementLogger;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.*;
@@ -630,6 +631,11 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                     pos++;
                 }
             }
+            readExecutor.scheduleWithFixedDelay(
+                    new MessageReaderStateUpdater(),
+                    INITIAL_READER_DELAY.toNanos(),
+                    readPollingInterval.toNanos(),
+                    TimeUnit.NANOSECONDS);
         }
     }
 
@@ -637,6 +643,15 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     public synchronized boolean unregisterReader(MessageReader reader) {
         ResourceUnavailableException.verifyOpen(isOpen,"Log",name);
         return this.readers.remove(reader);
+    }
+
+    private class MessageReaderStateUpdater implements Runnable {
+        @Override
+        public void run() {
+            for (MessageReader reader : readers) {
+                reader.updateState();
+            }
+        }
     }
 
     /**
