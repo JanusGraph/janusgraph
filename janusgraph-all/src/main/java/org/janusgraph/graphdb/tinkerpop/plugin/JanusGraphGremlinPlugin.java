@@ -20,6 +20,7 @@ import org.apache.tinkerpop.gremlin.jsr223.DefaultImportCustomizer;
 import org.apache.tinkerpop.gremlin.jsr223.ImportCustomizer;
 import org.janusgraph.core.BaseVertexQuery;
 import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.ConfiguredGraphFactory;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.Idfiable;
 import org.janusgraph.core.JanusGraph;
@@ -121,6 +122,7 @@ public class JanusGraphGremlinPlugin extends AbstractGremlinPlugin {
 
         CLASS_IMPORTS.add(BaseVertexQuery.class);
         CLASS_IMPORTS.add(Cardinality.class);
+        CLASS_IMPORTS.add(ConfiguredGraphFactory.class);
         CLASS_IMPORTS.add(EdgeLabel.class);
         CLASS_IMPORTS.add(Idfiable.class);
         CLASS_IMPORTS.add(JanusGraph.class);
