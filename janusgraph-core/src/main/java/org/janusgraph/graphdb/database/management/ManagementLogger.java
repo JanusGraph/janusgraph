@@ -31,7 +31,10 @@ import org.janusgraph.graphdb.database.cache.SchemaCache;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.serialize.Serializer;
+import org.janusgraph.graphdb.management.JanusGraphManager;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
+import static org.janusgraph.graphdb.database.management.GraphCacheEvictionAction.EVICT;
+import static org.janusgraph.graphdb.database.management.GraphCacheEvictionAction.DO_NOT_EVICT;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,7 +92,9 @@ public class ManagementLogger implements MessageReader {
                     long typeId = VariableLong.readPositive(in);
                     schemaCache.expireSchemaElement(typeId);
                 }
-                Thread ack = new Thread(new SendAckOnTxClose(evictionId, senderId, graph.getOpenTransactions()));
+                final GraphCacheEvictionAction action = serializer.readObjectNotNull(in, GraphCacheEvictionAction.class);
+                Preconditions.checkNotNull(action);
+                final Thread ack = new Thread(new SendAckOnTxClose(evictionId, senderId, graph.getOpenTransactions(), action, graph.getGraphName()));
                 ack.setDaemon(true);
                 ack.start();
                 break;
@@ -115,6 +120,7 @@ public class ManagementLogger implements MessageReader {
     }
 
     public void sendCacheEviction(Set<JanusGraphSchemaVertex> updatedTypes,
+                                             final boolean evictGraphFromCache,
                                              List<Callable<Boolean>> updatedTypeTriggers,
                                              Set<String> openInstances) {
         Preconditions.checkArgument(!openInstances.isEmpty());
@@ -127,6 +133,11 @@ public class ManagementLogger implements MessageReader {
         for (JanusGraphSchemaVertex type : updatedTypes) {
             assert type.hasId();
             VariableLong.writePositive(out,type.longId());
+        }
+        if (evictGraphFromCache) {
+            out.writeObjectNotNull(EVICT);
+        } else {
+            out.writeObjectNotNull(DO_NOT_EVICT);
         }
         sysLog.add(out.getStaticBuffer());
     }
@@ -197,11 +208,19 @@ public class ManagementLogger implements MessageReader {
         private final long evictionId;
         private final Set<? extends JanusGraphTransaction> openTx;
         private final String originId;
+        private final GraphCacheEvictionAction action;
+        private final String graphName;
 
-        private SendAckOnTxClose(long evictionId, String originId, Set<? extends JanusGraphTransaction> openTx) {
+        private SendAckOnTxClose(long evictionId,
+                                 String originId,
+                                 Set<? extends JanusGraphTransaction> openTx,
+                                 GraphCacheEvictionAction action,
+                                 String graphName) {
             this.evictionId = evictionId;
             this.openTx = openTx;
             this.originId = originId;
+            this.action = action;
+            this.graphName = graphName;
         }
 
         @Override
@@ -218,12 +237,24 @@ public class ManagementLogger implements MessageReader {
                         txStillOpen = true;
                     }
                 }
-                if (!txStillOpen) {
+                final JanusGraphManager jgm = JanusGraphManager.getInstance();
+                final boolean janusGraphManagerIsInBadState = null == jgm && action.equals(EVICT);
+                if (!txStillOpen && janusGraphManagerIsInBadState) {
+                    log.error("JanusGraphManager should be instantiated on this server, but it is not. " +
+                              "Please restart with proper server settings. " +
+                              "As a result, we could not evict graph {} from the cache.", graphName);
+                    break;
+                }
+                else if (!txStillOpen) {
                     //Send ack and finish up
                     DataOutput out = graph.getDataSerializer().getDataOutput(64);
                     out.writeObjectNotNull(MgmtLogType.CACHED_TYPE_EVICTION_ACK);
                     out.writeObjectNotNull(originId);
                     VariableLong.writePositive(out,evictionId);
+                    if (null != jgm && action.equals(EVICT)) {
+                        jgm.removeGraph(graphName);
+                        log.debug("Graph {} has been removed from the JanusGraphManager graph cache.", graphName);
+                    }
                     try {
                         sysLog.add(out.getStaticBuffer());
                         log.debug("Sent {}: evictionID={} originID={}", MgmtLogType.CACHED_TYPE_EVICTION_ACK, evictionId, originId);
