@@ -85,7 +85,7 @@ for which you have instantiated _and_ the references are stored inside the `Janu
 
 IMPORTANT: This is an irreversible operation that will delete all graph and index data.
 
-IMPORTANT: To ensure all graph representations are consistent across all JanusGraph nodes in your cluster, remove the graph from the `JanusGraphManager` graph reference tracker on all nodes in your cluster: `ConfiguredGraphFactory.close("graphName");`.
+IMPORTANT: To ensure all graph representations are consistent across all JanusGraph nodes in your cluster, this removes the graph from the `JanusGraphManager` graph cache on every node in the cluster, assuming each node has been properly configured to use the `JanusGraphManager`.
 
 [[configuring-JanusGraph-server-for-configuredgraphfactory]]
 === Configuring JanusGraph Server for ConfiguredGraphFactory
@@ -210,16 +210,7 @@ the property `graph.graphname` go through the `JanusGraphManager` which
 keeps track of graph references created on the given JVM. Think of it as
 a graph cache. For this reason:
 
-IMPORTANT: Any updates to a configuration are not guaranteed to take effect until
-you remove the graph in question on every JanusGraph node in your
-cluster.
-
-You can do so by calling:
-
-[source, gremlin]
-----
-ConfiguredGraphFactory.close("graph2");
-----
+IMPORTANT: Any updates to a graph configuration results in the eviction of the relevant graph from the graph cache on every node in the JanusGraph cluster, assuming each node has been configured properly to use the `JanusGraphManager`.
 
 Since graphs created using the template configuration first create a
 configuration for that graph in question using a copy and create method,
@@ -232,8 +223,7 @@ configuration are not guaranteed to take effect on the specific graph
 until:
 
 1. The relevant configuration is removed: `ConfiguredGraphFactory.removeConfiguration("graph2");`
-2. The graph in question has been closed on every JanusGraph node: `ConfiguredGraphFactory.close("graph2");`
-3. The graph is recreated using the template configuration: `ConfiguredGraphFactory.create("graph2");`
+2. The graph is recreated using the template configuration: `ConfiguredGraphFactory.create("graph2");`
 ====
 
 [[update-examples]]
@@ -259,9 +249,6 @@ map.put("storage.hostname", "10.0.0.1");
 ConfiguredGraphFactory.updateConfiguration("graph1",
 map);
 
-// Close graph
-ConfiguredGraphFactory.close("graph1");
-
 // We are now guaranteed to use the updated configuration
 def g1 = ConfiguredGraphFactory.open("graph1");
 ----
@@ -286,9 +273,6 @@ map.put("index.search.hostname", "127.0.0.1");
 map.put("index.search.elasticsearch.transport-scheme", "http");
 ConfiguredGraphFactory.updateConfiguration("graph1",
 map);
-
-// Close graph
-ConfiguredGraphFactory.close("graph1");
 
 // We are now guaranteed to use the updated configuration
 def g1 = ConfiguredGraphFactory.open("graph1");
@@ -316,9 +300,6 @@ MapConfiguration(map));
 
 // Remove Configuration
 ConfiguredGraphFactory.removeConfiguration("graph1");
-
-// Close graph on all JanusGraph nodes
-ConfiguredGraphFactory.close("graph1");
 
 // Recreate
 ConfiguredGraphFactory.create("graph1");
