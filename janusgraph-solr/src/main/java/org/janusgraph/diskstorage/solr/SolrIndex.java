@@ -124,6 +124,9 @@ public class SolrIndex implements IndexProvider {
 
     private static final String DEFAULT_ID_FIELD = "id";
 
+    private static final String STRING_POSTFIX = "_s";
+    private static final String TEXTSTRING_POSTFIX = "_t";
+
     private enum Mode {
         HTTP, CLOUD;
 
@@ -383,15 +386,22 @@ public class SolrIndex implements IndexProvider {
                         adds.keySet().stream().forEach(v-> {
                             final KeyInformation keyInformation = informations.get(collectionName, v);
                             final String solrOp = keyInformation.getCardinality() == Cardinality.SINGLE ? "set" : "add";
-                            doc.setField(v, isNewDoc ? adds.get(v) :
-                                new HashMap<String, Object>(1) {{put(solrOp, adds.get(v));}}
-                            );
+                            if (isNewDoc) {
+                                doc.setField(v, adds.get(v));
+                            } else {
+                                Map<String,Object> solrOpMap = new HashMap<String, Object>();
+                                solrOpMap.put(solrOp, adds.get(v));
+                                doc.setField(v, solrOpMap);
+                            }
                             // For textstring mapping, we create two indexes one for text and one for string
                             if (hasDualStringMapping(keyInformation)) {
-                                String fieldName = getDualMappingName(v);
-                                doc.setField(fieldName, isNewDoc ? adds.get(v) :
-                                    new HashMap<String, Object>(1) {{put(solrOp, adds.get(v));}}
-                                );
+                                if (isNewDoc) {
+                                    doc.setField(getDualMappingName(v), adds.get(v));
+                                } else {
+                                    Map<String,Object> solrOpMap = new HashMap<String,Object>();
+                                    solrOpMap.put(solrOp, adds.get(v));
+                                    doc.setField(getDualMappingName(v), solrOpMap);
+                                }
                             }
                         });
                         if (ttl>0) {
@@ -413,13 +423,7 @@ public class SolrIndex implements IndexProvider {
     }
 
     private String getDualMappingName(String key) {
-        String fieldName;
-        if (key.endsWith("_t")) {
-            fieldName = key.substring(0, key.length() - 1) + "s";
-        } else {
-            fieldName = key + "_s";
-        }
-        return fieldName;
+        return key.endsWith(TEXTSTRING_POSTFIX)?key.substring(0, key.length() - 1) + "s":key + STRING_POSTFIX;
     }
 
     private static boolean hasDualStringMapping(KeyInformation information) {
@@ -437,15 +441,23 @@ public class SolrIndex implements IndexProvider {
             // in the event of multiple removals in one mutation.
             final Map<String, Object> deletes = collectFieldValues(fieldDeletions, collectionName, informations);
             deletes.keySet().stream().forEach(vertex-> {
-                doc.setField(vertex, keyInformation.getCardinality() == Cardinality.SINGLE?
-                        fieldDeletes:new HashMap<String, Object>(1) {{ put("remove", deletes.get(vertex));}}
-                        );
+                if (keyInformation.getCardinality() == Cardinality.SINGLE) {
+                    doc.setField(vertex, fieldDeletes);
+                } else {
+                    Map<String,Object> removeMap = new HashMap<String, Object>();
+                    removeMap.put("remove", deletes.get(vertex));
+                    doc.setField(vertex,removeMap);
+                }
                 // For textstring mapping we need to delete both indexes, one for string one for text
                 if (hasDualStringMapping(keyInformation)) {
                     String fieldName = getDualMappingName(vertex);
-                    doc.setField(fieldName, keyInformation.getCardinality() == Cardinality.SINGLE?
-                        fieldDeletes:new HashMap<String, Object>(1) {{ put("remove", deletes.get(vertex));}}
-                    );
+                    if (keyInformation.getCardinality() == Cardinality.SINGLE) {
+                        doc.setField(vertex, fieldDeletes);
+                    } else {
+                        Map<String,Object> removeMap = new HashMap<String,Object>();
+                        removeMap.put("remove", deletes.get(vertex));
+                        doc.setField(fieldName, removeMap);
+                    }
                 }
             });
         }
@@ -691,8 +703,7 @@ public class SolrIndex implements IndexProvider {
                 if (map==Mapping.STRING && Text.HAS_CONTAINS.contains(janusgraphPredicate))
                     throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + janusgraphPredicate);
 
-                // If we're doing a textstring mapping, the change the key we search for.
-                //
+                // If we're doing a textstring mapping, then change the key we search for.
                 if (map==Mapping.TEXTSTRING && !Text.HAS_CONTAINS.contains(janusgraphPredicate)) {
                     fieldName = getDualMappingName(key);
                 }
@@ -989,9 +1000,10 @@ public class SolrIndex implements IndexProvider {
         if (AttributeUtil.isString(datatype)) {
             final Mapping map = getStringMapping(keyInfo);
             switch (map) {
-                case TEXT: postfix = "_t"; break;
-                case STRING: postfix = "_s"; break;
-                case TEXTSTRING: postfix = "_t"; break;
+                case TEXT:
+                case TEXTSTRING:
+                    postfix = TEXTSTRING_POSTFIX; break;
+                case STRING: postfix = STRING_POSTFIX; break;
                 default: throw new IllegalArgumentException("Unsupported string mapping: " + map);
             }
         } else if (AttributeUtil.isWholeNumber(datatype)) {
