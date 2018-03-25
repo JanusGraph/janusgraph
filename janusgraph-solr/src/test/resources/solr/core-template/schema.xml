@@ -571,6 +571,7 @@
     <field name="analyzed" type="text_en" indexed="true" stored="true" multiValued="false" />
     <field name="string" type="text_en" indexed="true" stored="true" multiValued="false" />
     <field name="full_text" type="text_en" indexed="true" stored="true" multiValued="false" />
+    <field name="full_text_s" type="string" indexed="true" stored="true" multiValued="false" />
     <field name="keyword" type="text_en" indexed="true" stored="true" multiValued="false" />
     <!-- JanusGraphIndexTest -->
     <field name="xtext" type="text_general" indexed="true" stored="true" multiValued="false" />
