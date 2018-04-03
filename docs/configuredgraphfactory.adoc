@@ -85,7 +85,7 @@ for which you have instantiated _and_ the references are stored inside the `Janu
 
 IMPORTANT: This is an irreversible operation that will delete all graph and index data.
 
-IMPORTANT: To ensure all graph representations are consistent across all JanusGraph nodes in your cluster, this removes the graph from the `JanusGraphManager` graph cache on every node in the cluster, assuming each node has been properly configured to use the `JanusGraphManager`.
+IMPORTANT: To ensure all graph representations are consistent across all JanusGraph nodes in your cluster, this removes the graph from the `JanusGraphManager` graph cache on every node in the cluster, assuming each node has been properly configured to use the `JanusGraphManager`. Learn more about this feature and how to configure your server to use said feature <<multinodejanusgraphcluster.adoc#graph-reference-consistency, here>>.
 
 [[configuring-JanusGraph-server-for-configuredgraphfactory]]
 === Configuring JanusGraph Server for ConfiguredGraphFactory
@@ -210,7 +210,7 @@ the property `graph.graphname` go through the `JanusGraphManager` which
 keeps track of graph references created on the given JVM. Think of it as
 a graph cache. For this reason:
 
-IMPORTANT: Any updates to a graph configuration results in the eviction of the relevant graph from the graph cache on every node in the JanusGraph cluster, assuming each node has been configured properly to use the `JanusGraphManager`.
+IMPORTANT: Any updates to a graph configuration results in the eviction of the relevant graph from the graph cache on every node in the JanusGraph cluster, assuming each node has been configured properly to use the `JanusGraphManager`. Learn more about this feature and how to configure your server to use said feature <<multinodejanusgraphcluster.adoc#graph-reference-consistency, here>>.
 
 Since graphs created using the template configuration first create a
 configuration for that graph in question using a copy and create method,
@@ -385,6 +385,8 @@ def g3 = ConfiguredGraphFactory.create("graph3"); //storage directory === /data/
 === Graph and Traversal Bindings
 
 Graphs created using the ConfiguredGraphFactory are bound to the executor context on the Gremlin Server by the "graph.graphname" property, and the graph's traversal reference is bound to the context by "<graphname>_traversal". This means, on subsequent connections to the server after the first time you create/open a graph, you can access the graph and traversal references by the "<graphname>" and "<graphname>_traversal" properties.
+
+Learn more about this feature and how to configure your server to use said feature <<multinodejanusgraphcluster.adoc#dynamic-graph-and-traversal-bindings, here>>.
 
 IMPORTANT: If you are connected to a remote Gremlin Server using the Gremlin Console and a *sessioned* connection, then you will have to reconnect to the server to bind the variables. This is also true for any sessioned WebSocket connection.
 
