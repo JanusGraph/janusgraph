@@ -532,6 +532,22 @@ gremlin> :> g.V().values('name')
 
 The `:remote` command tells the console to configure a remote connection to Gremlin Server using the `conf/remote.yaml` file to connect.  That file points to a Gremlin Server instance running on `localhost`.  The `:>` is the "submit" command which sends the Gremlin on that line to the currently active remote.
 
+=== Cleaning up after the Pre-Packaged Distribution
+
+If you want to start fresh and remove the database and logs you can use the clean command with `janusgraph.sh`. The server should be stopped before running the clean operation. 
+[source, text]
+----
+$ cd /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/
+$ ./bin/janusgraph.sh stop
+Killing Gremlin-Server (pid 91505)...
+Killing Elasticsearch (pid 91402)...
+Killing Cassandra (pid 91219)...
+$ ./bin/janusgraph.sh clean
+Are you sure you want to delete all stored data and logs? [y/N] y
+Deleted data in /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/db
+Deleted logs in /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/log
+----
+
 === JanusGraph Server as a WebSocket Endpoint
 
 The default configuration described in <<server-getting-started>> is already a WebSocket configuration.  If you want to alter the default configuration to work with your own Cassandra or HBase environment rather than use the quick start environment, follow these steps:
@@ -1475,6 +1491,26 @@ By default, JanusGraph uses the Astyanax library to connect to Cassandra cluster
 === Elasticsearch OutOfMemoryException
 
 When numerous clients are connecting to Elasticsearch, it is likely that an `OutOfMemoryException` occurs. This is not due to a memory issue, but to the OS not allowing more threads to be spawned by the user (the user running Elasticsearch). To circumvent this issue, increase the number of allowed processes to the user running Elasticsearch. For example, increase the `ulimit -u` from the default 1024 to 10024.
+
+=== Dropping a Database
+
+To drop a database using the Gremlin Console you can call `JanusGraphFactory.drop(graph)`. The graph you want to drop needs to be defined prior to running the drop method.
+
+With ConfiguredGraphFactory
+[source, gremlin]
+----
+graph = ConfiguredGraphFactory.open('example')
+ConfiguredGraphFactory.drop('example');
+----
+
+With JanusGraphFactory
+[source, gremlin]
+----
+graph = JanusGraphFactory.open('path/to/configuration.properties')
+JanusGraphFactory.drop(graph);
+----
+
+Note that on JanusGraph versions prior to 0.3.0 if multiple Gremlin Server instances are connecting to the graph that has been dropped it is reccomended to close the graph on all active nodes by running either `JanusGraphFactory.close(graph)` or `ConfiguredGraphFactory.close("example")` depending on which graph manager is in use. Closing and reopening the graph on all active nodes will prevent cached(stale) references to the graph that has been dropped. ConfiguredGraphFactory graphs that are dropped may need to have their configurations recreated using the <<configuredgraphfactory.adoc#graph-configurations, graph configuration singleton>> or <<configuredgraphfactory.adoc#template-configuration, template configuration>>.
 
 [[limitations]]
 == Technical Limitations
