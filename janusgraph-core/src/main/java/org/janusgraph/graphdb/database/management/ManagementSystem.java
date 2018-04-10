@@ -175,7 +175,8 @@ public class ManagementSystem implements JanusGraphManagement {
     private final UserModifiableConfiguration.ConfigVerifier configVerifier = new UserModifiableConfiguration.ConfigVerifier() {
         @Override
         public void verifyModification(ConfigOption option) {
-            Preconditions.checkArgument(option.getType() != ConfigOption.Type.FIXED, "Cannot change the fixed configuration option: %s", option);
+            Preconditions.checkArgument (graph.getConfiguration().isUpgradeAllowed(option.getName()) ||
+                                         option.getType() != ConfigOption.Type.FIXED, "Cannot change the fixed configuration option: %s", option);
             Preconditions.checkArgument(option.getType() != ConfigOption.Type.LOCAL, "Cannot change the local configuration option: %s", option);
             if (option.getType() == ConfigOption.Type.GLOBAL_OFFLINE) {
                 //Verify that there no other open JanusGraph graph instance and no open transactions

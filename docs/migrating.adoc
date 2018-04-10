@@ -1,7 +1,7 @@
 [[migrating-titan]]
 == Migrating from Titan
 
-This page describes some of the Configuration options that JanusGraph provides to allow migration of data from a data store which had previously been created by Titan.
+This page describes some of the Configuration options that JanusGraph provides to allow migration of data from a data store which had previously been created by Titan. Please note after migrating to version 0.3.0, or later, of JanusGraph you will not be able to connect to a graph using a Titan client. 
 
 === Configuration
 
