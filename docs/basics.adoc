@@ -530,7 +530,34 @@ gremlin> :> g.V().values('name')
 ==>stephen
 ----
 
-The `:remote` command tells the console to configure a remote connection to Gremlin Server using the `conf/remote.yaml` file to connect.  That file points to a Gremlin Server instance running on `localhost`.  The `:>` is the "submit" command which sends the Gremlin on that line to the currently active remote.
+The `:remote` command tells the console to configure a remote connection to Gremlin Server using the `conf/remote.yaml` file to connect.  That file points to a Gremlin Server instance running on `localhost`.  The `:>` is the "submit" command which sends the Gremlin on that line to the currently active remote. By default remote conenctions are sessionless, meaning that each line sent in the console is interpreted as a single request. Multiple statements can be sent on a single line using a semicolon as the delimiter. Alternately, you can establish a console with a session by specifying https://tinkerpop.apache.org/docs/current/reference/#sessions[session] when creating the connection. A https://tinkerpop.apache.org/docs/current/reference/#console-sessions[console session] allows you to reuse variables across several lines of input.
+
+----
+gremlin> :remote connect tinkerpop.server conf/remote.yaml
+==>Configured localhost/127.0.0.1:8182
+gremlin> graph
+==>standardjanusgraph[cassandrathrift:[127.0.0.1]]
+gremlin> g
+==>graphtraversalsource[standardjanusgraph[cassandrathrift:[127.0.0.1]], standard]
+gremlin> g.V()
+gremlin> user = "Chris"
+==>Chris
+gremlin> graph.addVertex("name", user)
+No such property: user for class: Script21
+Type ':help' or ':h' for help.
+Display stack trace? [yN]
+gremlin> :remote connect tinkerpop.server conf/remote.yaml session
+==>Configured localhost/127.0.0.1:8182-[9acf239e-a3ed-4301-b33f-55c911e04052]
+gremlin> g.V()
+gremlin> user = "Chris"
+==>Chris
+gremlin> user
+==>Chris
+gremlin> graph.addVertex("name", user)
+==>v[4344]
+gremlin> g.V().values('name')
+==>Chris
+----
 
 === JanusGraph Server as a WebSocket Endpoint
 
