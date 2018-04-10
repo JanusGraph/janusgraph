@@ -238,19 +238,19 @@ JanusGraph natively supports the following data types.
 .Native JanusGraph Data Types
 [options="header"]
 |=====
-|Name			|Description
-|String			|Character sequence
-|Character		|Individual character
-|Boolean		|true or false
-|Byte			|byte value
-|Short			|short value
-|Integer		|integer value
-|Long			|long value
-|Float			|4 byte floating point number
-|Double			|8 byte floating point number
+|Name                   |Description
+|String                 |Character sequence
+|Character              |Individual character
+|Boolean                |true or false
+|Byte                   |byte value
+|Short                  |short value
+|Integer                |integer value
+|Long                   |long value
+|Float                  |4 byte floating point number
+|Double                 |8 byte floating point number
 |Date                   |Specific instant in time (`java.util.Date`)
-|Geoshape		|Geographic shape like point, circle or box
-|UUID   		|Universally unique identifier (`java.util.UUID`)
+|Geoshape               |Geographic shape like point, circle or box
+|UUID                   |Universally unique identifier (`java.util.UUID`)
 |=====
 
 
@@ -329,6 +329,7 @@ Note, that schema name changes may not be immediately visible in currently runni
 Should the need arise to re-define an existing schema type, it is recommended to change the name of this type to a name that is not currently (and will never be) in use. After that, a new label or key can be defined with the original name, thereby effectively replacing the old one.
 However, note that this would not affect vertices, edges, or properties previously written with the existing type. Redefining existing graph elements is not supported online and must be accomplished through a batch graph transformation.
 
+[[schema-constraints]]
 === Schema Constraints
 
 The definition of the schema allows users to configure explicit property and connection constraints. Properties can be bound to specific vertex label and/or edge labels. Moreover, connection constraints allow users to explicitly define which two vertex labels can be connected by an edge label. These constraints can be used to ensure that a graph matches a given domain model. For example for the graph of the gods, a `god` can be a brother of another `god`, but not of a `monster` and a `god` can have a property `age`, but `location` can not have a property `age`. These constraints are disabled by default.
@@ -1296,7 +1297,7 @@ try {
     user.property("name", name)
     graph.tx().commit()
 } catch (Exception e) {
-    //Recover, retry, 	or return error message
+    //Recover, retry, or return error message
     println(e.getMessage())
 }
 
