@@ -68,7 +68,6 @@
         </repository>
     </distributionManagement>
     <properties>
-        <janusgraph.compatible.versions>0.1.0,0.1.1,0.2.0</janusgraph.compatible.versions>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
         <tinkerpop.version>3.3.3</tinkerpop.version>
         <junit.version>4.12</junit.version>
@@ -1267,7 +1266,7 @@
                 </dependencies>
             </dependencyManagement>
         </profile>
-	
+
         <profile>
             <id>coverage</id>
             <properties>
