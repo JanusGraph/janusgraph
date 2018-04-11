@@ -1213,7 +1213,7 @@ Hence, the `battlesByRatingAndTime` index can speed up the first two but not the
 Multiple vertex-centric indexes can be built for the same edge label in order to support different constraint traversals. JanusGraph's query optimizer attempts to pick the most efficient index for any given traversal. Vertex-centric indexes only support equality and range/interval constraints.
 
 [NOTE]
-The property keys used in a vertex-centric index must have an explicitly defined data type (i.e. _not_ `Object.class`) which supports a native sort order.
+The property keys used in a vertex-centric index must have an explicitly defined data type (i.e. _not_ `Object.class`) which supports a native sort order. This means not only that they must implement `Comparable` but that their serializer must impement `OrderPreservingSerializer`. The types that are currently supported are `Boolean`, `UUID`, `Byte`, `Float`, `Long`, `String`, `Integer`, `Date`, `Double`, `Character`, and `Short`
 
 If the vertex-centric index is built against an edge label that is defined in the same management transaction, the index will be immediately available for querying. If the edge label has already been in use, building a vertex-centric index against it requires the execution of a <<reindex, reindex procedure>> to ensure that the index contains all previously added edges. Until the reindex procedure has completed, the index will not be available.
 
