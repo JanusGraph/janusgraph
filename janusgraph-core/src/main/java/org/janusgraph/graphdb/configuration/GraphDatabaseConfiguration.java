@@ -1533,7 +1533,7 @@ public class GraphDatabaseConfiguration {
         preLoadConfiguration();
     }
 
-    private void checkBackwardCompatibilityWithTitan(ModifiableConfiguration globalWrite, BasicConfiguration localbc, KCVSConfiguration kcvsConfig, ModifiableConfiguration overwrite) {
+    private void checkBackwardCompatibilityWithTitan(ModifiableConfiguration globalWrite, BasicConfiguration localBasicConfiguration, KCVSConfiguration keyColumnValueStoreConfiguration, ModifiableConfiguration overwrite) {
         String version = globalWrite.get(TITAN_COMPATIBLE_VERSIONS);
         Preconditions.checkArgument(version!=null,"JanusGraph version nor Titan compatibility have not been initialized");
         if (!JanusGraphConstants.TITAN_COMPATIBLE_VERSIONS.contains(version)) {
@@ -1541,19 +1541,17 @@ public class GraphDatabaseConfiguration {
         }
 
         // When connecting to a store created by Titan the ID store name will not be in the
-        // global configuration. To ensure compatibility override the default to titan_ids.
-        boolean localTitanConfigured = localbc.get(TITAN_COMPATIBLE_VERSIONS) != null;
-        boolean localIdStoreIsDefault = JanusGraphConstants.JANUSGRAPH_ID_STORE_NAME.equals(localbc.get(IDS_STORE_NAME));
+        // global configuration as it was not something which was configurable with Titan.
+        // So to ensure compatibility override the default to titan_ids.
+        boolean localIdStoreIsDefault = JanusGraphConstants.JANUSGRAPH_ID_STORE_NAME.equals(localBasicConfiguration.get(IDS_STORE_NAME));
 
-        if (localTitanConfigured == true) {
-            boolean usingTitanIdStore = localIdStoreIsDefault == true || JanusGraphConstants.TITAN_ID_STORE_NAME.equals(localbc.get(IDS_STORE_NAME));
-            boolean existingKeyStore = kcvsConfig.get(IDS_STORE_NAME.getName(), IDS_STORE_NAME.getDatatype()) != null;
+        boolean usingTitanIdStore = localIdStoreIsDefault || JanusGraphConstants.TITAN_ID_STORE_NAME.equals(localBasicConfiguration.get(IDS_STORE_NAME));
+        boolean existingKeyStore = keyColumnValueStoreConfiguration.get(IDS_STORE_NAME.getName(), IDS_STORE_NAME.getDatatype()) != null;
 
-        	Preconditions.checkArgument(usingTitanIdStore,"ID store for Titan compatibility has not been initialized to: " + JanusGraphConstants.TITAN_ID_STORE_NAME);
-            if (existingKeyStore == false) {
-                log.info("Setting {} to {} for Titan compatibility", IDS_STORE_NAME.getName(), JanusGraphConstants.TITAN_ID_STORE_NAME);
-                overwrite.set(IDS_STORE_NAME, JanusGraphConstants.TITAN_ID_STORE_NAME);
-            }
+        Preconditions.checkArgument(usingTitanIdStore,"ID store for Titan compatibility has not been initialized to: " + JanusGraphConstants.TITAN_ID_STORE_NAME);
+        if (!existingKeyStore) {
+            log.info("Setting {} to {} for Titan compatibility", IDS_STORE_NAME.getName(), JanusGraphConstants.TITAN_ID_STORE_NAME);
+            overwrite.set(IDS_STORE_NAME, JanusGraphConstants.TITAN_ID_STORE_NAME);
         }
     }
 
