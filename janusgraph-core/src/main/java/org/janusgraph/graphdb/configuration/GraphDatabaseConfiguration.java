@@ -1381,7 +1381,6 @@ public class GraphDatabaseConfiguration {
         BasicConfiguration localbc = new BasicConfiguration(ROOT_NS,localConfig, BasicConfiguration.Restriction.NONE);
         ModifiableConfiguration overwrite = new ModifiableConfiguration(ROOT_NS,new CommonsConfiguration(), BasicConfiguration.Restriction.NONE);
 
-//        KeyColumnValueStoreManager storeManager=null;
         final KeyColumnValueStoreManager storeManager = Backend.getStorageManager(localbc);
         final StoreFeatures storeFeatures = storeManager.getFeatures();
         KCVSConfiguration kcvsConfig=Backend.getStandaloneGlobalConfiguration(storeManager,localbc);
@@ -1419,10 +1418,11 @@ public class GraphDatabaseConfiguration {
                         globalWrite.set(TIMESTAMP_PROVIDER, backendPreference);
                         log.info("Set timestamps to {} according to storage backend preference",
                             LoggerUtil.sanitizeAndLaunder(globalWrite.get(TIMESTAMP_PROVIDER)));
+                    } else {
+                        globalWrite.set(TIMESTAMP_PROVIDER, TIMESTAMP_PROVIDER.getDefaultValue());
+                        log.info("Set default timestamp provider {}",
+                            LoggerUtil.sanitizeAndLaunder(globalWrite.get(TIMESTAMP_PROVIDER)));
                     }
-                    globalWrite.set(TIMESTAMP_PROVIDER, TIMESTAMP_PROVIDER.getDefaultValue());
-                    log.info("Set default timestamp provider {}",
-                        LoggerUtil.sanitizeAndLaunder(globalWrite.get(TIMESTAMP_PROVIDER)));
                 } else {
                     log.info("Using configured timestamp provider {}", localbc.get(TIMESTAMP_PROVIDER));
                 }
