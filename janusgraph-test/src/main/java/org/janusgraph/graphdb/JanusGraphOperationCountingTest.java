@@ -244,20 +244,22 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         JanusGraphTransaction tx = graph.buildTransaction().checkExternalVertexExistence(false).groupName(metricsPrefix).start();
         v = tx.getVertex(v.longId());
         v.property("foo", "bus");
-//        printAllMetrics();
+        long numLookupPropertyConstraints = 1;
+        //printAllMetrics(metricsPrefix);
         tx.commit();
-        verifyStoreMetrics(EDGESTORE_NAME);
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, numLookupPropertyConstraints));
         verifyStoreMetrics(INDEXSTORE_NAME);
         verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1L));
 
         tx = graph.buildTransaction().checkExternalVertexExistence(false).groupName(metricsPrefix).start();
         v = tx.getVertex(v.longId());
         v.property("foo", "band");
+        numLookupPropertyConstraints +=1;
         assertEquals("band", v.property("foo").value());
         assertEquals(1, Iterators.size(v.properties("foo")));
         assertEquals(1, Iterators.size(v.properties()));
         tx.commit();
-        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 2L));
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 2L + numLookupPropertyConstraints));
         verifyStoreMetrics(INDEXSTORE_NAME);
         verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 2L));
         verifyStoreMetrics(getConfig().get(IDS_STORE_NAME));
@@ -541,7 +543,8 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         System.out.println("Hits: " + (getEdgeCacheRetrievals()-getEdgeCacheMisses()));
         System.out.println("Misses: " + getEdgeCacheMisses());
         assertEquals(numReads, lookups.get());
-        assertEquals(2 * numReads + numV, getEdgeCacheRetrievals());
+        final int numLookupPropertyConstraints = numV;
+        assertEquals(2 * numReads + numV + numLookupPropertyConstraints, getEdgeCacheRetrievals());
         int minMisses = 2*numV;
         assertTrue("Min misses ["+minMisses+"] vs actual ["+getEdgeCacheMisses()+"]",minMisses<=getEdgeCacheMisses() && 4*minMisses>=getEdgeCacheMisses());
     }

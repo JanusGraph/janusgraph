@@ -19,6 +19,7 @@ import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Map;
@@ -102,4 +103,21 @@ public class InMemoryGraphTest extends JanusGraphTest {
     @Override
     public void testClearStorage() {}
 
+    @Override
+    public void testAutoSchemaMakerForEdgePropertyConstraints() {}
+
+    @Override
+    public void testAutoSchemaMakerForVertexPropertyConstraints() {}
+
+    @Override
+    public void testAutoSchemaMakerForConnectionConstraints() {}
+
+    @Override
+    public void testSupportDirectCommitOfSchemaChangesForVertexProperties() {}
+
+    @Override
+    public void testSupportDirectCommitOfSchemaChangesForConnection() {}
+
+    @Override
+    public void testSupportDirectCommitOfSchemaChangesForEdgeProperties() {}
 }
