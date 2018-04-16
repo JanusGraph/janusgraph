@@ -1394,7 +1394,12 @@ public class GraphDatabaseConfiguration {
 
         // When connecting to a store created by Titan the ID store name will not be in the
         // global configuration. To ensure compatibility override the default to titan_ids.
-        boolean localTitanConfigured = localBasicConfiguration.get(TITAN_COMPATIBLE_VERSIONS) != null;
+        boolean localTitanConfigured = false;
+        try {
+            localTitanConfigured = localBasicConfiguration.get(TITAN_COMPATIBLE_VERSIONS) != null;
+        } catch (IllegalStateException e) {
+            localTitanConfigured = false;
+        }
         boolean localIdStoreIsDefault = JanusGraphConstants.JANUSGRAPH_ID_STORE_NAME.equals(localBasicConfiguration.get(IDS_STORE_NAME));
 
         if (localTitanConfigured) {
