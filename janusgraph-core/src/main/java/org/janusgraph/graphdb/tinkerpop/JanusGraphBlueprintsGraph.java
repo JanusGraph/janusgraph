@@ -211,6 +211,21 @@ public abstract class JanusGraphBlueprintsGraph implements JanusGraph {
     }
 
     @Override
+    public VertexLabel addProperties(VertexLabel vertexLabel, PropertyKey... keys) {
+        return getAutoStartTx().addProperties(vertexLabel, keys);
+    }
+
+    @Override
+    public EdgeLabel addProperties(EdgeLabel edgeLabel, PropertyKey... keys) {
+        return getAutoStartTx().addProperties(edgeLabel, keys);
+    }
+
+    @Override
+    public EdgeLabel addConnection(EdgeLabel edgeLabel, VertexLabel outVLabel, VertexLabel inVLabel) {
+        return getAutoStartTx().addConnection(edgeLabel, outVLabel, inVLabel);
+    }
+
+    @Override
     public boolean containsPropertyKey(String name) {
         return getAutoStartTx().containsPropertyKey(name);
     }

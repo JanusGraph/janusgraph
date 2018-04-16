@@ -92,6 +92,13 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
     DefaultSchemaMaker getAutoSchemaMaker();
 
     /**
+     * Allows to disable schema constraints.
+     *
+     * @return True, if schema constraints should not be applied, else false.
+     */
+    boolean hasDisabledSchemaConstraints();
+
+    /**
      * Whether the graph transaction is configured to verify that an added key does not yet exist in the database.
      *
      * @return True, if vertex existence is verified, else false
