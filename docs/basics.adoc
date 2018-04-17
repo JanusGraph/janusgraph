@@ -329,6 +329,41 @@ Note, that schema name changes may not be immediately visible in currently runni
 Should the need arise to re-define an existing schema type, it is recommended to change the name of this type to a name that is not currently (and will never be) in use. After that, a new label or key can be defined with the original name, thereby effectively replacing the old one.
 However, note that this would not affect vertices, edges, or properties previously written with the existing type. Redefining existing graph elements is not supported online and must be accomplished through a batch graph transformation.
 
+=== Schema Constraints
+
+The definition of the schema allows users to configure explicit property and connection constraints. Properties can be bound to specific vertex label and/or edge labels. Moreover, connection constraints allow users to explicitly define which two vertex labels can be connected by an edge label. These constraints can be used to ensure that a graph matches a given domain model. For example for the graph of the gods, a `god` can be a brother of another `god`, but not of a `monster` and a `god` can have a property `age`, but `location` can not have a property `age`. These constraints are disabled by default.
+
+Enable these schema constraints by setting `schema.constraints=true`. This setting depends on the setting `schema.default`. If config `schema.default` is set to `none`, then an `IllegalArgumentException` is thrown for schema constraint violations. If `schema.default` is not set `none`, schema constraints are automatically created, but no exception is thrown.
+Activating schema constraints has no impact on the existing data, because these schema constraints are only applied during the insertion process. So reading of data is not affected at all by those constraints.
+
+Multiple properties can be bound to a vertex using `JanusGraphManagement.addProperties(VertexLabel, PropertyKey...)`, for example:
+
+[source, gremlin]
+mgmt = graph.openManagement()
+person = mgmt.makeVertexLabel('person').make()
+name = mgmt.makePropertyKey('name').dataType(String.class).cardinality(Cardinality.SET).make()
+birthDate = mgmt.makePropertyKey('birthDate').dataType(Long.class).cardinality(Cardinality.SINGLE).make()
+mgmt.addProperties(person, name, birthDate)
+mgmt.commit()
+
+Multiple properties can be bound to an edge using `JanusGraphManagement.addProperties(EdgeLabel, PropertyKey...)`, for example:
+
+[source, gremlin]
+mgmt = graph.openManagement()
+follow = mgmt.makeEdgeLabel('follow').multiplicity(MULTI).make()
+name = mgmt.makePropertyKey('name').dataType(String.class).cardinality(Cardinality.SET).make()
+mgmt.addProperties(follow, name)
+mgmt.commit()
+
+Connections can be defined using `JanusGraphManagement.addConnection(EdgeLabel, VertexLabel out, VertexLabel in)` between an outgoing, an incoming and an edge, for example:
+
+[source, gremlin]
+mgmt = graph.openManagement()
+person = mgmt.makeVertexLabel('person').make()
+company = mgmt.makeVertexLabel('company').make()
+works = mgmt.makeEdgeLabel('works').multiplicity(MULTI).make()
+mgmt.addConnection(works, person, company)
+mgmt.commit()
 
 [[gremlin]]
 == Gremlin Query Language

@@ -3392,6 +3392,360 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     }
 
+    private void createStrictSchemaForVertexProperties() {
+        clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
+        VertexLabel label = mgmt.makeVertexLabel("user").make();
+        PropertyKey id = mgmt.makePropertyKey("id").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
+        mgmt.makePropertyKey("test").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
+        mgmt.addProperties(label, id);
+        finishSchema();
+    }
+
+    @Test
+    public void testEnforcedSchemaAllowsDefinedVertexProperties() {
+        createStrictSchemaForVertexProperties();
+
+        JanusGraphVertex v = tx.addVertex("user");
+        v.property("id", 10);
+    }
+
+    @Test
+    public void testSchemaIsEnforcedForVertexProperties() {
+        createStrictSchemaForVertexProperties();
+
+        JanusGraphVertex v = tx.addVertex("user");
+        try {
+            v.property("test", 10);
+            fail("This should never reached!");
+        } catch (IllegalArgumentException ignored) {
+        }
+    }
+
+    @Test
+    public void testAllowDisablingSchemaConstraintForVertexProperty() {
+        clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), false);
+        mgmt.makeVertexLabel("user").make();
+        mgmt.makePropertyKey("test").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
+        finishSchema();
+
+        JanusGraphVertex v = tx.addVertex("user");
+        v.property("test", 10);
+    }
+
+    @Test
+    public void testAllowDisablingSchemaConstraintForConnection() {
+        clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), false);
+        mgmt.makeVertexLabel("user").make();
+        mgmt.makeEdgeLabel("knows").make();
+        finishSchema();
+
+        JanusGraphVertex v1 = tx.addVertex("user");
+        JanusGraphVertex v2 = tx.addVertex("user");
+        v1.addEdge("knows", v2);
+    }
+
+    @Test
+    public void testAllowDisablingSchemaConstraintForEdgeProperty() {
+        clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), false);
+        mgmt.makeVertexLabel("user").make();
+        mgmt.makeEdgeLabel("knows").make();
+        mgmt.makePropertyKey("test").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
+        finishSchema();
+
+        JanusGraphVertex v1 = tx.addVertex("user");
+        JanusGraphVertex v2 = tx.addVertex("user");
+        v1.addEdge("knows", v2, "test", 10);
+    }
+
+    @Test
+    public void testAutoSchemaMakerForVertexPropertyConstraints() {
+        clopen(option(SCHEMA_CONSTRAINTS), true);
+        JanusGraphVertex v1 = tx.addVertex("user");
+        v1.property("test", 10);
+        clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
+
+        JanusGraphVertex v2 = tx.addVertex("user");
+        v2.property("test", 10);
+
+        try {
+            v2.property("id", 10);
+            fail("This should never reached!");
+        } catch (IllegalArgumentException ignored) {
+        }
+    }
+
+    @Test
+    public void testSupportDirectCommitOfSchemaChangesForVertexProperties() {
+        clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
+        GraphTraversalSource g = graph.traversal();
+        VertexLabel label = mgmt.makeVertexLabel("user").make();
+        PropertyKey prop = mgmt.makePropertyKey("id").dataType(Integer.class).make();
+        mgmt.addProperties(label, prop);
+        mgmt.commit();
+
+        g.addV("user").property("id", 10).iterate();
+    }
+
+    private GraphTraversalSource prepareGraphForDirectCommitTests() {
+        clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
+        GraphTraversalSource g = graph.traversal();
+        VertexLabel user = mgmt.makeVertexLabel("user").make();
+        EdgeLabel edge = mgmt.makeEdgeLabel("knows").make();
+        PropertyKey id = mgmt.makePropertyKey("id").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
+        mgmt.addProperties(edge, id);
+        mgmt.addConnection(edge, user, user);
+        mgmt.commit();
+        return g;
+    }
+
+    @Test
+    public void testSupportDirectCommitOfSchemaChangesForConnection() {
+        GraphTraversalSource g = prepareGraphForDirectCommitTests();
+
+        g.addV("user").as("p1").addV("user").addE("knows").from("p1").iterate();
+    }
+
+    @Test
+    public void testSupportDirectCommitOfSchemaChangesForEdgeProperties() {
+        GraphTraversalSource g = prepareGraphForDirectCommitTests();
+
+        g.addV("user").as("p1").addV("user").addE("knows").from("p1").property("id", 10).iterate();
+    }
+
+    private void createStrictSchemaForEdgeProperties() {
+        clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
+        VertexLabel user = mgmt.makeVertexLabel("user").make();
+        EdgeLabel edge = mgmt.makeEdgeLabel("knows").make();
+        PropertyKey id = mgmt.makePropertyKey("id").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
+        mgmt.makePropertyKey("test").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
+        mgmt.addProperties(edge, id);
+        mgmt.addConnection(edge, user, user);
+        finishSchema();
+    }
+
+    @Test
+    public void testEnforcedSchemaAllowsDefinedEdgeProperties() {
+        createStrictSchemaForEdgeProperties();
+
+        JanusGraphVertex v1 = tx.addVertex("user");
+        JanusGraphVertex v2 = tx.addVertex("user");
+        v1.addEdge("knows", v2, "id", 10);
+    }
+
+    @Test
+    public void testSchemaIsEnforcedForEdgeProperties() {
+        createStrictSchemaForEdgeProperties();
+
+        JanusGraphVertex v1 = tx.addVertex("user");
+        JanusGraphVertex v2 = tx.addVertex("user");
+        try {
+            v1.addEdge("knows", v2, "test", 10);
+            fail("This should never reached!");
+        } catch (IllegalArgumentException ignored) {
+        }
+    }
+
+    @Test
+    public void testAllowSingleCardinalityForEdgeProperties() {
+        clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
+        EdgeLabel edge = mgmt.makeEdgeLabel("knows").make();
+
+        PropertyKey propertyKey1 = mgmt.makePropertyKey("propertyKey1").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
+        mgmt.addProperties(edge, propertyKey1);
+
+        PropertyKey propertyKey2 = mgmt.makePropertyKey("propertyKey2").dataType(Integer.class).make();
+        mgmt.addProperties(edge, propertyKey2);
+
+        finishSchema();
+    }
+
+    @Test
+    public void testBanListCardinalityForEdgeProperties() {
+        clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
+        EdgeLabel edge = mgmt.makeEdgeLabel("knows").make();
+
+        try {
+            PropertyKey id = mgmt.makePropertyKey("id").cardinality(Cardinality.LIST).dataType(Integer.class).make();
+            mgmt.addProperties(edge, id);
+            fail("This should never reached!");
+        } catch (IllegalArgumentException ignored) {
+        }
+        finishSchema();
+    }
+
+    @Test
+    public void testBanSetCardinalityForEdgeProperties() {
+        clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
+        EdgeLabel edge = mgmt.makeEdgeLabel("knows").make();
+
+        try {
+            PropertyKey id = mgmt.makePropertyKey("id").cardinality(Cardinality.SET).dataType(Integer.class).make();
+            mgmt.addProperties(edge, id);
+            fail("This should never reached!");
+        } catch (IllegalArgumentException ignored) {
+        }
+        finishSchema();
+    }
+
+    @Test
+    public void testAutoSchemaMakerForEdgePropertyConstraints() {
+        clopen(option(SCHEMA_CONSTRAINTS), true);
+        JanusGraphVertex v1 = tx.addVertex("user");
+        JanusGraphVertex v2 = tx.addVertex("user");
+        v1.addEdge("knows", v2, "id", 10);
+        clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
+
+        v1 = tx.addVertex("user");
+        v2 = tx.addVertex("user");
+        v1.addEdge("knows", v2, "id", 10);
+
+        try {
+            v1.addEdge("knows", v2, "test", 10);
+            fail("This should never reached!");
+        } catch (IllegalArgumentException ignored) {
+        }
+    }
+
+    private void createStrictSchemaForConnections() {
+        clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
+        VertexLabel user = mgmt.makeVertexLabel("user").make();
+        VertexLabel company = mgmt.makeVertexLabel("company").make();
+        EdgeLabel edge = mgmt.makeEdgeLabel("knows").make();
+        mgmt.makeEdgeLabel("buys").make();
+        mgmt.addConnection(edge, user, company);
+        finishSchema();
+    }
+
+    @Test
+    public void testEnforcedSchemaAllowsDefinedConnections() {
+        createStrictSchemaForConnections();
+
+        JanusGraphVertex v1 = tx.addVertex("user");
+        JanusGraphVertex v2 = tx.addVertex("company");
+        v1.addEdge("knows", v2);
+    }
+
+    @Test
+    public void testSchemaIsEnforcedForConnections() {
+        createStrictSchemaForConnections();
+
+        JanusGraphVertex v1 = tx.addVertex("user");
+        try {
+            v1.addEdge("buys", v1);
+            fail("This should never reached!");
+        } catch (IllegalArgumentException ignored) {
+        }
+
+        JanusGraphVertex v2 = tx.addVertex("company");
+        try {
+            v2.addEdge("knows", v1);
+            fail("This should never reached!");
+        } catch (IllegalArgumentException ignored) {
+        }
+    }
+
+    @Test
+    public void testAutoSchemaMakerForConnectionConstraints() {
+        clopen(option(SCHEMA_CONSTRAINTS), true);
+        JanusGraphVertex v1 = tx.addVertex("user");
+        JanusGraphVertex v2 = tx.addVertex("user");
+        v1.addEdge("knows", v2);
+        clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
+
+        v1 = tx.addVertex("user");
+        v2 = tx.addVertex("user");
+        v1.addEdge("knows", v2);
+
+        try {
+            v1.addEdge("has", v2);
+            fail("This should never reached!");
+        } catch (IllegalArgumentException ignored) {
+        }
+    }
+
+    @Test
+    public void testSupportChangeNameOfEdgeAndUpdateConnections() {
+        clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
+        VertexLabel user = mgmt.makeVertexLabel("V1").make();
+        VertexLabel company = mgmt.makeVertexLabel("V2").make();
+        EdgeLabel edge = mgmt.makeEdgeLabel("E1").make();
+        mgmt.addConnection(edge, user, company);
+        finishSchema();
+
+        JanusGraphVertex v1 = tx.addVertex("V1");
+        JanusGraphVertex v2 = tx.addVertex("V2");
+        v1.addEdge("E1", v2);
+        newTx();
+
+        edge = mgmt.getEdgeLabel("E1");
+        mgmt.changeName(edge, "E2");
+        mgmt.commit();
+
+        JanusGraphVertex v3 = tx.addVertex("V1");
+        JanusGraphVertex v4 = tx.addVertex("V2");
+        v3.addEdge("E2", v4);
+    }
+
+    private void createStrictSchemaForComplexConnections() {
+        clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
+        VertexLabel v1 = mgmt.makeVertexLabel("V1").make();
+        VertexLabel v2 = mgmt.makeVertexLabel("V2").make();
+        VertexLabel v3 = mgmt.makeVertexLabel("V3").make();
+        VertexLabel v4 = mgmt.makeVertexLabel("V4").make();
+        EdgeLabel e1 = mgmt.makeEdgeLabel("E1").make();
+        EdgeLabel e2 = mgmt.makeEdgeLabel("E2").make();
+        mgmt.addConnection(e1, v1, v2);
+        mgmt.addConnection(e1, v3, v4);
+        mgmt.addConnection(e2, v1, v4);
+        mgmt.addConnection(e2, v3, v2);
+        finishSchema();
+    }
+
+    @Test
+    public void testAllowEnforcedComplexConnections() {
+        createStrictSchemaForComplexConnections();
+
+        JanusGraphVertex v1 = tx.addVertex("V1");
+        JanusGraphVertex v2 = tx.addVertex("V2");
+        JanusGraphVertex v3 = tx.addVertex("V3");
+        JanusGraphVertex v4 = tx.addVertex("V4");
+        v1.addEdge("E1", v2);
+        v3.addEdge("E1", v4);
+        v3.addEdge("E2", v2);
+        v1.addEdge("E2", v4);
+    }
+
+    @Test
+    public void testEnforceComplexConnections() {
+        createStrictSchemaForComplexConnections();
+
+        JanusGraphVertex v1 = tx.addVertex("V1");
+        JanusGraphVertex v2 = tx.addVertex("V2");
+        JanusGraphVertex v3 = tx.addVertex("V3");
+        JanusGraphVertex v4 = tx.addVertex("V4");
+        try {
+            v1.addEdge("E2", v2);
+            fail("This should never reached!");
+        } catch (IllegalArgumentException ignored) {
+        }
+        try {
+            v3.addEdge("E2", v4);
+            fail("This should never reached!");
+        } catch (IllegalArgumentException ignored) {
+        }
+        try {
+            v3.addEdge("E1", v2);
+            fail("This should never reached!");
+        } catch (IllegalArgumentException ignored) {
+        }
+        try {
+            v1.addEdge("E1", v4);
+            fail("This should never reached!");
+        } catch (IllegalArgumentException ignored) {
+        }
+    }
+
+
     private boolean isSortedByID(VertexList vl) {
         for (int i = 1; i < vl.size(); i++) {
             if (vl.getID(i - 1) > vl.getID(i)) return false;
@@ -3633,7 +3987,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         //Verify traversal metrics when having to read from backend [same query as above]
         t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).order().by("weight", decr).limit(10)).profile("~metrics");
-        assertCount(superV * 10, t); 
+        assertCount(superV * 10, t);
         metrics = t.asAdmin().getSideEffects().get("~metrics");
 
         //Verify that properties also use multi query [same query as above]
@@ -3738,6 +4092,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         PropertyKey weight = tx.makePropertyKey("weight").dataType(Float.class).cardinality(Cardinality.SINGLE).make();
         EdgeLabel knows = tx.makeEdgeLabel("knows").make();
         JanusGraphVertex n1 = tx.addVertex("weight", 10.5);
+        tx.addProperties(knows, weight);
         newTx();
 
         final Instant txTimes[] = new Instant[4];

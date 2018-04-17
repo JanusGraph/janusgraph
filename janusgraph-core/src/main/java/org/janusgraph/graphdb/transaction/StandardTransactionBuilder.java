@@ -47,6 +47,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private final DefaultSchemaMaker defaultSchemaMaker;
 
+    private boolean hasDisabledSchemaConstraints = true;
+
     private boolean verifyExternalVertexExistence = true;
 
     private boolean verifyInternalVertexExistence = false;
@@ -93,6 +95,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         if (graphConfig.isBatchLoading()) enableBatchLoading();
         this.graph = graph;
         this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
+        this.hasDisabledSchemaConstraints = graphConfig.hasDisabledSchemaConstraints();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.forceIndexUsage = graphConfig.hasForceIndexUsage();
         this.groupName = graphConfig.getMetricsPrefix();
@@ -111,6 +114,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         if (graphConfig.isBatchLoading()) enableBatchLoading();
         this.graph = graph;
         this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
+        this.hasDisabledSchemaConstraints = graphConfig.hasDisabledSchemaConstraints();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.forceIndexUsage = graphConfig.hasForceIndexUsage();
         this.groupName = graphConfig.getMetricsPrefix();
@@ -235,7 +239,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 propertyPrefetching, singleThreaded, threadBound, getTimestampProvider(), userCommitTime,
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
                 logIdentifier, restrictedPartitions, groupName,
-                defaultSchemaMaker, customOptions);
+                defaultSchemaMaker, hasDisabledSchemaConstraints, customOptions);
         return graph.newTransaction(immutable);
     }
 
@@ -285,6 +289,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     @Override
     public final DefaultSchemaMaker getAutoSchemaMaker() {
         return defaultSchemaMaker;
+    }
+
+    @Override
+    public boolean hasDisabledSchemaConstraints() {
+        return hasDisabledSchemaConstraints;
     }
 
     @Override
@@ -391,6 +400,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private final String logIdentifier;
         private final int[] restrictedPartitions;
         private final DefaultSchemaMaker defaultSchemaMaker;
+        private boolean hasDisabledSchemaConstraints = true;
 
         private final BaseTransactionConfig handleConfig;
 
@@ -406,7 +416,9 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 boolean isThreadBound, TimestampProvider times, Instant commitTime,
                 long indexCacheWeight, int vertexCacheSize, int dirtyVertexSize, String logIdentifier,
                 int[] restrictedPartitions,
-                String groupName, DefaultSchemaMaker defaultSchemaMaker,
+                String groupName,
+                DefaultSchemaMaker defaultSchemaMaker,
+                boolean hasDisabledSchemaConstraints,
                 Configuration customOptions) {
             this.isReadOnly = isReadOnly;
             this.hasEnabledBatchLoading = hasEnabledBatchLoading;
@@ -426,6 +438,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.logIdentifier = logIdentifier;
             this.restrictedPartitions=restrictedPartitions;
             this.defaultSchemaMaker = defaultSchemaMaker;
+            this.hasDisabledSchemaConstraints = hasDisabledSchemaConstraints;
             this.handleConfig = new StandardBaseTransactionConfig.Builder()
                     .commitTime(commitTime)
                     .timestampProvider(times)
@@ -476,6 +489,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public DefaultSchemaMaker getAutoSchemaMaker() {
             return defaultSchemaMaker;
+        }
+
+        @Override
+        public boolean hasDisabledSchemaConstraints() {
+            return hasDisabledSchemaConstraints;
         }
 
         @Override

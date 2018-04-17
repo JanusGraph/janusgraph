@@ -282,7 +282,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> AUTO_TYPE = new ConfigOption<>(SCHEMA_NS,"default",
             "Configures the DefaultSchemaMaker to be used by this graph. If set to 'none', automatic schema creation is disabled. " +
                     "Defaults to a blueprints compatible schema maker with MULTI edge labels and SINGLE property keys",
-            ConfigOption.Type.MASKABLE, "default" , new Predicate<String>() {
+            ConfigOption.Type.MASKABLE, "default", new Predicate<String>() {
         @Override
         public boolean apply(@Nullable String s) {
             if (s==null) return false;
@@ -301,6 +301,12 @@ public class GraphDatabaseConfiguration {
                     "default", JanusGraphDefaultSchemaMaker.INSTANCE,
                     "tp3", Tp3DefaultSchemaMaker.INSTANCE);
 
+    public static final ConfigOption<Boolean> SCHEMA_CONSTRAINTS = new ConfigOption<>(SCHEMA_NS, "constraints",
+            "Configures the schema constraints to be used by this graph. If config 'schema.constraints' " +
+            "is set to 'true' and 'schema.default' is set to 'none', then an 'IllegalArgumentException' is thrown for schema constraint violations. " +
+            "If 'schema.constraints' is set to 'true' and 'schema.default' is not set 'none', schema constraints are automatically created "+
+            "as described in the config option 'schema.default'. If 'schema.constraints' is set to 'false' which is the default, then no schema constraints are applied.",
+            ConfigOption.Type.MASKABLE, false);
 
     // ################ CACHE #######################
     // ################################################
@@ -1217,6 +1223,7 @@ public class GraphDatabaseConfiguration {
     private int txVertexCacheSize;
     private int txDirtyVertexSize;
     private DefaultSchemaMaker defaultSchemaMaker;
+    private boolean hasDisabledSchemaConstraints;
     private Boolean propertyPrefetching;
     private boolean adjustQueryLimit;
     private Boolean useMultiQuery;
@@ -1524,6 +1531,8 @@ public class GraphDatabaseConfiguration {
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
         if (batchLoading) defaultSchemaMaker = DisableDefaultSchemaMaker.INSTANCE;
 
+        hasDisabledSchemaConstraints = !configuration.get(SCHEMA_CONSTRAINTS);
+
         txVertexCacheSize = configuration.get(TX_CACHE_SIZE);
         //Check for explicit dirty vertex cache size first, then fall back on batch-loading-dependent default
         if (configuration.has(TX_DIRTY_SIZE)) {
@@ -1664,6 +1673,10 @@ public class GraphDatabaseConfiguration {
 
     public DefaultSchemaMaker getDefaultSchemaMaker() {
         return defaultSchemaMaker;
+    }
+
+    public boolean hasDisabledSchemaConstraints() {
+        return hasDisabledSchemaConstraints;
     }
 
     public boolean allowVertexIdSetting() {

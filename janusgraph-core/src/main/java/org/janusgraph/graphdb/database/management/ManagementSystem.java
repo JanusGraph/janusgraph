@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.Connection;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
@@ -86,7 +87,6 @@ import org.janusgraph.graphdb.types.TypeDefinitionMap;
 import org.janusgraph.graphdb.types.VertexLabelVertex;
 import org.janusgraph.graphdb.types.indextype.IndexTypeWrapper;
 import org.janusgraph.graphdb.types.system.BaseKey;
-import org.janusgraph.graphdb.types.system.BaseLabel;
 import org.janusgraph.graphdb.types.system.SystemTypeManager;
 import org.janusgraph.graphdb.types.vertices.EdgeLabelVertex;
 import org.janusgraph.graphdb.types.vertices.PropertyKeyVertex;
@@ -272,11 +272,7 @@ public class ManagementSystem implements JanusGraphManagement {
     }
 
     private JanusGraphEdge addSchemaEdge(JanusGraphVertex out, JanusGraphVertex in, TypeDefinitionCategory def, Object modifier) {
-        assert def.isEdge();
-        JanusGraphEdge edge = transaction.addEdge(out, in, BaseLabel.SchemaDefinitionEdge);
-        TypeDefinitionDescription desc = new TypeDefinitionDescription(def, modifier);
-        edge.property(BaseKey.SchemaDefinitionDesc.name(), desc);
-        return edge;
+        return transaction.addSchemaEdge(out, in, def, modifier);
     }
 
     // ###### INDEXING SYSTEM #####################
@@ -432,7 +428,7 @@ public class ManagementSystem implements JanusGraphManagement {
             })
             .filter(indexType -> indexType.getElement().subsumedBy(elementType))
             .map(JanusGraphIndexWrapper::new)
-        .collect(Collectors.toList());
+            .collect(Collectors.toList());
     }
 
     /**
@@ -1031,7 +1027,8 @@ public class ManagementSystem implements JanusGraphManagement {
     public void changeName(JanusGraphSchemaElement element, String newName) {
         Preconditions.checkArgument(StringUtils.isNotBlank(newName), "Invalid name: %s", newName);
         JanusGraphSchemaVertex schemaVertex = getSchemaVertex(element);
-        if (schemaVertex.name().equals(newName)) return;
+        String oldName = schemaVertex.name();
+        if (oldName.equals(newName)) return;
 
         JanusGraphSchemaCategory schemaCategory = schemaVertex.valueOrNull(BaseKey.SchemaCategory);
         Preconditions.checkArgument(schemaCategory.hasName(), "Invalid schema element: %s", element);
@@ -1052,9 +1049,23 @@ public class ManagementSystem implements JanusGraphManagement {
         }
 
         transaction.addProperty(schemaVertex, BaseKey.SchemaName, schemaCategory.getSchemaName(newName));
+
+        updateConnectionEdgeConstraints(schemaVertex, oldName, newName);
+
         updateSchemaVertex(schemaVertex);
         schemaVertex.resetCache();
         updatedTypes.add(schemaVertex);
+    }
+
+    private void updateConnectionEdgeConstraints(JanusGraphSchemaVertex edgeLabel, String oldName, String newName) {
+        if (!(edgeLabel instanceof EdgeLabel)) return;
+        ((EdgeLabel) edgeLabel).mappedConnections().stream()
+            .peek(s -> schemaCache.expireSchemaElement(s.getOutgoingVertexLabel().longId()))
+            .map(Connection::getConnectionEdge)
+            .forEach(edge -> {
+                TypeDefinitionDescription desc = new TypeDefinitionDescription(TypeDefinitionCategory.CONNECTION_EDGE, newName);
+                edge.property(BaseKey.SchemaDefinitionDesc.name(), desc);
+            });
     }
 
     public JanusGraphSchemaVertex getSchemaVertex(JanusGraphSchemaElement element) {
@@ -1303,6 +1314,21 @@ public class ManagementSystem implements JanusGraphManagement {
     @Override
     public VertexLabelMaker makeVertexLabel(String name) {
         return transaction.makeVertexLabel(name);
+    }
+
+    @Override
+    public VertexLabel addProperties(VertexLabel vertexLabel, PropertyKey... keys) {
+        return transaction.addProperties(vertexLabel, keys);
+    }
+
+    @Override
+    public EdgeLabel addProperties(EdgeLabel edgeLabel, PropertyKey... keys) {
+        return transaction.addProperties(edgeLabel, keys);
+    }
+
+    @Override
+    public EdgeLabel addConnection(EdgeLabel edgeLabel, VertexLabel outVLabel, VertexLabel inVLabel) {
+        return transaction.addConnection(edgeLabel, outVLabel, inVLabel);
     }
 
     @Override
