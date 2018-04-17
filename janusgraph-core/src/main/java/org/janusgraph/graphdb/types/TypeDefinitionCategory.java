@@ -65,15 +65,18 @@ public enum TypeDefinitionCategory {
     STATIC(Boolean.class),
 
     //Schema Edges
+    PROPERTY_KEY_EDGE(),
+    CONNECTION_EDGE(RelationCategory.EDGE, String.class),
+    UPDATE_CONNECTION_EDGE(),
     RELATIONTYPE_INDEX(),
     TYPE_MODIFIER(),
-    INDEX_FIELD(RelationCategory.EDGE,Parameter[].class),
+    INDEX_FIELD(RelationCategory.EDGE, Parameter[].class),
     INDEX_SCHEMA_CONSTRAINT();
 
     public static final Set<TypeDefinitionCategory> PROPERTYKEY_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, INVISIBLE, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE);
     public static final Set<TypeDefinitionCategory> EDGELABEL_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, INVISIBLE, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL);
     public static final Set<TypeDefinitionCategory> INDEX_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, ELEMENT_CATEGORY,INDEX_CARDINALITY,INTERNAL_INDEX, BACKING_INDEX,INDEXSTORE_NAME);
-    public static final Set<TypeDefinitionCategory> VERTEXLABEL_DEFINITION_CATEGORIES = ImmutableSet.of(PARTITIONED,STATIC);
+    public static final Set<TypeDefinitionCategory> VERTEXLABEL_DEFINITION_CATEGORIES = ImmutableSet.of(PARTITIONED, STATIC);
     public static final Set<TypeDefinitionCategory> TYPE_MODIFIER_DEFINITION_CATEGORIES;
 
     static {

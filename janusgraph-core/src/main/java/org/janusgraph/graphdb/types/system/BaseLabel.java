@@ -14,10 +14,15 @@
 
 package org.janusgraph.graphdb.types.system;
 
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.janusgraph.core.Connection;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
-import org.apache.tinkerpop.gremlin.structure.Direction;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 public class BaseLabel extends BaseRelationType implements EdgeLabel {
 
@@ -45,6 +50,16 @@ public class BaseLabel extends BaseRelationType implements EdgeLabel {
     @Override
     public Multiplicity multiplicity() {
         return multiplicity;
+    }
+
+    @Override
+    public Collection<PropertyKey> mappedProperties() {
+        return new ArrayList<>();
+    }
+
+    @Override
+    public Collection<Connection> mappedConnections() {
+        return new ArrayList<>();
     }
 
     @Override
