@@ -95,7 +95,9 @@ The following users have deployed JanusGraph in production.
   [video](https://youtu.be/KSmAdtMJYEo?t=1h2m17s) and
   [slides](https://www.slideshare.net/RoopaTangirala/polyglot-persistence-netflix-cde-meetup-90955706) (graph discussion starts at #86)
 * [Seeq](https://seeq.com)
-* [Sift Security](https://siftsecurity.com)
+* [Sift Security](https://siftsecurity.com) -
+  [blog post](http://blog.siftsecurity.com/2017/09/using-security-event-graph-to-drive.html) and
+  [slides](https://developer.ibm.com/opentech/wp-content/uploads/sites/43/2017/08/Sift-Security-Janus-Meetup-Aug-2017.pdf)
 * [Times Internet](http://timesinternet.in) - [blog post about CMS use case](http://denmarkblog.timesinternet.in/blogs/graph/times-internet-is-using-janusgraph-as-main-database-in-cms-for-all-newsrooms/articleshow/63709837.cms) (the CMS which is serving this blog post runs on JanusGraph)
 * [Uber](https://uber.com)
 
