@@ -77,7 +77,7 @@ public class Geoshape {
     private static String FIELD_TYPE = "type";
     private static String FIELD_COORDINATES = "coordinates";
 
-    public static final GeoshapeHelper HELPER = new JtsGeoshapeHelper();
+    public static final JtsGeoshapeHelper HELPER = new JtsGeoshapeHelper();
 
     private static final ObjectReader mapReader;
     private static final ObjectWriter mapWriter;
@@ -770,7 +770,6 @@ public class Geoshape {
          * @throws IOException
          */
         public static void write(OutputStream outputStream, Geoshape attribute) throws IOException {
-            outputStream.write(HELPER.isJts(attribute.shape) ? 0 : 1);
             try (DataOutputStream dataOutput = new DataOutputStream(outputStream)) {
                 HELPER.write(dataOutput, attribute);
                 dataOutput.flush();
@@ -785,13 +784,8 @@ public class Geoshape {
          * @throws IOException
          */
         public static Geoshape read(InputStream inputStream) throws IOException {
-            boolean isJts = inputStream.read()==0;
             try (DataInputStream dataInput = new DataInputStream(inputStream)) {
-                if (isJts) {
-                    return new Geoshape(HELPER.readGeometry(dataInput));
-                } else {
-                    return new Geoshape(HELPER.getBinaryCodec().readShape(dataInput));
-                }
+                return new Geoshape(HELPER.readShape(dataInput));
             }
         }
     }
