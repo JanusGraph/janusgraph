@@ -8,7 +8,7 @@ Solr is the popular, blazing fast open source enterprise search platform from th
 JanusGraph supports http://lucene.apache.org/solr/[Apache Solr] as an index backend.  Here are some of the Solr features supported by JanusGraph:
 
 * *Full-Text*: Supports all `Text` predicates to search for text properties that matches a given word, prefix or regular expression.
-* *Geo*: Supports all `Geo` predicates to search for geo properties that are intersecting, within, disjoint to or contained in a given query geometry. Supports points, lines and polygons for indexing. Supports circles, boxes and polygons for querying point properties and all shapes for querying non-point properties. Note that JTS is required when using line and polygon shapes (see <<search-predicates#geoshape,Geoshape documentation>> for more information).
+* *Geo*: Supports all `Geo` predicates to search for geo properties that are intersecting, within, disjoint to or contained in a given query geometry. Supports points, lines and polygons for indexing. Supports circles, boxes and polygons for querying point properties and all shapes for querying non-point properties.
 * *Numeric Range*: Supports all numeric comparisons in `Compare`.
 * *TTL*: Supports automatically expiring indexed elements.
 * *Temporal*: Millisecond granularity temporal indexing.
