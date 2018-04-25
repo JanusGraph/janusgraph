@@ -21,6 +21,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Cmp;
+import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.core.schema.JanusGraphSchemaType;
 import org.janusgraph.graphdb.database.IndexSerializer;
@@ -99,6 +100,10 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(predicate);
         Preconditions.checkArgument(predicate.isValidCondition(condition), "Invalid condition: %s", condition);
+        if (predicate.equals(Contain.NOT_IN)) {
+            // when querying `has(key, without(value))`, the query must also satisfy `has(key)`
+            has(key);
+        }
         constraints.add(new PredicateCondition<String, JanusGraphElement>(key, predicate, condition));
         return this;
     }
