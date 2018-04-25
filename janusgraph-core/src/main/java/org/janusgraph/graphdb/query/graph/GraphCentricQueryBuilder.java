@@ -98,12 +98,13 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     public GraphCentricQueryBuilder has(String key, JanusGraphPredicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(predicate);
-        Preconditions.checkArgument(predicate.isValidCondition(condition), "Invalid condition: %s", condition);
+        Preconditions.checkArgument(predicate.isValidCondition(condition),
+                "Invalid condition: %s", condition);
         if (predicate.equals(Contain.NOT_IN)) {
             // when querying `has(key, without(value))`, the query must also satisfy `has(key)`
             has(key);
         }
-        constraints.add(new PredicateCondition<String, JanusGraphElement>(key, predicate, condition));
+        constraints.add(new PredicateCondition<>(key, predicate, condition));
         return this;
     }
 
