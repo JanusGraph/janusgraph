@@ -26,6 +26,8 @@ import org.apache.tinkerpop.shaded.jackson.core.JsonGenerationException;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
 import org.apache.tinkerpop.shaded.jackson.core.JsonParser;
 import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
+import org.apache.tinkerpop.shaded.jackson.core.JsonToken;
+import org.apache.tinkerpop.shaded.jackson.core.type.WritableTypeId;
 import org.apache.tinkerpop.shaded.jackson.databind.DeserializationContext;
 import org.apache.tinkerpop.shaded.jackson.databind.SerializerProvider;
 import org.apache.tinkerpop.shaded.jackson.databind.deser.std.StdDeserializer;
@@ -82,12 +84,13 @@ public abstract class JanusGraphSONModule extends TinkerPopJacksonModule {
         public void serializeWithType(final RelationIdentifier relationIdentifier, final JsonGenerator jsonGenerator,
                 final SerializerProvider serializerProvider, final TypeSerializer typeSerializer)
                 throws IOException, JsonProcessingException {
-            typeSerializer.writeTypePrefixForScalar(relationIdentifier, jsonGenerator);
+            // since jackson 2.9, must keep track of `typeIdDef` in order to close it properly
+            final WritableTypeId typeIdDef = typeSerializer.writeTypePrefix(jsonGenerator, typeSerializer.typeId(relationIdentifier, JsonToken.VALUE_STRING));
             jsonGenerator.writeStartObject();
             jsonGenerator.writeStringField(GraphSONTokens.VALUE, relationIdentifier.toString());
             jsonGenerator.writeStringField(GraphSONTokens.CLASS, HashMap.class.getName());
             jsonGenerator.writeEndObject();
-            typeSerializer.writeTypeSuffixForScalar(relationIdentifier, jsonGenerator);
+            typeSerializer.writeTypeSuffix(jsonGenerator, typeIdDef);
         }
     }
 
