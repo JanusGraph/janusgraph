@@ -14,6 +14,12 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
+import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.BranchStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.MatchStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
+import org.apache.tinkerpop.gremlin.process.traversal.util.PathUtil;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
@@ -27,8 +33,12 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.javatuples.Pair;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -38,6 +48,9 @@ import java.util.Set;
 public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
 
     private static final JanusGraphLocalQueryOptimizerStrategy INSTANCE = new JanusGraphLocalQueryOptimizerStrategy();
+
+    private static final List<Class<? extends Step>> MULTIQUERY_INCOMPATIBLE_STEPS =
+        Arrays.asList(RepeatStep.class, MatchStep.class, BranchStep.class);
 
     private JanusGraphLocalQueryOptimizerStrategy() {
     }
@@ -74,7 +87,7 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
                 vstep.setLimit(QueryUtil.mergeLimits(limit, vstep.getLimit()));
             }
 
-            if (useMultiQuery) {
+            if (useMultiQuery && !(isChildOf(vstep, MULTIQUERY_INCOMPATIBLE_STEPS))) {
                 vstep.setUseMultiQuery(true);
             }
         });
@@ -95,7 +108,7 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
                 //We cannot fold in orders or ranges since they are not local
             }
 
-            if (useMultiQuery) {
+            if (useMultiQuery && !(isChildOf(vstep, MULTIQUERY_INCOMPATIBLE_STEPS))) {
                 vstep.setUseMultiQuery(true);
             }
         });
@@ -149,10 +162,22 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
             vstep.setTraversal(traversal);
             TraversalHelper.replaceStep(localStep, vstep, traversal);
 
-            if (useMultiQuery) {
+            if (useMultiQuery && !(isChildOf(vstep, MULTIQUERY_INCOMPATIBLE_STEPS))) {
                 vstep.setUseMultiQuery(true);
             }
         }
+    }
+
+    private static boolean isChildOf(Step<?, ?> currentStep, List<Class<? extends Step>> stepClasses) {
+        Step<?, ?> parent = currentStep.getTraversal().getParent().asStep();
+        while (!parent.equals(EmptyStep.instance())) {
+            final Step<?, ?> p = parent;
+            if(stepClasses.stream().filter(stepClass -> stepClass.isInstance(p)).findFirst().isPresent()) {
+                return true;
+            }
+            parent = parent.getTraversal().getParent().asStep();
+        }
+        return false;
     }
 
     private static final Set<Class<? extends ProviderOptimizationStrategy>> PRIORS = Collections.singleton(AdjacentVertexFilterOptimizerStrategy.class);
