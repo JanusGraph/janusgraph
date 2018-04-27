@@ -26,6 +26,9 @@ import org.junit.experimental.categories.Category;
 @Category({ CassandraSSLTests.class })
 public class CQLSSLStoreTest extends CQLStoreTest {
 
+    public CQLSSLStoreTest() throws BackendException {
+    }
+
     @BeforeClass
     public static void startCassandra() {
         startCleanEmbedded();
