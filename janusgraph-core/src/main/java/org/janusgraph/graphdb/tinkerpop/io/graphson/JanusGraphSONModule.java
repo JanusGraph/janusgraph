@@ -80,8 +80,7 @@ public abstract class JanusGraphSONModule extends TinkerPopJacksonModule {
         @Override
         public void serializeWithType(final RelationIdentifier relationIdentifier, final JsonGenerator jsonGenerator,
                 final SerializerProvider serializerProvider, final TypeSerializer typeSerializer)
-                throws IOException, JsonProcessingException {
-            typeSerializer.writeTypePrefixForScalar(relationIdentifier, jsonGenerator);
+                throws IOException {
             jsonGenerator.writeStartObject();
             jsonGenerator.writeStringField(GraphSONTokens.VALUE, relationIdentifier.toString());
             jsonGenerator.writeStringField(GraphSONTokens.CLASS, HashMap.class.getName());

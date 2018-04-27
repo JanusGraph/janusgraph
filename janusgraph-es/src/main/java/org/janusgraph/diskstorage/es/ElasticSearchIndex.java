@@ -30,7 +30,6 @@ import com.google.common.collect.Multimap;
 import org.janusgraph.diskstorage.es.compat.ES6Compat;
 import org.janusgraph.diskstorage.es.rest.util.HttpAuthTypes;
 import org.locationtech.spatial4j.shape.Rectangle;
-import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectWriter;
 import org.apache.tinkerpop.shaded.jackson.databind.SerializationFeature;
@@ -151,6 +150,11 @@ public class ElasticSearchIndex implements IndexProvider {
     public static final ConfigOption<Boolean> USE_EXTERNAL_MAPPINGS =
             new ConfigOption<>(ES_CREATE_NS, "use-external-mappings",
             "Whether JanusGraph should make use of an external mapping when registering an index.", ConfigOption.Type.MASKABLE, false);
+
+    public static final ConfigOption<Boolean> ALLOW_MAPPING_UPDATE =
+            new ConfigOption<>(ES_CREATE_NS, "allow-mapping-update",
+            "Whether JanusGraph should allow a mapping update when registering an index. " +
+            "Only applicable when " + USE_EXTERNAL_MAPPINGS.getName() + " is true.", ConfigOption.Type.MASKABLE, false);
 
     public static final ConfigOption<Boolean> USE_ALL_FIELD =
         new ConfigOption<>(ELASTICSEARCH_NS, "use-all-field",
@@ -276,6 +280,7 @@ public class ElasticSearchIndex implements IndexProvider {
     private final String indexName;
     private final int batchSize;
     private final boolean useExternalMappings;
+    private final boolean allowMappingUpdate;
     private final Map<String, Object> indexSetting;
     private final long createSleep;
     private final boolean useAllField;
@@ -286,6 +291,7 @@ public class ElasticSearchIndex implements IndexProvider {
         indexName = config.get(INDEX_NAME);
         useAllField = config.get(USE_ALL_FIELD);
         useExternalMappings = config.get(USE_EXTERNAL_MAPPINGS);
+        allowMappingUpdate = config.get(ALLOW_MAPPING_UPDATE);
         createSleep = config.get(CREATE_SLEEP);
         ingestPipelines = config.getSubset(ES_INGEST_PIPELINES);
         final ElasticSearchSetup.Connection c = interfaceConfiguration(config);
@@ -419,9 +425,8 @@ public class ElasticSearchIndex implements IndexProvider {
                 final IndexMapping mappings = client.getMapping(indexStoreName, store);
                 if (mappings == null || (!mappings.isDynamic() && !mappings.getProperties().containsKey(key))) {
                     //Error if it is not dynamic and have not the property 'key'
-                    throw new PermanentBackendException("The external mapping for index '"+ indexStoreName
-                            + "' and type '" + store + "' do not have property '" + key + "'");
-                } else if (mappings.isDynamic()) {
+                    throw new PermanentBackendException("The external mapping for index '"+ indexStoreName + "' and type '" + store + "' do not have property '" + key + "'");
+                } else if (allowMappingUpdate && mappings.isDynamic()) {
                     //If it is dynamic, we push the unknown property 'key'
                     this.pushMapping(store, key, information);
                 }
@@ -1234,9 +1239,8 @@ public class ElasticSearchIndex implements IndexProvider {
 
     @Override
     public String mapKey2Field(String key, KeyInformation information) {
-        Preconditions.checkArgument(!StringUtils.containsAny(key,new char[]{' '}),
-                "Invalid key name provided: %s",key);
-        return key;
+        IndexProvider.checkKeyValidity(key);
+        return key.replace(' ', IndexProvider.REPLACEMENT_CHAR);
     }
 
     @Override
