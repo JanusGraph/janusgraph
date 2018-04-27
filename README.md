@@ -1,4 +1,4 @@
-![JanusGraph logo](janusgraph.png)
+[![JanusGraph logo](janusgraph.png)](http://janusgraph.org/)
 
 JanusGraph is a highly scalable [graph database](http://en.wikipedia.org/wiki/Graph_database)
 optimized for storing and querying large graphs with billions of vertices and edges

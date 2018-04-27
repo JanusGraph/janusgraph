@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.hbase;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -28,8 +29,10 @@ import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -80,6 +83,21 @@ public class HBaseStoreManagerConfigTest {
 
         store.close();
         manager.close();
+    }
+    
+    @Test
+    // Test HBase preferred timestamp provider MILLI is set by default
+    public void testHBaseTimestampProvider() throws BackendException {
+        // Get an empty configuration
+        // GraphDatabaseConfiguration.buildGraphConfiguration() only build an empty one.
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
+        // Set backend to hbase
+        config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, "hbase");
+        // Instantiate a GraphDatabaseConfiguration based on the above
+        GraphDatabaseConfiguration graphConfig = new GraphDatabaseConfiguration(config.getConfiguration());
+        // Check the TIMESTAMP_PROVIDER has been set to the hbase preferred MILLI
+        TimestampProviders provider = graphConfig.getConfiguration().get(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER);
+        assertEquals(HBaseStoreManager.PREFERRED_TIMESTAMPS, provider);
     }
 
 }

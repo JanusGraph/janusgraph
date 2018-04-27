@@ -80,7 +80,9 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
         assert !initialized;
         initialized = true;
         if (useMultiQuery) {
-            if (!starts.hasNext()) throw FastNoSuchElementException.instance();
+            if (!starts.hasNext()) {
+                throw FastNoSuchElementException.instance();
+            }
             JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
             List<Traverser.Admin<Vertex>> vertices = new ArrayList<>();
             starts.forEachRemaining(v -> {

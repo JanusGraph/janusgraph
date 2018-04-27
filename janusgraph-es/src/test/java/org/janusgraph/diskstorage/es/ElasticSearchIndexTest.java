@@ -28,7 +28,7 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.codehaus.jackson.map.ObjectMapper;
+import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.attribute.*;
@@ -68,6 +68,8 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
     static HttpHost host;
     static CloseableHttpClient httpClient;
     static ObjectMapper objectMapper;
+
+    private static char REPLACEMENT_CHAR = '\u2022';
 
     @BeforeClass
     public static void startElasticsearch() throws Exception {
@@ -246,5 +248,16 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
             assertEquals(1, tx.queryStream(new IndexQuery("ingestvertex", PredicateCondition.of(TEXT, Text.CONTAINS, "bob"))).count());
             assertEquals(1, tx.queryStream(new IndexQuery("ingestvertex", PredicateCondition.of(STRING, Cmp.EQUAL, "hello"))).count());
         }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testMapKey2Field_IllegalCharacter() {
+        index.mapKey2Field("here is an illegal character: " + REPLACEMENT_CHAR, null);
+    }
+
+    @Test
+    public void testMapKey2Field_MappingSpaces() {
+        String expected = "field" + REPLACEMENT_CHAR + "name" + REPLACEMENT_CHAR + "with" + REPLACEMENT_CHAR + "spaces";
+        assertEquals(expected, index.mapKey2Field("field name with spaces", null));
     }
 }
