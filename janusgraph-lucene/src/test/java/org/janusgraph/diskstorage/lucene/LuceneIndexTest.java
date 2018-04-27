@@ -36,6 +36,7 @@ import java.util.Date;
 
 import java.util.UUID;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -47,6 +48,8 @@ public class LuceneIndexTest extends IndexProviderTest {
 
     private static final Logger log =
             LoggerFactory.getLogger(LuceneIndexTest.class);
+
+    private static char REPLACEMENT_CHAR = '\u2022';
 
     @Rule
     public TestName methodName = new TestName();
@@ -136,4 +139,16 @@ public class LuceneIndexTest extends IndexProviderTest {
 //        // This fails under Lucene but works in ES
 //        log.info("Skipping " + getClass().getSimpleName() + "." + methodName.getMethodName());
 //    }
+
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testMapKey2Field_IllegalCharacter() {
+        index.mapKey2Field("here is an illegal character: " + REPLACEMENT_CHAR, null);
+    }
+
+    @Test
+    public void testMapKey2Field_MappingSpaces() {
+        String expected = "field" + REPLACEMENT_CHAR + "name" + REPLACEMENT_CHAR + "with" + REPLACEMENT_CHAR + "spaces";
+        assertEquals(expected, index.mapKey2Field("field name with spaces", null));
+    }
 }
