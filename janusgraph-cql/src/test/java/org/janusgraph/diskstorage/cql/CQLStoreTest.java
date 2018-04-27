@@ -14,14 +14,8 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import static org.janusgraph.diskstorage.cql.CassandraStorageSetup.*;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.*;
-import static org.junit.Assert.*;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.datastax.driver.core.*;
+import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.KeyColumnValueStoreTest;
 import org.janusgraph.diskstorage.configuration.Configuration;
@@ -33,15 +27,34 @@ import org.janusgraph.testcategory.UnorderedKeyStoreTests;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.*;
+import static org.janusgraph.diskstorage.cql.CassandraStorageSetup.getCQLConfiguration;
+import static org.janusgraph.diskstorage.cql.CassandraStorageSetup.startCleanEmbedded;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+
+@RunWith(MockitoJUnitRunner.class)
 public class CQLStoreTest extends KeyColumnValueStoreTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CQLStoreTest.class);
 
     private static final String TEST_CF_NAME = "testcf";
     private static final String DEFAULT_COMPRESSOR_PACKAGE = "org.apache.cassandra.io.compress";
+    private static final String TEST_KEYSPACE_NAME = "test_keyspace";
+
+    public CQLStoreTest() throws BackendException {
+    }
 
     @BeforeClass
     public static void startCassandra() {
@@ -155,6 +168,41 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
     public void testTTLSupported() {
         final StoreFeatures features = this.manager.getFeatures();
         assertTrue(features.hasCellTTL());
+    }
+
+    @Mock
+    private Cluster cluster;
+
+    @InjectMocks
+    private CQLStoreManager mockManager = new CQLStoreManager(getBaseStorageConfiguration());
+
+    @Test
+    public void testExistKeyspaceSession() {
+        Metadata metadata = mock(Metadata.class);
+        KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
+        Session session = mock(Session.class);
+        when(cluster.getMetadata()).thenReturn(metadata);
+        when(metadata.getKeyspace(TEST_KEYSPACE_NAME)).thenReturn(keyspaceMetadata);
+        when(cluster.connect()).thenReturn(session);
+
+        mockManager.initializeSession(TEST_KEYSPACE_NAME);
+
+        verify(cluster).connect();
+        verify(session, never()).execute(any(Statement.class));
+    }
+
+    @Test
+    public void testNewKeyspaceSession() {
+        Metadata metadata = mock(Metadata.class);
+        Session session = mock(Session.class);
+        when(cluster.getMetadata()).thenReturn(metadata);
+        when(metadata.getKeyspace(TEST_KEYSPACE_NAME)).thenReturn(null);
+        when(cluster.connect()).thenReturn(session);
+
+        mockManager.initializeSession(TEST_KEYSPACE_NAME);
+
+        verify(cluster).connect();
+        verify(session, times(1)).execute(any(Statement.class));
     }
 
     @Override
