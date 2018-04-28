@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.tinkerpop.optimize;
 
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.BranchStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.OptionalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.MatchStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
@@ -50,7 +51,7 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
     private static final JanusGraphLocalQueryOptimizerStrategy INSTANCE = new JanusGraphLocalQueryOptimizerStrategy();
 
     private static final List<Class<? extends Step>> MULTIQUERY_INCOMPATIBLE_STEPS =
-        Arrays.asList(RepeatStep.class, MatchStep.class, BranchStep.class);
+        Arrays.asList(RepeatStep.class, MatchStep.class, BranchStep.class, OptionalStep.class);
 
     private JanusGraphLocalQueryOptimizerStrategy() {
     }
