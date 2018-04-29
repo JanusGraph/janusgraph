@@ -14,7 +14,6 @@
 
 package org.janusgraph.hadoop.formats.hbase;
 
-import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.StaticBuffer;
