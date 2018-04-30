@@ -67,6 +67,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Resource;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -128,7 +129,8 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     final ExecutorService executorService;
 
-    private final Cluster cluster;
+    @Resource
+    private Cluster cluster;
     private final Session session;
     private final StoreFeatures storeFeatures;
     private final Map<String, CQLKeyColumnValueStore> openStores;
@@ -278,17 +280,24 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     }
 
     Session initializeSession(final String keyspaceName) {
-        final Configuration configuration = getStorageConfig();
-        final Map<String, Object> replication = Match(configuration.get(REPLICATION_STRATEGY)).of(
-                Case($("SimpleStrategy"), strategy -> HashMap.<String, Object> of("class", strategy, "replication_factor", configuration.get(REPLICATION_FACTOR))),
-                Case($("NetworkTopologyStrategy"),
-                        strategy -> HashMap.<String, Object> of("class", strategy)
-                                .merge(Array.of(configuration.get(REPLICATION_OPTIONS))
-                                        .grouped(2)
-                                        .toMap(array -> Tuple.of(array.get(0), Integer.parseInt(array.get(1)))))))
-                .toJavaMap();
-
         final Session s = this.cluster.connect();
+
+        // if the keyspace already exists, just return the session
+        if (this.cluster.getMetadata().getKeyspace(keyspaceName) != null) {
+            return s;
+        }
+
+        final Configuration configuration = getStorageConfig();
+        // Setting replication strategy based on value reading from the configuration: either "SimpleStrategy" or "NetworkTopologyStrategy"
+        final Map<String, Object> replication = Match(configuration.get(REPLICATION_STRATEGY)).of(
+            Case($("SimpleStrategy"), strategy -> HashMap.<String, Object> of("class", strategy, "replication_factor", configuration.get(REPLICATION_FACTOR))),
+            Case($("NetworkTopologyStrategy"),
+                strategy -> HashMap.<String, Object> of("class", strategy)
+                    .merge(Array.of(configuration.get(REPLICATION_OPTIONS))
+                        .grouped(2)
+                        .toMap(array -> Tuple.of(array.get(0), Integer.parseInt(array.get(1)))))))
+            .toJavaMap();
+
         s.execute(createKeyspace(keyspaceName)
                 .ifNotExists()
                 .with()
