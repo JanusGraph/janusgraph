@@ -26,6 +26,7 @@ image:modes-local.png[]
 Cassandra can be run as a standalone database on the same local host as JanusGraph and the end-user application. In this model, JanusGraph and Cassandra communicate with one another via a `localhost` socket. Running JanusGraph over Cassandra requires the following setup steps:
 
 . http://cassandra.apache.org/download/[Download Cassandra], unpack it, and set filesystem paths in `conf/cassandra.yaml` and `conf/log4j-server.properties`
+. Connecting Gremlin Server to Cassandra using the default configuration files provided in the pre-packaged distribution requires that Cassandra Thrift is enabled. To enable Cassandra Thrift open `conf/cassandra.yaml` and update `start_rpc: false` to `start_rpc: true`. If Cassandra is already running Thrift can be started manually with `bin/nodetool enablethrift`. the Thrift status can be verified with `bin/nodetool` statusthrift.
 . Start Cassandra by invoking `bin/cassandra -f` on the command line in the directory where Cassandra was unpacked.  Read output to check that Cassandra started successfully.
 
 Now, you can create a Cassandra JanusGraph as follows::
@@ -37,6 +38,14 @@ set("storage.hostname", "127.0.0.1").
 open();
 
 In the Gremlin Console, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
+
+=== Local Container Mode
+
+Cassandra does not have a native install for Windows or OSX. One of the easiest ways to run Cassandra on OSX, Windows, or Linux is to use a Docker Container. You can download and run Cassandra with a single https://www.docker.com/[Docker] command. It is important to install a version that is supported by the version of JanusGraph you intend to use. The compatible versions can be found under the Tested Compatibility section of the specific release on the https://github.com/JanusGraph/janusgraph/releases[Releases page]. The https://hub.docker.com/_/cassandra/[Cassandra Docker Hub page] can be referenced for the available versions and useful commands. In the command below an environment variable is being set to enable Cassandra Thrift with `-e CASSANDRA_START_RPC=true`. A description of the ports can be found https://docs.datastax.com/en/cassandra/latest/cassandra/configuration/secureFireWall.html[here]. Port 9160 is used for the Thrift client API. Port 9042 is for CQL native clients. Ports 7000, 7001 and 7099 are for inter-node communication. Version 3.11 of Cassandra was the latest compatible version for JanusGraph 0.2.0 and is specified in the reference command below.
+
+[source, bash]
+docker run --name jg-cassandra -d -e CASSANDRA_START_RPC=true -p 9160:9160 \
+-p 9042:9042 -p 7199:7199 -p 7001:7001 -p 7000:7000 cassandra:3.11
 
 === Remote Server Mode
 

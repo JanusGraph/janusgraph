@@ -205,7 +205,6 @@ public class SolrIndex implements IndexProvider {
             "When mutating - wait for the index to reflect new mutations before returning. This can have a negative impact on performance.",
             ConfigOption.Type.LOCAL, false);
 
-
     private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder()
         .supportsDocumentTTL()
         .setDefaultStringMapping(Mapping.TEXT)
@@ -986,7 +985,9 @@ public class SolrIndex implements IndexProvider {
 
     @Override
     public String mapKey2Field(String key, KeyInformation keyInfo) {
-        Preconditions.checkArgument(!StringUtils.containsAny(key, new char[]{' '}),"Invalid key name provided: %s",key);
+        IndexProvider.checkKeyValidity(key);
+        key = key.replace(' ', REPLACEMENT_CHAR);
+
         if (!dynFields) return key;
         if (ParameterType.MAPPED_NAME.hasParameter(keyInfo.getParameters())) return key;
         String postfix;
