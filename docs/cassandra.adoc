@@ -17,6 +17,9 @@ The following sections outline the various ways in which JanusGraph can be used 
 [NOTE]
 If you are using Cassandra 2.2 or higher you need to explicitly enable thrift so that JanusGraph can connect to the cluster.
 Do so by running `./bin/nodetool enablethrift`.
+[NOTE]
+If security is enabled on Cassandra, the user must have `CREATE permission on <all keyspaces>`,
+otherwise the keyspace must be created ahead of time by an administrator.
 
 [[cassandra-local-server-mode]]
 === Local Server Mode
