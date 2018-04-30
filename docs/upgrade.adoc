@@ -103,3 +103,14 @@ configuration properties.
 The legacy configuration track was not recommended in JanusGraph 0.1.z and is
 no longer supported in JanusGraph 0.2.0. Users should refer to the previous
 sections and migrate to the `REST_CLIENT`.
+
+=== Upgrading from JanusGraph 0.2.0
+
+==== HBase TTL
+
+In JanusGraph 0.2.0, time-to-live (TTL) support was added for HBase storage backend.
+In order to utilize the TTL capability on HBase, the graph timestamps need to be
+MILLI. If the `graph.timestamps` property is not explicitly set to MILLI, the default
+is MICRO in JanusGraph 0.2.0, which does not work for HBase TTL.  Since the `graph.timestamps`
+property is FIXED, a new graph needs to be created to make any change of the `graph.timestamps`
+property effective.

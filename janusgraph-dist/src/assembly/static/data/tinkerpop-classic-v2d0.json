@@ -1,0 +1,6 @@
+{"id":1,"label":"vertex","outE":{"created":[{"id":9,"inV":3,"properties":{"weight":0.4}}],"knows":[{"id":7,"inV":2,"properties":{"weight":0.5}},{"id":8,"inV":4,"properties":{"weight":1.0}}]},"properties":{"name":[{"id":0,"value":"marko"}],"age":[{"id":2,"value":29}]}}
+{"id":2,"label":"vertex","inE":{"knows":[{"id":7,"outV":1,"properties":{"weight":0.5}}]},"properties":{"name":[{"id":3,"value":"vadas"}],"age":[{"id":4,"value":27}]}}
+{"id":3,"label":"vertex","inE":{"created":[{"id":9,"outV":1,"properties":{"weight":0.4}},{"id":11,"outV":4,"properties":{"weight":0.4}},{"id":12,"outV":6,"properties":{"weight":0.2}}]},"properties":{"name":[{"id":5,"value":"lop"}],"lang":[{"id":6,"value":"java"}]}}
+{"id":4,"label":"vertex","inE":{"knows":[{"id":8,"outV":1,"properties":{"weight":1.0}}]},"outE":{"created":[{"id":10,"inV":5,"properties":{"weight":1.0}},{"id":11,"inV":3,"properties":{"weight":0.4}}]},"properties":{"name":[{"id":7,"value":"josh"}],"age":[{"id":8,"value":32}]}}
+{"id":5,"label":"vertex","inE":{"created":[{"id":10,"outV":4,"properties":{"weight":1.0}}]},"properties":{"name":[{"id":9,"value":"ripple"}],"lang":[{"id":10,"value":"java"}]}}
+{"id":6,"label":"vertex","outE":{"created":[{"id":12,"inV":3,"properties":{"weight":0.2}}]},"properties":{"name":[{"id":11,"value":"peter"}],"age":[{"id":12,"value":35}]}}

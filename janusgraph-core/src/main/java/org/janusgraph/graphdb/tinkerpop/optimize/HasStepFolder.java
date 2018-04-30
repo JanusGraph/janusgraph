@@ -33,6 +33,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 
 import org.javatuples.Pair;
@@ -68,7 +69,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
     }
 
     static boolean validJanusGraphHas(Iterable<HasContainer> has) {
-        for (HasContainer h : has) {
+        for (final HasContainer h : has) {
             if (!validJanusGraphHas(h)) return false;
         }
         return true;
@@ -77,19 +78,24 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
     static boolean validJanusGraphOrder(OrderGlobalStep orderGlobalStep, Traversal rootTraversal,
                                           boolean isVertexOrder) {
         final List<Pair<Traversal.Admin, Object>> comparators = orderGlobalStep.getComparators();
-        for(Pair<Traversal.Admin, Object> comp : comparators) {
+        for(final Pair<Traversal.Admin, Object> comp : comparators) {
+            final String key;
             if (comp.getValue0() instanceof ElementValueTraversal &&
                 comp.getValue1() instanceof Order) {
-                final String key = ((ElementValueTraversal) comp.getValue0()).getPropertyKey();
-                final JanusGraphTransaction tx = JanusGraphTraversalUtil.getTx(rootTraversal.asAdmin());
-                final PropertyKey pKey = tx.getPropertyKey(key);
-                if(pKey == null
-                    || !(Comparable.class.isAssignableFrom(pKey.dataType()))
-                    || (isVertexOrder && pKey.cardinality() != Cardinality.SINGLE)) {
-                    return false;
-                }
+                key = ((ElementValueTraversal) comp.getValue0()).getPropertyKey();
+            } else if (comp.getValue1() instanceof ElementValueComparator) {
+                final ElementValueComparator evc = (ElementValueComparator) comp.getValue1();
+                if (!(evc.getValueComparator() instanceof Order)) return false;
+                key = evc.getPropertyKey();
             } else {
                 // do not fold comparators that include nested traversals that are not simple ElementValues
+                return false;
+            }
+            final JanusGraphTransaction tx = JanusGraphTraversalUtil.getTx(rootTraversal.asAdmin());
+            final PropertyKey pKey = tx.getPropertyKey(key);
+            if (pKey == null
+                || !(Comparable.class.isAssignableFrom(pKey.dataType()))
+                || (isVertexOrder && pKey.cardinality() != Cardinality.SINGLE)) {
                 return false;
             }
         }
@@ -139,7 +145,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         Step<?, ?> currentStep = janusgraphStep.getNextStep();
         while (true) {
             if (currentStep instanceof HasContainerHolder) {
-                Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers();
+                final Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers();
                 if (validJanusGraphHas(containers)) {
                     janusgraphStep.addAll(containers);
                     currentStep.getLabels().forEach(janusgraphStep::addLabel);
@@ -169,17 +175,20 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             currentStep = currentStep.getNextStep();
         }
 
-        if (lastOrder != null) {
-            if (validJanusGraphOrder(lastOrder, rootTraversal, isVertexOrder)) {
-                //Add orders to HasStepFolder
-                for (Pair<Traversal.Admin<Object, Comparable>, Comparator<Object>> comp :
-                    (List<Pair<Traversal.Admin<Object, Comparable>, Comparator<Object>>>) ((OrderGlobalStep) lastOrder).getComparators()) {
-                    ElementValueTraversal evt = (ElementValueTraversal) comp.getValue0();
+        if (lastOrder != null && validJanusGraphOrder(lastOrder, rootTraversal, isVertexOrder)) {
+            //Add orders to HasStepFolder
+            for (final Pair<Traversal.Admin<Object, Comparable>, Comparator<Object>> comp :
+                (List<Pair<Traversal.Admin<Object, Comparable>, Comparator<Object>>>) ((OrderGlobalStep) lastOrder).getComparators()) {
+                if (comp.getValue0() instanceof ElementValueTraversal) {
+                    final ElementValueTraversal evt = (ElementValueTraversal) comp.getValue0();
                     janusgraphStep.orderBy(evt.getPropertyKey(), (Order) comp.getValue1());
+                } else {
+                    final ElementValueComparator evc = (ElementValueComparator) comp.getValue1();
+                    janusgraphStep.orderBy(evc.getPropertyKey(), (Order) evc.getValueComparator());
                 }
-                lastOrder.getLabels().forEach(janusgraphStep::addLabel);
-                traversal.removeStep(lastOrder);
             }
+            lastOrder.getLabels().forEach(janusgraphStep::addLabel);
+            traversal.removeStep(lastOrder);
         }
     }
 
@@ -209,7 +218,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            OrderEntry that = (OrderEntry) o;
+            final OrderEntry that = (OrderEntry) o;
 
             if (key != null ? !key.equals(that.key) : that.key != null) return false;
             return order == that.order;
@@ -232,11 +241,11 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
     }
 
     static <E extends Ranging> void foldInRange(final HasStepFolder janusgraphStep, final Traversal.Admin<?, ?> traversal) {
-        Step<?, ?> nextStep = JanusGraphTraversalUtil.getNextNonIdentityStep(janusgraphStep);
+        final Step<?, ?> nextStep = JanusGraphTraversalUtil.getNextNonIdentityStep(janusgraphStep);
 
         if (nextStep instanceof RangeGlobalStep) {
-            RangeGlobalStep range = (RangeGlobalStep) nextStep;
-            int limit = QueryUtil.convertLimit(range.getHighRange());
+            final RangeGlobalStep range = (RangeGlobalStep) nextStep;
+            final int limit = QueryUtil.convertLimit(range.getHighRange());
             janusgraphStep.setLimit(QueryUtil.mergeLimits(limit, janusgraphStep.getLimit()));
             if (range.getLowRange() == 0) { //Range can be removed since there is no offset
                 nextStep.getLabels().forEach(janusgraphStep::addLabel);

@@ -1,0 +1,3 @@
+{"id":2000,"label":"message","inE":{"link":[{"id":5,"outV":2000}]},"outE":{"link":[{"id":4,"inV":2001},{"id":5,"inV":2000}]},"properties":{"name":[{"id":2,"value":"a"}]}}
+{"id":2001,"label":"message","inE":{"link":[{"id":4,"outV":2000}]},"properties":{"name":[{"id":3,"value":"b"}]}}
+{"id":1000,"label":"loops","inE":{"self":[{"id":1,"outV":1000}]},"outE":{"self":[{"id":1,"inV":1000}]},"properties":{"name":[{"id":0,"value":"loop"}]}}
