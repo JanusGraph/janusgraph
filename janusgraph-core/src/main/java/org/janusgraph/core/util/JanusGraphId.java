@@ -27,7 +27,7 @@ import org.janusgraph.graphdb.idmanagement.IDManager;
  * through {@link org.janusgraph.graphdb.database.StandardJanusGraph#getIDManager()} and includes methods for converting
  * a user id to ({@link org.janusgraph.graphdb.idmanagement.IDManager#toVertexId(long)}) and from
  * ({@link org.janusgraph.graphdb.idmanagement.IDManager#fromVertexId(long)}) JanusGraph vertex id.
- * <p/>
+ * <p>
  * <pre>
  * <code>IDManager idManager = ((StandardJanusGraph) graph).getIDManager();</code>
  * </pre>

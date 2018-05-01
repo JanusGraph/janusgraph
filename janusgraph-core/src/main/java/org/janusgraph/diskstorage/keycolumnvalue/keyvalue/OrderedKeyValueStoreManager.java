@@ -29,7 +29,7 @@ public interface OrderedKeyValueStoreManager extends KeyValueStoreManager {
     /**
      * Opens an ordered database by the given name. If the database does not exist, it is
      * created. If it has already been opened, the existing handle is returned.
-     * <p/>
+     * <p>
      *
      * @param name Name of database
      * @return Database Handle

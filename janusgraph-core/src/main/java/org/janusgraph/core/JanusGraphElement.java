@@ -47,10 +47,10 @@ public interface JanusGraphElement extends Element, Idfiable, Removable {
 
     /**
      * Returns a unique identifier for this entity.
-     * <p/>
+     * <p>
      * The unique identifier may only be set when the transaction in which entity is created commits.
      * Some entities are never assigned a unique identifier if they depend on a parent entity.
-     * <p/>
+     * <p>
      * JanusGraph allocates blocks of identifiers and automatically assigns identifiers to elements
      * automatically be default.  This behavior can be partially overridden by setting
      * {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}
@@ -75,7 +75,7 @@ public interface JanusGraphElement extends Element, Idfiable, Removable {
 
     /**
      * Checks whether this entity has a unique identifier.
-     * <p/>
+     * <p>
      * Note that some entities may never be assigned an identifier and others will only be
      * assigned an identifier at the end of a transaction.
      *
@@ -86,7 +86,7 @@ public interface JanusGraphElement extends Element, Idfiable, Removable {
 
     /**
      * Deletes this entity and any incident edges or properties from the graph.
-     * <p/>
+     * <p>
      *
      * @throws IllegalStateException if the entity cannot be deleted or if the user does not
      *                               have permission to remove the entity
@@ -108,7 +108,7 @@ public interface JanusGraphElement extends Element, Idfiable, Removable {
      * Retrieves the value associated with the given key on this element and casts it to the specified type.
      * If the key has cardinality SINGLE, then there can be at most one value and this value is returned (or null).
      * Otherwise a list of all associated values is returned, or an empty list if non exist.
-     * <p/>
+     * <p>
      *
      * @param key key
      * @return value or list of values associated with key
