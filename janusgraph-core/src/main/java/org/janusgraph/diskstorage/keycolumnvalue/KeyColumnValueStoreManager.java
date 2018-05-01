@@ -22,7 +22,7 @@ import java.util.Map;
 
 /**
  * KeyColumnValueStoreManager provides the persistence context to the graph database storage backend.
- * <p/>
+ * <p>
  * A KeyColumnValueStoreManager provides transaction handles across multiple data stores that
  * are managed by this KeyColumnValueStoreManager.
  *

@@ -24,7 +24,7 @@ public interface JanusGraphConfiguration {
 
     /**
      * Returns a string representation of the provided configuration option or namespace for inspection.
-     * <p />
+     * <p>
      * An exception is thrown if the path is invalid.
      *
      * @param path

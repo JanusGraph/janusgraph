@@ -219,9 +219,9 @@ public class BackendTransaction implements LoggableTransaction {
      * the key-value entry without taking a lock).
      * The expectedValue defines the value expected to match the value at the time the lock is acquired (or null if it is expected
      * that the key-column pair does not exist).
-     * <p/>
+     * <p>
      * If this method is called multiple times with the same key-column pair in the same transaction, all but the first invocation are ignored.
-     * <p/>
+     * <p>
      * The lock has to be released when the transaction closes (commits or aborts).
      *
      * @param key           Key on which to lock
@@ -243,9 +243,9 @@ public class BackendTransaction implements LoggableTransaction {
      * the key-value entry without taking a lock).
      * The expectedValue defines the value expected to match the value at the time the lock is acquired (or null if it is expected
      * that the key-column pair does not exist).
-     * <p/>
+     * <p>
      * If this method is called multiple times with the same key-column pair in the same transaction, all but the first invocation are ignored.
-     * <p/>
+     * <p>
      * The lock has to be released when the transaction closes (commits or aborts).
      *
      * @param key           Key on which to lock

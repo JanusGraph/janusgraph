@@ -108,9 +108,9 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
      * Abstract builder for this Locker implementation. See
      * {@link ConsistentKeyLocker} for an example of how to subclass this
      * abstract builder into a concrete builder.
-     * <p/>
+     * <p>
      * If you're wondering why the bounds for the type parameter {@code B} looks so hideous, see:
-     * <p/>
+     * <p>
      * <a href="https://weblogs.java.net/blog/emcmanus/archive/2010/10/25/using-builder-pattern-subclasses">Using the builder pattern with subclasses by Eamonn McManus</a>
      *
      * @param <S> The concrete type of {@link LockStatus}
@@ -253,7 +253,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
      * read-only operation: return if the lock is already held, but this method
      * finds that it is not held, then throw an exception instead of trying to
      * acquire it.
-     * <p/>
+     * <p>
      * This method is only useful with nonblocking locking implementations try
      * to lock and then check the outcome of the attempt in two separate stages.
      * For implementations that build {@code writeSingleLock(...)} on a

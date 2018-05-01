@@ -20,7 +20,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
- * This class counts arbitrary objects of type <K> and tries to do so efficiently in time and space.
+ * This class counts arbitrary objects of type &lt;K&gt; and tries to do so efficiently in time and space.
  * The class offers methods to increase the count of an object by a specified amount or default 1, as well
  * as retrieving the number of times and object has been counted.
  *

@@ -91,7 +91,7 @@ public class JanusGraphManager implements GraphManager {
     }
 
     /**
-     * @Deprecated
+     * @deprecated
      */
     @Deprecated
     @Override
@@ -115,7 +115,7 @@ public class JanusGraphManager implements GraphManager {
     }
 
     /**
-     * @Deprecated
+     * @deprecated
      */
     @Override
     public Map<String, TraversalSource> getTraversalSources() {

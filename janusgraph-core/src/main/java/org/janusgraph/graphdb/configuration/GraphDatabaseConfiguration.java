@@ -82,11 +82,11 @@ import org.janusgraph.util.stats.MetricManager;
 
 /**
  * Provides functionality to configure a {@link org.janusgraph.core.JanusGraph} INSTANCE.
- * <p/>
- * <p/>
+ * <p>
+ * <p>
  * A graph database configuration is uniquely associated with a graph database and must not be used for multiple
  * databases.
- * <p/>
+ * <p>
  * After a graph database has been initialized with respect to a configuration, some parameters of graph database
  * configuration may no longer be modifiable.
  *
@@ -363,7 +363,7 @@ public class GraphDatabaseConfiguration {
      * environments, reducing the cache size can avoid OutOfMemory and GC limit exceeded exceptions.
      * Note, however, that all modifications in a transaction must always be kept in memory and hence this setting does not
      * have much impact on write intense transactions. Those must be split into smaller transactions in the case of memory errors.
-     * <p/>
+     * <p>
      * The recently-used vertex cache can contain both dirty and clean vertices, that is, both vertices which have been
      * created or updated in the current transaction and vertices which have only been read in the current transaction.
      */
@@ -545,7 +545,7 @@ public class GraphDatabaseConfiguration {
 
     /**
      * Configuration key for the port on which to connect to remote storage backend servers.
-     * <p/>
+     * <p>
      * Value = {@value}
      */
     public static final ConfigOption<Integer> STORAGE_PORT = new ConfigOption<Integer>(STORAGE_NS,"port",
@@ -565,7 +565,7 @@ public class GraphDatabaseConfiguration {
 
     /**
      * Default timeout when connecting to a remote database instance
-     * <p/>
+     * <p>
      */
     public static final ConfigOption<Duration> CONNECTION_TIMEOUT = new ConfigOption<>(STORAGE_NS,"connection-timeout",
             "Default timeout, in milliseconds, when connecting to a remote database instance",
@@ -578,9 +578,9 @@ public class GraphDatabaseConfiguration {
      * become available when JanusGraph is run in server mode. Should the backend manager
      * experience exceptions when attempting to access the storage backend it will retry
      * until this timeout is exceeded.
-     * <p/>
+     * <p>
      * A wait time of 0 disables waiting.
-     * <p/>
+     * <p>
      */
     public static final ConfigOption<Duration> SETUP_WAITTIME = new ConfigOption<>(STORAGE_NS,"setup-wait",
             "Time in milliseconds for backend manager to wait for the storage backends to become available when JanusGraph is run in server mode",
@@ -829,7 +829,7 @@ public class GraphDatabaseConfiguration {
      * the maximum number of attempts before JanusGraph assumes the entire partition
      * is allocated and fails the request. It must be set to at least 1 and
      * should generally be set to 3 or more.
-     * <p/>
+     * <p>
      * This setting has no effect when {@link #IDAUTHORITY_CONFLICT_AVOIDANCE} is not configured to
      * {@link org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode#GLOBAL_AUTO}.
      */
@@ -1039,7 +1039,7 @@ public class GraphDatabaseConfiguration {
      * will begin with this string and a period. This value can be overridden on
      * a transaction-specific basis through
      * {@link StandardTransactionBuilder#groupName(String)}.
-     * <p/>
+     * <p>
      * Default = {@literal #METRICS_PREFIX_DEFAULT}
      */
     public static final ConfigOption<String> METRICS_PREFIX = new ConfigOption<String>(METRICS_NS,"prefix",
@@ -1050,17 +1050,17 @@ public class GraphDatabaseConfiguration {
     /**
      * Whether to aggregate measurements for the edge store, vertex index, edge
      * index, and ID store.
-     * <p/>
+     * <p>
      * If true, then metrics for each of these backends will use the same metric
      * name ("stores"). All of their measurements will be combined. This setting
      * measures the sum of JanusGraph's backend activity without distinguishing
      * between contributions of its various internal stores.
-     * <p/>
+     * <p>
      * If false, then metrics for each of these backends will use a unique
      * metric name ("idStore", "edgeStore", "vertexIndex", and "edgeIndex").
      * This setting exposes the activity associated with each backend component,
      * but it also multiplies the number of measurements involved by four.
-     * <p/>
+     * <p>
      * This option has no effect when {@link #BASIC_METRICS} is false.
      */
     public static final ConfigOption<Boolean> METRICS_MERGE_STORES = new ConfigOption<Boolean>(METRICS_NS,"merge-stores",
@@ -1198,7 +1198,7 @@ public class GraphDatabaseConfiguration {
 
     /**
      * The port to which Ganglia data are sent.
-     * <p/>
+     * <p>
      */
     public static final ConfigOption<Integer> GANGLIA_PORT = new ConfigOption<Integer>(METRICS_GANGLIA_NS,"port",
             "The port to which Ganglia data are sent",
@@ -1210,7 +1210,7 @@ public class GraphDatabaseConfiguration {
      * Whether to interpret {@link #GANGLIA_HOST_OR_GROUP} as a unicast or
      * multicast address. If present, it must be either the string "multicast"
      * or the string "unicast".
-     * <p/>
+     * <p>
      */
     public static final ConfigOption<String> GANGLIA_ADDRESSING_MODE = new ConfigOption<String>(METRICS_GANGLIA_NS,"addressing-mode",
             "Whether to communicate to Ganglia via uni- or multicast",
@@ -1227,7 +1227,7 @@ public class GraphDatabaseConfiguration {
     /**
      * The multicast TTL to set on outgoing Ganglia datagrams. This has no
      * effect when {@link #GANGLIA_ADDRESSING_MODE} is set to "multicast".
-     * <p/>
+     * <p>
      * This is a TTL in the multicast protocol sense (number of routed hops),
      * not a timestamp sense.
      */
@@ -1241,7 +1241,7 @@ public class GraphDatabaseConfiguration {
     /**
      * Whether to send data to Ganglia in the 3.1 protocol format (true) or the
      * 3.0 protocol format (false).
-     * <p/>
+     * <p>
      */
     public static final ConfigOption<Boolean> GANGLIA_USE_PROTOCOL_31 = new ConfigOption<Boolean>(METRICS_GANGLIA_NS,"protocol-31",
             "Whether to send data to Ganglia in the 3.1 protocol format",
@@ -1252,9 +1252,9 @@ public class GraphDatabaseConfiguration {
     /**
      * The host UUID to set on outgoing Ganglia datagrams. If null, no UUID is
      * set on outgoing data.
-     * <p/>
+     * <p>
      * See https://github.com/ganglia/monitor-core/wiki/UUIDSources
-     * <p/>
+     * <p>
      */
     public static final ConfigOption<String> GANGLIA_UUID = new ConfigOption<String>(METRICS_GANGLIA_NS,"uuid",
             "The host UUID to set on outgoing Ganglia datagrams. " +
@@ -1267,9 +1267,9 @@ public class GraphDatabaseConfiguration {
      * If non-null, it must be a valid Gmetric spoof string formatted as an
      * IP:hostname pair. If null, Ganglia will automatically determine the IP
      * and hostname to set on outgoing datagrams.
-     * <p/>
+     * <p>
      * See https://github.com/ganglia/monitor-core/wiki/Gmetric-Spoofing
-     * <p/>
+     * <p>
      */
     public static final ConfigOption<String> GANGLIA_SPOOF = new ConfigOption<String>(METRICS_GANGLIA_NS,"spoof",
             "If non-null, it must be a valid Gmetric spoof string formatted as an IP:hostname pair. " +
@@ -1314,7 +1314,7 @@ public class GraphDatabaseConfiguration {
 
     /**
      * The port to which Graphite data are sent.
-     * <p/>
+     * <p>
      */
     public static final ConfigOption<Integer> GRAPHITE_PORT = new ConfigOption<Integer>(METRICS_GRAPHITE_NS,"port",
             "The port to which Graphite data are sent",
@@ -1326,7 +1326,7 @@ public class GraphDatabaseConfiguration {
      * A Graphite-specific prefix for reported metrics. If non-null, Metrics
      * prepends this and a "." to all metric names before reporting them to
      * Graphite.
-     * <p/>
+     * <p>
      */
     public static final ConfigOption<String> GRAPHITE_PREFIX = new ConfigOption<String>(METRICS_GRAPHITE_NS,"prefix",
             "A Graphite-specific prefix for reported metrics",

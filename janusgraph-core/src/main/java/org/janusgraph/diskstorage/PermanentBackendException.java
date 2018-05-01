@@ -18,7 +18,7 @@ package org.janusgraph.diskstorage;
  * This exception signifies a permanent exception in a JanusGraph storage backend,
  * that is, an exception that is due to a permanent failure while persisting
  * data.
- * <p/>
+ * <p>
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
