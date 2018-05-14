@@ -29,7 +29,7 @@ import java.util.Map;
 
 /**
  * Wraps a {@link OrderedKeyValueStoreManager} and exposes it as a {@link KeyColumnValueStoreManager}.
- * <p/>
+ * <p>
  * An optional mapping of key-length can be defined if it is known that the {@link KeyColumnValueStore} of a given
  * name has a static key length. See {@link OrderedKeyValueStoreAdapter} for more information.
  *

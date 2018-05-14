@@ -20,7 +20,7 @@ import org.janusgraph.diskstorage.StaticBuffer;
 /**
  * Class representing a (key, column) pair.
  *
- * @author Dan LaRocque <dalaro@hopcount.org>
+ * @author Dan LaRocque (dalaro@hopcount.org)
  */
 public class KeyColumn {
 

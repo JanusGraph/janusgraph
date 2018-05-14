@@ -21,7 +21,7 @@ import org.janusgraph.graphdb.types.ParameterType;
 /**
  * Used to change the default mapping of an indexed key by providing the mapping explicitly as a parameter to
  * {@link JanusGraphManagement#addIndexKey(JanusGraphIndex, org.janusgraph.core.PropertyKey, Parameter[])}.
- * <p/>
+ * <p>
  * This applies mostly to string data types of keys, where the mapping specifies whether the string value is tokenized
  * ({@link #TEXT}) or indexed as a whole ({@link #STRING}), or both ({@link #TEXTSTRING}).
  *

@@ -26,12 +26,12 @@ import java.util.Map;
  * A MultiVertexQuery is identical to a {@link JanusGraphVertexQuery} but executed against a set of vertices simultaneously.
  * In other words, {@link JanusGraphMultiVertexQuery} allows identical {@link JanusGraphVertexQuery} executed against a non-trivial set
  * of vertices to be executed in one batch which can significantly reduce the query latency.
- * <p/>
+ * <p>
  * The query specification methods are identical to {@link JanusGraphVertexQuery}. The result set method return Maps from the specified
  * set of anchor vertices to their respective individual result sets.
- * <p/>
+ * <p>
  * Call {@link JanusGraphTransaction#multiQuery(java.util.Collection)} to construct a multi query in the enclosing transaction.
- * <p/>
+ * <p>
  * Note, that the {@link #limit(int)} constraint applies to each individual result set.
  *
  * @see JanusGraphVertexQuery
@@ -133,7 +133,7 @@ public interface JanusGraphMultiVertexQuery<Q extends JanusGraphMultiVertexQuery
     /**
      * Retrieves all vertices connected to each of the query's base vertices by edges
      * matching the conditions defined in this query.
-     * <p/>
+     * <p>
      *
      * @return An iterable of all vertices connected to each of the query's central vertices by matching edges
      */
@@ -142,7 +142,7 @@ public interface JanusGraphMultiVertexQuery<Q extends JanusGraphMultiVertexQuery
     /**
      * Retrieves all vertices connected to each of the query's central vertices by edges
      * matching the conditions defined in this query.
-     * <p/>
+     * <p>
      * The query engine will determine the most efficient way to retrieve the vertices that match this query.
      *
      * @return A list of all vertices' ids connected to each of the query's central vertex by matching edges

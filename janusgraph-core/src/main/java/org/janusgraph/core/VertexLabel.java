@@ -19,7 +19,7 @@ import org.janusgraph.core.schema.JanusGraphSchemaType;
 /**
  * A vertex label is a label attached to vertices in a JanusGraph graph. This can be used to define the nature of a
  * vertex.
- * <p />
+ * <p>
  * Internally, a vertex label is also used to specify certain characteristics of vertices that have a given label.
  *
  * @author Matthias Broecheler (me@matthiasb.com)

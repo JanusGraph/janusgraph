@@ -35,7 +35,7 @@ public interface LogProcessorBuilder {
      * Sets the identifier of this processor. This String should uniquely identify a log processing instance and will be used to record
      * up to which position in the log the log processor has advanced. In case of instance failure or instance restart,
      * the log processor can then pick up where it left of.
-     * <p/>
+     * <p>
      * This is an optional argument if recording the processing state is desired.
      *
      * @param name
