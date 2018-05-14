@@ -16,3 +16,5 @@ include::versions.adoc[]
 include::changelog.adoc[]
 
 include::upgrade.adoc[]
+
+include::doc-versions.adoc[]
