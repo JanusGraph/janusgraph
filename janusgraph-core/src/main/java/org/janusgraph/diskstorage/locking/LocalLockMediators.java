@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * instances.
  *
  * @see LocalLockMediatorProvider
- * @author Dan LaRocque <dalaro@hopcount.org>
+ * @author Dan LaRocque (dalaro@hopcount.org)
  */
 public enum LocalLockMediators implements LocalLockMediatorProvider {
     INSTANCE;

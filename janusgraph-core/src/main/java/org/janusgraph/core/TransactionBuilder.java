@@ -73,7 +73,7 @@ public interface TransactionBuilder {
      * Enables/disables checks that verify that each vertex actually exists in the underlying data store when it is retrieved.
      * This might be useful to address common data degradation issues but has adverse impacts on performance due to
      * repeated existence checks.
-     * <p/>
+     * <p>
      * Note, that these checks apply to vertex retrievals inside the query execution engine and not to vertex ids provided
      * by the user.
      *

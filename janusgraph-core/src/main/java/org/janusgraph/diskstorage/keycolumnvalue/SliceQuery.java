@@ -32,7 +32,7 @@ import java.util.List;
 /**
  * Queries for a slice of data identified by a start point (inclusive) and end point (exclusive).
  * Returns all {@link StaticBuffer}s that lie in this range up to the given limit.
- * <p/>
+ * <p>
  * If a SliceQuery is marked <i>static</i> it is expected that the result set does not change.
  *
  * @author Matthias Broecheler (me@matthiasb.com)

@@ -234,7 +234,7 @@ public class ConfiguredGraphFactory {
      * Get Configuration according to supplied graphName mapped to a specific
      * {@link Graph}; if does not exist, return null.
      *
-     * @return Map<String, Object>
+     * @return Map&lt;String, Object&gt;
      */
     public static Map<String, Object> getConfiguration(final String configName) {
         final ConfigurationManagementGraph configManagementGraph = getConfigGraphManagementInstance();
@@ -245,7 +245,7 @@ public class ConfiguredGraphFactory {
      * Get a list of all Configurations, excluding the template configuration; if none exist,
      * return an empty list
      *
-     * @return List<Map<String, Object>>
+     * @return List&lt;Map&lt;String, Object&gt;&gt;
      */
     public static List<Map<String, Object>> getConfigurations() {
         final ConfigurationManagementGraph configManagementGraph = getConfigGraphManagementInstance();
@@ -255,7 +255,7 @@ public class ConfiguredGraphFactory {
     /**
      * Get template configuration if exists, else return null.
      *
-     * @return Map<String, Object>
+     * @return Map&lt;String, Object&gt;
      */
     public static Map<String, Object> getTemplateConfiguration() {
         final ConfigurationManagementGraph configManagementGraph = getConfigGraphManagementInstance();

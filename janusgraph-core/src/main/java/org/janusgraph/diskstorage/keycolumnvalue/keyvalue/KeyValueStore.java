@@ -19,7 +19,7 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 
 /**
- * Interface for a data store that represents data in the simple key->value data model where each key is uniquely
+ * Interface for a data store that represents data in the simple key-&gt;value data model where each key is uniquely
  * associated with a value. Keys and values are generic ByteBuffers.
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);

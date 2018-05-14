@@ -29,7 +29,7 @@ public enum Multiplicity {
      * The given edge label specifies a multi-graph, meaning that the multiplicity is not constrained and that
      * there may be multiple edges of this label between any given pair of vertices.
      *
-     * @link http://en.wikipedia.org/wiki/Multigraph
+     * <a href="http://en.wikipedia.org/wiki/Multigraph">http://en.wikipedia.org/wiki/Multigraph</a>
      */
     MULTI,
 

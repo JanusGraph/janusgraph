@@ -25,7 +25,7 @@ import java.util.function.BiPredicate;
  * A special kind of {@link BiPredicate} which marks all the predicates that are natively supported by
  * JanusGraph and known to the query optimizer. Contains some custom methods that JanusGraph needs for
  * query answering and evaluation.
- * </p>
+ * <p>
  * This class contains a subclass used to convert Tinkerpop's {@link BiPredicate} implementations to the corresponding JanusGraph predicates.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -34,7 +34,7 @@ public interface JanusGraphPredicate extends BiPredicate<Object, Object> {
 
     /**
      * Whether the given condition is a valid condition for this predicate.
-     * </p>
+     * <p>
      * For instance, the {@link Cmp#GREATER_THAN} would require that the condition is comparable and not null.
      *
      * @param condition
@@ -44,7 +44,7 @@ public interface JanusGraphPredicate extends BiPredicate<Object, Object> {
 
     /**
      * Whether the given class is a valid data type for a value to which this predicate may be applied.
-     * </p>
+     * <p>
      * For instance, the {@link Cmp#GREATER_THAN} can only be applied to {@link Comparable} values.
      *
      * @param clazz
