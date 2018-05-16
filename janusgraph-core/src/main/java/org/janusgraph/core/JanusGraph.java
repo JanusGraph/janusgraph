@@ -77,7 +77,7 @@ public interface JanusGraph extends Transaction {
      * <p>
      * The transaction is open when it is returned but MUST be explicitly closed by calling {@link org.janusgraph.core.JanusGraphTransaction#commit()}
      * or {@link org.janusgraph.core.JanusGraphTransaction#rollback()} when it is no longer needed.
-     * <p/>
+     * <p>
      * Note, that this returns a thread independent transaction object. It is not necessary to call this method
      * to use Blueprint's standard transaction framework which will automatically start a transaction with the first
      * operation on the graph.

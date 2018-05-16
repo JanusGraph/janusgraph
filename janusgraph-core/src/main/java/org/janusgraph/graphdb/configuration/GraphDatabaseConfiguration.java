@@ -545,8 +545,6 @@ public class GraphDatabaseConfiguration {
 
     /**
      * Configuration key for the port on which to connect to remote storage backend servers.
-     * <p>
-     * Value = {@value}
      */
     public static final ConfigOption<Integer> STORAGE_PORT = new ConfigOption<Integer>(STORAGE_NS,"port",
             "The port on which to connect to storage backend servers.",
