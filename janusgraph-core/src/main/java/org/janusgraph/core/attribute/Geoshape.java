@@ -766,7 +766,6 @@ public class Geoshape {
          * Serialize a geoshape.
          * @param outputStream
          * @param attribute
-         * @return
          * @throws IOException
          */
         public static void write(OutputStream outputStream, Geoshape attribute) throws IOException {
