@@ -56,7 +56,7 @@ import java.io.IOException;
 public class ConfiguredGraphFactory {
 
     /**
-     * Creates a {@link JanusGraph} configuration stored in the {@ConfigurationGraphManagament}
+     * Creates a {@link JanusGraph} configuration stored in the {@link ConfigurationManagementGraph}
      * graph and a {@link JanusGraph} graph reference according to the single
      * Template Configuration  previously created by the {@link ConfigurationManagementGraph} API;
      * A configuration for this graph must not already exist, and a Template Configuration must
@@ -125,7 +125,7 @@ public class ConfiguredGraphFactory {
 
     /**
      * Removes the graph corresponding to the supplied graphName
-     * from the {@link JanusGraphManager} {@link Map<String, Graph>} graph reference tracker and
+     * from the {@link JanusGraphManager} graph reference tracker and
      * returns the corresponding Graph, or null if it doesn't exist.
      *
      * @param graphName Graph

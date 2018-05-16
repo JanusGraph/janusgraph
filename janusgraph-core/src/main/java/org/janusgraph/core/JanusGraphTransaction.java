@@ -91,9 +91,6 @@ public interface JanusGraphTransaction extends Transaction {
      * <br>
      * The call releases data structures if possible. All element references (e.g. vertex objects) retrieved
      * through this transaction are stale after the transaction closes and should no longer be used.
-     *
-     * @throws org.janusgraph.diskstorage.BackendException
-     *          if an error arises during persistence
      */
     public void commit();
 
@@ -102,9 +99,6 @@ public interface JanusGraphTransaction extends Transaction {
      * <p>
      * The call releases data structures if possible. All element references (e.g. vertex objects) retrieved
      * through this transaction are stale after the transaction closes and should no longer be used.
-     *
-     * @throws org.janusgraph.diskstorage.BackendException
-     *          if an error arises when releasing the transaction handle
      */
     public void rollback();
 
