@@ -306,7 +306,7 @@ public class GraphDatabaseConfiguration {
             "is set to 'true' and 'schema.default' is set to 'none', then an 'IllegalArgumentException' is thrown for schema constraint violations. " +
             "If 'schema.constraints' is set to 'true' and 'schema.default' is not set 'none', schema constraints are automatically created "+
             "as described in the config option 'schema.default'. If 'schema.constraints' is set to 'false' which is the default, then no schema constraints are applied.",
-            ConfigOption.Type.MASKABLE, false);
+            ConfigOption.Type.GLOBAL_OFFLINE, false);
 
     // ################ CACHE #######################
     // ################################################

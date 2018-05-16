@@ -34,7 +34,7 @@ import java.util.Set;
  * @author Joshua Shinavier (http://fortytwo.net)
  */
 public enum TypeDefinitionCategory {
-
+    //Don't change the order because it breaks backward compatibility.
     //Relation Types
     INVISIBLE(Boolean.class),
     SORT_KEY(long[].class),
@@ -65,13 +65,13 @@ public enum TypeDefinitionCategory {
     STATIC(Boolean.class),
 
     //Schema Edges
-    PROPERTY_KEY_EDGE(),
-    CONNECTION_EDGE(RelationCategory.EDGE, String.class),
-    UPDATE_CONNECTION_EDGE(),
     RELATIONTYPE_INDEX(),
     TYPE_MODIFIER(),
     INDEX_FIELD(RelationCategory.EDGE, Parameter[].class),
-    INDEX_SCHEMA_CONSTRAINT();
+    INDEX_SCHEMA_CONSTRAINT(),
+    PROPERTY_KEY_EDGE(),
+    CONNECTION_EDGE(RelationCategory.EDGE, String.class),
+    UPDATE_CONNECTION_EDGE();
 
     public static final Set<TypeDefinitionCategory> PROPERTYKEY_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, INVISIBLE, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE);
     public static final Set<TypeDefinitionCategory> EDGELABEL_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, INVISIBLE, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL);
