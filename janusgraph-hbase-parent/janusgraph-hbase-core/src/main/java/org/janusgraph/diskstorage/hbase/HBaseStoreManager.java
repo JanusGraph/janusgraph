@@ -936,9 +936,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                             addColumnToPut(putColumnWithTtl, cfName, putTimestamp, e);
                             // Convert ttl from second (JanusGraph TTL) to milliseconds (HBase TTL)
                             // @see JanusGraphManagement#setTTL(JanusGraphSchemaType, Duration)
-                            // Cast Put to Mutation for backward compatibility with HBase 0.98.x
                             // HBase supports cell-level TTL for versions 0.98.6 and above.
-                            ((Mutation) putColumnWithTtl).setTTL(ttl * 1000);
+                            (putColumnWithTtl).setTTL(ttl * 1000);
                             // commands.getFirst() is the list of Puts for this rowkey. Add this
                             // Put column with TTL to the list.
                             commands.getFirst().add(putColumnWithTtl);

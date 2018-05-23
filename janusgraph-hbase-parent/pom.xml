@@ -13,7 +13,6 @@
     
     <modules>
         <module>janusgraph-hbase-core</module>
-        <module>janusgraph-hbase-098</module>
         <module>janusgraph-hbase-10</module>
         <module>janusgraph-hbase</module>
     </modules>
