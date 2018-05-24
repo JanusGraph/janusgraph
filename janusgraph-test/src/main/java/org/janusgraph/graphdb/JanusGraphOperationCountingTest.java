@@ -190,7 +190,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
             //Needs to read on first iteration, after that it doesn't change anymore
             verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 19L));
             verifyStoreMetrics(INDEXSTORE_NAME,
-                ImmutableMap.of(M_GET_SLICE, 4L /* name, knows, person, uid */, M_ACQUIRE_LOCK, 0L));
+                    ImmutableMap.of(M_GET_SLICE, 4L /* name, knows, person, uid */, M_ACQUIRE_LOCK, 0L));
         }
 
         //Create some graph data
@@ -465,13 +465,13 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
     public void testCacheConcurrency() throws InterruptedException {
         metricsPrefix = "tCC";
         Object[] newConfig = {option(GraphDatabaseConfiguration.DB_CACHE),true,
-            option(GraphDatabaseConfiguration.DB_CACHE_TIME),0,
-            option(GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT),0,
-            option(GraphDatabaseConfiguration.DB_CACHE_SIZE),0.25,
-            option(GraphDatabaseConfiguration.BASIC_METRICS),true,
-            option(GraphDatabaseConfiguration.METRICS_MERGE_STORES),false,
-            option(GraphDatabaseConfiguration.METRICS_PREFIX),metricsPrefix,
-            option(GraphDatabaseConfiguration.SCHEMA_CONSTRAINTS),true};
+                option(GraphDatabaseConfiguration.DB_CACHE_TIME),0,
+                option(GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT),0,
+                option(GraphDatabaseConfiguration.DB_CACHE_SIZE),0.25,
+                option(GraphDatabaseConfiguration.BASIC_METRICS),true,
+                option(GraphDatabaseConfiguration.METRICS_MERGE_STORES),false,
+                option(GraphDatabaseConfiguration.METRICS_PREFIX),metricsPrefix,
+                option(GraphDatabaseConfiguration.SCHEMA_CONSTRAINTS),true};
         clopen(newConfig);
         final String prop = "someProp";
         makeKey(prop,Integer.class);
@@ -577,7 +577,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
     @Test
     public void testCacheSpeedup() {
         Object[] newConfig = {option(GraphDatabaseConfiguration.DB_CACHE),true,
-            option(GraphDatabaseConfiguration.DB_CACHE_TIME),0};
+                option(GraphDatabaseConfiguration.DB_CACHE_TIME),0};
         clopen(newConfig);
 
         int numV = 1000;
