@@ -662,26 +662,33 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         return uniqueLock;
     }
 
-    private void checkPropertyConstraintForVertexOrCreatePropertyConstraint(VertexLabel vertexLabel, PropertyKey key) {
+    private void checkPropertyConstraintForVertexOrCreatePropertyConstraint(JanusGraphVertex vertex, PropertyKey key) {
         if (config.hasDisabledSchemaConstraints()) return;
+        VertexLabel vertexLabel = vertex.vertexLabel();
         if (vertexLabel instanceof BaseVertexLabel) return;
         Collection<PropertyKey> propertyKeys = vertexLabel.mappedProperties();
         if (propertyKeys.contains(key)) return;
         config.getAutoSchemaMaker().makePropertyConstraintForVertex(vertexLabel, key, this);
     }
 
-    public void checkPropertyConstraintForEdgeOrCreatePropertyConstraint(EdgeLabel edgeLabel, PropertyKey key) {
+    public void checkPropertyConstraintForEdgeOrCreatePropertyConstraint(StandardEdge edge, PropertyKey key) {
         if (config.hasDisabledSchemaConstraints()) return;
+        EdgeLabel edgeLabel = edge.edgeLabel();
         if (edgeLabel instanceof BaseLabel) return;
         Collection<PropertyKey> propertyKeys = edgeLabel.mappedProperties();
         if (propertyKeys.contains(key)) return;
         config.getAutoSchemaMaker().makePropertyConstraintForEdge(edgeLabel, key, this);
     }
 
-    private void checkConnectionConstraintOrCreateConnectionConstraint(VertexLabel outVertexLabel, VertexLabel inVertexLabel, EdgeLabel edgeLabel) {
+    private void checkConnectionConstraintOrCreateConnectionConstraint(JanusGraphVertex outVertex, JanusGraphVertex inVertex, EdgeLabel edgeLabel) {
         if (config.hasDisabledSchemaConstraints()) return;
+
+        VertexLabel outVertexLabel = outVertex.vertexLabel();
         if (outVertexLabel instanceof BaseVertexLabel) return;
+
+        VertexLabel inVertexLabel = inVertex.vertexLabel();
         if (inVertexLabel instanceof BaseVertexLabel) return;
+
         Collection<Connection> connections = outVertexLabel.mappedConnections();
         for (Connection connection : connections) {
             if (connection.getIncomingVertexLabel() != inVertexLabel) continue;
@@ -695,7 +702,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         outVertex = ((InternalVertex) outVertex).it();
         inVertex = ((InternalVertex) inVertex).it();
         Preconditions.checkNotNull(label);
-        checkConnectionConstraintOrCreateConnectionConstraint(outVertex.vertexLabel(), inVertex.vertexLabel(), label);
+        checkConnectionConstraintOrCreateConnectionConstraint(outVertex, inVertex, label);
         Multiplicity multiplicity = label.multiplicity();
         TransactionLock uniqueLock = getUniquenessLock(outVertex, (InternalRelationType) label,inVertex);
         uniqueLock.lock(LOCK_TIMEOUT);
@@ -745,7 +752,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         Preconditions.checkArgument(!(key instanceof ImplicitKey),"Cannot create a property of implicit type: %s",key.name());
         vertex = ((InternalVertex) vertex).it();
         Preconditions.checkNotNull(key);
-        checkPropertyConstraintForVertexOrCreatePropertyConstraint(vertex.vertexLabel(), key);
+        checkPropertyConstraintForVertexOrCreatePropertyConstraint(vertex, key);
         final Object normalizedValue = verifyAttribute(key, value);
         Cardinality keyCardinality = key.cardinality();
 
