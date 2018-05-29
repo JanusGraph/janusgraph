@@ -23,7 +23,6 @@ import org.apache.tinkerpop.gremlin.process.computer.util.VertexProgramHelper;
 import org.apache.tinkerpop.gremlin.structure.util.star.StarGraph;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.VertexWritable;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
-import org.apache.cassandra.hadoop.HadoopCompat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -60,7 +59,7 @@ public class GiraphRecordReader extends RecordReader<NullWritable, VertexWritabl
     public void initialize(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
         reader.initialize(inputSplit, taskAttemptContext);
 
-        final Configuration conf = HadoopCompat.getConfiguration(taskAttemptContext);
+        final Configuration conf = taskAttemptContext.getConfiguration();
         if (conf.get(Constants.GREMLIN_HADOOP_GRAPH_FILTER, null) != null) {
             graphFilter = VertexProgramHelper.deserialize(ConfUtil.makeApacheConfiguration(conf),
                 Constants.GREMLIN_HADOOP_GRAPH_FILTER);
