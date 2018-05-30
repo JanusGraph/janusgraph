@@ -78,9 +78,13 @@ Refer to <<config-ref>> for a complete listing of all HBase specific configurati
 
 When configuring HBase it is recommended to consider the following HBase specific configuration options:
 
-* *tablename*: Name of the HBase table in which to store the JanusGraph graph. Allows multiple JanusGraph graphs to co-exist in the same HBase cluster.
+* *storage.hbase.table*: Name of the HBase table in which to store the JanusGraph graph. Allows multiple JanusGraph graphs to co-exist in the same HBase cluster.
 
 Please refer to the http://hbase.apache.org/book/config.files.html[HBase configuration documentation] for more HBase configuration options and their description. By prefixing the respective HBase configuration option with `storage.hbase.ext` in the JanusGraph configuration it will be passed on to HBase at initialization time. For example, to use the znode /hbase-secure for HBase, set the property: `storage.hbase.ext.zookeeper.znode.parent=/hbase-secure`. The prefix allows arbitrary HBase configuration options to be configured through JanusGraph.
+
+[IMPORTANT]
+HBase backend uses millisecond for timestamps. In JanusGraph 0.2.0 and earlier, if the `graph.timestamps` property is not explicitly set, the default is `MICRO`.
+In this case, the `graph.timestamps` property must be explicitly set to `MILLI`. Do not set the `graph.timestamps` property to another value in any cases.
 
 === Global Graph Operations
 
