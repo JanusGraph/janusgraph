@@ -88,7 +88,7 @@ public class HBaseStorageSetup {
                 // All HBase 1.x maps to 10
                 majorDotMinor = "1.0";
             }
-            String result = String.format("%s%sjanusgraph-hbase-%s/%s/", HBASE_PARENT_DIR, File.separator, majorDotMinor.replace(".", ""), lastSubdirectory);
+            String result = String.format("%s%sjanusgraph-hbase-server/%s/", HBASE_PARENT_DIR, File.separator, lastSubdirectory);
             log.debug("Built {} path for HBase version {}: {}", lastSubdirectory, hv, result);
             return result;
         } else {

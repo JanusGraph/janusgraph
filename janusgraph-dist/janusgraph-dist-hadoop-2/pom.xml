@@ -31,12 +31,6 @@
             <artifactId>hbase-shaded-server</artifactId>
             <!-- Need the -server artifact for hbase.mapreduce.TableInputFormat (Faunus) -->
             <version>${hbase100.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.lmax</groupId>
-                    <artifactId>disruptor</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
 

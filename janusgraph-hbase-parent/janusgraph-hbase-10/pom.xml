@@ -11,7 +11,6 @@
     <url>http://janusgraph.org</url>
     
     <properties>
-        <jruby.version>1.6.8</jruby.version>
         <top.level.basedir>${basedir}/../..</top.level.basedir>
     </properties>
     
@@ -28,54 +27,64 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-test</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-shaded-client</artifactId>
             <version>${hbase100.version}</version>
             <optional>true</optional>
-            <exclusions>
-                <exclusion>
-                    <artifactId>avro</artifactId>
-                    <groupId>org.apache.avro</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jruby-complete</artifactId>
-                    <groupId>org.jruby</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>asm</artifactId>
-                    <groupId>asm</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-shaded-server</artifactId>
             <version>${hbase100.version}</version>
             <optional>true</optional>
-            <exclusions>
-                <exclusion>
-                    <artifactId>avro</artifactId>
-                    <groupId>org.apache.avro</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jruby-complete</artifactId>
-                    <groupId>org.jruby</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>asm</artifactId>
-                    <groupId>asm</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>com.lmax</artifactId>
-                    <groupId>disruptor</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
-            <artifactId>jruby-complete</artifactId>
-            <groupId>org.jruby</groupId>
-            <version>${jruby.version}</version>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>janusgraph-hbase-server</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <!-- Logging.
+
+             Based on these two HBase links, it seems that HBase has
+             hard dependencies on log4j and slf4j-log4j12 (in addition
+             to commons-logging):
+
+             http://hbase.apache.org/book/config.files.html#client_dependencies
+             https://issues.apache.org/jira/browse/HBASE-2608
+
+             Our parent pom declares optional runtime-scoped dependencies
+             on slf4j-log4j12 and log4j.  But according to the links above,
+             these are required compile-scoped dependencies for HBase.
+             We override the parent's dependency declarations below.
+
+             These declarations could go away if HBase ever fully migrates
+             to slf4j and removes its hard dependency on log4j.
+
+             Note, logback-classic is added explicitly to ensure slf4j-log4j12
+             binding appears on the classpath before logback-classic. See
+             comments in janusgraph-cassandra/pom.xml for more information.
+        -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
         </dependency>
     </dependencies>
     
@@ -90,14 +99,6 @@
         </testResources>
         <plugins>
             <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>filter-hbase-conf</id>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
@@ -109,18 +110,19 @@
                 </executions>
             </plugin>
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-hbase-bin</id>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <artifactId>maven-clean-plugin</artifactId>
                 <executions>
                     <execution>
                         <id>clean-hbase-files</id>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>filter-hbase-conf</id>
+                        <phase>none</phase>
                     </execution>
                 </executions>
             </plugin>
