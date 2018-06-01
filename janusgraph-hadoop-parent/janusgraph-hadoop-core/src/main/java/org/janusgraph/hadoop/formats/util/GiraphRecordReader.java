@@ -16,8 +16,14 @@ package org.janusgraph.hadoop.formats.util;
 
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
+import org.apache.tinkerpop.gremlin.hadoop.Constants;
+import org.apache.tinkerpop.gremlin.hadoop.structure.util.ConfUtil;
+import org.apache.tinkerpop.gremlin.process.computer.GraphFilter;
+import org.apache.tinkerpop.gremlin.process.computer.util.VertexProgramHelper;
+import org.apache.tinkerpop.gremlin.structure.util.star.StarGraph;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.VertexWritable;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -26,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -39,6 +46,7 @@ public class GiraphRecordReader extends RecordReader<NullWritable, VertexWritabl
     private final GiraphInputFormat.RefCountedCloseable countedDeserializer;
     private JanusGraphVertexDeserializer deserializer;
     private VertexWritable vertex;
+    private GraphFilter graphFilter;
 
     public GiraphRecordReader(final GiraphInputFormat.RefCountedCloseable<JanusGraphVertexDeserializer> countedDeserializer,
                               final RecordReader<StaticBuffer, Iterable<Entry>> reader) {
@@ -50,6 +58,12 @@ public class GiraphRecordReader extends RecordReader<NullWritable, VertexWritabl
     @Override
     public void initialize(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
         reader.initialize(inputSplit, taskAttemptContext);
+
+        final Configuration conf = taskAttemptContext.getConfiguration();
+        if (conf.get(Constants.GREMLIN_HADOOP_GRAPH_FILTER, null) != null) {
+            graphFilter = VertexProgramHelper.deserialize(ConfUtil.makeApacheConfiguration(conf),
+                Constants.GREMLIN_HADOOP_GRAPH_FILTER);
+        }
     }
 
     @Override
@@ -60,8 +74,15 @@ public class GiraphRecordReader extends RecordReader<NullWritable, VertexWritabl
                     deserializer.readHadoopVertex(reader.getCurrentKey(), reader.getCurrentValue());
             if (null != maybeNullTinkerVertex) {
                 vertex = new VertexWritable(maybeNullTinkerVertex);
-                //vertexQuery.filterRelationsOf(vertex); // TODO reimplement vertex query filtering
-                return true;
+                if (graphFilter == null) {
+                    return true;
+                } else {
+                    final Optional<StarGraph.StarVertex> vertexWritable = vertex.get().applyGraphFilter(graphFilter);
+                    if (vertexWritable.isPresent()) {
+                        vertex.set(vertexWritable.get());
+                        return true;
+                    }
+                }
             }
         }
         return false;

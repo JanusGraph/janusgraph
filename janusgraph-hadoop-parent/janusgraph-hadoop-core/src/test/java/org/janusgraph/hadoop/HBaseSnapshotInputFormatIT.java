@@ -22,7 +22,10 @@ import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.tinkerpop.gremlin.process.computer.Computer;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.spark.process.computer.SparkGraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -175,6 +178,22 @@ public class HBaseSnapshotInputFormatIT extends AbstractInputFormatIT {
         assertTrue(geoIter.hasNext());
         Set<Object> geos = Sets.newHashSet(geoIter);
         assertEquals(3, geos.size());
+    }
+
+    @Test
+    @Override
+    public void testReadGraphOfTheGodsWithEdgeFiltering() throws Exception {
+        GraphOfTheGodsFactory.load(graph, null, true);
+        assertEquals(17L, (long) graph.traversal().E().count().next());
+        // Take a snapshot of the graph table
+        HBaseStorageSetup.createSnapshot(snapshotName, table);
+
+        // Read graph filtering out "battled" edges.
+        Graph g = getGraph();
+        Computer computer = Computer.compute(SparkGraphComputer.class)
+            .edges(__.bothE().hasLabel(P.neq("battled")));
+        GraphTraversalSource t = g.traversal().withComputer(computer);
+        assertEquals(14L, (long) t.E().count().next());
     }
 
     protected Graph getGraph() throws IOException, ConfigurationException {
