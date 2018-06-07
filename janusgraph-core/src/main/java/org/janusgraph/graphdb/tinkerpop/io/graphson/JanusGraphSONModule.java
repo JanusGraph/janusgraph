@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONUtil;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerationException;
@@ -37,6 +38,7 @@ import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
 import org.apache.tinkerpop.shaded.jackson.databind.SerializerProvider;
 import org.apache.tinkerpop.shaded.jackson.databind.jsontype.TypeSerializer;
 import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphPSerializer;
 
 /**
  * @author Stephen Mallette (http://stephen.genoprime.com)
@@ -141,6 +143,40 @@ public abstract class JanusGraphSONModule extends TinkerPopJacksonModule {
         @Override
         public RelationIdentifier createObject(Map data) {
             return RelationIdentifier.parse((String) data.get("relationId"));
+        }
+    }
+
+    public static class JanusGraphPDeserializerV2d0 extends StdDeserializer<P> {
+
+        public JanusGraphPDeserializerV2d0() {
+            super(P.class);
+        }
+
+        @Override
+        public P deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException {
+            String predicate = null;
+            Object value = null;
+
+            while (jsonParser.nextToken() != JsonToken.END_OBJECT) {
+                if (jsonParser.getCurrentName().equals(GraphSONTokens.PREDICATE)) {
+                    jsonParser.nextToken();
+                    predicate = jsonParser.getText();
+                } else if (jsonParser.getCurrentName().equals(GraphSONTokens.VALUE)) {
+                    jsonParser.nextToken();
+                    value = deserializationContext.readValue(jsonParser, Object.class);
+                }
+            }
+
+            try {
+                return JanusGraphPSerializer.createPredicateWithValue(predicate, value);
+            } catch (final Exception e) {
+                throw new IllegalStateException(e.getMessage(), e);
+            }
+        }
+
+        @Override
+        public boolean isCachable() {
+            return true;
         }
     }
 }
