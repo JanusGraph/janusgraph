@@ -546,8 +546,8 @@ public class GraphDatabaseConfiguration {
     /**
      * Configuration key for the port on which to connect to remote storage backend servers.
      */
-    public static final ConfigOption<Integer> STORAGE_PORT = new ConfigOption<Integer>(STORAGE_NS,"port",
-            "The port on which to connect to storage backend servers.",
+    public static final ConfigOption<Integer> STORAGE_PORT = new ConfigOption<>(STORAGE_NS,"port",
+            "The port on which to connect to storage backend servers. For HBase, it is the Zookeeper port.",
             ConfigOption.Type.LOCAL, Integer.class);
 
     /**
