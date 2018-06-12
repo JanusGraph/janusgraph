@@ -147,11 +147,11 @@ public enum MetricManager {
      * internal default value(s).
      * <p>
      * If {@code agentId} is non-null, then
-     * {@link MBeanServerFactory#findMBeanServer(String)} must return exactly
+     * {@link MBeanServerFactory#findMBeanServer(String agentId)} must return exactly
      * one {@code MBeanServer}. The reporter will register with that server. If
-     * the {@code MBeanServerFactory#findMBeanServer(String)} call returns no or
-     * multiple servers, then this method logs an error and falls back on the
-     * Metrics default for {@code agentId}.
+     * the {@code findMBeanServer(String agentId)} call returns no or multiple servers,
+     * then this method logs an error and falls back on the Metrics default for
+     * {@code agentId}.
      *
      * @param domain
      *            the JMX domain in which to continuously expose metrics
@@ -200,7 +200,7 @@ public enum MetricManager {
      * Create a {@link Slf4jReporter} attached to the JanusGraph Metrics registry.
      * <p>
      * If {@code loggerName} is null, or if it is non-null but
-     * {@link LoggerFactory#getLogger(String)} returns null, then Metrics's
+     * {@link LoggerFactory#getLogger(Class loggerName)} returns null, then Metrics's
      * default Slf4j logger name is used instead.
      *
      * @param reportInterval

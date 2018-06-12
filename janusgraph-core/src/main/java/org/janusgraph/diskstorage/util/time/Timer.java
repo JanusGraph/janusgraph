@@ -21,7 +21,7 @@ import com.google.common.base.Preconditions;
 
 /**
  * A utility to measure time durations.
- * </p>
+ * <p>
  * Differs from Guava Stopwatch in the following ways:
  *
  * <ul>

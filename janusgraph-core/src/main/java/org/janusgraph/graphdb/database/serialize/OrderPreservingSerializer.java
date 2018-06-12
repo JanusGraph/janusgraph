@@ -31,7 +31,7 @@ public interface OrderPreservingSerializer<V> extends AttributeSerializer<V> {
 
     /**
      * Reads an attribute from the given ReadBuffer assuming it was written in byte order.
-     * <p/>
+     * <p>
      * It is expected that this read operation adjusts the position in the ReadBuffer to after the attribute value.
      *
      * @param buffer ReadBuffer to read attribute from
@@ -42,7 +42,7 @@ public interface OrderPreservingSerializer<V> extends AttributeSerializer<V> {
     /**
      * Writes the attribute value to the given WriteBuffer such that the byte order of the result is equal to the
      * natural order of the attribute.
-     * <p/>
+     * <p>
      * It is expected that this write operation adjusts the position in the WriteBuffer to after the attribute value.
      *
      * @param buffer    WriteBuffer to write attribute to

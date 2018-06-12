@@ -22,7 +22,7 @@ import org.janusgraph.diskstorage.TemporaryBackendException;
  * request timeouts, network failures, etc. Temporary failures represented by
  * this exception might disappear if the request is retried, even if no machine
  * modifies the underlying lock state between the failure and follow-up request.
- * <p/>
+ * <p>
  * 
  * @author Matthias Broecheler (me@matthiasb.com)
  */

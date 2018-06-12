@@ -27,7 +27,7 @@ public interface KeyIterator extends RecordIterator<StaticBuffer> {
     /**
      * Returns an iterator over all entries associated with the current
      * key that match the column range specified in the query.
-     * </p>
+     * <p>
      * Closing the returned sub-iterator has no effect on this iterator.
      *
      * Calling {@link #next()} might close previously returned RecordIterators

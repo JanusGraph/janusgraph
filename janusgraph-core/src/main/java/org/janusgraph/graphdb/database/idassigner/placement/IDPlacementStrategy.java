@@ -42,10 +42,10 @@ public interface IDPlacementStrategy {
 
     /**
      * Bulk assignment of idAuthorities to vertices.
-     * <p/>
+     * <p>
      * It is expected that the passed in map contains the partition assignment after this method
      * returns. Any initial values in the map are meaningless and to be ignored.
-     * <p/>
+     * <p>
      * This is an optional operation. Check with {@link #supportsBulkPlacement()} first.
      *
      * @param vertices Map containing all vertices and their partition placement.
@@ -74,10 +74,10 @@ public interface IDPlacementStrategy {
      * part of the partition id space is hosted locally so that vertex and edge placements can be made accordingly
      * (i.e. preferring to assign partitions in the local ranges so that the data is hosted locally which is often
      * faster).
-     * <p/>
+     * <p>
      * This method can be called at any time while JanusGraph is running. It is typically called right
      * after construction and when the id space is redistributed.
-     * <p/>
+     * <p>
      * Depending on the storage backend one or multiple ranges of partition ids may be given. However, this list is never
      * empty.
      *

@@ -47,16 +47,16 @@ import org.janusgraph.graphdb.database.idhandling.VariableLong;
 /**
  * {@link org.janusgraph.diskstorage.IDAuthority} implementation
  * assuming that the backing store supports consistent key operations.
- * <p/>
+ * <p>
  * ID blocks are allocated by first applying for an id block, waiting for a
  * specified period of time and then checking that the application was the first
  * received for that particular id block. If so, the application is considered
  * successful. If not, some other process won the application and a new
  * application is tried.
- * <p/>
+ * <p>
  * The partition id is used as the key and since key operations are considered
  * consistent, this protocol guarantees unique id block assignments.
- * <p/>
+ * <p>
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 

@@ -106,7 +106,7 @@ public class IDHandler {
     }
 
     /**
-     * The edge type is written as follows: [ Invisible & System (2 bit) | Relation-Type-ID (1 bit) | Relation-Type-Count (variable) | Direction-ID (1 bit)]
+     * The edge type is written as follows: [ Invisible &amp; System (2 bit) | Relation-Type-ID (1 bit) | Relation-Type-Count (variable) | Direction-ID (1 bit)]
      * Would only need 1 bit to store relation-type-id, but using two so we can upper bound.
      *
      *

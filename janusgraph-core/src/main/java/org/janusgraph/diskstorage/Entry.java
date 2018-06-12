@@ -18,7 +18,7 @@ import org.janusgraph.graphdb.relations.RelationCache;
 
 /**
  * An entry is the primitive persistence unit used in the graph database storage backend.
- * <p/>
+ * <p>
  * An entry consists of a column and value both of which are general {@link java.nio.ByteBuffer}s.
  * The value may be null but the column may not.
  *

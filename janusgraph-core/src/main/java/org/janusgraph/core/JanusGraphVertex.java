@@ -22,10 +22,10 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 /**
  * JanusGraphVertex is the basic unit of a {@link JanusGraph}.
  * It extends the functionality provided by Blueprint's {@link Vertex} by helper and convenience methods.
- * <p />
+ * <p>
  * Vertices have incident edges and properties. Edge connect the vertex to other vertices. Properties attach key-value
  * pairs to this vertex to define it.
- * <p />
+ * <p>
  * Like {@link JanusGraphRelation} a vertex has a vertex label.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
@@ -39,10 +39,10 @@ public interface JanusGraphVertex extends JanusGraphElement, Vertex {
 
     /**
      * Creates a new edge incident on this vertex.
-     * <p/>
+     * <p>
      * Creates and returns a new {@link JanusGraphEdge} of the specified label with this vertex being the outgoing vertex
      * and the given vertex being the incoming vertex.
-     * <br />
+     * <br>
      * Automatically creates the edge label if it does not exist and automatic creation of types is enabled. Otherwise,
      * this method with throw an {@link IllegalArgumentException}.
      *
@@ -55,10 +55,10 @@ public interface JanusGraphVertex extends JanusGraphElement, Vertex {
 
     /**
      * Creates a new property for this vertex and given key with the specified value.
-     * <p/>
+     * <p>
      * Creates and returns a new {@link JanusGraphVertexProperty} for the given key on this vertex with the specified
      * object being the value.
-     * <br />
+     * <br>
      * Automatically creates the property key if it does not exist and automatic creation of types is enabled. Otherwise,
      * this method with throw an {@link IllegalArgumentException}.
      *
@@ -108,7 +108,7 @@ public interface JanusGraphVertex extends JanusGraphElement, Vertex {
 
     /**
      * Starts a new {@link JanusGraphVertexQuery} for this vertex.
-     * <p/>
+     * <p>
      * Initializes and returns a new {@link JanusGraphVertexQuery} based on this vertex.
      *
      * @return New JanusGraphQuery for this vertex

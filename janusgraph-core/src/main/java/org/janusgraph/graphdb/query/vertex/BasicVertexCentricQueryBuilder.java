@@ -198,7 +198,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     /**
      * If {@link #isImplicitKeyQuery(org.janusgraph.graphdb.internal.RelationCategory)} is true,
      * this method provides the result set for the query based on the evaluation of the {@link ImplicitKey}.
-     * </p>
+     * <p>
      * Handling of implicit keys is completely distinct from "normal" query execution and handled extra
      * for completeness reasons.
      *

@@ -25,7 +25,7 @@ public interface LogManager {
 
     /**
      * Opens a log for the given name.
-     * <p/>
+     * <p>
      * If a log with the given name already exists, the existing log is returned.
      *
      * @param name Name of the log to be opened

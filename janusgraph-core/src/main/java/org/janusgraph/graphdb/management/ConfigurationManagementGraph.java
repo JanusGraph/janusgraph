@@ -207,7 +207,7 @@ public class ConfigurationManagementGraph {
      * Get Configuration according to supplied graphName mapped to a specific
      * {@link Graph}; if does not exist, return null.
      *
-     * @return Map<String, Object>
+     * @return Map&lt;String, Object&gt;
      */
     public Map<String, Object> getConfiguration(final String configName) {
         final List<Map<String, Object>> graphConfiguration = graph.traversal().V().has(PROPERTY_GRAPH_NAME, configName).valueMap().toList();
@@ -224,7 +224,7 @@ public class ConfigurationManagementGraph {
      * Get a list of all Configurations, excluding the template configuration; if none exist,
      * return an empty list
      *
-     * @return List<Map<String, Object>>
+     * @return List&lt;Map&lt;String, Object&gt;&gt;
      */
     public List<Map<String, Object>> getConfigurations() {
         final List<Map<String, Object>> graphConfigurations = graph.traversal().V().has(PROPERTY_TEMPLATE, false).valueMap().toList();
@@ -234,7 +234,7 @@ public class ConfigurationManagementGraph {
     /**
      * Get template configuration if exists, else return null.
      *
-     * @return Map<String, Object>
+     * @return Map&lt;String, Object&gt;
      */
     public Map<String, Object> getTemplateConfiguration() {
         final List<Map<String, Object>> templateConfigurations = graph.traversal().V().has(PROPERTY_TEMPLATE, true).valueMap().toList();

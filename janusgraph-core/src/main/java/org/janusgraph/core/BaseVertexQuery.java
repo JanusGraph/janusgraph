@@ -22,12 +22,12 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * BaseVertexQuery constructs and executes a query over incident edges or properties from the perspective of a vertex.
- * <p/>
+ * <p>
  * A VertexQuery has some JanusGraph specific convenience methods for querying for incident edges or properties.
  * Using VertexQuery proceeds in two steps:
  * 1) Define the query by specifying what to retrieve and
  * 2) execute the query for the elements to retrieve.
- * <p />
+ * <p>
  * This is the base interface for the specific implementations of a VertexQuery. Calling {@link org.janusgraph.core.JanusGraphVertex#query()}
  * returns a {@link JanusGraphVertexQuery} for querying a single vertex.
  * Calling {@link JanusGraphTransaction#multiQuery(java.util.Collection)} returns a {@link JanusGraphMultiVertexQuery} to execute
@@ -99,7 +99,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
 
     /**
      * Query only for edges or properties that have an incident property or unidirected edge matching the given value.
-     * <p/>
+     * <p>
      * If type is a property key, then the query is restricted to edges or properties having an incident property matching
      * this key-value pair.
      * If type is an edge label, then it is expected that this label is unidirected ({@link EdgeLabel#isUnidirected()}
@@ -153,7 +153,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
 
     /**
      * Sets the retrieval limit for this query.
-     * <p/>
+     * <p>
      * When setting a limit, executing this query will only retrieve the specified number of relations. Note, that this
      * also applies to counts.
      *
@@ -166,7 +166,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
     /**
      * Orders the relation results of this query according
      * to their property for the given key in the given order (increasing/decreasing).
-     * </p>
+     * <p>
      * Note, that the ordering always applies to the incident relations (edges/properties) and NOT
      * to the adjacent vertices even if only vertices are being returned.
      *
