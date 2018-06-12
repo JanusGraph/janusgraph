@@ -434,7 +434,7 @@ public class ManagementSystem implements JanusGraphManagement {
     /**
      * Returns a {@link GraphIndexStatusWatcher} configured to watch
      * {@code graphIndexName} through graph {@code g}.
-     * <p/>
+     * <p>
      * This method just instantiates an object.
      * Invoke {@link GraphIndexStatusWatcher#call()} to wait.
      *
@@ -450,7 +450,7 @@ public class ManagementSystem implements JanusGraphManagement {
     /**
      * Returns a {@link RelationIndexStatusWatcher} configured to watch the index specified by
      * {@code relationIndexName} and {@code relationIndexType} through graph {@code g}.
-     * <p/>
+     * <p>
      * This method just instantiates an object.
      * Invoke {@link RelationIndexStatusWatcher#call()} to wait.
      *
@@ -1115,7 +1115,7 @@ public class ManagementSystem implements JanusGraphManagement {
 
     /**
      * Sets the consistency level for those schema elements that support it (types and internal indexes)
-     * </p>
+     * <p>
      * Note, that it is possible to have a race condition here if two threads simultaneously try to change the
      * consistency level. However, this is resolved when the consistency level is being read by taking the
      * first one and deleting all existing attached consistency levels upon modification.

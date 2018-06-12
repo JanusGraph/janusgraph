@@ -7,7 +7,7 @@ Elasticsearch is a distributed, RESTful search and analytics engine capable of s
 JanusGraph supports https://www.elastic.co/[Elasticsearch] as an index backend. Here are some of the Elasticsearch features supported by JanusGraph:
 
 * *Full-Text*: Supports all `Text` predicates to search for text properties that matches a given word, prefix or regular expression.
-* *Geo*: Supports all `Geo` predicates to search for geo properties that are intersecting, within, disjoint to or contained in a given query geometry. Supports points, circles, boxes, lines and polygons for indexing. Supports circles, boxes and polygons for querying point properties and all shapes for querying non-point properties. Note that JTS is required when using line and polygon shapes (see <<search-predicates#geoshape,Geoshape documentation>> for more information).
+* *Geo*: Supports all `Geo` predicates to search for geo properties that are intersecting, within, disjoint to or contained in a given query geometry. Supports points, circles, boxes, lines and polygons for indexing. Supports circles, boxes and polygons for querying point properties and all shapes for querying non-point properties.
 * *Numeric Range*: Supports all numeric comparisons in `Compare`.
 * *Flexible Configuration*: Supports remote operation and open-ended settings customization.
 * *Collections*: Supports indexing SET and LIST cardinality properties.

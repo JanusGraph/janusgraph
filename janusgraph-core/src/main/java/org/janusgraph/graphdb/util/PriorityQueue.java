@@ -27,7 +27,6 @@ package org.janusgraph.graphdb.util;
  * {@link #PriorityQueue(int,boolean)} constructor with
  * <code>prepopulate</code> set to <code>true</code>.
  * 
- * @lucene.internal
 */
 public abstract class PriorityQueue<T> {
   private int size;
@@ -258,7 +257,6 @@ public abstract class PriorityQueue<T> {
   }
   
   /** This method returns the internal heap array as Object[].
-   * @lucene.internal
    */
   protected final Object[] getHeapArray() {
     return heap;

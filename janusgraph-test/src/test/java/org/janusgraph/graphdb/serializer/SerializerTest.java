@@ -15,8 +15,10 @@
 package org.janusgraph.graphdb.serializer;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.janusgraph.core.attribute.*;
 import org.janusgraph.diskstorage.ReadBuffer;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -26,9 +28,19 @@ import org.janusgraph.graphdb.database.serialize.attribute.*;
 import org.janusgraph.graphdb.serializer.attributes.*;
 import org.janusgraph.testutil.RandomGenerator;
 import org.junit.Test;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.context.SpatialContextFactory;
+import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.locationtech.spatial4j.io.BinaryCodec;
+import org.locationtech.spatial4j.io.jts.JtsBinaryCodec;
+import org.locationtech.spatial4j.shape.Circle;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Rectangle;
+import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.DataOutputStream;
 import java.lang.reflect.Array;
 import java.util.*;
 
@@ -403,6 +415,41 @@ public class SerializerTest extends SerializerTestCommon {
         
         assertEquals(geo, serialize.readObjectNotNull(b, Geoshape.class));
         assertEquals(geo2, serialize.readObjectNotNull(b, Geoshape.class));
+    }
+
+    @Test
+    public void testLegacyNonJtsSerialization() throws Exception {
+        final SpatialContextFactory factory = new SpatialContextFactory();
+        factory.geo = true;
+        final SpatialContext context = new SpatialContext(factory);
+        BinaryCodec binaryCodec = new BinaryCodec(context, factory);
+
+        Shape[] shapes = new Shape[] {
+            context.getShapeFactory().pointXY(2.5, 0.5),
+            context.getShapeFactory().rect(2.5, 3.5, 0.5, 1.5),
+            context.getShapeFactory().circle(2.5, 0.5, DistanceUtils.dist2Degrees(5, DistanceUtils.EARTH_MEAN_RADIUS_KM))
+        };
+
+        DataOutput out = serialize.getDataOutput(128);
+        for (final Shape shape : shapes) {
+            // manually serialize with non-JTS codec
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            outputStream.write(1);
+            try (DataOutputStream dataOutput = new DataOutputStream(outputStream)) {
+                binaryCodec.writeShape(dataOutput, shape);
+                dataOutput.flush();
+            }
+            outputStream.flush();
+            byte[] bytes = outputStream.toByteArray();
+            VariableLong.writePositive(out,bytes.length);
+            out.putBytes(bytes);
+        }
+
+        // deserialize with standard serializer
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
+        assertEquals(Geoshape.geoshape(shapes[0]), serialize.readObjectNotNull(b, Geoshape.class));
+        assertEquals(Geoshape.geoshape(shapes[1]), serialize.readObjectNotNull(b, Geoshape.class));
+        assertEquals(Geoshape.geoshape(shapes[2]), serialize.readObjectNotNull(b, Geoshape.class));
     }
 
     private static class SerialEntry {

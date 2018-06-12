@@ -5,14 +5,8 @@ This page describes some of the Configuration options that JanusGraph provides t
 
 === Configuration
 
-When connecting to an existing Titan data store the `graph.titan-version` property should be set to the Titan version used to create that store.
+When connecting to an existing Titan data store the `graph.titan-version` property should already be set in the global configuration to Titan version `1.0.0`. The ID store name in JanusGraph is configurable via the `ids.store-name` property whereas in Titan it was a constant. If the `graph.titan-version` has been set in the existing global configuration, then you do **not** need to explicitly set the ID store as it will default to `titan_ids`.
 
-[source, properties]
-----
-graph.titan-version=1.0.0
-----
-
-The ID store name in JanusGraph is configurable via the `ids.store-name` property whereas in Titan it was a constant. If the `graph.titan-version` has been set, as in the example above, then you do **not** need to explicitly set this value as it will default to `titan_ids`.
 
 === Cassandra
 
@@ -20,7 +14,6 @@ The default keyspace used by Titan was `titan` and in order to reuse that existi
 
 [source, properties]
 ----
-graph.titan-version=1.0.0
 storage.cassandra.keyspace=titan
 ----
 
@@ -32,7 +25,6 @@ The name of the table used by Titan was `titan` and in order to reuse that exist
 
 [source, properties]
 ----
-graph.titan-version=1.0.0
 storage.hbase.table=titan
 ----
 

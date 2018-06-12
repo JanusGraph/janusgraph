@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This class resolves lock contention between two transactions on the same JVM.
- * <p/>
+ * <p>
  * This is not just an optimization to reduce network traffic. Locks written by
  * JanusGraph to a distributed key-value store contain an identifier, the "Rid",
  * which is unique only to the process level. The Rid can't tell which
@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * transactions in a single process from concurrently writing the same lock to a
  * distributed key-value store.
  *
- * @author Dan LaRocque <dalaro@hopcount.org>
+ * @author Dan LaRocque (dalaro@hopcount.org)
  */
 
 public class LocalLockMediator<T> {
@@ -71,13 +71,13 @@ public class LocalLockMediator<T> {
 
     /**
      * Acquire the lock specified by {@code kc}.
-     * <p/>
-     * <p/>
-     * For any particular key-column, whatever value of {@code requester} is
+     * <p>
+     * <p>
+     * For any particular key-column, whatever value of {@code requestor} is
      * passed to this method must also be passed to the associated later call to
-     * {@link #unlock(KeyColumn, T)}.
-     * <p/>
-     * If some requester {@code r} calls this method on a KeyColumn {@code k}
+     * {@link #unlock}.
+     * <p>
+     * If some requestor {@code r} calls this method on a KeyColumn {@code k}
      * and this method returns true, then subsequent calls to this method by
      * {@code r} on {@code l} merely attempt to update the {@code expiresAt}
      * timestamp. This differs from typical lock re-entrance: multiple successful
@@ -87,7 +87,7 @@ public class LocalLockMediator<T> {
      * updating the timestamp may fail, in which case the lock is considered to
      * have expired and the calling context should assume it no longer holds the
      * lock specified by {@code kc}.
-     * <p/>
+     * <p>
      * The current implementation of this method returns true when given an
      * {@code expiresAt} argument in the past. Future implementations may return
      * false instead.

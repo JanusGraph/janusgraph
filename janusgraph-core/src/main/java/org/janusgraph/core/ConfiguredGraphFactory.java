@@ -60,7 +60,7 @@ public class ConfiguredGraphFactory {
     LoggerFactory.getLogger(ConfiguredGraphFactory.class);
 
     /**
-     * Creates a {@link JanusGraph} configuration stored in the {@ConfigurationGraphManagament}
+     * Creates a {@link JanusGraph} configuration stored in the {@link ConfigurationManagementGraph}
      * graph and a {@link JanusGraph} graph reference according to the single
      * Template Configuration  previously created by the {@link ConfigurationManagementGraph} API;
      * A configuration for this graph must not already exist, and a Template Configuration must
@@ -129,7 +129,7 @@ public class ConfiguredGraphFactory {
 
     /**
      * Removes the graph corresponding to the supplied graphName
-     * from the {@link JanusGraphManager} {@link Map<String, Graph>} graph reference tracker and
+     * from the {@link JanusGraphManager} graph reference tracker and
      * returns the corresponding Graph, or null if it doesn't exist.
      *
      * @param graphName Graph
@@ -263,7 +263,7 @@ public class ConfiguredGraphFactory {
      * Get Configuration according to supplied graphName mapped to a specific
      * {@link Graph}; if does not exist, return null.
      *
-     * @return Map<String, Object>
+     * @return Map&lt;String, Object&gt;
      */
     public static Map<String, Object> getConfiguration(final String configName) {
         final ConfigurationManagementGraph configManagementGraph = getConfigGraphManagementInstance();
@@ -274,7 +274,7 @@ public class ConfiguredGraphFactory {
      * Get a list of all Configurations, excluding the template configuration; if none exist,
      * return an empty list
      *
-     * @return List<Map<String, Object>>
+     * @return List&lt;Map&lt;String, Object&gt;&gt;
      */
     public static List<Map<String, Object>> getConfigurations() {
         final ConfigurationManagementGraph configManagementGraph = getConfigGraphManagementInstance();
@@ -284,7 +284,7 @@ public class ConfiguredGraphFactory {
     /**
      * Get template configuration if exists, else return null.
      *
-     * @return Map<String, Object>
+     * @return Map&lt;String, Object&gt;
      */
     public static Map<String, Object> getTemplateConfiguration() {
         final ConfigurationManagementGraph configManagementGraph = getConfigGraphManagementInstance();

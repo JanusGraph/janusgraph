@@ -42,7 +42,7 @@ public interface StoreManager {
 
     /**
      * Deletes and clears all database in this storage manager.
-     * <p/>
+     * <p>
      * ATTENTION: Invoking this method will delete ALL your data!!
      */
     void clearStorage() throws BackendException;
@@ -67,7 +67,7 @@ public interface StoreManager {
      * name would open databases that read and write the same underlying data;
      * two store managers with different names should be, for data read/write
      * purposes, completely isolated from each other.
-     * <p/>
+     * <p>
      * Examples:
      * <ul>
      * <li>Cassandra keyspace</li>

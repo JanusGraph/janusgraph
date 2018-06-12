@@ -142,21 +142,21 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 
     /**
      * Configures the composite sort key for this label.
-     * <p/>
+     * <p>
      * Specifying the sort key of a type allows relations of this type to be efficiently retrieved in the order of
      * the sort key.
-     * <br />
+     * <br>
      * For instance, if the edge label <i>friend</i> has the sort key (<i>since</i>), which is a property key
      * with a timestamp data type, then one can efficiently retrieve all edges with label <i>friend</i> in a specified
-     * time interval using {@link org.janusgraph.core.JanusGraphVertexQuery#interval(String, Comparable, Comparable)}.
-     * <br />
+     * time interval using {@link org.janusgraph.core.JanusGraphVertexQuery#interval}.
+     * <br>
      * In other words, relations are stored on disk in the order of the configured sort key. The sort key is empty
      * by default.
-     * <br />
+     * <br>
      * If multiple types are specified as sort key, then those are considered as a <i>composite</i> sort key, i.e. taken jointly
      * in the given order.
-     * <p/>
-     * {@link org.janusgraph.core.RelationType}s used in the sort key must be either property out-unique keys or out-unique unidirected edge labels.
+     * <p>
+     * {@link org.janusgraph.core.RelationType}s used in the sort key must be either property out-unique keys or out-unique unidirected edge lables.
      *
      * @param keys JanusGraphTypes composing the sort key. The order is relevant.
      * @return this LabelMaker
@@ -175,7 +175,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
      *
      * @param order
      * @return
-     * @see #sortKey(PropertyKey...)
+     * @see #sortKey(PropertyKey... keys)
      */
     public StandardRelationTypeMaker sortOrder(Order order) {
         Preconditions.checkNotNull(order);

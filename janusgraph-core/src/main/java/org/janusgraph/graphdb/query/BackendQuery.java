@@ -16,7 +16,7 @@ package org.janusgraph.graphdb.query;
 
 /**
  * A BackendQuery is a query that can be updated to a new limit.
- * </p>
+ * <p>
  * This is useful in query execution where the query limit is successively relaxed to find all the needed elements
  * of the result set.
  *

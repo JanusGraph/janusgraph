@@ -101,7 +101,7 @@ public class ReadMarker {
      * Starts reading the log from the last recorded point in the log for the given id.
      * If the log has a record of such an id, it will use it as the starting point.
      * If not, it will start from the given timestamp and set it as the first read record for the given id.
-     * <p/>
+     * <p>
      * Identified read markers of this kind are useful to continuously read from the log. In the case of failure,
      * the last read record can be recovered for the id and log reading can be resumed from there. Note, that some
      * records might be read twice in that event depending on the guarantees made by a particular implementation.
@@ -115,7 +115,7 @@ public class ReadMarker {
     }
 
     /**
-     * Like {@link #fromIdentifierOrTime(String, java.time.Instant)} but uses the current time point
+     * Like {@link #fromIdentifierOrTime(String id, Instant timestamp)} but uses the current time point
      * as the starting timestamp if the log has no record of the id.
      *
      * @param id

@@ -99,10 +99,6 @@ Additional data types will be supported in the future.
 The Geoshape data type supports representing a point, circle, box, line, polygon, multi-point, multi-line and multi-polygon. Index backends currently support indexing points, circles, boxes, lines, polygons, multi-point, multi-line, multi-polygon and geometry collection.
 Geospatial index lookups are only supported via mixed indexes.
 
-.Note:
-[NOTE]
-The Java Topology Suite (JTS) is currently required to use polygon, multi-polygon and geometry collection with polygons. JTS is not included in JanusGraph distributions by default due to its LGPL license. Users must download the JTS JAR file separately and include it in the classpath when full geometry support is required.
-
 To construct a Geoshape use the following methods:
 
 [source, java]
@@ -112,7 +108,7 @@ Geoshape.point(37.97, 23.72)
 Geoshape.circle(37.97, 23.72, 50)
 //SW lat, SW lng, NE lat, NE lng
 Geoshape.box(37.97, 23.72, 38.97, 24.72)
-//WKT (requires JTS for polygon geometries)
+//WKT
 Geoshape.fromWkt("POLYGON ((35.4 48.9, 35.6 48.9, 35.6 49.1, 35.4 49.1, 35.4 48.9))")
 //MultiPoint
 Geoshape.geoshape(Geoshape.getShapeFactory().multiPoint().pointXY(60.0, 60.0).pointXY(120.0, 60.0)
@@ -121,13 +117,13 @@ Geoshape.geoshape(Geoshape.getShapeFactory().multiPoint().pointXY(60.0, 60.0).po
 Geoshape.geoshape(Geoshape.getShapeFactory().multiLineString()
   .add(Geoshape.getShapeFactory().lineString().pointXY(59.0, 60.0).pointXY(61.0, 60.0))
   .add(Geoshape.getShapeFactory().lineString().pointXY(119.0, 60.0).pointXY(121.0, 60.0)).build())
-//MultiPolygon (requires JTS)
+//MultiPolygon
 Geoshape.geoshape(Geoshape.getShapeFactory().multiPolygon()
   .add(Geoshape.getShapeFactory().polygon().pointXY(59.0, 59.0).pointXY(61.0, 59.0)
     .pointXY(61.0, 61.0).pointXY(59.0, 61.0).pointXY(59.0, 59.0))
   .add(Geoshape.getShapeFactory().polygon().pointXY(119.0, 59.0).pointXY(121.0, 59.0)
     .pointXY(121.0, 61.0).pointXY(119.0, 61.0).pointXY(119.0, 59.0)).build())
-//GeometryCollection (may requires JTS)
+//GeometryCollection
 Geoshape.geoshape(Geoshape.getGeometryCollectionBuilder()
   .add(Geoshape.getShapeFactory().pointXY(60.0, 60.0))
   .add(Geoshape.getShapeFactory().lineString().pointXY(119.0, 60.0).pointXY(121.0, 60.0).build())

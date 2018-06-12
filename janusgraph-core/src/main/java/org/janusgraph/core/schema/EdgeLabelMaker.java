@@ -36,7 +36,7 @@ public interface EdgeLabelMaker extends RelationTypeMaker {
 
     /**
      * Configures the label to be directed.
-     * <p/>
+     * <p>
      * By default, the label is directed.
      *
      * @return this EdgeLabelMaker
@@ -46,7 +46,7 @@ public interface EdgeLabelMaker extends RelationTypeMaker {
 
     /**
      * Configures the label to be unidirected.
-     * <p/>
+     * <p>
      * By default, the type is directed.
      *
      * @return this EdgeLabelMaker

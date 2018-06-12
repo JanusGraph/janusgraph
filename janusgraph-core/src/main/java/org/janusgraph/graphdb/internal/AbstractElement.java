@@ -26,11 +26,11 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 /**
  * AbstractElement is the base class for all elements in JanusGraph.
  * It is defined and uniquely identified by its id.
- * </p>
+ * <p>
  * For the id, it holds that:
- * id<0: Temporary id, will be assigned id>0 when the transaction is committed
+ * id&lt;0: Temporary id, will be assigned id&gt;0 when the transaction is committed
  * id=0: Virtual or implicit element that does not physically exist in the database
- * id>0: Physically persisted element
+ * id&gt;0: Physically persisted element
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */

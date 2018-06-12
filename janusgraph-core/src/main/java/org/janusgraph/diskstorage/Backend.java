@@ -78,7 +78,7 @@ public class Backend implements LockerProvider, AutoCloseable {
      * These are the names for the edge store and property index databases, respectively.
      * The edge store contains all edges and properties. The property index contains an
      * inverted index from attribute value to vertex.
-     * <p/>
+     * <p>
      * These names are fixed and should NEVER be changed. Changing these strings can
      * disrupt storage adapters that rely on these names for specific configurations.
      * In the past, the store name for the ID table, janusgraph_ids, was also marked here,
@@ -567,7 +567,7 @@ public class Backend implements LockerProvider, AutoCloseable {
 
     /**
      * Clears the storage of all registered backend data providers. This includes backend storage engines and index providers.
-     * <p/>
+     * <p>
      * IMPORTANT: Clearing storage means that ALL data will be lost and cannot be recovered.
      *
      * @throws BackendException

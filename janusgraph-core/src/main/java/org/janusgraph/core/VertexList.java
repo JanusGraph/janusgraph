@@ -18,10 +18,10 @@ import com.carrotsearch.hppc.LongArrayList;
 
 /**
  * List of {@link JanusGraphVertex}s.
- * <p/>
+ * <p>
  * Basic interface for a list of vertices which supports retrieving individuals vertices or iterating over all of them,
  * but does not support modification.
- * <p/>
+ * <p>
  * VertexList is returned by {@link JanusGraphVertexQuery}. Depending on how the query was executed that returned this VertexList,
  * getting vertex ids might be significantly faster than retrieving vertex objects.
  *
@@ -71,7 +71,7 @@ public interface VertexList extends Iterable<JanusGraphVertex> {
 
     /**
      * Returns a list of ids of all vertices in this list of vertices in the same order of the original vertex list.
-     * <p/>
+     * <p>
      * Uses an efficient primitive variable-sized array.
      *
      * @return A list of idAuthorities of all vertices in this list of vertices in the same order of the original vertex list.
