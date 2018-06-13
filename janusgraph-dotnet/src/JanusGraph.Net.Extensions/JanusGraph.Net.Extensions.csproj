@@ -1,0 +1,23 @@
+<!--  THIS IS A GENERATED FILE - DO NOT MODIFY THIS FILE DIRECTLY - it is generated from glv/JanusGraph.Net.Extensions.csproj.template -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSource>True</IncludeSource>
+    <IncludeSymbols>True</IncludeSymbols>
+    <Version>0.3.0-SNAPSHOT</Version>
+    <Title>JanusGraph.Net.Extensions</Title>
+    <Authors>JanusGraph</Authors>
+    <Description>JanusGraph.Net.Extensions extends Gremlin.Net with JanusGraph specific types and predicates.</Description>
+    <PackageId>JanusGraph.Net.Extensions</PackageId>
+    <PackageTags>janusgraph;gremlin</PackageTags>
+    <PackageProjectUrl>http://janusgraph.org/</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/JanusGraph/janusgraph/blob/master/LICENSE.txt</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/JanusGraph/janusgraph</RepositoryUrl>
+    <PackageIconUrl>https://raw.githubusercontent.com/JanusGraph/logos/master/RGB%20-%20PNG%20small/JanusGraph%20logomark%20color%20RGB.png</PackageIconUrl>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Gremlin.Net" Version="3.3.3" />
+  </ItemGroup>
+</Project>

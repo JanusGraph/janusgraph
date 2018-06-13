@@ -80,6 +80,7 @@
         <metrics3.version>3.0.1</metrics3.version>
         <sesame.version>2.7.10</sesame.version>
         <slf4j.version>1.7.12</slf4j.version>
+        <log4j.version>1.2.16</log4j.version>
         <httpcomponents.version>4.4.1</httpcomponents.version>
         <hadoop2.version>2.7.2</hadoop2.version>
         <hbase100.core.version>1.2.6</hbase100.core.version>
@@ -125,12 +126,14 @@
         <test.excluded.groups>org.janusgraph.testcategory.MemoryTests,org.janusgraph.testcategory.PerformanceTests,org.janusgraph.testcategory.BrittleTests</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <cassandra-driver.version>3.3.2</cassandra-driver.version>
+        <groovy.version>2.4.15</groovy.version>
     </properties>
     <modules>
         <module>janusgraph-codepipelines-ci</module>
         <module>janusgraph-core</module>
         <module>janusgraph-server</module>
         <module>janusgraph-test</module>
+        <module>janusgraph-dotnet</module>
         <module>janusgraph-berkeleyje</module>
         <module>janusgraph-cql</module>
         <module>janusgraph-cassandra</module>
@@ -655,7 +658,7 @@
             <dependency>
                 <groupId>log4j</groupId>
                 <artifactId>log4j</artifactId>
-                <version>1.2.16</version>
+                <version>${log4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>

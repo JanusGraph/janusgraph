@@ -37,6 +37,7 @@ env:
   matrix:
     # sort modules by test time with quickest modules first
     - MODULE='server'
+    - MODULE='dotnet'
     - MODULE='hadoop-parent/janusgraph-hadoop-2'
     - MODULE='lucene'
     - MODULE='solr' ARGS='-Pdocker,solr7'
@@ -86,6 +87,15 @@ matrix:
     - env: MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.murmur=true'
     - env: MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
 
+before_install:
+  - if [ "${MODULE}" == "dotnet" ]; then
+      wget -q packages-microsoft-prod.deb https://packages.microsoft.com/config/ubuntu/14.04/packages-microsoft-prod.deb;
+      sudo dpkg -i packages-microsoft-prod.deb
+      sudo apt-get install apt-transport-https;
+      sudo apt-get update;
+      sudo apt-get install dotnet-sdk-2.1;
+    fi
+
 install:
   - if [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] && [ -n "${COVERITY_ONLY:-}" ]; then
       echo "Building all modules for Coverity analysis";
@@ -93,6 +103,11 @@ install:
           mvn install -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
     elif [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] || [ -n "${COVERITY_ONLY:-}" ]; then
       echo "Skipping module build on Coverity branch/job";
+    elif [ "${MODULE}" == "dotnet" ]; then
+      echo "Building janusgraph-${MODULE} and dependencies";
+      travis_retry travis_wait \
+        mvn install -Pjanusgraph-dotnet --projects :janusgraph-dotnet,:janusgraph-dotnet-tests \
+        --also-make -DskipTests=true --batch-mode --show-version;
     else
       echo "Building janusgraph-${MODULE} and dependencies";
       travis_retry travis_wait \
@@ -113,6 +128,10 @@ script:
             -i janusgraph/analysis;
     elif [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] || [ -n "${COVERITY_ONLY:-}" ]; then
       echo "Skipping module tests on Coverity branch/job";
+    elif [ "${MODULE}" == "dotnet" ]; then
+      echo "Testing janusgraph-dotnet";
+      travis_retry travis_wait 50 \
+          mvn clean verify -Pjanusgraph-dotnet --projects :janusgraph-dotnet,:janusgraph-dotnet-tests;
     else
       echo "Testing janusgraph-${MODULE}";
       travis_retry travis_wait 50 \

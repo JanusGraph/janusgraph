@@ -72,6 +72,17 @@ gremlin> g = graph.traversal()
 ==>graphtraversalsource[standardjanusgraph[berkeleyje:db/berkeley], standard]
 ```
 
+## Building JanusGraph.Net.Extensions
+
+The [.NET Core 2.1 SDK](https://www.microsoft.com/net/download) is needed to build the JanusGraph.Net.Extensions library.
+While it is possible to build the library just with the `dotnet` CLI tool, Maven is required to also execute the tests as they
+need a running JanusGraph server which will automatically be started by Maven and stopped again after the tests have finished.
+To build and test JanusGraph.Net.Extensions, simply run:
+
+```bash
+mvn clean install -Pjanusgraph-dotnet -pl :janusgraph-dotnet,:janusgraph-dotnet-tests
+```
+
 ## Building on Eclipse IDE
 Note that this has only been tested on Eclipse Neon.2 Release (4.6.2) with m2e (1.7.0.20160603-1933) and m2e-wtp (1.3.1.20160831-1005) plugin.
 
