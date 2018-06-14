@@ -208,6 +208,8 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
 
     @Mock
     private Cluster cluster;
+    @Mock
+    private Session session;
 
     @InjectMocks
     private CQLStoreManager mockManager = new CQLStoreManager(getBaseStorageConfiguration());
@@ -216,7 +218,6 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
     public void testExistKeyspaceSession() {
         Metadata metadata = mock(Metadata.class);
         KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
-        Session session = mock(Session.class);
         when(cluster.getMetadata()).thenReturn(metadata);
         when(metadata.getKeyspace(TEST_KEYSPACE_NAME)).thenReturn(keyspaceMetadata);
         when(cluster.connect()).thenReturn(session);
@@ -230,7 +231,6 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
     @Test
     public void testNewKeyspaceSession() {
         Metadata metadata = mock(Metadata.class);
-        Session session = mock(Session.class);
         when(cluster.getMetadata()).thenReturn(metadata);
         when(metadata.getKeyspace(TEST_KEYSPACE_NAME)).thenReturn(null);
         when(cluster.connect()).thenReturn(session);
@@ -238,6 +238,40 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
         mockManager.initializeSession(TEST_KEYSPACE_NAME);
 
         verify(cluster).connect();
+        verify(session, times(1)).execute(any(Statement.class));
+    }
+
+    @Test
+    public void testExistTableOpenDatabase() throws BackendException {
+        //arrange
+        String someTableName = "foo";
+        Metadata metadata = mock(Metadata.class);
+        KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
+        when(keyspaceMetadata.getTable(someTableName)).thenReturn(mock(TableMetadata.class));
+        when(cluster.getMetadata()).thenReturn(metadata);
+        when(metadata.getKeyspace(mockManager.getKeyspaceName())).thenReturn(keyspaceMetadata);
+
+        //act
+        mockManager.openDatabase(someTableName, null);
+
+        //assert
+        verify(session, never()).execute(any(Statement.class));
+    }
+
+    @Test
+    public void testNewTableOpenDatabase() throws BackendException {
+        //arrange
+        String someTableName = "foo";
+        Metadata metadata = mock(Metadata.class);
+        KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
+        when(keyspaceMetadata.getTable(someTableName)).thenReturn(null);
+        when(cluster.getMetadata()).thenReturn(metadata);
+        when(metadata.getKeyspace(mockManager.getKeyspaceName())).thenReturn(keyspaceMetadata);
+
+        //act
+        mockManager.openDatabase(someTableName, null);
+
+        //assert
         verify(session, times(1)).execute(any(Statement.class));
     }
 
