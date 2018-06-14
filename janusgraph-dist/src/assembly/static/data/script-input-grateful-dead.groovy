@@ -17,10 +17,10 @@
  * under the License.
  */
 
-def parse(line, factory) {
+def parse(line) {
     def (vertex, outEdges, inEdges) = line.split(/\t/, 3)
     def (v1id, v1label, v1props) = vertex.split(/,/, 3)
-    def v1 = factory.vertex(v1id.toInteger(), v1label)
+    def v1 = graph.addVertex(T.id, v1id.toInteger(), T.label, v1label)
     switch (v1label) {
         case "song":
             def (name, songType, performances) = v1props.split(/,/)
@@ -43,8 +43,8 @@ def parse(line, factory) {
             } else {
                 (eLabel, otherV, weight) = parts
             }
-            def v2 = factory.vertex(otherV.toInteger())
-            def e = factory.edge(out ? v1 : v2, out ? v2 : v1, eLabel)
+            def v2 = graph.addVertex(T.id, otherV.toInteger())
+            def e = out ? v1.addOutEdge(eLabel, v2) : v1.addInEdge(eLabel, v2)
             if (weight != null) e.property("weight", weight.toInteger())
         }
     }
