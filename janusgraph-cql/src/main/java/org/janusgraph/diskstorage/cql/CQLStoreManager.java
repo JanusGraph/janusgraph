@@ -56,11 +56,13 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import javax.annotation.Resource;
 import javax.net.ssl.SSLContext;
@@ -132,7 +134,8 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     @Resource
     private Cluster cluster;
-    private final Session session;
+    @Resource
+    private Session session;
     private final StoreFeatures storeFeatures;
     private final Map<String, CQLKeyColumnValueStore> openStores;
     private final Deployment deployment;
@@ -365,7 +368,8 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     @Override
     public KeyColumnValueStore openDatabase(final String name, final Container metaData) throws BackendException {
-        return this.openStores.computeIfAbsent(name, n -> new CQLKeyColumnValueStore(this, n, getStorageConfig(), () -> this.openStores.remove(n), allowCompactStorage));
+        Supplier<Boolean> initializeTable = () -> Optional.ofNullable(this.cluster.getMetadata().getKeyspace(this.keyspace)).map(k -> k.getTable(name) == null).orElse(true);
+        return this.openStores.computeIfAbsent(name, n -> new CQLKeyColumnValueStore(this, n, getStorageConfig(), () -> this.openStores.remove(n), allowCompactStorage, initializeTable));
     }
 
     @Override
