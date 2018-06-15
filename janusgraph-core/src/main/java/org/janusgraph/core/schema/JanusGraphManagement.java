@@ -33,11 +33,11 @@ import java.util.concurrent.Future;
  * The JanusGraphManagement interface provides methods to define, update, and inspect the schema of a JanusGraph graph.
  * It wraps a {@link JanusGraphTransaction} and therefore copies many of its methods as they relate to schema inspection
  * and definition.
- * <p/>
+ * <p>
  * JanusGraphManagement behaves like a transaction in that it opens a transactional scope for reading the schema and making
  * changes to it. As such, it needs to be explicitly closed via its {@link #commit()} or {@link #rollback()} methods.
  * A JanusGraphManagement transaction is opened on a graph via {@link org.janusgraph.core.JanusGraph#openManagement()}.
- * <p/>
+ * <p>
  * JanusGraphManagement provides methods to:
  * <ul>
  * <li>Schema Types: View, update, and create vertex labels, edge labels, and property keys</li>
@@ -69,7 +69,7 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
     /**
      * Creates a {@link RelationTypeIndex} for the provided edge label. That means, that all edges of that label will be
      * indexed according to this index definition which will speed up certain vertex-centric queries.
-     * <p/>
+     * <p>
      * An indexed is defined by its name, the direction in which the index should be created (can be restricted to one
      * direction or both), the sort order and - most importantly - the sort keys which define the index key.
      *
@@ -96,7 +96,7 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
     /**
      * Creates a {@link RelationTypeIndex} for the provided property key. That means, that all properties of that key will be
      * indexed according to this index definition which will speed up certain vertex-centric queries.
-     * <p/>
+     * <p>
      * An indexed is defined by its name, the sort order and - most importantly - the sort keys which define the index key.
      *
      * @param key
@@ -244,11 +244,11 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
          * on the same values in the object returned by {@link #get()}, though
          * the implementation should attempt to provide both properties when
          * practical.
-         * <p/>
+         * <p>
          * The metrics visible through the object returned by this method may
          * also change their values between reads.  In other words, this is not
          * necessarily an immutable snapshot.
-         * <p/>
+         * <p>
          * If the index job has failed and the implementation is capable of
          * quickly detecting that, then the implementation should throw an
          * {@code ExecutionException}.  Returning metrics in case of failure is
@@ -348,13 +348,13 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
 
     /**
      * Forcefully removes a JanusGraph instance from this graph cluster as identified by its name.
-     * <p/>
+     * <p>
      * This method should be used with great care and only in cases where a JanusGraph instance
      * has been abnormally terminated (i.e. killed instead of properly shut-down). If this happens, the instance
      * will continue to be listed as an open instance which means that 1) a new instance with the same id cannot
      * be started and 2) schema updates will fail because the killed instance cannot acknowledge the schema update.
-     * <p/>
-     * <p/>
+     * <p>
+     * <p>
      * Throws an exception if the instance is not part of this cluster or if the instance has
      * been started after the start of this management transaction which is indicative of the instance
      * having been restarted successfully.

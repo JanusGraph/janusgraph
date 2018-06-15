@@ -23,7 +23,6 @@ import java.time.Instant;
  * The timestamps of a lock held by a {@link ConsistentKeyLocker}
  * and whether the held lock has or has not been checked.
  *
- * {@see ConsistentKeyLockStore}
  */
 public class ConsistentKeyLockStatus implements LockStatus {
 

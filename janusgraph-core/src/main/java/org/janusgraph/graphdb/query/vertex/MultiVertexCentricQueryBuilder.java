@@ -31,7 +31,7 @@ import java.util.*;
  * Implementation of {@link JanusGraphMultiVertexQuery} that extends {@link BasicVertexCentricQueryBuilder}
  * for all the query building and optimization and adds only the execution logic in
  * {@link #execute(org.janusgraph.graphdb.internal.RelationCategory, BasicVertexCentricQueryBuilder.ResultConstructor)}.
- * </p>
+ * <p>
  * All other methods just prepare or transform that result set to fit the particular method semantics.
  *
  * @author Matthias Broecheler (me@matthiasb.com)

@@ -35,12 +35,12 @@ import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 /**
  * A LRU cache implementation based upon ConcurrentHashMap and other techniques to reduce
  * contention and synchronization overhead to utilize multiple CPU cores more effectively.
- * <p/>
+ * <p>
  * Note that the implementation does not follow a true LRU (least-recently-used) eviction
  * strategy. Instead it strives to remove least recently used items but when the initial
  * cleanup does not remove enough items to reach the 'acceptableWaterMark' limit, it can
  * remove more items forcefully regardless of access order.
- * <p/>
+ * <p>
  * ADDED COMMENT:
  * This class has been copied from the Apache Solr project (see license above).
  * New method has been added "putIfAbsent" which has the same behaviour as normal CHM.putIfAbsent
@@ -176,11 +176,11 @@ public class ConcurrentLRUCache<V> {
     /**
      * Removes items from the cache to bring the size down
      * to an acceptable value ('acceptableWaterMark').
-     * <p/>
+     * <p>
      * It is done in two stages. In the first stage, least recently used items are evicted.
      * If, after the first stage, the cache size is still greater than 'acceptableSize'
      * config parameter, the second stage takes over.
-     * <p/>
+     * <p>
      * The second stage is more intensive and tries to bring down the cache size
      * to the 'lowerWaterMark' config parameter.
      */
@@ -425,7 +425,7 @@ public class ConcurrentLRUCache<V> {
 
     /**
      * Returns 'n' number of oldest accessed entries present in this cache.
-     * <p/>
+     * <p>
      * This uses a TreeSet to collect the 'n' oldest items ordered by ascending last access time
      * and returns a LinkedHashMap containing 'n' or less than 'n' entries.
      *

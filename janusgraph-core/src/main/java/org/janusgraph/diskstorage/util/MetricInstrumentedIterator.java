@@ -28,7 +28,7 @@ import org.apache.commons.lang.StringUtils;
  * {@link RecordIterator} instances returned from
  * {@link MetricInstrumentedStore#getSlice(org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery, org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction)}.
  * 
- * @author Dan LaRocque <dalaro@hopcount.org>
+ * @author Dan LaRocque (dalaro@hopcount.org)
  */
 public class MetricInstrumentedIterator implements KeyIterator {
     

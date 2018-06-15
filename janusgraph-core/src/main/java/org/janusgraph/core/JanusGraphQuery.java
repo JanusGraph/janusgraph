@@ -20,7 +20,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
 /**
  * Constructs a query against a mixed index to retrieve all elements (either vertices or edges)
  * that match all conditions.
- * <p/>
+ * <p>
  * Finding matching elements efficiently using this query mechanism requires that appropriate index structures have
  * been defined for the keys. See {@link org.janusgraph.core.schema.JanusGraphManagement} for more information
  * on how to define index structures in JanusGraph.

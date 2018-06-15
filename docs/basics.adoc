@@ -1522,7 +1522,7 @@ totalHumansAdded = new AtomicInteger(0);
 totalGodsAdded = new AtomicInteger(0);
 logProcessor.addLogProcessor("addedPerson").
         setProcessorIdentifier("addedPersonCounter").
-        setStartTime(System.currentTimeMillis(), TimeUnit.MILLISECONDS).
+        setStartTimeNow().
         addProcessor(new ChangeProcessor() {
             @Override
             public void process(JanusGraphTransaction tx, TransactionId txId, ChangeState changeState) {
@@ -1556,7 +1556,7 @@ One cannot add or remove change processor from a running log processor. In other
 [source, gremlin]
 logProcessor.addLogProcessor("battle").
         setProcessorIdentifier("battleTimer").
-        setStartTime(System.currentTimeMillis(), TimeUnit.MILLISECONDS).
+        setStartTimeNow().
         addProcessor(new ChangeProcessor() {
             @Override
             public void process(JanusGraphTransaction tx, TransactionId txId, ChangeState changeState) {

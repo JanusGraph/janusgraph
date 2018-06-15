@@ -19,10 +19,8 @@ your code and configuration accordingly:
   duplicate a word, e.g., `TitanGraph` is simply `JanusGraph` rather than
   `JanusGraphGraph`
 
-*IMPORTANT* If you are pointing JanusGraph at an existing Titan database you will
-need to set the `graph.titan-version` property. For more information on how to
-configure JanusGraph to read data which had previously been written by Titan
-refer to <<migrating-titan>>.
+For more information on how to configure JanusGraph to read data which had
+previously been written by Titan refer to <<migrating-titan>>.
 
 === Upgrading from JanusGraph 0.1.z
 

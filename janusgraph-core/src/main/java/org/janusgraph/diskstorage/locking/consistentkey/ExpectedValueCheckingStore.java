@@ -33,22 +33,22 @@ import org.janusgraph.diskstorage.util.KeyColumn;
  * A {@link KeyColumnValueStore} wrapper intended for non-transactional stores
  * that forwards all <b>but</b> these two methods to an encapsulated store
  * instance:
- * <p/>
+ * <p>
  * <ul>
  * <li>{@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}</li>
  * <li>{@link #mutate(StaticBuffer, List, List, StoreTransaction)}</li>
  * </ul>
- * <p/>
+ * <p>
  * This wrapper adds some logic to both of the overridden methods before calling
  * the encapsulated store's version.
- * <p/>
+ * <p>
  * This class, along with its collaborator class
  * {@link ExpectedValueCheckingTransaction}, track all {@code expectedValue}
  * arguments passed to {@code acquireLock} for each {@code StoreTransaction}.
  * When the transaction first {@code mutate(...)}s, the these classes cooperate
  * to check that all previously provided expected values match actual values,
  * throwing an exception and preventing mutation if a mismatch is detected.
- * <p/>
+ * <p>
  * This relies on a {@code Locker} instance supplied during construction for
  * locking.
  */
@@ -65,7 +65,7 @@ public class ExpectedValueCheckingStore extends KCVSProxy {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * This implementation supports locking when {@code lockStore} is non-null.
      */
     @Override
@@ -82,9 +82,9 @@ public class ExpectedValueCheckingStore extends KCVSProxy {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * This implementation supports locking when {@code lockStore} is non-null.
-     * <p/>
+     * <p>
      * Consider the following scenario. This method is called twice with
      * identical key, column, and txh arguments, but with different
      * expectedValue arguments in each call. In testing, it seems JanusGraph's

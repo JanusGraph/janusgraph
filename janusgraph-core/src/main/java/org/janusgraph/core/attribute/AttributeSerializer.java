@@ -21,14 +21,14 @@ import org.janusgraph.diskstorage.WriteBuffer;
 
 /**
  * Allows custom serializer definitions for attribute values.
- * <p/>
+ * <p>
  * For most data types (i.e. classes) used with properties, using the default serializer when registering the type with the
  * JanusGraph will be sufficient and efficient in practice. However, for certain data types, it can be more
  * efficient to provide custom serializers implementing this interface.
  * Such custom serializers are registered in the configuration file by specifying their path and loaded when
  * the database is initialized. Hence, the serializer must be on the classpath.
- * <br />
- * <p/>
+ * <br>
+ * <p>
  * When a {@link org.janusgraph.core.PropertyKey} is defined using a data type specified via {@link org.janusgraph.core.schema.PropertyKeyMaker} for which a custom serializer
  * is configured, then it will use this custom serializer for persistence operations.
  *
@@ -42,7 +42,7 @@ public interface AttributeSerializer<V> {
 
     /**
      * Reads an attribute from the given ReadBuffer.
-     * <p/>
+     * <p>
      * It is expected that this read operation adjusts the position in the ReadBuffer to after the attribute value.
      *
      * @param buffer ReadBuffer to read attribute from
@@ -52,7 +52,7 @@ public interface AttributeSerializer<V> {
 
     /**
      * Writes the attribute value to the given WriteBuffer.
-     * <p/>
+     * <p>
      * It is expected that this write operation adjusts the position in the WriteBuffer to after the attribute value.
      *
      * @param buffer    WriteBuffer to write attribute to

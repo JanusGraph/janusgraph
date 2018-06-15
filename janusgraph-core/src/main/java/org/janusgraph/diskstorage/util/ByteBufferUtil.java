@@ -73,7 +73,7 @@ public class ByteBufferUtil {
 
     /**
      * Compares two {@link java.nio.ByteBuffer}s according to their byte order (and not the byte value).
-     * <p/>
+     * <p>
      *
      * @param b1             First ByteBuffer
      * @param b2             Second ByteBuffer

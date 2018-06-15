@@ -19,7 +19,7 @@ import java.util.Collection;
 
 /**
  * EdgeLabel is an extension of {@link RelationType} for edges. Each edge in JanusGraph has a label.
- * <p/>
+ * <p>
  * An edge label defines the following characteristics of an edge:
  * <ul>
  * <li><strong>Directionality:</strong> An edge is either directed or unidirected. A directed edge can be thought of

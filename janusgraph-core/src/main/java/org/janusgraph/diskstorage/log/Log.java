@@ -30,7 +30,7 @@ public interface Log {
 
     /**
      * Attempts to add the given content to the log and returns a {@link Future} for this action.
-     * </p>
+     * <p>
      * If the log is configured for immediate sending, then any exception encountered during this process is thrown
      * by this method. Otherwise, encountered exceptions are attached to the returned future.
 
@@ -42,7 +42,7 @@ public interface Log {
     /**
      * Attempts to add the given content to the log and returns a {@link Future} for this action.
      * In addition, a key is provided to signal the recipient of the log message in partitioned logging systems.
-     * </p>
+     * <p>
      * If the log is configured for immediate sending, then any exception encountered during this process is thrown
      * by this method. Otherwise, encountered exceptions are attached to the returned future.
      *
@@ -62,7 +62,7 @@ public interface Log {
     /**
      * Registers the given readers with this log. These readers will be invoked for each newly read message from the log
      * starting at the point identified by the provided {@link ReadMarker}.
-     * <p/>
+     * <p>
      * If no previous readers were registered, invoking this method triggers reader threads to be instantiated.
      * If readers have been previously registered, then the provided {@link ReadMarker} must be compatible with the
      * previous {@link ReadMarker} or an exception will be thrown.

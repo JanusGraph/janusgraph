@@ -48,6 +48,7 @@ public interface JanusGraphEdge extends JanusGraphRelation, Edge {
      * Returns the vertex for the specified direction.
      * The direction cannot be Direction.BOTH.
      *
+     * @param dir Direction of IN or OUT
      * @return the vertex for the specified direction
      */
     JanusGraphVertex vertex(Direction dir);

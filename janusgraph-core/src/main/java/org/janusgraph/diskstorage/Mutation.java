@@ -137,11 +137,11 @@ public abstract class Mutation<E,K> {
      * it is identical to some addition under the provided conversion functions since we consider additions to apply logically after deletions.
      * Hence, such a deletion would be applied and immediately overwritten by an addition. To avoid this
      * inefficiency, consolidation should be called.
-     * </p>
+     * <p>
      * The provided conversion functions map additions and deletions into some object space V for comparison.
      * An addition is considered identical to a deletion if both map to the same object (i.e. equals=true) with the respective
      * conversion functions.
-     * </p>
+     * <p>
      * It needs to be ensured that V objects have valid hashCode() and equals() implementations.
      *
      * @param convertAdditions Function which maps additions onto comparison objects.

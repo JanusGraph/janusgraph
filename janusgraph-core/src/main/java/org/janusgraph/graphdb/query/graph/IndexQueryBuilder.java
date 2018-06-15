@@ -39,10 +39,10 @@ import java.util.stream.Stream;
  * any reference to `v.SOME_KEY`, `e.SOME_KEY` or `p.SOME_KEY` with the respective key reference. This replacement
  * is 'dumb' in the sense that it relies on simple string replacements to accomplish this. If the key contains special characters
  * (in particular space) then it must be encapsulated in quotation marks.
- * </p>
+ * <p>
  * In addition to the query string, a number of parameters can be specified which will be passed verbatim to the indexing
  * backend during query execution.
- * </p>
+ * <p>
  * This class essentially just acts as a builder, uses the {@link IndexSerializer} to execute the query, and then post-processes
  * the result set to return to the user.
  *

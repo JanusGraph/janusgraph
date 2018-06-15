@@ -137,7 +137,7 @@ public class JanusGraphManager implements GraphManager {
     }
 
     /**
-     * @Deprecated
+     * @deprecated
      */
     @Deprecated
     @Override
@@ -161,7 +161,7 @@ public class JanusGraphManager implements GraphManager {
     }
 
     /**
-     * @Deprecated
+     * @deprecated
      */
     @Override
     @Deprecated
