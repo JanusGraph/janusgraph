@@ -27,14 +27,14 @@ import java.util.*;
 
 /**
  * Executes a given {@link ElementQuery} against a provided {@link QueryExecutor} to produce the result set of elements.
- * </p>
- * The QueryProcessor creates a number of stacked iterators. </br>
+ * <p>
+ * The QueryProcessor creates a number of stacked iterators. <br>
  * At the highest level, the OuterIterator ensures that the correct (up to the given limit) number of elements is returned. It also provides the implementation of remove()
- * by calling the element's remove() method. </br>
+ * by calling the element's remove() method. <br>
  * The OuterIterator wraps the "unfolded" iterator which is a combination of the individual result set iterators of the sub-queries of the given query (see {@link ElementQuery#getSubQuery(int)}.
  * The unfolded iterator combines this iterators by checking whether 1) the result sets need additional filtering (if so, a filter iterator is wrapped around it) and 2) whether
  * the final result set needs to be sorted and in what order. If the result set needs to be sorted and the individual sub-query result sets aren't, then a PreSortingIterator is wrapped around
- * the iterator which effectively iterates the result set out, sorts it and then returns an iterator (i.e. much more expensive than exploiting existing sort orders).</br>
+ * the iterator which effectively iterates the result set out, sorts it and then returns an iterator (i.e. much more expensive than exploiting existing sort orders).<br>
  * In this way, the individual sub-result sets are prepared and then merged together the MergeSortIterator (which conserves sort order if present).
  * The semantics of the queries is OR, meaning the result sets are combined.
  * However, when {@link org.janusgraph.graphdb.query.ElementQuery#hasDuplicateResults()} is true (which assumes that the result set is sorted) then the merge sort iterator

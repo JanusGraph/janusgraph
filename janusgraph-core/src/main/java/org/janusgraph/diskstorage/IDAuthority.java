@@ -37,10 +37,10 @@ public interface IDAuthority {
      * that is, the block of ids has not been previously and will not
      * subsequently be assigned again when invoking this method on the local or
      * any remote machine that is connected to the underlying storage backend.
-     * <p/>
+     * <p>
      * In other words, this method has to ensure that ids are uniquely assigned
      * per partition.
-     * <p/>
+     * <p>
      * It is furthermore guaranteed that any id of the returned IDBlock is smaller than the upper bound
      * for the given partition as read from the {@link IDBlockSizer} set on this IDAuthority and that the
      * number of ids returned is equal to the block size of the IDBlockSizer.
@@ -68,7 +68,7 @@ public interface IDAuthority {
     /**
      * Sets the {@link IDBlockSizer} to be used by this IDAuthority. The IDBlockSizer specifies the block size for
      * each partition guaranteeing that the same partition will always be assigned the same block size.
-     * <p/>
+     * <p>
      * The IDBlockSizer cannot be changed for an IDAuthority that has already been used (i.e. after invoking {@link #getIDBlock(int, int, Duration)}.
      *
      * @param sizer The IDBlockSizer to be used by this IDAuthority

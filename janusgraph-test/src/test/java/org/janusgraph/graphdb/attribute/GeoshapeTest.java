@@ -17,11 +17,11 @@ package org.janusgraph.graphdb.attribute;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.janusgraph.core.attribute.Geoshape;
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.LinearRing;
-import com.vividsolutions.jts.geom.Polygon;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.LinearRing;
+import org.locationtech.jts.geom.Polygon;
 
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.apache.tinkerpop.shaded.jackson.databind.module.SimpleModule;
@@ -338,7 +338,7 @@ public class GeoshapeTest {
         om.registerModule(module);
         JtsSpatialContext context = (JtsSpatialContext) Geoshape.getSpatialContext();
         assertEquals("{\"type\":\"Point\",\"coordinates\":[20.5,10.5]}", om.writeValueAsString(Geoshape.point(10.5, 20.5)));
-        assertEquals("{\"type\":\"Polygon\",\"coordinates\": [[[20.5,10.5],[20.5,12.5],[22.5,12.5],[22.5,10.5],[20.5,10.5]]]}", om.writeValueAsString(Geoshape.box(10.5, 20.5, 12.5, 22.5)));
+        assertEquals("{\"type\":\"Polygon\",\"coordinates\":[[[20.5,10.5],[20.5,12.5],[22.5,12.5],[22.5,10.5],[20.5,10.5]]]}", om.writeValueAsString(Geoshape.box(10.5, 20.5, 12.5, 22.5)));
         assertEquals("{\"type\":\"Circle\",\"coordinates\":[20.5,10.5],\"radius\":30.5,\"properties\":{\"radius_units\":\"km\"}}", om.writeValueAsString(Geoshape.circle(10.5, 20.5, 30.5)));
         assertEquals("{\"type\":\"LineString\",\"coordinates\":[[20.5,10.5],[22.5,10.5],[22.5,12.5]]}", om.writeValueAsString(Geoshape.line(Arrays.asList(new double[][] {{20.5,10.5},{22.5,10.5},{22.5,12.5}}))));
         assertEquals("{\"type\":\"Polygon\",\"coordinates\":[[[20.5,10.5],[21.75,8],[22.5,10.5],[25,11.75],[22.5,12.5],[21,15],[20.5,12.5],[18,11.75],[20.5,10.5]]]}",

@@ -18,10 +18,10 @@ package org.janusgraph.diskstorage;
  * This exception signifies a (potentially) temporary exception in a JanusGraph storage backend,
  * that is, an exception that is due to a temporary unavailability or other exception that
  * is not permanent in nature.
- * <p/>
+ * <p>
  * If this exception is thrown it indicates that retrying the same operation might potentially
  * lead to success (but not necessarily)
- * <p/>
+ * <p>
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 

@@ -22,7 +22,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * A JanusGraphVertexQuery is a VertexQuery executed for a single vertex.
- * <p />
+ * <p>
  * Calling {@link org.janusgraph.core.JanusGraphVertex#query()} builds such a query against the vertex
  * this method is called on. This query builder provides the methods to specify which incident edges or
  * properties to query for.
@@ -140,7 +140,7 @@ public interface JanusGraphVertexQuery<Q extends JanusGraphVertexQuery<Q>> exten
     /**
      * Retrieves all vertices connected to this query's base vertex by edges
      * matching the conditions defined in this query.
-     * <p/>
+     * <p>
      * The query engine will determine the most efficient way to retrieve the vertices that match this query.
      *
      * @return A list of all vertices connected to this query's base vertex by matching edges

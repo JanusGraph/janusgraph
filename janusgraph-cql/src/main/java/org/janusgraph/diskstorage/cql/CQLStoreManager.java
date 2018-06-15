@@ -111,12 +111,15 @@ import io.vavr.collection.Iterator;
 import io.vavr.collection.Seq;
 import io.vavr.concurrent.Future;
 import io.vavr.control.Option;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class creates {@see CQLKeyColumnValueStore}s and handles Cassandra-backed allocation of vertex IDs for JanusGraph (when so
  * configured).
  */
 public class CQLStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CQLStoreManager.class);
 
     static final String CONSISTENCY_LOCAL_QUORUM = "LOCAL_QUORUM";
     static final String CONSISTENCY_QUORUM = "QUORUM";
@@ -367,11 +370,13 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     public void clearStorage() throws BackendException {
         if (this.storageConfig.get(DROP_ON_CLEAR)) {
             this.session.execute(dropKeyspace(this.keyspace));
-        } else {
+        } else if (this.exists()) {
             final Future<Seq<ResultSet>> result = Future.sequence(
                 Iterator.ofAll(this.cluster.getMetadata().getKeyspace(this.keyspace).getTables())
                     .map(table -> Future.fromJavaFuture(this.session.executeAsync(truncate(this.keyspace, table.getName())))));
             result.await();
+        } else {
+            LOGGER.info("Keyspace {} does not exist in the cluster", this.keyspace);
         }
     }
 

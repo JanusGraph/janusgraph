@@ -45,14 +45,14 @@ import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
  * A global {@link Locker} that resolves inter-thread lock contention via
  * {@link AbstractLocker} and resolves inter-process contention by reading and
  * writing lock data using {@link KeyColumnValueStore}.
- * <p/>
+ * <p>
  * <h2>Protocol and internals</h2>
- * <p/>
+ * <p>
  * Locking is done in two stages: first between threads inside a shared process,
  * and then between processes in a JanusGraph cluster.
- * <p/>
+ * <p>
  * <h3>Inter-thread lock contention</h3>
- * <p/>
+ * <p>
  * Lock contention between transactions within a shared process is arbitrated by
  * the {@code LocalLockMediator} class. This mediator uses standard
  * {@code java.util.concurrent} classes to guarantee that at most one thread
@@ -60,14 +60,14 @@ import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
  * uses a mediator to resolve inter-thread lock contention is common to multiple
  * {@code Locker} implementations and lives in the abstract base class
  * {@link AbstractLocker}.
- * <p/>
+ * <p>
  * However, the mediator has no way to perform inter-process communication. The
  * mediator can't detect or prevent a thread in another process (potentially on
  * different machine) acquiring the same lock. This is addressed in the next
  * section.
- * <p/>
+ * <p>
  * <h3>Inter-process lock contention</h3>
- * <p/>
+ * <p>
  * After the mediator signals that the current transaction has obtained a lock
  * at the inter-thread/intra-process level, this implementation does the
  * following series of writes and reads to {@code KeyColumnValueStore} to check
@@ -75,9 +75,9 @@ import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
  * operations go to a dedicated store holding nothing but locking data (a
  * "store" in this context means a Cassandra column family, an HBase table,
  * etc.)
- * <p/>
+ * <p>
  * <h4>Locking I/O sequence</h4>
- * <p/>
+ * <p>
  * <ol>
  * <li>Write a single column to the store with the following data
  * <dl>
@@ -91,29 +91,23 @@ import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
  * <dd>the single byte 0; this is unused but reserved for future use</dd>
  * </dl>
  * </li>
- * <p/>
  * <li>If the write failed or took longer than {@code lockWait} to complete
  * successfully, then retry the write with an updated timestamp and everything
  * else the same until we either exceed the configured retry count (in which
  * case we abort the lock attempt) or successfully complete the write in less
  * than {@code lockWait}.</li>
- * <p/>
  * <li>Wait, if necessary, until the time interval {@code lockWait} has passed
  * between the timestamp on our successful write and the current time.</li>
- * <p/>
  * <li>Read all columns for the key we wrote in the first step.</li>
- * <p/>
  * <li>Discard any columns with timestamps older than {@code lockExpire}.</li>
- * <p/>
- * <li>If our column is either the first column read or is preceded only by
+ * <li>If our column is either the first column read or is preceeded only by
  * columns containing our own {@code rid}, then we hold the lock.  Otherwise,
  * another process holds the lock and we have failed to acquire it.</li>
- * <p/>
  * <li>To release the lock, we delete from the store the column that we
  * wrote earlier in this sequence</li>
  * </ol>
- * <p/>
- * <p/>
+ * <p>
+ * <p>
  * As mentioned earlier, this class relies on {@link AbstractLocker} to obtain
  * and release an intra-process lock before and after the sequence of steps
  * listed above.  The mediator step is necessary for thread-safety, because

@@ -21,7 +21,7 @@ import org.janusgraph.diskstorage.PermanentBackendException;
  * example, another machine holds the lock we attempted to claim. These
  * exceptions typically will not go away on retries unless a machine modifies
  * the underlying lock state in some way.
- * <p/>
+ * <p>
  * 
  * @author Matthias Broecheler (me@matthiasb.com)
  */

@@ -238,7 +238,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             "at runtime.  Setting this option forces JanusGraph to instead reflectively load and instantiate the specified class.",
             ConfigOption.Type.MASKABLE, String.class);
 
-    public static final int PORT_DEFAULT = 9160;
+    public static final int PORT_DEFAULT = 2181;  // Not used. Just for the parent constructor.
 
     public static final TimestampProviders PREFERRED_TIMESTAMPS = TimestampProviders.MILLI;
 
@@ -274,8 +274,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         Collection<String> shorts = shortCfNameMap.values();
         Preconditions.checkArgument(Sets.newHashSet(shorts).size() == shorts.size());
 
-        checkConfigDeprecation(config);
-
         this.tableName = determineTableName(config);
         this.compression = config.get(COMPRESSION);
         this.regionCount = config.has(REGION_COUNT) ? config.get(REGION_COUNT) : -1;
@@ -310,6 +308,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             keysLoaded++;
         }
 
+        logger.debug("HBase configuration: set a total of {} configuration values", keysLoaded);
+
         // Special case for STORAGE_HOSTS
         if (config.has(GraphDatabaseConfiguration.STORAGE_HOSTS)) {
             String zkQuorumKey = "hbase.zookeeper.quorum";
@@ -318,7 +318,13 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             logger.info("Copied host list from {} to {}: {}", GraphDatabaseConfiguration.STORAGE_HOSTS, zkQuorumKey, csHostList);
         }
 
-        logger.debug("HBase configuration: set a total of {} configuration values", keysLoaded);
+        // Special case for STORAGE_PORT
+        if (config.has(GraphDatabaseConfiguration.STORAGE_PORT)) {
+            String zkPortKey = "hbase.zookeeper.property.clientPort";
+            Integer zkPort = config.get(GraphDatabaseConfiguration.STORAGE_PORT);
+            hconf.set(zkPortKey, zkPort.toString());
+            logger.info("Copied Zookeeper Port from {} to {}: {}", GraphDatabaseConfiguration.STORAGE_PORT, zkPortKey, zkPort);
+        }
 
         this.shortCfNames = config.get(SHORT_CF_NAMES);
 
@@ -963,13 +969,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     private String getCfNameForStoreName(String storeName) throws PermanentBackendException {
         return shortCfNames ? shortenCfName(shortCfNameMap, storeName) : storeName;
-    }
-
-    private void checkConfigDeprecation(org.janusgraph.diskstorage.configuration.Configuration config) {
-        if (config.has(GraphDatabaseConfiguration.STORAGE_PORT)) {
-            logger.warn("The configuration property {} is ignored for HBase. Set hbase.zookeeper.property.clientPort in hbase-site.xml or {}.hbase.zookeeper.property.clientPort in JanusGraph's configuration file.",
-                    ConfigElement.getPath(GraphDatabaseConfiguration.STORAGE_PORT), ConfigElement.getPath(HBASE_CONFIGURATION_NAMESPACE));
-        }
     }
 
     private AdminMask getAdminInterface() {

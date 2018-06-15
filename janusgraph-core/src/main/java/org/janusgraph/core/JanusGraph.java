@@ -67,10 +67,10 @@ public interface JanusGraph extends Transaction {
 
     /**
      * Opens a new thread-independent {@link JanusGraphTransaction}.
-     * <p/>
+     * <p>
      * The transaction is open when it is returned but MUST be explicitly closed by calling {@link org.janusgraph.core.JanusGraphTransaction#commit()}
      * or {@link org.janusgraph.core.JanusGraphTransaction#rollback()} when it is no longer needed.
-     * <p/>
+     * <p>
      * Note, that this returns a thread independent transaction object. It is not necessary to call this method
      * to use Blueprint's standard transaction framework which will automatically start a transaction with the first
      * operation on the graph.
@@ -91,7 +91,7 @@ public interface JanusGraph extends Transaction {
     /**
      * Returns the management system for this graph instance. The management system provides functionality
      * to change global configuration options, install indexes and inspect the graph schema.
-     * <p />
+     * <p>
      * The management system operates in its own transactional context which must be explicitly closed.
      *
      * @return
@@ -115,7 +115,7 @@ public interface JanusGraph extends Transaction {
 
     /**
      * Closes the graph database.
-     * <p/>
+     * <p>
      * Closing the graph database causes a disconnect and possible closing of the underlying storage backend
      * and a release of all occupied resources by this graph database.
      * Closing a graph database requires that all open thread-independent transactions have been closed -

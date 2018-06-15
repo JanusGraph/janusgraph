@@ -140,7 +140,7 @@ public interface SchemaInspector {
     /**
      * Returns the vertex label with the given name. If a vertex label with this name does not exist, the label is
      * automatically created through the registered {@link org.janusgraph.core.schema.DefaultSchemaMaker}.
-     * <p />
+     * <p>
      * Attempting to automatically create a vertex label might cause an exception depending on the configuration.
      *
      * @param name

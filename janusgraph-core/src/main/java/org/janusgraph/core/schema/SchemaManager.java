@@ -27,7 +27,7 @@ public interface SchemaManager extends SchemaInspector {
      * Returns a {@link org.janusgraph.core.schema.PropertyKeyMaker} instance to define a new {@link org.janusgraph.core.PropertyKey} with the given name.
      * By defining types explicitly (rather than implicitly through usage) one can control various
      * aspects of the key and associated consistency constraints.
-     * <p/>
+     * <p>
      * The key constructed with this maker will be created in the context of this transaction.
      *
      * @return a {@link org.janusgraph.core.schema.PropertyKeyMaker} linked to this transaction.
@@ -40,7 +40,7 @@ public interface SchemaManager extends SchemaInspector {
      * Returns a {@link org.janusgraph.core.schema.EdgeLabelMaker} instance to define a new {@link org.janusgraph.core.EdgeLabel} with the given name.
      * By defining types explicitly (rather than implicitly through usage) one can control various
      * aspects of the label and associated consistency constraints.
-     * <p/>
+     * <p>
      * The label constructed with this maker will be created in the context of this transaction.
      *
      * @return a {@link org.janusgraph.core.schema.EdgeLabelMaker} linked to this transaction.

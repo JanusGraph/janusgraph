@@ -87,7 +87,6 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
      *
      * @param key Key identifying the configuration property
      * @return Value stored for the key or null if the configuration property has not (yet) been defined.
-     * @throws org.janusgraph.diskstorage.BackendException
      */
     @Override
     public <O> O get(final String key, final Class<O> dataType) {
@@ -119,7 +118,6 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
      *
      * @param key   Key identifying the configuration property
      * @param value Value to be stored for the key
-     * @throws org.janusgraph.diskstorage.BackendException
      */
     @Override
     public <O> void set(String key, O value) {

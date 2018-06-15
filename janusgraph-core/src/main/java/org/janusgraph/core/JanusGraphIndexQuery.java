@@ -71,7 +71,7 @@ public interface JanusGraphIndexQuery {
     /**
      * Sets the element identifier string that is used by this query builder as the token to identifier key references
      * in the query string.
-     * <p/>
+     * <p>
      * For example, in the query 'v.name: Tom' the element identifier is 'v.'
      *
      *

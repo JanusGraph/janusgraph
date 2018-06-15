@@ -21,7 +21,7 @@ import org.apache.commons.lang.StringUtils;
 /**
  * This exception is thrown if a resource is being accessed that is unavailable.
  * The resource can be an external storage system, indexing system or other component.
- * <p/>
+ * <p>
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */

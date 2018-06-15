@@ -40,7 +40,7 @@ import org.janusgraph.util.stats.MetricManager;
  * calling {@link MetricRegistry#name(Class, String...)},
  * where methodName is the exact name of the method including capitalization,
  * and identifier is "time", "calls", or "exceptions".
- * <p/>
+ * <p>
  * In addition to the three standard metrics, {@code getSlice} and
  * {@code getKeys} have some additional metrics related to their return values.
  * {@code getSlice} carries metrics with the identifiers "entries-returned" and
@@ -48,18 +48,18 @@ import org.janusgraph.util.stats.MetricManager;
  * The second is a histogram of the size of Entry lists returned.
  * {@code getKeys} returns a {@link RecordIterator} that manages metrics for its
  * methods.
- * <p/>
+ * <p>
  * This implementation does not catch any exceptions. Exceptions emitted by the
  * backend store implementation are guaranteed to pass through this
  * implementation's methods.
- * <p/>
+ * <p>
  * The implementation includes repeated {@code try...catch} boilerplate that
  * could be reduced by using reflection to determine the method name and by
  * delegating Metrics object handling to a common helper that takes a Callable
  * closure, but I'm not sure that the extra complexity and potential performance
  * hit is worth it.
  *
- * @author Dan LaRocque <dalaro@hopcount.org>
+ * @author Dan LaRocque (dalaro@hopcount.org)
  */
 public class MetricInstrumentedStore implements KeyColumnValueStore {
 

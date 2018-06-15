@@ -32,10 +32,10 @@ import java.util.List;
 /**
  * A component/sub-query of a {@link GraphCentricQuery} that gets executed against an indexing backend or the index store
  * by the query processor of the enclosing transaction.
- * </p>
+ * <p>
  * This query itself can contain multiple sub-queries which are individually executed by the {@link org.janusgraph.graphdb.database.IndexSerializer}
  * and the result sets merged.
- * </p>
+ * <p>
  * Those sub-queries are either targeting an external indexing backend or the internal index store which is a distinction this
  * query keeps track of through the sub-class {@link Subquery}, since their definition and execution differs starkly.
  *

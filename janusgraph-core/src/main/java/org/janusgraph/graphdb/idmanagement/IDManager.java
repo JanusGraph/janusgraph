@@ -30,7 +30,7 @@ import org.janusgraph.graphdb.database.idhandling.VariableLong;
 public class IDManager {
 
     /**
-     *bit mask- Description (+ indicates defined type, * indicates proper & defined type)
+     *bit mask- Description (+ indicates defined type, * indicates proper &amp; defined type)
      *
      *      0 - + User created Vertex
      *    000 -     * Normal vertices

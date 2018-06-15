@@ -43,7 +43,7 @@ public interface IndexInformation {
     /**
      * Adjusts the name of the key so that it is a valid field name that can be used in the index.
      * JanusGraph stores this information and will use the returned name in all interactions with the index.
-     * <p/>
+     * <p>
      * Note, that mapped field names (either configured on a per key basis or through a global configuration)
      * are not adjusted and handed to the index verbatim.
      *

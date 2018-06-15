@@ -52,7 +52,7 @@ public class FutureMessage<M extends Message> extends AbstractFuture<Message> {
     }
 
     /**
-     * This method should be called by {@Link Log} implementations when the message could not be added to the log
+     * This method should be called by {@link org.janusgraph.diskstorage.log.Log} implementations when the message could not be added to the log
      * with the respective exception object.
      * @param exception
      */

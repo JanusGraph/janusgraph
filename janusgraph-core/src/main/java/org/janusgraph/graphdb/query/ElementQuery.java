@@ -58,7 +58,7 @@ public interface ElementQuery<R extends JanusGraphElement,B extends BackendQuery
 
     /**
      * Whether the given element matches the conditions of this query.
-     * </p>
+     * <p>
      * Used for result filtering if the result set returned by the query executor is not fitted.
      *
      * @param element

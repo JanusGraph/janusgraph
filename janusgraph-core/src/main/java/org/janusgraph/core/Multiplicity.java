@@ -19,7 +19,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
  * The multiplicity of edges between vertices for a given label. Multiplicity here is understood in the same sense as
- * for UML class diagrams {@url http://en.wikipedia.org/wiki/Class_diagram#Multiplicity}
+ * for UML class diagrams <a href="http://en.wikipedia.org/wiki/Class_diagram#Multiplicity">http://en.wikipedia.org/wiki/Class_diagram#Multiplicity</a>
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -29,7 +29,7 @@ public enum Multiplicity {
      * The given edge label specifies a multi-graph, meaning that the multiplicity is not constrained and that
      * there may be multiple edges of this label between any given pair of vertices.
      *
-     * @link http://en.wikipedia.org/wiki/Multigraph
+     * <a href="http://en.wikipedia.org/wiki/Multigraph">http://en.wikipedia.org/wiki/Multigraph</a>
      */
     MULTI,
 
