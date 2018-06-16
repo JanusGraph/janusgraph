@@ -51,7 +51,6 @@ import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
-import org.janusgraph.core.attribute.GeoshapeHelper;
 import org.janusgraph.core.attribute.JtsGeoshapeHelper;
 import org.janusgraph.core.attribute.Text;
 import org.janusgraph.core.schema.ConsistencyModifier;
@@ -154,7 +153,6 @@ public class JanusGraphGremlinPlugin extends AbstractGremlinPlugin {
         CLASS_IMPORTS.add(Contain.class);
         CLASS_IMPORTS.add(Geo.class);
         CLASS_IMPORTS.add(Geoshape.class);
-        CLASS_IMPORTS.add(GeoshapeHelper.class);
         CLASS_IMPORTS.add(JtsGeoshapeHelper.class);
         CLASS_IMPORTS.add(Text.class);
 
