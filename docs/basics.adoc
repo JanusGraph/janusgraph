@@ -378,6 +378,7 @@ This section is a brief overview of the Gremlin query language. For more informa
 
 * http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference[Complete Gremlin Manual]: Reference manual for all of the Gremlin steps.
 * http://tinkerpop.apache.org/docs/{tinkerpop_version}/tutorials/the-gremlin-console/[Gremlin Console Tutorial]: Learn how to use the Gremlin Console effectively to traverse and analyze a graph interactively.
+* https://github.com/krlawrence/graph#practical-gremlin-an-apache-tinkerpop-tutorial[Practical Gremlin Book]: A getting started guide for users of graph databases and the Gremlin query language.
 * http://tinkerpop.apache.org/docs/{tinkerpop_version}/recipes/[Gremlin Recipes]: A collection of best practices and common traversal patterns for Gremlin.
 * http://tinkerpop.apache.org/index.html#language-drivers[Gremlin Language Drivers]: Connect to a Gremlin Server with different programming languages, including Go, JavaScript, .NET/C#, PHP, Python, Ruby, Scala, and TypeScript.
 * http://tinkerpop.apache.org/docs/{tinkerpop_version}/tutorials/gremlin-language-variants/[Gremlin Language Variants]: Learn how to embed Gremlin in a host programming language.
