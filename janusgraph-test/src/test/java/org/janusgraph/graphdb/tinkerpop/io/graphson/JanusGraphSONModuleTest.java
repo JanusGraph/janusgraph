@@ -14,8 +14,6 @@
 
 package org.janusgraph.graphdb.tinkerpop.io.graphson;
 
-import org.apache.tinkerpop.gremlin.driver.Tokens;
-import org.apache.tinkerpop.gremlin.driver.message.RequestMessage;
 import org.apache.tinkerpop.gremlin.process.traversal.Bytecode;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -43,7 +41,7 @@ public class JanusGraphSONModuleTest {
 
     @Parameterized.Parameters(name= "GraphSON Version: {0}")
     public static Object[] data() {
-        return new Object[] { GraphSONVersion.V2_0 };
+        return new Object[] { GraphSONVersion.V2_0, GraphSONVersion.V3_0 };
     }
 
     @Parameterized.Parameter()
@@ -85,16 +83,13 @@ public class JanusGraphSONModuleTest {
 
         for (GraphTraversal traversal : traversals) {
             Bytecode expectedBytecode = traversal.asAdmin().getBytecode();
-            RequestMessage requestMessage = RequestMessage.build(Tokens.OPS_BYTECODE).processor(GraphSONTokens.TRAVERSAL)
-                .addArg(Tokens.ARGS_GREMLIN, expectedBytecode).create();
 
             ByteArrayOutputStream serializationStream = new ByteArrayOutputStream();
-            writer.writeObject(serializationStream, requestMessage);
+            writer.writeObject(serializationStream, expectedBytecode);
 
             ByteArrayInputStream inputStream = new ByteArrayInputStream(serializationStream.toByteArray());
-            RequestMessage deserialized = reader.readObject(inputStream, RequestMessage.class);
 
-            Bytecode result = (Bytecode) deserialized.getArgs().get(Tokens.ARGS_GREMLIN);
+            Bytecode result = reader.readObject(inputStream, Bytecode.class);
             assertEquals(expectedBytecode, result);
         }
     }
