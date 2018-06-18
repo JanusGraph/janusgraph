@@ -41,7 +41,7 @@ public interface HBaseCompat {
     /**
      * Create and return a HTableDescriptor instance with the given name. The
      * constructors on this method have remained stable over HBase development
-     * so far, but the old HTableDescriptor(String) constructor & byte[] friends
+     * so far, but the old HTableDescriptor(String) constructor &amp; byte[] friends
      * are now marked deprecated and may eventually be removed in favor of the
      * HTableDescriptor(TableName) constructor. That constructor (and the
      * TableName type) only exists in newer HBase versions. Hence this method.

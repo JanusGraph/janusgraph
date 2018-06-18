@@ -23,7 +23,7 @@ import org.janusgraph.diskstorage.common.AbstractStoreTransaction;
  * to HBase, which lets us check for user errors like passing a Cassandra
  * transaction into a HBase method.
  *
- * @author Dan LaRocque <dalaro@hopcount.org>
+ * @author Dan LaRocque &lt;dalaro@hopcount.org&gt;
  */
 public class HBaseTransaction extends AbstractStoreTransaction {
 
