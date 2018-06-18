@@ -40,10 +40,10 @@ import static org.junit.Assert.assertEquals;
  * A benchmark to test the performance of sequential row retrieval from the
  * underlying KeyColumnValueStore which is the basic operation underlying the
  * Fulgora OLAP component of JanusGraph.
- * <p/>
+ * <p>
  * Hence, this is effectively a benchmark for {@link org.janusgraph.olap.OLAPTest}
  * or at least the primitive backend operations used therein.
- * <p/>
+ * <p>
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
