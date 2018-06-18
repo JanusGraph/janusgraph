@@ -44,7 +44,7 @@ import java.util.*;
 
 /**
  * Here are some areas that might need work:
- * <p/>
+ * <p>
  * - batching? (consider HTable#batch, HTable#setAutoFlush(false)
  * - tuning HTable#setWriteBufferSize (?)
  * - writing a server-side filter to replace ColumnCountGetFilter, which drops
@@ -53,7 +53,7 @@ import java.util.*;
  * scale.
  * - RowMutations for combining Puts+Deletes (need a newer HBase than 0.92 for this)
  * - (maybe) fiddle with HTable#setRegionCachePrefetch and/or #prewarmRegionCache
- * <p/>
+ * <p>
  * There may be other problem areas.  These are just the ones of which I'm aware.
  */
 public class HBaseKeyColumnValueStore implements KeyColumnValueStore {

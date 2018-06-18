@@ -27,7 +27,7 @@ import java.io.Closeable;
  * 
  * @see CTConnectionFactory
  * @see CTConnectionPool
- * @author Dan LaRocque <dalaro@hopcount.org>
+ * @author Dan LaRocque &lt;dalaro@hopcount.org&gt;
  */
 public class CTConnection implements Closeable {
     
