@@ -95,7 +95,9 @@ install:
       travis_retry travis_wait \
           mvn install -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
     elif [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] || ! [ -z "${COVERITY_ONLY:-}" ]; then
-      echo "Skipping module build on Coverity branch/job";
+      echo "Building all modules for test-compile coverage, but skipping Coverity upload";
+      travis_retry travis_wait \
+          mvn install -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
     else
       echo "Building janusgraph-${MODULE} and dependencies";
       travis_retry travis_wait \
