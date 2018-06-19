@@ -127,6 +127,12 @@
 
         <dependency>
             <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-hbase-server</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-hbase-core</artifactId>
             <version>${project.version}</version>
             <classifier>tests</classifier>
