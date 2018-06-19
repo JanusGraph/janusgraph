@@ -52,7 +52,7 @@ import com.google.common.collect.BiMap;
  * <p>
  * 1. The snapshot name. This points to a pre-created snapshot of the graph
  * table on HBase. {@link HBaseStoreManager#HBASE_SNAPSHOT}
- * <br/>
+ * <br>
  * e.g. janusgraphmr.ioformat.conf.storage.hbase.snapshot-name=janusgraph-snapshot
  * <p>
  * 2. The snapshot restore directory. This is specified as a temporary restore
@@ -60,7 +60,7 @@ import com.google.common.collect.BiMap;
  * used to restore the table and region structure from the snapshot to scan the
  * table, but with no data coping involved.
  * {@link HBaseStoreManager#HBASE_SNAPSHOT_RESTORE_DIR}
- * <br/>
+ * <br>
  * e.g. janusgraphmr.ioformat.conf.storage.hbase.snapshot-restore-dir=/tmp
  * <p>
  * It is also required that the Hadoop configuration directory, which contains
@@ -71,7 +71,7 @@ import com.google.common.collect.BiMap;
  * Additionally, the HBase configuration directory, which contains hbase-site.xml,
  * should be placed in the classpath as well. If it is not, hbase.rootdir property
  * needs to be set as a pass-through property in the graph property file.
- * <br/>
+ * <br>
  * e.g. janusgraphmr.ioformat.conf.storage.hbase.ext.hbase.rootdir=/hbase
  */
 public class HBaseSnapshotBinaryInputFormat extends AbstractBinaryInputFormat {
