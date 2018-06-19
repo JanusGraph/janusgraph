@@ -127,12 +127,12 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     /**
      * Load a bunch of key-column-values in a way that vaguely resembles a lower
      * triangular matrix.
-     * <p/>
+     * <p>
      * Iterate over key values {@code k} in the half-open long interval
      * {@code [offset, offset + dimension -1)}. For each {@code k}, iterate over
      * the column values {@code c} in the half-open integer interval
      * {@code [offset, k]}.
-     * <p/>
+     * <p>
      * For each key-column coordinate specified by a {@code (k, c} pair in the
      *iteration, write a value one byte long with all bits set (unsigned -1 or
      *signed 255).
@@ -391,13 +391,13 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
      * {@code idOffset} is {@link KeyValueStoreUtil#idOffset}. Note that
      * identical columns appear on every key. The loaded values are randomly
      * generated strings converted to bytes.
-     * <p/>
+     * <p>
      * Calls the store's supported {@code getKeys} method depending on whether
      * it supports ordered or unordered scan. This logic is delegated to
      * {@link KCVSUtil#getKeys(KeyColumnValueStore, StoreFeatures, int, int, StoreTransaction)}
      * . That method uses all-zero and all-one buffers for the key and column
      * limits and retrieves every key.
-     * <p/>
+     * <p>
      * This method does nothing and returns immediately if the store supports no
      * scans.
      */
@@ -485,7 +485,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
      * nearly the same data as {@link #testOrderedGetKeysRespectsKeyLimit()},
      * except that all columns on every 10th row exceed the {@code getKeys}
      * slice limit.
-     * <p/>
+     * <p>
      * For each row in this test, either all columns match the slice bounds or
      * all columns fall outside the slice bounds. For this reason, it could be
      * described as a "coarse-grained" or "simple" test of {@code getKeys}'s
@@ -522,9 +522,9 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     /**
      * Test {@code getKeys} with columns slice values chosen to trigger
      * potential fencepost bugs.
-     * <p/>
+     * <p>
      * Description of data generated for and queried by this test:
-     * <p/>
+     * <p>
      * Generate a sequence of keys as unsigned integers, starting at zero. Each
      * row has as many columns as the key value. The columns are generated in
      * the same way as the keys. This results in a sort of "lower triangular"

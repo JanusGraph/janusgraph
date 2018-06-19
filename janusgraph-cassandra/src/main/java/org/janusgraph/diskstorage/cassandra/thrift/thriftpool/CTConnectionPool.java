@@ -25,14 +25,12 @@ import org.slf4j.LoggerFactory;
  * programmer can still cause RuntimeExceptions related to type errors
  * by mixing calls to these additional methods with calls to the legacy
  * "Object"-typed methods.
- * <p/>
- * <p/>
+ * <p>
  * Unfortunately, GenericKeyedObjectPool is not actually generic in the
  * type-system sense.  All of its methods are typed to Object, forcing the
  * client programmer to sprinkle code with casts.  This class centralizes
  * that casting to a single method.
- * <p/>
- * <p/>
+ * <p>
  * As a corollary, this class is slightly less flexible than
  * GenericKeyedObjectPool, as this class can only store keys and pooled
  * objects each of a single type, whereas GenericKeyedObjectPool could
@@ -40,9 +38,9 @@ import org.slf4j.LoggerFactory;
  * need the flexibility of heterogeneous types for pooling Thrift
  * connections, the original work that precipitated writing this class.
  *
- * @param <K> Key type
- * @param <V> Pooled object type
- * @author Dan LaRocque <dalaro@hopcount.org>
+ * &lt;K&gt; Key type
+ * &lt;V&gt; Pooled object type
+ * @author Dan LaRocque &lt;dalaro@hopcount.org&gt;
  */
 public class CTConnectionPool extends GenericKeyedObjectPool<String, CTConnection> {
     
@@ -55,7 +53,7 @@ public class CTConnectionPool extends GenericKeyedObjectPool<String, CTConnectio
 
     /**
      * If {@code conn} is non-null and is still open, then call
-     * {@link GenericKeyedObjectPool#returnObject(String, CTConnection),
+     * {@link org.apache.commons.pool.impl.GenericKeyedObjectPool#returnObject},
      * catching and logging and Exception that method might generate. 
      * This method does not emit any exceptions.
      * 

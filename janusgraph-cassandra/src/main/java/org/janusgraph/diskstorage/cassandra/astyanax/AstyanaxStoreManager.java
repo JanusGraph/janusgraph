@@ -80,7 +80,6 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     /**
      * Default name for the Cassandra cluster
-     * <p/>
      */
     public static final ConfigOption<String> CLUSTER_NAME =
             new ConfigOption<>(ASTYANAX_NS, "cluster-name",
@@ -89,7 +88,6 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     /**
      * Maximum pooled connections per host.
-     * <p/>
      */
     public static final ConfigOption<Integer> MAX_CONNECTIONS_PER_HOST =
             new ConfigOption<>(ASTYANAX_NS, "max-connections-per-host",
@@ -98,7 +96,6 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     /**
      * Maximum open connections allowed in the pool (counting all hosts).
-     * <p/>
      */
     public static final ConfigOption<Integer> MAX_CONNECTIONS =
             new ConfigOption<>(ASTYANAX_NS, "max-connections",
@@ -107,7 +104,6 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     /**
      * Maximum number of operations allowed per connection before the connection is closed.
-     * <p/>
      */
     public static final ConfigOption<Integer> MAX_OPERATIONS_PER_CONNECTION =
             new ConfigOption<>(ASTYANAX_NS, "max-operations-per-connection",
@@ -116,7 +112,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     /**
      * Maximum pooled "cluster" connections per host.
-     * <p/>
+     * <p>
      * These connections are mostly idle and only used for DDL operations
      * (like creating keyspaces).  JanusGraph doesn't need many of these connections
      * in ordinary operation.
@@ -128,7 +124,6 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     /**
      * The page size for Cassandra read operations.
-     * <p/>
      */
     public static final ConfigOption<Integer> READ_PAGE_SIZE =
             new ConfigOption<>(ASTYANAX_NS, "read-page-size",
@@ -138,7 +133,6 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     /**
      * How Astyanax discovers Cassandra cluster nodes. This must be one of the
      * values of the Astyanax NodeDiscoveryType enum.
-     * <p/>
      */
     public static final ConfigOption<String> NODE_DISCOVERY_TYPE =
             new ConfigOption<>(ASTYANAX_NS, "node-discovery-type",
@@ -147,7 +141,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     /**
      * Astyanax specific host supplier useful only when discovery type set to DISCOVERY_SERVICE or TOKEN_AWARE.
-     * Excepts fully qualified class name which extends google.common.base.Supplier<List<Host>>.
+     * Excepts fully qualified class name which extends google.common.base.Supplier&lt;List&lt;Host&gt;&gt;.
      */
     public static final ConfigOption<String> HOST_SUPPLIER =
             new ConfigOption<>(ASTYANAX_NS, "host-supplier",
@@ -157,7 +151,6 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     /**
      * Astyanax's connection pooler implementation. This must be one of the
      * values of the Astyanax ConnectionPoolType enum.
-     * <p/>
      */
     public static final ConfigOption<String> CONNECTION_POOL_TYPE =
             new ConfigOption<>(ASTYANAX_NS, "connection-pool-type",
@@ -185,11 +178,11 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * arguments. Here's an example setting that would instantiate an Astyanax
      * FixedRetryBackoffStrategy with an delay interval of 1s and suspend time
      * of 5s:
-     * <p/>
+     * <p>
      * <code>
      * com.netflix.astyanax.connectionpool.impl.FixedRetryBackoffStrategy,1000,5000
      * </code>
-     * <p/>
+     * <p>
      * If null, then Astyanax uses its default strategy, which is an
      * ExponentialRetryBackoffStrategy instance. The instance parameters take
      * Astyanax's built-in default values, which can be overridden via the
@@ -199,7 +192,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * <li>{@link #RETRY_MAX_DELAY_SLICE}</li>
      * <li>{@link #RETRY_SUSPEND_WINDOW}</li>
      * </ul>
-     * <p/>
+     * <p>
      * In Astyanax, RetryPolicy and RetryBackoffStrategy sound and look similar
      * but are used for distinct purposes. RetryPolicy is for retrying failed
      * operations. RetryBackoffStrategy is for retrying attempts to talk to
@@ -217,7 +210,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * {@link ConnectionPoolConfigurationImpl},
      * {@link ExponentialRetryBackoffStrategy}, and the javadoc for
      * {@link #RETRY_BACKOFF_STRATEGY} for more information.
-     * <p/>
+     * <p>
      * This parameter is not meaningful for and has no effect on
      * FixedRetryBackoffStrategy.
      */
@@ -232,7 +225,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * {@link ConnectionPoolConfigurationImpl},
      * {@link ExponentialRetryBackoffStrategy}, and the javadoc for
      * {@link #RETRY_BACKOFF_STRATEGY} for more information.
-     * <p/>
+     * <p>
      * This parameter is not meaningful for and has no effect on
      * FixedRetryBackoffStrategy.
      */
@@ -248,7 +241,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * {@link ConnectionPoolConfigurationImpl},
      * {@link ExponentialRetryBackoffStrategy}, and the javadoc for
      * {@link #RETRY_BACKOFF_STRATEGY} for more information.
-     * <p/>
+     * <p>
      * This parameter is not meaningful for and has no effect on
      * FixedRetryBackoffStrategy.
      */

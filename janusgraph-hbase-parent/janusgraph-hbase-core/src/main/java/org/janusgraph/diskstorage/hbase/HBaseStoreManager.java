@@ -96,7 +96,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Storage Manager for HBase
  *
- * @author Dan LaRocque <dalaro@hopcount.org>
+ * @author Dan LaRocque &lt;dalaro@hopcount.org&gt;
  */
 @PreInitializeConfigOptions
 public class HBaseStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager {
@@ -166,11 +166,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     /**
      * This setting is used only when {@link #REGION_COUNT} is unset.
-     * <p/>
+     * <p>
      * If JanusGraph's HBase table does not exist, then it will be created with total
      * region count = (number of servers reported by ClusterStatus) * (this
      * value).
-     * <p/>
+     * <p>
      * The Apache HBase manual suggests an order-of-magnitude range of potential
      * values for this setting:
      *
