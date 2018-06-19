@@ -48,7 +48,7 @@ public interface ConnectionMask extends Closeable
 
     /**
      * Retrieve the RegionLocations for the supplied table name.
-     * @param tablename
+     * @param tableName
      * @return A map of HRegionInfo to ServerName that describes the storage regions for the named table.
      * @throws IOException in the case of backend exceptions.
      */
