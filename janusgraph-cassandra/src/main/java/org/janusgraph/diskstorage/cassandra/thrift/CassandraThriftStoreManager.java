@@ -58,11 +58,11 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import static org.janusgraph.diskstorage.configuration.ConfigOption.disallowEmpty;
 
 /**
- * This class creates {@see CassandraThriftKeyColumnValueStore}s and
+ * This class creates @see CassandraThriftKeyColumnValueStore and
  * handles Cassandra-backed allocation of vertex IDs for JanusGraph (when so
  * configured).
  *
- * @author Dan LaRocque <dalaro@hopcount.org>
+ * @author Dan LaRocque &lt;dalaro@hopcount.org&gt;
  */
 @PreInitializeConfigOptions
 public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
@@ -366,11 +366,11 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
     /**
      * Connect to Cassandra via Thrift on the specified host and port and attempt to truncate the named keyspace.
-     * <p/>
+     * <p>
      * This is a utility method intended mainly for testing. It is
-     * equivalent to issuing 'truncate <cf>' for each of the column families in keyspace using
+     * equivalent to issuing 'truncate &lt;cf&gt;' for each of the column families in keyspace using
      * the cassandra-cli tool.
-     * <p/>
+     * <p>
      * Using truncate is better for a number of reasons, most significantly because it doesn't
      * involve any schema modifications which can take time to propagate across the cluster such
      * leaves nodes in the inconsistent state and could result in read/write failures.

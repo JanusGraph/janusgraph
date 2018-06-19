@@ -36,7 +36,6 @@ import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
  * This implementation is only intended for testing.
  * <p>
  * Limitations:
- * <p>
  * <ul>
  * <li>Ignores edge labels</li>
  * <li>Assumes there is at most one edge (of any label) between any vertex pair</li>

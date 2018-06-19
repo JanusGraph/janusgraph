@@ -115,7 +115,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class creates {@see CQLKeyColumnValueStore}s and handles Cassandra-backed allocation of vertex IDs for JanusGraph (when so
+ * This class creates see {@link CQLKeyColumnValueStore CQLKeyColumnValueStores} and handles Cassandra-backed allocation of vertex IDs for JanusGraph (when so
  * configured).
  */
 public class CQLStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager {
@@ -141,6 +141,8 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     /**
      * Constructor for the {@link CQLStoreManager} given a JanusGraph {@link Configuration}.
+     * @param configuration
+     * @throws BackendException
      */
     public CQLStoreManager(final Configuration configuration) throws BackendException {
         super(configuration, DEFAULT_PORT);

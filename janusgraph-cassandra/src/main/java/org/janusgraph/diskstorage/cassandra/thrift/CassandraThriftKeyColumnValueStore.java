@@ -49,7 +49,7 @@ import static org.janusgraph.diskstorage.cassandra.utils.CassandraHelper.makeEnt
  * A JanusGraph {@code KeyColumnValueStore} backed by Cassandra.
  * This uses the Cassandra Thrift API.
  *
- * @author Dan LaRocque <dalaro@hopcount.org>
+ * @author Dan LaRocque &lt;dalaro@hopcount.org&gt;
  * @see CassandraThriftStoreManager
  */
 public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
@@ -77,11 +77,11 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
     /**
      * Call Cassandra's Thrift get_slice() method.
-     * <p/>
+     * <p>
      * When columnEnd equals columnStart and either startInclusive
      * or endInclusive is false (or both are false), then this
      * method returns an empty list without making any Thrift calls.
-     * <p/>
+     * <p>
      * If columnEnd = columnStart + 1, and both startInclusive and
      * startExclusive are false, then the arguments effectively form
      * an empty interval.  In this case, as in the one previous,
@@ -90,7 +90,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
      * before returning the empty list.
      *
      * @throws org.janusgraph.diskstorage.BackendException
-     *          when columnEnd < columnStart
+     *          when columnEnd &lt; columnStart
      */
     @Override
     public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException {

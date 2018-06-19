@@ -1663,26 +1663,5 @@
             </build>
         </profile>
 
-        <profile>
-            <id>disable-javadoclint</id>
-
-            <activation>
-                <jdk>1.8</jdk>
-            </activation>
-
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <artifactId>maven-javadoc-plugin</artifactId>
-                            <configuration>
-                                <additionalparam>-Xdoclint:none</additionalparam>
-                            </configuration>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
-            </build>
-        </profile>
-
     </profiles>
 </project>

@@ -45,7 +45,7 @@ public abstract class DaemonRunner<S> {
      *
      * After successfully starting the daemon (no exceptions from
      * {@link #startImpl()}, register a shutdown hook with the VM
-     * that will call {@link #killImpl(S)} on shutdown.
+     * that will call {@link org.janusgraph.DaemonRunner#killImpl} on shutdown.
      *
      * @return status representing the daemon, either just-started
      *         or already running
