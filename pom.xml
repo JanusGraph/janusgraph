@@ -84,7 +84,7 @@
         <hadoop2.version>2.7.2</hadoop2.version>
         <hbase100.version>1.2.6</hbase100.version>
         <hbase.server.version>1.2.6</hbase.server.version>
-        <bigtable.version>1.3.0</bigtable.version>
+        <bigtable.version>1.4.0</bigtable.version>
         <scylladb.version>1.7.1</scylladb.version>
         <!-- align with org.apache.hbase:hbase -->
         <jackson1.version>1.9.13</jackson1.version>
