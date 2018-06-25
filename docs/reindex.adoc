@@ -58,7 +58,7 @@ The following Gremlin snippet outlines all steps of the MapReduce reindex proces
 [source,gremlin]
 ----
 // Open a graph
-graph = JanusGraphFactory.open("conf/janusgraph-cassandra-es.properties")
+graph = JanusGraphFactory.open("conf/janusgraph-cql-es.properties")
 g = graph.traversal()
 
 // Define a property
@@ -108,7 +108,7 @@ g.V().has("desc", containsText("baz"))
 // Concerned that JanusGraph could have read cache in that last query, instead of relying on the index?
 // Start a new instance to rule out cache hits.  Now we're definitely using the index.
 graph.close()
-graph = JanusGraphFactory.open("conf/janusgraph-cassandra-es.properties")
+graph = JanusGraphFactory.open("conf/janusgraph-cql-es.properties")
 g.V().has("desc", containsText("baz"))
 ----
 
@@ -238,7 +238,7 @@ A commented code example follows in the next subsection.
 import org.janusgraph.graphdb.database.management.ManagementSystem
 
 // Load the "Graph of the Gods" sample data
-graph = JanusGraphFactory.open('conf/janusgraph-cassandra-es.properties')
+graph = JanusGraphFactory.open('conf/janusgraph-cql-es.properties')
 g = graph.traversal()
 GraphOfTheGodsFactory.load(graph)
 
@@ -291,7 +291,7 @@ The following loads some indexed sample data into a BerkeleyDB-backed JanusGraph
 import org.janusgraph.graphdb.database.management.ManagementSystem
 
 // Load the "Graph of the Gods" sample data
-graph = JanusGraphFactory.open('conf/janusgraph-cassandra-es.properties')
+graph = JanusGraphFactory.open('conf/janusgraph-cql-es.properties')
 g = graph.traversal()
 GraphOfTheGodsFactory.load(graph)
 
