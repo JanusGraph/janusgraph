@@ -18,7 +18,7 @@ is required when using Spark in standalone mode or when running Spark on YARN or
 
 [source, gremlin]
 ----
-bin/gremlin.sh 
+bin/gremlin.sh
 
          \,,,/
          (o o)
@@ -31,8 +31,8 @@ gremlin> :plugin use tinkerpop.spark
 gremlin> :load data/grateful-dead-janusgraph-schema.groovy
 ==>true
 ==>true
-gremlin> graph = JanusGraphFactory.open('conf/janusgraph-cassandra.properties')
-==>standardjanusgraph[cassandrathrift:[127.0.0.1]]
+gremlin> graph = JanusGraphFactory.open('conf/janusgraph-cql.properties')
+==>standardjanusgraph[cql:[127.0.0.1]]
 gremlin> defineGratefulDeadSchema(graph)
 ==>null
 gremlin> graph.close()
@@ -41,14 +41,14 @@ gremlin> if (!hdfs.exists('data/grateful-dead.kryo')) hdfs.copyFromLocal('data/g
 ==>null
 gremlin> graph = GraphFactory.open('conf/hadoop-graph/hadoop-load.properties')
 ==>hadoopgraph[gryoinputformat->nulloutputformat]
-gremlin> blvp = BulkLoaderVertexProgram.build().writeGraph('conf/janusgraph-cassandra.properties').create(graph)
+gremlin> blvp = BulkLoaderVertexProgram.build().writeGraph('conf/janusgraph-cql.properties').create(graph)
 ==>BulkLoaderVertexProgram[bulkLoader=IncrementalBulkLoader,vertexIdProperty=bulkLoader.vertex.id,userSuppliedIds=false,keepOriginalIds=true,batchSize=0]
 gremlin> graph.compute(SparkGraphComputer).program(blvp).submit().get()
 ...
 ==>result[hadoopgraph[gryoinputformat->nulloutputformat],memory[size:0]]
 gremlin> graph.close()
 ==>null
-gremlin> graph = GraphFactory.open('conf/hadoop-graph/read-cassandra.properties')
+gremlin> graph = GraphFactory.open('conf/hadoop-graph/read-cassandra-3.properties')
 ==>hadoopgraph[cassandrainputformat->gryooutputformat]
 gremlin> g = graph.traversal().withComputer(SparkGraphComputer)
 ==>graphtraversalsource[hadoopgraph[cassandrainputformat->gryooutputformat], sparkgraphcomputer]

@@ -179,25 +179,25 @@ The `JanusGraphFactory.open() and GraphOfTheGodsFactory.load()` methods do the f
 
 Please see the https://github.com/JanusGraph/janusgraph/blob/master/janusgraph-core/src/main/java/org/janusgraph/example/GraphOfTheGodsFactory.java[GraphOfTheGodsFactory source code] for details.
 
-For those using JanusGraph/Cassandra (or JanusGraph/HBase), be sure to make use of `conf/janusgraph-cassandra-es.properties` (or `conf/janusgraph-hbase-es.properties`) and `GraphOfTheGodsFactory.load()`.
+For those using JanusGraph/Cassandra (or JanusGraph/HBase), be sure to make use of `conf/janusgraph-cql-es.properties` (or `conf/janusgraph-hbase-es.properties`) and `GraphOfTheGodsFactory.load()`.
 
 [source, gremlin]
-gremlin> graph = JanusGraphFactory.open('conf/janusgraph-cassandra-es.properties')
-==>standardjanusgraph[cassandrathrift:[127.0.0.1]]
+gremlin> graph = JanusGraphFactory.open('conf/janusgraph-cql-es.properties')
+==>standardjanusgraph[cql:[127.0.0.1]]
 gremlin> GraphOfTheGodsFactory.load(graph)
 ==>null
 gremlin> g = graph.traversal()
-==>graphtraversalsource[standardjanusgraph[cassandrathrift:[127.0.0.1]], standard]
+==>graphtraversalsource[standardjanusgraph[cql:[127.0.0.1]], standard]
 
-You may also use the `conf/janusgraph-cassandra.properties`, `conf/janusgraph-berkeleyje.properties`, or `conf/janusgraph-hbase.properties` configuration files to open a graph without an indexing backend configured. In such cases, you will need to use the `GraphOfTheGodsFactory.loadWithoutMixedIndex()` method to load the _Graph of the Gods_ so that it doesn't attempt to make use of an indexing backend.
+You may also use the `conf/janusgraph-cql.properties`, `conf/janusgraph-berkeleyje.properties`, or `conf/janusgraph-hbase.properties` configuration files to open a graph without an indexing backend configured. In such cases, you will need to use the `GraphOfTheGodsFactory.loadWithoutMixedIndex()` method to load the _Graph of the Gods_ so that it doesn't attempt to make use of an indexing backend.
 
 [source, gremlin]
-gremlin> graph = JanusGraphFactory.open('conf/janusgraph-cassandra.properties')
-==>standardjanusgraph[cassandrathrift:[127.0.0.1]]
+gremlin> graph = JanusGraphFactory.open('conf/janusgraph-cql.properties')
+==>standardjanusgraph[cql:[127.0.0.1]]
 gremlin> GraphOfTheGodsFactory.loadWithoutMixedIndex(graph, true)
 ==>null
 gremlin> g = graph.traversal()
-==>graphtraversalsource[standardjanusgraph[cassandrathrift:[127.0.0.1]], standard]
+==>graphtraversalsource[standardjanusgraph[cql:[127.0.0.1]], standard]
 
 === Global Graph Indices
 

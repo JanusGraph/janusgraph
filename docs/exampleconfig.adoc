@@ -28,7 +28,7 @@ In addition, this configures an embedded <<elasticsearch, Elasticsearch>> index 
 
 [source, properties]
 ----
-storage.backend=cassandra
+storage.backend=cql
 storage.hostname=100.100.100.1, 100.100.100.2
 
 index.search.backend=elasticsearch
