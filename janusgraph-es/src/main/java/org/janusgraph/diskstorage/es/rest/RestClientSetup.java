@@ -113,7 +113,7 @@ public class RestClientSetup {
      * customization is needed.
      * </p>
      * <p>
-     * See {@link RestClientBuilder#setRequestConfigCallback(RequestConfigCallback) for more details.
+     * See {@link RestClientBuilder#setRequestConfigCallback(RequestConfigCallback)} for more details.
      * </p>
      *
      * @param config
@@ -130,7 +130,7 @@ public class RestClientSetup {
      * customization is needed.
      * </p>
      * <p>
-     * See {@link RestClientBuilder#setHttpClientConfigCallback(HttpClientConfigCallback) for more details.
+     * See {@link RestClientBuilder#setHttpClientConfigCallback(HttpClientConfigCallback)} for more details.
      * </p>
      *
      * @param config

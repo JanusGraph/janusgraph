@@ -1858,7 +1858,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     /**
      * Test the correct application of {@link org.janusgraph.graphdb.types.system.ImplicitKey}
      * to vertices, edges, and properties.
-     * <p/>
+     * <p>
      * Additionally tests RelationIdentifier since this is closely related to ADJACENT and JANUSGRAPHID implicit keys.
      */
     @Test
@@ -2119,8 +2119,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     /**
      * Tests multi-valued properties with special focus on indexing and incident unidirectional edges
      * which is not tested in {@link #testSchemaTypes()}
-     * <p/>
-     * -->TODO: split and move this into other test cases: ordering to query, indexing to index
+     * <p>
+     * --&gt; TODO: split and move this into other test cases: ordering to query, indexing to index
      */
     @Test
     public <V> void testMultivaluedVertexProperty() {

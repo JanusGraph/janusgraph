@@ -1669,6 +1669,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
      * Create a vertex with an indexed property and commit. Open two new
      * transactions; delete vertex in one and delete just the property in the
      * other, then commit in the same order. Neither commit throws an exception.
+     * @throws BackendException
      */
     @Test
     public void testDeleteVertexThenDeleteProperty() throws BackendException {
@@ -1679,6 +1680,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
      * Create a vertex and commit. Open two new transactions; delete vertex in
      * one and add an indexed property in the other, then commit in the same
      * order. Neither commit throws an exception.
+     * @throws BackendException
      */
     @Test
     public void testDeleteVertexThenAddProperty() throws BackendException {
@@ -1689,6 +1691,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
      * Create a vertex with an indexed property and commit. Open two new
      * transactions; delete vertex in one and modify the property in the other,
      * then commit in the same order. Neither commit throws an exception.
+     * @throws BackendException
      */
     @Test
     public void testDeleteVertexThenModifyProperty() throws BackendException {

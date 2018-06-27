@@ -83,6 +83,7 @@ public final class Stopwatch {
      * Creates (but does not start) a new stopwatch using {@link System#nanoTime}
      * as its time source.
      *
+     * @return
      * @since 15.0
      */
     public static Stopwatch createUnstarted() {
@@ -93,6 +94,7 @@ public final class Stopwatch {
      * Creates (but does not start) a new stopwatch, using the specified time
      * source.
      *
+     * @return
      * @since 15.0
      */
     public static Stopwatch createUnstarted(Ticker ticker) {
@@ -103,6 +105,7 @@ public final class Stopwatch {
      * Creates (and starts) a new stopwatch using {@link System#nanoTime}
      * as its time source.
      *
+     * @return
      * @since 15.0
      */
     public static Stopwatch createStarted() {
@@ -113,6 +116,7 @@ public final class Stopwatch {
      * Creates (and starts) a new stopwatch, using the specified time
      * source.
      *
+     * @return
      * @since 15.0
      */
     public static Stopwatch createStarted(Ticker ticker) {
@@ -134,6 +138,7 @@ public final class Stopwatch {
      * Creates (but does not start) a new stopwatch, using the specified time
      * source.
      *
+     * @param ticker
      * @deprecated Use {@link Stopwatch#createUnstarted(Ticker)} instead.
      */
     @Deprecated
@@ -145,6 +150,7 @@ public final class Stopwatch {
      * Returns {@code true} if {@link #start()} has been called on this stopwatch,
      * and {@link #stop()} has not been called since the last call to {@code
      * start()}.
+     * @return
      */
     public boolean isRunning() {
         return isRunning;
@@ -202,6 +208,7 @@ public final class Stopwatch {
      * it is generally not useful to specify {@link TimeUnit#NANOSECONDS}
      * precision here.
      *
+     * @return 
      * @since 14.0 (since 10.0 as {@code elapsedTime()})
      */
     public long elapsed(TimeUnit desiredUnit) {
@@ -219,6 +226,7 @@ public final class Stopwatch {
 
     /**
      * Returns a string representation of the current elapsed time.
+     * @return
      */
     @GwtIncompatible("String.format()")
     @Override public String toString() {

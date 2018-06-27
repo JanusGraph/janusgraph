@@ -277,7 +277,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
 
     /**
      * Change the supplied {@code state} with a pseudorandom number generator.
-     * <p/>
+     * <p>
      * This method removes {@code min(maxDeletionCount, S)} entries from the
      * maps in {@code state.values()}, where {@code S} is the sum of the sizes
      * of the maps in {@code state.values()}; this method then adds
@@ -286,7 +286,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
      * since they are randomly generated. This method then returns a map of keys
      * to Mutations representing the changes it has made to {@code state}.
      *
-     * @param state            Maps keys -> columns -> values
+     * @param state            Maps keys -&gt; columns -&gt; values
      * @param maxDeletionCount Remove at most this many entries from state
      * @param additionCount    Add exactly this many entries to state
      * @return A KCVMutation map
