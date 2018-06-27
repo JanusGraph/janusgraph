@@ -69,7 +69,7 @@ import static java.util.stream.Collectors.toList;
  * from Cassandra-3 without referring to it (because otherwise we'd get functionality from
  * CqlRecordReader on Cassandra-2 and we don't want it). </p>
  *
- * @see <a href="https://github.com/JanusGraph/janusgraph/issues/172">Issue 172</a>.
+ * @see <a href="https://github.com/JanusGraph/janusgraph/issues/172">Issue 172.</a>
  */
 @Unstable // Because it should go away with JanusGraph upgrading to Cassandra-3 for OLAP
 @Deprecated // Because this class should already be on its path to deprecation

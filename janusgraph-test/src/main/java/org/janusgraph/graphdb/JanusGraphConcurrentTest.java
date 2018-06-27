@@ -175,7 +175,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
      * but also start some threads that add and remove relationships and
      * properties while the readers are working; all tasks share a common
      * transaction.
-     * <p/>
+     * <p>
      * The readers do not look for the properties or relationships the
      * writers are mutating, since this is all happening on a common transaction.
      *
@@ -282,9 +282,9 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
     /**
      * Load-then-read test of standard-indexed vertex properties. This test
      * contains no edges.
-     * <p/>
+     * <p>
      * The load stage is serial. The read stage is concurrent.
-     * <p/>
+     * <p>
      * Create a set of vertex property types with standard indices
      * (threadPoolSize * 5 by default) serially. Serially write 1k vertices with
      * values for all of the indexed property types. Concurrently query the
