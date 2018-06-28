@@ -42,32 +42,4 @@ public class CassandraContainer extends GenericContainer {
     public ModifiableConfiguration getThriftModifiableConfiguration(String keyspace) {
         return getGenericConfiguration(keyspace, "cassandrathrift");
     }
-
-    public WriteConfiguration getThriftWriteConfiguration(String keyspace) {
-        return getThriftModifiableConfiguration(keyspace).getConfiguration();
-    }
-
-    public ModifiableConfiguration getAstyanaxModifiableConfiguration(String keyspace) {
-        return getGenericConfiguration(keyspace, "astyanax");
-    }
-
-    public WriteConfiguration getAstyanaxWriteConfiguration(String keyspace) {
-        return getAstyanaxModifiableConfiguration(keyspace).getConfiguration();
-    }
-
-    public ModifiableConfiguration getCQLModifiableConfiguration(String keyspace) {
-        final ModifiableConfiguration config = buildGraphConfiguration();
-        config.set(CASSANDRA_KEYSPACE, cleanKeyspaceName(keyspace));
-        config.set(PAGE_SIZE, 500);
-        config.set(CONNECTION_TIMEOUT, Duration.ofSeconds(60L));
-        config.set(STORAGE_BACKEND, "cql");
-        config.set(STORAGE_HOSTS, new String[]{getContainerIpAddress()});
-        config.set(STORAGE_PORT, getMappedPort(CQL_PORT));
-        config.set(DROP_ON_CLEAR, false);
-        return config;
-    }
-
-    public WriteConfiguration getCQLWriteConfiguration(String keyspace) {
-        return getCQLModifiableConfiguration(keyspace).getConfiguration();
-    }
 }

@@ -184,25 +184,6 @@
                             </resources>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>filter-cassandra-murmur-config</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/cassandra/conf/localhost-murmur</outputDirectory>
-                            <filters>
-                                <filter>${top.level.basedir}/janusgraph-cassandra/config/cassandra-filters/localhost-murmur.properties</filter>
-                            </filters>
-                            <resources>
-                                <resource>
-                                    <directory>${top.level.basedir}/janusgraph-cassandra/config/cassandra</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
                 </executions>
             </plugin>
 
