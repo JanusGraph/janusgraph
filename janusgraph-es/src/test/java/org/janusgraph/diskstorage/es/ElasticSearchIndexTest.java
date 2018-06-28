@@ -45,6 +45,7 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -64,7 +65,8 @@ import static org.junit.Assert.fail;
 
 public class ElasticSearchIndexTest extends IndexProviderTest {
 
-    static ElasticsearchRunner esr;
+    @ClassRule
+    public static ElasticsearchContainer esr = new ElasticsearchContainer();
     static HttpHost host;
     static CloseableHttpClient httpClient;
     static ObjectMapper objectMapper;
@@ -73,11 +75,9 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
 
     @BeforeClass
     public static void startElasticsearch() throws Exception {
-        esr = new ElasticsearchRunner();
-        esr.start();
         httpClient = HttpClients.createDefault();
         objectMapper = new ObjectMapper();
-        host = new HttpHost(InetAddress.getByName(esr.getHostname()), ElasticsearchRunner.PORT);
+        host = new HttpHost(InetAddress.getByName(esr.getHostname()), esr.getPort());
         if (esr.getEsMajorVersion().value > 2) {
             IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("_ingest/pipeline/pipeline_1")));
             final HttpPut newPipeline = new HttpPut("_ingest/pipeline/pipeline_1");
@@ -120,7 +120,7 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         if (esr.getEsMajorVersion().value > 2) {
             cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
         }
-        return esr.setElasticsearchConfiguration(new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,cc, BasicConfiguration.Restriction.NONE), index)
+        return esr.setConfiguration(new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,cc, BasicConfiguration.Restriction.NONE), index)
             .set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index)
             .restrictTo(index);
     }

@@ -127,6 +127,12 @@
 			<version>${powermock.version}</version>
 			<scope>test</scope>
 		</dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <resources>
@@ -250,38 +256,17 @@
                     <execution>
                         <id>default-test</id>
                         <configuration>
-                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
+                            <argLine>${default.test.jvm.opts}</argLine>
                             <skipTests>${skip.es.test}</skipTests>
+                            <parallel>classes</parallel>
+                            <reuseForks>true</reuseForks>
+                            <forkCount>2</forkCount>
+                            <systemPropertyVariables>
+                                <es.docker.image>${es.docker.image}</es.docker.image>
+                                <elasticsearch.test.version>${elasticsearch.docker.test.version}</elasticsearch.test.version>
+                            </systemPropertyVariables>
                         </configuration>
                     </execution>
-
-                    <!--
-                    <execution>
-                        <id>es-cassandra-test</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                        <configuration>
-                            <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
-                            <includes>
-                                <include>**/ThriftElasticsearchTest.java</include>
-                            </includes>
-                            <reuseForks>false</reuseForks>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>default-test</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                        <configuration>
-                            <excludes>
-                                <exclude>**/ThriftElasticsearchTest.java</exclude>
-                            </excludes>
-                        </configuration>
-                    </execution>
-                    -->
                 </executions>
             </plugin>
         </plugins>
@@ -293,11 +278,11 @@
             <properties>
                 <!-- Testing with Elasticsearch 1.x requires Docker (es-docker profile). -->
                 <elasticsearch.docker.test.version>${elasticsearch1.test.version}</elasticsearch.docker.test.version>
-                <es.docker.image>elasticsearch</es.docker.image>
-                <!-- Groovy dynamic scripting must be enabled when testing on ES 1.x/2.x servers -->
-                <elasticsearch.test.groovy.inline>script.engine.groovy.inline.update: true</elasticsearch.test.groovy.inline>
                 <!-- Test version below used to unpack distribution artifact is irrelevant when testing with Docker -->
                 <elasticsearch.test.version>${elasticsearch2.test.version}</elasticsearch.test.version>
+                <!-- Groovy dynamic scripting must be enabled when testing on ES 1.x/2.x servers -->
+                <elasticsearch.test.groovy.inline>script.engine.groovy.inline.update: true</elasticsearch.test.groovy.inline>
+                <es.docker.image>elasticsearch</es.docker.image>
             </properties>
         </profile>
         <profile>
@@ -335,7 +320,7 @@
                             <execution>
                                 <id>default-test</id>
                                 <configuration>
-                                    <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
+                                    <argLine>${default.test.jvm.opts}</argLine>
                                     <skipTests>${skip.es.test}</skipTests>
                                     <excludes>
                                         <exclude>**/ElasticSearchMultiTypeIndexTest.java</exclude>
@@ -356,98 +341,6 @@
                 <plugins>
                     <plugin>
                         <artifactId>maven-gpg-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <!-- Run tests with Elasticsearch Docker container -->
-            <id>es-docker</id>
-            <properties>
-                <skip.es.test>true</skip.es.test>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <configuration>
-                            <skipITs>false</skipITs>
-                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
-                            <includes>
-                                <include>**/org/janusgraph/diskstorage/es/*.java</include>
-                            </includes>
-                            <systemProperties>
-                                <property>
-                                    <name>index.search.hostname</name>
-                                    <value>0.0.0.0</value>
-                                </property>
-                                <property>
-                                    <name>log4j.configuration</name>
-                                    <value>file:${project.build.directory}/test-classes/log4j.properties</value>
-                                </property>
-                            </systemProperties>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                        <version>0.18.1</version>
-                        <configuration>
-                            <images>
-                                <image>
-                                    <alias>elasticsearch</alias>
-                                    <name>${es.docker.image}:${elasticsearch.docker.test.version}</name>
-                                    <run>
-                                        <ports>
-                                            <port>9200:9200</port>
-                                        </ports>
-                                        <volumes>
-                                            <bind>
-                                                <volume>${project.build.directory}/elasticsearch-${elasticsearch.test.version}/config/elasticsearch.docker.yml:/usr/share/elasticsearch/config/elasticsearch.yml</volume>
-                                            </bind>
-                                        </volumes>
-                                        <env>
-                                            <ES_JAVA_OPTS>-Xms512m -Xmx512m</ES_JAVA_OPTS>
-                                            <http.host>0.0.0.0</http.host>
-                                            <transport.host>127.0.0.1</transport.host>
-                                        </env>
-                                        <wait>
-                                            <http>
-                                                <url>http://localhost:9200</url>
-                                                <method>GET</method>
-                                                <status>200..399</status>
-                                            </http>
-                                            <time>60000</time>
-                                        </wait>
-                                    </run>
-                                </image>
-                            </images>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>docker-start</id>
-                                <phase>pre-integration-test</phase>
-                                <goals>
-                                    <goal>start</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>docker-stop</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                    <goal>remove</goal>
-                                </goals>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>

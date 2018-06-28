@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.diskstorage.es;
+package org.janusgraph.pkgtest;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.util.system.IOUtils;
