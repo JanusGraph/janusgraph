@@ -245,6 +245,7 @@
                             <systemPropertyVariables>
                                 <es.docker.image>${es.docker.image}</es.docker.image>
                                 <elasticsearch.test.version>${elasticsearch.docker.test.version}</elasticsearch.test.version>
+                                <elasticsearch.test.groovy.inline>${elasticsearch.test.groovy.inline}</elasticsearch.test.groovy.inline>
                             </systemPropertyVariables>
                         </configuration>
                     </execution>

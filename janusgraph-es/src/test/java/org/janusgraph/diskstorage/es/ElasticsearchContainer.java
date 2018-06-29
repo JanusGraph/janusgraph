@@ -43,9 +43,13 @@ public class ElasticsearchContainer extends GenericContainer {
     protected void configure() {
         addExposedPort(ELASTIC_PORT);
         addEnv("transport.host", "0.0.0.0");
+        addEnv("discovery.zen.minimum_master_nodes", "1");
         addEnv("discovery.type", "single-node");
         addEnv("xpack.security.enabled", "false");
         addEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m");
+        if (System.getProperty("elasticsearch.test.groovy.inline") != "") {
+            addEnv("script.engine.groovy.inline.update", "true");
+        }
         waitingFor(Wait.forHttp("/_cluster/health?timeout=30s&wait_for_status=yellow"));
         majorVersion = ElasticMajorVersion.parse(getVersion());
     }
