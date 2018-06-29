@@ -104,7 +104,6 @@
         <!-- align with org.apache.tinkerpop:tinkerpop -->
         <netty4.version>4.0.56.Final</netty4.version>
         <jna.version>4.0.0</jna.version>
-        <testcontainers.version>1.8.0</testcontainers.version>
         <kuali.s3.wagon.version>1.1.20</kuali.s3.wagon.version>
         <jasper.version>5.5.23</jasper.version>
         <gmavenplus.version>1.5</gmavenplus.version>
@@ -126,6 +125,7 @@
         <test.excluded.groups>org.janusgraph.testcategory.MemoryTests,org.janusgraph.testcategory.PerformanceTests,org.janusgraph.testcategory.BrittleTests</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <cassandra-driver.version>3.3.2</cassandra-driver.version>
+        <testcontainers.version>1.7.0</testcontainers.version>
     </properties>
     <modules>
         <module>janusgraph-codepipelines-ci</module>
