@@ -144,7 +144,13 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
 
                     SliceResult qr = queue.poll(10,TimeUnit.MILLISECONDS); //Try very short time to see if we are done
                     if (qr==null) {
-                        if (pullThreads[i].isFinished()) continue; //No more data to be expected
+                        if (pullThreads[i].isFinished()) {
+                            // poll and check again to avoid multi-thread problem
+                            if ((qr = queue.poll(10,TimeUnit.MILLISECONDS)) != null){
+                                currentResults[i]=qr;
+                            }// else, No more data to be expected, ignore
+                            continue;
+                        }
                         qr = queue.poll(TIMEOUT_MS,TimeUnit.MILLISECONDS); //otherwise, give it more time
                         if (qr==null && !pullThreads[i].isFinished())
                             throw new TemporaryBackendException("Timed out waiting for next row data - storage error likely");
