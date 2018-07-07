@@ -23,7 +23,10 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -260,4 +263,31 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         String expected = "field" + REPLACEMENT_CHAR + "name" + REPLACEMENT_CHAR + "with" + REPLACEMENT_CHAR + "spaces";
         assertEquals(expected, index.mapKey2Field("field name with spaces", null));
     }
+
+    @Test
+    public void testClearStorageWithAliases() throws Exception {
+        IOUtils.closeQuietly(httpClient.execute(host, new HttpPut("test1")));
+        IOUtils.closeQuietly(httpClient.execute(host, new HttpPut("test2")));
+        final HttpPost addAlias = new HttpPost("_aliases");
+        addAlias.setHeader("Content-Type", "application/json");
+        addAlias.setEntity(new StringEntity("{\"actions\": [{\"add\": {\"indices\": [\"test1\", \"test2\"], \"alias\": \"alias1\"}}]}", Charset.forName("UTF-8")));
+        IOUtils.closeQuietly(httpClient.execute(host, addAlias));
+
+        initialize("vertex");
+        assertTrue(indexExists(GraphDatabaseConfiguration.INDEX_NAME.getDefaultValue()));
+
+        index.clearStorage();
+
+        assertFalse(indexExists(GraphDatabaseConfiguration.INDEX_NAME.getDefaultValue()));
+        assertTrue(indexExists("test1"));
+        assertTrue(indexExists("test2"));
+    }
+
+    private boolean indexExists(String name) throws IOException {
+        final CloseableHttpResponse response = httpClient.execute(host, new HttpHead(name));
+        final boolean exists = response.getStatusLine().getStatusCode() == 200;
+        IOUtils.closeQuietly(response);
+        return exists;
+    }
+
 }
