@@ -94,6 +94,7 @@ The following users have deployed JanusGraph in production.
 * [Netflix](https://www.netflix.com) -
   [video](https://youtu.be/KSmAdtMJYEo?t=1h2m17s) and
   [slides](https://www.slideshare.net/RoopaTangirala/polyglot-persistence-netflix-cde-meetup-90955706) (graph discussion starts at #86)
+* [Qihoo 360](https://www.360.cn/) ([about](https://en.wikipedia.org/wiki/Qihoo_360))
 * [Sift Security](https://siftsecurity.com)
 * [Times Internet](http://timesinternet.in) - [blog post about CMS use case](http://denmarkblog.timesinternet.in/blogs/graph/times-internet-is-using-janusgraph-as-main-database-in-cms-for-all-newsrooms/articleshow/63709837.cms) (the CMS which is serving this blog post runs on JanusGraph)
 * [Uber](https://uber.com)
