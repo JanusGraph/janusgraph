@@ -14,12 +14,15 @@
 
 package org.janusgraph.diskstorage.es;
 
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
@@ -27,10 +30,15 @@ import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 
 import java.net.InetAddress;
+import java.time.Instant;
+import java.util.Arrays;
 
 import static org.janusgraph.diskstorage.es.ElasticSearchIndex.USE_DEPRECATED_MULTITYPE_INDEX;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author David Clement (david.clement90@laposte.net)
@@ -66,6 +74,19 @@ public class ElasticSearchMultiTypeIndexTest extends ElasticSearchIndexTest {
         config.set(USE_DEPRECATED_MULTITYPE_INDEX, true, index);
         config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index);
         return config.restrictTo(index);
+    }
+
+    @Test @Override
+    public void clearStorageTest() throws Exception {
+        final String store = "vertex";
+        initialize(store);
+        final Multimap<String, Object> doc1 = getDocument("Hello world", 1001, 5.2, Geoshape.point(48.0, 0.0), Geoshape.polygon(Arrays.asList(new double[][] {{-0.1,47.9},{0.1,47.9},{0.1,48.1},{-0.1,48.1},{-0.1,47.9}})),Arrays.asList("1", "2", "3"), Sets.newHashSet("1", "2"), Instant.ofEpochSecond(1));
+        add(store, "doc1", doc1, true);
+        clopen();
+        assertTrue(index.exists());
+        super.tearDown();
+        super.setUp();
+        assertFalse(index.exists());
     }
 
 }

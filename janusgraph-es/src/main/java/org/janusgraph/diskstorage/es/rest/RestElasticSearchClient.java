@@ -217,20 +217,23 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     @Override
     public void deleteIndex(String indexName) throws IOException {
-        if (majorVersion.getValue() < 6 && indexExists(indexName)) {
-            performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + indexName, null);
-        } else {
-            final Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + "_cat" + REQUEST_SEPARATOR + "aliases" + REQUEST_PARAM_BEGINNING + "format=json", null);
+        if (isAlias(indexName)) {
+            // aliased multi-index case
+            final String path = new StringBuilder(REQUEST_SEPARATOR)
+                .append("_alias").append(REQUEST_SEPARATOR).append(indexName).toString();
+            final Response response = performRequest(REQUEST_TYPE_GET, path, null);
             try (final InputStream inputStream = response.getEntity().getContent()) {
-                final List<Map<String,Object>> records = mapper.readValue(inputStream, new TypeReference<List<Map<String, Object>>>() {});
+                final Map<String,Object> records = mapper.readValue(inputStream, new TypeReference<Map<String, Object>>() {});
                 if (records == null) return;
-                for (final Map<String,Object> record : records) {
-                    final String index = (String) record.get("index");
+                for (final String index : records.keySet()) {
                     if (indexExists(index)) {
                         performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + index, null);
                     }
                 }
             }
+        } else if (indexExists(indexName)) {
+            // legacy non-aliased multi-type index (see ElasticSearchIndex#USE_DEPRECATED_MULTITYPE_INDEX)
+            performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + indexName, null);
         }
     }
 
