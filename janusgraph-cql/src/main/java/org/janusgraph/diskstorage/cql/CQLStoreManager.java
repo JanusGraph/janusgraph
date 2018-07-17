@@ -15,8 +15,9 @@
 package org.janusgraph.diskstorage.cql;
 
 import static com.datastax.driver.core.schemabuilder.SchemaBuilder.createKeyspace;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.truncate;
 import static com.datastax.driver.core.schemabuilder.SchemaBuilder.dropKeyspace;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.select;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.truncate;
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
@@ -100,6 +101,10 @@ import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.TableMetadata;
+import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import com.datastax.driver.core.exceptions.QueryExecutionException;
+import com.datastax.driver.core.exceptions.QueryValidationException;
 import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -129,6 +134,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     private final String keyspace;
     private final int batchSize;
     private final boolean atomicBatch;
+    private final boolean allowCompactStorage;
 
     final ExecutorService executorService;
 
@@ -162,6 +168,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
         this.cluster = initializeCluster();
         this.session = initializeSession(this.keyspace);
+        this.allowCompactStorage = initializeCompactStorage();
 
         final Configuration global = buildGraphConfiguration()
                 .set(READ_CONSISTENCY, CONSISTENCY_QUORUM)
@@ -310,6 +317,23 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         return s;
     }
 
+    boolean initializeCompactStorage() throws PermanentBackendException {
+        try {
+            final ResultSet versionResultSet = this.session.execute(
+                select().column("release_version").from("system", "local") );
+            final String version = versionResultSet.one().getString(0);
+            final int major = Integer.parseInt(version.substring(0, version.indexOf(".")));
+            // starting with Cassandra 3 COMPACT STORAGE is deprecated and has no impact
+            return (major < 3);
+        } catch (NumberFormatException | NoHostAvailableException | QueryExecutionException | QueryValidationException e) {
+            throw new PermanentBackendException("Error determining Cassandra version", e);
+        }
+    }
+
+    boolean isCompactStorageAllowed() {
+        return this.allowCompactStorage;
+    }
+
     ExecutorService getExecutorService() {
         return this.executorService;
     }
@@ -327,6 +351,13 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                 .getOrElseThrow(() -> new PermanentBackendException(String.format("Unknown keyspace '%s'", this.keyspace)));
         return Option.of(keyspaceMetadata.getTable(name))
                 .map(tableMetadata -> tableMetadata.getOptions().getCompression())
+                .getOrElseThrow(() -> new PermanentBackendException(String.format("Unknown table '%s'", name)));
+    }
+
+    TableMetadata getTableMetadata(final String name) throws BackendException {
+        final KeyspaceMetadata keyspaceMetadata = Option.of(this.cluster.getMetadata().getKeyspace(this.keyspace))
+                .getOrElseThrow(() -> new PermanentBackendException(String.format("Unknown keyspace '%s'", this.keyspace)));
+        return Option.of(keyspaceMetadata.getTable(name))
                 .getOrElseThrow(() -> new PermanentBackendException(String.format("Unknown table '%s'", name)));
     }
 
@@ -360,7 +391,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     @Override
     public KeyColumnValueStore openDatabase(final String name, final Container metaData) throws BackendException {
-        return this.openStores.computeIfAbsent(name, n -> new CQLKeyColumnValueStore(this, n, getStorageConfig(), () -> this.openStores.remove(n)));
+        return this.openStores.computeIfAbsent(name, n -> new CQLKeyColumnValueStore(this, n, getStorageConfig(), () -> this.openStores.remove(n), allowCompactStorage));
     }
 
     @Override
