@@ -111,7 +111,7 @@ example, look like:
 [source, properties]
 ----
 gremlin.graph=org.janusgraph.core.JanusGraphFactory
-storage.backend=cassandrathrift
+storage.backend=cql
 graph.graphname=ConfigurationManagementGraph
 storage.hostname=127.0.0.1
 ----
@@ -154,7 +154,7 @@ configurations used to open specific graphs, referenced by the
 [source, gremlin]
 ----
 map = new HashMap<String, Object>();
-map.put("storage.backend", "cassandrathrift");
+map.put("storage.backend", "cql");
 map.put("storage.hostname", "127.0.0.1");
 map.put("graph.graphname", "graph1");
 ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
@@ -177,7 +177,7 @@ the same configuration template. For example:
 [source, gremlin]
 ----
 map = new HashMap<String, Object>();
-map.put("storage.backend", "cassandrathrift");
+map.put("storage.backend", "cql");
 map.put("storage.hostname", "127.0.0.1");
 ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
 ----
@@ -235,7 +235,7 @@ IP address:
 [source, gremlin]
 ----
 map = new HashMap();
-map.put("storage.backend", "cassandrathrift");
+map.put("storage.backend", "cql");
 map.put("storage.hostname", "127.0.0.1");
 map.put("graph.graphname", "graph1");
 ConfiguredGraphFactory.createConfiguration(new
@@ -258,7 +258,7 @@ g1 = ConfiguredGraphFactory.open("graph1");
 [source, gremlin]
 ----
 map = new HashMap();
-map.put("storage.backend", "cassandrathrift");
+map.put("storage.backend", "cql");
 map.put("storage.hostname", "127.0.0.1");
 map.put("graph.graphname", "graph1");
 ConfiguredGraphFactory.createConfiguration(new
@@ -283,7 +283,7 @@ g1 = ConfiguredGraphFactory.open("graph1");
 [source, gremlin]
 ----
 map = new HashMap();
-map.put("storage.backend", "cassandrathrift");
+map.put("storage.backend", "cql");
 map.put("storage.hostname", "127.0.0.1");
 ConfiguredGraphFactory.createTemplateConfiguration(new
 MapConfiguration(map));
@@ -356,7 +356,7 @@ Below are some example use cases:
 [source, gremlin]
 ----
 map = new HashMap();
-map.put("storage.backend", "cassandrathrift");
+map.put("storage.backend", "cql");
 map.put("storage.hostname", "127.0.0.1");
 ConfiguredGraphFactory.createTemplateConfiguration(new
 MapConfiguration(map));
@@ -431,14 +431,14 @@ Please create a template Configuration using the
 ConfigurationManagementGraph API.
 
 gremlin> map = new HashMap();
-gremlin> map.put("storage.backend", "cassandrathrift"); 
+gremlin> map.put("storage.backend", "cql");
 gremlin> map.put("storage.hostname", "127.0.0.1");
 gremlin> map.put("GraphName", "graph1");
 gremlin> ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
 Please include in your configuration the property "graph.graphname".
 
-gremlin> map = new HashMap(); 
-gremlin> map.put("storage.backend", "cassandrathrift");
+gremlin> map = new HashMap();
+gremlin> map.put("storage.backend", "cql");
 gremlin> map.put("storage.hostname", "127.0.0.1");
 gremlin> map.put("graph.graphname", "graph1");
 gremlin> ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
@@ -447,7 +447,7 @@ gremlin> ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
 gremlin> ConfiguredGraphFactory.open("graph1").vertices();
 
 gremlin> map = new HashMap(); map.put("storage.backend",
-"cassandrathrift"); map.put("storage.hostname", "127.0.0.1");
+"cql"); map.put("storage.hostname", "127.0.0.1");
 gremlin> map.put("graph.graphname", "graph1");
 gremlin> ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
 Your template configuration may not contain the property
@@ -455,7 +455,7 @@ Your template configuration may not contain the property
 
 gremlin> map = new HashMap();
 gremlin> map.put("storage.backend",
-"cassandrathrift"); map.put("storage.hostname", "127.0.0.1");
+"cql"); map.put("storage.hostname", "127.0.0.1");
 gremlin> ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
 ==>null
 
@@ -464,11 +464,11 @@ graphnames.
 gremlin> g1 = ConfiguredGraphFactory.open("graph1");
 gremlin> g2 = ConfiguredGraphFactory.create("graph2");
 gremlin> g3 = ConfiguredGraphFactory.create("graph3");
-gremlin> g2.addVertex(); 
+gremlin> g2.addVertex();
 gremlin> l = [];
-gremlin> l << g1.vertices().size(); 
+gremlin> l << g1.vertices().size();
 ==>0
-gremlin> l << g2.vertices().size(); 
+gremlin> l << g2.vertices().size();
 ==>1
 gremlin> l << g3.vertices().size();
 ==>0

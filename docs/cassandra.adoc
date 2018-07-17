@@ -14,12 +14,26 @@ over 300 TB of data in over 400 machines.
 
 The following sections outline the various ways in which JanusGraph can be used in concert with Apache Cassandra.
 
+[[cassandra-storage-backend]]
+=== Cassandra Storage Backend
+
+JanusGraph provides the following backends for use with Cassandra:
+
+* `cql` - CQL based driver. This is the recommended driver.
+* `cassandrathrift` - JanusGraph's Thrift connection pool driver
+* `cassandra` - https://github.com/Netflix/astyanax[Astyanax] driver. The Astyanax project is https://medium.com/netflix-techblog/astyanax-retiring-an-old-friend-6cca1de9ac4[retired].
+* `embeddedcassandra` - Embedded driver for running Cassandra and JanusGraph within the same JVM
+
+Cassandra has two protocols for clients to use: CQL and Thrift. Thrift was the original interface, however it was deprecated starting with Cassandra 2.1. The core of JanusGraph was originally written before the deprecation of Thrift, and it has several classes that support Thrift. With Cassandra 4.0, Thrift support will be removed in Cassandra. JanusGraph users are recommended to use the `cql` storage backend.
+
 [NOTE]
-If you are using Cassandra 2.2 or higher you need to explicitly enable thrift so that JanusGraph can connect to the cluster.
-Do so by running `./bin/nodetool enablethrift`.
+If you plan to use a Thrift-based driver and you are using Cassandra 2.2 or higher, you need to explicitly enable Thrift so that JanusGraph can connect to the cluster.
+Do so by running `./bin/nodetool enablethrift` on every Cassandra node.
+
 [NOTE]
 If security is enabled on Cassandra, the user must have `CREATE permission on <all keyspaces>`,
 otherwise the keyspace must be created ahead of time by an administrator.
+
 
 [[cassandra-local-server-mode]]
 === Local Server Mode
@@ -36,7 +50,7 @@ Now, you can create a Cassandra JanusGraph as follows::
 
 [source, java]
 JanusGraph g = JanusGraphFactory.build().
-set("storage.backend", "cassandra").
+set("storage.backend", "cql").
 set("storage.hostname", "127.0.0.1").
 open();
 
@@ -60,7 +74,7 @@ For example, suppose we have a running Cassandra cluster where one of the machin
 
 [source, java]
 JanusGraph graph = JanusGraphFactory.build().
-set("storage.backend", "cassandra").
+set("storage.backend", "cql").
 set("storage.hostname", "77.77.77.77").
 open();
 
@@ -86,7 +100,7 @@ In this case, each Gremlin Server would be configured to connect to the Cassandr
 ----
 ...
 graphs: {
-  g: conf/janusgraph-cassandra.properties}
+  g: conf/janusgraph-cql.properties}
 plugins:
   - janusgraph.imports
 ...
@@ -194,7 +208,7 @@ Launch additional EC2 instances to run JanusGraph which are either configured in
 
 * Create a configuration file with `vi janusgraph.properties` and add the following lines::
 
-      storage.backend = cassandra
+      storage.backend = cql
       storage.hostname = [IP-address-of-one-Cassandra-EC2-instance]
 
 You may add additional configuration options found on this page or in <<config-ref>>.
@@ -202,7 +216,7 @@ You may add additional configuration options found on this page or in <<config-r
 * Start the Gremlin Console again and type the following::
 
       gremlin> graph = JanusGraphFactory.open('janusgraph.properties')
-      ==>janusgraph[cassandra:[IP-address-of-one-Cassandra-EC2-instance]]
+      ==>janusgraph[cql:[IP-address-of-one-Cassandra-EC2-instance]]
 
 You have successfully connected this JanusGraph instance to the Cassandra cluster and can start to operate on the graph.
 

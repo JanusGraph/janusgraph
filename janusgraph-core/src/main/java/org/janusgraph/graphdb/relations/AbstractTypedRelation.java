@@ -111,7 +111,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     public <V> Property<V> property(final String key, final V value) {
         verifyAccess();
 
-        PropertyKey propertyKey = tx().getOrCreatePropertyKey(key);
+        PropertyKey propertyKey = tx().getOrCreatePropertyKey(key, value);
         Object normalizedValue = tx().verifyAttribute(propertyKey,value);
         it().setPropertyDirect(propertyKey,normalizedValue);
         return new SimpleJanusGraphProperty<>(this, propertyKey, value);

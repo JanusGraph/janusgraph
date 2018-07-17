@@ -144,6 +144,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.Date;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -5697,4 +5698,34 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         d = v2.value("~ttl");
         assertEquals(Duration.ZERO, d);
     }
+
+    @Test
+    public void testAutoSchemaMakerForVertexPropertyDataType(){
+        JanusGraphVertex v1 = tx.addVertex("user");
+        v1.property("id", 10);
+        v1.property("created", new Date());
+
+        PropertyKey idPropertyKey = tx.getPropertyKey("id");
+        assertEquals("Data type not identified correctly by auto schema maker",
+            Integer.class, idPropertyKey.dataType());
+        PropertyKey createdPropertyKey = tx.getPropertyKey("created");
+        assertEquals("Data type not identified properly by auto schema maker",
+            Date.class, createdPropertyKey.dataType());
+
+    }
+
+    @Test
+    public void testAutoSchemaMakerForEdgePropertyDataType(){
+        JanusGraphVertex v1 = tx.addVertex("user");
+        JanusGraphVertex v2 = tx.addVertex("user");
+        v1.addEdge("knows", v2, "id", 10, "created", new Date());
+
+        PropertyKey idPropertyKey = tx.getPropertyKey("id");
+        assertEquals("Data type not identified correctly by auto schema maker",
+            Integer.class, idPropertyKey.dataType());
+        PropertyKey createdPropertyKey = tx.getPropertyKey("created");
+        assertEquals("Data type not identified correctly by auto schema maker",
+            Date.class, createdPropertyKey.dataType());
+    }
+
 }
