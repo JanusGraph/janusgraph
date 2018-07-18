@@ -38,6 +38,7 @@ import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
 import static io.vavr.Predicates.instanceOf;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPACT_STORAGE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_BLOCK_SIZE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_TYPE;
@@ -80,6 +81,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.exceptions.QueryValidationException;
 import com.datastax.driver.core.exceptions.UnsupportedFeatureException;
+import com.datastax.driver.core.schemabuilder.Create.Options;
 import com.datastax.driver.core.schemabuilder.TableOptions.CompactionOptions;
 import com.datastax.driver.core.schemabuilder.TableOptions.CompressionOptions;
 import com.google.common.collect.Lists;
@@ -143,8 +145,9 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
      * @param tableName the name of the database table for storing the key/column/values
      * @param configuration data used in creating this store
      * @param closer callback used to clean up references to this store in the store manager
+     * @param allowCompactStorage whether to use compact storage is allowed (true only for Cassandra 2 and earlier)
      */
-    public CQLKeyColumnValueStore(final CQLStoreManager storeManager, final String tableName, final Configuration configuration, final Runnable closer) {
+    public CQLKeyColumnValueStore(final CQLStoreManager storeManager, final String tableName, final Configuration configuration, final Runnable closer, final boolean allowCompactStorage) {
         this.storeManager = storeManager;
         this.executorService = this.storeManager.getExecutorService();
         this.tableName = tableName;
@@ -152,7 +155,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         this.session = this.storeManager.getSession();
         this.getter = new CQLColValGetter(storeManager.getMetaDataSchema(this.tableName));
 
-        initializeTable(this.session, this.storeManager.getKeyspaceName(), tableName, configuration);
+        initializeTable(this.session, this.storeManager.getKeyspaceName(), tableName, configuration, allowCompactStorage);
 
         // @formatter:off
         this.getSlice = this.session.prepare(select()
@@ -211,16 +214,22 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         // @formatter:on
     }
 
-    private static void initializeTable(final Session session, final String keyspaceName, final String tableName, final Configuration configuration) {
-        session.execute(createTable(keyspaceName, tableName)
+    private static void initializeTable(final Session session, final String keyspaceName, final String tableName, final Configuration configuration, final boolean allowCompactStorage) {
+        final Options createTable = createTable(keyspaceName, tableName)
                 .ifNotExists()
                 .addPartitionKey(KEY_COLUMN_NAME, DataType.blob())
                 .addClusteringColumn(COLUMN_COLUMN_NAME, DataType.blob())
                 .addColumn(VALUE_COLUMN_NAME, DataType.blob())
                 .withOptions()
                 .compressionOptions(compressionOptions(configuration))
-                .compactionOptions(compactionOptions(configuration))
-                .compactStorage());
+                .compactionOptions(compactionOptions(configuration));
+        // COMPACT STORAGE is allowed on Cassandra 2 or earlier
+        // when COMPACT STORAGE is allowed, the default is to enable it
+        final boolean useCompactStorage =
+            (allowCompactStorage && configuration.has(CF_COMPACT_STORAGE))
+            ? configuration.get(CF_COMPACT_STORAGE)
+            : allowCompactStorage;
+        session.execute(useCompactStorage ? createTable.compactStorage() : createTable);
     }
 
     private static CompressionOptions compressionOptions(final Configuration configuration) {

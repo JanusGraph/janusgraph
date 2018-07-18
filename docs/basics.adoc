@@ -21,7 +21,7 @@ Sets up JanusGraph to use the Cassandra persistence engine running locally and a
 
 [source, properties]
 ----
-storage.backend=cassandra
+storage.backend=cql
 storage.hostname=localhost
 
 index.search.backend=elasticsearch
@@ -70,7 +70,7 @@ There are several example configuration files in the `conf/` directory that can 
 [source, java]
 ----
 // Connect to Cassandra on localhost using a default configuration
-graph = JanusGraphFactory.open("conf/gremlin-server/http-janusgraph-hbase-server.properties")
+graph = JanusGraphFactory.open("conf/janusgraph-cql.properties")
 // Connect to HBase on localhost using a default configuration
 graph = JanusGraphFactory.open("conf/janusgraph-hbase.properties")
 ----
@@ -102,7 +102,7 @@ If the JanusGraph graph cluster has been previously configured and/or only the s
 
 [source, gremlin]
 ----
-graph = JanusGraphFactory.open('cassandra:localhost')
+graph = JanusGraphFactory.open('cql:localhost')
 ----
 
 [source, gremlin]
@@ -407,7 +407,7 @@ Taken together, these steps form a path-like traversal query. Each step can be d
 
 [source, gremlin]
 gremlin> g
-==>graphtraversalsource[janusgraph[cassandrathrift:127.0.0.1], standard]
+==>graphtraversalsource[janusgraph[cql:127.0.0.1], standard]
 gremlin> g.V().has('name', 'hercules')
 ==>v[24]
 gremlin> g.V().has('name', 'hercules').out('father')
@@ -573,9 +573,9 @@ The `:remote` command tells the console to configure a remote connection to Grem
 gremlin> :remote connect tinkerpop.server conf/remote.yaml
 ==>Configured localhost/127.0.0.1:8182
 gremlin> graph
-==>standardjanusgraph[cassandrathrift:[127.0.0.1]]
+==>standardjanusgraph[cql:[127.0.0.1]]
 gremlin> g
-==>graphtraversalsource[standardjanusgraph[cassandrathrift:[127.0.0.1]], standard]
+==>graphtraversalsource[standardjanusgraph[cql:[127.0.0.1]], standard]
 gremlin> g.V()
 gremlin> user = "Chris"
 ==>Chris
