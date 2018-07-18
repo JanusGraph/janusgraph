@@ -358,10 +358,10 @@ bin/gremlin.sh
          \,,,/
          (o o)
 -----oOOo-(3)-oOOo-----
-gremlin> graph = JanusGraphFactory.open('conf/janusgraph-cassandra-solr.properties')
-==>janusgraph[cassandrathrift:[127.0.0.1]]
+gremlin> graph = JanusGraphFactory.open('conf/janusgraph-cql-solr.properties')
+==>janusgraph[cql:[127.0.0.1]]
 gremlin> g = graph.traversal()
-==>graphtraversalsource[janusgraph[cassandrathrift:[127.0.0.1]], standard]
+==>graphtraversalsource[janusgraph[cql:[127.0.0.1]], standard]
 gremlin>
 ----
 
@@ -394,7 +394,7 @@ SOLR_HOST=localhost:8983
 #
 # index.search.solr.http-urls=http://localhost:8983/solr/janusgraph.solr1
 #
-# The stock JanusGraph config file conf/janusgraph-cassandra-solr.properties
+# The stock JanusGraph config file conf/janusgraph-cql-solr.properties
 # ships with this http-urls value.
 
 # Upload Solr config files to DSE Search daemon
@@ -422,7 +422,7 @@ dataset.  Picking up the Gremlin Console session started above:
 
 [source, gremlin]
 ----
-// Assuming graph = JanusGraphFactory.open('conf/janusgraph-cassandra-solr.properties')...
+// Assuming graph = JanusGraphFactory.open('conf/janusgraph-cql-solr.properties')...
 gremlin> GraphOfTheGodsFactory.load(graph)
 ==>null
 ----

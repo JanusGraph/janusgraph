@@ -4,7 +4,7 @@ scriptEvaluationTimeout: 30000
 channelizer: org.janusgraph.channelizers.JanusGraphWebSocketChannelizer
 graphManager: org.janusgraph.graphdb.management.JanusGraphManager
 graphs: {
-  ConfigurationManagementGraph: conf/janusgraph-cassandra-configurationgraph.properties
+  ConfigurationManagementGraph: conf/janusgraph-cql-configurationgraph.properties
 }
 scriptEngines: {
   gremlin-groovy: {
