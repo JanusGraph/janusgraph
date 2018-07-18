@@ -4,17 +4,72 @@
 JanusGraph-Hadoop works with TinkerPop's hadoop-gremlin package for
 general-purpose OLAP.
 
-Here's a three step example showing some basic integrated JanusGraph-TinkerPop functionality.
+The current tutorial covers the following topics for setting up Spark environment to work with Janusgraph using Hadoop for doing OLAP.
 
-1. Manually define schema and then load the Grateful Dead graph from a TinkerPop Kryo-serialized binary file 
-2. Run a VertexProgram to compute PageRanks, writing the derived graph to `output/~g`
-3. Read the derived graph vertices and their computed rank values
+1. Bulk loading into backend data store with local spark (Spark dist which comes with JanusGraph)
+2. Bulk loading into backend data store using Spark Cluster in Standalone mode. (The tutorial expects that there is a up and running Spark Cluster as provided host)
+3. Reads from backend data store into Hadoopgraph for OLAP against local spark
+4. Reads from Cassandra backend into Hadoopgraph for OLAP against Spark Cluster in standalone mode.
 
 [NOTE]
-The examples in this chapter are based on running Spark in local mode. Additional configuration 
-is required when using Spark in standalone mode or when running Spark on YARN or Mesos.
+The examples in this chapter are based on running Spark in local mode or standalone cluster mode. Additional configuration
+is required when using Spark on YARN or Mesos.
 
-=== Defining defining schema and loading data
+===== Pre-Requisite check:
+HADOOP_CONF_DIR needs to be set in CLASSPATH from where you will be running OLAP queries. Hence this adds dependency that Hadoop needs to be installed/configured from the box where gremlin console is started.
+
+For reference purpose, Gremlin-consolse is considered to be driver here, and hence HADOOP_CONF_DIR needs to be added to CLASSPATH of gremlin console.
+
+[source, shell]
+----
+cd janusgraph-0.2.1-SNAPSHOT-hadoop2/bin
+vi gremlin.sh
+
+CP="$CP":$(find -L $LIB -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
+# Add the jars in $BIN/../lib that start with "janusgraph"
+CP="$CP":$(find -L $LIB -name 'janusgraph*.jar' | sort | tr '\n' ':')
+# Add the remaining jars in $BIN/../lib.
+CP="$CP":$(find -L $LIB -name '*.jar' ! -name 'janusgraph*' ! -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
+# Add the jars in $BIN/../ext (at any subdirectory depth)
+CP="$CP":$(find -L $EXT -name '*.jar' | sort | tr '\n' ':')
+# Add Hadoop Configuration directory to ClassPath, for me it is situated at /root/hadoop/etc/hadoop
+CP="$CP":/root/hadoop/etc/hadoop
+----
+
+Now that Hadoop configuration is added to Gremlin console CLASSPATH, we then next want to configure the Hadoop configuration in local machine to point to an up and running HDFS cluster.
+
+Editing just the *core-site.xml* in Hadoop configuration directory works. The sample *core-site.xml* with Hadoop Master / NameNode is as follows:
+[NOTE]
+The following configuration considers that Hadoop, Cassandra and Elasticsearch are up and running on localhost. Also note that the Port
+provided in core-site.xml is specific to Hadoop version being tested on. 54310 is port which is specific to Hadoop 2.6.5 and can change according to Hadoop version.
+
+[source, xml]
+----
+<property>
+  <name>fs.default.name</name>
+  <value>hdfs://127.0.0.1:54310</value>
+  <description>The name of the default file system.  A URI whose scheme and authority determine the FileSystem implementation.  The uri's scheme determines the config property (fs.SCHEME.impl) naming the FileSystem implementation class.  The uri's authority is used to determine the host, port, etc. for a filesystem.</description>
+</property>
+----
+
+[NOTE]
+hadoop-load.properties is renamed into hadoop-bulk-load.properties, and used accordingly.
+
+[NOTE]
+janusgraph-cassandra.properties is renamed into janusgraph-cassandra-bulk-load.properties, and used accordingly.
+
+A step by step tutorial for the above following topics are as follows:
+
+====== 1. Bulk loading into backend using Local Spark
+Here's a three step example showing some basic integrated JanusGraph-TinkerPop functionality against Local Spark.
+
+1. Manually define schema and then load the Grateful Dead graph from a TinkerPop Kryo-serialized binary file
+2. Run simple query against Spark, like count of vertices for checking ingestion.
+
+3. Run a VertexProgram to compute PageRank, writing the derived graph to `output/~g`
+4. Read the derived graph vertices and their computed rank values
+
+====== Defining defining schema and loading data
 
 [source, gremlin]
 ----
@@ -28,68 +83,59 @@ gremlin> :plugin use tinkerpop.hadoop
 ==>tinkerpop.hadoop activated
 gremlin> :plugin use tinkerpop.spark
 ==>tinkerpop.spark activated
+gremlin> # Step 1
 gremlin> :load data/grateful-dead-janusgraph-schema.groovy
 ==>true
 ==>true
-gremlin> graph = JanusGraphFactory.open('conf/janusgraph-cql.properties')
+gremlin> graph = JanusGraphFactory.open('conf/janusgraph-cassandra-bulk-load.properties')
 ==>standardjanusgraph[cql:[127.0.0.1]]
 gremlin> defineGratefulDeadSchema(graph)
 ==>null
 gremlin> graph.close()
 ==>null
-gremlin> if (!hdfs.exists('data/grateful-dead.kryo')) hdfs.copyFromLocal('data/grateful-dead.kryo','data/grateful-dead.kryo')
+gremlin> if (!hdfs.exists('/grateful-dead.kryo')) hdfs.copyFromLocal('data/grateful-dead.kryo','/grateful-dead.kryo')
 ==>null
-gremlin> graph = GraphFactory.open('conf/hadoop-graph/hadoop-load.properties')
+gremlin> graph = GraphFactory.open('conf/hadoop-graph/hadoop-bulk-load.properties')
 ==>hadoopgraph[gryoinputformat->nulloutputformat]
-gremlin> blvp = BulkLoaderVertexProgram.build().writeGraph('conf/janusgraph-cql.properties').create(graph)
+gremlin> blvp = BulkLoaderVertexProgram.build().writeGraph('conf/janusgraph-cassandra-bulk-load.properties').create(graph)
 ==>BulkLoaderVertexProgram[bulkLoader=IncrementalBulkLoader,vertexIdProperty=bulkLoader.vertex.id,userSuppliedIds=false,keepOriginalIds=true,batchSize=0]
 gremlin> graph.compute(SparkGraphComputer).program(blvp).submit().get()
 ...
 ==>result[hadoopgraph[gryoinputformat->nulloutputformat],memory[size:0]]
 gremlin> graph.close()
 ==>null
-gremlin> graph = GraphFactory.open('conf/hadoop-graph/read-cassandra-3.properties')
-==>hadoopgraph[cassandrainputformat->gryooutputformat]
-gremlin> g = graph.traversal().withComputer(SparkGraphComputer)
-==>graphtraversalsource[hadoopgraph[cassandrainputformat->gryooutputformat], sparkgraphcomputer]
+gremlin> graph = JanusGraphFactory.open('conf/janusgraph-cassandra-bulk-load.properties')
+==>standardjanusgraph[cql:[127.0.0.1]]
+gremlin> g = graph.traversal()
+==>graphtraversalsource[standardjanusgraph[cassandrathrift:[127.0.0.1]], standard]
 gremlin> g.V().count()
-...
 ==>808
+gremlin> g.E().count()
+==> 8046
 ----
 
 [source, properties]
 ----
-# hadoop-load.properties
-
+# hadoop-bulk-load.properties
 #
 # Hadoop Graph Configuration
 #
 gremlin.graph=org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph
-gremlin.hadoop.graphInputFormat=org.apache.tinkerpop.gremlin.hadoop.structure.io.gryo.GryoInputFormat
-gremlin.hadoop.graphOutputFormat=org.apache.hadoop.mapreduce.lib.output.NullOutputFormat
-gremlin.hadoop.inputLocation=./data/grateful-dead.kryo
-gremlin.hadoop.outputLocation=output
-gremlin.hadoop.jarsInDistributedCache=true
+gremlin.hadoop.graphReader=org.apache.tinkerpop.gremlin.hadoop.structure.io.gryo.GryoInputFormat
+gremlin.hadoop.graphWriter=org.apache.hadoop.mapreduce.lib.output.NullOutputFormat
 
-#
-# GiraphGraphComputer Configuration
-#
-giraph.minWorkers=2
-giraph.maxWorkers=2
-giraph.useOutOfCoreGraph=true
-giraph.useOutOfCoreMessages=true
-mapred.map.child.java.opts=-Xmx1024m
-mapred.reduce.child.java.opts=-Xmx1024m
-giraph.numInputThreads=4
-giraph.numComputeThreads=4
-giraph.maxMessagesInMemory=100000
+gremlin.hadoop.jarsInDistributedCache=true
+gremlin.hadoop.inputLocation=hdfs:///grateful-dead.kryo
+gremlin.hadoop.outputLocation=output
+gremlin.spark.persistContext=true
 
 #
 # SparkGraphComputer Configuration
 #
 spark.master=local[*]
-spark.executor.memory=1g
+spark.executor.memory=6g
 spark.serializer=org.apache.spark.serializer.KryoSerializer
+spark.kryo.registrator=org.apache.tinkerpop.gremlin.spark.structure.io.gryo.GryoRegistrator
 ----
 
 [source, gremlin]
@@ -120,6 +166,187 @@ def defineGratefulDeadSchema(janusGraph) {
     m.commit()
 }
 ----
+
+====== 2. Bulk loading into backend using Spark cluster in standalone mode.
+The steps followed above, under section *Bulk loading into backend using Local Spark* can be followed again to Bulk load data into Janusgraph using Spark.
+
+We will only need to modify our hadoop-bulk-load.properties to point to our Clustered spark, and not local.
+
+Also, in addition to that, we will need to distribute all the necessary Jars (In this case which comes pre-packaged with JanusGraph), so that required classes are loaded in required order and hence doesn't raise conflicts.
+
+[NOTE]
+We have copied all the jars under *janusgraph-distribution/lib* into /root/lib/janusgraph/ and the same directory structure is created across all workers, and jars are manually copied across all workers.
+
+[source, properties]
+----
+# hadoop-bulk-load.properties
+#
+# Hadoop Graph Configuration
+#
+gremlin.graph=org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph
+gremlin.hadoop.graphReader=org.apache.tinkerpop.gremlin.hadoop.structure.io.gryo.GryoInputFormat
+gremlin.hadoop.graphWriter=org.apache.hadoop.mapreduce.lib.output.NullOutputFormat
+
+gremlin.hadoop.jarsInDistributedCache=true
+gremlin.hadoop.inputLocation=hdfs:///grateful-dead.kryo
+gremlin.hadoop.outputLocation=output
+gremlin.spark.persistContext=true
+
+#
+# SparkGraphComputer Configuration
+#
+spark.master=spark://127.0.0.1:7077
+spark.executor.memory=6g
+spark.executor.extraClassPath=/root/lib/janusgraph/*
+spark.serializer=org.apache.spark.serializer.KryoSerializer
+spark.kryo.registrator=org.apache.tinkerpop.gremlin.spark.structure.io.gryo.GryoRegistrator
+----
+
+[NOTE]
+The backend of choice here is Cassandra for all read example bellow. Additional configuration will be needed specific to that data store, if anything else is selected, like for example HBase, Scylla, etc.
+
+====== 3. Reads from backend data store into Hadoopgraph for OLAP against local spark
+
+The following properties file is used to load HadoopGraph into gremlin console, over which OLAP queries are done.
+
+[source, properties]
+----
+# hadoop-cassandra3.properties
+#
+# Hadoop Graph Configuration
+#
+gremlin.graph=org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph
+gremlin.hadoop.graphReader=org.janusgraph.hadoop.formats.cassandra.Cassandra3InputFormat
+gremlin.hadoop.graphWriter=org.apache.tinkerpop.gremlin.hadoop.structure.io.gryo.GryoOutputFormat
+
+gremlin.hadoop.jarsInDistributedCache=true
+gremlin.hadoop.inputLocation=none
+gremlin.hadoop.outputLocation=output
+gremlin.spark.persistContext=true
+
+#
+# JanusGraph Cassandra InputFormat configuration
+#
+janusgraphmr.ioformat.conf.storage.backend=cassandra
+janusgraphmr.ioformat.conf.storage.hostname=127.0.0.1
+janusgraphmr.ioformat.conf.storage.port=9160
+janusgraphmr.ioformat.conf.storage.cassandra.keyspace=janusgraph
+janusgraphmr.ioformat.conf.index.search.backend=elasticsearch
+janusgraphmr.ioformat.conf.index.search.hostname=127.0.0.1
+
+#
+# Apache Cassandra InputFormat configuration
+#
+cassandra.input.partitioner.class=org.apache.cassandra.dht.Murmur3Partitioner
+
+#
+# SparkGraphComputer Configuration
+#
+spark.master=local[*]
+spark.executor.memory=6g
+spark.serializer=org.apache.spark.serializer.KryoSerializer
+
+----
+
+First create a properties file with above configurations, and load the same on Gremlin console to run OLAP queries as follows:
+
+[source, gremlin]
+----
+bin/gremlin.sh
+
+         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+plugin activated: janusgraph.imports
+gremlin> :plugin use tinkerpop.hadoop
+==>tinkerpop.hadoop activated
+gremlin> :plugin use tinkerpop.spark
+==>tinkerpop.spark activated
+gremlin> graph = GraphFactory.open('conf/hadoop-graph/hadoop-cassandra3.properties')
+==>hadoopgraph[cassandra3inputformat->gryooutputformat]
+gremlin> g = graph.traversal().withComputer(SparkGraphComputer)
+==>graphtraversalsource[hadoopgraph[cassandra3inputformat->gryooutputformat], sparkgraphcomputer]
+gremlin> g.V().count()
+......
+==>808
+gremlin> g.E().count()
+......
+==> 8046
+----
+
+====== 4. Reads from Cassandra backend into Hadoopgraph for OLAP against Spark Cluster in standalone mode.
+
+When running against Standalone Spark cluster, a few extra properties needs to be added, which specifies the CLASSPATH loading order of Spark workers. The updated properties file is similar to the property added in section *Bulk loading into backend data store using Spark Cluster in Standalone mode.*
+
+Use the following properties file to load HadoopGraph against Spark Standalone cluster with Cassandra backend.
+
+[source, properties]
+----
+# spark-cassandra3.properties
+#
+# Hadoop Graph Configuration
+#
+gremlin.graph=org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph
+gremlin.hadoop.graphReader=org.janusgraph.hadoop.formats.cassandra.Cassandra3InputFormat
+gremlin.hadoop.graphWriter=org.apache.tinkerpop.gremlin.hadoop.structure.io.gryo.GryoOutputFormat
+
+gremlin.hadoop.jarsInDistributedCache=true
+gremlin.hadoop.inputLocation=none
+gremlin.hadoop.outputLocation=output
+gremlin.spark.persistContext=true
+
+#
+# JanusGraph Cassandra InputFormat configuration
+#
+janusgraphmr.ioformat.conf.storage.backend=cassandra
+janusgraphmr.ioformat.conf.storage.hostname=127.0.0.1
+janusgraphmr.ioformat.conf.storage.port=9160
+janusgraphmr.ioformat.conf.storage.cassandra.keyspace=janusgraph
+janusgraphmr.ioformat.conf.index.search.backend=elasticsearch
+janusgraphmr.ioformat.conf.index.search.hostname=127.0.0.1
+
+#
+# Apache Cassandra InputFormat configuration
+#
+cassandra.input.partitioner.class=org.apache.cassandra.dht.Murmur3Partitioner
+
+#
+# SparkGraphComputer Configuration
+#
+spark.master=spark://127.0.0.1:7077
+spark.executor.memory=6g
+spark.executor.extraClassPath=/root/lib/janusgraph/*
+spark.serializer=org.apache.spark.serializer.KryoSerializer
+
+----
+
+Then use the properties file as follows from gremlin console:
+
+
+[source, gremlin]
+----
+bin/gremlin.sh
+
+         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+plugin activated: janusgraph.imports
+gremlin> :plugin use tinkerpop.hadoop
+==>tinkerpop.hadoop activated
+gremlin> :plugin use tinkerpop.spark
+==>tinkerpop.spark activated
+gremlin> graph = GraphFactory.open('conf/hadoop-graph/spark-cassandra3.properties')
+==>hadoopgraph[cassandra3inputformat->gryooutputformat]
+gremlin> g = graph.traversal().withComputer(SparkGraphComputer)
+==>graphtraversalsource[hadoopgraph[cassandra3inputformat->gryooutputformat], sparkgraphcomputer]
+gremlin> g.V().count()
+......
+==>808
+gremlin> g.E().count()
+......
+==> 8046
+----
+
 
 === Running PageRank
 
