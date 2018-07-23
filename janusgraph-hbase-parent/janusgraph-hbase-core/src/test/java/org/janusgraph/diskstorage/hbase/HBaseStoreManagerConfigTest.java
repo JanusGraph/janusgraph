@@ -112,7 +112,7 @@ public class HBaseStoreManagerConfigTest {
             KeyColumnValueStore store = manager.openDatabase(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME);
         } catch (BackendException e) {
             assertTrue("Can't get the locations".equals(e.getCause().getMessage())
-                    || "Attempt to start meta tracker failed.".equals(e.getCause().getMessage()));
+                    || "Can't get the location for replica 0".equals(e.getCause().getMessage()));
             return;
         }
         fail("Expected BackendException with: Can't get the locations");
