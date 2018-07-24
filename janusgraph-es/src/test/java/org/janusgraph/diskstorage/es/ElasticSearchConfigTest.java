@@ -25,7 +25,6 @@ import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
-import org.janusgraph.diskstorage.es.IndexMappings;
 import org.janusgraph.diskstorage.indexing.*;
 import static org.janusgraph.diskstorage.es.ElasticSearchIndex.*;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
@@ -46,10 +45,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.apache.tinkerpop.shaded.jackson.core.type.TypeReference;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,6 +67,8 @@ import static org.junit.Assert.*;
 public class ElasticSearchConfigTest {
 
     private static final Logger log = LoggerFactory.getLogger(ElasticSearchConfigTest.class);
+    @ClassRule
+    public static ElasticsearchContainer esr = new ElasticsearchContainer();
 
     private static final String INDEX_NAME = "escfg";
 
@@ -80,8 +78,6 @@ public class ElasticSearchConfigTest {
 
     private static final String ANALYZER_STANDARD = "standard";
 
-    private ElasticsearchRunner esr;
-
     private HttpHost host;
 
     private CloseableHttpClient httpClient;
@@ -90,12 +86,8 @@ public class ElasticSearchConfigTest {
 
     @Before
     public void setup() throws Exception {
-        esr = new ElasticsearchRunner();
-        esr.start();
-
         httpClient = HttpClients.createDefault();
-        host = new HttpHost(InetAddress.getByName(esr.getHostname()), ElasticsearchRunner.PORT);
-
+        host = new HttpHost(InetAddress.getByName(esr.getHostname()), esr.getPort());
         objectMapper = new ObjectMapper();
         IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("_template/template_1")));
     }
@@ -104,14 +96,13 @@ public class ElasticSearchConfigTest {
     public void teardown() throws Exception {
         IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("janusgraph*")));
         IOUtils.closeQuietly(httpClient);
-        esr.stop();
     }
 
     @Test
     public void testJanusGraphFactoryBuilder() {
         final JanusGraphFactory.Builder builder = JanusGraphFactory.build();
         builder.set("storage.backend", "inmemory");
-        builder.set("index." + INDEX_NAME + ".elasticsearch.hostname", esr.getHostname() + ":" + ElasticsearchRunner.PORT);
+        builder.set("index." + INDEX_NAME + ".hostname", esr.getHostname() + ":" + esr.getPort());
         final JanusGraph graph = builder.open(); // Must not throw an exception
         assertTrue(graph.isOpen());
         graph.close();
@@ -119,13 +110,13 @@ public class ElasticSearchConfigTest {
 
     @Test
     public void testClient() throws BackendException, InterruptedException {
-        final ModifiableConfiguration config = esr.setElasticsearchConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME);
+        final ModifiableConfiguration config = esr.setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
         IndexProvider idx = open(indexConfig);
         simpleWriteAndQuery(idx);
         idx.close();
 
-        config.set(INDEX_HOSTS, new String[]{ "10.11.12.13:" + ElasticsearchRunner.PORT }, INDEX_NAME);
+        config.set(INDEX_HOSTS, new String[]{ "localhost:9201" }, INDEX_NAME);
         indexConfig = config.restrictTo(INDEX_NAME);
         Throwable failure = null;
         try {
@@ -145,7 +136,7 @@ public class ElasticSearchConfigTest {
         final ModifiableConfiguration config =
             new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
                 cc, BasicConfiguration.Restriction.NONE);
-        esr.setElasticsearchConfiguration(config, INDEX_NAME);
+        esr.setConfiguration(config, INDEX_NAME);
         final Configuration indexConfig = config.restrictTo(INDEX_NAME);
         final IndexProvider idx = open(indexConfig);
         simpleWriteAndQuery(idx);
@@ -162,7 +153,8 @@ public class ElasticSearchConfigTest {
     public void testExternalMappingsViaMapping() throws Exception {
         final Duration maxWrite = Duration.ofMillis(2000L);
         final String storeName = "test_mapping";
-        final Configuration indexConfig = GraphDatabaseConfiguration.buildGraphConfiguration().set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME).restrictTo(INDEX_NAME);
+        final Configuration indexConfig = esr.setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME)
+            .set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME).restrictTo(INDEX_NAME);
         final IndexProvider idx = open(indexConfig);
         final ElasticMajorVersion version = ((ElasticSearchIndex) idx).getVersion();
 
@@ -220,7 +212,9 @@ public class ElasticSearchConfigTest {
     public void testExternalDynamic() throws Exception {
         final Duration maxWrite = Duration.ofMillis(2000L);
         final String storeName = "test_mapping";
-        final Configuration indexConfig = GraphDatabaseConfiguration.buildGraphConfiguration().set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME).restrictTo(INDEX_NAME);
+        final Configuration indexConfig = esr.setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME)
+            .set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME).restrictTo(INDEX_NAME);
+
         final IndexProvider idx = open(indexConfig);
         final ElasticMajorVersion version = ((ElasticSearchIndex) idx).getVersion();
 
@@ -255,7 +249,8 @@ public class ElasticSearchConfigTest {
     public void testUpdateExternalDynamicMapping() throws Exception {
         final Duration maxWrite = Duration.ofMillis(2000L);
         final String storeName = "test_mapping";
-        final Configuration indexConfig = GraphDatabaseConfiguration.buildGraphConfiguration().set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME).set(ALLOW_MAPPING_UPDATE, true, INDEX_NAME).restrictTo(INDEX_NAME);
+        final Configuration indexConfig = esr.setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME)
+            .set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME).set(ALLOW_MAPPING_UPDATE, true, INDEX_NAME).restrictTo(INDEX_NAME);
         final IndexProvider idx = open(indexConfig);
         final ElasticMajorVersion version = ((ElasticSearchIndex) idx).getVersion();
 
@@ -290,7 +285,8 @@ public class ElasticSearchConfigTest {
     public void testExternalMappingsViaTemplate() throws Exception {
         final Duration maxWrite = Duration.ofMillis(2000L);
         final String storeName = "test_mapping";
-        final Configuration indexConfig = GraphDatabaseConfiguration.buildGraphConfiguration().set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME).restrictTo(INDEX_NAME);
+        final Configuration indexConfig = esr.setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME)
+            .set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME).restrictTo(INDEX_NAME);
         final IndexProvider idx = open(indexConfig);
         final ElasticMajorVersion version = ((ElasticSearchIndex) idx).getVersion();
 
@@ -321,7 +317,7 @@ public class ElasticSearchConfigTest {
 
     @Test
     public void testSplitIndexToMultiType() throws InterruptedException, BackendException, IOException {
-        final ModifiableConfiguration config = esr.setElasticsearchConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME);
+        final ModifiableConfiguration config = esr.setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME);
         config.set(USE_DEPRECATED_MULTITYPE_INDEX, false, INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
         final IndexProvider idx = open(indexConfig);
@@ -340,7 +336,7 @@ public class ElasticSearchConfigTest {
 
     @Test
     public void testMultiTypeToSplitIndex() throws InterruptedException, BackendException, IOException {
-        final ModifiableConfiguration config = esr.setElasticsearchConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME);
+        final ModifiableConfiguration config = esr.setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME);
         config.set(USE_DEPRECATED_MULTITYPE_INDEX, true, INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
         final IndexProvider idx = open(indexConfig);
@@ -360,7 +356,7 @@ public class ElasticSearchConfigTest {
     @Test
     public void testMultiTypeUpgrade() throws InterruptedException, BackendException, IOException {
         // create multi-type index
-        final ModifiableConfiguration config = esr.setElasticsearchConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME);
+        final ModifiableConfiguration config = esr.setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME);
         config.set(USE_DEPRECATED_MULTITYPE_INDEX, true, INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
         IndexProvider idx = open(indexConfig);

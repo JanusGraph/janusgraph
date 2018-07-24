@@ -59,7 +59,7 @@ public class ElasticSearchMultiTypeIndexTest extends ElasticSearchIndexTest {
 
     private void clear() throws Exception {
         try (final CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            final HttpHost host = new HttpHost(InetAddress.getByName(esr.getHostname()), ElasticsearchRunner.PORT);
+            final HttpHost host = new HttpHost(InetAddress.getByName(esr.getHostname()), esr.getPort());
             IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("janusgraph*")));
         }
     }
@@ -70,7 +70,7 @@ public class ElasticSearchMultiTypeIndexTest extends ElasticSearchIndexTest {
         if (esr.getEsMajorVersion().value > 2) {
             cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
         }
-        final ModifiableConfiguration config = esr.setElasticsearchConfiguration(new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,cc, BasicConfiguration.Restriction.NONE), index);
+        final ModifiableConfiguration config = esr.setConfiguration(new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,cc, BasicConfiguration.Restriction.NONE), index);
         config.set(USE_DEPRECATED_MULTITYPE_INDEX, true, index);
         config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index);
         return config.restrictTo(index);

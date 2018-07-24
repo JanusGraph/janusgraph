@@ -124,6 +124,7 @@
         <test.excluded.groups>org.janusgraph.testcategory.MemoryTests,org.janusgraph.testcategory.PerformanceTests,org.janusgraph.testcategory.BrittleTests</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <cassandra-driver.version>3.3.2</cassandra-driver.version>
+        <testcontainers.version>1.7.0</testcontainers.version>
     </properties>
     <modules>
         <module>janusgraph-codepipelines-ci</module>
@@ -193,6 +194,7 @@
                             <rules>
                                 <DependencyConvergence />
                             </rules>
+                            <skip>true</skip>
                         </configuration>
                     </execution>
                 </executions>

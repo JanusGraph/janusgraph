@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.diskstorage.es;
+package org.janusgraph.pkgtest;
 
 import org.janusgraph.DaemonRunner;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.es.ElasticMajorVersion;
+import org.janusgraph.diskstorage.es.ElasticSearchSetup;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.io.FileUtils;

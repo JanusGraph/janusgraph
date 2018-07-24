@@ -20,8 +20,7 @@ import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.util.system.IOUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.File;
@@ -34,18 +33,8 @@ import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
 
 public class BerkeleyElasticsearchTest extends JanusGraphIndexTest {
 
-    private static ElasticsearchRunner esr;
-
-    @BeforeClass
-    public static void startElasticsearch() {
-        esr = new ElasticsearchRunner();
-        esr.start();
-    }
-
-    @AfterClass
-    public static void stopElasticsearch() {
-        esr.stop();
-    }
+    @ClassRule
+    public static ElasticsearchContainer esr = new ElasticsearchContainer();
 
     public BerkeleyElasticsearchTest() {
         super(true, true, true);
@@ -53,7 +42,7 @@ public class BerkeleyElasticsearchTest extends JanusGraphIndexTest {
 
     @Override
     public WriteConfiguration getConfiguration() {
-        return esr.setElasticsearchConfiguration(getBerkeleyJEConfiguration(), INDEX)
+        return esr.setConfiguration(getBerkeleyJEConfiguration(), INDEX)
             .set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, INDEX)
             .getConfiguration();
     }
@@ -74,14 +63,14 @@ public class BerkeleyElasticsearchTest extends JanusGraphIndexTest {
     }
 
     /**
-     * Test {@link org.janusgraph.example.GraphOfTheGodsFactory#create(String)}.
+     * Test {@link org.janusgraph.example.GraphOfTheGodsFactory#create(String, String)}.
      */
     @Test
     public void testGraphOfTheGodsFactoryCreate() {
         File bdbtmp = new File("target/gotgfactory");
         IOUtils.deleteDirectory(bdbtmp, true);
 
-        JanusGraph gotg = GraphOfTheGodsFactory.create(bdbtmp.getPath());
+        JanusGraph gotg = GraphOfTheGodsFactory.create(bdbtmp.getPath(), esr.getHostname() + ":" + esr.getPort());
         JanusGraphIndexTest.assertGraphOfTheGods(gotg);
         gotg.close();
     }
