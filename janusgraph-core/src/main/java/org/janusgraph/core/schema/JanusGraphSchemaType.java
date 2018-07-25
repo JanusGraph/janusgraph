@@ -25,4 +25,11 @@ package org.janusgraph.core.schema;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public interface JanusGraphSchemaType extends JanusGraphSchemaElement {
+
+    /**
+     * Checks whether this schema type has been newly created in the current transaction.
+     *
+     * @return True, if the schema type has been newly created, else false.
+     */
+    boolean isNew();
 }

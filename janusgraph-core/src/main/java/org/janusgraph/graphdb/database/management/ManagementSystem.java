@@ -569,13 +569,15 @@ public class ManagementSystem implements JanusGraphManagement {
         if (unique) indexCardinality = Cardinality.SINGLE;
         else indexCardinality = (allSingleKeys ? Cardinality.SET : Cardinality.LIST);
 
+        boolean canIndexBeEnabled = oneNewKey || (constraint != null && constraint.isNew());
+
         TypeDefinitionMap def = new TypeDefinitionMap();
         def.setValue(TypeDefinitionCategory.INTERNAL_INDEX, true);
         def.setValue(TypeDefinitionCategory.ELEMENT_CATEGORY, elementCategory);
         def.setValue(TypeDefinitionCategory.BACKING_INDEX, Token.INTERNAL_INDEX_NAME);
         def.setValue(TypeDefinitionCategory.INDEXSTORE_NAME, indexName);
         def.setValue(TypeDefinitionCategory.INDEX_CARDINALITY, indexCardinality);
-        def.setValue(TypeDefinitionCategory.STATUS, oneNewKey ? SchemaStatus.ENABLED : SchemaStatus.INSTALLED);
+        def.setValue(TypeDefinitionCategory.STATUS, canIndexBeEnabled ? SchemaStatus.ENABLED : SchemaStatus.INSTALLED);
         JanusGraphSchemaVertex indexVertex = transaction.makeSchemaVertex(JanusGraphSchemaCategory.GRAPHINDEX, indexName, def);
         for (int i = 0; i < keys.length; i++) {
             Parameter[] paras = {ParameterType.INDEX_POSITION.getParameter(i)};

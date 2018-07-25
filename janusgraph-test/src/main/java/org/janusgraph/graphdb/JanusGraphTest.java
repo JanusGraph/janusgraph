@@ -1825,6 +1825,72 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         finishSchema();
     }
 
+    @Test
+    public void testIndexShouldBeEnabledForExistingPropertyKeyAndConstrainedToNewVertexLabel() {
+        mgmt.makePropertyKey("alreadyExistingProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        finishSchema();
+
+        PropertyKey existingPropertyKey  = mgmt.getPropertyKey("alreadyExistingProperty");
+        VertexLabel newLabel = mgmt.makeVertexLabel("newLabel").make();
+        mgmt.buildIndex("newIndex", Vertex.class).addKey(existingPropertyKey).indexOnly(newLabel).buildCompositeIndex();
+        finishSchema();
+
+        assertEquals(SchemaStatus.ENABLED, mgmt.getGraphIndex("newIndex").getIndexStatus(existingPropertyKey));
+    }
+
+    @Test
+    public void testIndexShouldBeEnabledForExistingPropertyKeyAndConstrainedToNewEdgeLabel() {
+        mgmt.makePropertyKey("alreadyExistingProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        finishSchema();
+
+        PropertyKey existingPropertyKey  = mgmt.getPropertyKey("alreadyExistingProperty");
+        EdgeLabel newLabel = mgmt.makeEdgeLabel("newLabel").make();
+        mgmt.buildIndex("newIndex", Edge.class).addKey(existingPropertyKey).indexOnly(newLabel).buildCompositeIndex();
+        finishSchema();
+
+        assertEquals(SchemaStatus.ENABLED, mgmt.getGraphIndex("newIndex").getIndexStatus(existingPropertyKey));
+    }
+
+    @Test
+    public void testIndexShouldNotBeEnabledForExistingPropertyKeyAndConstrainedToExistingVertexLabel() {
+        mgmt.makePropertyKey("alreadyExistingProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makeVertexLabel("alreadyExistingLabel").make();
+        finishSchema();
+
+        PropertyKey existingPropertyKey  = mgmt.getPropertyKey("alreadyExistingProperty");
+        VertexLabel existingLabel = mgmt.getVertexLabel("alreadyExistingLabel");
+        mgmt.buildIndex("newIndex", Vertex.class).addKey(existingPropertyKey).indexOnly(existingLabel).buildCompositeIndex();
+        finishSchema();
+
+        assertNotEquals(SchemaStatus.ENABLED, mgmt.getGraphIndex("newIndex").getIndexStatus(existingPropertyKey));
+    }
+
+    @Test
+    public void testIndexShouldNotBeEnabledForExistingPropertyKeyAndConstrainedToExistingEdgeLabel() {
+        mgmt.makePropertyKey("alreadyExistingProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makeEdgeLabel("alreadyExistingLabel").make();
+        finishSchema();
+
+        PropertyKey existingPropertyKey  = mgmt.getPropertyKey("alreadyExistingProperty");
+        EdgeLabel existingLabel = mgmt.getEdgeLabel("alreadyExistingLabel");
+        mgmt.buildIndex("newIndex", Edge.class).addKey(existingPropertyKey).indexOnly(existingLabel).buildCompositeIndex();
+        finishSchema();
+
+        assertNotEquals(SchemaStatus.ENABLED, mgmt.getGraphIndex("newIndex").getIndexStatus(existingPropertyKey));
+    }
+
+    @Test
+    public void testIndexShouldNotBeEnabledForExistingPropertyKeyWithoutLabelConstraint() {
+        mgmt.makePropertyKey("alreadyExistingProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        finishSchema();
+
+        PropertyKey existingPropertyKey  = mgmt.getPropertyKey("alreadyExistingProperty");
+        mgmt.buildIndex("newIndex", Vertex.class).addKey(existingPropertyKey).buildCompositeIndex();
+        finishSchema();
+
+        assertNotEquals(SchemaStatus.ENABLED, mgmt.getGraphIndex("newIndex").getIndexStatus(existingPropertyKey));
+    }
+
    /* ==================================================================================
                             ADVANCED
      ==================================================================================*/
