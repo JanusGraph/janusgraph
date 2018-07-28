@@ -52,3 +52,13 @@ coverity_tool.tar.gz
 cov-analysis-linux64/
 cov-int.tar.gz
 cov-int/
+
+.glv
+
+# .NET / Visual Studio
+.vs/
+[Dd]ebug/
+[Rr]elease/
+[Oo]bj/
+*.user
+*.nupkg

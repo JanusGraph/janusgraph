@@ -1,0 +1,109 @@
+[[connecting-via-dotnet]]
+== Connecting from .NET
+
+JanusGraph can be queried from a .NET application with Apache TinkerPop's http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference/#gremlin-DotNet[Gremlin.Net].
+
+Gremlin traversals can be constructed with Gremlin.Net just like in Gremlin-Java or Gremiln-Groovy. Refer to <<gremlin>> for an introduction to Gremlin and pointers to further resources. The main syntactical difference for Gremlin.Net is that it follows .NET naming conventions, e.g., method names use PascalCase instead of camelCase.
+
+=== Getting Started with Gremlin.Net
+
+To get started with Gremlin.Net:
+
+1.  Create a console application:
+[source, bash]
+dotnet new console -o GremlinNetExample
+
+2.  Add Gremlin.Net:
+[source, bash]
+dotnet add package Gremlin.Net
+
+3.  Create a `GraphTraversalSource` which is the basis for all Gremlin traversals:
+[source, csharp]
+var graph = new Graph();
+var client = new GremlinClient(new GremlinServer("localhost", 8182), new GraphSON2Reader(),
+    new GraphSON2Writer(), GremlinClient.GraphSON2MimeType);
+// GraphSON2 needs to be configured here as JanusGraph doesn't support GraphSON3 yet
+var g = graph.Traversal().WithRemote(new DriverRemoteConnection(client));
+// Reuse 'g' across the application
+
+4.  Execute a simple traversal:
+[source, csharp]
+var herculesAge = g.V().Has("name", "hercules").Values<int>("age").Next();
+Console.WriteLine($"Hercules is {herculesAge} years old.");
+
+`Next()` is a terminal step that submits the traversal to the `GremlinServer` and returns a single result. Other terminal steps can be found http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference/#_remoteconnection_submission_2[in TinkerPop's reference documentation].
+
+The traversal cal also be executed asynchronously by using `Promise()` which is the recommended way as the underlying driver in Gremlin.Net also works asynchronously:
+
+[source, csharp]
+var herculesAge = await g.V().Has("name", "hercules").Values<int>("age").Promise(t => t.Next());
+
+=== JanusGraph Specific Types and Predicates
+
+JanusGraph contains some types and <<search-predicates, predicates>> that are not part of Apache TinkerPop and are therefore also not supported by Gremlin.Net. JanusGraph.Net.Extensions is a https://docs.microsoft.com/dotnet/standard/net-standard[.NET Standard] library that extends Gremlin.Net with these types and predicates to make them usable in a .NET application.
+
+==== Using JanusGraph.Net.Extensions
+
+JanusGraph.Net.Extensions contain a `JanusGraphClientBuilder` that makes it easy to construct an `IGremlinClient` object that is already pre-configured for JanusGraph:
+
+[source, csharp]
+var client = JanusGraphClientBuilder
+    .BuildClientForServer(new GremlinServer("localhost", 8182))
+    .Create();
+
+The constructed `IGremlinClient` object can now be used to construct a `GraphTraversalSource` which is the basis of all Gremlin traversals:
+
+[source, csharp]
+var graph = new Graph();
+var g = graph.Traversal().WithRemote(new DriverRemoteConnection(client));
+// Reuse the graph traversal source g accross the application to start traversals
+
+==== Text Predicates
+
+Text predicates can also be used from a .NET application:
+
+[source, csharp]
+var reasons = g.E().Has("reason", Text.TextContains("loves")).ToList();
+
+The `Text` class prefix can be omitted with an `using static`:
+
+[source, csharp]
+using static JanusGraph.Net.Extensions.Text;
+
+which simplifies the previous traversal to:
+
+[source, csharp]
+var reasons = g.E().Has("reason", TextContains("loves")).ToList();
+
+Refer to <<text-predicate>> for a complete list of text predicates.
+
+==== Geo Types
+
+<<geoshape, JanusGraph's geo types>> can be returned from traversals:
+
+[source, csharp]
+var firstBattlePlace = g.V().Has("name", "hercules").OutE("battled").Order().By("time")
+    .Values<Point>("place").Next();
+Console.WriteLine(
+    $"Hercules first battle took place at {firstBattlePlace.Latitude}, {firstBattlePlace.Longitude}");
+
+and they can be used as arguments:
+
+[source, csharp]
+g.V().Has("name", "hercules").OutE("battled").Has("place", Geoshape.Point(38.1f, 23.7f)).Next();
+
+==== Receiving Edges
+
+With JanusGraph.Net.Extensions, it is also possible to receive edges from the JanusGraph server:
+
+[source, csharp]
+var edges = g.V().Has("name","hercules").OutE("battled").ToList();
+
+This would result in an exception with just Gremlin.Net as a special deserializer is necessary to deserialize the edge ids.
+
+==== Not Supported Yet
+
+The following features are still missing in JanusGraph.Net.Extensions:
+
+* <<geo-predicate, Geo predicates>>
+* More <<geoshape, Geoshapes>> (currently, only `Geoshape.Point` is supported)

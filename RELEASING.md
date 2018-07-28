@@ -92,6 +92,18 @@ can't be canceled.
 Release the Sonatype OSS repository that you inspected and closed
 earlier.  It will appear on Maven Central in an hour or two.
 
+To release the JanusGraph.Net.Extensions NuGet package to [nuget.org](https://www.nuget.org)
+you need an account on nuget.org and be added as an owner to the package.
+Ask a member of the Technical Steering Committee who is already listed as
+an owner of that package for that. The publishing of the package also
+requires an [API key that can be created](https://docs.microsoft.com/en-us/nuget/create-packages/publish-a-package#create-api-keys)
+for your account on nuget.org.
+With this API key, you can publish the NuGet package:
+
+```bash
+mvn deploy -pl :janusgraph-dotnet-source -Dnuget -Ddotnet.repository.key=[api-key]
+```
+
 Finally, push your local changes to Github:
 
 ```bash

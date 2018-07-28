@@ -1,0 +1,110 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph-dotnet</artifactId>
+        <version>0.3.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>janusgraph-dotnet-source</artifactId>
+    <name>JanusGraph-DotNet: .NET Extensions for JanusGraph - Source</name>
+    <url>http://janusgraph.org</url>
+    <packaging>${packaging.type}</packaging>
+
+    <build>
+        <plugins>
+            <!-- Override the execution from gremlin-dotnet to disable code generation from happening a second time -->
+            <plugin>
+                <groupId>org.codehaus.gmavenplus</groupId>
+                <artifactId>gmavenplus-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-dsl</id>
+                        <phase/>
+                    </execution>
+                </executions>
+            </plugin>
+            <!--
+            there is no point to deploying the jvm stuff - there is no java source really - just poms
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>janusgraph-dotnet-standard</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <packaging.type>pom</packaging.type>
+            </properties>
+        </profile>
+        <!-- activates the building of .NET components and requires that the .NET Core SDK be installed on the system -->
+        <profile>
+            <id>janusgraph-dotnet</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <file>
+                    <exists>.glv</exists>
+                </file>
+            </activation>
+            <properties>
+                <packaging.type>dotnet-library</packaging.type>
+            </properties>
+            <build>
+                <directory>${basedir}/target</directory>
+                <finalName>${project.artifactId}-${project.version}</finalName>
+                <plugins>
+                    <plugin>
+                        <groupId>org.eobjects.build</groupId>
+                        <artifactId>dotnet-maven-plugin</artifactId>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <packEnabled>true</packEnabled>
+                            <nugetPushEnabled>false</nugetPushEnabled>
+                            <nugetAddEnabled>false</nugetAddEnabled>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <!-- Provides a way to deploy the JanusGraph.Net.Extensions NuGet package to nuget.org. -->
+        <profile>
+            <id>glv-dotnet-deploy</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>nuget</name>
+                </property>
+            </activation>
+            <properties>
+                <packaging.type>dotnet-library</packaging.type>
+            </properties>
+            <build>
+                <directory>${basedir}/target</directory>
+                <finalName>${project.artifactId}-${project.version}</finalName>
+                <plugins>
+                    <plugin>
+                        <groupId>org.eobjects.build</groupId>
+                        <artifactId>dotnet-maven-plugin</artifactId>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <packEnabled>true</packEnabled>
+                            <nugetPushEnabled>true</nugetPushEnabled>
+                            <repository>https://api.nuget.org/v3/index.json</repository>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

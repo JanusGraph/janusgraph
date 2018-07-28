@@ -19,6 +19,7 @@ Boolean and UUID data types support the `eq` and `neq` comparison predicates.
 
 `eq` and `neq` can be used on Boolean and UUID.
 
+[[text-predicate]]
 === Text Predicate
 
 The `Text` enum specifies the <<text-search, search operator>> used to query for matching text or string values.  We differentiate between two types of predicates:
@@ -35,6 +36,7 @@ The `Text` enum specifies the <<text-search, search operator>> used to query for
 
 See <<text-search>> for more information about full-text and string search.
 
+[[geo-predicate]]
 === Geo Predicate
 
 The `Geo` enum specifies geo-location predicates.
