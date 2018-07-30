@@ -1,13 +1,13 @@
 [[graph-partitioning]]
 == Graph Partitioning
 
-When the JanusGraph cluster consists of multiple storage backend instances, the graph is partitioned across those machines. Since JanusGraph stores the graph in an adjacency list representation the assignment of vertices to machines determines the partitioning. By default, JanusGraph uses a random partitioning strategy that randomly assigns vertices to machines. Random partitioning is very efficient, requires no configuration, and results in balanced partitions. Currently explicit partitioning is not supported.
+When JanusGraph is deployed on a cluster of multiple storage backend instances, the graph is partitioned across those machines. Since JanusGraph stores the graph in an adjacency list representation the assignment of vertices to machines determines the partitioning. By default, JanusGraph uses a random partitioning strategy that randomly assigns vertices to machines. Random partitioning is very efficient, requires no configuration, and results in balanced partitions. Currently explicit partitioning is not supported.
 
 [source, properties]
 cluster.max-partitions = 32
 id.placement = simple 
 
-The configuration option `max-partitions` controls how many virtual partitions JanusGraph creates. This number should be roughly twice the number of storage backend instances. If the JanusGraph cluster is expected to grow, estimate the size of the cluster in the foreseeable future and take this number as the baseline. Setting this number too large will unnecessarily fragment the cluster which can lead to poor performance. This number should be larger than the maximum expected number of nodes in the JanusGraph graph. It must be greater than 1 and a power of 2. 
+The configuration option `max-partitions` controls how many virtual partitions JanusGraph creates. This number should be roughly twice the number of storage backend instances. If the cluster of storage backend instances is expected to grow, estimate the size of the cluster in the foreseeable future and take this number as the baseline. Setting this number too large will unnecessarily fragment the cluster which can lead to poor performance. This number should be larger than the maximum expected number of nodes in the JanusGraph graph. It must be greater than 1 and a power of 2. 
 
 There are two aspects to graph partitioning which can be individually controlled: edge cuts and vertex cuts.
 
