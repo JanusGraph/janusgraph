@@ -16,6 +16,9 @@ package org.janusgraph.graphdb.tinkerpop;
 
 import org.apache.tinkerpop.gremlin.driver.Client;
 import org.apache.tinkerpop.gremlin.driver.Cluster;
+import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Test;
@@ -56,6 +59,9 @@ public class JanusGraphChannelizerTest extends AbstractGremlinServerIntegrationT
             //assert newGraph_traversal is bound and the graphs are equivalent
             assertEquals("newGraph", client.submit("newGraph_traversal.getGraph().getGraphName()").all().get().get(0).getString());
 
+            // Ensure that we can open a remote graph traversal source against the created graph, and execute traversals
+            GraphTraversalSource newGraphTraversal = EmptyGraph.instance().traversal().withRemote(DriverRemoteConnection.using(cluster, "newGraph_traversal"));
+            assertEquals(0, newGraphTraversal.V().count().next().longValue());
         } finally {
             cluster.close();
         }
