@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import org.janusgraph.core.JanusGraphManagerUtility;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.ResourceUnavailableException;
@@ -237,7 +238,7 @@ public class ManagementLogger implements MessageReader {
                         txStillOpen = true;
                     }
                 }
-                final JanusGraphManager jgm = JanusGraphManager.getInstance();
+                final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
                 final boolean janusGraphManagerIsInBadState = null == jgm && action.equals(EVICT);
                 if (!txStillOpen && janusGraphManagerIsInBadState) {
                     log.error("JanusGraphManager should be instantiated on this server, but it is not. " +
