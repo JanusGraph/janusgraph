@@ -62,6 +62,9 @@ env:
     - MODULE='cassandra' ARGS='-Dtest=***/cassandra/*,*/graphdb/embedded/*'
     - MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/diskstorage/hbase/*'
     - MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/graphdb/hbase/*'
+    - MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dtest=**/diskstorage/hbase/* -Dhbase.profile -Phbase2'
+    - MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dtest=**/graphdb/hbase/* -Dhbase.profile -Phbase2'
+    - MODULE='hadoop-parent/janusgraph-hadoop-2' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dhbase.profile -Phbase2'
     - MODULE='cql' ARGS='-Dtest=**/diskstorage/cql/* -Dtest.skip.murmur=true'
     - MODULE='cql' ARGS='-Dtest=**/diskstorage/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
     - MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.murmur=true'
@@ -99,7 +102,7 @@ install:
       echo "Building janusgraph-${MODULE} and dependencies";
       travis_retry travis_wait \
           mvn install --projects janusgraph-${MODULE} --also-make \
-          -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
+          -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version ${INSTALL_ARGS};
     fi
 
 script:

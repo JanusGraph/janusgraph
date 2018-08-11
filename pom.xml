@@ -81,7 +81,8 @@
         <slf4j.version>1.7.12</slf4j.version>
         <httpcomponents.version>4.4.1</httpcomponents.version>
         <hadoop2.version>2.7.2</hadoop2.version>
-        <hbase100.version>1.2.6</hbase100.version>
+        <hbase1.version>1.2.6</hbase1.version>
+        <hbase2.version>2.1.0</hbase2.version>
         <hbase.server.version>1.2.6</hbase.server.version>
         <bigtable.version>1.4.0</bigtable.version>
         <scylladb.version>1.7.1</scylladb.version>
