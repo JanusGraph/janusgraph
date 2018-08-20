@@ -8,10 +8,9 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 [![Build Status][travis-shield]][travis-link]
 [![Maven][maven-shield]][maven-link]
 [![Javadoc][javadoc-shield]][javadoc-link]
+[![Downloads][downloads-shield]][downloads-link]
 [![Codecov][codecov-shield]][codecov-link]
 [![Coverity Scan][coverity-shield]][coverity-link]
-[![Gitter][gitter-shield]][gitter-link]
-[![Stack Overflow][stackoverflow-shield]][stackoverflow-link]
 
 [travis-shield]: https://travis-ci.org/JanusGraph/janusgraph.svg?branch=master
 [travis-link]: https://travis-ci.org/JanusGraph/janusgraph
@@ -19,14 +18,12 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 [maven-link]: https://search.maven.org/#search%7Cga%7C1%7Corg.janusgraph
 [javadoc-shield]: https://javadoc.io/badge/org.janusgraph/janusgraph-core.svg?color=blue
 [javadoc-link]: https://javadoc.io/doc/org.janusgraph/janusgraph-core
+[downloads-shield]: https://img.shields.io/github/downloads/JanusGraph/janusgraph/total.svg
+[downloads-link]: https://github.com/JanusGraph/janusgraph/releases
 [codecov-shield]:https://codecov.io/gh/JanusGraph/janusgraph/branch/master/graph/badge.svg
 [codecov-link]:https://codecov.io/gh/JanusGraph/janusgraph
 [coverity-shield]: https://img.shields.io/coverity/scan/janusgraph-janusgraph.svg
 [coverity-link]: https://scan.coverity.com/projects/janusgraph-janusgraph
-[gitter-shield]: https://img.shields.io/gitter/room/janusgraph/janusgraph.svg
-[gitter-link]: https://gitter.im/janusgraph/janusgraph
-[stackoverflow-shield]: https://img.shields.io/badge/stackoverflow-janusgraph-blue.svg
-[stackoverflow-link]: https://stackoverflow.com/questions/tagged/janusgraph
 
 ## Learn More
 
