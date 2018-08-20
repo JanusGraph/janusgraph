@@ -124,7 +124,7 @@ if ! [ -d "${COVERITY_BUILD_OUTPUT_DIR}" ]; then
   "${COVERITY_ANALYSIS_DIR}"/bin/cov-build \
     --dir "${COVERITY_BUILD_OUTPUT_DIR}" \
     --java-cmd-line-buf-size 102400 \
-    mvn -DskipTests=true -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -B -V clean install
+    mvn -Dmaven.test.skip.exec=true -Dmaven.javadoc.skip=true -B -V clean install
 else
   echo "Maven build already done; remove the '${COVERITY_BUILD_OUTPUT_DIR}' directory to re-run."
 fi
