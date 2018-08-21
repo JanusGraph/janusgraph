@@ -1037,7 +1037,7 @@ Suppose that Hercules battled hundreds of monsters in addition to the three capt
 h = g.V().has('name', 'hercules').next()
 g.V(h).outE('battled').has('time', inside(10, 20)).inV()
 
-Building a vertex-centric index by time speeds up such traversal queries.
+Building a vertex-centric index by time speeds up such traversal queries. Note, this initial index example already exists in the _Graph of the Gods_ as an index named `edges`. As a result, running the steps below will result in a uniqueness constraint error.
 
 [source, gremlin]
 graph.tx().rollback()  //Never create new indexes while a transaction is active
@@ -1047,7 +1047,7 @@ battled = mgmt.getEdgeLabel('battled')
 mgmt.buildEdgeIndex(battled, 'battlesByTime', Direction.BOTH, Order.decr, time)
 mgmt.commit()
 //Wait for the index to become available
-ManagementSystem.awaitGraphIndexStatus(graph, 'battlesByTime').call()
+ManagementSystem.awaitRelationIndexStatus(graph, 'battlesByTime').call()
 //Reindex the existing data
 mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("battlesByTime"), SchemaAction.REINDEX).get()
