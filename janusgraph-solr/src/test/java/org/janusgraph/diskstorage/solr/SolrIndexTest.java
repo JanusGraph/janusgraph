@@ -14,6 +14,13 @@
 
 package org.janusgraph.diskstorage.solr;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.util.Date;
+import java.util.UUID;
+
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.janusgraph.core.Cardinality;
@@ -35,14 +42,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import java.util.Date;
-
-import java.util.UUID;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 /**
  * @author Jared Holmberg (jholmberg@bericotechnologies.com)
@@ -79,7 +78,7 @@ public class SolrIndexTest extends IndexProviderTest {
         return KeywordTokenizer.class.getName();
     }
 
-    private Configuration getLocalSolrTestConfig() {
+    protected Configuration getLocalSolrTestConfig() {
         final String index = "solr";
         final ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
 
