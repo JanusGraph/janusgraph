@@ -265,6 +265,9 @@
                             <includes>
                                 <include>**/org/janusgraph/diskstorage/solr/*.java</include>
                             </includes>
+                            <excludes>
+                                <exclude>**/org/janusgraph/diskstorage/solr/SolrIndexKerberosKeytabTest.java</exclude>
+                            </excludes>
                             <systemProperties>
                                 <property>
                                     <name>index.search.solr.zookeeper-url</name>
