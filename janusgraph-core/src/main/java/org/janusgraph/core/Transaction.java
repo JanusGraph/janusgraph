@@ -68,7 +68,7 @@ public interface Transaction extends Graph, SchemaManager {
      * Returns a {@link org.janusgraph.core.JanusGraphIndexQuery} to query for vertices or edges against the specified indexing backend using
      * the given query string. The query string is analyzed and answered by the underlying storage backend.
      * <p>
-     * Note, that using indexQuery will may ignore modifications in the current transaction.
+     * Note, that using indexQuery may ignore modifications in the current transaction.
      *
      * @param indexName Name of the index to query as configured
      * @param query Query string
