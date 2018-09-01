@@ -5,10 +5,10 @@ optimized for storing and querying large graphs with billions of vertices and ed
 distributed across a multi-machine cluster. JanusGraph is a transactional database that
 can support thousands of concurrent users, complex traversals, and analytic graph queries.
 
-[![Build Status][travis-shield]][travis-link]
+[![Downloads][downloads-shield]][downloads-link]
 [![Maven][maven-shield]][maven-link]
 [![Javadoc][javadoc-shield]][javadoc-link]
-[![Downloads][downloads-shield]][downloads-link]
+[![Build Status][travis-shield]][travis-link]
 [![Codecov][codecov-shield]][codecov-link]
 [![Coverity Scan][coverity-shield]][coverity-link]
 
