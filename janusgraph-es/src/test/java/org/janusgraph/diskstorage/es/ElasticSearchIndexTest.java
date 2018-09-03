@@ -21,31 +21,32 @@ import com.google.common.collect.Multimap;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpHead;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.*;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.attribute.*;
+import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
-import org.janusgraph.diskstorage.indexing.IndexProvider;
-import org.janusgraph.diskstorage.indexing.IndexProviderTest;
+import org.janusgraph.diskstorage.indexing.*;
 import org.janusgraph.core.schema.Mapping;
-import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
+import org.janusgraph.graphdb.types.ParameterType;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -281,6 +282,63 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         assertFalse(indexExists(GraphDatabaseConfiguration.INDEX_NAME.getDefaultValue()));
         assertTrue(indexExists("test1"));
         assertTrue(indexExists("test2"));
+    }
+
+    @Test
+    public void testCustomMappingProperty() throws BackendException, IOException, ParseException {
+
+        String mappingTypeName = "vertex";
+        String indexPrefix = "janusgraph";
+        String parameterName = "boost";
+        Double parameterValue = 5.5;
+
+        String field = "field_with_custom_prop";
+
+        KeyInformation keyInfo = new StandardKeyInformation(
+            String.class,
+            Cardinality.SINGLE,
+            Mapping.STRING.asParameter(),
+            Parameter.of(ParameterType.customParameterName(parameterName), parameterValue));
+
+        index.register(mappingTypeName, field, keyInfo, tx);
+
+        String indexName = indexPrefix+"_"+mappingTypeName;
+
+        CloseableHttpResponse response = getESMapping(indexName, mappingTypeName);
+
+        // Fallback to multitype index
+        if(response.getStatusLine().getStatusCode() != 200){
+            indexName = indexPrefix;
+            response = getESMapping(indexName, mappingTypeName);
+        }
+
+        HttpEntity entity = response.getEntity();
+
+        JSONObject json = (JSONObject) new JSONParser().parse(EntityUtils.toString(entity));
+
+        String returnedProperty = retrieveValueFromJSON(json,
+            indexName, "mappings", mappingTypeName, "properties", field, parameterName);
+
+        assertEquals(parameterValue.toString(), returnedProperty);
+
+        IOUtils.closeQuietly(response);
+    }
+
+    private CloseableHttpResponse getESMapping(String indexName, String mappingTypeName) throws IOException {
+        final HttpGet httpGet = new HttpGet(indexName+"/_mapping/"+mappingTypeName);
+        return httpClient.execute(host, httpGet);
+    }
+
+    private String retrieveValueFromJSON(JSONObject json, String ... hierarchy){
+
+        for(int i=0; i<hierarchy.length; i++){
+            if(i+1==hierarchy.length){
+                return json.get(hierarchy[i]).toString();
+            }
+            json = (JSONObject) json.get(hierarchy[i]);
+        }
+
+        return null;
     }
 
     private boolean indexExists(String name) throws IOException {
