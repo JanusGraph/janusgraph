@@ -44,6 +44,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
 
     private static final int QUEUE_SIZE = 1000;
     private static final int TIMEOUT_MS = 180000; // 60 seconds
+    private static final int TIME_PER_TRY = 10; // 60 seconds
     private static final int MAX_KEY_LENGTH = 128; //in bytes
 
     private final ScanJob job;
@@ -142,13 +143,13 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
                     if (currentResults[i]!=null) continue;
                     BlockingQueue<SliceResult> queue = dataQueues.get(i);
 
-                    SliceResult qr = queue.poll(10,TimeUnit.MILLISECONDS); //Try very short time to see if we are done
+                    SliceResult qr = queue.poll(TIME_PER_TRY,TimeUnit.MILLISECONDS); //Try very short time to see if we are done
                     if (qr==null) {
                         if (pullThreads[i].isFinished()) continue; //No more data to be expected
                         int retryCount = 0;
-                        while (!pullThreads[i].isFinished() && retryCount < TIMEOUT_MS / 10 && qr == null){
+                        while (!pullThreads[i].isFinished() && retryCount < TIMEOUT_MS / TIME_PER_TRY && qr == null) {
                             retryCount ++;
-                            qr = queue.poll(10, TimeUnit.MILLISECONDS);
+                            qr = queue.poll(TIME_PER_TRY, TimeUnit.MILLISECONDS);
                         }
                         if (qr==null && !pullThreads[i].isFinished())
                             throw new TemporaryBackendException("Timed out waiting for next row data - storage error likely");
