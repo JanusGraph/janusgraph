@@ -81,6 +81,17 @@ tools:
 Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for more information, including
 CLAs and best practices for working with GitHub.
 
+## Powered by JanusGraph
+
+* [Apache Atlas](https://github.com/apache/atlas) - metadata management for governance ([website](http://atlas.apache.org/))
+* [Eclipse Keti](https://github.com/eclipse/keti) - access control service to protect RESTful APIs ([website](https://projects.eclipse.org/projects/iot.keti))
+* [Exakat](https://github.com/exakat/exakat) - PHP static analysis ([website](https://www.exakat.io/))
+* [Open Network Automation Platform (ONAP)](https://www.onap.org/) - automation and orchestration for Software-Defined Networks
+* [Unifi Catalog & Discovery](https://unifisoftware.com/product/catalog-discovery/) - JanusGraph is embedded into the Unifi Data Catalog UI to enable users to determine how datasets and attributes are related.
+- [Uber Knowledge Graph](https://www.youtube.com/watch?v=C01Gh0g01JE) ([event info](https://leap.ai/events/2017/08/06/uber_knowledge_graph))
+- [Express-Cassandra](https://github.com/masumsoft/express-cassandra) - Cassandra ORM/ODM/OGM for Node.js with optional support for Elassandra & JanusGraph
+* [Windup](https://github.com/windup/windup) by RedHat - application migration and assessment tool ([website](https://developers.redhat.com/products/rhamt/overview/))
+
 ## Users
 
 The following users have deployed JanusGraph in production.
