@@ -27,18 +27,6 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-shaded-client</artifactId>
-            <version>${hbase.version}</version>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-shaded-server</artifactId>
-            <version>${hbase.version}</version>
-            <optional>true</optional>
-        </dependency>
     </dependencies>
     
     <build>
@@ -93,17 +81,43 @@
     
     <profiles>
         <profile>
-            <id>hadoop2</id>
-
+            <id>hbase1</id>
             <activation>
                 <property>
-                    <name>!hadoop.profile</name>
+                    <name>!hbase.profile</name>
                 </property>
             </activation>
-
-            <properties>
-                <hbase.version>${hbase100.version}</hbase.version>
-            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-shaded-client</artifactId>
+                    <version>${hbase1.version}</version>
+                    <optional>true</optional>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-shaded-server</artifactId>
+                    <version>${hbase1.version}</version>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>hbase2</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-shaded-client</artifactId>
+                    <version>${hbase2.version}</version>
+                    <optional>true</optional>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-shaded-mapreduce</artifactId>
+                    <version>${hbase2.version}</version>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 </project>
