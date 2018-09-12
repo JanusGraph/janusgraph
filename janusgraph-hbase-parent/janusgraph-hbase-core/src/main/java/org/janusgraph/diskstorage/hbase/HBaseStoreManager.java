@@ -56,7 +56,6 @@ import org.apache.hadoop.hbase.ZooKeeperConnectionException;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Row;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -260,6 +259,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     // Cached return value of getDeployment() as requesting it can be expensive.
     private Deployment deployment = null;
 
+    private final org.apache.hadoop.conf.Configuration hconf;
+
     private static final ConcurrentHashMap<HBaseStoreManager, Throwable> openManagers = new ConcurrentHashMap<>();
 
     // Mutable instance state
@@ -296,7 +297,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
          * which in turn applies the contents of hbase-default.xml and then
          * applies the contents of hbase-site.xml.
          */
-        final org.apache.hadoop.conf.Configuration hconf = HBaseConfiguration.create();
+        hconf = HBaseConfiguration.create();
 
         // Copy a subset of our commons config into a Hadoop config
         int keysLoaded=0;
@@ -916,7 +917,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
                     for (StaticBuffer b : mutation.getDeletions()) {
                         // commands.getSecond() is a Delete for this rowkey.
-                        commands.getSecond().deleteColumns(cfName, b.as(StaticBuffer.ARRAY_FACTORY), delTimestamp);
+                        commands.getSecond().addColumns(cfName, b.as(StaticBuffer.ARRAY_FACTORY), delTimestamp);
                     }
                 }
 
@@ -963,7 +964,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     private void addColumnToPut(Put p, byte[] cfName, long putTimestamp, Entry e) {
-      p.add(cfName, e.getColumnAs(StaticBuffer.ARRAY_FACTORY), putTimestamp,
+      p.addColumn(cfName, e.getColumnAs(StaticBuffer.ARRAY_FACTORY), putTimestamp,
           e.getValueAs(StaticBuffer.ARRAY_FACTORY));
     }
 
@@ -984,5 +985,10 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             return config.get(GRAPH_NAME);
         }
         return config.get(HBASE_TABLE);
+    }
+
+    @VisibleForTesting
+    protected org.apache.hadoop.conf.Configuration getHBaseConf() {
+        return hconf;
     }
 }

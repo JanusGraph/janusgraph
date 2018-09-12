@@ -60,11 +60,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-shaded-client</artifactId>
-            <version>${hbase100.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-bigtable</artifactId>
             <version>${project.version}</version>
@@ -177,4 +172,42 @@
             <!-- Done disabling unnecessary plugins -->
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>hbase1</id>
+            <activation>
+                <property>
+                    <name>!hbase.profile</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-shaded-client</artifactId>
+                    <version>${hbase1.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-shaded-server</artifactId>
+                    <version>${hbase1.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>hbase2</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-shaded-client</artifactId>
+                    <version>${hbase2.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-shaded-mapreduce</artifactId>
+                    <version>${hbase2.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>

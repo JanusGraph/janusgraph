@@ -16,8 +16,6 @@ package org.janusgraph.diskstorage.hbase;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
 import java.io.StringWriter;
 
@@ -102,19 +100,13 @@ public class HBaseStoreManagerConfigTest {
     }
 
     @Test
-    public void testHBaseStoragePort() {
+    public void testHBaseStoragePort() throws BackendException {
         WriteConfiguration config = HBaseStorageSetup.getHBaseGraphConfiguration();
-        // Set a wrong port to see if it is effective. Default server is at 2181.
         config.set(ConfigElement.getPath(GraphDatabaseConfiguration.STORAGE_PORT), 2000);
-        try {
-            HBaseStoreManager manager = new HBaseStoreManager(new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS,
+        HBaseStoreManager manager = new HBaseStoreManager(new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS,
                     config, BasicConfiguration.Restriction.NONE));
-            KeyColumnValueStore store = manager.openDatabase(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME);
-        } catch (BackendException e) {
-            assertTrue("Can't get the locations".equals(e.getCause().getMessage())
-                    || "Can't get the location for replica 0".equals(e.getCause().getMessage()));
-            return;
-        }
-        fail("Expected BackendException with: Can't get the locations");
+        // Check the native property in HBase conf.
+        String port = manager.getHBaseConf().get("hbase.zookeeper.property.clientPort");
+        assertEquals("2000", port);
     }
 }
