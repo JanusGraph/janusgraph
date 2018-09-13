@@ -216,15 +216,15 @@ public class SolrIndex implements IndexProvider {
             "When mutating - wait for the index to reflect new mutations before returning. This can have a negative impact on performance.",
             ConfigOption.Type.LOCAL, false);
 
-    
+
     /** Security Configuration */
-    
+
     public static final ConfigOption<Boolean> KERBEROS_ENABLED = new ConfigOption<Boolean>(SOLR_NS,"kerberos-enabled",
             "Whether SOLR instance is Kerberized or not.",
-            ConfigOption.Type.GLOBAL_OFFLINE, false);
+            ConfigOption.Type.MASKABLE, false);
     public static final ConfigOption<String> KERBEROS_CONFIG = new ConfigOption<String>(SOLR_NS,"kerberos-config",
             "The absolute path to the JAAS configuration file for providing kerberos configuration to SOLR.",
-            ConfigOption.Type.GLOBAL_OFFLINE, String.class);
+            ConfigOption.Type.MASKABLE, String.class);
 
     private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder()
         .supportsDocumentTTL()
@@ -261,13 +261,13 @@ public class SolrIndex implements IndexProvider {
         batchSize = config.get(INDEX_MAX_RESULT_SET_SIZE);
         ttlField = config.get(TTL_FIELD);
         waitSearcher = config.get(WAIT_SEARCHER);
-        
+
         if (kerberosEnabled) {
             logger.debug("Kerberos is enabled. Configuring SOLR for Kerberos.");
             configureSolrClientsForKerberos();
         } else {
             logger.debug("Kerberos is NOT enabled.");
-            logger.debug("KERBEROS_ENABLED name is " + KERBEROS_ENABLED.getName() + " and it is" + (KERBEROS_ENABLED.isOption() ? " " : " not") + " an option."); 
+            logger.debug("KERBEROS_ENABLED name is " + KERBEROS_ENABLED.getName() + " and it is" + (KERBEROS_ENABLED.isOption() ? " " : " not") + " an option.");
             logger.debug("KERBEROS_ENABLED type is " + KERBEROS_ENABLED.getType().name());
         }
         final ModifiableSolrParams clientParams = new ModifiableSolrParams();
@@ -315,7 +315,7 @@ public class SolrIndex implements IndexProvider {
                 @Override
                 public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
                     if(request instanceof HttpEntityEnclosingRequest) {
-                        HttpEntityEnclosingRequest enclosingRequest = ((HttpEntityEnclosingRequest) request);  
+                        HttpEntityEnclosingRequest enclosingRequest = ((HttpEntityEnclosingRequest) request);
                         HttpEntity requestEntity = enclosingRequest.getEntity();
                         enclosingRequest.setEntity(new BufferedHttpEntity(requestEntity));
                     }
