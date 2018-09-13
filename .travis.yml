@@ -92,17 +92,13 @@ matrix:
 install:
   - if [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] && ! [ -z "${COVERITY_ONLY:-}" ]; then
       echo "Building all modules for Coverity analysis";
-      travis_retry travis_wait \
-          mvn install -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
+      travis_retry travis_wait mvn install -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
     elif [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] || ! [ -z "${COVERITY_ONLY:-}" ]; then
       echo "Building all modules for test-compile coverage, but skipping Coverity upload";
-      travis_retry travis_wait \
-          mvn install -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
+      travis_retry travis_wait mvn install -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
     else
       echo "Building janusgraph-${MODULE} and dependencies";
-      travis_retry travis_wait \
-          mvn install --projects janusgraph-${MODULE} --also-make \
-          -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
+      travis_retry travis_wait mvn install --projects janusgraph-${MODULE} --also-make -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
     fi
 
 script:
@@ -120,8 +116,7 @@ script:
       echo "Skipping module tests on Coverity branch/job";
     else
       echo "Testing janusgraph-${MODULE}";
-      travis_retry travis_wait 50 \
-          mvn clean verify --projects janusgraph-${MODULE} -Pcoverage ${ARGS};
+      travis_retry travis_wait 50 mvn clean verify --projects janusgraph-${MODULE} -Pcoverage ${ARGS};
     fi
 
 after_success:
