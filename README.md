@@ -5,13 +5,12 @@ optimized for storing and querying large graphs with billions of vertices and ed
 distributed across a multi-machine cluster. JanusGraph is a transactional database that
 can support thousands of concurrent users, complex traversals, and analytic graph queries.
 
-[![Build Status][travis-shield]][travis-link]
+[![Downloads][downloads-shield]][downloads-link]
 [![Maven][maven-shield]][maven-link]
 [![Javadoc][javadoc-shield]][javadoc-link]
+[![Build Status][travis-shield]][travis-link]
 [![Codecov][codecov-shield]][codecov-link]
 [![Coverity Scan][coverity-shield]][coverity-link]
-[![Gitter][gitter-shield]][gitter-link]
-[![Stack Overflow][stackoverflow-shield]][stackoverflow-link]
 
 [travis-shield]: https://travis-ci.org/JanusGraph/janusgraph.svg?branch=master
 [travis-link]: https://travis-ci.org/JanusGraph/janusgraph
@@ -19,14 +18,12 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 [maven-link]: https://search.maven.org/#search%7Cga%7C1%7Corg.janusgraph
 [javadoc-shield]: https://javadoc.io/badge/org.janusgraph/janusgraph-core.svg?color=blue
 [javadoc-link]: https://javadoc.io/doc/org.janusgraph/janusgraph-core
+[downloads-shield]: https://img.shields.io/github/downloads/JanusGraph/janusgraph/total.svg
+[downloads-link]: https://github.com/JanusGraph/janusgraph/releases
 [codecov-shield]:https://codecov.io/gh/JanusGraph/janusgraph/branch/master/graph/badge.svg
 [codecov-link]:https://codecov.io/gh/JanusGraph/janusgraph
 [coverity-shield]: https://img.shields.io/coverity/scan/janusgraph-janusgraph.svg
 [coverity-link]: https://scan.coverity.com/projects/janusgraph-janusgraph
-[gitter-shield]: https://img.shields.io/gitter/room/janusgraph/janusgraph.svg
-[gitter-link]: https://gitter.im/janusgraph/janusgraph
-[stackoverflow-shield]: https://img.shields.io/badge/stackoverflow-janusgraph-blue.svg
-[stackoverflow-link]: https://stackoverflow.com/questions/tagged/janusgraph
 
 ## Learn More
 
@@ -83,6 +80,17 @@ tools:
 
 Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for more information, including
 CLAs and best practices for working with GitHub.
+
+## Powered by JanusGraph
+
+* [Apache Atlas](https://github.com/apache/atlas) - metadata management for governance ([website](http://atlas.apache.org/))
+* [Eclipse Keti](https://github.com/eclipse/keti) - access control service to protect RESTful APIs ([website](https://projects.eclipse.org/projects/iot.keti))
+* [Exakat](https://github.com/exakat/exakat) - PHP static analysis ([website](https://www.exakat.io/))
+* [Open Network Automation Platform (ONAP)](https://www.onap.org/) - automation and orchestration for Software-Defined Networks
+* [Unifi Catalog & Discovery](https://unifisoftware.com/product/catalog-discovery/) - JanusGraph is embedded into the Unifi Data Catalog UI to enable users to determine how datasets and attributes are related.
+- [Uber Knowledge Graph](https://www.youtube.com/watch?v=C01Gh0g01JE) ([event info](https://leap.ai/events/2017/08/06/uber_knowledge_graph))
+- [Express-Cassandra](https://github.com/masumsoft/express-cassandra) - Cassandra ORM/ODM/OGM for Node.js with optional support for Elassandra & JanusGraph
+* [Windup](https://github.com/windup/windup) by RedHat - application migration and assessment tool ([website](https://developers.redhat.com/products/rhamt/overview/))
 
 ## Users
 

@@ -536,6 +536,14 @@ public class ElasticSearchIndex implements IndexProvider {
             }
         }
 
+        final List<Parameter> customParameters = ParameterType.getCustomParameters(information.getParameters());
+
+        if (properties.containsKey(key) && !customParameters.isEmpty()) {
+            final Map<String, Object> mapping = new HashMap<>(((Map<String, Object>) properties.get(key)));
+            customParameters.forEach(p -> mapping.put(p.key(), p.value()));
+            properties.put(key, mapping);
+        }
+
         final Map<String,Object> mapping = ImmutableMap.of("properties", properties);
 
         try {
