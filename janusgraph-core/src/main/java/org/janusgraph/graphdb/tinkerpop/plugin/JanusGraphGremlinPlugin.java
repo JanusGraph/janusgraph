@@ -199,13 +199,14 @@ public class JanusGraphGremlinPlugin extends AbstractGremlinPlugin {
         CLASS_IMPORTS.add(ZonedDateTime.class);
         CLASS_IMPORTS.add(ZoneId.class);
         CLASS_IMPORTS.add(ZoneOffset.class);
+        CLASS_IMPORTS.add(ChronoUnit.class);
 
         ///////////
         // ENUMS //
         ///////////
 
-        Collections.addAll(ENUM_IMPORTS, Geo.values());
-        Collections.addAll(ENUM_IMPORTS, Text.values());
+        // also make sure the class is imported for these enums
+
         Collections.addAll(ENUM_IMPORTS, Multiplicity.values());
         Collections.addAll(ENUM_IMPORTS, Cardinality.values());
         Collections.addAll(ENUM_IMPORTS, ChronoUnit.values());
@@ -214,7 +215,28 @@ public class JanusGraphGremlinPlugin extends AbstractGremlinPlugin {
         // METHODS //
         /////////////
 
-        Stream.concat(Stream.of(Geo.class.getMethods()), Stream.of(Text.class.getMethods()))
+        // only include the static predicates
+        // also make sure the class is imported for these methods
+
+        Stream.of(Geo.values())
+            .map(v -> {
+                try {
+                    return Geo.class.getMethod(v.toString(), Object.class);
+                } catch (NoSuchMethodException e) {
+                    throw new RuntimeException(e);
+                }
+            })
+            .filter(JanusGraphGremlinPlugin::isMethodStatic)
+            .forEach(METHOD_IMPORTS::add);
+
+        Stream.of(Text.values())
+            .map(v -> {
+                try {
+                    return Text.class.getMethod(v.toString(), Object.class);
+                } catch (NoSuchMethodException e) {
+                    throw new RuntimeException(e);
+                }
+            })
             .filter(JanusGraphGremlinPlugin::isMethodStatic)
             .forEach(METHOD_IMPORTS::add);
     }
