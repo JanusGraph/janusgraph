@@ -105,13 +105,15 @@ public class JanusGraphManager implements GraphManager {
         final ScheduledExecutorService bindExecutor = Executors.newScheduledThreadPool(1);
         // Dynamically created graphs created with the ConfiguredGraphFactory are
         // bound across all nodes in the cluster and in the face of server restarts
-        bindExecutor.scheduleWithFixedDelay(new GremlinExecutorGraphBinder(this.gremlinExecutor), 0, 20L, TimeUnit.SECONDS);
+        bindExecutor.scheduleWithFixedDelay(new GremlinExecutorGraphBinder(this, this.gremlinExecutor), 0, 20L, TimeUnit.SECONDS);
     }
 
     private class GremlinExecutorGraphBinder implements Runnable {
+        final JanusGraphManager graphManager;
         final GremlinExecutor gremlinExecutor;
 
-        public GremlinExecutorGraphBinder(GremlinExecutor gremlinExecutor) {
+        public GremlinExecutorGraphBinder(JanusGraphManager graphManager, GremlinExecutor gremlinExecutor) {
+            this.graphManager = graphManager;
             this.gremlinExecutor = gremlinExecutor;
         }
 
@@ -121,7 +123,10 @@ public class JanusGraphManager implements GraphManager {
                 try {
                     final Graph graph = ConfiguredGraphFactory.open(it);
                     this.gremlinExecutor.getScriptEngineManager().put(it, graph);
-                    this.gremlinExecutor.getScriptEngineManager().put(it + "_traversal", graph.traversal());
+                    String traversalName = it + "_traversal";
+                    TraversalSource traversalSource = graph.traversal();
+                    this.gremlinExecutor.getScriptEngineManager().put(traversalName, traversalSource);
+                    this.graphManager.putTraversalSource(traversalName, traversalSource);
                 } catch (Exception e) {
                     // cannot open graph, do nothing
                     log.error(String.format("Failed to open graph %s with the following error:\n %s.\n" +
@@ -190,10 +195,14 @@ public class JanusGraphManager implements GraphManager {
         return traversalSources.remove(tsName);
     }
 
+    /**
+     * Get the {@link Graph} and {@link TraversalSource} list as a set of bindings.
+     */
     @Override
     public Bindings getAsBindings() {
         final Bindings bindings = new SimpleBindings();
         graphs.forEach(bindings::put);
+        traversalSources.forEach(bindings::put);
         return bindings;
     }
 
@@ -249,7 +258,10 @@ public class JanusGraphManager implements GraphManager {
         if (graph != null && !((StandardJanusGraph) graph).isClosed()) {
             if (null != gremlinExecutor) {
                 this.gremlinExecutor.getScriptEngineManager().put(gName, graph);
-                this.gremlinExecutor.getScriptEngineManager().put(gName + "_traversal", graph.traversal());
+                String traversalName = gName + "_traversal";
+                TraversalSource traversalSource = graph.traversal();
+                this.gremlinExecutor.getScriptEngineManager().put(traversalName, traversalSource);
+                this.putTraversalSource(traversalName, traversalSource);
             }
             return graph;
         } else {
@@ -262,7 +274,10 @@ public class JanusGraphManager implements GraphManager {
             }
             if (null != gremlinExecutor) {
                 this.gremlinExecutor.getScriptEngineManager().put(gName, graph);
-                this.gremlinExecutor.getScriptEngineManager().put(gName + "_traversal", graph.traversal());
+                String traversalName = gName + "_traversal";
+                TraversalSource traversalSource = graph.traversal();
+                this.gremlinExecutor.getScriptEngineManager().put(traversalName, traversalSource);
+                this.putTraversalSource(traversalName, traversalSource);
             }
             return graph;
         }
