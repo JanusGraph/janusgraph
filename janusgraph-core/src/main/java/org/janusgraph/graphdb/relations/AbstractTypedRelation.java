@@ -14,14 +14,18 @@
 
 package org.janusgraph.graphdb.relations;
 
-import org.janusgraph.core.*;
+import org.janusgraph.core.InvalidElementException;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.RelationType;
 import org.janusgraph.graphdb.internal.AbstractElement;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.Iterator;
@@ -40,12 +44,14 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     @Override
     public InternalRelation it() {
         InternalVertex v = getVertex(0);
-        if (v == v.it())
+        if (v.it().equals(v)) {
             return this;
+        }
 
         InternalRelation next = (InternalRelation) RelationIdentifier.get(this).findRelation(tx());
-        if (next == null)
+        if (next == null) {
             throw InvalidElementException.removedException(this);
+        }
 
         return next;
     }
@@ -61,23 +67,27 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
      */
     protected final void verifyAccess() { }
 
-	/* ---------------------------------------------------------------
-	 * Immutable Aspects of Relation
-	 * ---------------------------------------------------------------
-	 */
+    /* ---------------------------------------------------------------
+     * Immutable Aspects of Relation
+     * ---------------------------------------------------------------
+     */
 
     @Override
     public Direction direction(Vertex vertex) {
-        for (int i=0;i<getArity();i++) {
-            if (it().getVertex(i).equals(vertex)) return EdgeDirection.fromPosition(i);
+        for (int i = 0; i < getArity(); i++) {
+            if (it().getVertex(i).equals(vertex)) {
+                return EdgeDirection.fromPosition(i);
+            }
         }
         throw new IllegalArgumentException("Relation is not incident on vertex");
     }
 
     @Override
     public boolean isIncidentOn(Vertex vertex) {
-        for (int i=0;i<getArity();i++) {
-            if (it().getVertex(i).equals(vertex)) return true;
+        for (int i = 0; i < getArity(); i++) {
+            if (it().getVertex(i).equals(vertex)) {
+                return true;
+            }
         }
         return false;
     }
@@ -89,7 +99,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
     @Override
     public boolean isLoop() {
-        return getArity()==2 && getVertex(0).equals(getVertex(1));
+        return getArity() == 2 && getVertex(0).equals(getVertex(1));
     }
 
     @Override
@@ -103,9 +113,9 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     }
 
     /* ---------------------------------------------------------------
-	 * Mutable Aspects of Relation
-	 * ---------------------------------------------------------------
-	 */
+     * Mutable Aspects of Relation
+     * ---------------------------------------------------------------
+     */
 
     @Override
     public <V> Property<V> property(final String key, final V value) {
@@ -120,7 +130,9 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     @Override
     public <O> O valueOrNull(PropertyKey key) {
         verifyAccess();
-        if (key instanceof ImplicitKey) return ((ImplicitKey)key).computeProperty(this);
+        if (key instanceof ImplicitKey) {
+            return ((ImplicitKey) key).computeProperty(this);
+        }
         return it().getValueDirect(key);
     }
 
@@ -128,12 +140,14 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     public <O> O value(String key) {
         verifyAccess();
         O val = valueInternal(tx().getPropertyKey(key));
-        if (val==null) throw Property.Exceptions.propertyDoesNotExist(this,key);
+        if (val == null) {
+            throw Property.Exceptions.propertyDoesNotExist(this, key);
+        }
         return val;
     }
 
     private <O> O valueInternal(PropertyKey type) {
-        if (type==null) {
+        if (type == null) {
             return null;
         }
         return valueOrNull(type);
@@ -145,19 +159,19 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
         Stream<PropertyKey> keys;
 
-        if (keyNames==null || keyNames.length==0) {
+        if (keyNames == null || keyNames.length == 0) {
             keys = IteratorUtils.stream(it().getPropertyKeysDirect().iterator());
         } else {
             keys = Stream.of(keyNames)
-                    .map(s -> tx().getPropertyKey(s)).filter(rt -> rt != null && getValueDirect(rt)!=null);
+                         .map(s -> tx().getPropertyKey(s)).filter(rt -> rt != null && getValueDirect(rt) != null);
         }
-        return keys.map( rt -> (Property<V>)new SimpleJanusGraphProperty<V>(this,rt,valueInternal(rt))).iterator();
+        return keys.map(rt -> (Property<V>) new SimpleJanusGraphProperty<V>(this, rt, valueInternal(rt))).iterator();
     }
 
     /* ---------------------------------------------------------------
-	 * Blueprints Iterators
-	 * ---------------------------------------------------------------
-	 */
+     * Blueprints Iterators
+     * ---------------------------------------------------------------
+     */
 
 //    @Override
 //    public Iterator<Vertex> vertexIterator(Direction direction) {
