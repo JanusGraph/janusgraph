@@ -61,12 +61,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 @Category({ SerialTests.class })
-public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest {
+public class JanusGraphOperationCountingTest extends JanusGraphBaseTest {
 
     public MetricManager metric;
     public final String SYSTEM_METRICS  = GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
-
-    public abstract WriteConfiguration getBaseConfiguration();
 
     public final boolean storeUsesConsistentKeyLocker() {
         return !this.features.hasLocking();

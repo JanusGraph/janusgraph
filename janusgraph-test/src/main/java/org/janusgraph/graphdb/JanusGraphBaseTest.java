@@ -16,6 +16,8 @@ package org.janusgraph.graphdb;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+import org.janusgraph.JanusGraphDatabaseManager;
+import org.janusgraph.JanusGraphDatabaseProvider;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
@@ -40,6 +42,8 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestName;
 
 import java.time.Duration;
 import java.util.*;
@@ -67,11 +71,22 @@ public abstract class JanusGraphBaseTest {
     public JanusGraphManagement mgmt;
 
     public Map<String,LogManager> logManagers;
+    protected JanusGraphDatabaseProvider graphProvider;
+
+    @Rule
+    public TestName name = new TestName();
 
     public JanusGraphBaseTest() {
     }
 
-    public abstract WriteConfiguration getConfiguration();
+    protected WriteConfiguration getBaseConfiguration() {
+        return graphProvider.getJanusGraphConfiguration(this, name.getMethodName()).getConfiguration();
+
+    }
+
+    public WriteConfiguration getConfiguration() {
+        return getBaseConfiguration();
+    }
 
     public Configuration getConfig() {
         return new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS, config.copy(), BasicConfiguration.Restriction.NONE);
@@ -94,6 +109,7 @@ public abstract class JanusGraphBaseTest {
 
     @Before
     public void setUp() throws Exception {
+        graphProvider = JanusGraphDatabaseManager.getGraphDatabaseProvider();
         this.config = getConfiguration();
         TestGraphConfigs.applyOverrides(config);
         Preconditions.checkNotNull(config);
@@ -154,30 +170,7 @@ public abstract class JanusGraphBaseTest {
     }
 
     public void clopen(Object... settings) {
-        config = getConfiguration();
-        if (mgmt!=null && mgmt.isOpen()) mgmt.rollback();
-        if (null != tx && tx.isOpen()) tx.commit();
-        if (settings!=null && settings.length>0) {
-            final Map<TestConfigOption,Object> options = validateConfigOptions(settings);
-            JanusGraphManagement janusGraphManagement = null;
-            final ModifiableConfiguration modifiableConfiguration = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.LOCAL);
-            for (final Map.Entry<TestConfigOption,Object> option : options.entrySet()) {
-                if (option.getKey().option.isLocal()) {
-                    modifiableConfiguration.set(option.getKey().option,option.getValue(),option.getKey().umbrella);
-                } else {
-                    if (janusGraphManagement==null) janusGraphManagement = graph.openManagement();
-                    janusGraphManagement.set(ConfigElement.getPath(option.getKey().option,option.getKey().umbrella),option.getValue());
-                }
-            }
-            if (janusGraphManagement!=null) janusGraphManagement.commit();
-            modifiableConfiguration.close();
-        }
-        if (null != graph && null != graph.tx() && graph.tx().isOpen())
-            graph.tx().commit();
-        if (null != graph && graph.isOpen())
-            graph.close();
-        Preconditions.checkNotNull(config);
-        open(config);
+        graphProvider.clopen(this, settings);
     }
 
 

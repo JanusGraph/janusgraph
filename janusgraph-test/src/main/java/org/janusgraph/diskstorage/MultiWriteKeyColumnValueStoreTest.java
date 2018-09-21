@@ -70,8 +70,6 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
         close();
     }
 
-    public abstract KeyColumnValueStoreManager openStorageManager() throws BackendException;
-
     public void open() throws BackendException {
         manager = openStorageManager();
         tx = new CacheTransaction(manager.beginTransaction(getTxConfig()), manager, bufferSize, Duration.ofMillis(100), true);

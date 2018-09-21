@@ -1,4 +1,4 @@
-// Copyright 2017 JanusGraph Authors
+// Copyright 2018 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,18 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.blueprints.structure;
+package org.janusgraph;
 
-import org.janusgraph.blueprints.BerkeleyGraphProvider;
-import org.janusgraph.core.JanusGraph;
-import org.apache.tinkerpop.gremlin.GraphProviderClass;
-import org.apache.tinkerpop.gremlin.structure.StructureStandardSuite;
 import org.junit.runner.RunWith;
 
-/**
- * @author Matthias Broecheler (me@matthiasb.com)
- */
-@RunWith(StructureStandardSuite.class)
-@GraphProviderClass(provider = BerkeleyGraphProvider.class, graph = JanusGraph.class)
-public class BerkeleyJanusGraphStructureTest {
+@RunWith(JanusGraphTinkerpopTestSuite.class)
+@JanusGraphProviderClass(provider = BerkeleyJanusGraphDatabaseProvider.class)
+@JanusGraphIgnoreTest(
+    test = "org.apache.tinkerpop.gremlin.process.traversal.TraversalInterruptionTest",
+    method = "testConcurrentGetSlice",
+    reason = "BerkeleyDB JE does not support thread interrupts.")//TODO need to be tested
+public class BerkeleyGraphTinkerpopTest {
 }

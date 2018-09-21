@@ -274,13 +274,9 @@
                         <forkedProcessTimeoutInSeconds>21600</forkedProcessTimeoutInSeconds>
                         <reuseForks>false</reuseForks>
                         <excludes>
+                            <exclude>**/*TinkerpopTest.java</exclude>
                             <exclude>**/*PerformanceTest.java</exclude>
                             <exclude>**/*ConcurrentTest.java</exclude>
-                            <exclude>**/*Groovy*Test.java</exclude>
-                            <exclude>**/*ComputerTest.java</exclude>
-                            <exclude>**/*ProcessTest.java</exclude>
-                            <exclude>**/*ProcessPerformanceTest.java</exclude>
-                            <exclude>**/*StructureTest.java</exclude>
                         </excludes>
                         <excludedGroups>${test.excluded.groups}</excludedGroups>
                         <skip>${test.skip.default}</skip>
@@ -306,11 +302,7 @@
                                 <threadCount>1</threadCount>
                                 <perCoreThreadCount>false</perCoreThreadCount>
                                 <includes>
-                                    <include>**/*Groovy*Test.java</include>
-                                    <include>**/*ComputerTest.java</include>
-                                    <include>**/*ProcessTest.java</include>
-                                    <include>**/*ProcessPerformanceTest.java</include>
-                                    <include>**/*StructureTest.java</include>
+                                    <include>**/*TinkerpopTest.java</include>
                                 </includes>
                                 <runOrder>alphabetical</runOrder>
                                 <skipTests>${test.skip.tp}</skipTests>

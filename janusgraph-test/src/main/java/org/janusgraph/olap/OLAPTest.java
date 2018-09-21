@@ -48,7 +48,7 @@ import static org.junit.Assert.*;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class OLAPTest extends JanusGraphBaseTest {
+public class OLAPTest extends JanusGraphBaseTest {
 
     private static final Random random = new Random();
 

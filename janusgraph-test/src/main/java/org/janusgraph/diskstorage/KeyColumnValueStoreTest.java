@@ -45,7 +45,7 @@ import org.janusgraph.testutil.RandomGenerator;
 
 import static org.junit.Assert.*;
 
-public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
+public class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
     public static final int TRIALS = 5000;
     @Rule
@@ -70,8 +70,6 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         open();
     }
 
-    public abstract KeyColumnValueStoreManager openStorageManager() throws BackendException;
-
     public void open() throws BackendException {
         manager = openStorageManager();
         store = manager.openDatabase(storeName);
@@ -87,8 +85,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     public void clopen() throws BackendException {
-        close();
-        open();
+        graphProvider.clopen(this, name.getMethodName());
     }
 
     @After

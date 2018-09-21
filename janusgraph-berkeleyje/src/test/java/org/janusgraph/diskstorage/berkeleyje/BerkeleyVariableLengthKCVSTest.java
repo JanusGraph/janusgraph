@@ -14,27 +14,7 @@
 
 package org.janusgraph.diskstorage.berkeleyje;
 
-import org.janusgraph.BerkeleyStorageSetup;
-import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.KeyColumnValueStoreTest;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManagerAdapter;
-import org.junit.Test;
 
 public class BerkeleyVariableLengthKCVSTest extends KeyColumnValueStoreTest {
-
-    public KeyColumnValueStoreManager openStorageManager() throws BackendException {
-        BerkeleyJEStoreManager sm = new BerkeleyJEStoreManager(BerkeleyStorageSetup.getBerkeleyJEConfiguration());
-        return new OrderedKeyValueStoreManagerAdapter(sm);
-    }
-
-    @Test @Override
-    public void testConcurrentGetSlice() {
-
-    }
-
-    @Test @Override
-    public void testConcurrentGetSliceAndMutate() {
-
-    }
 }

@@ -55,7 +55,7 @@ import org.junit.runners.Parameterized;
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 @RunWith(Parameterized.class)
-public abstract class JanusGraphIoTest extends JanusGraphBaseTest {
+public class JanusGraphIoTest extends JanusGraphBaseTest {
 
     private static final GeometryFactory GF = new GeometryFactory();
 

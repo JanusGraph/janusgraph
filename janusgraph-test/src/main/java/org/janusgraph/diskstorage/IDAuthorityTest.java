@@ -17,6 +17,8 @@ package org.janusgraph.diskstorage;
 import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.LongSet;
 import com.google.common.base.Preconditions;
+import org.janusgraph.JanusGraphDatabaseManager;
+import org.janusgraph.JanusGraphDatabaseProvider;
 import org.janusgraph.StorageSetup;
 
 import org.janusgraph.diskstorage.configuration.Configuration;
@@ -34,10 +36,8 @@ import org.janusgraph.graphdb.database.idassigner.IDBlockSizer;
 import org.janusgraph.graphdb.database.idassigner.IDPoolExhaustedException;
 import org.janusgraph.testutil.TestGraphConfigs;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
@@ -56,7 +56,7 @@ import java.util.concurrent.Future;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 @RunWith(Parameterized.class)
-public abstract class IDAuthorityTest {
+public class IDAuthorityTest extends KeyStorageBaseTest {
 
     private static final Logger log =
             LoggerFactory.getLogger(IDAuthorityTest.class);
@@ -130,8 +130,6 @@ public abstract class IDAuthorityTest {
         m.close();
         open();
     }
-
-    public abstract KeyColumnValueStoreManager openStorageManager() throws BackendException;
 
     public void open() throws BackendException {
         manager = new KeyColumnValueStoreManager[CONCURRENCY];

@@ -15,6 +15,9 @@
 package org.janusgraph.diskstorage.log;
 
 import java.time.Duration;
+
+import org.janusgraph.JanusGraphDatabaseManager;
+import org.janusgraph.JanusGraphDatabaseProvider;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -22,6 +25,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
 import org.janusgraph.diskstorage.log.kcvs.KCVSLogManager;
 
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.junit.Before;
 
 /**
  * Implementation of the {@link LogTest} for {@link KCVSLogManager} based log implementations.
@@ -29,9 +33,16 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class KCVSLogTest extends LogTest {
+public class KCVSLogTest extends LogTest {
 
-    public abstract KeyColumnValueStoreManager openStorageManager() throws BackendException;
+    private JanusGraphDatabaseProvider provider;
+
+    public KeyColumnValueStoreManager openStorageManager() throws BackendException {
+        if(provider == null) {
+            provider = JanusGraphDatabaseManager.getGraphDatabaseProvider();
+        }
+        return provider.openStorageManager(this, testName.getMethodName(), 0, null);
+    }
 
     public static final String LOG_NAME = "testlog";
 

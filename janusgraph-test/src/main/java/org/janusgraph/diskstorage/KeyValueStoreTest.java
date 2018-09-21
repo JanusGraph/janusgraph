@@ -34,7 +34,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.RecordIterator;
 
-public abstract class KeyValueStoreTest extends AbstractKCVSTest {
+public class KeyValueStoreTest extends AbstractKCVSTest {
 
     private final Logger log = LoggerFactory.getLogger(KeyValueStoreTest.class);
 
@@ -54,13 +54,11 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
     }
 
     public void open() throws BackendException {
-        manager = openStorageManager();
+        manager = openOrderedStorageManager();
         String storeName = "testStore1";
         store = manager.openDatabase(storeName);
         tx = manager.beginTransaction(getTxConfig());
     }
-
-    public abstract OrderedKeyValueStoreManager openStorageManager() throws BackendException;
 
     @After
     public void tearDown() throws Exception {

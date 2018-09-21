@@ -41,7 +41,7 @@ import org.janusgraph.testutil.MemoryAssess;
  * These tests focus on the in-memory data structures of individual transactions and how they hold up to high memory pressure
  */
 @Category({ MemoryTests.class })
-public abstract class JanusGraphPerformanceMemoryTest extends JanusGraphBaseTest {
+public class JanusGraphPerformanceMemoryTest extends JanusGraphBaseTest {
 
     @Rule
     public TestRule benchmark = JUnitBenchmarkProvider.get();

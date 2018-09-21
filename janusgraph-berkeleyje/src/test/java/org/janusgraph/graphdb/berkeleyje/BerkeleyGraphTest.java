@@ -19,10 +19,13 @@ import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.graphdb.JanusGraphBaseTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+import org.junit.runner.RunWith;
+import org.junit.runners.BlockJUnit4ClassRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,31 +44,10 @@ import static org.junit.Assert.*;
 
 public class BerkeleyGraphTest extends JanusGraphTest {
 
-    @Rule
-    public TestName methodNameRule = new TestName();
-
     private static final Logger log =
             LoggerFactory.getLogger(BerkeleyGraphTest.class);
 
-    @Override
-    public WriteConfiguration getConfiguration() {
-        ModifiableConfiguration modifiableConfiguration = BerkeleyStorageSetup.getBerkeleyJEConfiguration();
-        String methodName = methodNameRule.getMethodName();
-        if (methodName.equals("testConsistencyEnforcement")) {
-            IsolationLevel iso = IsolationLevel.SERIALIZABLE;
-            log.debug("Forcing isolation level {} for test method {}", iso, methodName);
-            modifiableConfiguration.set(BerkeleyJEStoreManager.ISOLATION_LEVEL, iso.toString());
-        } else {
-            IsolationLevel iso = null;
-            if (modifiableConfiguration.has(BerkeleyJEStoreManager.ISOLATION_LEVEL)) {
-                iso = ConfigOption.getEnumValue(modifiableConfiguration.get(BerkeleyJEStoreManager.ISOLATION_LEVEL),IsolationLevel.class);
-            }
-            log.debug("Using isolation level {} (null means adapter default) for test method {}", iso, methodName);
-        }
-        return modifiableConfiguration.getConfiguration();
-    }
-
-    @Override
+    @Test
     public void testClearStorage() throws Exception {
         tearDown();
         config.set(ConfigElement.getPath(GraphDatabaseConfiguration.DROP_ON_CLEAR), true);
@@ -80,23 +62,7 @@ public class BerkeleyGraphTest extends JanusGraphTest {
 
     @Test
     public void testVertexCentricQuerySmall() {
-        testVertexCentricQuery(1450 /*noVertices*/);
-    }
-
-    @Override
-    public void testConsistencyEnforcement() {
-        // Check that getConfiguration() explicitly set serializable isolation
-        // This could be enforced with a JUnit assertion instead of a Precondition,
-        // but a failure here indicates a problem in the test itself rather than the
-        // system-under-test, so a Precondition seems more appropriate
-        IsolationLevel effective = ConfigOption.getEnumValue(config.get(ConfigElement.getPath(BerkeleyJEStoreManager.ISOLATION_LEVEL), String.class),IsolationLevel.class);
-        Preconditions.checkState(IsolationLevel.SERIALIZABLE.equals(effective));
-        super.testConsistencyEnforcement();
-    }
-
-    @Override
-    public void testConcurrentConsistencyEnforcement() {
-        //Do nothing TODO: Figure out why this is failing in BerkeleyDB!!
+        testVertexCentricQuery(1450 );//noVertices
     }
 
     @Test

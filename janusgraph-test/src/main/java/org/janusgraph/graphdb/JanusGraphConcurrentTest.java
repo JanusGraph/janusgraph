@@ -46,7 +46,7 @@ import static org.junit.Assert.assertEquals;
  * High concurrency test cases to spot deadlocks and other failures that can occur under high degrees of parallelism.
  */
 @Category({PerformanceTests.class})
-public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
+public class JanusGraphConcurrentTest extends JanusGraphBaseTest {
 
     @Rule
     public TestRule benchmark = JUnitBenchmarkProvider.get();

@@ -56,7 +56,7 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
 import static org.easymock.EasyMock.*;
 
-public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
+public class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
 
     private static final Logger log =
             LoggerFactory.getLogger(LockKeyColumnValueStoreTest.class);
@@ -109,8 +109,6 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
         v1 = KeyValueStoreUtil.getBuffer("val1");
         v2 = KeyValueStoreUtil.getBuffer("val2");
     }
-
-    public abstract KeyColumnValueStoreManager openStorageManager(int id, Configuration configuration) throws BackendException;
 
     public void open() throws BackendException {
         manager = new KeyColumnValueStoreManager[CONCURRENCY];

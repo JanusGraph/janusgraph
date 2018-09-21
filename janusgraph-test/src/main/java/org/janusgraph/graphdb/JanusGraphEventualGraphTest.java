@@ -47,7 +47,7 @@ import static org.junit.Assert.*;
  */
 
 @Category({ SerialTests.class })
-public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
+public class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
 
     @Test
     public void verifyEligibility() {

@@ -48,12 +48,10 @@ import static org.junit.Assert.*;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
+public class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
 
     final static Random random = new Random();
     final static int numPartitions = 8;
-
-    public abstract WriteConfiguration getBaseConfiguration();
 
     @Override
     public WriteConfiguration getConfiguration() {

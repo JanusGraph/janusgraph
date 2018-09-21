@@ -1,4 +1,4 @@
-// Copyright 2017 JanusGraph Authors
+// Copyright 2018 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.blueprints.process;
+package org.janusgraph;
 
-import org.janusgraph.blueprints.BerkeleyGraphProvider;
-import org.janusgraph.core.JanusGraph;
-import org.apache.tinkerpop.gremlin.GraphProviderClass;
-import org.junit.runner.RunWith;
+import java.lang.annotation.*;
 
 /**
- * @author Matthias Broecheler (me@matthiasb.com)
+ * Holds a collection of {@link JanusGraphIgnoreTest} enabling multiple {@link JanusGraphIgnoreTest} to be applied to a
+ * single suite.
  */
-@RunWith(BerkeleyProcessStandardSuite.class)
-@GraphProviderClass(provider = BerkeleyGraphProvider.class, graph = JanusGraph.class)
-public class BerkeleyJanusGraphProcessTest {
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+@Inherited
+public @interface JanusGraphIgnoreTests {
+    JanusGraphIgnoreTest[] value();
 }

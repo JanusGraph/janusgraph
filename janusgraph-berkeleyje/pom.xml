@@ -37,6 +37,12 @@
             <artifactId>je</artifactId>
             <version>7.4.5</version>
         </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-test</artifactId>
+            <version>0.3.1-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <resources>
@@ -63,6 +69,17 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/BerkeleyFixedLengthKCVSTest.java</exclude>
+                        <exclude>**/BerkeleyVariableLengthKCVSTest.java</exclude>
+                        <exclude>**/BerkeleyGraphTest.java</exclude>
+                        <exclude>**/BerkeleyGraphTinkerpopTest.java</exclude>
+                    </excludes>
+                </configuration>
             </plugin>
         </plugins>
     </build>

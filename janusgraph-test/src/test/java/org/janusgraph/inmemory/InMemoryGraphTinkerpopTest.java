@@ -1,4 +1,4 @@
-// Copyright 2017 JanusGraph Authors
+// Copyright 2018 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,18 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.blueprints.process;
+package org.janusgraph.inmemory;
 
-import org.janusgraph.blueprints.BerkeleyGraphComputerProvider;
-import org.janusgraph.core.JanusGraph;
-import org.apache.tinkerpop.gremlin.GraphProviderClass;
-import org.apache.tinkerpop.gremlin.process.ProcessComputerSuite;
+import org.janusgraph.JanusGraphProviderClass;
+import org.janusgraph.JanusGraphTinkerpopTestSuite;
 import org.junit.runner.RunWith;
 
-/**
- * @author Matthias Broecheler (me@matthiasb.com)
- */
-@RunWith(ProcessComputerSuite.class)
-@GraphProviderClass(provider = BerkeleyGraphComputerProvider.class, graph = JanusGraph.class)
-public class BerkeleyJanusGraphComputerTest {
+@RunWith(JanusGraphTinkerpopTestSuite.class)
+@JanusGraphProviderClass(provider = InMemoryJanusGraphDatabaseProvider.class)
+public class InMemoryGraphTinkerpopTest {
 }
+

@@ -22,7 +22,7 @@ import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class AbstractKCVSTest {
+public class AbstractKCVSTest extends KeyStorageBaseTest {
 
     protected static final TimestampProvider times = TimestampProviders.MICRO;
 

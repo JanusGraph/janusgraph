@@ -16,6 +16,7 @@ package org.janusgraph.blueprints;
 
 import com.google.common.collect.Sets;
 
+import org.janusgraph.JanusGraphDatabaseManager;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.PropertyKey;
@@ -102,7 +103,8 @@ public abstract class AbstractJanusGraphProvider extends AbstractGraphProvider {
 
     @Override
     public Set<Class> getImplementations() {
-        return IMPLEMENTATION;
+        return JanusGraphDatabaseManager.getGraphDatabaseProvider()
+            .extendImplementations(IMPLEMENTATION);
     }
 
     @Override

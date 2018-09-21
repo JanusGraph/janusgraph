@@ -1,4 +1,4 @@
-// Copyright 2017 JanusGraph Authors
+// Copyright 2018 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.graphdb.berkeleyje;
+package org.janusgraph;
 
-import org.janusgraph.BerkeleyStorageSetup;
-import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.olap.OLAPTest;
+import java.lang.annotation.*;
 
-public class BerkeleyOLAPTest extends OLAPTest {
-
-    @Override
-    public WriteConfiguration getConfiguration() {
-        return BerkeleyStorageSetup.getBerkeleyJEGraphConfiguration();
-    }
-
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+@Inherited
+public @interface JanusGraphSpecificTestClasses {
+    JanusGraphSpecificTestClass[] value();
 }

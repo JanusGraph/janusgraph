@@ -165,7 +165,7 @@ import static org.junit.Assert.*;
  * @author Matthias Broecheler (me@matthiasb.com)
  * @author Joshua Shinavier (http://fortytwo.net)
  */
-public abstract class JanusGraphTest extends JanusGraphBaseTest {
+public class JanusGraphTest extends JanusGraphBaseTest {
 
     private final Logger log = LoggerFactory.getLogger(JanusGraphTest.class);
 

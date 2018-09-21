@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
-public abstract class ManagementTest extends JanusGraphBaseTest {
+public class ManagementTest extends JanusGraphBaseTest {
 
     private static final Logger log =
             LoggerFactory.getLogger(ManagementTest.class);
