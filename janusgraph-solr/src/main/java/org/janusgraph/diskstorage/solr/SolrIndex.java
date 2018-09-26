@@ -222,9 +222,6 @@ public class SolrIndex implements IndexProvider {
     public static final ConfigOption<Boolean> KERBEROS_ENABLED = new ConfigOption<Boolean>(SOLR_NS,"kerberos-enabled",
             "Whether SOLR instance is Kerberized or not.",
             ConfigOption.Type.MASKABLE, false);
-    public static final ConfigOption<String> KERBEROS_CONFIG = new ConfigOption<String>(SOLR_NS,"kerberos-config",
-            "The absolute path to the JAAS configuration file for providing kerberos configuration to SOLR.",
-            ConfigOption.Type.MASKABLE, String.class);
 
     private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder()
         .supportsDocumentTTL()
@@ -248,14 +245,12 @@ public class SolrIndex implements IndexProvider {
     private final int batchSize;
     private final boolean waitSearcher;
     private final boolean kerberosEnabled;
-    private final String kerberosConfig;
 
     public SolrIndex(final Configuration config) throws BackendException {
         Preconditions.checkArgument(config!=null);
         configuration = config;
         mode = Mode.parse(config.get(SOLR_MODE));
         kerberosEnabled = config.get(KERBEROS_ENABLED);
-        kerberosConfig = config.has(KERBEROS_CONFIG) ? config.get(KERBEROS_CONFIG) : null;
         dynFields = config.get(DYNAMIC_FIELDS);
         keyFieldIds = parseKeyFieldsForCollections(config);
         batchSize = config.get(INDEX_MAX_RESULT_SET_SIZE);
@@ -304,8 +299,11 @@ public class SolrIndex implements IndexProvider {
         }
     }
 
-    private void configureSolrClientsForKerberos() {
-        System.setProperty("java.security.auth.login.config", kerberosConfig);
+    private void configureSolrClientsForKerberos() throws PermanentBackendException {
+        String kerberosConfig = System.getProperty("java.security.auth.login.config");
+        if(kerberosConfig == null) {
+            throw new PermanentBackendException("Unable to configure kerberos for solr client. System property 'java.security.auth.login.config' is not set.");
+        }
         logger.debug("Using kerberos configuration file located at '{}'.", kerberosConfig);
         try(Krb5HttpClientBuilder krbBuild = new Krb5HttpClientBuilder()) {
 

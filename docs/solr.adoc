@@ -159,8 +159,15 @@ When connecting to a Solr environment that is protected by Kerberos we must spec
 [source, properties]
 ----
 index.search.solr.kerberos-enabled=true
-index.search.solr.kerberos-config=/absolute/path/to/janusgraph_solr_jaas.conf
 ----
+
+The JAAS configuration file is supplied by ensuring that you set the java system property `java.security.auth.login.config` with the absolute path to the file. This property should be set using JVM options. For example to run `gremlin.sh` you would need to set the `JAVA_OPTIONS` environment variable prior to running the script:
+
+[source, bourne]
+---
+export JAVA_OPTIONS="-Djava.security.auth.login.config=/absolute/path/jaas.conf"
+$JANUSGRAPH_HOME/bin/gremlin.sh
+---
 
 For details on the content required in the JAAS configuration file refer to the https://lucene.apache.org/solr/guide/7_0/kerberos-authentication-plugin.html#define-a-jaas-configuration-file[Solr Reference Guide].
 

@@ -47,6 +47,10 @@ public class SolrIndexKerberosKeytabTest extends SolrIndexTest {
         miniKDC = new MiniKDC(jassConfigFilePath);
         miniKDC.setUpMiniKdc();
         SolrRunner.start(true);
+
+        // java.security.auth.login.config is already set as part of the initialization of the KDC.
+        // That property value will be leveraged for both the mini solr cloud cluster to start up
+        // and for configuring the solr client for janus to connect to the mini solr cloud cluster.
     }
 
     @AfterClass
@@ -83,7 +87,6 @@ public class SolrIndexKerberosKeytabTest extends SolrIndexTest {
         config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getZookeeperUrls(), index);
         config.set(SolrIndex.WAIT_SEARCHER, true, index);
         config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index);
-        config.set(SolrIndex.KERBEROS_CONFIG, jassConfigFilePath, index);
         config.set(SolrIndex.KERBEROS_ENABLED, true, index);
         return config.restrictTo(index);
     }
