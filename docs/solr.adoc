@@ -52,7 +52,6 @@ A number of additional configuration options pertaining to the creation of new c
 
 SolrCloud leverages Zookeeper to coordinate collection and configset information between the Solr servers. The use of Zookeeper with SolrCloud provides the opportunity to significantly reduce the amount of manual configuration required to use Solr as a back end index for JanusGraph.
 
-
 ==== Configset Configuration
 
 A configset is required to create a collection. The configset is stored in Zookeeper to enable access to it across the Solr servers.
@@ -153,6 +152,24 @@ mgmt.buildIndex("verticesByAge", Vertex.class).addKey(age).buildMixedIndex("sear
 mgmt.commit()
 ----
 
+=== Kerberos Configuration
+
+When connecting to a Solr environment that is protected by Kerberos we must specify that Kerberos is being used and reference a JAAS configuration file to properly configure the Solr Clients. This configuration is required when Kerberos is in use regardless of the mode in which Solr is operating (SolrCloud or Solr Standalone).
+
+[source, properties]
+----
+index.search.solr.kerberos-enabled=true
+----
+
+The JAAS configuration file is supplied by ensuring that you set the java system property `java.security.auth.login.config` with the absolute path to the file. This property should be set using JVM options. For example to run `gremlin.sh` you would need to set the `JAVA_OPTIONS` environment variable prior to running the script:
+
+[source, bourne]
+---
+export JAVA_OPTIONS="-Djava.security.auth.login.config=/absolute/path/jaas.conf"
+$JANUSGRAPH_HOME/bin/gremlin.sh
+---
+
+For details on the content required in the JAAS configuration file refer to the https://lucene.apache.org/solr/guide/7_0/kerberos-authentication-plugin.html#define-a-jaas-configuration-file[Solr Reference Guide].
 
 === Solr Schema Design
 
