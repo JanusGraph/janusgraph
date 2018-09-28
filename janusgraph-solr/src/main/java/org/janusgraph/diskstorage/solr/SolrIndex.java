@@ -45,7 +45,15 @@ import java.util.stream.StreamSupport;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpEntityEnclosingRequest;
+import org.apache.http.HttpException;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.client.HttpClient;
+import org.apache.http.entity.BufferedHttpEntity;
+import org.apache.http.impl.auth.KerberosScheme;
+import org.apache.http.protocol.HttpContext;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -55,7 +63,10 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.impl.PreemptiveAuth;
+import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -205,6 +216,13 @@ public class SolrIndex implements IndexProvider {
             "When mutating - wait for the index to reflect new mutations before returning. This can have a negative impact on performance.",
             ConfigOption.Type.LOCAL, false);
 
+
+    /** Security Configuration */
+
+    public static final ConfigOption<Boolean> KERBEROS_ENABLED = new ConfigOption<Boolean>(SOLR_NS,"kerberos-enabled",
+            "Whether SOLR instance is Kerberized or not.",
+            ConfigOption.Type.MASKABLE, false);
+
     private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder()
         .supportsDocumentTTL()
         .setDefaultStringMapping(Mapping.TEXT)
@@ -226,22 +244,37 @@ public class SolrIndex implements IndexProvider {
     private final String ttlField;
     private final int batchSize;
     private final boolean waitSearcher;
+    private final boolean kerberosEnabled;
 
     public SolrIndex(final Configuration config) throws BackendException {
         Preconditions.checkArgument(config!=null);
         configuration = config;
-
         mode = Mode.parse(config.get(SOLR_MODE));
+        kerberosEnabled = config.get(KERBEROS_ENABLED);
         dynFields = config.get(DYNAMIC_FIELDS);
         keyFieldIds = parseKeyFieldsForCollections(config);
         batchSize = config.get(INDEX_MAX_RESULT_SET_SIZE);
         ttlField = config.get(TTL_FIELD);
         waitSearcher = config.get(WAIT_SEARCHER);
 
+        if (kerberosEnabled) {
+            logger.debug("Kerberos is enabled. Configuring SOLR for Kerberos.");
+            configureSolrClientsForKerberos();
+        } else {
+            logger.debug("Kerberos is NOT enabled.");
+            logger.debug("KERBEROS_ENABLED name is " + KERBEROS_ENABLED.getName() + " and it is" + (KERBEROS_ENABLED.isOption() ? " " : " not") + " an option.");
+            logger.debug("KERBEROS_ENABLED type is " + KERBEROS_ENABLED.getType().name());
+        }
+        final ModifiableSolrParams clientParams = new ModifiableSolrParams();
         switch (mode) {
             case CLOUD:
                 final String zookeeperUrl = config.get(SolrIndex.ZOOKEEPER_URL);
                 final CloudSolrClient cloudServer = new CloudSolrClient.Builder()
+                    .withLBHttpSolrClientBuilder(
+                        new LBHttpSolrClient.Builder()
+                            .withHttpSolrClientBuilder(new HttpSolrClient.Builder().withInvariantParams(clientParams))
+                            .withBaseSolrUrls(config.get(HTTP_URLS))
+                     )
                     .withZkHost(zookeeperUrl)
                     .sendUpdatesOnlyToShardLeaders()
                     .build();
@@ -249,16 +282,13 @@ public class SolrIndex implements IndexProvider {
                 solrClient = cloudServer;
                 break;
             case HTTP:
-                final HttpClient clientParams = HttpClientUtil.createClient(new ModifiableSolrParams() {{
-                    add(HttpClientUtil.PROP_ALLOW_COMPRESSION, config.get(HTTP_ALLOW_COMPRESSION).toString());
-                    add(HttpClientUtil.PROP_CONNECTION_TIMEOUT, config.get(HTTP_CONNECTION_TIMEOUT).toString());
-                    add(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST,
-                            config.get(HTTP_MAX_CONNECTIONS_PER_HOST).toString());
-                    add(HttpClientUtil.PROP_MAX_CONNECTIONS, config.get(HTTP_GLOBAL_MAX_CONNECTIONS).toString());
-                }});
-
+                clientParams.add(HttpClientUtil.PROP_ALLOW_COMPRESSION, config.get(HTTP_ALLOW_COMPRESSION).toString());
+                clientParams.add(HttpClientUtil.PROP_CONNECTION_TIMEOUT, config.get(HTTP_CONNECTION_TIMEOUT).toString());
+                clientParams.add(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, config.get(HTTP_MAX_CONNECTIONS_PER_HOST).toString());
+                clientParams.add(HttpClientUtil.PROP_MAX_CONNECTIONS, config.get(HTTP_GLOBAL_MAX_CONNECTIONS).toString());
+                final HttpClient client = HttpClientUtil.createClient(clientParams);
                 solrClient = new LBHttpSolrClient.Builder()
-                    .withHttpClient(clientParams)
+                    .withHttpClient(client)
                     .withBaseSolrUrls(config.get(HTTP_URLS))
                     .build();
 
@@ -266,6 +296,33 @@ public class SolrIndex implements IndexProvider {
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported Solr operation mode: " + mode);
+        }
+    }
+
+    private void configureSolrClientsForKerberos() throws PermanentBackendException {
+        String kerberosConfig = System.getProperty("java.security.auth.login.config");
+        if(kerberosConfig == null) {
+            throw new PermanentBackendException("Unable to configure kerberos for solr client. System property 'java.security.auth.login.config' is not set.");
+        }
+        logger.debug("Using kerberos configuration file located at '{}'.", kerberosConfig);
+        try(Krb5HttpClientBuilder krbBuild = new Krb5HttpClientBuilder()) {
+
+            SolrHttpClientBuilder kb = krbBuild.getBuilder();
+            HttpClientUtil.setHttpClientBuilder(kb);
+            HttpRequestInterceptor bufferedEntityInterceptor = new HttpRequestInterceptor() {
+                @Override
+                public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
+                    if(request instanceof HttpEntityEnclosingRequest) {
+                        HttpEntityEnclosingRequest enclosingRequest = ((HttpEntityEnclosingRequest) request);
+                        HttpEntity requestEntity = enclosingRequest.getEntity();
+                        enclosingRequest.setEntity(new BufferedHttpEntity(requestEntity));
+                    }
+                }
+            };
+            HttpClientUtil.addRequestInterceptor(bufferedEntityInterceptor);
+
+            HttpRequestInterceptor preemptiveAuth = new PreemptiveAuth(new KerberosScheme());
+            HttpClientUtil.addRequestInterceptor(preemptiveAuth);
         }
     }
 

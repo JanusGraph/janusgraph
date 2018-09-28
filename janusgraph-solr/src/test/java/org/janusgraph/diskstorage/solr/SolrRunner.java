@@ -17,6 +17,8 @@ package org.janusgraph.diskstorage.solr;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.cloud.ConfigurableMiniSolrCloudCluster;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 
 import java.io.BufferedReader;
@@ -26,6 +28,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -38,13 +41,23 @@ public class SolrRunner {
 
     protected static final String[] KEY_FIELDS = new String[0];
 
+
+    private static final String SECURITY_JSON = "{\"authentication\": {\"class\": \"org.apache.solr.security.KerberosPlugin\"}}";
+
     private static final String TMP_DIRECTORY = System.getProperty("java.io.tmpdir");
     private static final String TEMPLATE_DIRECTORY = "core-template";
     private static final String COLLECTIONS_FILE = "/collections.txt";
 
     private static MiniSolrCloudCluster miniSolrCloudCluster;
+    private static boolean kerberosEnabled;
 
     public static void start() throws Exception {
+        start(false);
+    }
+
+    public static void start(boolean isKerberosEnabled) throws Exception {
+        kerberosEnabled = isKerberosEnabled;
+
         if (ZOOKEEPER_URLS != null) {
             return;
         }
@@ -64,7 +77,18 @@ public class SolrRunner {
         temp.deleteOnExit();
 
         final String solrXml = new String(Files.readAllBytes(new File(solrHome, "solr.xml").toPath()));
-        miniSolrCloudCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, temp.toPath(), solrXml, null, null);
+        if(!kerberosEnabled) {
+            miniSolrCloudCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, temp.toPath(), solrXml, null, null);
+        } else {
+            JettyConfig jettyConfig = JettyConfig.builder()
+                .setContext(null)
+                .withSSLConfig(null)
+                .withFilters(null)
+                .withServlets(null)
+                .build();
+            miniSolrCloudCluster = new ConfigurableMiniSolrCloudCluster(NUM_SERVERS, temp.toPath(), solrXml, jettyConfig, null, Optional.of(SECURITY_JSON));
+        }
+
 
         for (String core : COLLECTIONS) {
             File coreDirectory = new File(temp.getAbsolutePath() + File.separator + core);
@@ -74,7 +98,7 @@ public class SolrRunner {
         }
     }
 
-    public static String getZookeeperUrls() {
+	public static String getZookeeperUrls() {
         final String zookeeperUrls;
         if (ZOOKEEPER_URLS == null) {
             zookeeperUrls = miniSolrCloudCluster.getZkServer().getZkAddress();
@@ -90,7 +114,9 @@ public class SolrRunner {
         }
         System.clearProperty("solr.solrxml.location");
         System.clearProperty("zkHost");
-        miniSolrCloudCluster.shutdown();
+        if (miniSolrCloudCluster != null) {
+            miniSolrCloudCluster.shutdown();
+        }
     }
 
     private static String[] readCollections() {

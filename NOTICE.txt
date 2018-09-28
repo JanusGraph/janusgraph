@@ -22,6 +22,7 @@ It also includes software from other open source projects including, but not lim
  * Apache Groovy [http://groovy-lang.org/]
  * Apache HBase [https://hbase.apache.org/]
  * Apache Hadoop [http://hadoop.apache.org/]
+ * Apache Kerby [https://github.com/apache/directory-kerby]
  * Apache Log4j [https://logging.apache.org/log4j]
  * Apache Lucene [https://lucene.apache.org/]
  * Apache MRUnit [https://mrunit.apache.org/]

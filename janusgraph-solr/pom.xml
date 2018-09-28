@@ -112,6 +112,19 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>org.apache.kerby</groupId>
+            <artifactId>kerb-simplekdc</artifactId>
+            <version>1.1.1</version>
+            <scope>test</scope>
+            <exclusions>
+                <!-- Use asm from solr-test-framework -->
+                <exclusion>
+                    <groupId>org.ow2.asm</groupId>
+                    <artifactId>asm</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>servlet-api</artifactId>
             <version>2.5</version>
@@ -181,7 +194,6 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <executions>
@@ -253,6 +265,9 @@
                             <includes>
                                 <include>**/org/janusgraph/diskstorage/solr/*.java</include>
                             </includes>
+                            <excludes>
+                                <exclude>**/org/janusgraph/diskstorage/solr/SolrIndexKerberosKeytabTest.java</exclude>
+                            </excludes>
                             <systemProperties>
                                 <property>
                                     <name>index.search.solr.zookeeper-url</name>
