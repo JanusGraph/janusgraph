@@ -101,9 +101,15 @@ In this case, each Gremlin Server would be configured to connect to the Cassandr
 ----
 ...
 graphs: {
-  g: conf/janusgraph-cql.properties}
-plugins:
-  - janusgraph.imports
+  g: conf/janusgraph-cql.properties
+}
+scriptEngines: {
+  gremlin-groovy: {
+    plugins: { org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin: {},
+               org.apache.tinkerpop.gremlin.server.jsr223.GremlinServerGremlinPlugin: {},
+               org.apache.tinkerpop.gremlin.tinkergraph.jsr223.TinkerGraphGremlinPlugin: {},
+               org.apache.tinkerpop.gremlin.jsr223.ImportGremlinPlugin: {classImports: [java.lang.Math], methodImports: [java.lang.Math#*]},
+               org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: {files: [scripts/empty-sample.groovy]}}}}
 ...
 ----
 For more information about Gremlin Server see the http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#gremlin-server[Apache TinkerPop documentation]

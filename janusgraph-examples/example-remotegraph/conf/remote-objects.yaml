@@ -1,7 +1,7 @@
 hosts: [127.0.0.1]
 port: 8182
 serializer: {
-    className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0,
+    className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0,
     config: {
         ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry]
     }
