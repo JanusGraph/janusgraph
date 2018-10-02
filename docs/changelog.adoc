@@ -2,7 +2,7 @@
 [appendix]
 == Release Notes
 
-=== Version 0.2.2 (Release Date: September ??, 2018)
+=== Version 0.2.2 (Release Date: October 2, 2018)
 
 [source, xml]
 <dependency>
