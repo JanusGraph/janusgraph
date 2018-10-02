@@ -66,9 +66,15 @@ In this case, each Gremlin Server would be configured to connect to the HBase cl
 ----
 ...
 graphs: {
-  g: conf/janusgraph-hbase.properties}
-plugins:
-  - janusgraph.imports
+  g: conf/janusgraph-hbase.properties
+}
+scriptEngines: {
+  gremlin-groovy: {
+    plugins: { org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin: {},
+               org.apache.tinkerpop.gremlin.server.jsr223.GremlinServerGremlinPlugin: {},
+               org.apache.tinkerpop.gremlin.tinkergraph.jsr223.TinkerGraphGremlinPlugin: {},
+               org.apache.tinkerpop.gremlin.jsr223.ImportGremlinPlugin: {classImports: [java.lang.Math], methodImports: [java.lang.Math#*]},
+               org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: {files: [scripts/empty-sample.groovy]}}}}
 ...
 ----
 

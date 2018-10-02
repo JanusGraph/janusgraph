@@ -129,8 +129,13 @@ Configuring JanusGraph Server is accomplished through a JanusGraph Server yaml c
 graphs: {
   graph: conf/janusgraph-berkeleyje.properties
 }
-plugins:
-  - janusgraph.imports
+scriptEngines: {
+  gremlin-groovy: {
+    plugins: { org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin: {},
+               org.apache.tinkerpop.gremlin.server.jsr223.GremlinServerGremlinPlugin: {},
+               org.apache.tinkerpop.gremlin.tinkergraph.jsr223.TinkerGraphGremlinPlugin: {},
+               org.apache.tinkerpop.gremlin.jsr223.ImportGremlinPlugin: {classImports: [java.lang.Math], methodImports: [java.lang.Math#*]},
+               org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: {files: [scripts/empty-sample.groovy]}}}}
 ...
 ----
 
@@ -863,21 +868,24 @@ host: localhost
 port: 8182
 graphs: {
   graph: conf/janusgraph.properties}
-plugins:
-  - janusgraph.imports
 scriptEngines: {
   gremlin-groovy: {
-    scripts: [scripts/janusgraph.groovy]}}
+    plugins: { org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin: {},
+               org.apache.tinkerpop.gremlin.server.jsr223.GremlinServerGremlinPlugin: {},
+               org.apache.tinkerpop.gremlin.tinkergraph.jsr223.TinkerGraphGremlinPlugin: {},
+               org.apache.tinkerpop.gremlin.jsr223.ImportGremlinPlugin: {classImports: [java.lang.Math], methodImports: [java.lang.Math#*]},
+               org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: {files: [scripts/empty-sample.groovy]}}}}
 serializers:
-  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
-  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { serializeResultToString: true }}
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0, config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0, config: { serializeResultToString: true }}
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0, config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
 metrics: {
   slf4jReporter: {enabled: true, interval: 180000}}
 ----
 
 .There are several important parts to this configuration file as they relate to JanusGraph.
 . In the `graphs` map, there is a key called `graph` and its value is `conf/janusgraph.properties`.  This tells Gremlin Server to instantiate a `Graph` instance called "graph" and use the `conf/janusgraph.properties` file to configure it.  The "graph" key becomes the unique name for the `Graph` instance in Gremlin Server and it can be referenced as such in the scripts submitted to it.
-. In the `plugins` list, there is a reference to `janusgraph.imports`, which tells Gremlin Server to initialize the "JanusGraph Plugin".  The "JanusGraph Plugin" will auto-import JanusGraph specific classes for usage in scripts.
+. In the `plugins` list, there is a reference to `JanusGraphGremlinPlugin`, which tells Gremlin Server to initialize the "JanusGraph Plugin".  The "JanusGraph Plugin" will auto-import JanusGraph specific classes for usage in scripts.
 . Note the `scripts` key and the reference to `scripts/janusgraph.groovy`.  This Groovy file is an initialization script for Gremlin Server and that particular ScriptEngine.  Create `scripts/janusgraph.groovy` with the following contents:
 
 
@@ -911,8 +919,8 @@ $ bin/gremlin-server.sh conf/gremlin-server-janusgraph.yaml
 [INFO] GremlinExecutor - Initialized gremlin-groovy ScriptEngine with scripts/janusgraph.groovy
 [INFO] ServerGremlinExecutor - Initialized GremlinExecutor and configured ScriptEngines.
 [INFO] ServerGremlinExecutor - A GraphTraversalSource is now bound to [g] with graphtraversalsource[standardjanusgraph[berkeleyje:db/berkeley], standard]
-[INFO] AbstractChannelizer - Configured application/vnd.gremlin-v1.0+gryo with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0
-[INFO] AbstractChannelizer - Configured application/vnd.gremlin-v1.0+gryo-stringd with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0
+[INFO] AbstractChannelizer - Configured application/vnd.gremlin-v3.0+gryo with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0
+[INFO] AbstractChannelizer - Configured application/vnd.gremlin-v3.0+gryo-stringd with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0
 [INFO] GremlinServer$1 - Gremlin Server configured with worker thread pool of 1, gremlin pool of 8 and boss thread pool of 1.
 [INFO] GremlinServer$1 - Channel started at port 8182.
 ----
@@ -931,12 +939,12 @@ IMPORTANT: A difference you should understand is that when working with JanusGra
 [source,java]
 ----
 GryoMapper mapper = GryoMapper.build().addRegistry(JanusGraphIoRegistry.INSTANCE).create();
-Cluster cluster = Cluster.build().serializer(new GryoMessageSerializerV1d0(mapper)).create();
+Cluster cluster = Cluster.build().serializer(new GryoMessageSerializerV3d0(mapper)).create();
 Client client = cluster.connect();
 client.submit("g.V()").all().get();
 ----
 
-By adding the `JanusGraphIoRegistry` to the `org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0`, the driver will know how to properly deserialize custom data types returned by JanusGraph.
+By adding the `JanusGraphIoRegistry` to the `org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0`, the driver will know how to properly deserialize custom data types returned by JanusGraph.
 
 === Extending JanusGraph Server
 
