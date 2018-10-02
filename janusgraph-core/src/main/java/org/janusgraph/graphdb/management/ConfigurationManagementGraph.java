@@ -20,6 +20,7 @@ import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
 import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphAlreadyInstantiatedException;
 import static org.janusgraph.core.schema.SchemaAction.ENABLE_INDEX;
+import static org.janusgraph.core.schema.SchemaAction.REINDEX;
 import static org.janusgraph.core.schema.SchemaStatus.INSTALLED;
 import static org.janusgraph.core.schema.SchemaStatus.REGISTERED;
 import org.janusgraph.core.PropertyKey;
@@ -59,6 +60,7 @@ public class ConfigurationManagementGraph {
     private static final String GRAPH_NAME_INDEX = "Graph_Name_Index";
     private static final String PROPERTY_TEMPLATE = "Template_Configuration";
     private static final String TEMPLATE_INDEX = "Template_Index";
+    private static final String CREATED_USING_TEMPLATE_INDEX = "Created_Using_Template_Index";
 
     private final StandardJanusGraph graph;
 
@@ -76,7 +78,7 @@ public class ConfigurationManagementGraph {
         this.graph = graph;
         createIndexIfDoesNotExist(GRAPH_NAME_INDEX, PROPERTY_GRAPH_NAME, String.class, true);
         createIndexIfDoesNotExist(TEMPLATE_INDEX, PROPERTY_TEMPLATE, Boolean.class, false);
-        createIndexIfDoesNotExist(PROPERTY_CREATED_USING_TEMPLATE, PROPERTY_CREATED_USING_TEMPLATE, Boolean.class, false);
+        createIndexIfDoesNotExist(CREATED_USING_TEMPLATE_INDEX, PROPERTY_CREATED_USING_TEMPLATE, Boolean.class, false);
     }
 
     private synchronized void initialize() {
@@ -262,8 +264,15 @@ public class ConfigurationManagementGraph {
         graph.tx().rollback();
         JanusGraphManagement management = graph.openManagement();
         if (null == management.getGraphIndex(indexName)) {
-            final PropertyKey key = management.makePropertyKey(propertyKeyName).dataType(dataType).make();
-
+            final PropertyKey key;
+            boolean propertyKeyAlreadyExisted = false;
+            if (null == management.getPropertyKey(propertyKeyName)) {
+                key = management.makePropertyKey(propertyKeyName).dataType(dataType).make();
+            }
+            else {
+                key = management.getPropertyKey(propertyKeyName);
+                propertyKeyAlreadyExisted = true;
+            }
             final JanusGraphIndex index;
             if (unique) index = management.buildIndex(indexName, Vertex.class).addKey(key).unique().buildCompositeIndex();
             else index = management.buildIndex(indexName, Vertex.class).addKey(key).buildCompositeIndex();
@@ -272,9 +281,17 @@ public class ConfigurationManagementGraph {
                     management.commit();
                     ManagementSystem.awaitGraphIndexStatus(graph, indexName).call();
                     management = graph.openManagement();
-                    management.updateIndex(index, ENABLE_INDEX).get();
+                    if (propertyKeyAlreadyExisted) {
+                        management.updateIndex(management.getGraphIndex(indexName), REINDEX).get();
+                    } else {
+                        management.updateIndex(management.getGraphIndex(indexName), ENABLE_INDEX).get();
+                    }
                 } else if (index.getIndexStatus(key) == REGISTERED) {
-                    management.updateIndex(index, ENABLE_INDEX).get();
+                    if (propertyKeyAlreadyExisted) {
+                        management.updateIndex(management.getGraphIndex(indexName), REINDEX).get();
+                    } else {
+                        management.updateIndex(management.getGraphIndex(indexName), ENABLE_INDEX).get();
+                    }
                 }
             } catch (InterruptedException | ExecutionException e) {
                 log.warn("Failed to create index {} for ConfigurationManagementGraph with exception: {}",
@@ -311,4 +328,3 @@ public class ConfigurationManagementGraph {
         return map;
     }
 }
-
