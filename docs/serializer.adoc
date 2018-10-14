@@ -1,7 +1,7 @@
 [[serializer]]
 == Datatype and Attribute Serializer Configuration
 
-JanusGraph supports a number of classes for attribute values on properties. JanusGraph efficiently serializes primitives, primitive arrays and `Geoshape`, `UUID`, and `Date`. JanusGraph supports serializing arbitrary objects as attribute values, but these require custom serializers to be defined.
+JanusGraph supports a number of classes for attribute values on properties. JanusGraph efficiently serializes primitives, primitive arrays and `Geoshape`, `UUID`, `Date`, `ObjectNode` and `ArrayNode`. JanusGraph supports serializing arbitrary objects as attribute values, but these require custom serializers to be defined.
 
 To configure a custom attribute class with a custom serializer, follow these steps:
 
