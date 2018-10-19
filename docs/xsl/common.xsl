@@ -92,6 +92,8 @@
               <div class="dropdown-content">
                 <a href="https://docs.janusgraph.org/latest/index.html">Latest</a>
                 <a href="https://docs.janusgraph.org/0.3.0/index.html">Version 0.3.0</a>
+                <a href="https://docs.janusgraph.org/0.2.3/index.html">Version 0.2.3</a>
+                <a href="https://docs.janusgraph.org/0.2.2/index.html">Version 0.2.2</a>
                 <a href="https://docs.janusgraph.org/0.2.1/index.html">Version 0.2.1</a>
                 <a href="https://docs.janusgraph.org/0.2.0/index.html">Version 0.2.0</a>
                 <a href="https://docs.janusgraph.org/0.1.1/index.html">Version 0.1.1</a>
