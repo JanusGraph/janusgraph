@@ -26,6 +26,7 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -157,10 +158,13 @@ public class SolrIndex implements IndexProvider {
             ConfigOption.Type.GLOBAL_OFFLINE, "ttl");
 
     /** SolrCloud Configuration */
-
-    public static final ConfigOption<String> ZOOKEEPER_URL = new ConfigOption<String>(SOLR_NS,"zookeeper-url",
+    /*
+     * TODO Rename ZOOKEEPER_URL and "zookeeper-url" to ZOOKEEPER_URLS and
+     * "zookeeper-urls" in future major releases.
+     */
+    public static final ConfigOption<String[]> ZOOKEEPER_URL = new ConfigOption<String[]>(SOLR_NS,"zookeeper-url",
             "URL of the Zookeeper instance coordinating the SolrCloud cluster",
-            ConfigOption.Type.MASKABLE, "localhost:2181");
+            ConfigOption.Type.MASKABLE, new String[] { "localhost:2181" });
 
     public static final ConfigOption<Integer> NUM_SHARDS = new ConfigOption<Integer>(SOLR_NS,"num-shards",
             "Number of shards for a collection. This applies when creating a new collection which is only supported under the SolrCloud operation mode.",
@@ -239,11 +243,28 @@ public class SolrIndex implements IndexProvider {
         waitSearcher = config.get(WAIT_SEARCHER);
 
         if (mode==Mode.CLOUD) {
-            final String zookeeperUrl = config.get(SolrIndex.ZOOKEEPER_URL);
-            final CloudSolrClient cloudServer = new CloudSolrClient.Builder()
-                .withZkHost(zookeeperUrl)
-                .sendUpdatesOnlyToShardLeaders()
-                .build();
+            final String[] zookeeperUrl = config.get(SolrIndex.ZOOKEEPER_URL);
+            // Process possible zookeeper chroot. e.g. localhost:2181/solr
+            // chroot has to be the same assuming one Zookeeper ensemble.
+            // Parse from the last string. If found, take it as the chroot.
+            String chroot = null;
+            for (int i = zookeeperUrl.length - 1; i >= 0; i--) {
+                int chrootIndex = zookeeperUrl[i].indexOf("/");
+                if (chrootIndex != -1) {
+                    String hostAndPort = zookeeperUrl[i].substring(0, chrootIndex);
+                    if (chroot == null) {
+                        chroot = zookeeperUrl[i].substring(chrootIndex);
+                    }
+                    zookeeperUrl[i] = hostAndPort;
+                }
+            }
+            final CloudSolrClient.Builder builder = new CloudSolrClient.Builder()
+                    .withZkHost(Arrays.asList(zookeeperUrl))
+                    .sendUpdatesOnlyToShardLeaders();
+            if (chroot != null) {
+                builder.withZkChroot(chroot);
+            }
+            final CloudSolrClient cloudServer = builder.build();
             cloudServer.connect();
             solrClient = cloudServer;
         } else if (mode==Mode.HTTP) {

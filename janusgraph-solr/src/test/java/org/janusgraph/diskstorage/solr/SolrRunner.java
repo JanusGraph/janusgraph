@@ -15,6 +15,8 @@
 package org.janusgraph.diskstorage.solr;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 
@@ -30,7 +32,7 @@ import java.util.stream.Collectors;
 
 public class SolrRunner {
 
-    public static final String ZOOKEEPER_URLS = System.getProperty("index.search.solr.zookeeper-url");
+    public static final String ZOOKEEPER_URLS_SYSTEM_PROPERTY = System.getProperty("index.search.solr.zookeeper-url");
 
     protected static final int NUM_SERVERS = 1;
     protected static final String[] COLLECTIONS = readCollections();
@@ -44,7 +46,7 @@ public class SolrRunner {
     private static MiniSolrCloudCluster miniSolrCloudCluster;
 
     public static void start() throws Exception {
-        if (ZOOKEEPER_URLS != null) {
+        if (ZOOKEEPER_URLS_SYSTEM_PROPERTY != null) {
             return;
         }
         String userDir = System.getProperty("user.dir");
@@ -73,18 +75,18 @@ public class SolrRunner {
         }
     }
 
-    public static String getZookeeperUrls() {
-        final String zookeeperUrls;
-        if (ZOOKEEPER_URLS == null) {
-            zookeeperUrls = miniSolrCloudCluster.getZkServer().getZkAddress();
+    public static String[] getZookeeperUrls() {
+        final String[] zookeeperUrls;
+        if (Strings.isNullOrEmpty(ZOOKEEPER_URLS_SYSTEM_PROPERTY)) {
+            zookeeperUrls = new String[] { miniSolrCloudCluster.getZkServer().getZkAddress() };
         } else {
-            zookeeperUrls = ZOOKEEPER_URLS;
+            zookeeperUrls = ZOOKEEPER_URLS_SYSTEM_PROPERTY.split(",");
         }
         return zookeeperUrls;
     }
 
     public static void stop() throws Exception {
-        if (ZOOKEEPER_URLS != null) {
+        if (ZOOKEEPER_URLS_SYSTEM_PROPERTY != null) {
             return;
         }
         System.clearProperty("solr.solrxml.location");
