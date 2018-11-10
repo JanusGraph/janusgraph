@@ -6,6 +6,8 @@ include::intro.adoc[]
 
 include::basics.adoc[]
 
+include::connecting.adoc[]
+
 include::storagebackends.adoc[]
 
 include::indexbackends.adoc[]
