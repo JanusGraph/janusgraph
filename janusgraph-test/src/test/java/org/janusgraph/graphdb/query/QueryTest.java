@@ -15,8 +15,10 @@
 package org.janusgraph.graphdb.query;
 
 import com.google.common.collect.Iterators;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Contain;
+import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
@@ -27,6 +29,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -127,5 +130,53 @@ public class QueryTest {
     }
 
 
+    @Test
+    public void testMultipleIndexQueryWithLimits() {
+        JanusGraphManagement mgmt = graph.openManagement();
+        PropertyKey prop1Key = mgmt.makePropertyKey("prop1").dataType(String.class).make();
+        PropertyKey prop2Key = mgmt.makePropertyKey("prop2").dataType(String.class).make();
+
+        mgmt.buildIndex("prop1_idx", Vertex.class).addKey(prop1Key).buildCompositeIndex();
+        mgmt.buildIndex("prop2_idx", Vertex.class).addKey(prop2Key).buildCompositeIndex();
+
+        mgmt.commit();
+
+        // Creates 20 vertices with prop1=prop1val1, prop2=prop2val1
+        for(int i=0; i<20; i++)
+        {
+            tx.addVertex().property("prop1", "prop1val1").element().property("prop2", "prop2val1");
+        }
+        // Creates an additional vertex with prop1=prop1val1, prop2=prop2val2
+        tx.addVertex().property("prop1", "prop1val1").element().property("prop2", "prop2val2");
+
+        tx.commit();
+
+        List<Vertex> res;
+
+        // Tests that queries for the single vertex containing prop1=prop1val1, prop2=prop2val2, are returned when limit(1) is applied
+
+        // Tests that single vertex containing prop1=prop1val1, prop2=prop2val2 is returned when indices are not used
+        res = graph.traversal().V().map(x -> x.get()).has("prop2", "prop2val2").has("prop1", "prop1val1").limit(1).toList();
+        assertEquals(1, res.size());
+
+        // Tests that single vertex containing prop1=prop1val1, prop2=prop2val2 is returned when only prop1 index is used
+        res = graph.traversal().V().has("prop1", "prop1val1").map(x -> x.get()).has("prop2", "prop2val2").limit(1).toList();
+        assertEquals(1, res.size());
+
+        // Tests that single vertex containing prop1=prop1val1, prop2=prop2val2 is returned when only prop2 index is used
+        res = graph.traversal().V().has("prop2", "prop2val2").map(x -> x.get()).has("prop1", "prop1val1").limit(1).toList();
+        assertEquals(1, res.size());
+
+        // Tests that JanusGraphStep strategy properly combines has() steps to use both indices
+        // Tests without limits
+        res = graph.traversal().V().has("prop1", "prop1val1").has("prop2", "prop2val2").toList();
+        assertEquals(1, res.size());
+        // Tests with limit
+        res = graph.traversal().V().has("prop1", "prop1val1").has("prop2", "prop2val2").limit(1).toList();
+        assertEquals(1, res.size());
+        res = graph.traversal().V().has("prop2", "prop2val2").has("prop1", "prop1val1").limit(1).toList();
+        assertEquals(1, res.size());
+    }
 
 }
+
