@@ -76,9 +76,9 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
             }
             else if (this.ids.length > 0) {
                 final Graph graph = (Graph)traversal.asAdmin().getGraph().get();
-                if(Edge.class.isAssignableFrom(returnClass)){
-                    return iteratorList((Iterator) graph.edges(this.ids));
-                }
+//                if(Edge.class.isAssignableFrom(returnClass)){
+//                    return iteratorList((Iterator) graph.edges(this.ids));
+//                }
                 return iteratorList((Iterator)graph.vertices(this.ids));
             }
             if (hasLocalContainers.isEmpty()) {
