@@ -387,9 +387,9 @@ This section is a brief overview of the Gremlin query language. For more informa
 * https://github.com/krlawrence/graph#practical-gremlin-an-apache-tinkerpop-tutorial[Practical Gremlin Book]: A getting started guide for users of graph databases and the Gremlin query language.
 * http://tinkerpop.apache.org/docs/{tinkerpop_version}/recipes/[Gremlin Recipes]: A collection of best practices and common traversal patterns for Gremlin.
 * http://tinkerpop.apache.org/index.html#language-drivers[Gremlin Language Drivers]: Connect to a Gremlin Server with different programming languages, including Go, JavaScript, .NET/C#, PHP, Python, Ruby, Scala, and TypeScript.
-* http://tinkerpop.apache.org/docs/{tinkerpop_version}/tutorials/gremlin-language-variants/[Gremlin Language Variants]: Learn how to embed Gremlin in a host programming language.
 * http://sql2gremlin.com[Gremlin for SQL developers]: Learn Gremlin using typical patterns found when querying data with SQL.
 
+In addition to these resources, <<connecting>> explains how Gremlin can be used in different programming languages to query a JanusGraph Server.
 
 === Introductory Traversals
 
@@ -488,7 +488,7 @@ The example above has 4 chained functions: `out`, `in`, `except`, and `values` (
 When chaining together functions, the incoming type must match the outgoing type, where `U` matches anything. Thus, the "co-battled/ally" traversal above is correct.
 
 [NOTE]
-The Gremlin overview presented in this section focused on the Gremlin-Groovy language implementation used in the Gremlin Console. Additional http://tinkerpop.apache.org/index.html#language-drivers[language drivers] and http://tinkerpop.apache.org/docs/{tinkerpop_version}/tutorials/gremlin-language-variants/[language variants] of Gremlin are available.
+The Gremlin overview presented in this section focused on the Gremlin-Groovy language implementation used in the Gremlin Console. Refer to <<connecting>> for information about connecting to JanusGraph with other languages than Groovy and independent of the Gremlin Console.
 
 === Iterating the Traversal
 
@@ -521,7 +521,7 @@ List<Vertex> gods = g.V().hasLabel("god").toList(); // Find all the gods
 
 JanusGraph uses the http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-server[Gremlin Server] engine as the server component to process and answer client queries.  When packaged in JanusGraph, Gremlin Server is called JanusGraph Server.
 
-JanusGraph Server must be started manually in order to use it.  JanusGraph Server provides a way to remotely execute Gremlin scripts against one or more JanusGraph instances hosted within it. This section will describe how to use the WebSocket configuration, as well as describe how to configure JanusGraph Server to handle HTTP endpoint interactions.
+JanusGraph Server must be started manually in order to use it.  JanusGraph Server provides a way to remotely execute Gremlin traversals against one or more JanusGraph instances hosted within it. This section will describe how to use the WebSocket configuration, as well as describe how to configure JanusGraph Server to handle HTTP endpoint interactions. For information about how to connect to a JanusGraph Server from different languages refer to <<connecting>>.
 
 [[server-getting-started]]
 === Getting Started
