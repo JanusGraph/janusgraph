@@ -20,6 +20,8 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.schema.ConsistencyModifier;
@@ -42,6 +44,7 @@ import static org.junit.Assert.*;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.testcategory.SerialTests;
@@ -643,4 +646,25 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         return ((System.nanoTime()-start)/1000000.0);
     }
 
+
+    @Test
+    public void getEdgeByHasId() {
+        GraphTraversalSource g = graph.traversal();
+
+        g.addV("community").as("firstCommunity").
+        addV("person").addE("follows").to("firstCommunity").iterate();
+
+        RelationIdentifier eid = (RelationIdentifier) g.E().id().next();
+
+        GraphTraversal<Edge, Edge> t1 = g.E().hasId(eid);
+        GraphTraversal<Edge, Edge> t2 = g.E(eid);
+
+        Edge e1 = t1.next();
+
+        Edge e2 = t2.next();
+
+        assertNotNull(e1);
+        assertEquals(e1, e2);
+
+    }
 }
