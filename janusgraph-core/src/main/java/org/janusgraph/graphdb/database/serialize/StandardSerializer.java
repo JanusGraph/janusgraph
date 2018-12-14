@@ -42,6 +42,8 @@ import org.janusgraph.graphdb.types.TypeDefinitionDescription;
 
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.shaded.jackson.databind.node.ArrayNode;
+import org.apache.tinkerpop.shaded.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -132,7 +134,8 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(67,TraverserSet.class, new SerializableSerializer());
         registerClassInternal(68,HashMap.class, new SerializableSerializer());
         registerClassInternal(69,GraphCacheEvictionAction.class, new EnumSerializer<>(GraphCacheEvictionAction.class));
-
+        registerClassInternal(70, ObjectNode.class, new JsonSerializer<>(ObjectNode.class));
+        registerClassInternal(71, ArrayNode.class, new JsonSerializer<>(ArrayNode.class));
     }
 
     @Override
