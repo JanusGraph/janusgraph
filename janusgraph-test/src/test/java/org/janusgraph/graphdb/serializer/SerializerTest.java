@@ -40,7 +40,13 @@ import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
+import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
+import org.apache.tinkerpop.shaded.jackson.databind.node.ArrayNode;
+import org.apache.tinkerpop.shaded.jackson.databind.node.ObjectNode;
+
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.*;
 
@@ -452,6 +458,18 @@ public class SerializerTest extends SerializerTestCommon {
         assertEquals(Geoshape.geoshape(shapes[2]), serialize.readObjectNotNull(b, Geoshape.class));
     }
 
+    @Test
+    public void jsonObjectSerialization() throws IOException {
+
+        jsonSerialization(ObjectNode.class, "{\"key1\":\"test\",\"key2\":123}");
+    }
+
+    @Test
+    public void jsonArraySerialization() throws IOException {
+
+        jsonSerialization(ArrayNode.class, "[\"val1\",\"val2\",\"val3\"]");
+    }
+
     private static class SerialEntry {
 
         final Object object;
@@ -569,11 +587,23 @@ public class SerializerTest extends SerializerTestCommon {
         };
     }
 
+    private <T extends JsonNode> void jsonSerialization(Class<T> type, String jsonContent) throws IOException {
 
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        T jsonNode = type.cast(objectMapper.readTree(jsonContent));
+
+        DataOutput out = serialize.getDataOutput(128);
+
+        out.writeObjectNotNull(jsonNode);
+
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
+
+        assertEquals(jsonNode, serialize.readObjectNotNull(b, type));
+    }
 
 
     //Arrays (support null serialization)
-
 
 
 }
