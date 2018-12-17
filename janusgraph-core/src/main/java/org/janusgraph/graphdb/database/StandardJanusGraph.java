@@ -24,6 +24,7 @@ import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
@@ -158,7 +159,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
         //Register instance and ensure uniqueness
         String uniqueInstanceId = configuration.getUniqueGraphId();
-        ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
+        ModifiableConfiguration globalConfig = getGlobalSystemConfig(backend);
         final boolean instanceExists = globalConfig.has(REGISTRATION_TIME, uniqueInstanceId);
         final boolean replaceExistingInstance = configuration.getConfiguration().get(REPLACE_INSTANCE_IF_EXISTS);
         if (instanceExists && !replaceExistingInstance) {
@@ -211,7 +212,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             String uniqueId = null;
             try {
                 uniqueId = config.getUniqueGraphId();
-                ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
+                ModifiableConfiguration globalConfig = getGlobalSystemConfig(backend);
                 globalConfig.remove(REGISTRATION_TIME, uniqueId);
             } catch (Exception e) {
                 log.warn("Unable to remove graph instance uniqueid {}", uniqueId, e);
@@ -449,6 +450,11 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         return resultList;
     }
 
+    private ModifiableConfiguration getGlobalSystemConfig(Backend backend) {
+
+        return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
+            backend.getGlobalSystemConfig(), BasicConfiguration.Restriction.GLOBAL);
+    }
 
     // ################### WRITE #########################
 

@@ -15,9 +15,9 @@
 package org.janusgraph.graphdb;
 
 import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_HOSTNAME;
@@ -48,12 +48,12 @@ public class GraphDatabaseConfigurationInstanceIdTest {
         map.put(UNIQUE_INSTANCE_ID.toStringWithoutRoot(), "not-unique");
         map.put(REPLACE_INSTANCE_IF_EXISTS.toStringWithoutRoot(), true);
         final MapConfiguration config = new MapConfiguration(map);
-        final StandardJanusGraph graph1 = new StandardJanusGraph(new GraphDatabaseConfiguration(new CommonsConfiguration(config)));
+        final StandardJanusGraph graph1 = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
 
         assertEquals(graph1.openManagement().getOpenInstances().size(), 1);
         assertEquals(graph1.openManagement().getOpenInstances().toArray()[0], "not-unique");
 
-        final StandardJanusGraph graph2 = new StandardJanusGraph(new GraphDatabaseConfiguration(new CommonsConfiguration(config)));
+        final StandardJanusGraph graph2 = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
 
         assertEquals(graph1.openManagement().getOpenInstances().size(), 1);
         assertEquals(graph1.openManagement().getOpenInstances().toArray()[0], "not-unique");
@@ -69,7 +69,7 @@ public class GraphDatabaseConfigurationInstanceIdTest {
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         map.put(UNIQUE_INSTANCE_ID.toStringWithoutRoot(), "not-unique");
         final MapConfiguration config = new MapConfiguration(map);
-        final StandardJanusGraph graph1 = new StandardJanusGraph(new GraphDatabaseConfiguration(new CommonsConfiguration(config)));
+        final StandardJanusGraph graph1 = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
 
         assertEquals(graph1.openManagement().getOpenInstances().size(), 1);
         assertEquals(graph1.openManagement().getOpenInstances().toArray()[0], "not-unique");
@@ -77,7 +77,7 @@ public class GraphDatabaseConfigurationInstanceIdTest {
         thrown.expect(JanusGraphException.class);
         final String err = "A JanusGraph graph with the same instance id [not-unique] is already open. Might required forced shutdown.";
         thrown.expectMessage(equalTo(err));
-        final StandardJanusGraph graph2 = new StandardJanusGraph(new GraphDatabaseConfiguration(new CommonsConfiguration(config)));
+        final StandardJanusGraph graph2 = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
 
         graph1.close();
     }
@@ -88,7 +88,7 @@ public class GraphDatabaseConfigurationInstanceIdTest {
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         map.put(UNIQUE_INSTANCE_ID_HOSTNAME.toStringWithoutRoot(), true);
         final MapConfiguration config = new MapConfiguration(map);
-        final StandardJanusGraph graph = new StandardJanusGraph(new GraphDatabaseConfiguration(new CommonsConfiguration(config)));
+        final StandardJanusGraph graph = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
         assertEquals(graph.openManagement().getOpenInstances().size(), 1);
         assertEquals(graph.openManagement().getOpenInstances().toArray()[0], Inet4Address.getLocalHost().getHostName());
 				graph.close();
@@ -101,7 +101,7 @@ public class GraphDatabaseConfigurationInstanceIdTest {
         map.put(UNIQUE_INSTANCE_ID_HOSTNAME.toStringWithoutRoot(), true);
         map.put(UNIQUE_INSTANCE_ID_SUFFIX.toStringWithoutRoot(), 1);
 				final MapConfiguration config = new MapConfiguration(map);
-        final StandardJanusGraph graph = new StandardJanusGraph(new GraphDatabaseConfiguration(new CommonsConfiguration(config)));
+        final StandardJanusGraph graph = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
         assertEquals(graph.openManagement().getOpenInstances().size(), 1);
         assertEquals(graph.openManagement().getOpenInstances().toArray()[0], Inet4Address.getLocalHost().getHostName() + "1");
 				graph.close();

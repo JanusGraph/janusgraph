@@ -16,10 +16,12 @@ package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.collect.ImmutableList;
 
+import java.io.Closeable;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface ReadConfiguration {
+public interface ReadConfiguration extends Closeable {
 
     ReadConfiguration EMPTY = new ReadConfiguration() {
         @Override
@@ -42,6 +44,7 @@ public interface ReadConfiguration {
 
     Iterable<String> getKeys(String prefix);
 
+    @Override
     void close();
 
 }
