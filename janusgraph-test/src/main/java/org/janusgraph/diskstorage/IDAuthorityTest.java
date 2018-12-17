@@ -32,6 +32,7 @@ import static org.junit.Assert.*;
 
 import org.janusgraph.graphdb.database.idassigner.IDBlockSizer;
 import org.janusgraph.graphdb.database.idassigner.IDPoolExhaustedException;
+import org.janusgraph.graphdb.idmanagement.UniqueInstanceIdRetriever;
 import org.janusgraph.testutil.TestGraphConfigs;
 
 import org.junit.After;
@@ -143,7 +144,7 @@ public abstract class IDAuthorityTest {
             //sc.set(GraphDatabaseConfiguration.INSTANCE_RID_SHORT,(short)i);
             sc.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_SUFFIX, (short)i);
             if (!sc.has(UNIQUE_INSTANCE_ID)) {
-                String uniqueGraphId = getOrGenerateUniqueInstanceId(sc);
+                String uniqueGraphId = UniqueInstanceIdRetriever.getInstance().getOrGenerateUniqueInstanceId(sc);
                 log.debug("Setting unique instance id: {}", uniqueGraphId);
                 sc.set(UNIQUE_INSTANCE_ID, uniqueGraphId);
             }

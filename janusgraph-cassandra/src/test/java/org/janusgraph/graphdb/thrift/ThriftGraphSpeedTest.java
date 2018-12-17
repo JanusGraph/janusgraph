@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.thrift;
 
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.graphdb.SpeedTestSchema;
+import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
@@ -51,7 +52,7 @@ public class ThriftGraphSpeedTest extends JanusGraphSpeedTest {
 
 
         if (null == graph) {
-            GraphDatabaseConfiguration graphDatabaseConfiguration = new GraphDatabaseConfiguration(conf);
+            GraphDatabaseConfiguration graphDatabaseConfiguration = new GraphDatabaseConfigurationBuilder().build(conf);
             graphDatabaseConfiguration.getBackend().clearStorage();
             log.debug("Cleared backend storage");
             graph = (StandardJanusGraph)JanusGraphFactory.open(conf);

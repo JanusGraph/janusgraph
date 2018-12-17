@@ -14,11 +14,11 @@
 
 package org.janusgraph.core;
 
+import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
 import org.janusgraph.graphdb.management.JanusGraphManager;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
@@ -87,7 +87,7 @@ public class ConfiguredGraphFactory {
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         Preconditions.checkState(jgm != null, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
         final CommonsConfiguration config = new CommonsConfiguration(new MapConfiguration(templateConfigMap));
-        final JanusGraph g = (JanusGraph) jgm.openGraph(graphName, (String gName) -> new StandardJanusGraph(new GraphDatabaseConfiguration(config)));
+        final JanusGraph g = (JanusGraph) jgm.openGraph(graphName, (String gName) -> new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(config)));
         configManagementGraph.createConfiguration(new MapConfiguration(templateConfigMap));
         return g;
     }
@@ -112,7 +112,7 @@ public class ConfiguredGraphFactory {
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         Preconditions.checkState(jgm != null, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
         final CommonsConfiguration config = new CommonsConfiguration(new MapConfiguration(graphConfigMap));
-        return (JanusGraph) jgm.openGraph(graphName, (String gName) -> new StandardJanusGraph(new GraphDatabaseConfiguration(config)));
+        return (JanusGraph) jgm.openGraph(graphName, (String gName) -> new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(config)));
     }
 
     /**

@@ -20,6 +20,7 @@ import org.janusgraph.diskstorage.cql.CassandraStorageSetup;
 import org.janusgraph.graphdb.JanusGraphSpeedTest;
 import org.janusgraph.graphdb.SpeedTestSchema;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.testcategory.PerformanceTests;
 import org.junit.BeforeClass;
@@ -47,7 +48,7 @@ public class CQLGraphSpeedTest extends JanusGraphSpeedTest {
     @Override
     protected StandardJanusGraph getGraph() throws BackendException {
         if (null == graph) {
-            GraphDatabaseConfiguration graphDatabaseConfiguration = new GraphDatabaseConfiguration(conf);
+            GraphDatabaseConfiguration graphDatabaseConfiguration = new GraphDatabaseConfigurationBuilder().build(conf);
             graphDatabaseConfiguration.getBackend().clearStorage();
             log.debug("Cleared backend storage");
             graph = (StandardJanusGraph)JanusGraphFactory.open(conf);
