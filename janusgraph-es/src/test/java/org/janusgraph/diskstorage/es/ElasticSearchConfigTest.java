@@ -218,72 +218,14 @@ public class ElasticSearchConfigTest {
 
     @Test
     public void testExternalDynamic() throws Exception {
-        final Duration maxWrite = Duration.ofMillis(2000L);
-        final String storeName = "test_mapping";
-        final Configuration indexConfig = GraphDatabaseConfiguration.buildGraphConfiguration().set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME).restrictTo(INDEX_NAME);
-        final IndexProvider idx = open(indexConfig);
-        final ElasticMajorVersion version = ((ElasticSearchIndex) idx).getVersion();
 
-        // Test that the "date" property throws an exception.
-        final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest
-            .getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD));
-        final BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
-        final IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
-        try {
-            idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
-            fail("should fail");
-        } catch (final PermanentBackendException e) {
-            log.debug(e.getMessage(), e);
-        }
-
-        final HttpPut newMapping = new HttpPut("janusgraph_"+storeName);
-        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(readMapping(version, "/dynamic_mapping.json")), Charset.forName("UTF-8")));
-        executeRequest(newMapping);
-
-        // Test that the "date" property works well.
-        idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
-        // Test that the "weight" property works well due to external mapping.
-        idx.register(storeName, "weight", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("weight"), itx);
-        itx.rollback();
-        idx.close();
-        final ElasticSearchClient client = ElasticSearchSetup.REST_CLIENT.connect(indexConfig).getClient();
-        final Map<String, Object> properties = client.getMapping("janusgraph_"+storeName, storeName).getProperties();
-        Assert.assertFalse(properties.toString(), properties.containsKey("weight"));
+        testExternalDynamic(false);
     }
 
     @Test
     public void testUpdateExternalDynamicMapping() throws Exception {
-        final Duration maxWrite = Duration.ofMillis(2000L);
-        final String storeName = "test_mapping";
-        final Configuration indexConfig = GraphDatabaseConfiguration.buildGraphConfiguration().set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME).set(ALLOW_MAPPING_UPDATE, true, INDEX_NAME).restrictTo(INDEX_NAME);
-        final IndexProvider idx = open(indexConfig);
-        final ElasticMajorVersion version = ((ElasticSearchIndex) idx).getVersion();
 
-        // Test that the "date" property throws an exception.
-        final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest
-            .getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD));
-        final BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
-        final IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
-        try {
-            idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
-            fail("should fail");
-        } catch (final PermanentBackendException e) {
-            log.debug(e.getMessage(), e);
-        }
-
-        final HttpPut newMapping = new HttpPut("janusgraph_"+storeName);
-        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(readMapping(version, "/dynamic_mapping.json")), Charset.forName("UTF-8")));
-        executeRequest(newMapping);
-
-        // Test that the "date" property works well.
-        idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
-        // Test that the "weight" property works well due to dynamic mapping.
-        idx.register(storeName, "weight", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("weight"), itx);
-        itx.rollback();
-        idx.close();
-        final ElasticSearchClient client = ElasticSearchSetup.REST_CLIENT.connect(indexConfig).getClient();
-        final Map<String, Object> properties = client.getMapping("janusgraph_"+storeName, storeName).getProperties();
-        Assert.assertTrue(properties.toString(), properties.containsKey("weight"));
+        testExternalDynamic(true);
     }
 
     @Test
@@ -408,6 +350,53 @@ public class ElasticSearchConfigTest {
         idx.clearStorage();
         idx.close();
         return new ElasticSearchIndex(indexConfig);
+    }
+
+    private void testExternalDynamic(boolean withUpdateMapping) throws Exception {
+
+        final Duration maxWrite = Duration.ofMillis(2000L);
+        final String storeName = "test_mapping";
+
+        final Configuration indexConfig = buildIndexConfigurationForExternalDynamic(withUpdateMapping);
+
+        final IndexProvider idx = open(indexConfig);
+        final ElasticMajorVersion version = ((ElasticSearchIndex) idx).getVersion();
+
+        // Test that the "date" property throws an exception.
+        final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest
+            .getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD));
+        final BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
+        final IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
+        try {
+            idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
+            fail("should fail");
+        } catch (final PermanentBackendException e) {
+            log.debug(e.getMessage(), e);
+        }
+
+        final HttpPut newMapping = new HttpPut("janusgraph_"+storeName);
+        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(readMapping(version, "/dynamic_mapping.json")), Charset.forName("UTF-8")));
+        executeRequest(newMapping);
+
+        // Test that the "date" property works well.
+        idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
+        // Test that the "weight" property works well due to dynamic mapping.
+        idx.register(storeName, "weight", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("weight"), itx);
+        itx.rollback();
+        idx.close();
+        final ElasticSearchClient client = ElasticSearchSetup.REST_CLIENT.connect(indexConfig).getClient();
+        final Map<String, Object> properties = client.getMapping("janusgraph_"+storeName, storeName).getProperties();
+
+        Assert.assertEquals(properties.toString(), withUpdateMapping, properties.containsKey("weight"));
+    }
+
+    private Configuration buildIndexConfigurationForExternalDynamic(boolean withUpdateMapping){
+
+        ModifiableConfiguration indexConfig = GraphDatabaseConfiguration.buildGraphConfiguration().set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME);
+        if(withUpdateMapping){
+            indexConfig = indexConfig.set(ALLOW_MAPPING_UPDATE, true, INDEX_NAME);
+        }
+        return indexConfig.restrictTo(INDEX_NAME);
     }
 
 }
