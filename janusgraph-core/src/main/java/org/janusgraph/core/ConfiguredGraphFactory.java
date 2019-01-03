@@ -203,14 +203,7 @@ public class ConfiguredGraphFactory {
      */
     public static void updateConfiguration(final String graphName, final Configuration config) {
         final ConfigurationManagementGraph configManagementGraph = getConfigGraphManagementInstance();
-        try {
-            final JanusGraph graph = open(graphName);
-            removeGraphFromCache(graph);
-        } catch (Exception e) {
-            // cannot open graph, do nothing
-            log.error(String.format("Failed to open graph %s with the following error:\n %s.\n" +
-            "Thus, it and its traversal will not be bound on this server.", graphName, e.toString()));
-        }
+        removeGraphFromCache(graphName);
         configManagementGraph.updateConfiguration(graphName, config);
     }
 
@@ -231,15 +224,20 @@ public class ConfiguredGraphFactory {
      */
     public static void removeConfiguration(final String graphName) {
         final ConfigurationManagementGraph configManagementGraph = getConfigGraphManagementInstance();
+        removeGraphFromCache(graphName);
+        configManagementGraph.removeConfiguration(graphName);
+    }
+
+    private static void removeGraphFromCache(final String graphName) {
+
         try {
             final JanusGraph graph = open(graphName);
             removeGraphFromCache(graph);
         } catch (Exception e) {
             // cannot open graph, do nothing
             log.error(String.format("Failed to open graph %s with the following error:\n %s.\n" +
-            "Thus, it and its traversal will not be bound on this server.", graphName, e.toString()));
+                "Thus, it and its traversal will not be bound on this server.", graphName, e.toString()));
         }
-        configManagementGraph.removeConfiguration(graphName);
     }
 
     private static void removeGraphFromCache(final JanusGraph graph) {
