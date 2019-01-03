@@ -214,7 +214,7 @@ For convenience, copies of APACHE-2.0 and CC-BY-4.0 are included verbatim below.
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright 2012-2013 Aurelius LLC
+   Copyright [yyyy] [name of copyright owner]
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
