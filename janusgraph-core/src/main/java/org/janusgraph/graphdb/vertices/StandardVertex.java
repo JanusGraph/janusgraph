@@ -33,7 +33,8 @@ import java.util.List;
 
 public class StandardVertex extends AbstractVertex {
 
-    private byte lifecycle;
+    private Object lifecycleMutex = new Object();
+    private volatile byte lifecycle;
     private volatile AddedRelationsContainer addedRelations=AddedRelationsContainer.EMPTY;
 
     public StandardVertex(final StandardJanusGraphTx tx, final long id, byte lifecycle) {
@@ -41,8 +42,10 @@ public class StandardVertex extends AbstractVertex {
         this.lifecycle=lifecycle;
     }
 
-    public synchronized final void updateLifeCycle(ElementLifeCycle.Event event) {
-        this.lifecycle = ElementLifeCycle.update(lifecycle,event);
+    public final void updateLifeCycle(ElementLifeCycle.Event event) {
+        synchronized(lifecycleMutex) {
+            this.lifecycle = ElementLifeCycle.update(lifecycle,event);
+        }
     }
 
     @Override
