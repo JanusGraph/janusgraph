@@ -75,6 +75,27 @@ Any commit that is made following CTR shall include the fact that it is a CTR in
 Community members who wish to review CTRs may subscribe to the https://groups.google.com/forum/#!forum/janusgraph-commits[JanusGraph commits] list so that they will see CTRs as they come through.
 If another committer responds with a -1, the commit should be rolled back and the formal RTC process should be followed.
 
+[[merging-pull-requests]]
+=== Merging of Pull Requests
+
+A pull request is ready to be merged when it has been approved
+(see <<review-then-commit>>).
+It can either be merged manually with `git` commands or through the GitHub UI
+with the _Merge pull request_ button.
+If the pull request targets a release branch that is upstream of other release
+branches (e.g., `0.2` is upstream of `master`), then it is important to make
+sure that the change also lands in the downstream release branches.
+This is the responsibility of the committer who merges the pull request.
+Therefore, merge the pull request first into its target branch and then merge
+that branch (e.g., `0.2`) into the next downstream branch (e.g., `0.3`), and
+so on until you merge the last release branch into `master`.
+Afterwards push all release branches, ideally with an atomic commit:
+
+[source, bash]
+git push --atomic origin master 0.3 0.2
+
+This approach keeps merge conflicts to a minimum when a release branch is
+merged into a downstream release branch.
 
 [[release-policy]]
 == Release Policy
