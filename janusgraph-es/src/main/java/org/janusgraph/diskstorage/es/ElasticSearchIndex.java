@@ -254,6 +254,21 @@ public class ElasticSearchIndex implements IndexProvider {
             ES_HTTP_AUTH_CUSTOM_NS, "authenticator-args", "Comma-separated custom authenticator constructor arguments.",
             ConfigOption.Type.LOCAL, new String[0]);
 
+    public static final ConfigOption<Integer> ES_CONNECT_TIMEOUT = new ConfigOption<>(
+        ELASTICSEARCH_NS, "connect-timeout",
+        "Sets the connect timeout (in milliseconds) ",
+        ConfigOption.Type.MASKABLE, Integer.class);
+
+    public static final ConfigOption<Integer> ES_SOCKET_TIMEOUT = new ConfigOption<>(
+        ELASTICSEARCH_NS, "socket-timeout",
+        "Sets the socket timeout (in milliseconds) ",
+        ConfigOption.Type.MASKABLE, Integer.class);
+
+    public static final ConfigOption<Integer> ES_CONNECTION_REQUEST_TIMEOUT = new ConfigOption<>(
+        ELASTICSEARCH_NS, "connection-request-timeout",
+        "Sets the connection request timeout (in milliseconds) ",
+        ConfigOption.Type.MASKABLE, Integer.class);
+
     public static final int HOST_PORT_DEFAULT = 9200;
 
     /**
