@@ -131,7 +131,9 @@ public class RestClientSetup {
             if (socketTimeout != null) {
                 builder.setSocketTimeout(socketTimeout);
             }
-            builder.setConnectionRequestTimeout(connectionRequestTimeout == null ? 0 : connectionRequestTimeout);
+            if(connectionRequestTimeout != null) {
+                builder.setConnectionRequestTimeout(connectionRequestTimeout);
+            }
             return builder;
         };
     }
