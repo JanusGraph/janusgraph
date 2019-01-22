@@ -124,6 +124,9 @@ public class RestClientSetup {
         Integer connectTimeout = config.get(ElasticSearchIndex.ES_CONNECT_TIMEOUT);
         Integer socketTimeout = config.get(ElasticSearchIndex.ES_SOCKET_TIMEOUT);
         Integer connectionRequestTimeout = config.get(ElasticSearchIndex.ES_CONNECTION_REQUEST_TIMEOUT);
+        if(connectTimeout == null && socketTimeout == null && connectionRequestTimeout == null){
+            return null;
+        }
         return builder -> {
             if (connectTimeout != null) {
                 builder.setConnectTimeout(connectTimeout);
