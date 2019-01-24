@@ -1279,6 +1279,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             Iterator<JanusGraphElement> iterator;
             if (!indexQuery.isEmpty()) {
                 final List<QueryUtil.IndexCall<Object>> retrievals = new ArrayList<>();
+                // Leave first index for streaming, and prepare the rest for intersecting and lookup
                 for (int i = 1; i < indexQuery.size(); i++) {
                     final JointIndexQuery.Subquery subquery = indexQuery.getQuery(i);
                     retrievals.add(limit -> {
@@ -1291,8 +1292,10 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                         }
                     });
                 }
+                // Constructs an iterator which lazily streams results from 1st index, and filters by looking up in the intersection of results from all other indices (if any)
+                // NOTE NO_LIMIT is passed to processIntersectingRetrievals to prevent incomplete intersections, which could lead to missed results
                 iterator = new SubqueryIterator(indexQuery.getQuery(0), indexSerializer, txHandle, indexCache, indexQuery.getLimit(), getConversionFunction(query.getResultType()),
-                        retrievals.isEmpty() ? null: QueryUtil.processIntersectingRetrievals(retrievals, indexQuery.getLimit()));
+                        retrievals.isEmpty() ? null: QueryUtil.processIntersectingRetrievals(retrievals, Query.NO_LIMIT));
             } else {
                 if (config.hasForceIndexUsage()) throw new JanusGraphException("Could not find a suitable index to answer graph query and graph scans are disabled: " + query);
                 log.warn("Query requires iterating over all vertices [{}]. For better performance, use indexes", query.getCondition());
