@@ -121,21 +121,16 @@ public class RestClientSetup {
      * @return callback or null if the request customization is not needed
      */
     protected RequestConfigCallback getRequestConfigCallback(Configuration config) {
-        Integer connectTimeout = config.get(ElasticSearchIndex.ES_CONNECT_TIMEOUT);
-        Integer socketTimeout = config.get(ElasticSearchIndex.ES_SOCKET_TIMEOUT);
-        Integer connectionRequestTimeout = config.get(ElasticSearchIndex.ES_CONNECTION_REQUEST_TIMEOUT);
-        if(connectTimeout == null && socketTimeout == null && connectionRequestTimeout == null){
-            return null;
-        }
+
         return builder -> {
-            if (connectTimeout != null) {
-                builder.setConnectTimeout(connectTimeout);
+            if (config.has(ElasticSearchIndex.ES_CONNECT_TIMEOUT)) {
+                builder.setConnectTimeout(config.get(ElasticSearchIndex.ES_CONNECT_TIMEOUT));
             }
-            if (socketTimeout != null) {
-                builder.setSocketTimeout(socketTimeout);
+            if (config.has(ElasticSearchIndex.ES_SOCKET_TIMEOUT)) {
+                builder.setSocketTimeout(config.get(ElasticSearchIndex.ES_SOCKET_TIMEOUT));
             }
-            if(connectionRequestTimeout != null) {
-                builder.setConnectionRequestTimeout(connectionRequestTimeout);
+            if(config.has(ElasticSearchIndex.ES_CONNECTION_REQUEST_TIMEOUT)) {
+                builder.setConnectionRequestTimeout(config.get(ElasticSearchIndex.ES_CONNECTION_REQUEST_TIMEOUT));
             }
             return builder;
         };
