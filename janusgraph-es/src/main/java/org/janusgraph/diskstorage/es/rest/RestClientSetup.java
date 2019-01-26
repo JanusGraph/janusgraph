@@ -121,7 +121,9 @@ public class RestClientSetup {
      * @return callback or null if the request customization is not needed
      */
     protected RequestConfigCallback getRequestConfigCallback(Configuration config) {
-
+        if(!config.has(ElasticSearchIndex.ES_CONNECT_TIMEOUT) && !config.has(ElasticSearchIndex.ES_SOCKET_TIMEOUT) && !config.has(ElasticSearchIndex.ES_CONNECTION_REQUEST_TIMEOUT)){
+            return null;
+        }
         return builder -> {
             if (config.has(ElasticSearchIndex.ES_CONNECT_TIMEOUT)) {
                 builder.setConnectTimeout(config.get(ElasticSearchIndex.ES_CONNECT_TIMEOUT));
