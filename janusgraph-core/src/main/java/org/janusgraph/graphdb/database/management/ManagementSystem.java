@@ -22,58 +22,58 @@ import com.google.common.collect.Sets;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.Connection;
 import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphEdge;
+import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.EdgeLabelMaker;
+import org.janusgraph.core.schema.Index;
+import org.janusgraph.core.schema.JanusGraphConfiguration;
+import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.core.schema.JanusGraphSchemaElement;
+import org.janusgraph.core.schema.JanusGraphSchemaType;
 import org.janusgraph.core.schema.JobStatus;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.schema.PropertyKeyMaker;
 import org.janusgraph.core.schema.RelationTypeIndex;
 import org.janusgraph.core.schema.SchemaAction;
 import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.core.schema.JanusGraphConfiguration;
-import org.janusgraph.core.schema.JanusGraphIndex;
-import org.janusgraph.core.schema.Index;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.core.schema.JanusGraphSchemaElement;
-import org.janusgraph.core.schema.JanusGraphSchemaType;
 import org.janusgraph.core.schema.VertexLabelMaker;
+import org.janusgraph.core.VertexLabel;
 import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.configuration.backend.KCVSConfiguration;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.TransactionalConfiguration;
 import org.janusgraph.diskstorage.configuration.UserModifiableConfiguration;
-import org.janusgraph.diskstorage.configuration.backend.KCVSConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScanner;
 import org.janusgraph.diskstorage.log.Log;
-import org.janusgraph.graphdb.database.IndexSerializer;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.cache.SchemaCache;
+import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
+import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.Token;
-import org.janusgraph.graphdb.management.JanusGraphManager;
-import org.janusgraph.graphdb.olap.VertexJobConverter;
 import org.janusgraph.graphdb.olap.job.IndexRemoveJob;
 import org.janusgraph.graphdb.olap.job.IndexRepairJob;
+import org.janusgraph.graphdb.olap.VertexJobConverter;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexField;
 import org.janusgraph.graphdb.types.IndexType;
+import org.janusgraph.graphdb.types.indextype.IndexTypeWrapper;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.ParameterIndexField;
 import org.janusgraph.graphdb.types.ParameterType;
@@ -85,35 +85,38 @@ import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.janusgraph.graphdb.types.TypeDefinitionDescription;
 import org.janusgraph.graphdb.types.TypeDefinitionMap;
 import org.janusgraph.graphdb.types.VertexLabelVertex;
-import org.janusgraph.graphdb.types.indextype.IndexTypeWrapper;
 import org.janusgraph.graphdb.types.system.BaseKey;
 import org.janusgraph.graphdb.types.system.SystemTypeManager;
 import org.janusgraph.graphdb.types.vertices.EdgeLabelVertex;
+import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.graphdb.types.vertices.PropertyKeyVertex;
 import org.janusgraph.graphdb.types.vertices.RelationTypeVertex;
-import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.lang.StringBuilder;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.List;
 import java.util.ArrayList;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -149,6 +152,9 @@ public class ManagementSystem implements JanusGraphManagement {
     private final Instant txStartTime;
     private boolean graphShutdownRequired;
     private boolean isOpen;
+
+    private final static String FIRSTDASH= "------------------------------------------------------------------------------------------------\n";
+    private final static String DASHBREAK = "---------------------------------------------------------------------------------------------------\n";
 
     public ManagementSystem(StandardJanusGraph graph, KCVSConfiguration config, Log sysLog,
                             ManagementLogger managementLogger, SchemaCache schemaCache) {
@@ -430,6 +436,176 @@ public class ManagementSystem implements JanusGraphManagement {
             .filter(indexType -> indexType.getElement().subsumedBy(elementType))
             .map(JanusGraphIndexWrapper::new)
             .collect(Collectors.toList());
+    }
+
+    @Override
+    public String printSchema() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(printVertexLabels(false));
+        sb.append(printEdgeLabels(false));
+        sb.append(printPropertyKeys(false));
+        sb.append(printIndexes(false));
+        return sb.toString();
+    }
+
+    @Override
+    public String printVertexLabels() {
+        return this.printVertexLabels(true);
+    }
+
+    private String printVertexLabels(boolean calledDirectly) {
+        StringBuilder sb = new StringBuilder();
+        String pattern = "%-30s | %-11s | %-50s |%n";
+        Iterable<VertexLabel> labels = getVertexLabels();
+        boolean hasResults = false;
+        sb.append(FIRSTDASH);
+        sb.append(String.format(pattern, "Vertex Label Name", "Partitioned", "Static"));
+        sb.append(DASHBREAK);
+        for(VertexLabel label: labels) {
+            hasResults = true;
+            sb.append(String.format(pattern, label.name(), label.isPartitioned(), label.isStatic()));
+        }
+        if (hasResults && calledDirectly) {
+            sb.append(DASHBREAK);
+        }
+        return sb.toString();
+    }
+
+    @Override
+    public String printEdgeLabels() {
+        return this.printEdgeLabels(true);
+    }
+
+    private String printEdgeLabels(boolean calledDirectly) {
+        StringBuilder sb = new StringBuilder();
+        String pattern = "%-30s | %-11s | %-11s | %-36s |%n";
+        Iterable<EdgeLabel> labels = getRelationTypes(EdgeLabel.class);
+        boolean hasResults = false;
+        if (calledDirectly) {
+            sb.append(FIRSTDASH);
+        } else {
+            sb.append(DASHBREAK);
+        }
+        sb.append(String.format(pattern, "Edge Label Name", "Directed", "Unidirected", "Multiplicity"));
+        sb.append(DASHBREAK);
+        for (EdgeLabel label: labels) {
+            hasResults = true;
+            sb.append(String.format(pattern, label.name(), label.isDirected() ,label.isUnidirected(), label.multiplicity()));
+        }
+        if (hasResults && calledDirectly) {
+            sb.append(DASHBREAK);
+        }
+        return sb.toString();
+    }
+
+    @Override
+    public String printPropertyKeys() {
+        return this.printPropertyKeys(true);
+    }
+
+    private String printPropertyKeys(boolean calledDirectly) {
+        StringBuilder sb = new StringBuilder();
+        String pattern = "%-30s | %-11s | %-50s |\n";
+        Iterable<PropertyKey> keys = getRelationTypes(PropertyKey.class);
+        boolean hasResults = false;
+        if (calledDirectly) {
+            sb.append(FIRSTDASH);
+        } else {
+            sb.append(DASHBREAK);
+        }
+        sb.append(String.format(pattern, "Property Key Name", "Cardinality", "Data Type"));
+        sb.append(DASHBREAK);
+        for (PropertyKey key: keys) {
+            hasResults = true;
+            sb.append(String.format(pattern, key.name(), key.cardinality(), key.dataType()));
+        }
+        if (hasResults && calledDirectly) {
+            sb.append(DASHBREAK);
+        }
+        return sb.toString();
+    }
+
+    @Override
+    public String printIndexes() {
+        return this.printIndexes(true);
+    }
+
+    private String printIndexes(boolean calledDirectly) {
+        StringBuilder sb = new StringBuilder();
+        String pattern = "%-30s | %-11s | %-9s | %-14s | %-10s %10s |%n";
+        String relationPattern = "%-30s | %-11s | %-9s | %-14s | %-8s | %10s |%n";
+        Iterable<JanusGraphIndex> vertexIndexes = getGraphIndexes(Vertex.class);
+        Iterable<JanusGraphIndex> edgeIndexes = getGraphIndexes(Edge.class);
+        Iterable<RelationType> relationTypes = getRelationTypes(RelationType.class);
+        LinkedList<RelationTypeIndex> relationIndexes  = new LinkedList<>();
+
+        for (RelationType rt :relationTypes) {
+            Iterable<RelationTypeIndex> rti = getRelationIndexes(rt);
+            rti.forEach(relationIndexes::add);
+        }
+
+        if (calledDirectly) {
+            sb.append(FIRSTDASH);
+        } else {
+            sb.append(DASHBREAK);
+        }
+        sb.append(String.format(pattern, "Vertex Index Name", "Type", "Unique", "Backing", "Key:", "Status"));
+        sb.append(DASHBREAK);
+        sb.append(iterateIndexes(pattern, vertexIndexes));
+        
+        sb.append(DASHBREAK);
+        sb.append(String.format(pattern, "Edge Index (VCI) Name", "Type", "Unique", "Backing", "Key:", "Status"));
+        sb.append(DASHBREAK);
+        sb.append(iterateIndexes(pattern, edgeIndexes));
+
+        sb.append(DASHBREAK);
+        sb.append(String.format(relationPattern,"Relation Index", "Type", "Direction", "Sort Key", "Order", "Status"));
+        sb.append(DASHBREAK);
+        for (RelationTypeIndex ri: relationIndexes) {
+            sb.append(String.format(relationPattern, ri.name(), ri.getType(), ri.getDirection(), ri.getSortKey()[0], ri.getSortOrder(), ri.getIndexStatus().name()));
+        }
+        if (!relationIndexes.isEmpty()) {
+            sb.append(DASHBREAK);
+        }
+        return sb.toString();
+    }
+
+    private String iterateIndexes(String pattern, Iterable<JanusGraphIndex> indexes) {
+        StringBuilder sb = new StringBuilder();
+        for (JanusGraphIndex index: indexes) {
+            String type = getIndexType(index);
+            PropertyKey[] keys = index.getFieldKeys();
+            String[][] keyStatus = getKeyStatus(keys, index);
+            sb.append(String.format(pattern, index.name(), type, index.isUnique(), index.getBackingIndex(), keyStatus[0][0] + ":", keyStatus[0][1]));
+            if (keyStatus.length > 1) {
+                for (int i = 1; i < keyStatus.length; i++) {
+                    sb.append(String.format(pattern, "", "", "", "", keyStatus[i][0] + ":", keyStatus[i][1]));
+                }
+            }
+        }
+        return sb.toString();
+
+    }
+
+    private String[][] getKeyStatus(PropertyKey[] keys, JanusGraphIndex index) {
+        String[][] keyStatus = new String[keys.length][2];
+        for (int i = 0; i < keys.length; i++) {
+            keyStatus[i][0] = keys[i].name();
+            keyStatus[i][1] = index.getIndexStatus(keys[i]).name();
+        }
+        return keyStatus.length > 0 ? keyStatus: new String[][] {{"",""}};
+    }
+
+    private String getIndexType(JanusGraphIndex index) {
+        String type;
+        if (index.isCompositeIndex()) {
+            type = "Composite";
+        } else if (index.isMixedIndex()) {
+            type = "Mixed";
+        } else {
+            type = "Unknown";
+        }
+        return type;
     }
 
     /**
@@ -749,7 +925,7 @@ public class ManagementSystem implements JanusGraphManagement {
     /**
      * Upon the open managementsystem's commit, this graph will be asynchronously evicted from the cache on all JanusGraph nodes in your
      * cluster, once there are no open transactions on this graph on each respective JanusGraph node
-     * and assuming each node is correctly configured to use the {@link JanusGraphManager}.
+     * and assuming each node is correctly configured to use the {@link org.janusgraph.graphdb.management.JanusGraphManager}.
      */
     public void evictGraphFromCache() {
         this.evictGraphFromCache = true;
