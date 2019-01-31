@@ -65,7 +65,7 @@ public abstract class AbstractIDAuthority implements IDAuthority {
         this.idApplicationWaitMS =
                 config.get(GraphDatabaseConfiguration.IDAUTHORITY_WAIT);
 
-        this.metricsPrefix = GraphDatabaseConfiguration.getSystemMetricsPrefix();
+        this.metricsPrefix = GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
     }
 
     @Override

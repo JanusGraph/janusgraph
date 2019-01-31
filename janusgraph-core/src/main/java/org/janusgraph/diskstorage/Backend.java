@@ -19,10 +19,12 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import org.apache.commons.configuration.BaseConfiguration;
 import org.janusgraph.core.JanusGraphConfigurationException;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.configuration.*;
+import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import org.janusgraph.diskstorage.indexing.*;
 import org.janusgraph.diskstorage.keycolumnvalue.*;
@@ -344,7 +346,7 @@ public class Backend implements LockerProvider, AutoCloseable {
 
     private StandardScanner.Builder buildStoreIndexScanJob(String storeName) {
         TimestampProvider provider = configuration.get(TIMESTAMP_PROVIDER);
-        ModifiableConfiguration jobConfig = GraphDatabaseConfiguration.buildJobConfiguration();
+        ModifiableConfiguration jobConfig = buildJobConfiguration();
         jobConfig.set(JOB_START_TIME,provider.getTime().toEpochMilli());
         return scanner.build()
                 .setStoreName(storeName)
@@ -595,6 +597,13 @@ public class Backend implements LockerProvider, AutoCloseable {
         } else {
             log.debug("Backend {} has already been closed or cleared", this);
         }
+    }
+
+    private ModifiableConfiguration buildJobConfiguration() {
+
+        return new ModifiableConfiguration(JOB_NS,
+            new CommonsConfiguration(new BaseConfiguration()),
+            BasicConfiguration.Restriction.NONE);
     }
 
     //############ Registered Storage Managers ##############
