@@ -1,4 +1,4 @@
-// Copyright 2017 JanusGraph Authors
+// Copyright 2018 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,58 +16,42 @@ package org.janusgraph.graphdb.configuration;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.janusgraph.core.*;
-import org.janusgraph.core.attribute.AttributeSerializer;
 import org.janusgraph.core.schema.DefaultSchemaMaker;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.StandardIndexProvider;
 import org.janusgraph.diskstorage.StandardStoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
+import org.janusgraph.diskstorage.configuration.converter.ReadConfigurationConverter;
+import org.janusgraph.graphdb.configuration.converter.RegisteredAttributeClassesConverter;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphDefaultSchemaMaker;
 import org.janusgraph.graphdb.tinkerpop.Tp3DefaultSchemaMaker;
-import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.types.typemaker.DisableDefaultSchemaMaker;
 import org.janusgraph.util.stats.NumberUtil;
 import org.janusgraph.diskstorage.util.time.*;
 import org.janusgraph.diskstorage.configuration.*;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
-import org.janusgraph.diskstorage.configuration.backend.KCVSConfiguration;
 import org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode;
 import org.janusgraph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
-import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
-import org.janusgraph.diskstorage.log.kcvs.KCVSLogManager;
 import org.janusgraph.graphdb.database.cache.MetricInstrumentedSchemaCache;
 import org.janusgraph.graphdb.database.cache.StandardSchemaCache;
 import org.janusgraph.graphdb.database.cache.SchemaCache;
 import org.janusgraph.graphdb.database.serialize.StandardSerializer;
-import org.janusgraph.util.encoding.LongEncoding;
 import org.janusgraph.util.system.ConfigurationUtil;
-import org.janusgraph.util.system.LoggerUtil;
 import org.janusgraph.util.system.NetworkUtil;
 
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
 
-import java.io.File;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nullable;
 import javax.management.MBeanServerFactory;
 
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.*;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.ClassUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,9 +78,7 @@ import org.janusgraph.util.stats.MetricManager;
  */
 public class GraphDatabaseConfiguration {
 
-    private static final Logger log =
-            LoggerFactory.getLogger(GraphDatabaseConfiguration.class);
-
+    private static final Logger log = LoggerFactory.getLogger(GraphDatabaseConfiguration.class);
 
     public static final ConfigNamespace ROOT_NS = new ConfigNamespace(null,"root","Root Configuration Namespace for the JanusGraph Graph Database");
 
@@ -295,7 +277,7 @@ public class GraphDatabaseConfiguration {
         @Override
         public boolean apply(@Nullable String s) {
             if (s==null) return false;
-            if (preregisteredAutoType.containsKey(s)) return true;
+            if (PREREGISTERED_AUTO_TYPE.containsKey(s)) return true;
             try {
                 Class<?> clazz = ClassUtils.getClass(s);
                 return DefaultSchemaMaker.class.isAssignableFrom(clazz);
@@ -305,7 +287,7 @@ public class GraphDatabaseConfiguration {
         }
     });
 
-    private static final Map<String, DefaultSchemaMaker> preregisteredAutoType =
+    private static final Map<String, DefaultSchemaMaker> PREREGISTERED_AUTO_TYPE =
             ImmutableMap.of("none", DisableDefaultSchemaMaker.INSTANCE,
                     "default", JanusGraphDefaultSchemaMaker.INSTANCE,
                     "tp3", Tp3DefaultSchemaMaker.INSTANCE);
@@ -321,7 +303,6 @@ public class GraphDatabaseConfiguration {
     // ################################################
 
     public static final ConfigNamespace CACHE_NS = new ConfigNamespace(ROOT_NS,"cache","Configuration options that modify JanusGraph's caching behavior");
-
 
     public static final ConfigOption<Boolean> DB_CACHE = new ConfigOption<>(CACHE_NS,"db-cache",
             "Whether to enable JanusGraph's database-level cache, which is shared across all transactions. " +
@@ -1216,9 +1197,6 @@ public class GraphDatabaseConfiguration {
     public static final String SYSTEM_PROPERTIES_STORE_NAME = "system_properties";
     public static final String SYSTEM_CONFIGURATION_IDENTIFIER = "configuration";
     public static final String USER_CONFIGURATION_IDENTIFIER = "userconfig";
-    private static final String INCOMPATIBLE_VERSION_EXCEPTION = "Runtime version is incompatible with current JanusGraph version: JanusGraph [%1s] vs. runtime [%2s]";
-    private static final String INCOMPATIBLE_STORAGE_VERSION_EXCEPTION = "Storage version is incompatible with current client: graph storage version %s vs. client storage version %s when opening graph %s.";
-    private static final String BACKLEVEL_STORAGE_VERSION_EXCEPTION = "The storage version on the client or server is lower than the storage version of the graph: graph storage version %s vs. client storage version %s when opening graph %s.";
 
     private final Configuration configuration;
     private final ReadConfiguration configurationAtOpen;
@@ -1243,452 +1221,19 @@ public class GraphDatabaseConfiguration {
 
     private StoreFeatures storeFeatures = null;
 
-    public GraphDatabaseConfiguration(ReadConfiguration localConfig) {
-        Preconditions.checkNotNull(localConfig);
-
-        configurationAtOpen = localConfig;
-
-        BasicConfiguration localBasicConfiguration = new BasicConfiguration(ROOT_NS,localConfig, BasicConfiguration.Restriction.NONE);
-        ModifiableConfiguration overwrite = new ModifiableConfiguration(ROOT_NS,new CommonsConfiguration(), BasicConfiguration.Restriction.NONE);
-
-        final KeyColumnValueStoreManager storeManager = Backend.getStorageManager(localBasicConfiguration);
-
-        final StoreFeatures storeFeatures = storeManager.getFeatures();
-        KCVSConfiguration keyColumnValueStoreConfiguration=Backend.getStandaloneGlobalConfiguration(storeManager,localBasicConfiguration);
-        final ReadConfiguration globalConfig;
-
-        //Copy over local config options
-        localConfiguration = new ModifiableConfiguration(ROOT_NS, new CommonsConfiguration(), BasicConfiguration.Restriction.LOCAL);
-        localConfiguration.setAll(getLocalSubset(localBasicConfiguration.getAll()));
-
-        //Read out global configuration
-        try {
-            // If lock prefix is unspecified, specify it now
-            if (!localBasicConfiguration.has(LOCK_LOCAL_MEDIATOR_GROUP)) {
-                overwrite.set(LOCK_LOCAL_MEDIATOR_GROUP, storeManager.getName());
-            }
-
-            //Freeze global configuration if not already frozen!
-            ModifiableConfiguration globalWrite = new ModifiableConfiguration(ROOT_NS,keyColumnValueStoreConfiguration, BasicConfiguration.Restriction.GLOBAL);
-
-            if (!globalWrite.isFrozen()) {
-                //Copy over global configurations
-                globalWrite.setAll(getGlobalSubset(localBasicConfiguration.getAll()));
-
-                //Write JanusGraph version
-                Preconditions.checkArgument(!globalWrite.has(INITIAL_JANUSGRAPH_VERSION),"Database has already been initialized but not frozen");
-                globalWrite.set(INITIAL_JANUSGRAPH_VERSION,JanusGraphConstants.VERSION);
-
-                //Write storage version
-                Preconditions.checkArgument(!globalWrite.has(INITIAL_STORAGE_VERSION),"Database has already been initialized but not frozen");
-                globalWrite.set(INITIAL_STORAGE_VERSION,JanusGraphConstants.STORAGE_VERSION);
-                /* If the configuration does not explicitly set a timestamp provider and
-                 * the storage backend both supports timestamps and has a preference for
-                 * a specific timestamp provider, then apply the backend's preference.
-                 */
-                if (!localBasicConfiguration.has(TIMESTAMP_PROVIDER)) {
-                    StoreFeatures f = storeManager.getFeatures();
-                    final TimestampProviders backendPreference;
-                    if (f.hasTimestamps() && null != (backendPreference = f.getPreferredTimestamps())) {
-                        globalWrite.set(TIMESTAMP_PROVIDER, backendPreference);
-                        log.info("Set timestamps to {} according to storage backend preference",
-                            LoggerUtil.sanitizeAndLaunder(globalWrite.get(TIMESTAMP_PROVIDER)));
-                    } else {
-                        globalWrite.set(TIMESTAMP_PROVIDER, TIMESTAMP_PROVIDER.getDefaultValue());
-                        log.info("Set default timestamp provider {}",
-                            LoggerUtil.sanitizeAndLaunder(globalWrite.get(TIMESTAMP_PROVIDER)));
-                    }
-                } else {
-                    log.info("Using configured timestamp provider {}", localBasicConfiguration.get(TIMESTAMP_PROVIDER));
-                }
-                globalWrite.freezeConfiguration();
-            } else {
-                final boolean allowUpgrade;
-                String graphName = getGraphName();
-                if (graphName == null) {
-                    graphName = "";
-                }
-
-                if (localBasicConfiguration.has(ALLOW_UPGRADE)) {
-                    allowUpgrade = localBasicConfiguration.get(ALLOW_UPGRADE);
-                } else if (globalWrite.has(ALLOW_UPGRADE)) {
-                    allowUpgrade = globalWrite.get(ALLOW_UPGRADE);
-                } else {
-                    allowUpgrade = ALLOW_UPGRADE.getDefaultValue();
-                }
-
-                if (allowUpgrade) {
-                    // If the graph doesn't have a storage version set it and update version
-                    if (!globalWrite.has(INITIAL_STORAGE_VERSION)) {
-                        globalWrite.set(INITIAL_JANUSGRAPH_VERSION, JanusGraphConstants.VERSION);
-                        globalWrite.set(TITAN_COMPATIBLE_VERSIONS, JanusGraphConstants.VERSION);
-                        globalWrite.set(INITIAL_STORAGE_VERSION, JanusGraphConstants.STORAGE_VERSION);
-                        globalWrite.set(ALLOW_UPGRADE, false);
-                        log.info("graph.storage-version has been upgraded from 1 to {} and graph.janusgraph-version has been upgraded from {} to {} on graph {}",
-                                 JanusGraphConstants.STORAGE_VERSION, globalWrite.get(INITIAL_JANUSGRAPH_VERSION), JanusGraphConstants.VERSION, graphName);
-                    // If the graph has a storage version, but it's lower than the client or server opening the graph upgrade the version and storage version
-                    } else if (Integer.parseInt(globalWrite.get(INITIAL_STORAGE_VERSION)) < Integer.parseInt(JanusGraphConstants.STORAGE_VERSION)) {
-                        globalWrite.set(INITIAL_JANUSGRAPH_VERSION, JanusGraphConstants.VERSION);
-                        globalWrite.set(TITAN_COMPATIBLE_VERSIONS, JanusGraphConstants.VERSION);
-                        globalWrite.set(INITIAL_STORAGE_VERSION, JanusGraphConstants.STORAGE_VERSION);
-                        globalWrite.set(ALLOW_UPGRADE, false);
-                        log.info("graph.storage-version has been upgraded from {} to {} and graph.janusgraph-version has been upgraded from {} to {} on graph {}",
-                                 globalWrite.get(INITIAL_STORAGE_VERSION), JanusGraphConstants.STORAGE_VERSION, globalWrite.get(INITIAL_JANUSGRAPH_VERSION), JanusGraphConstants.VERSION, graphName);
-                    // If the storage version of the client or server opening the graph is lower than the graph's storage version throw an exception
-                    } else if (Integer.parseInt(globalWrite.get(INITIAL_STORAGE_VERSION)) > Integer.parseInt(JanusGraphConstants.STORAGE_VERSION)) {
-                        throw new JanusGraphException(String.format(BACKLEVEL_STORAGE_VERSION_EXCEPTION, globalWrite.get(INITIAL_STORAGE_VERSION), JanusGraphConstants.STORAGE_VERSION, graphName));
-                    } else {
-                        log.warn("Warning graph.allow-upgrade is currently set to true on graph {}. Please set graph.allow-upgrade to false in your properties file.", graphName);
-                    }
-
-                } else {
-                         if (!globalWrite.has(INITIAL_STORAGE_VERSION) || !globalWrite.get(INITIAL_STORAGE_VERSION).equals(JanusGraphConstants.STORAGE_VERSION)) {
-                            String storageVersion = (globalWrite.has(INITIAL_STORAGE_VERSION)) ? globalWrite.get(INITIAL_STORAGE_VERSION) : "1";
-                            throw new JanusGraphException(String.format(INCOMPATIBLE_STORAGE_VERSION_EXCEPTION, storageVersion, JanusGraphConstants.STORAGE_VERSION, graphName));
-                        }
-                }
-                try {
-                    String version = globalWrite.get(INITIAL_JANUSGRAPH_VERSION);
-                    Preconditions.checkArgument(version!=null,"JanusGraph version has not been initialized");
-                } catch (IllegalStateException ise) {
-                    checkBackwardCompatibilityWithTitan(globalWrite, localBasicConfiguration, keyColumnValueStoreConfiguration, overwrite);
-                }
-
-                final boolean managedOverridesAllowed;
-
-                if (localBasicConfiguration.has(ALLOW_STALE_CONFIG))
-                    managedOverridesAllowed = localBasicConfiguration.get(ALLOW_STALE_CONFIG);
-                else if (globalWrite.has(ALLOW_STALE_CONFIG))
-                    managedOverridesAllowed = globalWrite.get(ALLOW_STALE_CONFIG);
-                else
-                    managedOverridesAllowed = ALLOW_STALE_CONFIG.getDefaultValue();
-
-                // Check for disagreement between local and backend values for GLOBAL(_OFFLINE) and FIXED options
-                // The point of this check is to find edits to the local config which have no effect (and therefore likely indicate misconfiguration)
-                Set<String> optionsWithDiscrepancies = Sets.newHashSet();
-                for (Map.Entry<ConfigElement.PathIdentifier, Object> ent : getManagedSubset(localBasicConfiguration.getAll()).entrySet()) {
-                    ConfigElement.PathIdentifier pid = ent.getKey();
-                    assert pid.element.isOption();
-                    ConfigOption<?> opt = (ConfigOption<?>)pid.element;
-                    Object localValue = ent.getValue();
-
-                    // Get the storage backend's setting and compare with localValue
-                    Object storeValue = globalWrite.get(opt, pid.umbrellaElements);
-
-                    // Check if the value is to be overwritten
-                    if (overwrite.has(opt, pid.umbrellaElements))
-                    {
-                        storeValue = overwrite.get(opt, pid.umbrellaElements);
-                    }
-
-                    // Most validation predicate implementations disallow null, but we can't assume that here
-                    final boolean match;
-                    if (null != localValue && null != storeValue) {
-                        match = localValue.equals(storeValue);
-                    } else {
-                        match = null == localValue && null == storeValue;
-                    }
-
-                    // Log each option with value disagreement between local and backend configs
-                    if (!match) {
-                        String fullOptionName = ConfigElement.getPath(pid.element, pid.umbrellaElements);
-                        String template = "Local setting {}={} (Type: {}) is overridden by globally managed value ({}).  Use the {} interface instead of the local configuration to control this setting.";
-                        Object replacements[] = new Object[] { fullOptionName, localValue, opt.getType(), storeValue, ManagementSystem.class.getSimpleName() };
-                        if (managedOverridesAllowed) { // Lower log severity when this is enabled
-                            log.warn(template, replacements);
-                        } else {
-                            log.error(template, replacements);
-                        }
-                        optionsWithDiscrepancies.add(fullOptionName);
-                    }
-                }
-
-                if (0 < optionsWithDiscrepancies.size() && !managedOverridesAllowed) {
-                    String template = "Local settings present for one or more globally managed options: [%s].  These options are controlled through the %s interface; local settings have no effect.";
-                    throw new JanusGraphConfigurationException(String.format(template, Joiner.on(", ").join(optionsWithDiscrepancies), ManagementSystem.class.getSimpleName()));
-                }
-            }
-
-            globalConfig = keyColumnValueStoreConfiguration.asReadConfiguration();
-        } finally {
-            keyColumnValueStoreConfiguration.close();
-        }
-        Configuration combinedConfig = new MixedConfiguration(ROOT_NS,globalConfig,localConfig);
-
-        //Compute unique instance id
-        this.uniqueGraphId = getOrGenerateUniqueInstanceId(combinedConfig);
-        overwrite.set(UNIQUE_INSTANCE_ID, this.uniqueGraphId);
-
-        //Default log configuration for system and tx log
-        //TRANSACTION LOG: send_delay=0, ttl=2days and backend=default
-        Preconditions.checkArgument(combinedConfig.get(LOG_BACKEND,TRANSACTION_LOG).equals(LOG_BACKEND.getDefaultValue()),
-                "Must use default log backend for transaction log");
-        Preconditions.checkArgument(!combinedConfig.has(LOG_SEND_DELAY,TRANSACTION_LOG) ||
-                combinedConfig.get(LOG_SEND_DELAY, TRANSACTION_LOG).isZero(),"Send delay must be 0 for transaction log.");
-        overwrite.set(LOG_SEND_DELAY, Duration.ZERO,TRANSACTION_LOG);
-        if (!combinedConfig.has(LOG_STORE_TTL,TRANSACTION_LOG) && TTLKCVSManager.supportsAnyTTL(storeFeatures)) {
-            overwrite.set(LOG_STORE_TTL,TRANSACTION_LOG_DEFAULT_TTL,TRANSACTION_LOG);
-        }
-        //SYSTEM MANAGEMENT LOG: backend=default and send_delay=0 and key_consistent=true and fixed-partitions=true
-        Preconditions.checkArgument(combinedConfig.get(LOG_BACKEND,MANAGEMENT_LOG).equals(LOG_BACKEND.getDefaultValue()),
-                "Must use default log backend for system log");
-        Preconditions.checkArgument(!combinedConfig.has(LOG_SEND_DELAY,MANAGEMENT_LOG) ||
-                combinedConfig.get(LOG_SEND_DELAY,MANAGEMENT_LOG).isZero(),"Send delay must be 0 for system log.");
-        overwrite.set(LOG_SEND_DELAY, Duration.ZERO, MANAGEMENT_LOG);
-        Preconditions.checkArgument(!combinedConfig.has(KCVSLog.LOG_KEY_CONSISTENT, MANAGEMENT_LOG) ||
-                combinedConfig.get(KCVSLog.LOG_KEY_CONSISTENT, MANAGEMENT_LOG), "Management log must be configured to be key-consistent");
-        overwrite.set(KCVSLog.LOG_KEY_CONSISTENT,true,MANAGEMENT_LOG);
-        Preconditions.checkArgument(!combinedConfig.has(KCVSLogManager.LOG_FIXED_PARTITION,MANAGEMENT_LOG)
-                || combinedConfig.get(KCVSLogManager.LOG_FIXED_PARTITION,MANAGEMENT_LOG),"Fixed partitions must be enabled for management log");
-        overwrite.set(KCVSLogManager.LOG_FIXED_PARTITION,true,MANAGEMENT_LOG);
-
-        this.configuration = new MergedConfiguration(overwrite,combinedConfig);
+    public GraphDatabaseConfiguration(ReadConfiguration configurationAtOpen, ModifiableConfiguration localConfiguration,
+                                      String uniqueGraphId, Configuration configuration) {
+        this.configurationAtOpen = configurationAtOpen;
+        this.localConfiguration = localConfiguration;
+        this.uniqueGraphId = uniqueGraphId;
+        this.configuration = configuration;
         preLoadConfiguration();
-    }
-
-    private void checkBackwardCompatibilityWithTitan(ModifiableConfiguration globalWrite, BasicConfiguration localBasicConfiguration, KCVSConfiguration keyColumnValueStoreConfiguration, ModifiableConfiguration overwrite) {
-        String version = globalWrite.get(TITAN_COMPATIBLE_VERSIONS);
-        Preconditions.checkArgument(version!=null,"JanusGraph version nor Titan compatibility have not been initialized");
-        if (!JanusGraphConstants.TITAN_COMPATIBLE_VERSIONS.contains(version)) {
-            throw new JanusGraphException(String.format(INCOMPATIBLE_VERSION_EXCEPTION, version, JanusGraphConstants.VERSION));
-        }
-
-        // When connecting to a store created by Titan the ID store name will not be in the
-        // global configuration as it was not something which was configurable with Titan.
-        // So to ensure compatibility override the default to titan_ids.
-        boolean localIdStoreIsDefault = JanusGraphConstants.JANUSGRAPH_ID_STORE_NAME.equals(localBasicConfiguration.get(IDS_STORE_NAME));
-
-        boolean usingTitanIdStore = localIdStoreIsDefault || JanusGraphConstants.TITAN_ID_STORE_NAME.equals(localBasicConfiguration.get(IDS_STORE_NAME));
-        boolean existingKeyStore = keyColumnValueStoreConfiguration.get(IDS_STORE_NAME.getName(), IDS_STORE_NAME.getDatatype()) != null;
-
-        Preconditions.checkArgument(usingTitanIdStore,"ID store for Titan compatibility has not been initialized to: " + JanusGraphConstants.TITAN_ID_STORE_NAME);
-        if (!existingKeyStore) {
-            log.info("Setting {} to {} for Titan compatibility", IDS_STORE_NAME.getName(), JanusGraphConstants.TITAN_ID_STORE_NAME);
-            overwrite.set(IDS_STORE_NAME, JanusGraphConstants.TITAN_ID_STORE_NAME);
-        }
-    }
-
-    private static Map<ConfigElement.PathIdentifier, Object> getGlobalSubset(Map<ConfigElement.PathIdentifier, Object> m) {
-        return Maps.filterEntries(m, entry -> {
-            assert entry.getKey().element.isOption();
-            return ((ConfigOption)entry.getKey().element).isGlobal();
-        });
-    }
-
-    private static Map<ConfigElement.PathIdentifier, Object> getLocalSubset(Map<ConfigElement.PathIdentifier, Object> m) {
-        return Maps.filterEntries(m, entry -> {
-            assert entry.getKey().element.isOption();
-            return ((ConfigOption)entry.getKey().element).isLocal();
-        });
-    }
-
-    private static Map<ConfigElement.PathIdentifier, Object> getManagedSubset(Map<ConfigElement.PathIdentifier, Object> m) {
-        return Maps.filterEntries(m, entry -> {
-            assert entry.getKey().element.isOption();
-            return ((ConfigOption)entry.getKey().element).isManaged();
-        });
-    }
-
-    private static final AtomicLong INSTANCE_COUNTER = new AtomicLong(0);
-
-    private static String getSuffix(Configuration config) {
-        final String suffix;
-        if (config.has(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_SUFFIX)) {
-            suffix = LongEncoding.encode(config.get(
-                    GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_SUFFIX));
-        } else if (!config.has(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_HOSTNAME)) {
-            suffix = ManagementFactory.getRuntimeMXBean().getName() + LongEncoding.encode(INSTANCE_COUNTER.incrementAndGet());
-        } else {
-            suffix = "";
-        }
-        return suffix;
-    }
-
-    private static String getUid(Configuration config) {
-        final String localHostErrMsg = "Cannot determine local host";
-        final String uid;
-        if (config.has(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_HOSTNAME)
-          && config.get(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_HOSTNAME)) {
-            try {
-                uid = Inet4Address.getLocalHost().getHostName();
-            } catch (UnknownHostException e) {
-                throw new JanusGraphConfigurationException(localHostErrMsg, e);
-            }
-        } else {
-            final byte[] addrBytes;
-            try {
-                addrBytes = Inet4Address.getLocalHost().getAddress();
-            } catch (UnknownHostException e) {
-                throw new JanusGraphConfigurationException(localHostErrMsg, e);
-            }
-            uid = new String(Hex.encodeHex(addrBytes));
-        }
-        return uid;
-
-    }
-
-    private static String computeUniqueInstanceId(Configuration config) {
-        final String suffix = getSuffix(config);
-        final String uid = getUid(config);
-        String instanceId = uid + suffix;
-        for (char c : ConfigElement.ILLEGAL_CHARS) {
-            instanceId = StringUtils.replaceChars(instanceId,c,'-');
-        }
-        return instanceId;
-    }
-
-    public static String getOrGenerateUniqueInstanceId(Configuration config) {
-        String uid;
-        if (!config.has(UNIQUE_INSTANCE_ID)) {
-            uid = computeUniqueInstanceId(config);
-            log.info("Generated {}={}", UNIQUE_INSTANCE_ID.getName(), uid);
-        } else {
-            uid = config.get(UNIQUE_INSTANCE_ID);
-        }
-        Preconditions.checkArgument(!StringUtils.containsAny(uid,ConfigElement.ILLEGAL_CHARS),"Invalid unique identifier: %s",uid);
-        return uid;
     }
 
     public static ModifiableConfiguration buildGraphConfiguration() {
         return new ModifiableConfiguration(ROOT_NS,
-                new CommonsConfiguration(new BaseConfiguration()),
-                BasicConfiguration.Restriction.NONE);
-    }
-
-    public static ModifiableConfiguration buildJobConfiguration() {
-        return new ModifiableConfiguration(JOB_NS,
-                new CommonsConfiguration(new BaseConfiguration()),
-                BasicConfiguration.Restriction.NONE);
-    }
-
-
-    public static String getSystemMetricsPrefix() {
-        return METRICS_SYSTEM_PREFIX_DEFAULT;
-    }
-
-    public static ModifiableConfiguration getGlobalSystemConfig(Backend backend) {
-        return new ModifiableConfiguration(ROOT_NS,
-                backend.getGlobalSystemConfig(), BasicConfiguration.Restriction.GLOBAL);
-    }
-
-    private void preLoadConfiguration() {
-        readOnly = configuration.get(STORAGE_READONLY);
-        flushIDs = configuration.get(IDS_FLUSH);
-        forceIndexUsage = configuration.get(FORCE_INDEX_USAGE);
-        batchLoading = configuration.get(STORAGE_BATCH);
-        String autoTypeMakerName = configuration.get(AUTO_TYPE);
-        if (preregisteredAutoType.containsKey(autoTypeMakerName))
-            defaultSchemaMaker = preregisteredAutoType.get(autoTypeMakerName);
-        else defaultSchemaMaker = ConfigurationUtil.instantiate(autoTypeMakerName);
-        //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
-        if (batchLoading) defaultSchemaMaker = DisableDefaultSchemaMaker.INSTANCE;
-
-        hasDisabledSchemaConstraints = !configuration.get(SCHEMA_CONSTRAINTS);
-
-        txVertexCacheSize = configuration.get(TX_CACHE_SIZE);
-        //Check for explicit dirty vertex cache size first, then fall back on batch-loading-dependent default
-        if (configuration.has(TX_DIRTY_SIZE)) {
-            txDirtyVertexSize = configuration.get(TX_DIRTY_SIZE);
-        } else {
-            txDirtyVertexSize = batchLoading ?
-                    TX_DIRTY_SIZE_DEFAULT_WITH_BATCH :
-                    TX_DIRTY_SIZE_DEFAULT_WITHOUT_BATCH;
-        }
-
-        propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
-        useMultiQuery = configuration.get(USE_MULTIQUERY);
-        adjustQueryLimit = configuration.get(ADJUST_LIMIT);
-        allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);
-        logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
-
-        unknownIndexKeyName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UNKNOWN_FIELD_NAME : null;
-
-        configureMetrics();
-    }
-
-    private void configureMetrics() {
-        Preconditions.checkNotNull(configuration);
-
-        metricsPrefix = configuration.get(METRICS_PREFIX);
-
-        if (!configuration.get(BASIC_METRICS)) {
-            metricsPrefix = null;
-        } else {
-            Preconditions.checkNotNull(metricsPrefix);
-        }
-
-        configureMetricsConsoleReporter();
-        configureMetricsCsvReporter();
-        configureMetricsJmxReporter();
-        configureMetricsSlf4jReporter();
-        configureMetricsGangliaReporter();
-        configureMetricsGraphiteReporter();
-    }
-
-    private void configureMetricsConsoleReporter() {
-        if (configuration.has(METRICS_CONSOLE_INTERVAL)) {
-            MetricManager.INSTANCE.addConsoleReporter(configuration.get(METRICS_CONSOLE_INTERVAL));
-        }
-    }
-
-    private void configureMetricsCsvReporter() {
-        if (configuration.has(METRICS_CSV_DIR)) {
-            MetricManager.INSTANCE.addCsvReporter(configuration.get(METRICS_CSV_INTERVAL), configuration.get(METRICS_CSV_DIR));
-        }
-    }
-
-    private void configureMetricsJmxReporter() {
-        if (configuration.get(METRICS_JMX_ENABLED)) {
-            MetricManager.INSTANCE.addJmxReporter(configuration.get(METRICS_JMX_DOMAIN), configuration.get(METRICS_JMX_AGENTID));
-        }
-    }
-
-    private void configureMetricsSlf4jReporter() {
-        if (configuration.has(METRICS_SLF4J_INTERVAL)) {
-            // null loggerName is allowed -- that means Metrics will use its internal default
-            MetricManager.INSTANCE.addSlf4jReporter(configuration.get(METRICS_SLF4J_INTERVAL),
-                    configuration.has(METRICS_SLF4J_LOGGER) ? configuration.get(METRICS_SLF4J_LOGGER) : null);
-        }
-    }
-
-    private void configureMetricsGangliaReporter() {
-        if (configuration.has(GANGLIA_HOST_OR_GROUP)) {
-            final String host = configuration.get(GANGLIA_HOST_OR_GROUP);
-            final Duration intervalDuration = configuration.get(GANGLIA_INTERVAL);
-            final Integer port = configuration.get(GANGLIA_PORT);
-
-            final UDPAddressingMode addressingMode;
-            final String addressingModeString = configuration.get(GANGLIA_ADDRESSING_MODE);
-            if (addressingModeString.equalsIgnoreCase("multicast")) {
-                addressingMode = UDPAddressingMode.MULTICAST;
-            } else if (addressingModeString.equalsIgnoreCase("unicast")) {
-                addressingMode = UDPAddressingMode.UNICAST;
-            } else throw new AssertionError();
-
-            final Boolean proto31 = configuration.get(GANGLIA_USE_PROTOCOL_31);
-
-            final int ttl = configuration.get(GANGLIA_TTL);
-
-            final UUID uuid = configuration.has(GANGLIA_UUID)? UUID.fromString(configuration.get(GANGLIA_UUID)):null;
-
-            String spoof = null;
-            if (configuration.has(GANGLIA_SPOOF)) spoof = configuration.get(GANGLIA_SPOOF);
-
-            try {
-                MetricManager.INSTANCE.addGangliaReporter(host, port, addressingMode, ttl, proto31, uuid, spoof, intervalDuration);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    private void configureMetricsGraphiteReporter() {
-        if (configuration.has(GRAPHITE_HOST)) {
-            MetricManager.INSTANCE.addGraphiteReporter(configuration.get(GRAPHITE_HOST),
-                    configuration.get(GRAPHITE_PORT),
-                    configuration.get(GRAPHITE_PREFIX),
-                    configuration.get(GRAPHITE_INTERVAL));
-        }
+            new CommonsConfiguration(new BaseConfiguration()),
+            BasicConfiguration.Restriction.NONE);
     }
 
     public boolean isReadOnly() {
@@ -1775,50 +1320,6 @@ public class GraphDatabaseConfiguration {
         return configuration.get(ALLOW_UPGRADE) && JanusGraphConstants.UPGRADEABLE_FIXED.contains(name);
     }
 
-    public static List<RegisteredAttributeClass<?>> getRegisteredAttributeClasses(Configuration configuration) {
-        List<RegisteredAttributeClass<?>> all = new ArrayList<>();
-        for (String attributeId : configuration.getContainedNamespaces(CUSTOM_ATTRIBUTE_NS)) {
-            Preconditions.checkArgument(attributeId.startsWith(ATTRIBUTE_PREFIX),"Invalid attribute definition: %s",attributeId);
-            int position;
-            try {
-                position = Integer.parseInt(attributeId.substring(ATTRIBUTE_PREFIX.length()));
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Expected entry of the form ["+ ATTRIBUTE_PREFIX +"X] where X is a number but given" + attributeId);
-            }
-            final Class<?> clazz;
-            final AttributeSerializer<?> serializer;
-            String classname = configuration.get(CUSTOM_ATTRIBUTE_CLASS,attributeId);
-            try {
-                clazz = Class.forName(classname);
-            } catch (ClassNotFoundException e) {
-                throw new IllegalArgumentException("Could not find attribute class" + classname, e);
-            }
-            Preconditions.checkNotNull(clazz);
-
-            Preconditions.checkArgument(configuration.has(CUSTOM_SERIALIZER_CLASS, attributeId));
-            String serializerName = configuration.get(CUSTOM_SERIALIZER_CLASS, attributeId);
-            try {
-                Class<?> serializerClass = Class.forName(serializerName);
-                serializer = (AttributeSerializer) serializerClass.newInstance();
-            } catch (ClassNotFoundException e) {
-                throw new IllegalArgumentException("Could not find serializer class" + serializerName);
-            } catch (InstantiationException | IllegalAccessException e) {
-                throw new IllegalArgumentException("Could not instantiate serializer class" + serializerName, e);
-            }
-            Preconditions.checkNotNull(serializer);
-            RegisteredAttributeClass reg = new RegisteredAttributeClass(position, clazz, serializer);
-            for (RegisteredAttributeClass<?> registeredAttributeClass : all) {
-                if (registeredAttributeClass.equals(reg)) {
-                    throw new IllegalArgumentException("Duplicate attribute registration: " + registeredAttributeClass
-                            + " and " + reg);
-                }
-            }
-            all.add(reg);
-
-        }
-        return all;
-    }
-
     public VertexIDAssigner getIDAssigner(Backend backend) {
         return new VertexIDAssigner(configuration, backend.getIDAuthority(), backend.getStoreFeatures());
     }
@@ -1858,7 +1359,11 @@ public class GraphDatabaseConfiguration {
 
     public static Serializer getSerializer(Configuration configuration) {
         Serializer serializer = new StandardSerializer();
-        for (RegisteredAttributeClass<?> clazz : getRegisteredAttributeClasses(configuration)) {
+
+        List<RegisteredAttributeClass<?>> registeredAttributeClasses =
+            RegisteredAttributeClassesConverter.getInstance().convert(configuration);
+
+        for (RegisteredAttributeClass<?> clazz : registeredAttributeClasses) {
             clazz.registerWith(serializer);
         }
         return serializer;
@@ -1876,19 +1381,127 @@ public class GraphDatabaseConfiguration {
     }
 
     public org.apache.commons.configuration.Configuration getConfigurationAtOpen() {
-        org.apache.commons.configuration.Configuration result = new BaseConfiguration();
-        for (String k : configurationAtOpen.getKeys("")) {
-            result.setProperty(k, configurationAtOpen.get(k, Object.class));
-        }
-        return result;
+        return ReadConfigurationConverter.getInstance().convert(configurationAtOpen);
     }
 
-     /* ----------------------------------------
-     Methods for writing/reading config files
-        -------------------------------------------*/
+    private void preLoadConfiguration() {
+        readOnly = configuration.get(STORAGE_READONLY);
+        flushIDs = configuration.get(IDS_FLUSH);
+        forceIndexUsage = configuration.get(FORCE_INDEX_USAGE);
+        batchLoading = configuration.get(STORAGE_BATCH);
+        String autoTypeMakerName = configuration.get(AUTO_TYPE);
+        if (PREREGISTERED_AUTO_TYPE.containsKey(autoTypeMakerName))
+            defaultSchemaMaker = PREREGISTERED_AUTO_TYPE.get(autoTypeMakerName);
+        else defaultSchemaMaker = ConfigurationUtil.instantiate(autoTypeMakerName);
+        //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
+        if (batchLoading) defaultSchemaMaker = DisableDefaultSchemaMaker.INSTANCE;
 
-    public static String getPath(File dir) {
-        return dir.getAbsolutePath() + File.separator;
+        hasDisabledSchemaConstraints = !configuration.get(SCHEMA_CONSTRAINTS);
+
+        txVertexCacheSize = configuration.get(TX_CACHE_SIZE);
+        //Check for explicit dirty vertex cache size first, then fall back on batch-loading-dependent default
+        if (configuration.has(TX_DIRTY_SIZE)) {
+            txDirtyVertexSize = configuration.get(TX_DIRTY_SIZE);
+        } else {
+            txDirtyVertexSize = batchLoading ?
+                TX_DIRTY_SIZE_DEFAULT_WITH_BATCH :
+                TX_DIRTY_SIZE_DEFAULT_WITHOUT_BATCH;
+        }
+
+        propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
+        useMultiQuery = configuration.get(USE_MULTIQUERY);
+        adjustQueryLimit = configuration.get(ADJUST_LIMIT);
+        allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);
+        logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
+
+        unknownIndexKeyName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UNKNOWN_FIELD_NAME : null;
+
+        configureMetrics();
+    }
+
+    private void configureMetrics() {
+        Preconditions.checkNotNull(configuration);
+
+        metricsPrefix = configuration.get(METRICS_PREFIX);
+
+        if (!configuration.get(BASIC_METRICS)) {
+            metricsPrefix = null;
+        } else {
+            Preconditions.checkNotNull(metricsPrefix);
+        }
+
+        configureMetricsConsoleReporter();
+        configureMetricsCsvReporter();
+        configureMetricsJmxReporter();
+        configureMetricsSlf4jReporter();
+        configureMetricsGangliaReporter();
+        configureMetricsGraphiteReporter();
+    }
+
+    private void configureMetricsConsoleReporter() {
+        if (configuration.has(METRICS_CONSOLE_INTERVAL)) {
+            MetricManager.INSTANCE.addConsoleReporter(configuration.get(METRICS_CONSOLE_INTERVAL));
+        }
+    }
+
+    private void configureMetricsCsvReporter() {
+        if (configuration.has(METRICS_CSV_DIR)) {
+            MetricManager.INSTANCE.addCsvReporter(configuration.get(METRICS_CSV_INTERVAL), configuration.get(METRICS_CSV_DIR));
+        }
+    }
+
+    private void configureMetricsJmxReporter() {
+        if (configuration.get(METRICS_JMX_ENABLED)) {
+            MetricManager.INSTANCE.addJmxReporter(configuration.get(METRICS_JMX_DOMAIN), configuration.get(METRICS_JMX_AGENTID));
+        }
+    }
+
+    private void configureMetricsSlf4jReporter() {
+        if (configuration.has(METRICS_SLF4J_INTERVAL)) {
+            // null loggerName is allowed -- that means Metrics will use its internal default
+            MetricManager.INSTANCE.addSlf4jReporter(configuration.get(METRICS_SLF4J_INTERVAL),
+                configuration.has(METRICS_SLF4J_LOGGER) ? configuration.get(METRICS_SLF4J_LOGGER) : null);
+        }
+    }
+
+    private void configureMetricsGangliaReporter() {
+        if (configuration.has(GANGLIA_HOST_OR_GROUP)) {
+            final String host = configuration.get(GANGLIA_HOST_OR_GROUP);
+            final Duration intervalDuration = configuration.get(GANGLIA_INTERVAL);
+            final Integer port = configuration.get(GANGLIA_PORT);
+
+            final UDPAddressingMode addressingMode;
+            final String addressingModeString = configuration.get(GANGLIA_ADDRESSING_MODE);
+            if (addressingModeString.equalsIgnoreCase("multicast")) {
+                addressingMode = UDPAddressingMode.MULTICAST;
+            } else if (addressingModeString.equalsIgnoreCase("unicast")) {
+                addressingMode = UDPAddressingMode.UNICAST;
+            } else throw new AssertionError();
+
+            final Boolean proto31 = configuration.get(GANGLIA_USE_PROTOCOL_31);
+
+            final int ttl = configuration.get(GANGLIA_TTL);
+
+            final UUID uuid = configuration.has(GANGLIA_UUID)? UUID.fromString(configuration.get(GANGLIA_UUID)):null;
+
+            String spoof = null;
+            if (configuration.has(GANGLIA_SPOOF)) spoof = configuration.get(GANGLIA_SPOOF);
+
+            try {
+                MetricManager.INSTANCE.addGangliaReporter(host, port, addressingMode, ttl, proto31, uuid, spoof, intervalDuration);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void configureMetricsGraphiteReporter() {
+        if (configuration.has(GRAPHITE_HOST)) {
+            MetricManager.INSTANCE.addGraphiteReporter(configuration.get(GRAPHITE_HOST),
+                configuration.get(GRAPHITE_PORT),
+                configuration.get(GRAPHITE_PREFIX),
+                configuration.get(GRAPHITE_INTERVAL));
+        }
     }
 
 }

@@ -33,6 +33,7 @@ import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -93,7 +94,7 @@ public class HBaseStoreManagerConfigTest {
         // Set backend to hbase
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, "hbase");
         // Instantiate a GraphDatabaseConfiguration based on the above
-        GraphDatabaseConfiguration graphConfig = new GraphDatabaseConfiguration(config.getConfiguration());
+        GraphDatabaseConfiguration graphConfig = new GraphDatabaseConfigurationBuilder().build(config.getConfiguration());
         // Check the TIMESTAMP_PROVIDER has been set to the hbase preferred MILLI
         TimestampProviders provider = graphConfig.getConfiguration().get(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER);
         assertEquals(HBaseStoreManager.PREFERRED_TIMESTAMPS, provider);
