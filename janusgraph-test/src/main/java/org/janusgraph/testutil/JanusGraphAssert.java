@@ -14,15 +14,16 @@
 
 package org.janusgraph.testutil;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
@@ -35,31 +36,31 @@ import java.util.stream.Stream;
 public class JanusGraphAssert {
 
     public static void assertCount(int expected, Traversal traversal) {
-        org.junit.Assert.assertEquals(expected, traversal.toList().size());
+        assertEquals(expected, traversal.toList().size());
     }
 
     public static void assertCount(int expected, Collection collection) {
-        org.junit.Assert.assertEquals(expected, collection.size());
+        assertEquals(expected, collection.size());
     }
 
     public static void assertCount(int expected, Iterable iterable) {
-        org.junit.Assert.assertEquals(expected, Iterables.size(iterable));
+        assertEquals(expected, Iterables.size(iterable));
     }
 
     public static void assertCount(int expected, Iterator iterator) {
-        org.junit.Assert.assertEquals(expected, Iterators.size(iterator));
+        assertEquals(expected, Iterators.size(iterator));
     }
 
     public static void assertCount(long expected, Stream stream) {
-        org.junit.Assert.assertEquals(expected, stream.count());
+        assertEquals(expected, stream.count());
     }
 
     public static<V extends Element> void assertEmpty(Object object) {
-        org.junit.Assert.assertTrue(isEmpty(object));
+        assertTrue(isEmpty(object));
     }
 
     public static<V extends Element> void assertNotEmpty(Object object) {
-        org.junit.Assert.assertFalse(isEmpty(object));
+        assertFalse(isEmpty(object));
     }
 
     public static<E extends Element> void assertTraversal(GraphTraversal<?, E> req, E... expectedElements) {

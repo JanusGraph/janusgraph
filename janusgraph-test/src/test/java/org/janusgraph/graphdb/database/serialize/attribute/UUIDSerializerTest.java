@@ -17,7 +17,7 @@ package org.janusgraph.graphdb.database.serialize.attribute;
 import org.janusgraph.diskstorage.util.ReadArrayBuffer;
 import org.janusgraph.diskstorage.util.WriteByteBuffer;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 

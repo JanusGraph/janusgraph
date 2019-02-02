@@ -34,7 +34,7 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import java.util.Random;
 import java.util.concurrent.*;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * A benchmark to test the performance of sequential row retrieval from the

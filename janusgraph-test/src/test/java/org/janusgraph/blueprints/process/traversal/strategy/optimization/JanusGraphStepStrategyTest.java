@@ -45,13 +45,14 @@ import org.janusgraph.graphdb.query.JanusGraphPredicate.Converter;
 import org.janusgraph.graphdb.tinkerpop.optimize.HasStepFolder;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStepStrategy;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.stream.Stream;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.P.eq;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.gt;
@@ -62,30 +63,22 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.proper
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.not;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.values;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-@RunWith(Parameterized.class)
 public class JanusGraphStepStrategyTest {
-
-    @Parameterized.Parameter()
-    public Traversal original;
-
-    @Parameterized.Parameter(value = 1)
-    public Traversal optimized;
-
-    @Parameterized.Parameter(value = 2)
-    public Collection<TraversalStrategy> otherStrategies;
-
-    @Test
-    public void doTest() {
+    
+    @ParameterizedTest
+    @MethodSource("generateTestParameters")
+    public void doTest(Traversal original, Traversal optimized, Collection<TraversalStrategy> otherStrategies) {
         final TraversalStrategies strategies = new DefaultTraversalStrategies();
         strategies.addStrategies(JanusGraphStepStrategy.instance());
-        for (final TraversalStrategy strategy : this.otherStrategies) {
+        for (final TraversalStrategy strategy : otherStrategies) {
             strategies.addStrategies(strategy);
         }
-        this.original.asAdmin().setStrategies(strategies);
-        this.original.asAdmin().applyStrategies();
-        assertEquals(this.optimized, this.original);
+        original.asAdmin().setStrategies(strategies);
+        original.asAdmin().applyStrategies();
+        assertEquals(optimized, original);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -122,8 +115,7 @@ public class JanusGraphStepStrategyTest {
     }
 
 
-    @Parameterized.Parameters(name = "{0}")
-    public static Iterable<Object[]> generateTestParameters() {
+    private static Stream<Arguments> generateTestParameters() {
         final StandardJanusGraph graph = (StandardJanusGraph) StorageSetup.getInMemoryGraph();
         final GraphTraversalSource g = graph.traversal();
         // create a basic schema so that order pushdown can be tested as this optimization requires a JanusGraph
@@ -133,69 +125,70 @@ public class JanusGraphStepStrategyTest {
         mgmt.makePropertyKey("lang").dataType(String.class).make();
         mgmt.commit();
 
-        return Arrays.asList(new Object[][]{
-            {g.V().out(), g_V().out(), Collections.emptyList()},
-            {g.V().has("name", "marko").out(), g_V("name", eq("marko")).out(), Collections.emptyList()},
-            {g.V().has("name", "marko").has("age", gt(31).and(lt(10))).out(),
-                    g_V("name", eq("marko"), "age", new AndP<Integer>(Arrays.asList(gt(31), lt(10)))).out(), Collections.emptyList()},
-            {g.V().has("name", "marko").has("age", gt(31).or(lt(10))).out(),
-                        g_V("name", eq("marko"), "age", new OrP<Integer>(Arrays.asList(gt(31), lt(10)))).out(), Collections.emptyList()},
-            {g.V().has("name", "marko").has("age", gt(31).and(lt(10).or(gt(40)))).out(),
-                            g_V("name", eq("marko"), "age", new OrP<Integer>(Arrays.asList(gt(31), new AndP<Integer>(Arrays.asList(lt(10), gt(40)))))).out(), Collections.emptyList()},
-            {g.V().has("name", "marko").or(has("age"), has("age", gt(32))).has("lang", "java"),
-                    g_V("name", eq("marko"), "lang", eq("java")).or(has("age"), has("age", gt(32))), Collections.singletonList(FilterRankingStrategy.instance())},
-            {g.V().has("name", "marko").as("a").or(has("age"), has("age", gt(32))).has("lang", "java"),
-                    g_V("name", eq("marko")).as("a").or(has("age"), has("age", gt(32))).has("lang", "java"), Collections.emptyList()},
-            {g.V().has("name", "marko").as("a").or(has("age"), has("age", gt(32))).has("lang", "java"),
-                    g_V("name", eq("marko"), "lang", eq("java")).or(has("age"), has("age", gt(32))).as("a"), Collections.singletonList(FilterRankingStrategy.instance())},
-            {g.V().dedup().has("name", "marko").or(has("age"), has("age", gt(32))).has("lang", "java"),
-                    g_V("name", eq("marko"), "lang", eq("java")).or(has("age"), has("age", gt(32))).dedup(), Collections.singletonList(FilterRankingStrategy.instance())},
-            {g.V().as("a").dedup().has("name", "marko").or(has("age"), has("age", gt(32))).has("lang", "java"),
-                    g_V("name", eq("marko"), "lang", eq("java")).or(has("age"), has("age", gt(32))).dedup().as("a"), Collections.singletonList(FilterRankingStrategy.instance())},
-            {g.V().as("a").has("name", "marko").as("b").or(has("age"), has("age", gt(32))).has("lang", "java"),
-                    g_V("name", eq("marko"), "lang", eq("java")).or(has("age"), has("age", gt(32))).as("b", "a"), Collections.singletonList(FilterRankingStrategy.instance())},
-            {g.V().as("a").dedup().has("name", "marko").or(has("age"), has("age", gt(32))).filter(has("name", "bob")).has("lang", "java"),
-                    g_V("name", eq("marko"), "lang", eq("java"), "name", eq("bob")).or(has("age"), has("age", gt(32))).dedup().as("a"), Arrays.asList(InlineFilterStrategy.instance(), FilterRankingStrategy.instance())},
-            {g.V().has("name", "marko").or(not(has("age")), has("age", gt(32))).has("name", "bob").has("lang", "java"),
-                    g_V("name", eq("marko"), "name", eq("bob"), "lang", eq("java")).or(not(filter(properties("age"))), has("age", gt(32))), TraversalStrategies.GlobalCache.getStrategies(JanusGraph.class).toList()},
-            {g.V().has("name", eq("marko").and(eq("bob").and(eq("stephen")))).out("knows"),
-                        g_V("name", new AndP<String>(Arrays.asList(eq("marko"), eq("bob"),eq("stephen")))).out("knows"), Collections.emptyList()},
-            {g.V().hasId(1), g_V(T.id, 1), Collections.emptyList()},
-            {g.V().hasId(within(1, 2)), g_V(T.id, 1, T.id, 2), Collections.emptyList()},
-            {g.V().hasId(1).has("name", "marko"), g_V(T.id, 1, "name", eq("marko")), Collections.emptyList()},
-            {g.V().hasId(1).hasLabel("Person"), g_V(T.id, 1, "~label", eq("Person")), Collections.emptyList()},
-            {g.V().hasLabel("Person").has("lang", "java").order().by("name"),
-                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.incr)), Collections.emptyList()},
-            {g.V().hasLabel("Person").has("lang", "java").order().by(new ElementValueComparator("name", Order.incr)),
-                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.incr)), Collections.emptyList()},
+
+        return Arrays.stream(new Arguments[]{
+            arguments(g.V().out(), g_V().out(), Collections.emptyList()),
+            arguments(g.V().has("name", "marko").out(), g_V("name", eq("marko")).out(), Collections.emptyList()),
+            arguments(g.V().has("name", "marko").has("age", gt(31).and(lt(10))).out(),
+                g_V("name", eq("marko"), "age", new AndP<Integer>(Arrays.asList(gt(31), lt(10)))).out(), Collections.emptyList()),
+            arguments(g.V().has("name", "marko").has("age", gt(31).or(lt(10))).out(),
+                g_V("name", eq("marko"), "age", new OrP<Integer>(Arrays.asList(gt(31), lt(10)))).out(), Collections.emptyList()),
+            arguments(g.V().has("name", "marko").has("age", gt(31).and(lt(10).or(gt(40)))).out(),
+                g_V("name", eq("marko"), "age", new OrP<Integer>(Arrays.asList(gt(31), new AndP<Integer>(Arrays.asList(lt(10), gt(40)))))).out(), Collections.emptyList()),
+            arguments(g.V().has("name", "marko").or(has("age"), has("age", gt(32))).has("lang", "java"),
+                g_V("name", eq("marko"), "lang", eq("java")).or(has("age"), has("age", gt(32))), Collections.singletonList(FilterRankingStrategy.instance())),
+            arguments(g.V().has("name", "marko").as("a").or(has("age"), has("age", gt(32))).has("lang", "java"),
+                g_V("name", eq("marko")).as("a").or(has("age"), has("age", gt(32))).has("lang", "java"), Collections.emptyList()),
+            arguments(g.V().has("name", "marko").as("a").or(has("age"), has("age", gt(32))).has("lang", "java"),
+                g_V("name", eq("marko"), "lang", eq("java")).or(has("age"), has("age", gt(32))).as("a"), Collections.singletonList(FilterRankingStrategy.instance())),
+            arguments(g.V().dedup().has("name", "marko").or(has("age"), has("age", gt(32))).has("lang", "java"),
+                g_V("name", eq("marko"), "lang", eq("java")).or(has("age"), has("age", gt(32))).dedup(), Collections.singletonList(FilterRankingStrategy.instance())),
+            arguments(g.V().as("a").dedup().has("name", "marko").or(has("age"), has("age", gt(32))).has("lang", "java"),
+                g_V("name", eq("marko"), "lang", eq("java")).or(has("age"), has("age", gt(32))).dedup().as("a"), Collections.singletonList(FilterRankingStrategy.instance())),
+            arguments(g.V().as("a").has("name", "marko").as("b").or(has("age"), has("age", gt(32))).has("lang", "java"),
+                g_V("name", eq("marko"), "lang", eq("java")).or(has("age"), has("age", gt(32))).as("b", "a"), Collections.singletonList(FilterRankingStrategy.instance())),
+            arguments(g.V().as("a").dedup().has("name", "marko").or(has("age"), has("age", gt(32))).filter(has("name", "bob")).has("lang", "java"),
+                g_V("name", eq("marko"), "lang", eq("java"), "name", eq("bob")).or(has("age"), has("age", gt(32))).dedup().as("a"), Arrays.asList(InlineFilterStrategy.instance(), FilterRankingStrategy.instance())),
+            arguments(g.V().has("name", "marko").or(not(has("age")), has("age", gt(32))).has("name", "bob").has("lang", "java"),
+                g_V("name", eq("marko"), "name", eq("bob"), "lang", eq("java")).or(not(filter(properties("age"))), has("age", gt(32))), TraversalStrategies.GlobalCache.getStrategies(JanusGraph.class).toList()),
+            arguments(g.V().has("name", eq("marko").and(eq("bob").and(eq("stephen")))).out("knows"),
+                g_V("name", new AndP<String>(Arrays.asList(eq("marko"), eq("bob"), eq("stephen")))).out("knows"), Collections.emptyList()),
+            arguments(g.V().hasId(1), g_V(T.id, 1), Collections.emptyList()),
+            arguments(g.V().hasId(within(1, 2)), g_V(T.id, 1, T.id, 2), Collections.emptyList()),
+            arguments(g.V().hasId(1).has("name", "marko"), g_V(T.id, 1, "name", eq("marko")), Collections.emptyList()),
+            arguments(g.V().hasId(1).hasLabel("Person"), g_V(T.id, 1, "~label", eq("Person")), Collections.emptyList()),
+            arguments(g.V().hasLabel("Person").has("lang", "java").order().by("name"),
+                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.incr)), Collections.emptyList()),
+            arguments(g.V().hasLabel("Person").has("lang", "java").order().by(new ElementValueComparator("name", Order.incr)),
+                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.incr)), Collections.emptyList()),
             // same as above, different order
-            {g.V().hasLabel("Person").has("lang", "java").order().by("name", Order.decr),
-                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.decr)), Collections.emptyList()},
-            {g.V().hasLabel("Person").has("lang", "java").order().by(new ElementValueComparator("name", org.apache.tinkerpop.gremlin.process.traversal.Order.incr)),
-                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.incr)), Collections.emptyList()},
+            arguments(g.V().hasLabel("Person").has("lang", "java").order().by("name", Order.decr),
+                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.decr)), Collections.emptyList()),
+            arguments(g.V().hasLabel("Person").has("lang", "java").order().by(new ElementValueComparator("name", Order.incr)),
+                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.incr)), Collections.emptyList()),
             // if multiple order steps are specified in a row, only the last will be folded in because it overrides previous ordering
-            {g.V().hasLabel("Person").has("lang", "java").order().by("lang", Order.incr).order().by("name", Order.decr),
-                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.decr)), Collections.emptyList()},
+            arguments(g.V().hasLabel("Person").has("lang", "java").order().by("lang", Order.incr).order().by("name", Order.decr),
+                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.decr)), Collections.emptyList()),
             // do not folder in orders that include a nested traversal
-            {g.V().hasLabel("Person").order().by(values("age")),
-                g_V("~label", eq("Person")).order().by(values("age")), Collections.emptyList()},
+            arguments(g.V().hasLabel("Person").order().by(values("age")),
+                g_V("~label", eq("Person")).order().by(values("age")), Collections.emptyList()),
             // age property is not registered in the schema so the order should not be folded in
-            {g.V().hasLabel("Person").has("lang", "java").order().by("age"),
-                g_V("~label", eq("Person"), "lang", eq("java")).order().by("age"), Collections.emptyList()},
+            arguments(g.V().hasLabel("Person").has("lang", "java").order().by("age"),
+                g_V("~label", eq("Person"), "lang", eq("java")).order().by("age"), Collections.emptyList()),
             // Per the TinkerGraph reference implementation, multiple hasIds in a row should not be folded
             // into a single within(ids) lookup
-            {g.V().hasId(1).hasId(2), g_V(T.id, 1).hasId(2), Collections.emptyList()},
-            {g.V().has("name", "marko").range(10, 20), g_V("name", eq("marko"), __.range(10, 20)), Collections.emptyList()},
-            {g.V().has("name", "marko").or(has("length", lt(160)), has("age", gt(32))).has("lang", "java"),
-                    g_V("name", eq("marko"), "lang", eq("java"),__.or(g_V("length", lt(160)), g_V("age", gt(32)))),  Collections.emptyList()},
-            {g.V().or(has("length", lt(160)), has("age", gt(32)).range(1, 5)),
-                    g_V(__.or(g_V("length", lt(160)), g_V("age", gt(32), __.range(1, 5)))),  Collections.emptyList()},
-            {g.V().or(has("length", lt(160)), has("age", gt(32)).range(1, 5)).range(10, 20),
-                    g_V(__.or(g_V("length", lt(160)), g_V("age", gt(32), __.range(1, 5))), __.range(10, 20)),  Collections.emptyList()},
-            {g.V().or(__.has("name", "marko"), has("lang", "java").order().by("name", Order.decr)),
-                        g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.decr)))), Collections.emptyList()},
-            {g.V().or(__.has("name", "marko"), has("lang", "java").order().by("name", Order.decr)).order().by("lang", Order.incr),
-                    g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.decr))), new HasStepFolder.OrderEntry("lang", Order.incr)), Collections.emptyList()},
+            arguments(g.V().hasId(1).hasId(2), g_V(T.id, 1).hasId(2), Collections.emptyList()),
+            arguments(g.V().has("name", "marko").range(10, 20), g_V("name", eq("marko"), __.range(10, 20)), Collections.emptyList()),
+            arguments(g.V().has("name", "marko").or(has("length", lt(160)), has("age", gt(32))).has("lang", "java"),
+                g_V("name", eq("marko"), "lang", eq("java"), __.or(g_V("length", lt(160)), g_V("age", gt(32)))), Collections.emptyList()),
+            arguments(g.V().or(has("length", lt(160)), has("age", gt(32)).range(1, 5)),
+                g_V(__.or(g_V("length", lt(160)), g_V("age", gt(32), __.range(1, 5)))), Collections.emptyList()),
+            arguments(g.V().or(has("length", lt(160)), has("age", gt(32)).range(1, 5)).range(10, 20),
+                g_V(__.or(g_V("length", lt(160)), g_V("age", gt(32), __.range(1, 5))), __.range(10, 20)), Collections.emptyList()),
+            arguments(g.V().or(__.has("name", "marko"), has("lang", "java").order().by("name", Order.decr)),
+                g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.decr)))), Collections.emptyList()),
+            arguments(g.V().or(__.has("name", "marko"), has("lang", "java").order().by("name", Order.decr)).order().by("lang", Order.incr),
+                g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.decr))), new HasStepFolder.OrderEntry("lang", Order.incr)), Collections.emptyList())
         });
     }
 }

@@ -19,8 +19,8 @@ import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
@@ -55,69 +55,69 @@ public class InMemoryGraphTest extends JanusGraphTest {
         newTx();
     }
 
-    @Test
+    @Override @Test @Disabled
     public void testLocalGraphConfiguration() {}
 
-    @Test
+    @Override @Test @Disabled
     public void testMaskableGraphConfig() {}
 
-    @Test
+    @Override @Test @Disabled
     public void testGlobalGraphConfig() {}
 
-    @Test
+    @Override @Test @Disabled
     public void testGlobalOfflineGraphConfig() {}
 
-    @Test
+    @Override @Test @Disabled
     public void testFixedGraphConfig() {}
 
-    @Override
+    @Override @Test @Disabled
     public void testManagedOptionMasking() {}
 
-    @Override
+    @Override @Test @Disabled
     public void testTransactionConfiguration() {}
 
-    @Override
+    @Override @Test @Disabled
     public void testTinkerPopOptimizationStrategies() {}
 
-    @Override
+    @Override @Test @Disabled
     public void testDataTypes() {}
 
-    @Override
+    @Override @Test @Disabled
     public void testForceIndexUsage() {}
 
-    @Override
+    @Override @Test @Disabled
     public void testAutomaticTypeCreation() {}
 
-    @Override
+    @Override @Test @Disabled
     public void simpleLogTest() {}
 
-    @Override
+    @Override @Test @Disabled
     public void simpleLogTestWithFailure() {}
 
-    @Override
+    @Override @Test @Disabled
     public void testIndexUpdatesWithReindexAndRemove() {}
 
-    @Override
+    @Override @Test @Disabled
     public void testIndexUpdateSyncWithMultipleInstances() {}
 
-    @Override
+    @Override @Test @Disabled
     public void testClearStorage() {}
 
-    @Override
+    @Override @Test @Disabled
     public void testAutoSchemaMakerForEdgePropertyConstraints() {}
 
-    @Override
+    @Override @Test @Disabled
     public void testAutoSchemaMakerForVertexPropertyConstraints() {}
 
-    @Override
+    @Override @Test @Disabled
     public void testAutoSchemaMakerForConnectionConstraints() {}
 
-    @Override
+    @Override @Test @Disabled
     public void testSupportDirectCommitOfSchemaChangesForVertexProperties() {}
 
-    @Override
+    @Override @Test @Disabled
     public void testSupportDirectCommitOfSchemaChangesForConnection() {}
 
-    @Override
+    @Override @Test @Disabled
     public void testSupportDirectCommitOfSchemaChangesForEdgeProperties() {}
 }

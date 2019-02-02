@@ -3,13 +3,9 @@ package org.janusgraph.graphdb
 import org.janusgraph.diskstorage.configuration.WriteConfiguration
 import org.janusgraph.graphdb.query.QueryUtil
 import org.apache.tinkerpop.gremlin.util.Gremlin
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.AfterEach
 
-import static org.junit.Assert.*
-
-import org.junit.After
-import org.junit.Before
-import org.junit.Rule
-import org.junit.rules.TestName
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -26,9 +22,6 @@ import java.util.zip.GZIPInputStream
 abstract class GroovySpeedTestSupport {
 
     private static final Logger log = LoggerFactory.getLogger(GroovySpeedTestSupport)
-
-    @Rule
-    public TestName testName = new TestName()
 
     // Graph generation settings
     public static final int VERTEX_COUNT = SpeedTestSchema.VERTEX_COUNT
@@ -61,7 +54,7 @@ abstract class GroovySpeedTestSupport {
         this.conf = conf
     }
 
-    @Before
+    @BeforeEach
     void open() {
 //        Preconditions.checkArgument(TX_COUNT * DEFAULT_OPS_PER_TX <= VERTEX_COUNT);
 
@@ -77,7 +70,7 @@ abstract class GroovySpeedTestSupport {
         }
     }
 
-    @After
+    @AfterEach
     void rollback() {
         if (null != graph)
             graph.rollback()

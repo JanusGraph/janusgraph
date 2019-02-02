@@ -34,9 +34,10 @@ import org.apache.tinkerpop.gremlin.server.GremlinServer;
 import org.apache.tinkerpop.gremlin.server.Settings;
 import org.apache.tinkerpop.gremlin.server.op.OpLoader;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,9 +57,6 @@ public abstract class AbstractGremlinServerIntegrationTest {
     private static final boolean GREMLIN_SERVER_EPOLL = "true".equalsIgnoreCase(System.getProperty(epollOption));
     private static final Logger logger = LoggerFactory.getLogger(AbstractGremlinServerIntegrationTest.class);
 
-    @Rule
-    public TestName name = new TestName();
-
     public Settings overrideSettings(final Settings settings) {
         return settings;
     }
@@ -67,16 +65,16 @@ public abstract class AbstractGremlinServerIntegrationTest {
         return AbstractGremlinServerIntegrationTest.class.getResourceAsStream("gremlin-server-integration.yaml");
     }
 
-    @Before
-    public void setUp() throws Exception {
-        logger.info("* Testing: " + name.getMethodName());
+    @BeforeEach
+    public void setUp(TestInfo testInfo) throws Exception {
+        logger.info("* Testing: " + testInfo.getDisplayName());
         logger.info("* Epoll option enabled:" + GREMLIN_SERVER_EPOLL);
 
         startServer();
     }
 
-    public void setUp(final Settings settings) throws Exception {
-        logger.info("* Testing: " + name.getMethodName());
+    public void setUp(final Settings settings, TestInfo testInfo) throws Exception {
+        logger.info("* Testing: " + testInfo.getDisplayName());
         logger.info("* Epoll option enabled:" + GREMLIN_SERVER_EPOLL);
 
         startServer(settings);
@@ -109,7 +107,7 @@ public abstract class AbstractGremlinServerIntegrationTest {
         server.start().join();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         stopServer();
     }

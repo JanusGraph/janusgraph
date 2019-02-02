@@ -20,9 +20,9 @@ import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.util.system.IOUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
@@ -36,13 +36,13 @@ public class BerkeleyElasticsearchTest extends JanusGraphIndexTest {
 
     private static ElasticsearchRunner esr;
 
-    @BeforeClass
+    @BeforeAll
     public static void startElasticsearch() {
         esr = new ElasticsearchRunner();
         esr.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopElasticsearch() {
         esr.stop();
     }

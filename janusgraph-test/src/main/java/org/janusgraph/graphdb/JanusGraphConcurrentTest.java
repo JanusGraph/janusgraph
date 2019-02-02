@@ -15,20 +15,17 @@
 package org.janusgraph.graphdb;
 
 import com.google.common.collect.Iterables;
+import org.janusgraph.TestCategory;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.EdgeLabelMaker;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.testcategory.PerformanceTests;
 import org.janusgraph.testutil.JUnitBenchmarkProvider;
 import org.janusgraph.testutil.RandomGenerator;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.*;
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,13 +36,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * High concurrency test cases to spot deadlocks and other failures that can occur under high degrees of parallelism.
  */
-@Category({PerformanceTests.class})
+@Tag(TestCategory.PERFORMANCE_TESTS)
 public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
 
     @Rule
@@ -66,9 +63,9 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
     private ExecutorService executor;
 
     @Override
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
+    @BeforeEach
+    public void setUp(TestInfo testInfo) throws Exception {
+        super.setUp(testInfo);
         executor = Executors.newFixedThreadPool(THREAD_COUNT);
     }
 
@@ -98,7 +95,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
     }
 
     @Override
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         executor.shutdown();
         if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {

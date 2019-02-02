@@ -17,7 +17,7 @@ package org.janusgraph.graphdb.tinkerpop;
 import static org.easymock.EasyMock.expect;
 
 import org.easymock.EasyMockSupport;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.Cardinality;

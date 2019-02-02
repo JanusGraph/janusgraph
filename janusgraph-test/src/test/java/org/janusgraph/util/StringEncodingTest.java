@@ -16,9 +16,9 @@ package org.janusgraph.util;
 
 import com.google.common.collect.ImmutableList;
 import org.janusgraph.util.encoding.StringEncoding;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -42,25 +42,31 @@ public class StringEncodingTest {
         assertEquals("xyz",StringEncoding.readAsciiString(data,3));
     }
 
-    @Test(expected=NullPointerException.class)
+    @Test
     public void testAsciiStringEncodingWithNull() {
-        StringEncoding.getAsciiByteLength(null);
+        assertThrows(NullPointerException.class, () -> {
+            StringEncoding.getAsciiByteLength(null);
+        });
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test
     public void testAsciiStringEncodingWithNonAscii() {
-        StringEncoding.getAsciiByteLength("ösdf30snü+p");
+        assertThrows(IllegalArgumentException.class, () -> {
+            StringEncoding.getAsciiByteLength("ösdf30snü+p");
+        });
     }
 
     @Test
     public void testStringLaunder() {
-        ImmutableList.of("asdf3","","f232rdfjdhjkhfafb-38`138","8947(*&#$80124n"," _+%","ösdf30snü+p")
-            .forEach(s -> assertEquals(s,StringEncoding.launder(s)));
+        ImmutableList.of("asdf3", "", "f232rdfjdhjkhfafb-38`138", "8947(*&#$80124n", " _+%", "ösdf30snü+p")
+            .forEach(s -> assertEquals(s, StringEncoding.launder(s)));
     }
 
-    @Test(expected=NullPointerException.class)
+    @Test
     public void testStringLaunderWithNull() {
-        StringEncoding.launder(null);
+        assertThrows(NullPointerException.class, () -> {
+            StringEncoding.launder(null);
+        });
     }
 
 }

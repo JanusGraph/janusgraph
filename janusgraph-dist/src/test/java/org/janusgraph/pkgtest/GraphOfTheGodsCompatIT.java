@@ -18,7 +18,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.io.FileUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -14,32 +14,25 @@
 
 package org.janusgraph.graphdb;
 
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_HOSTNAME;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_SUFFIX;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
-
-import org.apache.commons.configuration.MapConfiguration;
-
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.HashMap;
-import org.junit.Test;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
-import static org.junit.Assert.*;
-import static org.hamcrest.Matchers.equalTo;
+import org.apache.commons.configuration.MapConfiguration;
+import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.junit.jupiter.api.Test;
+
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_HOSTNAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_SUFFIX;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class GraphDatabaseConfigurationInstanceIdTest {
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void graphShouldOpenWithSameInstanceId() {
@@ -73,13 +66,11 @@ public class GraphDatabaseConfigurationInstanceIdTest {
 
         assertEquals(graph1.openManagement().getOpenInstances().size(), 1);
         assertEquals(graph1.openManagement().getOpenInstances().toArray()[0], "not-unique");
-
-        thrown.expect(JanusGraphException.class);
-        final String err = "A JanusGraph graph with the same instance id [not-unique] is already open. Might required forced shutdown.";
-        thrown.expectMessage(equalTo(err));
-        final StandardJanusGraph graph2 = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
-
-        graph1.close();
+        JanusGraphException janusGraphException = assertThrows(JanusGraphException.class, () -> {
+            final StandardJanusGraph graph2 = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
+            graph1.close();
+        });
+        assertEquals("A JanusGraph graph with the same instance id [not-unique] is already open. Might required forced shutdown.", janusGraphException.getMessage());
     }
 
     @Test

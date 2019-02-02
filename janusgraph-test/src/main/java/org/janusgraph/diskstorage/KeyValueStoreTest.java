@@ -23,16 +23,17 @@ import java.util.Set;
 import com.google.common.collect.Lists;
 import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.*;
 import org.janusgraph.diskstorage.util.BufferUtil;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.RecordIterator;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class KeyValueStoreTest extends AbstractKCVSTest {
 
@@ -45,7 +46,7 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
     protected StoreTransaction tx;
     protected OrderedKeyValueStore store;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         StoreManager m = openStorageManager();
         m.clearStorage();
@@ -62,7 +63,7 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
 
     public abstract OrderedKeyValueStoreManager openStorageManager() throws BackendException;
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         close();
     }
@@ -111,9 +112,9 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
         for (int i = 0; i < numKeys; i++) {
             boolean result = store.containsKey(KeyValueStoreUtil.getBuffer(i), tx);
             if (removed.contains(i)) {
-                Assert.assertFalse(result);
+                assertFalse(result);
             } else {
-                Assert.assertTrue(result);
+                assertTrue(result);
             }
         }
     }
@@ -127,9 +128,9 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
         for (int i = 0; i < numKeys; i++) {
             StaticBuffer result = store.get(KeyValueStoreUtil.getBuffer(i), tx);
             if (removed.contains(i)) {
-                Assert.assertNull(result);
+                assertNull(result);
             } else {
-                Assert.assertEquals(values[i], KeyValueStoreUtil.getString(result));
+                assertEquals(values[i], KeyValueStoreUtil.getString(result));
             }
         }
         //2. Check all at once (if supported)
@@ -142,16 +143,16 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
             Map<KVQuery,RecordIterator<KeyValueEntry>> results = store.getSlices(queries,tx);
             for (int i = 0; i < numKeys; i++) {
                 RecordIterator<KeyValueEntry> result = results.get(queries.get(i));
-                Assert.assertNotNull(result);
+                assertNotNull(result);
                 StaticBuffer value;
                 if (result.hasNext()) {
                     value = result.next().getValue();
-                    Assert.assertFalse(result.hasNext());
+                    assertFalse(result.hasNext());
                 } else value=null;
                 if (removed.contains(i)) {
-                    Assert.assertNull(value);
+                    assertNull(value);
                 } else {
-                    Assert.assertEquals(values[i], KeyValueStoreUtil.getString(value));
+                    assertEquals(values[i], KeyValueStoreUtil.getString(value));
                 }
             }
         }
@@ -209,7 +210,7 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
             String[] values = generateValues();
             loadValues(values);
             RecordIterator<KeyValueEntry> iterator0 = getAllData(tx);
-            Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator0));
+            assertEquals(numKeys, KeyValueStoreUtil.count(iterator0));
             clopen();
             RecordIterator<KeyValueEntry> iterator1 = getAllData(tx);
             RecordIterator<KeyValueEntry> iterator2 = getAllData(tx);
@@ -219,8 +220,8 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
             // (important for BerkeleyJE where leaving cursors open causes exceptions)
             @SuppressWarnings("unused")
             RecordIterator<KeyValueEntry> iterator3 = getAllData(tx);
-            Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator1));
-            Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator2));
+            assertEquals(numKeys, KeyValueStoreUtil.count(iterator1));
+            assertEquals(numKeys, KeyValueStoreUtil.count(iterator2));
         }
     }
 
@@ -243,15 +244,15 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
                 Entry entry = entries.get(pos);
                 int id = KeyValueStoreUtil.getID(entry.getColumn());
                 String str = KeyValueStoreUtil.getString(entry.getValueAs(StaticBuffer.STATIC_FACTORY));
-                Assert.assertEquals(i, id);
-                Assert.assertEquals(values[i], str);
+                assertEquals(i, id);
+                assertEquals(values[i], str);
             }
             pos++;
         }
-        if (limit > 0 && pos >= limit) Assert.assertEquals(limit, entries.size());
+        if (limit > 0 && pos >= limit) assertEquals(limit, entries.size());
         else {
-            Assert.assertNotNull(entries);
-            Assert.assertEquals(pos, entries.size());
+            assertNotNull(entries);
+            assertEquals(pos, entries.size());
         }
     }
 

@@ -23,8 +23,9 @@ import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.EasyMock.isA;
 import static org.janusgraph.graphdb.tinkerpop.gremlin.server.handler.HttpHMACAuthenticationHandler.PROPERTY_GENERATE_TOKEN;
 import static org.janusgraph.graphdb.tinkerpop.gremlin.server.handler.HttpHMACAuthenticationHandler.PROPERTY_TOKEN;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.InetAddress;
 import java.util.Base64;
@@ -44,65 +45,75 @@ import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.PropertyKeyMaker;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class HMACAuthenticatorTest extends EasyMockSupport {
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testSetupNullConfig() {
-        final HMACAuthenticator authenticator = new HMACAuthenticator();
-        authenticator.setup(null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            final HMACAuthenticator authenticator = new HMACAuthenticator();
+            authenticator.setup(null);
+        });
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testSetupNoCredDb() {
-        final HMACAuthenticator authenticator = new HMACAuthenticator();
-        authenticator.setup(new HashMap<String, Object>());
+        assertThrows(IllegalStateException.class, () -> {
+            final HMACAuthenticator authenticator = new HMACAuthenticator();
+            authenticator.setup(new HashMap<String, Object>());
+        });
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testSetupNoHmacSecret() {
-        final HMACAuthenticator authenticator = new HMACAuthenticator();
-        final Map<String, Object> configMap = new HashMap<String, Object>();
-        configMap.put(CONFIG_CREDENTIALS_DB, "configCredDb");
-        authenticator.setup(configMap);
+        assertThrows(IllegalStateException.class, () -> {
+            final HMACAuthenticator authenticator = new HMACAuthenticator();
+            final Map<String, Object> configMap = new HashMap<String, Object>();
+            configMap.put(CONFIG_CREDENTIALS_DB, "configCredDb");
+            authenticator.setup(configMap);
+        });
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testSetupEmptyNoUserDefault() {
-        final HMACAuthenticator authenticator = createMockBuilder(HMACAuthenticator.class)
-            .addMockedMethod("openGraph")
-            .addMockedMethod("createCredentialGraph")
-            .createMock();
-        final JanusGraph graph = createMock(JanusGraph.class);
-        final CredentialGraph credentialGraph = createMock(CredentialGraph.class);
-        final Map<String, Object> configMap = new HashMap<String, Object>();
-        configMap.put(CONFIG_CREDENTIALS_DB, "configCredDb");
-        configMap.put(HMACAuthenticator.CONFIG_HMAC_SECRET, "secret");
-        configMap.put(HMACAuthenticator.CONFIG_DEFAULT_PASSWORD, "pass");
+        assertThrows(IllegalStateException.class, () -> {
+            final HMACAuthenticator authenticator = createMockBuilder(HMACAuthenticator.class)
+                .addMockedMethod("openGraph")
+                .addMockedMethod("createCredentialGraph")
+                .createMock();
+            final JanusGraph graph = createMock(JanusGraph.class);
+            final CredentialGraph credentialGraph = createMock(CredentialGraph.class);
+            final Map<String, Object> configMap = new HashMap<String, Object>();
+            configMap.put(CONFIG_CREDENTIALS_DB, "configCredDb");
+            configMap.put(HMACAuthenticator.CONFIG_HMAC_SECRET, "secret");
+            configMap.put(HMACAuthenticator.CONFIG_DEFAULT_PASSWORD, "pass");
 
-        expect(authenticator.openGraph(isA(String.class))).andReturn(graph);
-        expect(authenticator.createCredentialGraph(isA(JanusGraph.class))).andReturn(credentialGraph);
-        authenticator.setup(configMap);
+            expect(authenticator.openGraph(isA(String.class))).andReturn(graph);
+            expect(authenticator.createCredentialGraph(isA(JanusGraph.class))).andReturn(credentialGraph);
+            authenticator.setup(configMap);
+        });
     }
 
-    @Test(expected=IllegalStateException.class)
+    @Test
     public void testSetupEmptyCredGraphNoPassDefault() {
-        final HMACAuthenticator authenticator = createMockBuilder(HMACAuthenticator.class)
-            .addMockedMethod("openGraph")
-            .addMockedMethod("createCredentialGraph")
-            .createMock();
-        final JanusGraph graph = createMock(JanusGraph.class);
-        final CredentialGraph credentialGraph = createMock(CredentialGraph.class);
-        final Map<String, Object> configMap = new HashMap<String, Object>();
-        configMap.put(CONFIG_CREDENTIALS_DB, "configCredDb");
-        configMap.put(HMACAuthenticator.CONFIG_HMAC_SECRET, "secret");
-        configMap.put(HMACAuthenticator.CONFIG_DEFAULT_USER, "user");
+        assertThrows(IllegalStateException.class, () -> {
+            final HMACAuthenticator authenticator = createMockBuilder(HMACAuthenticator.class)
+                .addMockedMethod("openGraph")
+                .addMockedMethod("createCredentialGraph")
+                .createMock();
+            final JanusGraph graph = createMock(JanusGraph.class);
+            final CredentialGraph credentialGraph = createMock(CredentialGraph.class);
+            final Map<String, Object> configMap = new HashMap<String, Object>();
+            configMap.put(CONFIG_CREDENTIALS_DB, "configCredDb");
+            configMap.put(HMACAuthenticator.CONFIG_HMAC_SECRET, "secret");
+            configMap.put(HMACAuthenticator.CONFIG_DEFAULT_USER, "user");
 
-        expect(authenticator.openGraph(isA(String.class))).andReturn(graph);
-        expect(authenticator.createCredentialGraph(isA(JanusGraph.class))).andReturn(credentialGraph);
-        authenticator.setup(configMap);
+            expect(authenticator.openGraph(isA(String.class))).andReturn(graph);
+            expect(authenticator.createCredentialGraph(isA(JanusGraph.class))).andReturn(credentialGraph);
+            authenticator.setup(configMap);
+        });
     }
 
     @Test
@@ -266,48 +277,49 @@ public class HMACAuthenticatorTest extends EasyMockSupport {
         verifyAll();
     }
 
-    @Test(expected=AuthenticationException.class)
+    @Test
     public void testAuthenticateBasicAuthInvalid() throws AuthenticationException {
-       final Map<String, String> credentials = new HashMap<>();
-       credentials.put(PROPERTY_USERNAME, "user");
-       credentials.put(PROPERTY_PASSWORD, "invalid");
+        assertThrows(AuthenticationException.class, () -> {
+            final Map<String, String> credentials = new HashMap<>();
+            credentials.put(PROPERTY_USERNAME, "user");
+            credentials.put(PROPERTY_PASSWORD, "invalid");
 
-       final HMACAuthenticator authenticator = createMockBuilder(HMACAuthenticator.class)
-            .addMockedMethod("openGraph")
-            .addMockedMethod("createCredentialGraph")
-            .createMock();
+            final HMACAuthenticator authenticator = createMockBuilder(HMACAuthenticator.class)
+                .addMockedMethod("openGraph")
+                .addMockedMethod("createCredentialGraph")
+                .createMock();
 
-        final Map<String, Object> configMap = new HashMap<String, Object>();
-        configMap.put(CONFIG_CREDENTIALS_DB, "configCredDb");
-        configMap.put(HMACAuthenticator.CONFIG_HMAC_SECRET, "secret");
-        configMap.put(HMACAuthenticator.CONFIG_DEFAULT_PASSWORD, "pass");
-        configMap.put(HMACAuthenticator.CONFIG_DEFAULT_USER, "user");
+            final Map<String, Object> configMap = new HashMap<String, Object>();
+            configMap.put(CONFIG_CREDENTIALS_DB, "configCredDb");
+            configMap.put(HMACAuthenticator.CONFIG_HMAC_SECRET, "secret");
+            configMap.put(HMACAuthenticator.CONFIG_DEFAULT_PASSWORD, "pass");
+            configMap.put(HMACAuthenticator.CONFIG_DEFAULT_USER, "user");
 
-        final JanusGraph graph = createMock(JanusGraph.class);
-        final CredentialGraph credentialGraph = createMock(CredentialGraph.class);
-        final ManagementSystem mgmt = createMock(ManagementSystem.class);
-        final Transaction tx = createMock(Transaction.class);
-        final Vertex userVertex = createMock(Vertex.class);
-        final String bcryptedPass = BCrypt.hashpw("pass", BCrypt.gensalt(4));
+            final JanusGraph graph = createMock(JanusGraph.class);
+            final CredentialGraph credentialGraph = createMock(CredentialGraph.class);
+            final ManagementSystem mgmt = createMock(ManagementSystem.class);
+            final Transaction tx = createMock(Transaction.class);
+            final Vertex userVertex = createMock(Vertex.class);
+            final String bcryptedPass = BCrypt.hashpw("pass", BCrypt.gensalt(4));
 
-        expect(authenticator.openGraph(isA(String.class))).andReturn(graph);
-        expect(authenticator.createCredentialGraph(isA(JanusGraph.class))).andReturn(credentialGraph);
-        expect(credentialGraph.findUser(eq("user"))).andReturn(userVertex).times(2);
-        expect(userVertex.value(eq(PROPERTY_PASSWORD))).andReturn(bcryptedPass);
-        expect(graph.tx()).andReturn(tx);
-        expect(graph.openManagement()).andReturn(mgmt);
-        expect(mgmt.containsGraphIndex(eq("byUsername"))).andReturn(true);
-        tx.rollback();
-        expectLastCall();
+            expect(authenticator.openGraph(isA(String.class))).andReturn(graph);
+            expect(authenticator.createCredentialGraph(isA(JanusGraph.class))).andReturn(credentialGraph);
+            expect(credentialGraph.findUser(eq("user"))).andReturn(userVertex).times(2);
+            expect(userVertex.value(eq(PROPERTY_PASSWORD))).andReturn(bcryptedPass);
+            expect(graph.tx()).andReturn(tx);
+            expect(graph.openManagement()).andReturn(mgmt);
+            expect(mgmt.containsGraphIndex(eq("byUsername"))).andReturn(true);
+            tx.rollback();
+            expectLastCall();
 
-        tx.rollback();
-        expectLastCall();
+            tx.rollback();
+            expectLastCall();
 
-        replayAll();
-        authenticator.setup(configMap);
-        authenticator.authenticate(credentials);
-        verifyAll();
-
+            replayAll();
+            authenticator.setup(configMap);
+            authenticator.authenticate(credentials);
+            verifyAll();
+        });
     }
 
     @Test
@@ -505,15 +517,19 @@ public class HMACAuthenticatorTest extends EasyMockSupport {
 
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testNewSaslNegotiatorOfInetAddr() {
-        final HMACAuthenticator authenticator = new HMACAuthenticator();
-        authenticator.newSaslNegotiator(createMock(InetAddress.class));
+        assertThrows(RuntimeException.class, () -> {
+            final HMACAuthenticator authenticator = new HMACAuthenticator();
+            authenticator.newSaslNegotiator(createMock(InetAddress.class));
+        });
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testNewSaslNegotiator() {
-        final HMACAuthenticator authenticator = new HMACAuthenticator();
-        authenticator.newSaslNegotiator();
+        assertThrows(RuntimeException.class, () -> {
+            final HMACAuthenticator authenticator = new HMACAuthenticator();
+            authenticator.newSaslNegotiator();
+        });
     }
 }

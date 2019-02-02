@@ -21,7 +21,7 @@ import org.janusgraph.diskstorage.util.StaticArrayEntryList;
 import org.janusgraph.diskstorage.util.WriteByteBuffer;
 import org.janusgraph.graphdb.relations.RelationCache;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -30,7 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
