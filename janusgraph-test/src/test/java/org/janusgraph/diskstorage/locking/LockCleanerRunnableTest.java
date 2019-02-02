@@ -19,7 +19,7 @@ import static org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLock
 import static org.easymock.EasyMock.anyObject;
 import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
 import java.util.List;
@@ -29,9 +29,9 @@ import org.janusgraph.diskstorage.util.*;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -59,7 +59,7 @@ public class LockCleanerRunnableTest {
     private final KeySliceQuery ksq = new KeySliceQuery(key, LOCK_COL_START, LOCK_COL_END);
     private final StaticBuffer defaultLockRid = new StaticArrayBuffer(new byte[]{(byte) 32});
 
-    @Before
+    @BeforeEach
     public void setupMocks() {
         IMocksControl relaxedCtrl = EasyMock.createControl();
         tx = relaxedCtrl.createMock(StoreTransaction.class);
@@ -68,7 +68,7 @@ public class LockCleanerRunnableTest {
         store = ctrl.createMock(KeyColumnValueStore.class);
     }
 
-    @After
+    @AfterEach
     public void verifyMocks() {
         ctrl.verify();
     }

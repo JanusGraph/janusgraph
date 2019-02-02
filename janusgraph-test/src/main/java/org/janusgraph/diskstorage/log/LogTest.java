@@ -20,10 +20,9 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 
-import org.junit.*;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,23 +59,18 @@ public abstract class LogTest {
 
     private LogManager manager;
 
-    // This TestName field must be public.  Exception when I tried private:
-    // "java.lang.Exception: The @Rule 'testName' must be public."
-    @Rule
-    public TestName testName = new TestName();
-
-    @Before
-    public void setup() throws Exception {
+    @BeforeEach
+    public void setup(TestInfo testInfo) throws Exception {
         //Tests that assume that write order is preserved when reading from the log must suffix their test names with "serial"
-        boolean requiresOrderPreserving = testName.getMethodName().toLowerCase().endsWith("serial");
-        log.debug("Starting {}.{} - Order preserving {}", getClass().getSimpleName(), testName.getMethodName(), requiresOrderPreserving);
+        boolean requiresOrderPreserving = testInfo.getDisplayName().toLowerCase().endsWith("serial()");
+        log.debug("Starting {}.{} - Order preserving {}", getClass().getSimpleName(), testInfo.getTestMethod().toString(), requiresOrderPreserving);
         manager = openLogManager(DEFAULT_SENDER_ID,requiresOrderPreserving);
     }
 
-    @After
-    public void shutdown() throws Exception {
+    @AfterEach
+    public void shutdown(TestInfo testInfo) throws Exception {
         close();
-        log.debug("Finished {}.{}", getClass().getSimpleName(), testName.getMethodName());
+        log.debug("Finished {}.{}", getClass().getSimpleName(), testInfo.getTestMethod().toString());
     }
 
     public void close() throws Exception {
@@ -273,8 +267,8 @@ public abstract class LogTest {
         for (int i = 0; i < counts.length; i++) {
             CountingReader count = counts[i];
             count.await(timeoutMS);
-            assertEquals("counter index " + i + " message count mismatch", numMessages, count.totalMsg.get());
-            assertEquals("counter index " + i + " value mismatch", numMessages*(numMessages+1)/2,count.totalValue.get());
+            assertEquals(numMessages, count.totalMsg.get(), "counter index " + i + " message count mismatch");
+            assertEquals(numMessages*(numMessages+1)/2,count.totalValue.get(), "counter index " + i + " value mismatch");
             assertTrue(log1.unregisterReader(count));
         }
         log1.close();
@@ -352,7 +346,7 @@ public abstract class LogTest {
             long value = content.getLong(0);
             log.debug("Read log value {} by senderid \"{}\"", value, message.getSenderId());
             if (expectIncreasingValues) {
-                assertTrue("Message out of order or duplicated: " + lastMessageValue + " preceded " + value, lastMessageValue<value);
+                assertTrue(lastMessageValue < value, "Message out of order or duplicated: " + lastMessageValue + " preceded " + value);
                 lastMessageValue = value;
             }
             totalMsg.incrementAndGet();

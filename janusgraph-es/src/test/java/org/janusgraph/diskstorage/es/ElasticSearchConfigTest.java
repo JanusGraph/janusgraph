@@ -46,10 +46,10 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.apache.tinkerpop.shaded.jackson.core.type.TypeReference;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +63,7 @@ import java.util.Map.Entry;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test behavior JanusGraph ConfigOptions governing ES client setup.
@@ -88,7 +88,7 @@ public class ElasticSearchConfigTest {
 
     private ObjectMapper objectMapper;
 
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         esr = new ElasticsearchRunner();
         esr.start();
@@ -100,7 +100,7 @@ public class ElasticSearchConfigTest {
         IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("_template/template_1")));
     }
 
-    @After
+    @AfterEach
     public void teardown() throws Exception {
         IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("janusgraph*")));
         IOUtils.closeQuietly(httpClient);
@@ -340,7 +340,7 @@ public class ElasticSearchConfigTest {
         request.setHeader("Content-Type", "application/json");
         try (final CloseableHttpResponse res = httpClient.execute(host, request)) {
             final int statusCode = res.getStatusLine().getStatusCode();
-            assertTrue("request failed", statusCode >= 200 && statusCode < 300);
+            assertTrue(statusCode >= 200 && statusCode < 300, "request failed");
             assertFalse(EntityUtils.toString(res.getEntity()).contains("error"));
         }
     }

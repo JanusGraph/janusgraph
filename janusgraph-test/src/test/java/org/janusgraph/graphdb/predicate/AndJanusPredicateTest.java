@@ -26,7 +26,7 @@ import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Text;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author David Clement (david.clement90@laposte.net)

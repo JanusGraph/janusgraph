@@ -16,7 +16,7 @@ package org.janusgraph.graphdb;
 
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraph;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests JanusGraphFactory.open's colon-delimited shorthand parameter syntax.

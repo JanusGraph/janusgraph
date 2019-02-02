@@ -155,11 +155,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.apache.velocity</groupId>
             <artifactId>velocity</artifactId>
             <version>1.7</version>
@@ -771,7 +766,7 @@
                                         <goal>integration-test</goal>
                                     </goals>
                                     <configuration>
-                                        <excludedGroups>org.janusgraph.testcategory.OrderedKeyStoreTests,org.janusgraph.testcategory.UnorderedKeyStoreTests</excludedGroups>
+                                        <excludedGroups>ORDERED_KEY_STORE_TESTS,UNORDERED_KEY_STORE_TESTS</excludedGroups>
                                         <skip>${skipDefaultDistroIT}</skip>
                                         <failIfNoTests>false</failIfNoTests>
                                         <excludes>
@@ -789,7 +784,7 @@
                                     </goals>
                                     <configuration>
                                         <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
-                                        <excludedGroups>org.janusgraph.testcategory.OrderedKeyStoreTests</excludedGroups>
+                                        <excludedGroups>ORDERED_KEY_STORE_TESTS</excludedGroups>
                                         <reportNameSuffix>murmur</reportNameSuffix>
                                         <failIfNoTests>false</failIfNoTests>
                                         <includes>
@@ -805,7 +800,7 @@
                                     </goals>
                                     <configuration>
                                         <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-bop -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-bop</argLine>
-                                        <excludedGroups>org.janusgraph.testcategory.UnorderedKeyStoreTests</excludedGroups>
+                                        <excludedGroups>UNORDERED_KEY_STORE_TESTS</excludedGroups>
                                         <reportNameSuffix>bop</reportNameSuffix>
                                         <failIfNoTests>false</failIfNoTests>
                                         <includes>

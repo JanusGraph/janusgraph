@@ -17,8 +17,8 @@ package org.janusgraph.hadoop;
 import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.apache.hadoop.hbase.util.VersionInfo;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.io.IOException;
 
@@ -29,12 +29,12 @@ public class HBaseIndexManagementIT extends AbstractIndexManagementIT {
         return HBaseStorageSetup.getHBaseGraphConfiguration();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startHBase() throws IOException {
         HBaseStorageSetup.startHBase();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopHBase() {
         // Workaround for https://issues.apache.org/jira/browse/HBASE-10312
         if (VersionInfo.getVersion().startsWith("0.96"))

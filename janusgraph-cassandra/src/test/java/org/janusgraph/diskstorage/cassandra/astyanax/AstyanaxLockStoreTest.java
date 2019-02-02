@@ -16,7 +16,7 @@ package org.janusgraph.diskstorage.cassandra.astyanax;
 
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.LockKeyColumnValueStoreTest;
@@ -24,7 +24,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 
 public class AstyanaxLockStoreTest extends LockKeyColumnValueStoreTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void startCassandra() {
         CassandraStorageSetup.startCleanEmbedded();
     }

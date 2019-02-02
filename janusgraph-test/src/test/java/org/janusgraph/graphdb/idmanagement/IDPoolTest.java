@@ -14,9 +14,9 @@
 
 package org.janusgraph.graphdb.idmanagement;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.Assert.fail;
 import static org.easymock.EasyMock.*;
 
@@ -31,7 +31,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
 import org.janusgraph.graphdb.database.idassigner.IDBlockSizer;
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.graphdb.database.idassigner.IDPoolExhaustedException;
@@ -102,7 +102,7 @@ public class IDPoolTest {
             int max = 0;
             int[] all = set.getAll();
             for (int id : all) if (id > max) max = id;
-            for (int j=1;j<=max;j++) assertTrue(i+ " contains: " + j,set.contains(j));
+            for (int j=1;j<=max;j++) assertTrue(set.contains(j), i+ " contains: " + j);
         }
     }
 

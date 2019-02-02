@@ -18,22 +18,22 @@ JanusGraph runs continuous integration via Travis; see the [dashboard](https://t
 Travis sends emails on test failures and status transitions (to/from failure) to
 [janusgraph-ci@googlegroups.com](https://groups.google.com/forum/#!forum/janusgraph-ci) mailing list.
 
-### JUnit Test Categories
+### JUnit Test Tags
 
-All of JanusGraph's tests are written for JUnit.  JanusGraph's JUnit tests are annotated with the following [JUnit Categories](https://github.com/junit-team/junit/wiki/Categories):
+All of JanusGraph's tests are written for JUnit.  JanusGraph's JUnit tests are annotated with the following [JUnit Tags](https://junit.org/junit5/docs/current/user-guide/#writing-tests-tagging-and-filtering):
 
 
 | Category Name | Maven Property | Default | Comment |
 | ------------- | ------------------- |:------------:| ------- |
-| MemoryTests | test.skip.mem | true (disabled) | Tests intended to exert memory pressure |
-| PerformanceTests | test.skip.perf | true (disabled) | Tests written as simple speed tests using JUnitBenchmarks|
-| OrderedKeyStoreTests | test.skip.ordered | false (enabled) | Tests written for a storage backend that stores data in key order |
-| UnorderedKeyStoreTests | test.skip.unordered | false (enabled) | Tests written for a storage backend that doesn't store data in key order |
-| (No&nbsp;category) | test.skip.default | false (enabled) | Tests without any Category annotations |
+| MEMORY_TESTS | test.skip.mem | true (disabled) | Tests intended to exert memory pressure |
+| PERFORMANCE_TESTS | test.skip.perf | true (disabled) | Tests written as simple speed tests using JUnitBenchmarks|
+| ORDERED_KEY_STORE_TESTS | test.skip.ordered | false (enabled) | Tests written for a storage backend that stores data in key order |
+| UNORDERED_KEY_STORE_TESTS | test.skip.unordered | false (enabled) | Tests written for a storage backend that doesn't store data in key order |
+| (No&nbsp;tag) | test.skip.default | false (enabled) | Tests without any Tag annotations |
 
-**Category Name** above is a Java interface defined in the package [org.janusgraph.testcategory](janusgraph-test/src/main/org/janusgraph/testcategory).  These interfaces appear as arguments to the JUnit `@Category(...)` annotation, e.g. `@Category({MemoryTests.class})`.
+**Tag Name** above is a Java interface defined in the package [org.janusgraph.testcategory](janusgraph-test/src/main/org/janusgraph/testcategory).  These interfaces appear as arguments to the JUnit `@Tag(...)` annotation, e.g. `@Tag(TestCategory.MEMORY_TESTS)`.
 
-**Maven Property** above is a boolean-valued pom.xml property that skips the associated test category when true and executes the associated test category when false.  The default values defined in pom.xml can be overridden on the command-line in the ordinary Maven way, e.g. `mvn -Dtest.skip.mem=false test`.
+**Maven Property** above is a boolean-valued pom.xml property that skips the associated test tag when true and executes the associated test tag when false.  The default values defined in pom.xml can be overridden on the command-line in the ordinary Maven way, e.g. `mvn -Dtest.skip.mem=false test`.
 
 *Implementation Note.*  The Maven property naming pattern "test.skip.x=boolean" is needlessly verbose, a cardinal sin for command line options.  A more concise alternative would be "test.x" with the boolean sense negated.  However, this complicates the pom.xml configuration for the Surefire plugin since it precludes direct use of the Surefire plugin's `<skip>` configuration tag, as in `<skip>${test.skip.perf}</skip>`.  There doesn't seem to be a straightforward way to negate a boolean or otherwise make this easy, at least without resorting to profiles or a custom plugin, though I might be missing something.  Also, the mold is arguably already set by Surefire's "maven.test.skip" property, though that has slightly different interpretation semantics than the properties above.
 
@@ -45,12 +45,12 @@ The standard maven-surefire-plugin option applies for most tests:
 mvn test -Dtest=full.or.partial.classname#methodname
 ```
 
-However, MemoryTests and PerformanceTests are disabled by default regardless of whatever `-Dtest=...` option might be specified.  When running a single MemoryTest or PerformanceTest, specify `-Dtest.mem=true` or `-Dtest.perf=true` as appropriate for the test in question.
+However, MEMORY_TESTS and PERFORMANCE_TESTS are disabled by default regardless of whatever `-Dtest=...` option might be specified.  When running a single MemoryTest or PerformanceTest, specify `-Dtest.mem=true` or `-Dtest.perf=true` as appropriate for the test in question.
 
 Here's a concrete example.
 
 ```bash
-# Executes no tests because the MemoryTests category is disabled by default
+# Executes no tests because the MEMORY_TESTS category is disabled by default
 mvn test -Dtest=BerkeleyJEGraphPerformanceMemoryTest
 # Executes the specified test
 mvn test -Dtest=BerkeleyJEGraphPerformanceMemoryTest -Dtest.skip.mem=false

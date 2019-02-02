@@ -14,12 +14,12 @@
 
 package org.janusgraph.graphdb.thrift;
 
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.common.collect.ImmutableMap;
 import java.net.InetAddress;
-
 import org.apache.cassandra.config.Config;
 import org.apache.cassandra.config.KSMetaData;
 import org.apache.cassandra.config.Schema;
@@ -28,12 +28,11 @@ import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.janusgraph.diskstorage.cassandra.thrift.thriftpool.CTConnection;
 import org.janusgraph.diskstorage.cassandra.thrift.thriftpool.CTConnectionFactory;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableMap;
 
 public class ThriftConnectionTest {
 
@@ -45,7 +44,7 @@ public class ThriftConnectionTest {
     private final Logger log = LoggerFactory.getLogger(ThriftConnectionTest.class);
     private CTConnectionFactory.Config factoryConfig;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         try {
             Config.setClientMode(true);
@@ -74,7 +73,7 @@ public class ThriftConnectionTest {
         when(mockConnection.getConfig()).thenReturn(factoryConfig);
         when(mockConnection.isOpen()).thenReturn(true);
         TTransport mockClient = spy(mockConnection.getTransport());
-        
+
         assertTrue(connectionFactory.validateObject(null, mockConnection));
         when(mockClient.readAll(new byte[0], 0,0)).thenThrow(new TTransportException("Broken Pipe"));
         assertTrue(mockClient.isOpen());

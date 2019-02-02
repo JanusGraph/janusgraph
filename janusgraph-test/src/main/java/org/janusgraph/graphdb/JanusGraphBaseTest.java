@@ -38,8 +38,9 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 
 import java.time.Duration;
 import java.util.*;
@@ -47,9 +48,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -65,6 +64,7 @@ public abstract class JanusGraphBaseTest {
     public StoreFeatures features;
     public JanusGraphTransaction tx;
     public JanusGraphManagement mgmt;
+    public TestInfo testInfo;
 
     public Map<String,LogManager> logManagers;
 
@@ -92,8 +92,9 @@ public abstract class JanusGraphBaseTest {
         return backend;
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp(TestInfo testInfo) throws Exception {
+        this.testInfo = testInfo;
         this.config = getConfiguration();
         TestGraphConfigs.applyOverrides(config);
         Preconditions.checkNotNull(config);
@@ -110,7 +111,7 @@ public abstract class JanusGraphBaseTest {
         mgmt = graph.openManagement();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         close();
         closeLogs();
@@ -433,8 +434,8 @@ public abstract class JanusGraphBaseTest {
             final Comparable current = element.value(key);
             if (previous != null) {
                 final int cmp = previous.compareTo(current);
-                assertTrue(previous + " <> " + current + " @ " + count,
-                        order == Order.ASC ? cmp <= 0 : cmp >= 0);
+                assertTrue(order == Order.ASC ? cmp <= 0 : cmp >= 0,
+                    previous + " <> " + current + " @ " + count);
             }
             previous = current;
             count++;

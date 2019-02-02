@@ -14,14 +14,14 @@
 
 package org.janusgraph.pkgtest;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.janusgraph.CassandraStorageSetup;
 
 public class CassandraThriftAssemblyIT extends AbstractJanusGraphAssemblyIT {
 
-    @BeforeClass
+    @BeforeAll
     public static void startCassandra() {
         CassandraStorageSetup.startCleanEmbedded();
     }

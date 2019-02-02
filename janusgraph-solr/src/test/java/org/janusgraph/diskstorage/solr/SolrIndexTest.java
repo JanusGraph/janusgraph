@@ -14,10 +14,6 @@
 
 package org.janusgraph.diskstorage.solr;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.util.Date;
 import java.util.UUID;
 
@@ -38,22 +34,24 @@ import org.janusgraph.diskstorage.indexing.IndexProviderTest;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
 import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Jared Holmberg (jholmberg@bericotechnologies.com)
  */
 public class SolrIndexTest extends IndexProviderTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpMiniCluster() throws Exception {
         SolrRunner.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownMiniCluster() throws Exception {
         SolrRunner.stop();
     }
@@ -158,15 +156,18 @@ public class SolrIndexTest extends IndexProviderTest {
      * Dropping collection is not implemented with Solr Cloud to accommodate use case where collection is created
      * outside of JanusGraph and associated with a config set with a different name.
      */
-    @Override @Test @Ignore
+    @Override @Test @Disabled
     public void clearStorageTest() throws Exception {
         super.clearStorageTest();
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testMapKey2Field_IllegalCharacter() {
-        KeyInformation keyInfo = new StandardKeyInformation(Boolean.class, Cardinality.SINGLE);
-        index.mapKey2Field("here is an illegal character: •", keyInfo);
+        assertThrows(IllegalArgumentException.class, () -> {
+
+            KeyInformation keyInfo = new StandardKeyInformation(Boolean.class, Cardinality.SINGLE);
+            index.mapKey2Field("here is an illegal character: •", keyInfo);
+        });
     }
 
     @Test

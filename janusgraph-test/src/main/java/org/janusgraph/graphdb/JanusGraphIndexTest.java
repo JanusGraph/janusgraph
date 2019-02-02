@@ -18,6 +18,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
+import org.janusgraph.TestCategory;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.PropertyKey;
@@ -45,7 +46,6 @@ import org.janusgraph.core.util.ManagementUtil;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
-import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
 import org.janusgraph.diskstorage.indexing.IndexInformation;
@@ -58,28 +58,22 @@ import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
-import org.janusgraph.graphdb.query.condition.Not;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
-import org.janusgraph.testcategory.BrittleTests;
 import org.janusgraph.testutil.TestGraphConfigs;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,7 +98,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.janusgraph.testutil.JanusGraphAssert.*;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.decr;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.incr;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 /**
@@ -174,9 +168,6 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         super.clopen(settings);
     }
 
-    @Rule
-    public TestName methodName = new TestName();
-
     /**
      * Tests the {@link org.janusgraph.example.GraphOfTheGodsFactory#load(org.janusgraph.core.JanusGraph)}
      * method used as the standard example that ships with JanusGraph.
@@ -217,9 +208,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     private static void assertStorageExists(Backend backend, boolean exists) throws Exception {
         final String suffix = exists ? "should exist before clearing" : "should not exist after clearing";
-        assertTrue("graph " + suffix, backend.getStoreManager().exists() == exists);
+        assertTrue(backend.getStoreManager().exists() == exists, "graph " + suffix);
         for (final IndexInformation index : backend.getIndexInformation().values()) {
-            assertTrue("index " + suffix, ((IndexProvider) index).exists() == exists);
+            assertTrue(((IndexProvider) index).exists() == exists, "index " + suffix);
         }
     }
 
@@ -580,7 +571,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             clopen();//Flush the index
             try {
                 assertEquals(v1, getOnlyVertex(graph.query().has("instant", Cmp.EQUAL, firstTimestamp)));
-                Assert.fail("Should have failed to update the index");
+                fail("Should have failed to update the index");
             } catch (final Exception ignored) {
 
             }
@@ -1147,7 +1138,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 return; // Ignore for lucene
 
             default:
-                Assert.fail("Unknown index backend:" + backend);
+                fail("Unknown index backend:" + backend);
                 break;
         }
 
@@ -1234,7 +1225,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     }
 
-    @Category({BrittleTests.class})
+    @Tag(TestCategory.BRITTLE_TESTS)
     @Test
     public void testIndexReplay() throws Exception {
         final TimestampProvider times = graph.getConfiguration().getTimestampProvider();
@@ -1672,8 +1663,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
      * @throws BackendException
      */
     @Test
-    public void testDeleteVertexThenDeleteProperty() throws BackendException {
-        testNestedWrites("x", null);
+    public void testDeleteVertexThenDeleteProperty(TestInfo testInfo) throws BackendException {
+        testNestedWrites("x", null, testInfo);
     }
 
     /**
@@ -1683,8 +1674,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
      * @throws BackendException
      */
     @Test
-    public void testDeleteVertexThenAddProperty() throws BackendException {
-        testNestedWrites(null, "y");
+    public void testDeleteVertexThenAddProperty(TestInfo testInfo) throws BackendException {
+        testNestedWrites(null, "y", testInfo);
     }
 
     /**
@@ -1694,8 +1685,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
      * @throws BackendException
      */
     @Test
-    public void testDeleteVertexThenModifyProperty() throws BackendException {
-        testNestedWrites("x", "y");
+    public void testDeleteVertexThenModifyProperty(TestInfo testInfo) throws BackendException {
+        testNestedWrites("x", "y", testInfo);
     }
 
     @Test
@@ -1718,7 +1709,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             .map(JanusGraphIndexQuery.Result::getScore)
             .collect(Collectors.toSet());
 
-        Assert.assertEquals(3, scores.size());
+        assertEquals(3, scores.size());
     }
 
     @Test
@@ -1737,10 +1728,10 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         tx.commit();
 
         final JanusGraphVertex r = Iterables.get(graph.query().has("name", Text.CONTAINS, "hercules here").vertices(), 0);
-        Assert.assertEquals(r.property("name").value(), "hercules was here");
+        assertEquals(r.property("name").value(), "hercules was here");
     }
 
-    private void testNestedWrites(String initialValue, String updatedValue) throws BackendException {
+    private void testNestedWrites(String initialValue, String updatedValue, TestInfo testInfo) throws BackendException {
         // This method touches a single vertex with multiple transactions,
         // leading to deadlock under BDB and cascading test failures. Check for
         // the hasTxIsolation() store feature, which is currently true for BDB
@@ -1752,7 +1743,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         try {
             b = graph.getConfiguration().getBackend();
             if (b.getStoreFeatures().hasTxIsolation()) {
-                log.info("Skipping " + getClass().getSimpleName() + "." + methodName.getMethodName());
+                log.info("Skipping " + getClass().getSimpleName() + "." + testInfo.getTestMethod().toString());
                 return;
             }
         } finally {
@@ -1865,7 +1856,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 final PropertyKey stringProperty = mgmt.makePropertyKey("name").dataType(String.class).cardinality(cardinality).make();
                 //This should throw an exception
                 mgmt.buildIndex("collectionIndex", Vertex.class).addKey(stringProperty, getStringMapping()).buildMixedIndex(INDEX);
-                Assert.fail("Should have thrown an exception");
+                fail("Should have thrown an exception");
             } catch (final JanusGraphException ignored) {
 
             }
@@ -2035,7 +2026,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         try {
             ManagementSystem.awaitGraphIndexStatus(graph, "randomMixedIndex").status(SchemaStatus.REGISTERED, SchemaStatus.ENABLED).call();
         } catch (final Exception e) {
-            Assert.fail("Failed to awaitGraphIndexStatus on multiple statuses.");
+            fail("Failed to awaitGraphIndexStatus on multiple statuses.");
         }
     }
 

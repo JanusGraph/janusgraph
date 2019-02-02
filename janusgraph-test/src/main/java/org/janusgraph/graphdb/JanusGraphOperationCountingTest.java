@@ -37,21 +37,21 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.janusgraph.graphdb.database.cache.MetricInstrumentedSchemaCache.*;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexType;
-import org.janusgraph.testcategory.SerialTests;
+import org.janusgraph.TestCategory;
 import org.janusgraph.util.stats.MetricManager;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -60,7 +60,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-@Category({ SerialTests.class })
+@Tag(TestCategory.SERIAL_TESTS)
 public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest {
 
     public MetricManager metric;
@@ -407,7 +407,8 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         for (String operation : OPERATION_NAMES) {
             Long count = operationCounts.get(operation);
             if (count==null) count = 0L;
-            assertEquals(Joiner.on(".").join(prefix, storeName, operation, MetricInstrumentedStore.M_CALLS),count.longValue(), metric.getCounter(prefix, storeName, operation, MetricInstrumentedStore.M_CALLS).getCount());
+            assertEquals(count.longValue(), metric.getCounter(prefix, storeName, operation, MetricInstrumentedStore.M_CALLS).getCount(),
+                Joiner.on(".").join(prefix, storeName, operation, MetricInstrumentedStore.M_CALLS));
         }
     }
 
@@ -417,10 +418,12 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
 
     public void verifyTypeCacheMetrics(String prefix, int nameMisses, int relationMisses) {
 //        assertEquals("On type cache name retrievals",nameRetrievals, metric.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, METRICS_TYPENAME, CacheMetricsAction.RETRIEVAL.getName()).getCount());
-        assertEquals("On type cache name misses",nameMisses, metric.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, METRICS_TYPENAME, CacheMetricsAction.MISS.getName()).getCount());
+        assertEquals(nameMisses, metric.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, METRICS_TYPENAME, CacheMetricsAction.MISS.getName()).getCount(),
+            "On type cache name misses");
         assertTrue(nameMisses <= metric.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, METRICS_TYPENAME, CacheMetricsAction.RETRIEVAL.getName()).getCount());
 //        assertEquals("On type cache relation retrievals",relationRetrievals, metric.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, METRICS_RELATIONS, CacheMetricsAction.RETRIEVAL.getName()).getCount());
-        assertEquals("On type cache relation misses", relationMisses, metric.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, METRICS_RELATIONS, CacheMetricsAction.MISS.getName()).getCount());
+        assertEquals(relationMisses, metric.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, METRICS_RELATIONS, CacheMetricsAction.MISS.getName()).getCount(),
+            "On type cache relation misses");
         assertTrue(relationMisses <= metric.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, METRICS_RELATIONS, CacheMetricsAction.RETRIEVAL.getName()).getCount());
     }
 
@@ -509,7 +512,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
                 boolean postCommit = postcommit[pos].get();
                 final Integer value = v.value(prop);
                 lookups.incrementAndGet();
-                assertNotNull("On pos [" + pos + "]", value);
+                assertNotNull(value, "On pos [" + pos + "]");
                 if (!precommit[pos].get()) assertEquals(0, value.intValue());
                 else if (postCommit) assertEquals(1, value.intValue());
                 graph.tx().commit();
@@ -549,7 +552,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         final int numLookupPropertyConstraints = numV;
         assertEquals(2 * numReads + numV + numLookupPropertyConstraints, getEdgeCacheRetrievals());
         int minMisses = 2*numV;
-        assertTrue("Min misses ["+minMisses+"] vs actual ["+getEdgeCacheMisses()+"]",minMisses<=getEdgeCacheMisses() && 4*minMisses>=getEdgeCacheMisses());
+        assertTrue(minMisses<=getEdgeCacheMisses() && 4*minMisses>=getEdgeCacheMisses(), "Min misses ["+minMisses+"] vs actual ["+getEdgeCacheMisses()+"]");
     }
 
     private long getEdgeCacheRetrievals() {
@@ -630,7 +633,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         timeHotGlobal = timeHotGlobal/measurements;
 
         System.out.println(round(timeColdGlobal) + "\t" + round(timeWarmGlobal) + "\t" + round(timeHotGlobal));
-        assertTrue(timeColdGlobal + " vs " + timeWarmGlobal, timeColdGlobal>timeWarmGlobal*2);
+        assertTrue(timeColdGlobal>timeWarmGlobal*2, timeColdGlobal + " vs " + timeWarmGlobal);
         //assertTrue(timeWarmGlobal + " vs " + timeHotGlobal, timeWarmGlobal>timeHotGlobal); Sometimes, this is not true
     }
 

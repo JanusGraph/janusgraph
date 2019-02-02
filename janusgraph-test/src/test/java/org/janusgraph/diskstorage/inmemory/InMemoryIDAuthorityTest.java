@@ -38,8 +38,8 @@ public class InMemoryIDAuthorityTest extends IDAuthorityTest {
      */
     private final InMemoryStoreManager sharedManager;
 
-    public InMemoryIDAuthorityTest(WriteConfiguration baseConfig) {
-        super(baseConfig);
+    public InMemoryIDAuthorityTest() {
+        super();
         sharedManager = new InMemoryStoreManager();
     }
 

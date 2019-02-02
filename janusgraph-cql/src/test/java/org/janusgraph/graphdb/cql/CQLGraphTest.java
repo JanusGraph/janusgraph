@@ -15,7 +15,7 @@
 package org.janusgraph.graphdb.cql;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
@@ -25,7 +25,7 @@ import org.janusgraph.graphdb.CassandraGraphTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.JanusGraphConstants;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class CQLGraphTest extends CassandraGraphTest {
 

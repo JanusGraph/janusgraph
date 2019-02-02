@@ -18,18 +18,20 @@ import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SolrIndexKerberosMissingConfigTest {
 
-	@BeforeClass
+	@BeforeAll
 	public static void setUpMiniCluster() throws Exception {
 		SolrRunner.start();
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void tearDownMiniCluster() throws Exception {
 		SolrRunner.stop();
 	}
@@ -40,9 +42,9 @@ public class SolrIndexKerberosMissingConfigTest {
 	 * 
 	 * @throws Exception
 	 */
-	@Test(expected = PermanentBackendException.class)
+	@Test
 	public void testIndexInitializationFailsWhenMissingJavaSecurityAuthLoginConfig() throws Exception {
-		new SolrIndex(getLocalSolrTestConfig());
+        assertThrows(PermanentBackendException.class, () -> new SolrIndex(getLocalSolrTestConfig()));
 	}
 
 	protected Configuration getLocalSolrTestConfig() {

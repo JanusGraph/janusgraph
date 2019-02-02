@@ -23,6 +23,7 @@ import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_ROOT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY;
@@ -30,17 +31,14 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GR
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 import static org.janusgraph.diskstorage.configuration.BasicConfiguration.Restriction.NONE;
 
-
-import org.apache.commons.configuration.BaseConfiguration;
-
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
-import org.junit.Test;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
-import static org.junit.Assert.assertEquals;
-import static org.hamcrest.Matchers.equalTo;
+import org.apache.commons.configuration.BaseConfiguration;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class LocalStoreManagerTest {
 
@@ -96,9 +94,6 @@ public class LocalStoreManagerTest {
         return new LocalStoreManagerSampleImplementation(mc);
     }
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
     @Test
     public void directoryShouldEqualSuppliedDirectory() throws BackendException {
         final Map<ConfigOption, String> map = getBaseConfigurationMap();
@@ -117,15 +112,14 @@ public class LocalStoreManagerTest {
     }
 
     @Test
-    public void shouldThrowError() throws BackendException {
-        boolean errorFound = false;
+    public void shouldThrowError() {
         final Map<ConfigOption, String> map = getBaseConfigurationMap();
         map.put(GRAPH_NAME, "randomGraphName");
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage(equalTo("Please supply configuration parameter " +
-                                     "\"storage.directory\" or both \"storage.root\" " +
-                                     "and \"graph.graphname\"."));
-        final LocalStoreManager mgr = getStoreManager(map);
+
+        RuntimeException runtimeException = assertThrows(RuntimeException.class, () -> getStoreManager(map));
+        assertEquals("Please supply configuration parameter " +
+            "\"storage.directory\" or both \"storage.root\" " +
+            "and \"graph.graphname\".", runtimeException.getMessage());
     }
 }
 

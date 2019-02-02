@@ -18,14 +18,14 @@ import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphTest;
 
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 public class HBaseGraphTest extends JanusGraphTest {
-    @BeforeClass
+    @BeforeAll
     public static void startHBase() throws IOException {
         HBaseStorageSetup.startHBase();
     }
@@ -35,10 +35,10 @@ public class HBaseGraphTest extends JanusGraphTest {
         return HBaseStorageSetup.getHBaseGraphConfiguration();
     }
 
-    @Override @Test @Ignore("HBase does not support retrieving cell TTL by client")
+    @Override @Test @Disabled("HBase does not support retrieving cell TTL by client")
     public void testVertexTTLImplicitKey() { }
 
-    @Override @Test @Ignore("HBase does not support retrieving cell TTL by client")
+    @Override @Test @Disabled("HBase does not support retrieving cell TTL by client")
     public void testEdgeTTLImplicitKey() { }
 
 }

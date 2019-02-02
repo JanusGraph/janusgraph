@@ -1,4 +1,4 @@
-// Copyright 2017 JanusGraph Authors
+// Copyright 2019 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.testcategory;
+package org.janusgraph;
 
-/**
- * This is a JUnit category for tests that don't need a Cassandra server.
- * 
- * If you rename or move this class, then you must also update mentions of it in
- * the Cassandra module's pom.xml.
- */
-public class StandaloneTests { }
+public class CassandraTestCategory {
+    public static final String CASSANDRA_SSL_TESTS = "CASSANDRA_SSL_TESTS";
+    public static final String STANDALONE_TESTS = "STANDALONE_TESTS";
+}

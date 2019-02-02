@@ -29,12 +29,9 @@ import org.apache.commons.configuration.MapConfiguration;
 import java.util.Map;
 import java.util.HashMap;
 
-import org.junit.Test;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
-import static org.junit.Assert.*;
-import static org.hamcrest.Matchers.equalTo;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterEach;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ConfiguredGraphFactoryTest {
     private static final JanusGraphManager gm;
@@ -48,10 +45,7 @@ public class ConfiguredGraphFactoryTest {
         new ConfigurationManagementGraph(graph);
     }
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
-    @After
+    @AfterEach
     public void cleanUp() {
         ConfiguredGraphFactory.removeTemplateConfiguration();
     }
@@ -135,18 +129,16 @@ public class ConfiguredGraphFactoryTest {
 
     @Test
     public void shouldThrowConfigurationDoesNotExistError() {
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage(equalTo("Please create configuration for this graph using the " +
-                                     "ConfigurationManagementGraph#createConfiguration API."));
-        ConfiguredGraphFactory.open("graph1");
+        RuntimeException graph1 = assertThrows(RuntimeException.class, () -> ConfiguredGraphFactory.open("graph1"));
+        assertEquals("Please create configuration for this graph using the " +
+            "ConfigurationManagementGraph#createConfiguration API.", graph1.getMessage());
     }
 
     @Test
     public void shouldThrowTemplateConfigurationDoesNotExistError() {
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage(equalTo("Please create a template Configuration using the " +
-                                     "ConfigurationManagementGraph#createTemplateConfiguration API."));
-        ConfiguredGraphFactory.create("graph1");
+        RuntimeException graph1 = assertThrows(RuntimeException.class, () -> ConfiguredGraphFactory.create("graph1"));
+        assertEquals("Please create a template Configuration using the " +
+            "ConfigurationManagementGraph#createTemplateConfiguration API.", graph1.getMessage());
     }
 
     @Test
@@ -156,10 +148,10 @@ public class ConfiguredGraphFactoryTest {
         map.put(GRAPH_NAME.toStringWithoutRoot(), "graph1");
         ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
         ConfiguredGraphFactory.removeConfiguration("graph1");
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage(equalTo("Please create configuration for this graph using the " +
-                                     "ConfigurationManagementGraph#createConfiguration API."));
-        ConfiguredGraphFactory.open("graph1");
+
+        RuntimeException graph1 = assertThrows(RuntimeException.class, () -> ConfiguredGraphFactory.open("graph1"));
+        assertEquals("Please create configuration for this graph using the " +
+            "ConfigurationManagementGraph#createConfiguration API.", graph1.getMessage());
     }
 
     @Test
@@ -169,10 +161,9 @@ public class ConfiguredGraphFactoryTest {
         ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
         ConfiguredGraphFactory.removeTemplateConfiguration();
 
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage(equalTo("Please create a template Configuration using the " +
-                                     "ConfigurationManagementGraph#createTemplateConfiguration API."));
-        ConfiguredGraphFactory.create("graph1");
+        RuntimeException graph1 = assertThrows(RuntimeException.class, () -> ConfiguredGraphFactory.create("graph1"));
+        assertEquals("Please create a template Configuration using the " +
+            "ConfigurationManagementGraph#createTemplateConfiguration API.", graph1.getMessage());
     }
 
     @Test
@@ -182,10 +173,10 @@ public class ConfiguredGraphFactoryTest {
         map.put(GRAPH_NAME.toStringWithoutRoot(), "graph1");
         ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
         ConfiguredGraphFactory.removeConfiguration("graph1");
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage(equalTo("Please create a template Configuration using the " +
-                                     "ConfigurationManagementGraph#createTemplateConfiguration API."));
-        ConfiguredGraphFactory.create("graph1");
+
+        RuntimeException graph1 = assertThrows(RuntimeException.class, () -> ConfiguredGraphFactory.create("graph1"));
+        assertEquals("Please create a template Configuration using the " +
+            "ConfigurationManagementGraph#createTemplateConfiguration API.", graph1.getMessage());
     }
 
     @Test
@@ -203,9 +194,10 @@ public class ConfiguredGraphFactoryTest {
             assertNull(gm.getGraph("graph1"));
             // we should throw an error since the config has been updated and we are attempting
             // to open a bogus backend
-            thrown.expect(IllegalArgumentException.class);
-            thrown.expectMessage(equalTo("Could not find implementation class: bogusBackend"));
-            final StandardJanusGraph graph2 = (StandardJanusGraph) ConfiguredGraphFactory.open("graph1");
+            IllegalArgumentException graph1 = assertThrows(IllegalArgumentException.class, () -> {
+                final StandardJanusGraph graph2 = (StandardJanusGraph) ConfiguredGraphFactory.open("graph1");
+            });
+            assertEquals("Could not find implementation class: bogusBackend", graph1.getMessage());
         } finally {
             ConfiguredGraphFactory.removeConfiguration("graph1");
             ConfiguredGraphFactory.close("graph1");

@@ -17,10 +17,9 @@ package org.janusgraph.graphdb.tinkerpop.plugin;
 import java.lang.reflect.Method;
 import java.util.Set;
 import org.apache.tinkerpop.gremlin.jsr223.ImportCustomizer;
-import org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JanusGraphGremlinPluginTest {
     @Test
@@ -31,12 +30,12 @@ public class JanusGraphGremlinPluginTest {
 
         for (final Method m : customizer.getMethodImports()) {
             final Class c = m.getDeclaringClass();
-            assertTrue("CLASS_IMPORTS is missing " + c.getCanonicalName(), classes.contains(c));
+            assertTrue(classes.contains(c), "CLASS_IMPORTS is missing " + c.getCanonicalName());
         }
 
         for (final Enum e : customizer.getEnumImports()) {
             final Class c = e.getDeclaringClass();
-            assertTrue("CLASS_IMPORTS is missing " + c.getCanonicalName(), classes.contains(c));
+            assertTrue(classes.contains(c), "CLASS_IMPORTS is missing " + c.getCanonicalName());
         }
     }
 }

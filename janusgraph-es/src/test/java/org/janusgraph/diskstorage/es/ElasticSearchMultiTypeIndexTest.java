@@ -28,30 +28,30 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetAddress;
 import java.time.Instant;
 import java.util.Arrays;
 
 import static org.janusgraph.diskstorage.es.ElasticSearchIndex.USE_DEPRECATED_MULTITYPE_INDEX;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author David Clement (david.clement90@laposte.net)
  */
 public class ElasticSearchMultiTypeIndexTest extends ElasticSearchIndexTest {
 
-    @Before @Override
+    @BeforeEach @Override
     public void setUp() throws Exception {
         clear();
         super.setUp();
     }
 
-    @After @Override
+    @AfterEach @Override
     public void tearDown() throws Exception {
         super.tearDown();
         clear();

@@ -16,8 +16,8 @@ package org.janusgraph.diskstorage;
 
 import static org.easymock.EasyMock.capture;
 import static org.easymock.EasyMock.expect;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.util.List;
@@ -27,9 +27,6 @@ import org.easymock.Capture;
 import org.easymock.CaptureType;
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -53,6 +50,9 @@ import org.janusgraph.diskstorage.util.StaticArrayEntryList;
 
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test transaction handling in {@link ExpectedValueCheckingStore} and related
@@ -84,7 +84,7 @@ public class ExpectedValueCheckingTest {
     private static final StaticBuffer LOCK_COL = BufferUtil.getIntBuffer(64);
     private static final StaticBuffer LOCK_VAL = BufferUtil.getIntBuffer(128);
 
-    @Before
+    @BeforeEach
     public void setupMocks() throws BackendException {
 
         // Initialize mock controller
@@ -142,7 +142,7 @@ public class ExpectedValueCheckingTest {
         ctrl.reset();
     }
 
-    @After
+    @AfterEach
     public void verifyMocks() {
         ctrl.verify();
         ctrl.reset();

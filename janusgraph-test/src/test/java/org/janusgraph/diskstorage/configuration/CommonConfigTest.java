@@ -19,7 +19,7 @@ import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 
 import org.janusgraph.diskstorage.util.time.Temporals;
 import org.apache.commons.configuration.BaseConfiguration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

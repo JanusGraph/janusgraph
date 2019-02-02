@@ -14,15 +14,14 @@
 
 package org.janusgraph.graphdb.embedded;
 
-import org.junit.BeforeClass;
-
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphEventualGraphTest;
+import org.junit.jupiter.api.BeforeAll;
 
 public class EmbeddedEventualGraphTest extends JanusGraphEventualGraphTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void startEmbeddedCassandra() {
         CassandraStorageSetup.startCleanEmbedded();
     }

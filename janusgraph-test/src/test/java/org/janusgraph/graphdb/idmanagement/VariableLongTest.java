@@ -21,13 +21,13 @@ import org.janusgraph.diskstorage.WriteBuffer;
 import org.janusgraph.diskstorage.util.WriteByteBuffer;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.apache.commons.lang.time.StopWatch;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -61,7 +61,7 @@ public class VariableLongTest {
             long value = impl.read(rb1);
             assertEquals(expected, value);
             int length = Math.abs(rb1.getPosition()-beforePos);
-            assertEquals("On: " + expected,length,impl.length(expected));
+            assertEquals(length,impl.length(expected), "On: " + expected);
         };
 
         if (backward) {

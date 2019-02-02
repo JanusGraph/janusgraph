@@ -59,7 +59,7 @@
                             <systemPropertyVariables>
                                 <test.hbase.parentdir>${top.level.basedir}/janusgraph-hbase-parent</test.hbase.parentdir>
                             </systemPropertyVariables>
-                        <excludedGroups>${test.excluded.groups},org.janusgraph.testcategory.UnorderedKeyStoreTests</excludedGroups>
+                        <excludedGroups>${test.excluded.groups},UNORDERED_KEY_STORE_TESTS</excludedGroups>
                     </configuration>
                 </plugin>
                 <plugin>
