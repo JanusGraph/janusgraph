@@ -14,14 +14,14 @@
 
 package org.janusgraph.graphdb.cql;
 
+import org.janusgraph.TestCategory;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.cql.CassandraStorageSetup;
 import org.janusgraph.graphdb.JanusGraphConcurrentTest;
-import org.janusgraph.testcategory.PerformanceTests;
-import org.junit.BeforeClass;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 
-@Category({PerformanceTests.class})
+@Tag(TestCategory.PERFORMANCE_TESTS)
 public class CQLGraphConcurrentTest extends JanusGraphConcurrentTest {
 
     @Override
@@ -30,7 +30,7 @@ public class CQLGraphConcurrentTest extends JanusGraphConcurrentTest {
     }
 
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         CassandraStorageSetup.startCleanEmbedded();
     }

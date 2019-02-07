@@ -15,14 +15,14 @@
 package org.janusgraph.graphdb.thrift;
 
 import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.TestCategory;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphConcurrentTest;
-import org.janusgraph.testcategory.PerformanceTests;
 
-import org.junit.BeforeClass;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 
-@Category({PerformanceTests.class})
+@Tag(TestCategory.PERFORMANCE_TESTS)
 public class ThriftGraphConcurrentTest extends JanusGraphConcurrentTest {
 
     @Override
@@ -31,7 +31,7 @@ public class ThriftGraphConcurrentTest extends JanusGraphConcurrentTest {
     }
 
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         CassandraStorageSetup.startCleanEmbedded();
     }

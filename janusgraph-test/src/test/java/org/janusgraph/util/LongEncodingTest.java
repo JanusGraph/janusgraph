@@ -16,12 +16,12 @@ package org.janusgraph.util;
 
 import com.google.common.collect.Sets;
 import org.janusgraph.util.encoding.LongEncoding;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Random;
 import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

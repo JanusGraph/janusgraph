@@ -103,6 +103,10 @@
                     <groupId>jline</groupId>
                     <artifactId>jline</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -282,7 +286,7 @@
                         <phase>test</phase>
                         <configuration>
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-bop -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-bop</argLine>
-                            <excludedGroups>${test.excluded.groups},org.janusgraph.testcategory.UnorderedKeyStoreTests,org.janusgraph.testcategory.SerialTests,org.janusgraph.testcategory.CassandraSSLTests</excludedGroups>
+                            <excludedGroups>${test.excluded.groups},UNORDERED_KEY_STORE_TESTS,SERIAL_TESTS,CASSANDRA_SSL_TESTS</excludedGroups>
                             <groups />
                             <forkCount>1</forkCount>
                             <reuseForks>false</reuseForks>
@@ -302,7 +306,7 @@
                         <phase>test</phase>
                         <configuration>
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
-                            <excludedGroups>${test.excluded.groups},org.janusgraph.testcategory.OrderedKeyStoreTests,org.janusgraph.testcategory.SerialTests,org.janusgraph.testcategory.CassandraSSLTests</excludedGroups>
+                            <excludedGroups>${test.excluded.groups},ORDERED_KEY_STORE_TESTS,SERIAL_TESTS,CASSANDRA_SSL_TESTS</excludedGroups>
                             <groups />
                             <forkCount>1</forkCount>
                             <reuseForks>false</reuseForks>
@@ -323,7 +327,7 @@
                         <configuration>
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur-ssl -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur-ssl</argLine>
                             <excludedGroups />
-                            <groups>org.janusgraph.testcategory.CassandraSSLTests</groups>
+                            <groups>CASSANDRA_SSL_TESTS</groups>
                             <!-- The TP3 JUnit Suite/Runner ignores groups/@Category and I'm not sure why.  Redundant excludes to keep TP3 tests from using non-SSL configs on SSL -->
                             <excludes>
                                 <exclude>**/*ComputerTest.java</exclude>
@@ -349,7 +353,7 @@
                         <configuration>
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
                             <excludedGroups />
-                            <groups>org.janusgraph.testcategory.SerialTests</groups>
+                            <groups>SERIAL_TESTS</groups>
                             <forkCount>1</forkCount>
                             <reuseForks>false</reuseForks>
                             <parallel>none</parallel>
@@ -434,7 +438,7 @@
                                 <include>**/org/janusgraph/graphdb/thrift/*.java</include>
                             </includes>
                             <!-- Exclude default (performance/memory) tests. Also exclude SSL tests (fail under Scylla) -->
-                            <excludedGroups>${test.excluded.groups},org.janusgraph.testcategory.CassandraSSLTests</excludedGroups>
+                            <excludedGroups>${test.excluded.groups},CASSANDRA_SSL_TESTS</excludedGroups>
                             <systemProperties>
                                 <!-- Run tests against the containerized Scylla test server -->
                                 <property>

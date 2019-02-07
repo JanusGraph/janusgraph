@@ -105,7 +105,7 @@ import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.graphdb.types.StandardPropertyKeyMaker;
 import org.janusgraph.graphdb.types.system.BaseVertexLabel;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
-import org.janusgraph.testcategory.BrittleTests;
+import org.janusgraph.TestCategory;
 import org.janusgraph.testutil.TestGraphConfigs;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
@@ -126,8 +126,8 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,7 +159,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.Order.decr;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.incr;
 import static org.apache.tinkerpop.gremlin.structure.Direction.*;
 import static org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality.single;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -193,9 +193,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         tearDown();
         config.set(ConfigElement.getPath(GraphDatabaseConfiguration.DROP_ON_CLEAR), true);
         final Backend backend = getBackend(config, false);
-        assertTrue("graph should exist before clearing storage", backend.getStoreManager().exists());
+        assertTrue(backend.getStoreManager().exists(), "graph should exist before clearing storage");
         clearGraph(config);
-        assertFalse("graph should not exist after clearing storage", backend.getStoreManager().exists());
+        assertFalse(backend.getStoreManager().exists(), "graph should not exist after clearing storage");
     }
 
     /**
@@ -398,7 +398,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             for (Object r : n.query().direction(Direction.OUT).edges()) {
                 edgeIds.add(((JanusGraphEdge) r).longId());
             }
-            assertTrue(edgeIds + " vs " + nodeEdgeIds[i], edgeIds.equals(nodeEdgeIds[i]));
+            assertEquals(edgeIds, nodeEdgeIds[i], edgeIds + " vs " + nodeEdgeIds[i]);
         }
         newTx();
         //Bulk vertex retrieval
@@ -1320,8 +1320,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             GraphOfTheGodsFactory.load(graph);
             fail("Expected an exception to be thrown indicating improper index backend configuration");
         } catch (IllegalStateException ex) {
-            assertTrue("An exception asking the user to use loadWithoutMixedIndex was expected",
-                    ex.getMessage().contains("loadWithoutMixedIndex"));
+            assertTrue(ex.getMessage().contains("loadWithoutMixedIndex"),
+                "An exception asking the user to use loadWithoutMixedIndex was expected");
         }
     }
 
@@ -1679,7 +1679,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(30, graphIndexMetrics.getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
     }
 
-    @Category({BrittleTests.class})
+    @Tag(TestCategory.BRITTLE_TESTS)
     @Test
     public void testIndexUpdateSyncWithMultipleInstances() throws InterruptedException {
         clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
@@ -1760,7 +1760,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     }
 
-    @Category({BrittleTests.class})
+    @Tag(TestCategory.BRITTLE_TESTS)
     @Test
     public void testIndexShouldRegisterWhenWeRemoveAnInstance() throws InterruptedException {
         clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
@@ -2200,8 +2200,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         final String foo = "foo", bar = "bar", weight = "weight";
         final List<String> values =
                 ImmutableList.of("four", "score", "and", "seven");
-        assertTrue("Values list must have multiple elements for this test to make sense",
-                2 <= values.size());
+        assertTrue(2 <= values.size(),
+            "Values list must have multiple elements for this test to make sense");
 
         // Create property with name pname and a vertex
         PropertyKey w = makeKey(weight, Integer.class);
@@ -2677,7 +2677,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             base.addEdge("married", a);
         }, parallelThreads);
 
-        assertTrue("At most 1 tx should succeed: " + numSuccess, numSuccess <= 1);
+        assertTrue(numSuccess <= 1, "At most 1 tx should succeed: " + numSuccess);
 
         numSuccess = executeParallelTransactions(tx -> {
             tx.addVertex("name", nameA);
@@ -2689,7 +2689,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         final long numA = Iterables.size(tx.query().has("name", nameA).vertices());
         final long numB = Iterables.size(tx.query().has("name", nameB).vertices());
 //        System.out.println(numA + " - " + numB);
-        assertTrue("At most 1 tx should succeed: " + numSuccess, numSuccess <= 1);
+        assertTrue(numSuccess <= 1, "At most 1 tx should succeed: " + numSuccess);
         assertTrue(numA <= 1);
         assertTrue(numB <= 1);
     }
@@ -2833,13 +2833,13 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         lastTime = 0;
         for (final JanusGraphEdge e : v.query().labels("connect").direction(OUT).limit(20).edges()) {
             int nowTime = e.value("time");
-            assertTrue(lastTime + " vs. " + nowTime, lastTime <= nowTime);
+            assertTrue(lastTime <= nowTime, lastTime + " vs. " + nowTime);
             lastTime = nowTime;
         }
         lastTime = Integer.MAX_VALUE;
         for (final Edge e : u.query().labels("connectDesc").direction(OUT).limit(20).edges()) {
             int nowTime = e.value("time");
-            assertTrue(lastTime + " vs. " + nowTime, lastTime >= nowTime);
+            assertTrue(lastTime >= nowTime, lastTime + " vs. " + nowTime);
             lastTime = nowTime;
         }
         assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).has("time", Cmp.GREATER_THAN, 60).limit(10).vertices()));
@@ -2948,13 +2948,13 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         lastTime = 0;
         for (final Edge e : v.query().labels("connect").direction(OUT).limit(20).edges()) {
             int nowTime = e.value("time");
-            assertTrue(lastTime + " vs. " + nowTime, lastTime <= nowTime);
+            assertTrue(lastTime <= nowTime, lastTime + " vs. " + nowTime);
             lastTime = nowTime;
         }
         lastTime = Integer.MAX_VALUE;
         for (final Edge e : u.query().labels("connectDesc").direction(OUT).limit(20).edges()) {
             int nowTime = e.value("time");
-            assertTrue(lastTime + " vs. " + nowTime, lastTime >= nowTime);
+            assertTrue(lastTime >= nowTime, lastTime + " vs. " + nowTime);
             lastTime = nowTime;
         }
         assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).has("time", Cmp.GREATER_THAN, 60).limit(10).vertices()));
@@ -4099,11 +4099,11 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                     assertNull(subMetric.getCount(TraversalMetrics.ELEMENT_COUNT_ID));
                     break;
                 case "backend-query":
-                    if (fromCache) assertFalse("Should not execute backend-queries when cached", true);
+                    if (fromCache) fail("Should not execute backend-queries when cached");
                     assertTrue(subMetric.getCount(TraversalMetrics.ELEMENT_COUNT_ID) > 0);
                     break;
                 default:
-                    assertFalse("Unrecognized nested query: " + subMetric.getName(), true);
+                    fail("Unrecognized nested query: " + subMetric.getName());
             }
 
         }
@@ -4308,10 +4308,10 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                     assertTrue(txId.getTransactionId() > 0 && txId.getTransactionId() < 100);
                     final Instant txTime = txId.getTransactionTime();
                     // Times should be within a second
-                    assertTrue(String.format("tx timestamp %s not between start %s and end time %s",
-                                    txTime, startTime, endTime),
-                            (txTime.isAfter(startTime) || txTime.equals(startTime))
-                                    && (txTime.isBefore(endTime) || txTime.equals(endTime)));
+                    assertTrue((txTime.isAfter(startTime) || txTime.equals(startTime))
+                                                        && (txTime.isBefore(endTime) || txTime.equals(endTime)),
+                        String.format("tx timestamp %s not between start %s and end time %s",
+                                                        txTime, startTime, endTime));
 
                     assertTrue(tx.containsRelationType("knows"));
                     assertTrue(tx.containsRelationType("weight"));
@@ -5338,7 +5338,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEmpty(v1.query().direction(Direction.OUT).vertices());
     }
 
-    @Category({BrittleTests.class})
+    @Tag(TestCategory.BRITTLE_TESTS)
     @Test
     public void testEdgeTTLWithIndex() throws Exception {
         if (!features.hasCellTTL()) {
@@ -5377,7 +5377,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEmpty(graph.query().has("time", 42).edges());
     }
 
-    @Category({BrittleTests.class})
+    @Tag(TestCategory.BRITTLE_TESTS)
     @Test
     public void testPropertyTTLTiming() throws Exception {
         if (!features.hasCellTTL()) {
@@ -5463,7 +5463,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEmpty(graph.query().has("name", "some event").vertices());
     }
 
-    @Category({BrittleTests.class})
+    @Tag(TestCategory.BRITTLE_TESTS)
     @Test
     public void testEdgeTTLLimitedByVertexTTL() throws Exception {
 
@@ -5564,14 +5564,16 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testSettingTTLOnUnsupportedType() {
-        if (!features.hasCellTTL()) {
-            throw new IllegalArgumentException();
-        }
+        assertThrows(IllegalArgumentException.class, () -> {
+            if (!features.hasCellTTL()) {
+                throw new IllegalArgumentException();
+            }
 
-        JanusGraphSchemaType type = ImplicitKey.ID;
-        mgmt.setTTL(type, Duration.ZERO);
+            JanusGraphSchemaType type = ImplicitKey.ID;
+            mgmt.setTTL(type, Duration.ZERO);
+        });
     }
 
     @Test
@@ -5660,24 +5662,28 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         mgmt.rollback();
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testGetTTLFromUnsupportedType() {
-        if (!features.hasCellTTL()) {
-            throw new IllegalArgumentException();
-        }
+        assertThrows(IllegalArgumentException.class, () -> {
+            if (!features.hasCellTTL()) {
+                throw new IllegalArgumentException();
+            }
 
-        JanusGraphSchemaType type = ImplicitKey.ID;
-        mgmt.getTTL(type);
+            JanusGraphSchemaType type = ImplicitKey.ID;
+            mgmt.getTTL(type);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testSettingTTLOnNonStaticVertexLabel() {
-        if (!features.hasCellTTL()) {
-            throw new IllegalArgumentException();
-        }
+        assertThrows(IllegalArgumentException.class, () -> {
+            if (!features.hasCellTTL()) {
+                throw new IllegalArgumentException();
+            }
 
-        VertexLabel label1 = mgmt.makeVertexLabel("event").make();
-        mgmt.setTTL(label1, Duration.ofSeconds(42));
+            VertexLabel label1 = mgmt.makeVertexLabel("event").make();
+            mgmt.setTTL(label1, Duration.ofSeconds(42));
+        });
     }
 
     @Test
@@ -5766,32 +5772,32 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
-    public void testAutoSchemaMakerForVertexPropertyDataType(){
+    public void testAutoSchemaMakerForVertexPropertyDataType() {
         JanusGraphVertex v1 = tx.addVertex("user");
         v1.property("id", 10);
         v1.property("created", new Date());
 
         PropertyKey idPropertyKey = tx.getPropertyKey("id");
-        assertEquals("Data type not identified correctly by auto schema maker",
-            Integer.class, idPropertyKey.dataType());
+        assertEquals(Integer.class, idPropertyKey.dataType(),
+            "Data type not identified correctly by auto schema maker");
         PropertyKey createdPropertyKey = tx.getPropertyKey("created");
-        assertEquals("Data type not identified properly by auto schema maker",
-            Date.class, createdPropertyKey.dataType());
+        assertEquals(Date.class, createdPropertyKey.dataType(),
+            "Data type not identified properly by auto schema maker");
 
     }
 
     @Test
-    public void testAutoSchemaMakerForEdgePropertyDataType(){
+    public void testAutoSchemaMakerForEdgePropertyDataType() {
         JanusGraphVertex v1 = tx.addVertex("user");
         JanusGraphVertex v2 = tx.addVertex("user");
         v1.addEdge("knows", v2, "id", 10, "created", new Date());
 
         PropertyKey idPropertyKey = tx.getPropertyKey("id");
-        assertEquals("Data type not identified correctly by auto schema maker",
-            Integer.class, idPropertyKey.dataType());
+        assertEquals(Integer.class, idPropertyKey.dataType(),
+            "Data type not identified correctly by auto schema maker");
         PropertyKey createdPropertyKey = tx.getPropertyKey("created");
-        assertEquals("Data type not identified correctly by auto schema maker",
-            Date.class, createdPropertyKey.dataType());
+        assertEquals(Date.class, createdPropertyKey.dataType(),
+            "Data type not identified correctly by auto schema maker");
     }
 
 }

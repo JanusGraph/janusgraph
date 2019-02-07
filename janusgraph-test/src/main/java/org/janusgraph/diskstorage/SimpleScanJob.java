@@ -32,7 +32,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SimpleScanJob implements ScanJob {
 
@@ -185,10 +185,10 @@ public class SimpleScanJob implements ScanJob {
          * 1. The number of setups must equal the number of teardowns
          * 2. The number of setups (teardowns) must be positive
          */
-        assertEquals("Number of ScanJob setup calls must equal number of ScanJob teardown calls",
-                result1.getCustom(SimpleScanJob.SETUP_COUNT), result1.getCustom(SimpleScanJob.TEARDOWN_COUNT));
-        assertTrue("Number of ScanJob setup/teardown calls must be positive",
-                0 < result1.getCustom(SimpleScanJob.SETUP_COUNT));
+        assertEquals(result1.getCustom(SimpleScanJob.SETUP_COUNT), result1.getCustom(SimpleScanJob.TEARDOWN_COUNT),
+            "Number of ScanJob setup calls must equal number of ScanJob teardown calls");
+        assertTrue(0 < result1.getCustom(SimpleScanJob.SETUP_COUNT),
+            "Number of ScanJob setup/teardown calls must be positive");
 
         Configuration conf2 = getJobConf(ImmutableList.of(new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(128)).setLimit(5)));
         ScanMetrics result2 = runner.run(new SimpleScanJob(), conf2, SimpleScanJob.class.getName() + "#ROOT_NS");

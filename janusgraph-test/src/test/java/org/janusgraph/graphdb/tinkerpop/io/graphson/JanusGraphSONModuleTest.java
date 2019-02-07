@@ -25,7 +25,10 @@ import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.attribute.Text;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -34,21 +37,14 @@ import java.io.ByteArrayOutputStream;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.P.gt;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.within;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 
-@RunWith(Parameterized.class)
 public class JanusGraphSONModuleTest {
 
-    @Parameterized.Parameters(name= "GraphSON Version: {0}")
-    public static Object[] data() {
-        return new Object[] { GraphSONVersion.V2_0, GraphSONVersion.V3_0 };
-    }
-
-    @Parameterized.Parameter()
-    public GraphSONVersion graphSONVersion;
-
-    @Test
-    public void testTinkerPopPredicatesAsGraphSON() throws Exception {
+    @ParameterizedTest(name= "GraphSON Version: {0}")
+    @EnumSource(value = GraphSONVersion.class, mode = EXCLUDE, names = { "V1_0" })
+    public void testTinkerPopPredicatesAsGraphSON(GraphSONVersion graphSONVersion) throws Exception {
         Graph graph = EmptyGraph.instance();
         GraphTraversalSource g = graph.traversal();
 
@@ -59,8 +55,9 @@ public class JanusGraphSONModuleTest {
         graphsonSerializationTest(traversals, graphSONVersion);
     }
 
-    @Test
-    public void testJanusGraphPredicatesAsGraphSON() throws Exception {
+    @ParameterizedTest(name= "GraphSON Version: {0}")
+    @EnumSource(value = GraphSONVersion.class, mode = EXCLUDE, names = { "V1_0" })
+    public void testJanusGraphPredicatesAsGraphSON(GraphSONVersion graphSONVersion) throws Exception {
         Graph graph = EmptyGraph.instance();
         GraphTraversalSource g = graph.traversal();
 

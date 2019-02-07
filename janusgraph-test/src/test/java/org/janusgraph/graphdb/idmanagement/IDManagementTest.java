@@ -31,14 +31,14 @@ import org.janusgraph.graphdb.database.serialize.StandardSerializer;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.types.system.*;
 import org.janusgraph.testutil.RandomGenerator;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class IDManagementTest {
 

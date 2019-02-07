@@ -17,8 +17,8 @@ package org.janusgraph.core.attribute;
 
 import org.janusgraph.core.attribute.Geoshape.Point;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
@@ -34,7 +34,7 @@ public class GeoshapeHelperTest {
 
     private ShapeFactory factory;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         this.helper = new JtsGeoshapeHelper();
         this.factory = new JtsShapeFactory(helper.context, helper.factory);

@@ -24,15 +24,15 @@ import org.janusgraph.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.OrderList;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -42,7 +42,7 @@ public class QueryTest {
     private JanusGraph graph;
     private JanusGraphTransaction tx;
 
-    @Before
+    @BeforeEach
     public void setup() {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, InMemoryStoreManager.class.getCanonicalName());
@@ -50,7 +50,7 @@ public class QueryTest {
         tx = graph.newTransaction();
     }
 
-    @After
+    @AfterEach
     public void shutdown() {
         if (tx!=null && tx.isOpen()) tx.commit();
         if (graph!=null && graph.isOpen()) graph.close();

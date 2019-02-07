@@ -27,13 +27,13 @@ import org.apache.tinkerpop.gremlin.server.Settings;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.After;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ManagementLoggerGraphCacheEvictionTest {
 
-    @After
+    @AfterEach
     public void cleanUp() {
         JanusGraphManager.shutdownJanusGraphManager();
     }

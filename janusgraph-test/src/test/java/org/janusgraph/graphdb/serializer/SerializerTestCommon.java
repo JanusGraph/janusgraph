@@ -14,12 +14,12 @@
 
 package org.janusgraph.graphdb.serializer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import org.janusgraph.graphdb.serializer.attributes.*;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,13 +36,13 @@ public class SerializerTestCommon {
     protected Serializer serialize;
     protected boolean printStats;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         serialize = new StandardSerializer();
         printStats = false;
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         serialize.close();
     }

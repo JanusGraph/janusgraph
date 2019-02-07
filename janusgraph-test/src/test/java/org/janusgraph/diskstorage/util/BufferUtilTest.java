@@ -17,13 +17,13 @@ package org.janusgraph.diskstorage.util;
 import com.google.common.primitives.Longs;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 import java.util.Random;
 
 import static org.junit.Assert.fail;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -44,13 +44,13 @@ public class BufferUtilTest {
             StaticBuffer b2 = BufferUtil.getLongBuffer(val2);
 
             //Compare
-            assertEquals(val1 + " : " + val2, Math.signum(Longs.compare(val1, val2)), Math.signum(b1.compareTo(b2)), 0.01);
+            assertEquals(Math.signum(Longs.compare(val1, val2)), Math.signum(b1.compareTo(b2)), 0.01, val1 + " : " + val2);
             assertEquals(Math.signum(Longs.compare(val2, val1)), Math.signum(b2.compareTo(b1)), 0.01);
             assertEquals(0, b1.compareTo(b1));
 
             ByteBuffer bb1 = of(val1);
             ByteBuffer bb2 = of(val2);
-            assertEquals(val1 + " : " + val2, Math.signum(Longs.compare(val1, val2)), Math.signum(ByteBufferUtil.compare(bb1,bb2)), 0.01);
+            assertEquals(Math.signum(Longs.compare(val1, val2)), Math.signum(ByteBufferUtil.compare(bb1,bb2)), 0.01, val1 + " : " + val2);
             assertEquals(Math.signum(Longs.compare(val2, val1)), Math.signum(ByteBufferUtil.compare(bb2, bb1)), 0.01);
             assertEquals(0, ByteBufferUtil.compare(bb1, bb1));
 

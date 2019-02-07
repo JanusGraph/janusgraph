@@ -33,9 +33,9 @@ import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.testutil.RandomGenerator;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.time.Duration;
@@ -44,7 +44,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -125,7 +125,7 @@ public abstract class IndexProviderTest {
 
     public abstract String getKeywordAnalyzerName();
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         index = openIndex();
         index.clearStorage();
@@ -152,7 +152,7 @@ public abstract class IndexProviderTest {
         return new IndexTransaction(index, indexRetriever, config, Duration.ofMillis(2000L));
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         close();
     }
@@ -949,47 +949,46 @@ public abstract class IndexProviderTest {
         clopen();
 
         IndexQuery query = new IndexQuery(store, PredicateCondition.of(STRING, Cmp.EQUAL, "Tom and Jerry"));
-        assertEquals(query.toString(), 1, tx.queryStream(query).count());
+        assertEquals(1, tx.queryStream(query).count(), query.toString());
         query = new IndexQuery(store, PredicateCondition.of(STRING, Cmp.EQUAL, "Tom Jerry"));
-        assertEquals(query.toString(), 1, tx.queryStream(query).count());
+        assertEquals(1, tx.queryStream(query).count(), query.toString());
         query = new IndexQuery(store, PredicateCondition.of(STRING, Cmp.EQUAL, "Tom or Jerry"));
-        assertEquals(query.toString(), 1, tx.queryStream(query).count());
+        assertEquals(1, tx.queryStream(query).count(), query.toString());
         query = new IndexQuery(store, PredicateCondition.of(STRING, Text.PREFIX, "jerr"));
-        assertEquals(query.toString(), 1, tx.queryStream(query).count());
+        assertEquals(1, tx.queryStream(query).count(), query.toString());
         query = new IndexQuery(store, PredicateCondition.of(STRING, Text.REGEX, "jer.*"));
-        assertEquals(query.toString(), 1, tx.queryStream(query).count());
+        assertEquals(1, tx.queryStream(query).count(), query.toString());
         query = new IndexQuery(store, PredicateCondition.of(ANALYZED, Text.CONTAINS, "Tom and Jerry"));
-        assertEquals(query.toString(), 1, tx.queryStream(query).count());
+        assertEquals(1, tx.queryStream(query).count(), query.toString());
         query = new IndexQuery(store, PredicateCondition.of(ANALYZED, Text.CONTAINS, "Tom Jerry"));
-        assertEquals(query.toString(), 1, tx.queryStream(query).count());
+        assertEquals(1, tx.queryStream(query).count(), query.toString());
         query = new IndexQuery(store, PredicateCondition.of(ANALYZED, Text.CONTAINS, "Tom or Jerry"));
-        assertEquals(query.toString(), 1, tx.queryStream(query).count());
+        assertEquals(1, tx.queryStream(query).count(), query.toString());
         query = new IndexQuery(store, PredicateCondition.of(ANALYZED, Text.CONTAINS_PREFIX, "jerr"));
-        assertEquals(query.toString(), 1, tx.queryStream(query).count());
+        assertEquals(1, tx.queryStream(query).count(), query.toString());
         query = new IndexQuery(store, PredicateCondition.of(ANALYZED, Text.CONTAINS_REGEX, "jer.*"));
-        assertEquals(query.toString(), 1, tx.queryStream(query).count());
+        assertEquals(1, tx.queryStream(query).count(), query.toString());
         if(indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)){
             query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.EQUAL, "Tom and Jerry"));
-            assertEquals(query.toString(), 1, tx.queryStream(query).count());
+            assertEquals(1, tx.queryStream(query).count(), query.toString());
             query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.EQUAL, "Tom Jerry"));
-            assertEquals(query.toString(), 1, tx.queryStream(query).count());
+            assertEquals(1, tx.queryStream(query).count(), query.toString());
             query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.EQUAL, "Tom or Jerry"));
-            assertEquals(query.toString(), 1, tx.queryStream(query).count());
+            assertEquals(1, tx.queryStream(query).count(), query.toString());
             query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Text.PREFIX, "jerr"));
-            assertEquals(query.toString(), 1, tx.queryStream(query).count());
+            assertEquals(1, tx.queryStream(query).count(), query.toString());
             query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Text.REGEX, "jer.*"));
-            assertEquals(query.toString(), 1, tx.queryStream(query).count());
+            assertEquals(1, tx.queryStream(query).count(), query.toString());
             query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Text.CONTAINS, "Tom and Jerry"));
-            assertEquals(query.toString(), 1, tx.queryStream(query).count());
+            assertEquals(1, tx.queryStream(query).count(), query.toString());
             query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Text.CONTAINS, "Tom Jerry"));
-            assertEquals(query.toString(), 1, tx.queryStream(query).count());
+            assertEquals(1, tx.queryStream(query).count(), query.toString());
             query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Text.CONTAINS, "Tom or Jerry"));
-            assertEquals(query.toString(), 1, tx.queryStream(query).count());
+            assertEquals(1, tx.queryStream(query).count(), query.toString());
             query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Text.CONTAINS_PREFIX, "jerr"));
-            assertEquals(query.toString(), 1, tx.queryStream(query).count());
+            assertEquals(1, tx.queryStream(query).count(), query.toString());
             query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Text.CONTAINS_REGEX, "jer.*"));
-
-            assertEquals(query.toString(), 1, tx.queryStream(query).count());
+            assertEquals(1, tx.queryStream(query).count(), query.toString());
 
             assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.GREATER_THAN, "a"))).size());
             assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.GREATER_THAN, "z"))).size());
@@ -1008,9 +1007,9 @@ public abstract class IndexProviderTest {
             assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.LESS_THAN_EQUAL, "Tom and Jerry"))).size());
         }
         query = new IndexQuery(store, PredicateCondition.of(KEYWORD, Text.CONTAINS_PREFIX, "Tom"));
-        assertEquals(query.toString(), 1, tx.queryStream(query).count());
+        assertEquals(1, tx.queryStream(query).count(), query.toString());
         query = new IndexQuery(store, PredicateCondition.of(KEYWORD, Text.CONTAINS_REGEX, ".*Jer.*"));
-        assertEquals(query.toString(), 1, tx.queryStream(query).count());
+        assertEquals(1, tx.queryStream(query).count(), query.toString());
 
     }
 

@@ -14,19 +14,22 @@
 
 package org.janusgraph.diskstorage.cassandra.thrift;
 
-import static org.junit.Assert.assertEquals;
-
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class CassandraThriftStoreManagerTest {
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void configOptionFrameSizeMbShouldErrorOnLowValue() {
-        ModifiableConfiguration config = CassandraStorageSetup.getCassandraThriftConfiguration("janusgraph");
-        config.set(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB, 0);
-        config.get(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB);
+        assertThrows(IllegalArgumentException.class, () -> {
+            ModifiableConfiguration config = CassandraStorageSetup.getCassandraThriftConfiguration("janusgraph");
+            config.set(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB, 0);
+            config.get(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB);
+        });
     }
 
     @Test
@@ -37,11 +40,13 @@ public class CassandraThriftStoreManagerTest {
         assertEquals(1, result.intValue());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void configOptionFrameSizeMbShouldErrorOnHighValue() {
-        ModifiableConfiguration config = CassandraStorageSetup.getCassandraThriftConfiguration("janusgraph");
-        config.set(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB, 2048);
-        config.get(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB);
+        assertThrows(IllegalArgumentException.class, () -> {
+            ModifiableConfiguration config = CassandraStorageSetup.getCassandraThriftConfiguration("janusgraph");
+            config.set(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB, 2048);
+            config.get(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB);
+        });
     }
 
 }

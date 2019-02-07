@@ -19,7 +19,7 @@
         <test.javaagent.opts>-javaagent:${com.github.jbellis:jamm:jar}</test.javaagent.opts>
         <test.extra.jvm.opts>${test.javaagent.opts}</test.extra.jvm.opts>
         <test.jvm.opts>-Xms256m -Xmx1280m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</test.jvm.opts>
-        <test.excluded.groups>org.janusgraph.testcategory.MemoryTests,org.janusgraph.testcategory.PerformanceTests,org.janusgraph.testcategory.BrittleTests</test.excluded.groups>
+        <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <top.level.basedir>${basedir}/..</top.level.basedir>
     </properties>
 
@@ -73,16 +73,6 @@
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-test</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -215,7 +205,7 @@
                         </goals>
                         <phase>test</phase>
                         <configuration>
-                            <excludedGroups>${test.excluded.groups},org.janusgraph.testcategory.UnorderedKeyStoreTests,org.janusgraph.testcategory.SerialTests,org.janusgraph.testcategory.CassandraSSLTests</excludedGroups>
+                            <excludedGroups>${test.excluded.groups},UNORDERED_KEY_STORE_TESTS,SERIAL_TESTS,CASSANDRA_SSL_TESTS</excludedGroups>
                             <groups />
                             <reportNameSuffix>${test.byteorderedpartitioner}</reportNameSuffix>
                             <systemProperties>
@@ -238,7 +228,7 @@
                         </goals>
                         <phase>test</phase>
                         <configuration>
-                            <excludedGroups>${test.excluded.groups},org.janusgraph.testcategory.OrderedKeyStoreTests,org.janusgraph.testcategory.SerialTests,org.janusgraph.testcategory.CassandraSSLTests</excludedGroups>
+                            <excludedGroups>${test.excluded.groups},ORDERED_KEY_STORE_TESTS,SERIAL_TESTS,CASSANDRA_SSL_TESTS</excludedGroups>
                             <groups />
                             <reportNameSuffix>${test.murmur}</reportNameSuffix>
                             <systemProperties>
@@ -262,7 +252,7 @@
                         <phase>test</phase>
                         <configuration>
                             <excludedGroups />
-                            <groups>org.janusgraph.testcategory.SerialTests</groups>
+                            <groups>SERIAL_TESTS</groups>
                             <parallel>none</parallel>
                             <perCoreThreadCount>false</perCoreThreadCount>
                             <threadCount>1</threadCount>
@@ -289,8 +279,7 @@
                         <phase>test</phase>
                         <configuration>
                             <excludedGroups />
-                            <groups>org.janusgraph.testcategory.CassandraSSLTests</groups>
-                            <!-- The TP3 JUnit Suite/Runner ignores groups/@Category and I'm not sure why. Redundant excludes to keep TP3 tests from using non-SSL configs on SSL -->
+                            <groups>CASSANDRA_SSL_TESTS</groups>
                             <excludes>
                                 <exclude>**/*ComputerTest.java</exclude>
                                 <exclude>**/*StructureTest.java</exclude>
@@ -347,7 +336,7 @@
                                 <include>**/org/janusgraph/graphdb/cql/*.java</include>
                             </includes>
                             <!-- Exclude default (performance/memory) tests. Also exclude SSL tests (fail under Scylla) -->
-                            <excludedGroups>${test.excluded.groups},org.janusgraph.testcategory.CassandraSSLTests</excludedGroups>
+                            <excludedGroups>${test.excluded.groups},CASSANDRA_SSL_TESTS</excludedGroups>
                             <systemProperties>
                                 <!-- Run tests against the containerized Scylla test server -->
                                 <property>

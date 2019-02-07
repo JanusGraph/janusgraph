@@ -18,7 +18,7 @@ import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.StorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphTest;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 
 public class ThriftGraphCacheTest extends JanusGraphTest {
 
@@ -28,7 +28,7 @@ public class ThriftGraphCacheTest extends JanusGraphTest {
     }
 
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         CassandraStorageSetup.startCleanEmbedded();
     }

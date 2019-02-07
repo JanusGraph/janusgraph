@@ -24,6 +24,6 @@ import org.junit.runner.RunWith;
 @GraphProviderClass(provider = CQLGraphComputerProvider.class, graph = JanusGraph.class)
 public class CQLComputerTest {
 
-//    TP3 ignores @BeforeClass
+//    TP3 ignores @BeforeAll
 
 }

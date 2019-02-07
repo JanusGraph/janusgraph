@@ -22,6 +22,9 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
 import org.janusgraph.diskstorage.log.kcvs.KCVSLogManager;
 
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 
 /**
  * Implementation of the {@link LogTest} for {@link KCVSLogManager} based log implementations.
@@ -50,16 +53,18 @@ public abstract class KCVSLogTest extends LogTest {
     }
 
     @Override
-    public void setup() throws Exception {
+    @BeforeEach
+    public void setup(TestInfo testInfo) throws Exception {
         StoreManager m = openStorageManager();
         m.clearStorage();
         m.close();
-        super.setup();
+        super.setup(testInfo);
     }
 
     @Override
-    public void shutdown() throws Exception {
-        super.shutdown();
+    @AfterEach
+    public void shutdown(TestInfo testInfo) throws Exception {
+        super.shutdown(testInfo);
         storeManager.close();
     }
 

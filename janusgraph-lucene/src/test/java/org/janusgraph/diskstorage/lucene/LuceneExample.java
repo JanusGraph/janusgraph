@@ -34,8 +34,8 @@ import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,7 +58,7 @@ public abstract class LuceneExample {
     final private Map<String,SpatialStrategy> spatial= new HashMap<>();
     final private SpatialContext ctx = SpatialContext.GEO;
 
-    @Before
+    @BeforeEach
     public void setup() {
         if (path.exists()) IOUtils.deleteDirectory(path,false);
         if (!path.exists() && path.isDirectory()) {

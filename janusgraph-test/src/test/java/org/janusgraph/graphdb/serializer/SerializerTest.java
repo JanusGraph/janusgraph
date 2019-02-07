@@ -27,7 +27,7 @@ import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.serialize.attribute.*;
 import org.janusgraph.graphdb.serializer.attributes.*;
 import org.janusgraph.testutil.RandomGenerator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.context.SpatialContextFactory;
 import org.locationtech.spatial4j.distance.DistanceUtils;
@@ -50,7 +50,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SerializerTest extends SerializerTestCommon {
 
@@ -90,7 +90,7 @@ public class SerializerTest extends SerializerTestCommon {
             StaticBuffer b2 = out2.getStaticBuffer();
             assertEquals(s1, serialize.readObjectByteOrder(b1.asReadBuffer(), String.class));
             assertEquals(s2, serialize.readObjectByteOrder(b2.asReadBuffer(), String.class));
-            assertEquals(s1 + " vs " + s2, Integer.signum(s1.compareTo(s2)), Integer.signum(b1.compareTo(b2)));
+            assertEquals(Integer.signum(s1.compareTo(s2)), Integer.signum(b1.compareTo(b2)), s1 + " vs " + s2);
         }
     }
 
@@ -381,7 +381,7 @@ public class SerializerTest extends SerializerTestCommon {
             o2.writeObjectByteOrder(c2,type.getKey());
             StaticBuffer s1 = o1.getStaticBuffer();
             StaticBuffer s2 = o2.getStaticBuffer();
-            assertEquals(Math.signum(c1.compareTo(c2)),Math.signum(s1.compareTo(s2)),0.0);
+            assertEquals(Math.signum(c1.compareTo(c2)),Math.signum(s1.compareTo(s2)));
             Object c1o = serialize.readObjectByteOrder(s1.asReadBuffer(),type.getKey());
             Object c2o = serialize.readObjectByteOrder(s2.asReadBuffer(),type.getKey());
             assertEquals(c1,c1o);

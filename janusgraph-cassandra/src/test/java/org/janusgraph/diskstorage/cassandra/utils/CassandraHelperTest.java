@@ -16,7 +16,7 @@ package org.janusgraph.diskstorage.cassandra.utils;
 
 import org.apache.cassandra.dht.BytesToken;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.junit.Assert;
 

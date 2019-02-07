@@ -21,15 +21,17 @@ import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 
 public class HBaseStoreTest extends KeyColumnValueStoreTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void startHBase() throws IOException, BackendException {
         HBaseStorageSetup.startHBase();
     }
@@ -51,8 +53,8 @@ public class HBaseStoreTest extends KeyColumnValueStoreTest {
     }
 
     @Test
-    public void testGetKeysWithKeyRange() throws Exception {
-        super.testGetKeysWithKeyRange();
+    public void testGetKeysWithKeyRange(TestInfo testInfo) throws Exception {
+        super.testGetKeysWithKeyRange(testInfo);
     }
 
     @Override
