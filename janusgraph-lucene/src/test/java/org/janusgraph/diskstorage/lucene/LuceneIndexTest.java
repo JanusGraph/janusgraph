@@ -26,9 +26,7 @@ import org.janusgraph.diskstorage.indexing.IndexProviderTest;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,9 +34,7 @@ import java.util.Date;
 
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -51,9 +47,6 @@ public class LuceneIndexTest extends IndexProviderTest {
 
     private static char REPLACEMENT_CHAR = '\u2022';
     private static final String MAPPING = "mapping";
-
-    @Rule
-    public TestName methodName = new TestName();
 
     @Override
     public IndexProvider openIndex() throws BackendException {
@@ -135,16 +128,12 @@ public class LuceneIndexTest extends IndexProviderTest {
         assertFalse(index.supports(of(Geoshape.class, Cardinality.SINGLE, new Parameter<>(MAPPING, Mapping.PREFIX_TREE)), Geo.DISJOINT));
     }
 
-//    @Override
-//    public void testDeleteDocumentThenModifyField() {
-//        // This fails under Lucene but works in ES
-//        log.info("Skipping " + getClass().getSimpleName() + "." + methodName.getMethodName());
-//    }
 
-
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testMapKey2Field_IllegalCharacter() {
-        index.mapKey2Field("here is an illegal character: " + REPLACEMENT_CHAR, null);
+        assertThrows(IllegalArgumentException.class, () ->{
+            index.mapKey2Field("here is an illegal character: " + REPLACEMENT_CHAR, null);
+        });
     }
 
     @Test

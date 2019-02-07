@@ -15,22 +15,21 @@
 package org.janusgraph.diskstorage.cql;
 
 import com.datastax.driver.core.*;
-import org.janusgraph.diskstorage.Backend;
+import org.janusgraph.TestCategory;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.KeyColumnValueStoreTest;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.testcategory.OrderedKeyStoreTests;
-import org.janusgraph.testcategory.UnorderedKeyStoreTests;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,10 +40,10 @@ import java.util.Map;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.*;
 import static org.janusgraph.diskstorage.cql.CassandraStorageSetup.getCQLConfiguration;
 import static org.janusgraph.diskstorage.cql.CassandraStorageSetup.startCleanEmbedded;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CQLStoreTest extends KeyColumnValueStoreTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CQLStoreTest.class);
@@ -56,7 +55,7 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
     public CQLStoreTest() throws BackendException {
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startCassandra() {
         startCleanEmbedded();
     }
@@ -75,14 +74,14 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
     }
 
     @Test
-    @Category({ UnorderedKeyStoreTests.class })
-    public void testUnorderedConfiguration() {
+    @Tag(TestCategory.UNORDERED_KEY_STORE_TESTS)
+    public void testUnorderedConfiguration(TestInfo testInfo) {
         if (!this.manager.getFeatures().hasUnorderedScan()) {
             LOGGER.warn(
-                    "Can't test key-unordered features on incompatible store.  "
-                            + "This warning could indicate reduced test coverage and "
-                            + "a broken JUnit configuration.  Skipping test {}.",
-                            this.name.getMethodName());
+                "Can't test key-unordered features on incompatible store.  "
+                    + "This warning could indicate reduced test coverage and "
+                    + "a broken JUnit configuration.  Skipping test {}.",
+                testInfo.getDisplayName());
             return;
         }
 
@@ -92,14 +91,14 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
     }
 
     @Test
-    @Category({ OrderedKeyStoreTests.class })
-    public void testOrderedConfiguration() {
+    @Tag(TestCategory.ORDERED_KEY_STORE_TESTS)
+    public void testOrderedConfiguration(TestInfo testInfo) {
         if (!this.manager.getFeatures().hasOrderedScan()) {
             LOGGER.warn(
-                    "Can't test key-ordered features on incompatible store.  "
-                            + "This warning could indicate reduced test coverage and "
-                            + "a broken JUnit configuration.  Skipping test {}.",
-                            this.name.getMethodName());
+                "Can't test key-ordered features on incompatible store.  "
+                    + "This warning could indicate reduced test coverage and "
+                    + "a broken JUnit configuration.  Skipping test {}.",
+                testInfo.getDisplayName());
             return;
         }
 

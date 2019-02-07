@@ -19,8 +19,8 @@ import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 import static org.janusgraph.CassandraStorageSetup.getCassandraThriftConfiguration;
 
@@ -28,14 +28,14 @@ public class ThriftElasticsearchTest extends JanusGraphIndexTest {
 
     private static ElasticsearchRunner esr;
 
-    @BeforeClass
+    @BeforeAll
     public static void startElasticsearch() {
         CassandraStorageSetup.startCleanEmbedded();
         esr = new ElasticsearchRunner();
         esr.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopElasticsearch() {
         esr.stop();
     }

@@ -23,7 +23,7 @@ import org.easymock.EasyMockSupport;
 import org.janusgraph.graphdb.tinkerpop.gremlin.server.auth.HMACAuthenticator;
 import org.janusgraph.graphdb.tinkerpop.gremlin.server.auth.JanusGraphSimpleAuthenticator;
 import org.janusgraph.graphdb.tinkerpop.gremlin.server.auth.SaslAndHMACAuthenticator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;

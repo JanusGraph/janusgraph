@@ -19,14 +19,13 @@ import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.junit.jupiter.api.Test;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_DIRECTORY;
 import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
-
-import org.apache.commons.codec.digest.DigestUtils;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

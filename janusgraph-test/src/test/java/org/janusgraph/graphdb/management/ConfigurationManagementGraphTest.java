@@ -33,8 +33,8 @@ import org.apache.commons.configuration.MapConfiguration;
 import java.util.Map;
 import java.util.HashMap;
 
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ConfigurationManagementGraphTest {
 

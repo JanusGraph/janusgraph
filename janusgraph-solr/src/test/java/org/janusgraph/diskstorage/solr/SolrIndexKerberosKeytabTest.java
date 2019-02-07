@@ -21,12 +21,14 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.base.Joiner;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SolrIndexKerberosKeytabTest extends SolrIndexTest {
 
@@ -36,7 +38,7 @@ public class SolrIndexKerberosKeytabTest extends SolrIndexTest {
 
     private static String jassConfigFilePath;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpMiniCluster() throws Exception {
         // Start KDC
         String userDir = System.getProperty("user.dir");
@@ -53,30 +55,34 @@ public class SolrIndexKerberosKeytabTest extends SolrIndexTest {
         // and for configuring the solr client for janus to connect to the mini solr cloud cluster.
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownMiniCluster() throws Exception {
         SolrRunner.stop();
         miniKDC.close();
     }
 
-    @Before
+    @BeforeEach
     public void ensureClientPrincipalIsConfigured() throws KrbException {
         miniKDC.createClientPrincipal();
         miniKDC.createClientKeyTab();
     }
 
-    @Test(expected = RemoteSolrException.class)
+    @Test
     public void testSingleStoreFailsWhenKeytabIsMissing() throws Exception {
-        // Remove client keytab so authentication will fail
-        miniKDC.deleteClientKeyTab();
-        super.singleStore();
+        assertThrows(RemoteSolrException.class, () -> {
+            // Remove client keytab so authentication will fail
+            miniKDC.deleteClientKeyTab();
+            super.singleStore();
+        });
     }
 
-    @Test(expected = RemoteSolrException.class)
+    @Test
     public void testSingleStoreFailsWhenPrincipalDoesntExist() throws Exception {
-        // Remove client principal to simulate a revoked user so authentication will fail
-        miniKDC.deleteClientPrincipal();
-        super.singleStore();
+        assertThrows(RemoteSolrException.class, () -> {
+            // Remove client principal to simulate a revoked user so authentication will fail
+            miniKDC.deleteClientPrincipal();
+            super.singleStore();
+        });
     }
 
     @Override

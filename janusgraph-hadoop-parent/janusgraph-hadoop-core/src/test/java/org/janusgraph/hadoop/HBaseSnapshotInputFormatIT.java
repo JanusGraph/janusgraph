@@ -31,17 +31,17 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -63,16 +63,16 @@ public class HBaseSnapshotInputFormatIT extends AbstractInputFormatIT {
     private final String table = "janusgraph";
     private final String snapshotName = "janusgraph-snapshot";
 
-    @BeforeClass
+    @BeforeAll
     public static void startHBase() throws IOException, BackendException {
         HBaseStorageSetup.startHBase();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopHBase() {
     }
 
-    @After
+    @AfterEach
     @Override
     public void tearDown() throws Exception {
         super.tearDown();
@@ -127,7 +127,7 @@ public class HBaseSnapshotInputFormatIT extends AbstractInputFormatIT {
         final Set<?> observedValuesOnP = ImmutableSet.copyOf((List) propertiesOnVertex.values().iterator().next());
         assertEquals(numProps, observedValuesOnP.size());
         // order may not be preserved in multi-value properties
-        assertEquals("Unexpected values", ImmutableSet.copyOf(valuesOnP), observedValuesOnP);
+        assertEquals(ImmutableSet.copyOf(valuesOnP), observedValuesOnP, "Unexpected values");
     }
 
     @Test

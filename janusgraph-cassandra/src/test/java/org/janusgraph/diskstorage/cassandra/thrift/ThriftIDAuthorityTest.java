@@ -17,17 +17,12 @@ package org.janusgraph.diskstorage.cassandra.thrift;
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.IDAuthorityTest;
-import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 
 public class ThriftIDAuthorityTest extends IDAuthorityTest {
 
-    public ThriftIDAuthorityTest(WriteConfiguration baseConfig) {
-        super(baseConfig);
-    }
-
-    @BeforeClass
+    @BeforeAll
     public static void startCassandra() {
         CassandraStorageSetup.startCleanEmbedded();
     }

@@ -17,11 +17,10 @@ import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.isA;
 import static org.easymock.EasyMock.notNull;
 import static org.easymock.EasyMock.replay;
-
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.easymock.EasyMockSupport;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.janusgraph.core.RelationType;
 import org.janusgraph.core.PropertyKey;
@@ -48,7 +47,7 @@ public class StandardJanusGraphTxTest extends EasyMockSupport {
             e = ex;
         }
         tx.getOrCreatePropertyKey("Qux", "Quux");
-        assertNotNull("getOrCreatePropertyKey should throw an Exception when the relationType is not a PropertyKey", e);
+        assertNotNull(e, "getOrCreatePropertyKey should throw an Exception when the relationType is not a PropertyKey");
         verifyAll();
     }
 

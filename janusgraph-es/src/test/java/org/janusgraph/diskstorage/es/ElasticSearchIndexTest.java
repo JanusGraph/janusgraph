@@ -47,9 +47,9 @@ import org.janusgraph.graphdb.types.ParameterType;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -57,10 +57,8 @@ import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -75,7 +73,7 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
 
     private static char REPLACEMENT_CHAR = '\u2022';
 
-    @BeforeClass
+    @BeforeAll
     public static void startElasticsearch() throws Exception {
         esr = new ElasticsearchRunner();
         esr.start();
@@ -91,7 +89,7 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         }
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopElasticsearch() throws ClientProtocolException, IOException {
         IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("janusgraph*")));
         IOUtils.closeQuietly(httpClient);
@@ -254,9 +252,11 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testMapKey2Field_IllegalCharacter() {
-        index.mapKey2Field("here is an illegal character: " + REPLACEMENT_CHAR, null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            index.mapKey2Field("here is an illegal character: " + REPLACEMENT_CHAR, null);
+        });
     }
 
     @Test

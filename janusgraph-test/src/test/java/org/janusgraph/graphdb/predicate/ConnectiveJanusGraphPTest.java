@@ -6,7 +6,7 @@ import java.util.List;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Text;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 
 public class ConnectiveJanusGraphPTest {

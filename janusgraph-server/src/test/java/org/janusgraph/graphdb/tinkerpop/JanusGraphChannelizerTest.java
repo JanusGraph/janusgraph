@@ -14,40 +14,32 @@
 
 package org.janusgraph.graphdb.tinkerpop;
 
+import java.util.concurrent.ExecutionException;
 import org.apache.tinkerpop.gremlin.driver.Client;
 import org.apache.tinkerpop.gremlin.driver.Cluster;
 import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
-import java.util.concurrent.ExecutionException;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
-import static org.junit.Assert.*;
-import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class JanusGraphChannelizerTest extends AbstractGremlinServerIntegrationTest {
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void bindingShouldExistAfterGraphIsCreated() throws Exception {
         final Cluster cluster = TestClientFactory.open();
         final Client client = cluster.connect();
 
-        try {
-            //assert server is running correctly
-            assertEquals(2, client.submit("1+1").all().get().get(0).getInt());
+        //assert server is running correctly
+        assertEquals(2, client.submit("1+1").all().get().get(0).getInt());
 
-            //assert ConfigurationManagementGraph is bound
-            assertEquals(0, client.submit("ConfigurationManagementGraph.vertices().size()").all().get().get(0).getInt());
+        //assert ConfigurationManagementGraph is bound
+        assertEquals(0, client.submit("ConfigurationManagementGraph.vertices().size()").all().get().get(0).getInt());
 
-            //assert new graph is not bound
-            thrown.expect(ExecutionException.class);
-            thrown.expectMessage(equalTo("org.apache.tinkerpop.gremlin.driver.exception.ResponseException: No such property: " +
-                "newGraph for class: Script3"));
+        //assert new graph is not bound
+        ExecutionException executionException = assertThrows(ExecutionException.class, () -> {
+
             client.submit("newGraph").all().get();
 
             //create newGraph
@@ -62,9 +54,11 @@ public class JanusGraphChannelizerTest extends AbstractGremlinServerIntegrationT
             // Ensure that we can open a remote graph traversal source against the created graph, and execute traversals
             GraphTraversalSource newGraphTraversal = EmptyGraph.instance().traversal().withRemote(DriverRemoteConnection.using(cluster, "newGraph_traversal"));
             assertEquals(0, newGraphTraversal.V().count().next().longValue());
-        } finally {
-            cluster.close();
-        }
+        });
+        assertEquals(
+            "org.apache.tinkerpop.gremlin.driver.exception.ResponseException: No such property: newGraph for class: Script3",
+            executionException.getMessage());
+        cluster.close();
     }
 }
 

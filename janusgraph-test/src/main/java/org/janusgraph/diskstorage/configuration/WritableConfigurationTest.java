@@ -17,13 +17,13 @@ package org.janusgraph.diskstorage.configuration;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.Arrays;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -34,12 +34,12 @@ public abstract class WritableConfigurationTest {
 
     public abstract WriteConfiguration getConfig();
 
-    @Before
+    @BeforeEach
     public void setup() {
         config = getConfig();
     }
 
-    @After
+    @AfterEach
     public void cleanup() {
         config.close();
     }

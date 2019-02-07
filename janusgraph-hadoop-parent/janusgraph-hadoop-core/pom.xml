@@ -27,6 +27,12 @@
             <version>${mrunit.version}</version>
             <classifier>hadoop2</classifier>
             <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
+            </exclusions>
             <!-- <scope>test</scope> -->
         </dependency>
         <dependency>

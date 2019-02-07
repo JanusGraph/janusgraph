@@ -14,7 +14,7 @@
 
 package org.janusgraph.pkgtest;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class CassandraEmbeddedESAssemblyIT extends AbstractJanusGraphAssemblyIT {
 
