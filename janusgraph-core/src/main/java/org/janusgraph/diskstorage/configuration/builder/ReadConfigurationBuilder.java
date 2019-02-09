@@ -20,9 +20,9 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.janusgraph.core.JanusGraphConfigurationException;
 import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.configuration.*;
 import org.janusgraph.diskstorage.configuration.backend.KCVSConfiguration;
+import org.janusgraph.diskstorage.configuration.backend.builder.KCVSConfigurationBuilder;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
@@ -53,10 +53,11 @@ public class ReadConfigurationBuilder {
                                                       BasicConfiguration localBasicConfiguration,
                                                       ModifiableConfiguration overwrite,
                                                       KeyColumnValueStoreManager storeManager,
-                                                      ModifiableConfigurationBuilder modifiableConfigurationBuilder){
+                                                      ModifiableConfigurationBuilder modifiableConfigurationBuilder,
+                                                      KCVSConfigurationBuilder kcvsConfigurationBuilder){
         //Read out global configuration
         try (KCVSConfiguration keyColumnValueStoreConfiguration =
-                 Backend.getStandaloneGlobalConfiguration(storeManager,localBasicConfiguration)){
+                 kcvsConfigurationBuilder.buildStandaloneGlobalConfiguration(storeManager,localBasicConfiguration)){
 
             // If lock prefix is unspecified, specify it now
             if (!localBasicConfiguration.has(LOCK_LOCAL_MEDIATOR_GROUP)) {
@@ -96,26 +97,32 @@ public class ReadConfigurationBuilder {
     private void setupUpgradeConfiguration(String graphName, ModifiableConfiguration globalWrite){
         // If the graph doesn't have a storage version set it and update version
         if (!globalWrite.has(INITIAL_STORAGE_VERSION)) {
-            globalWrite.set(INITIAL_JANUSGRAPH_VERSION, JanusGraphConstants.VERSION);
-            globalWrite.set(TITAN_COMPATIBLE_VERSIONS, JanusGraphConstants.VERSION);
-            globalWrite.set(INITIAL_STORAGE_VERSION, JanusGraphConstants.STORAGE_VERSION);
-            globalWrite.set(ALLOW_UPGRADE, false);
+            janusGraphVersionsWithDisallowedUpgrade(globalWrite);
             log.info("graph.storage-version has been upgraded from 1 to {} and graph.janusgraph-version has been upgraded from {} to {} on graph {}",
                 JanusGraphConstants.STORAGE_VERSION, globalWrite.get(INITIAL_JANUSGRAPH_VERSION), JanusGraphConstants.VERSION, graphName);
-            // If the graph has a storage version, but it's lower than the client or server opening the graph upgrade the version and storage version
-        } else if (Integer.parseInt(globalWrite.get(INITIAL_STORAGE_VERSION)) < Integer.parseInt(JanusGraphConstants.STORAGE_VERSION)) {
-            globalWrite.set(INITIAL_JANUSGRAPH_VERSION, JanusGraphConstants.VERSION);
-            globalWrite.set(TITAN_COMPATIBLE_VERSIONS, JanusGraphConstants.VERSION);
-            globalWrite.set(INITIAL_STORAGE_VERSION, JanusGraphConstants.STORAGE_VERSION);
-            globalWrite.set(ALLOW_UPGRADE, false);
+            return;
+        }
+        int storageVersion = Integer.parseInt(JanusGraphConstants.STORAGE_VERSION);
+        int initialStorageVersion = Integer.parseInt(globalWrite.get(INITIAL_STORAGE_VERSION));
+        // If the storage version of the client or server opening the graph is lower than the graph's storage version throw an exception
+        if (initialStorageVersion > storageVersion) {
+            throw new JanusGraphException(String.format(BACKLEVEL_STORAGE_VERSION_EXCEPTION, globalWrite.get(INITIAL_STORAGE_VERSION), JanusGraphConstants.STORAGE_VERSION, graphName));
+        }
+        // If the graph has a storage version, but it's lower than the client or server opening the graph upgrade the version and storage version
+        if (initialStorageVersion < storageVersion) {
+            janusGraphVersionsWithDisallowedUpgrade(globalWrite);
             log.info("graph.storage-version has been upgraded from {} to {} and graph.janusgraph-version has been upgraded from {} to {} on graph {}",
                 globalWrite.get(INITIAL_STORAGE_VERSION), JanusGraphConstants.STORAGE_VERSION, globalWrite.get(INITIAL_JANUSGRAPH_VERSION), JanusGraphConstants.VERSION, graphName);
-            // If the storage version of the client or server opening the graph is lower than the graph's storage version throw an exception
-        } else if (Integer.parseInt(globalWrite.get(INITIAL_STORAGE_VERSION)) > Integer.parseInt(JanusGraphConstants.STORAGE_VERSION)) {
-            throw new JanusGraphException(String.format(BACKLEVEL_STORAGE_VERSION_EXCEPTION, globalWrite.get(INITIAL_STORAGE_VERSION), JanusGraphConstants.STORAGE_VERSION, graphName));
         } else {
             log.warn("Warning graph.allow-upgrade is currently set to true on graph {}. Please set graph.allow-upgrade to false in your properties file.", graphName);
         }
+    }
+
+    private void janusGraphVersionsWithDisallowedUpgrade(ModifiableConfiguration globalWrite){
+        globalWrite.set(INITIAL_JANUSGRAPH_VERSION, JanusGraphConstants.VERSION);
+        globalWrite.set(TITAN_COMPATIBLE_VERSIONS, JanusGraphConstants.VERSION);
+        globalWrite.set(INITIAL_STORAGE_VERSION, JanusGraphConstants.STORAGE_VERSION);
+        globalWrite.set(ALLOW_UPGRADE, false);
     }
 
     private void setupJanusGraphVersion(ModifiableConfiguration globalWrite){
