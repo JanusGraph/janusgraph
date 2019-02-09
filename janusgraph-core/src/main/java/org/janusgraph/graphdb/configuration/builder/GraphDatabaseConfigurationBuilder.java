@@ -19,6 +19,7 @@ import com.google.common.collect.Maps;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.configuration.*;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.configuration.backend.builder.KCVSConfigurationBuilder;
 import org.janusgraph.diskstorage.configuration.builder.ModifiableConfigurationBuilder;
 import org.janusgraph.diskstorage.configuration.builder.ReadConfigurationBuilder;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -50,7 +51,8 @@ public class GraphDatabaseConfigurationBuilder {
         final StoreFeatures storeFeatures = storeManager.getFeatures();
 
         final ReadConfiguration globalConfig = new ReadConfigurationBuilder().buildGlobalConfiguration(
-            localConfig, localBasicConfiguration, overwrite, storeManager, new ModifiableConfigurationBuilder());
+            localConfig, localBasicConfiguration, overwrite, storeManager,
+            new ModifiableConfigurationBuilder(), new KCVSConfigurationBuilder());
 
         //Copy over local config options
         ModifiableConfiguration localConfiguration = new ModifiableConfiguration(ROOT_NS, new CommonsConfiguration(), BasicConfiguration.Restriction.LOCAL);
