@@ -11,7 +11,7 @@ or whether it is a JanusGraph-specific issue.
 
 [`TinkerGraphApp.java`](src/main/java/org/janusgraph/example/TinkerGraphApp.java)
 is an example Java program that connects to a TinkerGraph. You will notice
-the major difference between this an the JanusGraph app is in how the graphs
+the major difference between this and the JanusGraph app is in how the graphs
 define schema and indexes. The code to construct and query the graph is exactly
 the same.
 
@@ -37,7 +37,7 @@ The required Maven dependency for TinkerGraph:
 
 ## Run the example
 
-This command can be run from the `examples` or the project's directory.
+This command can be run from `examples` or the project's directory.
 
 ```
 mvn exec:java -pl :example-tinkergraph
@@ -45,5 +45,5 @@ mvn exec:java -pl :example-tinkergraph
 
 ## Drop the graph
 
-TinkerGraph is not configured to not store anything into a persistent
+TinkerGraph is not configured to store anything into a persistent
 location, so the graph will disappear when the application finishes.
