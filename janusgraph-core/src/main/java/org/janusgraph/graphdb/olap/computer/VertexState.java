@@ -39,7 +39,7 @@ public class VertexState<M> {
     }
 
     public VertexState(Map<String,Integer> keyMap) {
-        assert isValidIdMap(keyMap);
+        Preconditions.checkArgument(isValidIdMap(keyMap));
         previousMessages = null;
         currentMessages = null;
 
@@ -48,26 +48,26 @@ public class VertexState<M> {
     }
 
     public<V> void setProperty(String key, V value, Map<String,Integer> keyMap) {
-        assert !keyMap.isEmpty() && keyMap.containsKey(key);
+        Preconditions.checkArgument(!keyMap.isEmpty() && keyMap.containsKey(key));
         if (keyMap.size()==1) properties = value;
         else ((Object[])properties)[keyMap.get(key)]=value;
     }
 
     public<V> V getProperty(String key, Map<String,Integer> keyMap) {
-        assert !keyMap.isEmpty() && keyMap.containsKey(key);
+        Preconditions.checkArgument(!keyMap.isEmpty() && keyMap.containsKey(key));
         if (keyMap.size()==1) return (V)properties;
         else return (V)((Object[])properties)[keyMap.get(key)];
     }
 
     private void initializeCurrentMessages(Map<MessageScope,Integer> scopeMap) {
-        assert !scopeMap.isEmpty() && isValidIdMap(scopeMap);
+        Preconditions.checkArgument(!scopeMap.isEmpty() && isValidIdMap(scopeMap));
         if (currentMessages==null) {
             if (scopeMap.size()>1) currentMessages = new Object[scopeMap.size()];
         }
     }
 
     public synchronized void setMessage(M message, MessageScope scope, Map<MessageScope,Integer> scopeMap) {
-        assert message!=null && scope!=null;
+        Preconditions.checkArgument(message!=null && scope!=null);
         Preconditions.checkArgument(scopeMap.containsKey(scope),"Provided scope was not declared in the VertexProgram: %s",scope);
         initializeCurrentMessages(scopeMap);
         if (scopeMap.size()==1) currentMessages = message;
@@ -76,9 +76,9 @@ public class VertexState<M> {
 
     public synchronized void addMessage(M message, MessageScope scope, Map<MessageScope,Integer> scopeMap,
                                         MessageCombiner<M> combiner) {
-        assert message!=null && scope!=null && combiner!=null;
+        Preconditions.checkArgument(message!=null && scope!=null && combiner!=null);
         Preconditions.checkArgument(scopeMap.containsKey(scope),"Provided scope was not declared in the VertexProgram: %s",scope);
-        assert scopeMap.containsKey(scope);
+        Preconditions.checkArgument(scopeMap.containsKey(scope));
         initializeCurrentMessages(scopeMap);
         if (scopeMap.size()==1) {
             if (currentMessages==null) currentMessages = message;
@@ -92,7 +92,7 @@ public class VertexState<M> {
     }
 
     public M getMessage(MessageScope scope, Map<MessageScope,Integer> scopeMap) {
-        assert scope!=null && isValidIdMap(scopeMap) && scopeMap.containsKey(scope);
+        Preconditions.checkArgument(scope!=null && isValidIdMap(scopeMap) && scopeMap.containsKey(scope));
         if (scopeMap.size()==1 || (previousMessages==null && currentMessages==null)) return (M)previousMessages;
         else return (M)((Object[])previousMessages)[scopeMap.get(scope)];
     }

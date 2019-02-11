@@ -139,7 +139,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                 metrics.incrementCustom(ADDED_RECORDS_COUNT, additions.size());
             } else if (index instanceof JanusGraphIndex) {
                 IndexType indexType = managementSystem.getSchemaVertex(index).asIndexType();
-                assert indexType!=null;
+                Preconditions.checkNotNull(indexType);
                 IndexSerializer indexSerializer = graph.getIndexSerializer();
                 //Gather elements to index
                 List<JanusGraphElement> elements;
@@ -172,7 +172,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                         }
                     }
                 } else {
-                    assert indexType.isMixedIndex();
+                    Preconditions.checkState(indexType.isMixedIndex());
                     Map<String,Map<String,List<IndexEntry>>> documentsPerStore = new HashMap<>();
                     for (JanusGraphElement element : elements) {
                         indexSerializer.reindexElement(element, (MixedIndexType) indexType, documentsPerStore);

@@ -63,7 +63,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
     }
 
     private static long getOffsetAndValue(long offset, long valuePos) {
-        assert valuePos>0;
+        Preconditions.checkArgument(valuePos>0);
         return (offset<< 32L) + valuePos;
     }
 
@@ -297,8 +297,8 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             limitAndValuePos[pos]= getOffsetAndValue(cpf.dataOffset,entry.getValuePosition());
             pos++;
         }
-        assert cpf.dataOffset==data.length;
-        assert pos==limitAndValuePos.length;
+        Preconditions.checkState(cpf.dataOffset==data.length);
+        Preconditions.checkState(pos==limitAndValuePos.length);
         return new StaticArrayEntryList(data,limitAndValuePos,metadataSchema);
     }
 
@@ -318,7 +318,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         @Override
         public Boolean get(byte[] array, int offset, int limit) {
             int len = limit-offset;
-            assert len>=0;
+            Preconditions.checkState(len>=0);
             System.arraycopy(array,offset,data,dataOffset,len);
             dataOffset+=len;
             return Boolean.TRUE;
@@ -380,8 +380,8 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             limitAndValuePos[pos]= getOffsetAndValue(offset,valuePos);
             pos++;
         }
-        assert offset==data.length;
-        assert pos==limitAndValuePos.length;
+        Preconditions.checkState(offset==data.length);
+        Preconditions.checkState(pos==limitAndValuePos.length);
         return new StaticArrayEntryList(data,limitAndValuePos,metadataSchema);
     }
 
@@ -401,7 +401,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             D col = getter.getColumn(element);
             D val = getter.getValue(element);
             int colSize = dataHandler.getSize(col);
-            assert colSize>0;
+            Preconditions.checkState(colSize>0);
             int valueSize = dataHandler.getSize(val);
             int metaDataSize = getMetaDataSize(metadataSchema,element,getter);
 
@@ -418,7 +418,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             limitAndValuePos[pos]= getOffsetAndValue(offset,colSize); //valuePosition = colSize
             pos++;
         }
-        assert offset<=data.length;
+        Preconditions.checkState(offset<=data.length);
         if (data.length>offset*3/2) {
             //Resize to preserve memory
             byte[] newData = new byte[offset];
@@ -431,8 +431,8 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             System.arraycopy(limitAndValuePos,0,newPos,0,pos);
             limitAndValuePos=newPos;
         }
-        assert offset<=data.length;
-        assert pos==limitAndValuePos.length;
+        Preconditions.checkState(offset<=data.length);
+        Preconditions.checkState(pos==limitAndValuePos.length);
         return new StaticArrayEntryList(data,limitAndValuePos,metadataSchema);
     }
 
@@ -456,7 +456,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
      ########################################### */
 
     private int parseMetaData(Map<EntryMetaData,Object> metadata, int baseOffset) {
-        assert hasMetaData();
+        Preconditions.checkState(hasMetaData());
         for (EntryMetaData meta : metaDataSchema) {
             MetaDataSerializer s = getSerializer(meta);
             Object d = s.read(data,baseOffset);
@@ -469,10 +469,10 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
     private static<D,K> int getMetaDataSize(EntryMetaData[] schema, D entry, StaticArrayEntry.GetColVal<D,K> metaGetter) {
         int dataSize = 0;
         if (schema.length>0) {
-            assert schema.length==metaGetter.getMetaSchema(entry).length;
+            Preconditions.checkState(schema.length==metaGetter.getMetaSchema(entry).length);
             for (EntryMetaData meta : schema) {
                 Object data = metaGetter.getMetaData(entry,meta);
-                assert data!=null;
+                Preconditions.checkNotNull(data);
                 dataSize+=getSerializer(meta).getByteLength(data);
             }
         }
@@ -483,7 +483,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         if (schema.length==0) return startPos;
         for (EntryMetaData meta : schema) {
             Object d = metaGetter.getMetaData(entry,meta);
-            assert d!=null;
+            Preconditions.checkNotNull(d);
             MetaDataSerializer s = getSerializer(meta);
             s.write(data,startPos,d);
             startPos+=s.getByteLength(d);
@@ -524,14 +524,14 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
 
         @Override
         public void write(byte[] data, int startPos, Integer value) {
-            assert data.length>=startPos+getByteLength(value);
-            assert value!=null;
+            Preconditions.checkArgument(data.length>=startPos+getByteLength(value));
+            Preconditions.checkNotNull(value);
             StaticArrayBuffer.putInt(data, startPos, value);
         }
 
         @Override
         public Integer read(byte[] data, int startPos) {
-            assert data.length>=startPos+4;
+            Preconditions.checkArgument(data.length>=startPos+4);
             return StaticArrayBuffer.getInt(data, startPos);
         }
     }
@@ -547,14 +547,14 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
 
         @Override
         public void write(byte[] data, int startPos, Long value) {
-            assert data.length>=startPos+getByteLength(value);
-            assert value!=null;
+            Preconditions.checkArgument(data.length>=startPos+getByteLength(value));
+            Preconditions.checkNotNull(value);
             StaticArrayBuffer.putLong(data,startPos,value);
         }
 
         @Override
         public Long read(byte[] data, int startPos) {
-            assert data.length>=startPos+8;
+            Preconditions.checkArgument(data.length>=startPos+8);
             return StaticArrayBuffer.getLong(data,startPos);
         }
     }
@@ -571,7 +571,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
 
         @Override
         public void write(byte[] data, int startPos, String value) {
-            assert data.length>=startPos+getByteLength(value);
+            Preconditions.checkArgument(data.length>=startPos+getByteLength(value));
             StringEncoding.writeAsciiString(data,startPos,value);
         }
 

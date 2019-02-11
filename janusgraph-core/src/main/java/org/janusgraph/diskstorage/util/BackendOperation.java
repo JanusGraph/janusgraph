@@ -45,7 +45,7 @@ public class BackendOperation {
 
     private static Duration pertubTime(Duration duration) {
         Duration newDuration = duration.dividedBy((int)(2.0 / (1 + (random.nextDouble() * 2 - 1.0) * PERTURBATION_PERCENTAGE)));
-        assert !duration.isZero() : duration;
+        Preconditions.checkState(!duration.isZero(), duration);
         return newDuration;
     }
 
@@ -82,7 +82,6 @@ public class BackendOperation {
                 }
             }
             //Wait and retry
-            assert lastException!=null;
             if (System.currentTimeMillis()+waitTime.toMillis()<maxTime) {
                 log.info("Temporary exception during backend operation ["+exe.toString()+"]. Attempting backoff retry.",lastException);
                 try {

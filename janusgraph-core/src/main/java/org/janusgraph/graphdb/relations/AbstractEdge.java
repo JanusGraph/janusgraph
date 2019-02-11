@@ -35,7 +35,7 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Janu
     public AbstractEdge(long id, EdgeLabel label, InternalVertex start, InternalVertex end) {
         super(id, label);
 
-        assert start != null && end != null;
+        Preconditions.checkArgument(start != null && end != null);
         this.start = start;
         this.end = end;
     }
@@ -83,7 +83,7 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Janu
 
     @Override
     public int getLen() {
-        assert !type.isUnidirected(Direction.IN);
+        Preconditions.checkArgument(!type.isUnidirected(Direction.IN));
         return type.isUnidirected(Direction.OUT)?1:2;
     }
 

@@ -85,7 +85,7 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
             //IndexMutation already exists => if we deleted and re-created it we need to remove the deleted flag
             if (isNew && m.isDeleted()) {
                 m.resetDelete();
-                assert !m.isNew() && !m.isDeleted();
+                Preconditions.checkArgument(!m.isNew() && !m.isDeleted());
             }
         }
         return m;

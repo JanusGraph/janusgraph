@@ -674,7 +674,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      * @return either the parameter or a new array
      */
     private byte[] zeroExtend(byte[] dataToPad) {
-        assert null != dataToPad;
+        Preconditions.checkNotNull(dataToPad);
 
         final int targetLength = 4;
 

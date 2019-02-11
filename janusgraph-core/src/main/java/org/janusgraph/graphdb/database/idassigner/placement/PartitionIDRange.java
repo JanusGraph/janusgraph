@@ -153,7 +153,7 @@ public class PartitionIDRange {
 
             int startInt = local.getStart().getInt(0);
             int lowerID = startInt >>> backShift;
-            assert lowerID>=0 && lowerID<partitionIdBound;
+            Preconditions.checkState(lowerID>=0 && lowerID<partitionIdBound);
             //Lower id must be inclusive, so check that we did not truncate anything!
             boolean truncatedBits = (lowerID<<backShift)!=startInt;
             StaticBuffer start = local.getAt(0);

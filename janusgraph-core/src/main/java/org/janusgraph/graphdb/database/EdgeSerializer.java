@@ -122,7 +122,7 @@ public class EdgeSerializer implements RelationReader {
             }
             other = otherVertexId;
         } else {
-            assert relationType.isPropertyKey();
+            Preconditions.checkState(relationType.isPropertyKey());
             PropertyKey key = (PropertyKey) relationType;
 
             if (multiplicity.isConstrained()) {
@@ -135,15 +135,15 @@ public class EdgeSerializer implements RelationReader {
                 in.movePositionTo(data.getValuePosition());
                 other = readPropertyValue(in,key);
             }
-            Preconditions.checkState(other!=null,
+            Preconditions.checkNotNull(other,
                 "Encountered error in deserializer [null value returned]. Check serializer compatibility.");
         }
-        assert other!=null;
+        Preconditions.checkNotNull(other);
 
         if (!excludeProperties && !multiplicity.isConstrained() && keySignature.length>0) {
             int currentPos = in.getPosition();
             //Read sort key which only exists if type is not unique in this direction
-            assert endKeyPos>startKeyPos;
+            Preconditions.checkState(endKeyPos>startKeyPos);
             int keyLength = endKeyPos-startKeyPos; //after reading the ids, we are on the last byte of the key
             in.movePositionTo(startKeyPos);
             ReadBuffer inKey = in;
@@ -160,7 +160,7 @@ public class EdgeSerializer implements RelationReader {
             while (in.hasRemaining()) {
                 PropertyKey type = tx.getExistingPropertyKey(IDHandler.readInlineRelationType(in));
                 Object propertyValue = readInline(in, type, InlineType.NORMAL);
-                assert propertyValue != null;
+                Preconditions.checkNotNull(propertyValue);
                 properties.put(type.longId(), propertyValue);
             }
 
@@ -168,7 +168,7 @@ public class EdgeSerializer implements RelationReader {
                 for (Map.Entry<EntryMetaData,Object> metas : data.getMetaData().entrySet()) {
                     ImplicitKey key = ImplicitKey.MetaData2ImplicitKey.get(metas.getKey());
                     if (key!=null) {
-                        assert metas.getValue()!=null;
+                        Preconditions.checkNotNull(metas.getValue());
                         properties.put(key.longId(),metas.getValue());
                     }
                 }
@@ -209,7 +209,7 @@ public class EdgeSerializer implements RelationReader {
     private static DirectionID getDirID(Direction dir, RelationCategory rt) {
         switch (rt) {
             case PROPERTY:
-                assert dir == Direction.OUT;
+                Preconditions.checkArgument(dir == Direction.OUT);
                 return DirectionID.PROPERTY_DIR;
 
             case EDGE:
@@ -248,7 +248,7 @@ public class EdgeSerializer implements RelationReader {
         Multiplicity multiplicity = type.multiplicity();
 
         long[] sortKey = type.getSortKey();
-        assert !multiplicity.isConstrained() || sortKey.length==0: type.name();
+        Preconditions.checkState(!multiplicity.isConstrained() || sortKey.length==0, type.name());
         int keyStartPos = out.getPosition();
         if (!multiplicity.isConstrained()) {
             writeInlineTypes(sortKey, relation, out, tx, InlineType.KEY);
@@ -275,12 +275,12 @@ public class EdgeSerializer implements RelationReader {
                 valuePosition = out.getPosition();
             }
         } else {
-            assert relation.isProperty();
+            Preconditions.checkState(relation.isProperty());
             Preconditions.checkArgument(relation.isProperty());
             Object value = ((JanusGraphVertexProperty) relation).value();
             Preconditions.checkNotNull(value);
             PropertyKey key = (PropertyKey) type;
-            assert key.dataType().isInstance(value);
+            Preconditions.checkState(key.dataType().isInstance(value));
 
             if (multiplicity.isConstrained()) {
                 if (multiplicity.isUnique(dir)) { //Cardinality=SINGLE
@@ -292,7 +292,7 @@ public class EdgeSerializer implements RelationReader {
                 }
                 VariableLong.writePositive(out, relationId);
             } else {
-                assert multiplicity.getCardinality()== Cardinality.LIST;
+                Preconditions.checkState(multiplicity.getCardinality()== Cardinality.LIST);
                 VariableLong.writePositiveBackward(out, relationId);
                 valuePosition = out.getPosition();
                 writePropertyValue(out,key,value);
@@ -322,7 +322,7 @@ public class EdgeSerializer implements RelationReader {
             PropertyKey t = tx.getExistingPropertyKey(tid);
             writeInline(out, t, relation.getValueDirect(t), InlineType.NORMAL);
         }
-        assert valuePosition>0;
+        Preconditions.checkState(valuePosition>0);
 
         return new StaticArrayEntry(type.getSortOrder() == Order.DESC ?
                                     out.getStaticBufferFlipBytes(keyStartPos, keyEndPos) :
@@ -352,7 +352,7 @@ public class EdgeSerializer implements RelationReader {
     }
 
     private void writeInline(DataOutput out, PropertyKey inlineKey, Object value, InlineType inlineType) {
-        assert inlineType.writeInlineKey() || !AttributeUtil.hasGenericDataType(inlineKey);
+        Preconditions.checkArgument(inlineType.writeInlineKey() || !AttributeUtil.hasGenericDataType(inlineKey));
 
         if (inlineType.writeInlineKey()) {
             IDHandler.writeInlineRelationType(out, inlineKey.longId());
@@ -367,10 +367,10 @@ public class EdgeSerializer implements RelationReader {
 
     private void writePropertyValue(DataOutput out, PropertyKey key, Object value, InlineType inlineType) {
         if (AttributeUtil.hasGenericDataType(key)) {
-            assert !inlineType.writeByteOrdered();
+            Preconditions.checkArgument(!inlineType.writeByteOrdered());
             out.writeClassAndObject(value);
         } else {
-            assert value==null || value.getClass().equals(key.dataType());
+            Preconditions.checkArgument(value==null || value.getClass().equals(key.dataType()));
             if (inlineType.writeByteOrdered()) out.writeObjectByteOrder(value, key.dataType());
             else out.writeObject(value, key.dataType());
         }
@@ -391,10 +391,10 @@ public class EdgeSerializer implements RelationReader {
         StaticBuffer sliceStart = null, sliceEnd = null;
         RelationCategory rt = type.isPropertyKey() ? RelationCategory.PROPERTY : RelationCategory.EDGE;
         if (dir == Direction.BOTH) {
-            assert type.isEdgeLabel();
+            Preconditions.checkState(type.isEdgeLabel());
             sliceStart = IDHandler.getRelationType(type.longId(), getDirID(Direction.OUT, rt), type.isInvisibleType());
             sliceEnd = IDHandler.getRelationType(type.longId(), getDirID(Direction.IN, rt), type.isInvisibleType());
-            assert sliceStart.compareTo(sliceEnd)<0;
+            Preconditions.checkState(sliceStart.compareTo(sliceEnd)<0);
             sliceEnd = BufferUtil.nextBiggerBuffer(sliceEnd);
         } else {
             DirectionID dirID = getDirID(dir, rt);
@@ -406,7 +406,7 @@ public class EdgeSerializer implements RelationReader {
 
             long[] sortKeyIDs = type.getSortKey();
             Preconditions.checkArgument(sortKey.length >= sortKeyIDs.length);
-            assert colStart.getPosition() == colEnd.getPosition();
+            Preconditions.checkState(colStart.getPosition() == colEnd.getPosition());
             int keyStartPos = colStart.getPosition();
             int keyEndPos = -1;
             for (int i = 0; i < sortKey.length && sortKey[i] != null; i++) {
@@ -414,20 +414,20 @@ public class EdgeSerializer implements RelationReader {
                 Interval interval = sortKey[i].interval;
 
                 if (i>=sortKeyIDs.length) {
-                    assert !type.multiplicity().isUnique(dir);
+                    Preconditions.checkState(!type.multiplicity().isUnique(dir));
                     assert (propertyKey instanceof ImplicitKey)
                             && (propertyKey==ImplicitKey.JANUSGRAPHID || propertyKey==ImplicitKey.ADJACENT_ID);
-                    assert propertyKey!=ImplicitKey.ADJACENT_ID || (i==sortKeyIDs.length);
+                    Preconditions.checkState(propertyKey!=ImplicitKey.ADJACENT_ID || (i==sortKeyIDs.length));
                     assert propertyKey!=ImplicitKey.JANUSGRAPHID || (!type.multiplicity().isConstrained() &&
                                                   (i==sortKeyIDs.length && propertyKey.isPropertyKey()
                                                       || i==sortKeyIDs.length+1 && propertyKey.isEdgeLabel() ));
-                    assert colStart.getPosition()==colEnd.getPosition();
-                    assert interval==null || interval.isPoints();
+                    Preconditions.checkState(colStart.getPosition()==colEnd.getPosition());
+                    Preconditions.checkState(interval==null || interval.isPoints());
                     keyEndPos = colStart.getPosition();
 
                 } else {
-                    assert !type.multiplicity().isConstrained();
-                    assert propertyKey.longId() == sortKeyIDs[i];
+                    Preconditions.checkState(!type.multiplicity().isConstrained());
+                    Preconditions.checkState(propertyKey.longId() == sortKeyIDs[i]);
                 }
 
                 if (interval == null || interval.isEmpty()) {
@@ -435,7 +435,7 @@ public class EdgeSerializer implements RelationReader {
                 }
                 if (interval.isPoints()) {
                     if (propertyKey==ImplicitKey.JANUSGRAPHID || propertyKey==ImplicitKey.ADJACENT_ID) {
-                        assert !type.multiplicity().isUnique(dir);
+                        Preconditions.checkState(!type.multiplicity().isUnique(dir));
                         VariableLong.writePositiveBackward(colStart, (Long)interval.getStart());
                         VariableLong.writePositiveBackward(colEnd, (Long)interval.getEnd());
                     } else {
@@ -467,12 +467,12 @@ public class EdgeSerializer implements RelationReader {
                             throw new AssertionError(type.getSortOrder().toString());
                     }
 
-                    assert sliceStart.compareTo(sliceEnd)<=0;
+                    Preconditions.checkState(sliceStart.compareTo(sliceEnd)<=0);
                     break;
                 }
             }
             if (sliceStart==null) {
-                assert sliceEnd==null && colStart.getPosition()==colEnd.getPosition();
+                Preconditions.checkState(sliceEnd==null && colStart.getPosition()==colEnd.getPosition());
                 if (keyEndPos<0) keyEndPos=colStart.getPosition();
                 switch (type.getSortOrder()) {
                     case ASC:

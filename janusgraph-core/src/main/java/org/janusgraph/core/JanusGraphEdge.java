@@ -15,6 +15,7 @@
 
 package org.janusgraph.core;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -40,7 +41,7 @@ public interface JanusGraphEdge extends JanusGraphRelation, Edge {
      * @return edge label of this edge
      */
     default EdgeLabel edgeLabel() {
-        assert getType() instanceof EdgeLabel;
+        Preconditions.checkArgument(getType() instanceof EdgeLabel);
         return (EdgeLabel)getType();
     }
 

@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.query.vertex;
 
+import com.google.common.base.Preconditions;
 import com.carrotsearch.hppc.LongArrayList;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.VertexList;
@@ -45,7 +46,7 @@ public class VertexLongList implements VertexListInternal {
     }
 
     public VertexLongList(StandardJanusGraphTx tx, LongArrayList vertices, boolean sorted) {
-        assert !sorted || AbstractLongListUtil.isSorted(vertices);
+        Preconditions.checkArgument(!sorted || AbstractLongListUtil.isSorted(vertices));
         this.tx = tx;
         this.vertices = vertices;
         this.sorted = sorted;
@@ -88,7 +89,7 @@ public class VertexLongList implements VertexListInternal {
     public VertexList subList(int fromPosition, int length) {
         LongArrayList subList = new LongArrayList(length);
         subList.add(vertices.buffer, fromPosition, length);
-        assert subList.size()==length;
+        Preconditions.checkState(subList.size()==length);
         return new VertexLongList(tx,subList,sorted);
     }
 

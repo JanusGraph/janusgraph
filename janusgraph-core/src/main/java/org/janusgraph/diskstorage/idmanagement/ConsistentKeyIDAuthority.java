@@ -188,14 +188,14 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         if (randomizeUniqueId) {
             id = random.nextInt(uniqueIDUpperBound);
         } else id = uniqueId;
-        assert id>=0 && id<uniqueIDUpperBound;
+        Preconditions.checkState(id>=0 && id<uniqueIDUpperBound);
         return id;
     }
 
     private StaticBuffer getPartitionKey(int partition, int idNamespace, int uniqueId) {
-        assert partition>=0 && partition<(1<< partitionBitWidth);
-        assert idNamespace>=0;
-        assert uniqueId>=0 && uniqueId<(1<<uniqueIdBitWidth);
+        Preconditions.checkArgument(partition>=0 && partition<(1<< partitionBitWidth));
+        Preconditions.checkArgument(idNamespace>=0);
+        Preconditions.checkArgument(uniqueId>=0 && uniqueId<(1<<uniqueIdBitWidth));
 
         int[] components = new int[2];
         components[0] = (partitionBitWidth >0?(partition<<(Integer.SIZE- partitionBitWidth)):0) + uniqueId;
@@ -247,7 +247,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                 }
 
                 // calculate the start (inclusive) and end (exclusive) of the allocation we're about to attempt
-                assert idBlockUpperBound - blockSize > nextStart;
+                Preconditions.checkState(idBlockUpperBound - blockSize > nextStart);
                 long nextEnd = nextStart + blockSize;
                 StaticBuffer target = null;
 
@@ -268,7 +268,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                         throw new TemporaryBackendException("Wrote claim for id block [" + nextStart + ", " + nextEnd + ") in " + (writeElapsed) + " => too slow, threshold is: " + idApplicationWaitMS);
                     } else {
 
-                        assert 0 != target.length();
+                        Preconditions.checkState(0 != target.length());
                         final StaticBuffer[] slice = getBlockSlice(nextEnd);
 
                         /* At this point we've written our claim on [nextStart, nextEnd),
@@ -411,7 +411,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         @Override
         public long getId(long index) {
             if (index<0 || index>= numIds) throw new ArrayIndexOutOfBoundsException((int)index);
-            assert uniqueID<(1<<uniqueIDBitWidth);
+            Preconditions.checkState(uniqueID<(1<<uniqueIDBitWidth));
             return ((startIDCount +index)<<uniqueIDBitWidth) + uniqueID;
         }
 

@@ -41,7 +41,7 @@ public class ArraysUtil {
     }
 
     public static long[] insertSortedInc(long[] arr, long element) {
-        assert arr == null || isSortedInc(arr);
+        Preconditions.checkArgument(arr == null || isSortedInc(arr));
         long[] newArray = new long[(arr != null ? arr.length + 1 : 1)];
         int offset = 0;
         if (arr != null) {
@@ -67,12 +67,12 @@ public class ArraysUtil {
                 pos++;
             }
         }
-        assert pos == res.length;
+        Preconditions.checkState(pos == res.length);
         return res;
     }
 
     public static long[] mergeSortedInc(long[] a, long[] b) {
-        assert isSortedInc(a) && isSortedInc(b);
+        Preconditions.checkArgument(isSortedInc(a) && isSortedInc(b));
         long[] res = new long[a.length + b.length];
         int ai = 0, bi = 0;
         while (ai < a.length || bi < b.length) {

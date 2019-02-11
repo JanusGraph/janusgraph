@@ -44,7 +44,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
     private final StaticBuffer sliceEnd;
 
     public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd) {
-        assert sliceStart != null && sliceEnd != null;
+        Preconditions.checkArgument(sliceStart != null && sliceEnd != null);
 
         this.sliceStart = sliceStart;
         this.sliceEnd = sliceEnd;
@@ -104,7 +104,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
     //TODO: make this more efficient by using reuseIterator() on otherResult
     public EntryList getSubset(final SliceQuery otherQuery, final EntryList otherResult) {
-        assert otherQuery.subsumes(this);
+        Preconditions.checkState(otherQuery.subsumes(this));
         int pos = Collections.binarySearch(otherResult, sliceStart);
         if (pos < 0) pos = -pos - 1;
 

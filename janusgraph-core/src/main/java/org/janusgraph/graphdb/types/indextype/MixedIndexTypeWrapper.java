@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.types.indextype;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.PropertyKey;
@@ -52,13 +53,13 @@ public class MixedIndexTypeWrapper extends IndexTypeWrapper implements MixedInde
             result = new ParameterIndexField[numFields];
             int pos = 0;
             for (SchemaSource.Entry entry : entries) {
-                assert entry.getSchemaType() instanceof PropertyKey;
-                assert entry.getModifier() instanceof Parameter[];
+                Preconditions.checkState(entry.getSchemaType() instanceof PropertyKey);
+                Preconditions.checkState(entry.getModifier() instanceof Parameter[]);
                 result[pos++]=ParameterIndexField.of((PropertyKey)entry.getSchemaType(),(Parameter[])entry.getModifier());
             }
             fields = result;
         }
-        assert result!=null;
+        Preconditions.checkNotNull(result);
         return result;
     }
 

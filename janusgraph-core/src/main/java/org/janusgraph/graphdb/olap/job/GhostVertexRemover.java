@@ -74,7 +74,7 @@ public class GhostVertexRemover extends VertexJobConverter {
         Preconditions.checkArgument(jobConfig.has(GraphDatabaseConfiguration.JOB_START_TIME),"Invalid configuration for this job. Start time is required.");
         this.jobStartTime = Instant.ofEpochMilli(jobConfig.get(GraphDatabaseConfiguration.JOB_START_TIME));
 
-        assert tx!=null && tx.isOpen();
+        Preconditions.checkState(tx!=null && tx.isOpen());
         tx.rollback();
         StandardTransactionBuilder txb = graph.get().buildTransaction();
         txb.commitTime(jobStartTime);
@@ -86,8 +86,8 @@ public class GhostVertexRemover extends VertexJobConverter {
     @Override
     public void process(StaticBuffer key, Map<SliceQuery, EntryList> entries, ScanMetrics metrics) {
         long vertexId = getVertexId(key);
-        assert entries.size()==1;
-        assert entries.get(everythingQueryLimit)!=null;
+        Preconditions.checkArgument(entries.size()==1);
+        Preconditions.checkNotNull(entries.get(everythingQueryLimit));
         final EntryList everything = entries.get(everythingQueryLimit);
         if (!isGhostVertex(vertexId, everything)) {
             return;

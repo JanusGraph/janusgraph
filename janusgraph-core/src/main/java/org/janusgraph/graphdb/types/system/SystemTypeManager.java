@@ -54,8 +54,8 @@ public abstract class SystemTypeManager {
             ADDITIONAL_RESERVED_NAMES = ImmutableSet.of(
                 "key", "vertex", "edge", "element", "property", "label");
         }
-        assert SYSTEM_TYPES_BY_ID.size()==17;
-        assert SYSTEM_TYPES_BY_NAME.size()==17;
+        Preconditions.checkState(SYSTEM_TYPES_BY_ID.size()==17);
+        Preconditions.checkState(SYSTEM_TYPES_BY_NAME.size()==17);
     }
 
     public static SystemRelationType getSystemType(long id) {

@@ -59,7 +59,7 @@ public class VertexCentricEdgeIterable<R extends JanusGraphRelation> implements 
         }
 
         private void getNextEdge() {
-            assert vertexIterator != null && currentOutEdges != null;
+            Preconditions.checkState(vertexIterator != null && currentOutEdges != null);
             nextEdge = null;
             while (nextEdge == null) {
                 if (currentOutEdges.hasNext()) {

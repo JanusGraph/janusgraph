@@ -72,7 +72,7 @@ public abstract class ArraySerializer implements SupportsNullSerializer {
                 !value.getClass().getComponentType().equals(boxedClass)) return -1;
         for (int i = 0; i < Array.getLength(value); i++) {
             if (Array.get(value,i)==null) return -1;
-            assert Array.get(value,i).getClass().equals(boxedClass);
+            Preconditions.checkState(Array.get(value,i).getClass().equals(boxedClass));
         }
         return Array.getLength(value);
     }
@@ -89,7 +89,7 @@ public abstract class ArraySerializer implements SupportsNullSerializer {
         if (array==null) VariableLong.writePositive(buffer,0);
         else {
             long length = ((long)Array.getLength(array))+1;
-            assert length>0;
+            Preconditions.checkState(length>0);
             VariableLong.writePositive(buffer,length);
         }
     }

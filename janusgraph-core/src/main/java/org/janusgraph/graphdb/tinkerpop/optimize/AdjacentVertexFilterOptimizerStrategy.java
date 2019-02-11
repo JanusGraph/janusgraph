@@ -14,8 +14,7 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.graphdb.types.system.ImplicitKey;
+import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
@@ -33,6 +32,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.graphdb.types.system.ImplicitKey;
 
 import java.util.List;
 
@@ -67,7 +68,7 @@ public class AdjacentVertexFilterOptimizerStrategy extends AbstractTraversalStra
                     EdgeVertexStep evs = (EdgeVertexStep) steps.get(0);
                     if (evs.getDirection() != Direction.BOTH) direction = evs.getDirection();
                 } else {
-                    assert steps.get(0) instanceof EdgeOtherVertexStep;
+                    Preconditions.checkState(steps.get(0) instanceof EdgeOtherVertexStep);
                     direction = Direction.BOTH;
                 }
                 P predicate = ((IsStep) steps.get(1)).getPredicate();

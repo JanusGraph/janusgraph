@@ -165,7 +165,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
                     SliceQuery query = queries.get(i);
                     EntryList entries = EntryList.EMPTY_LIST;
                     if (currentResults[i]!=null && currentResults[i].key.equals(key)) {
-                        assert query.equals(currentResults[i].query);
+                        Preconditions.checkState(query.equals(currentResults[i].query));
                         entries = currentResults[i].entries;
                         currentResults[i]=null;
                     }

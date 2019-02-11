@@ -187,7 +187,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
     private int getDataTypeRegistration(Class datatype) {
         Integer registrationNo = registrations.inverse().get(normalizeDataType(datatype));
         Preconditions.checkArgument(registrationNo!=null,"Datatype is not supported by database since no serializer has been registered: %s",datatype);
-        assert registrationNo>0;
+        Preconditions.checkState(registrationNo>0);
         return registrationNo;
     }
 
@@ -431,7 +431,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         }
 
         private Class getClass(long registrationNo) {
-            assert registrationNo<Integer.MAX_VALUE && registrationNo>=0;
+            Preconditions.checkState(registrationNo<Integer.MAX_VALUE && registrationNo>=0);
             if (registrationNo==0) return null;
             return getDataType((int) registrationNo);
         }

@@ -109,7 +109,7 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
             tv = getOrCreateVertex(vertexId, null, tg);
         }
 
-        Preconditions.checkState(null != tv, "Unable to determine vertex label for vertex with ID %s", vertexId);
+        Preconditions.checkNotNull(tv, "Unable to determine vertex label for vertex with ID %s", vertexId);
 
         // Iterate over and decode edgestore columns (relations) on this vertex
         for (final Entry data : entries) {
@@ -129,7 +129,7 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
                     VertexProperty.Cardinality card = getPropertyKeyCardinality(type.name());
                     tv.property(card, type.name(), value, T.id, relation.relationId);
                 } else {
-                    assert type.isEdgeLabel();
+                    Preconditions.checkState(type.isEdgeLabel());
 
                     // Partitioned vertex handling
                     if (idManager.isPartitionedVertex(relation.getOtherVertexId())) {
@@ -164,7 +164,7 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
                     if (relation.hasProperties()) {
                         // Load relation properties
                         for (final LongObjectCursor<Object> next : relation) {
-                            assert next.value != null;
+                            Preconditions.checkNotNull(next.value);
                             RelationType rt = typeManager.getExistingRelationType(next.key);
                             if (rt.isPropertyKey()) {
                                 te.property(rt.name(), next.value);

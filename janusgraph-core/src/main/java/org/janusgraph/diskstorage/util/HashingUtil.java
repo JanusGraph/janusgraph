@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.util;
 
+import com.google.common.base.Preconditions;
 import com.google.common.hash.HashCode;
 import org.janusgraph.diskstorage.StaticBuffer;
 
@@ -53,7 +54,7 @@ public class HashingUtil {
 
         HashCode hashcode = key.as(hashFactory);
         WriteByteBuffer newKey = new WriteByteBuffer(prefixLen+key.length());
-        assert prefixLen==4 || prefixLen==8;
+        Preconditions.checkState(prefixLen==4 || prefixLen==8);
         if (prefixLen==4) newKey.putInt(hashcode.asInt());
         else newKey.putLong(hashcode.asLong());
         newKey.putBytes(key);

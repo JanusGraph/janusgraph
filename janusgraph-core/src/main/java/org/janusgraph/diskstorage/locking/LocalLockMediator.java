@@ -98,8 +98,8 @@ public class LocalLockMediator<T> {
      * @return true if the lock is acquired, false if it was not acquired
      */
     public boolean lock(KeyColumn kc, T requester, Instant expires) {
-        assert null != kc;
-        assert null != requester;
+        Preconditions.checkNotNull(kc);
+        Preconditions.checkNotNull(requester);
 
         final StackTraceElement[] acquiredAt = log.isTraceEnabled() ?
                 new Throwable("Lock acquisition by " + requester).getStackTrace() : null;

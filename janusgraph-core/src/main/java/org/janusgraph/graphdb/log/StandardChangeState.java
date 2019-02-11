@@ -14,16 +14,17 @@
 
 package org.janusgraph.graphdb.log;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.*;
 import org.janusgraph.core.log.Change;
 import org.janusgraph.core.log.ChangeState;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalVertex;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.EnumMap;
 import java.util.HashSet;
@@ -59,7 +60,7 @@ class StandardChangeState implements ChangeState {
     @Override
     public Set<JanusGraphVertex> getVertices(Change change) {
         if (change.isProper()) return vertices.get(change);
-        assert change==Change.ANY;
+        Preconditions.checkArgument(change==Change.ANY);
         final Set<JanusGraphVertex> all = new HashSet<>();
         for (Change state : new Change[]{Change.ADDED,Change.REMOVED}) {
             all.addAll(vertices.get(state));

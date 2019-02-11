@@ -67,7 +67,7 @@ public class FulgoraUtil {
 
         for (Step step : incident.getSteps()) result.addStep(step);
         Step<Vertex,?> startStep = result.getStartStep();
-        assert startStep instanceof VertexStep;
+        Preconditions.checkState(startStep instanceof VertexStep);
         ((VertexStep) startStep).reverseDirection();
 
         if (start!=null) result.addStep(0, new StartStep<>(incident, start));

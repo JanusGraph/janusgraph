@@ -355,7 +355,7 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
         private final AtomicInteger failures;
 
         private VertexPropertyWriter(List<Map.Entry<Long, Map<String, Object>>> properties, AtomicInteger failures) {
-            assert properties != null && !properties.isEmpty() && failures != null;
+            Preconditions.checkState(properties != null && !properties.isEmpty() && failures != null);
             this.properties = properties;
             this.failures = failures;
         }

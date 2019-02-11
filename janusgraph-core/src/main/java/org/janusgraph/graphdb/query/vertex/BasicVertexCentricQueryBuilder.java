@@ -206,7 +206,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      * @return
      */
     protected Iterable<JanusGraphRelation> executeImplicitKeyQuery(InternalVertex v) {
-        assert isImplicitKeyQuery(RelationCategory.PROPERTY);
+        Preconditions.checkState(isImplicitKeyQuery(RelationCategory.PROPERTY));
         if (dir==Direction.IN || limit<1) return ImmutableList.of();
         ImplicitKey key = (ImplicitKey)tx.getRelationType(types[0]);
         return ImmutableList.of(new StandardVertexProperty(0, key, v, key.computeProperty(v),
@@ -276,7 +276,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     }
 
     protected boolean useSimpleQueryProcessor(BaseVertexCentricQuery query, InternalVertex... vertices) {
-        assert vertices.length > 0;
+        Preconditions.checkArgument(vertices.length > 0);
         if (!query.isSimple()) return false;
         if (queryOnlyLoaded) return true;
         for (InternalVertex vertex : vertices) if (!vertex.isLoaded()) return false;
@@ -416,7 +416,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     }
 
     protected BaseVertexCentricQuery constructQueryWithoutProfile(RelationCategory returnType) {
-        assert returnType != null;
+        Preconditions.checkNotNull(returnType);
         Preconditions.checkArgument(adjacentVertex==null || returnType == RelationCategory.EDGE,
                 "Vertex constraints only apply to edges");
         if (limit <= 0)
@@ -430,7 +430,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         }
         //Prepare order
         orders.makeImmutable();
-        assert orders.hasCommonOrder();
+        Preconditions.checkState(orders.hasCommonOrder());
 
         //Prepare constraints
         And<JanusGraphRelation> conditions = QueryUtil.constraints2QNF(tx, constraints);
@@ -557,7 +557,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                                     if (interval != null) score += 1;
                                     break;
                                 } else {
-                                    assert interval.isPoints();
+                                    Preconditions.checkState(interval.isPoints());
                                     score += 5.0 / interval.getPoints().size();
                                 }
                             }
@@ -728,7 +728,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                 default: throw new AssertionError();
             }
         } else return null;
-        assert newInt!=null;
+        Preconditions.checkNotNull(newInt);
         return pint!=null?pint.intersect(newInt):newInt;
     }
 
@@ -739,7 +739,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      * @return
      */
     private static Condition<JanusGraphRelation> getTypeCondition(Set<RelationType> types) {
-        assert !types.isEmpty();
+        Preconditions.checkArgument(!types.isEmpty());
         if (types.size() == 1)
             return new RelationTypeCondition<>(types.iterator().next());
 
@@ -765,10 +765,10 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         if (baseLimit == Query.NO_LIMIT) {
             return baseLimit;
         }
-        assert baseLimit > 0;
+        Preconditions.checkArgument(baseLimit > 0);
         baseLimit = Math.max(baseLimit,
                 Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, remainingConditions, baseLimit)));
-        assert baseLimit > 0;
+        Preconditions.checkState(baseLimit > 0);
         return baseLimit;
     }
 

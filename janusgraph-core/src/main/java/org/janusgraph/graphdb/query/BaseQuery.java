@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.query;
 
+import com.google.common.base.Preconditions;
 /**
  * Standard implementation of {@link Query}.
  *
@@ -28,7 +29,7 @@ public class BaseQuery implements Query {
     }
 
     public BaseQuery(final int limit) {
-        assert limit >= 0;
+        Preconditions.checkArgument(limit >= 0);
         this.limit = limit;
     }
 
@@ -38,7 +39,7 @@ public class BaseQuery implements Query {
      * @return
      */
     public BaseQuery setLimit(final int limit) {
-        assert limit >= 0;
+        Preconditions.checkArgument(limit >= 0);
         this.limit = limit;
         return this;
     }

@@ -15,11 +15,12 @@
 package org.janusgraph.graphdb.util;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.janusgraph.core.*;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
-import org.apache.tinkerpop.gremlin.structure.*;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -37,7 +38,7 @@ public class ElementHelper {
             if (value==null) return Collections.EMPTY_LIST;
             else return ImmutableList.of(value);
         } else {
-            assert element instanceof JanusGraphVertex;
+            Preconditions.checkState(element instanceof JanusGraphVertex);
             return Iterables.transform((((JanusGraphVertex) element).query()).keys(key.name()).properties(), new Function<JanusGraphVertexProperty, Object>() {
                 @Nullable
                 @Override

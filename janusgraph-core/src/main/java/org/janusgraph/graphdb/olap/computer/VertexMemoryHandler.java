@@ -45,7 +45,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
     private boolean inExecute;
 
     VertexMemoryHandler(FulgoraVertexMemory<M> vertexMemory, PreloadedVertex vertex) {
-        assert vertex!=null && vertexMemory!=null;
+        Preconditions.checkArgument(vertex!=null && vertexMemory!=null);
         this.vertexMemory = vertexMemory;
         this.vertex = vertex;
         this.vertexId = vertexMemory.getCanonicalId(vertex.longId());
@@ -57,7 +57,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
     }
 
     <V> JanusGraphVertexProperty<V> constructProperty(String key, V value) {
-        assert key!=null && value!=null;
+        Preconditions.checkArgument(key!=null && value!=null);
         return new FulgoraVertexProperty<>(this, vertex, key, value);
     }
 
@@ -92,7 +92,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
             final V previousValue = vertexMemory.getProperty(vertexId, key);
             final List<V> values;
             if (previousValue != null) {
-                assert previousValue instanceof List;
+                Preconditions.checkState(previousValue instanceof List);
                 values = new ArrayList<>(((List) previousValue));
             } else {
                 values = new ArrayList<>();

@@ -123,7 +123,7 @@ public enum TypeDefinitionCategory {
     }
 
     public boolean verifyAttribute(Object attribute) {
-        Preconditions.checkState(dataType !=null);
+        Preconditions.checkNotNull(dataType);
         return attribute != null && dataType.equals(attribute.getClass());
     }
 

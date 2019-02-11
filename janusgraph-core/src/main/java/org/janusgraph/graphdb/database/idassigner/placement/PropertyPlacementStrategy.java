@@ -87,12 +87,12 @@ public class PropertyPlacementStrategy extends SimpleBulkPlacementStrategy {
     private int getPartitionIDbyKey(JanusGraphVertex vertex) {
         Preconditions.checkState(idManager!=null && key!=null,
                 "PropertyPlacementStrategy has not been initialized correctly");
-        assert idManager.getPartitionBound()<=Integer.MAX_VALUE;
+        Preconditions.checkState(idManager.getPartitionBound()<=Integer.MAX_VALUE);
         int partitionBound = (int)idManager.getPartitionBound();
         final JanusGraphVertexProperty p = Iterables.getFirst(vertex.query().keys(key).properties(), null);
         if (p==null) return -1;
         int hashPid = Math.abs(p.value().hashCode())%partitionBound;
-        assert hashPid>=0 && hashPid<partitionBound;
+        Preconditions.checkState(hashPid>=0 && hashPid<partitionBound);
         if (isExhaustedPartition(hashPid)) {
             //We keep trying consecutive partition ids until we find a non-exhausted one
             int newPid=hashPid;

@@ -112,10 +112,10 @@ public class TransactionLogHeader {
             out.putBoolean(userLogSuccess);
             out.putInt(indexFailures.size());
             for (String index : indexFailures.keySet()) {
-                assert StringUtils.isNotBlank(index);
+                Preconditions.checkState(StringUtils.isNotBlank(index));
                 out.writeObjectNotNull(index);
             }
-        } else assert userLogSuccess && indexFailures.isEmpty();
+        } else Preconditions.checkState(userLogSuccess && indexFailures.isEmpty());
         return out.getStaticBuffer();
     }
 
@@ -147,7 +147,7 @@ public class TransactionLogHeader {
         Preconditions.checkArgument(meta.size()<Byte.MAX_VALUE,"Too much meta data: %s",meta.size());
         out.putByte(VariableLong.unsignedByte(meta.size()));
         for (Map.Entry<LogTxMeta,Object> metaEntry : meta.entrySet()) {
-            assert metaEntry.getValue()!=null;
+            Preconditions.checkNotNull(metaEntry.getValue());
             out.putByte(VariableLong.unsignedByte(metaEntry.getKey().ordinal()));
             out.writeObjectNotNull(metaEntry.getValue());
         }

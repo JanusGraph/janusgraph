@@ -81,7 +81,7 @@ public abstract class LimitAdjustingIterator<R> implements Iterator<R> {
         for (int i = 0; i < count; i++)
             iterator.next();
 
-        assert count < currentLimit : count + " vs " + currentLimit + " | " + maxLimit;
+        Preconditions.checkState(count < currentLimit, count + " vs " + currentLimit + " | " + maxLimit);
         return hasNext();
     }
 

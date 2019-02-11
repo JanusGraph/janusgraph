@@ -57,7 +57,7 @@ public class VariableLong {
     }
 
     private static void writeUnsigned(WriteBuffer out, int offset, final long value) {
-        assert offset % 7 == 0;
+        Preconditions.checkArgument(offset % 7 == 0);
         while (offset > 0) {
             offset -= 7;
             byte b = (byte) ((value >>> offset) & BIT_MASK);
@@ -77,7 +77,7 @@ public class VariableLong {
     }
 
     private static int numVariableBlocks(final int numBits) {
-        assert numBits > 0;
+        Preconditions.checkArgument(numBits > 0);
         return (numBits - 1) / 7 + 1;
     }
 
@@ -92,12 +92,12 @@ public class VariableLong {
 
     public static long readPositive(ScanBuffer in) {
         long value = readUnsigned(in);
-        assert value >= 0;
+        Preconditions.checkState(value >= 0);
         return value;
     }
 
     public static void writePositive(WriteBuffer out, final long value) {
-        assert value >= 0;
+        Preconditions.checkArgument(value >= 0);
         writeUnsigned(out, value);
     }
 
@@ -122,7 +122,7 @@ public class VariableLong {
     }
 
     public static int positiveLength(long value) {
-        assert value >= 0;
+        Preconditions.checkArgument(value >= 0);
         return unsignedNumBlocks(value);
     }
 
@@ -131,7 +131,7 @@ public class VariableLong {
     ################################## */
 
     private static long convert2Unsigned(final long value) {
-        assert value >= 0 || value > Long.MIN_VALUE;
+        Preconditions.checkArgument(value >= 0 || value > Long.MIN_VALUE);
         return Math.abs(value) << 1 | (value < 0 ? 1 : 0);
     }
 
@@ -157,8 +157,8 @@ public class VariableLong {
     ################################## */
 
     public static void writePositiveWithPrefix(final WriteBuffer out, long value, long prefix, final int prefixBitLen) {
-        assert value >= 0;
-        assert prefixBitLen > 0 && prefixBitLen < 6 && (prefix < (1L << prefixBitLen));
+        Preconditions.checkArgument(value >= 0);
+        Preconditions.checkArgument(prefixBitLen > 0 && prefixBitLen < 6 && (prefix < (1L << prefixBitLen)));
         //Write first byte
         int deltaLen = 8 - prefixBitLen;
         byte first = (byte)(prefix << deltaLen);
@@ -172,7 +172,7 @@ public class VariableLong {
         } else {
             valueLen += (7 - mod);
         }
-        assert valueLen >= 0;
+        Preconditions.checkState(valueLen >= 0);
         if (valueLen > 0) {
             //Add continue mask to indicate reading further
             first = (byte) ( first | (1 << (deltaLen - 1)));
@@ -185,13 +185,13 @@ public class VariableLong {
     }
 
     public static int positiveWithPrefixLength(final long value, final int prefixBitLen) {
-        assert value >= 0;
-        assert prefixBitLen > 0 && prefixBitLen < 6;
+        Preconditions.checkArgument(value >= 0);
+        Preconditions.checkArgument(prefixBitLen > 0 && prefixBitLen < 6);
         return numVariableBlocks(unsignedBitLength(value)+prefixBitLen);
     }
 
     public static long[] readPositiveWithPrefix(final ReadBuffer in, final int prefixBitLen) {
-        assert prefixBitLen > 0 && prefixBitLen < 6;
+        Preconditions.checkArgument(prefixBitLen > 0 && prefixBitLen < 6);
 
         int first = unsignedByte(in.getByte());
         int deltaLen = 8 - prefixBitLen;
@@ -201,7 +201,7 @@ public class VariableLong {
             int deltaPos = in.getPosition();
             long remainder = readUnsigned(in);
             deltaPos = in.getPosition()-deltaPos;
-            assert deltaPos > 0;
+            Preconditions.checkState(deltaPos > 0);
             value = (value << (deltaPos * 7)) + remainder;
         }
         return new long[]{value, prefix};
@@ -214,12 +214,12 @@ public class VariableLong {
     ################################## */
 
     public static void writePositiveBackward(WriteBuffer out, long value) {
-        assert value >= 0;
+        Preconditions.checkArgument(value >= 0);
         writeUnsignedBackward(out,value);
     }
 
     public static int positiveBackwardLength(long value) {
-        assert value >= 0;
+        Preconditions.checkArgument(value >= 0);
         return unsignedBackwardLength(value);
     }
 
@@ -257,7 +257,7 @@ public class VariableLong {
     private static void writeUnsignedBackward(WriteBuffer out, final long value) {
         int numBytes = unsignedBackwardLength(value);
         int prefixLen = numBytes - 3;
-        assert prefixLen >= 0 && prefixLen < 8; //Consumes 3 bits
+        Preconditions.checkState(prefixLen >= 0 && prefixLen < 8); //Consumes 3 bits
         //Prepare first byte
         byte b = (byte)((prefixLen << 4) | 0x80); //stop marker (first bit) and length
         for (int i = numBytes - 1; i >= 0; i--) {
@@ -269,7 +269,7 @@ public class VariableLong {
 
     private static int unsignedBackwardLength(final long value) {
         int bitLength = unsignedBitLength(value);
-        assert bitLength > 0 && bitLength <= 64;
+        Preconditions.checkState(bitLength > 0 && bitLength <= 64);
         return Math.max(3, 1 + (bitLength <= 4 ? 0 : (1 + (bitLength - 5) / 7)));
     }
 
@@ -283,7 +283,7 @@ public class VariableLong {
             b = in.getByte(position);
             if (b < 0) { //First byte
                 value = value | ((b & 0x0F)<<(7 * numBytes));
-                assert ((b >>> 4) & 7) + 3 == numBytes + 1 : b + " vs " + numBytes; //verify correct length
+                Preconditions.checkState(((b >>> 4) & 7) + 3 == numBytes + 1, b + " vs " + numBytes); //verify correct length
                 break;
             }
             value = value | (b << (7 * numBytes));

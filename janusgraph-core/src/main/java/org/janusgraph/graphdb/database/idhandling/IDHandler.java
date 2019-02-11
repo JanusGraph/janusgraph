@@ -14,6 +14,8 @@
 
 package org.janusgraph.graphdb.database.idhandling;
 
+import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.diskstorage.ReadBuffer;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
@@ -22,7 +24,6 @@ import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.WriteByteBuffer;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.RelationCategory;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.*;
 
@@ -78,12 +79,12 @@ public class IDHandler {
         }
 
         private int getPrefix(boolean invisible, boolean systemType) {
-            assert !systemType || invisible; // systemType implies invisible
+            Preconditions.checkArgument(!systemType || invisible); // systemType implies invisible
             return ((systemType?0:invisible?2:1)<<1) + getRelationType();
         }
 
         private static DirectionID getDirectionID(int relationType, int direction) {
-            assert relationType >= 0 && relationType <= 1 && direction >= 0 && direction <= 1;
+            Preconditions.checkArgument(relationType >= 0 && relationType <= 1 && direction >= 0 && direction <= 1);
             return forId((relationType << 1) + direction);
         }
 
@@ -101,7 +102,7 @@ public class IDHandler {
     private static final int PREFIX_BIT_LEN = 3;
 
     public static int relationTypeLength(long relationTypeId) {
-        assert relationTypeId > 0 && (relationTypeId << 1) > 0;  //Check positive and no-overflow
+        Preconditions.checkArgument(relationTypeId > 0 && (relationTypeId << 1) > 0);  //Check positive and no-overflow
         return VariableLong.positiveWithPrefixLength(IDManager.stripEntireRelationTypePadding(relationTypeId) << 1, PREFIX_BIT_LEN);
     }
 
@@ -115,7 +116,7 @@ public class IDHandler {
      * @param dirID
      */
     public static void writeRelationType(WriteBuffer out, long relationTypeId, DirectionID dirID, boolean invisible) {
-        assert relationTypeId > 0 && (relationTypeId << 1) > 0; //Check positive and no-overflow
+        Preconditions.checkArgument(relationTypeId > 0 && (relationTypeId << 1) > 0); //Check positive and no-overflow
 
         long strippedId = (IDManager.stripEntireRelationTypePadding(relationTypeId) << 1) + dirID.getDirectionInt();
         VariableLong.writePositiveWithPrefix(out, strippedId, dirID.getPrefix(invisible, IDManager.isSystemRelationTypeId(relationTypeId)), PREFIX_BIT_LEN);
@@ -163,7 +164,7 @@ public class IDHandler {
     }
 
     private static StaticBuffer getPrefixed(int prefix) {
-        assert prefix < (1 << PREFIX_BIT_LEN) && prefix >= 0;
+        Preconditions.checkArgument(prefix < (1 << PREFIX_BIT_LEN) && prefix >= 0);
         byte[] arr = new byte[1];
         arr[0] = (byte) (prefix << (Byte.SIZE - PREFIX_BIT_LEN));
         return new StaticArrayBuffer(arr);
@@ -188,7 +189,7 @@ public class IDHandler {
                 throw new AssertionError("Unrecognized type:" + type);
         }
         end++;
-        assert end > start;
+        Preconditions.checkState(end > start);
         return new StaticBuffer[]{getPrefixed(start), getPrefixed(end)};
     }
 

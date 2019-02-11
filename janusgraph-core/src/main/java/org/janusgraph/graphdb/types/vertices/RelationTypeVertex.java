@@ -15,8 +15,10 @@
 package org.janusgraph.graphdb.types.vertices;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.graphdb.internal.Order;
@@ -26,7 +28,6 @@ import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.SchemaSource;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.janusgraph.graphdb.types.TypeUtil;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -87,7 +88,7 @@ public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implemen
     public InternalRelationType getBaseType() {
         Entry entry = Iterables.getOnlyElement(getRelated(TypeDefinitionCategory.RELATIONTYPE_INDEX,Direction.IN),null);
         if (entry==null) return null;
-        assert entry.getSchemaType() instanceof InternalRelationType;
+        Preconditions.checkState(entry.getSchemaType() instanceof InternalRelationType);
         return (InternalRelationType)entry.getSchemaType();
     }
 
@@ -96,7 +97,7 @@ public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implemen
             @Nullable
             @Override
             public InternalRelationType apply(@Nullable Entry entry) {
-                assert entry.getSchemaType() instanceof InternalRelationType;
+                Preconditions.checkState(entry.getSchemaType() instanceof InternalRelationType);
                 return (InternalRelationType)entry.getSchemaType();
             }
         }));
@@ -115,7 +116,7 @@ public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implemen
             result = b.build();
             indexes=result;
         }
-        assert result!=null;
+        Preconditions.checkNotNull(result);
         return result;
     }
 

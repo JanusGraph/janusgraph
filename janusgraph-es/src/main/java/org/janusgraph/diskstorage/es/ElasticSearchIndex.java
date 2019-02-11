@@ -356,7 +356,7 @@ public class ElasticSearchIndex implements IndexProvider {
      * @throws IOException if the index status could not be checked or index could not be created
      */
     private void checkForOrCreateIndex(String index) throws IOException {
-        Preconditions.checkState(null != client);
+        Preconditions.checkNotNull(client);
         Preconditions.checkNotNull(index);
 
         // Create index if it does not useExternalMappings and if it does not already exist
@@ -554,7 +554,7 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     private static Mapping getStringMapping(KeyInformation information) {
-        assert AttributeUtil.isString(information.getDataType());
+        Preconditions.checkArgument(AttributeUtil.isString(information.getDataType()));
         Mapping map = Mapping.getMapping(information);
         if (map==Mapping.DEFAULT) map = Mapping.TEXT;
         return map;
@@ -672,7 +672,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 for (final Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
                     final String documentId = entry.getKey();
                     final IndexMutation mutation = entry.getValue();
-                    assert mutation.isConsolidated();
+                    Preconditions.checkState(mutation.isConsolidated());
                     Preconditions.checkArgument(!(mutation.isNew() && mutation.isDeleted()));
                     Preconditions.checkArgument(!mutation.isNew() || !mutation.hasDeletions());
                     Preconditions.checkArgument(!mutation.isDeleted() || !mutation.hasAdditions());

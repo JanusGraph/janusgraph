@@ -60,8 +60,8 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
 
     @Override
     public JanusGraphMultiVertexQuery addVertex(Vertex vertex) {
-        assert vertex != null;
-        assert vertex instanceof InternalVertex;
+        Preconditions.checkNotNull(vertex);
+        Preconditions.checkArgument(vertex instanceof InternalVertex);
         vertices.add(((InternalVertex)vertex).it());
         return this;
     }

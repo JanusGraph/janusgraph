@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.cassandra.astyanax;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Iterables;
@@ -33,6 +34,7 @@ import com.netflix.astyanax.query.RowSliceQuery;
 import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.serializers.ByteBufferSerializer;
 import com.netflix.astyanax.query.RowQuery;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.TemporaryBackendException;
@@ -51,7 +53,6 @@ import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
 import org.janusgraph.diskstorage.util.RecordIterator;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
@@ -163,7 +164,7 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
         final Map<StaticBuffer, EntryList> result = new HashMap<>(rows.size());
 
         for (Row<ByteBuffer, ByteBuffer> row : rows) {
-            assert !result.containsKey(row.getKey());
+            Preconditions.checkState(!result.containsKey(row.getKey()));
             final ByteBuffer key = row.getKey();
             ColumnList<ByteBuffer> pageColumns = row.getColumns();
             final List<Column<ByteBuffer>> queryColumns = new ArrayList();

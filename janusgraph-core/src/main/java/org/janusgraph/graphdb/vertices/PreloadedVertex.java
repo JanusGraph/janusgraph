@@ -48,7 +48,7 @@ public class PreloadedVertex extends CacheVertex {
 
     public PreloadedVertex(StandardJanusGraphTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
-        assert lifecycle == ElementLifeCycle.Loaded : "Invalid lifecycle encountered: " + lifecycle;
+        Preconditions.checkArgument(lifecycle == ElementLifeCycle.Loaded, "Invalid lifecycle encountered: %s", lifecycle);
     }
 
     public void setPropertyMixing(PropertyMixing mixin) {

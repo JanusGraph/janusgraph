@@ -58,8 +58,8 @@ public class AbstractLongListUtil {
     }
 
     public static LongArrayList mergeJoin(LongArrayList a, LongArrayList b, final boolean unique) {
-        assert isSorted(a) : a.toString();
-        assert isSorted(b) : b.toString();
+        Preconditions.checkArgument(isSorted(a), a.toString());
+        Preconditions.checkArgument(isSorted(b), b.toString());
         int counterA = 0, counterB = 0;
         int sizeA = a.size();
         int sizeB = b.size();
@@ -82,7 +82,7 @@ public class AbstractLongListUtil {
             } else if (a.get(counterA) < b.get(counterB)) {
                 counterA++;
             } else {
-                assert a.get(counterA) > b.get(counterB);
+                Preconditions.checkState(a.get(counterA) > b.get(counterB));
                 counterB++;
             }
         }

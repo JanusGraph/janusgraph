@@ -227,7 +227,7 @@ public class KCVSLogManager implements LogManager {
      */
     synchronized void closedLog(KCVSLog log) {
         KCVSLog l = openLogs.remove(log.getName());
-        assert l==log;
+        Preconditions.checkState(l==log);
     }
 
     @Override

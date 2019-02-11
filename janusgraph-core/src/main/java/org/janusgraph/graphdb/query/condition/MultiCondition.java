@@ -14,8 +14,9 @@
 
 package org.janusgraph.graphdb.query.condition;
 
-import org.janusgraph.core.JanusGraphElement;
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.janusgraph.core.JanusGraphElement;
 
 import java.util.ArrayList;
 
@@ -39,7 +40,7 @@ public abstract class MultiCondition<E extends JanusGraphElement> extends ArrayL
     MultiCondition(final Condition<E>... conditions) {
         super(conditions.length);
         for (Condition<E> condition : conditions) {
-            assert condition != null;
+            Preconditions.checkNotNull(condition);
             super.add(condition);
         }
     }
@@ -50,7 +51,7 @@ public abstract class MultiCondition<E extends JanusGraphElement> extends ArrayL
     }
 
     public boolean add(Condition<E> condition) {
-        assert condition != null;
+        Preconditions.checkNotNull(condition);
         return super.add(condition);
     }
 

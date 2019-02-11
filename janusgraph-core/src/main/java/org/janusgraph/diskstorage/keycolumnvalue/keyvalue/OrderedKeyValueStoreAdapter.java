@@ -77,7 +77,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
         }
         final Map<KVQuery,RecordIterator<KeyValueEntry>> results = store.getSlices(queries,txh);
         final Map<StaticBuffer,EntryList> convertedResults = new HashMap<>(keys.size());
-        assert queries.size()==keys.size();
+        Preconditions.checkState(queries.size()==keys.size());
         for (int i = 0; i < queries.size(); i++) {
             convertedResults.put(keys.get(i),convert(results.get(queries.get(i))));
         }

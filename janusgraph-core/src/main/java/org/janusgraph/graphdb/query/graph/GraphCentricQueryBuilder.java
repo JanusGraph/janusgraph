@@ -291,7 +291,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
                             = getEqualityConditionValues(conditions,ImplicitKey.LABEL);
                     if (equalCon==null) continue;
                     final Collection<Object> labels = equalCon.getValue();
-                    assert labels.size() >= 1;
+                    Preconditions.checkState(labels.size() >= 1);
                     if (labels.size()>1) {
                         log.warn("The query optimizer currently does not support multiple label constraints in query: {}",this);
                         continue;
@@ -380,7 +380,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         if (!QueryUtil.isQueryNormalForm(condition)) {
             return null;
         }
-        assert condition instanceof And;
+        Preconditions.checkState(condition instanceof And);
         if (index.getStatus()!= SchemaStatus.ENABLED) return null;
         final IndexField[] fields = index.getFieldKeys();
         final Object[] indexValues = new Object[fields.length];
@@ -404,7 +404,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             final Map.Entry<Condition,Collection<Object>> equalCon = getEqualityConditionValues(condition,field.getFieldKey());
             if (equalCon!=null) {
                 coveredClauses.add(equalCon.getKey());
-                assert equalCon.getValue().size()>0;
+                Preconditions.checkState(equalCon.getValue().size()>0);
                 for (final Object value : equalCon.getValue()) {
                     final Object[] newValues = Arrays.copyOf(indexValues,fields.length);
                     newValues[position]=value;
@@ -457,7 +457,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             covered.add(condition);
             return condition;
         }
-        assert condition instanceof And;
+        Preconditions.checkState(condition instanceof And);
         final And<JanusGraphElement> subCondition = new And<>(condition.numChildren());
         for (final Condition<JanusGraphElement> subClause : condition.getChildren()) {
             if (coversAll(index,subClause,indexInfo)) {

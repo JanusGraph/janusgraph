@@ -16,6 +16,7 @@ package org.janusgraph.diskstorage.cassandra;
 
 import java.util.*;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.BackendException;
@@ -214,7 +215,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
                 throw new JanusGraphException("Could not connect to Cassandra to read partitioner information. Please check the connection", e);
             }
         }
-        assert partitioner != null;
+        Preconditions.checkNotNull(partitioner);
         return partitioner;
     }
 

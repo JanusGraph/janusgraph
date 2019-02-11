@@ -183,7 +183,7 @@ public class VertexIDAssigner implements AutoCloseable {
             } catch (IDPoolExhaustedException e) {
                 continue; //try again on a different partition
             }
-            assert element.hasId();
+            Preconditions.checkState(element.hasId());
 
             /*
               The next block of code checks the added the relation for partitioned vertices as either end point. If such exists,
@@ -250,7 +250,7 @@ public class VertexIDAssigner implements AutoCloseable {
                 for (int i = 0; i < relation.getArity(); i++) {
                     InternalVertex vertex = relation.getVertex(i);
                     if (!vertex.hasId()) {
-                        assert !(vertex instanceof JanusGraphSchemaVertex); //Those are assigned ids immediately in the transaction
+                        Preconditions.checkState(!(vertex instanceof JanusGraphSchemaVertex)); //Those are assigned ids immediately in the transaction
                         if (vertex.vertexLabel().isPartitioned())
                             assignID(vertex, getVertexIDType(vertex)); //Assign partitioned vertex ids immediately
                         else

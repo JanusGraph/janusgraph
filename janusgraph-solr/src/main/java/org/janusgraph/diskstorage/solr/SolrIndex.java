@@ -760,7 +760,7 @@ public class SolrIndex implements IndexProvider {
                 }
             } else if (value instanceof String) {
                 final Mapping map = getStringMapping(information.get(key));
-                assert map==Mapping.TEXT || map==Mapping.STRING;
+                Preconditions.checkState(map==Mapping.TEXT || map==Mapping.STRING);
 
                 if (map==Mapping.TEXT && !(Text.HAS_CONTAINS.contains(predicate) || predicate instanceof Cmp))
                     throw new IllegalArgumentException("Text mapped string values only support CONTAINS and Compare queries and not: " + predicate);
@@ -1123,7 +1123,7 @@ public class SolrIndex implements IndexProvider {
      */
 
     private static Mapping getStringMapping(KeyInformation information) {
-        assert AttributeUtil.isString(information.getDataType());
+        Preconditions.checkArgument(AttributeUtil.isString(information.getDataType()));
         Mapping map = Mapping.getMapping(information);
         if (map==Mapping.DEFAULT) map = Mapping.TEXT;
         return map;

@@ -246,7 +246,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
                     logger.error("Full exception: ",e);
                     continue;
                 }
-                assert transactionId!=null;
+                Preconditions.checkNotNull(transactionId);
                 try {
                     processor.process(tx,transactionId,changes);
                     return;

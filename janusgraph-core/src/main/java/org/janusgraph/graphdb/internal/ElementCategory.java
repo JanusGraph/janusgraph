@@ -61,8 +61,8 @@ public enum ElementCategory {
 
     public boolean matchesConstraint(JanusGraphSchemaType type, JanusGraphElement element) {
         Preconditions.checkArgument(type != null && element!=null);
-        assert isInstance(element);
-        assert isValidConstraint(type);
+        Preconditions.checkArgument(isInstance(element));
+        Preconditions.checkArgument(isValidConstraint(type));
         switch(this) {
             case VERTEX: return ((JanusGraphVertex)element).vertexLabel().equals(type);
             case EDGE: return ((JanusGraphEdge)element).edgeLabel().equals(type);

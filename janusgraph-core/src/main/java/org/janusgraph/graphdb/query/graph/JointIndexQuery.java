@@ -112,7 +112,7 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
         private QueryProfiler profiler = QueryProfiler.NO_OP;
 
         private Subquery(IndexType index, BackendQuery query) {
-            assert index!=null && query!=null && (query instanceof MultiKeySliceQuery || query instanceof IndexQuery);
+            Preconditions.checkArgument(index!=null && query!=null && (query instanceof MultiKeySliceQuery || query instanceof IndexQuery));
             this.index = index;
             this.query = query;
         }

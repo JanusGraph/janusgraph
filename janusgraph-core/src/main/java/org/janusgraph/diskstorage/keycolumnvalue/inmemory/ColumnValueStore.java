@@ -208,7 +208,7 @@ class ColumnValueStore {
 
         Data(final Entry[] array, final int size) {
             Preconditions.checkArgument(size >= 0 && size <= array.length);
-            assert isSorted();
+            Preconditions.checkState(isSorted());
             this.array = array;
             this.size = size;
         }

@@ -80,7 +80,7 @@ public class CassandraHelper {
 
         @Override
         public boolean apply(@Nullable E e) {
-            assert e!=null;
+            Preconditions.checkNotNull(e);
             if (count>=limit || BufferUtil.equals(lastColumn, getter.getColumn(e))) return false;
             count++;
             return true;
@@ -110,7 +110,7 @@ public class CassandraHelper {
             throw new UnsupportedOperationException();
 
         // if left part is BytesToken, right part should be too, otherwise there is no sense in the ring
-        assert rightKeyInclusive instanceof BytesToken;
+        Preconditions.checkArgument(rightKeyInclusive instanceof BytesToken);
 
         // l is exclusive, r is inclusive
         BytesToken l = (BytesToken) leftKeyExclusive;

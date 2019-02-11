@@ -34,7 +34,7 @@ public class ParameterIndexField extends IndexField {
 
     public SchemaStatus getStatus() {
         SchemaStatus status = ParameterType.STATUS.findParameter(parameters, null);
-        Preconditions.checkState(status!=null,"Field [%s] did not have a status",this);
+        Preconditions.checkNotNull(status,"Field [%s] did not have a status",this);
         return status;
     }
 

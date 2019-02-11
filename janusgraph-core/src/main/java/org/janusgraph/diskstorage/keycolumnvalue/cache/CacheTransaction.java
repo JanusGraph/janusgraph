@@ -105,7 +105,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     }
 
     private KCVMutation convert(KCVEntryMutation mutation) {
-        assert !mutation.isEmpty();
+        Preconditions.checkArgument(!mutation.isEmpty());
         if (!mutation.hasDeletions())
             return new KCVMutation(mutation.getAdditions(), KeyColumnValueStore.NO_DELETIONS);
         else
@@ -148,11 +148,11 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
                         final KCVEntryMutation m = mutationsForKey.getValue();
                         final List<CachableStaticBuffer> entries = new ArrayList<>(m.getTotalMutations());
                         for (final Entry e : m.getAdditions()) {
-                            assert e instanceof CachableStaticBuffer;
+                            Preconditions.checkState(e instanceof CachableStaticBuffer);
                             entries.add((CachableStaticBuffer)e);
                         }
                         for (final StaticBuffer e : m.getDeletions()) {
-                            assert e instanceof CachableStaticBuffer;
+                            Preconditions.checkState(e instanceof CachableStaticBuffer);
                             entries.add((CachableStaticBuffer)e);
                         }
                         cache.invalidate(mutationsForKey.getKey(),entries);

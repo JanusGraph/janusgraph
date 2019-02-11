@@ -28,7 +28,7 @@ public class ConversionHelper {
     public static int getTTLSeconds(Duration duration) {
         Preconditions.checkArgument(duration!=null && !duration.isZero(),"Must provide non-zero TTL");
         long ttlSeconds = Math.max(1,duration.getSeconds());
-        assert ttlSeconds>0;
+        Preconditions.checkState(ttlSeconds>0);
         Preconditions.checkArgument(ttlSeconds<=Integer.MAX_VALUE, "tll value is too large [%s] - value overflow",duration);
         return (int)ttlSeconds;
     }

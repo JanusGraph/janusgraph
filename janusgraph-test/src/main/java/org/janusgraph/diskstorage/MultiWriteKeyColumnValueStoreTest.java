@@ -14,10 +14,6 @@
 
 package org.janusgraph.diskstorage;
 
-import static org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -38,6 +34,9 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.*;
+
+import static org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest {
 
@@ -330,7 +329,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
                 columnIterator.remove();
 
                 if (state.get(key).isEmpty()) {
-                    assert !columnIterator.hasNext();
+                    assertTrue(!columnIterator.hasNext());
                     iterator.remove();
                 }
             }

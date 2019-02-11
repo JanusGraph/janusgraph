@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.database;
 
+import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
@@ -59,7 +60,7 @@ public class RelationQueryCache implements AutoCloseable {
         } catch (ExecutionException e) {
             throw new AssertionError("Should not happen: " + e.getMessage());
         }
-        assert ce!=null;
+        Preconditions.checkNotNull(ce);
         return ce.get(dir);
     }
 

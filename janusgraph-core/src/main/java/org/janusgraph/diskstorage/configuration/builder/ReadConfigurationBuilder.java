@@ -153,14 +153,14 @@ public class ReadConfigurationBuilder {
 
     private Map<ConfigElement.PathIdentifier, Object> getGlobalSubset(Map<ConfigElement.PathIdentifier, Object> m) {
         return Maps.filterEntries(m, entry -> {
-            assert entry.getKey().element.isOption();
+            Preconditions.checkArgument(entry.getKey().element.isOption());
             return ((ConfigOption)entry.getKey().element).isGlobal();
         });
     }
 
     private Map<ConfigElement.PathIdentifier, Object> getManagedSubset(Map<ConfigElement.PathIdentifier, Object> m) {
         return Maps.filterEntries(m, entry -> {
-            assert entry.getKey().element.isOption();
+            Preconditions.checkArgument(entry.getKey().element.isOption());
             return ((ConfigOption)entry.getKey().element).isManaged();
         });
     }
@@ -234,7 +234,7 @@ public class ReadConfigurationBuilder {
 
         for (Map.Entry<ConfigElement.PathIdentifier, Object> entry : getManagedSubset(localBasicConfiguration.getAll()).entrySet()) {
             ConfigElement.PathIdentifier pathId = entry.getKey();
-            assert pathId.element.isOption();
+            Preconditions.checkState(pathId.element.isOption());
             ConfigOption<?> configOption = (ConfigOption<?>)pathId.element;
             Object localValue = entry.getValue();
 

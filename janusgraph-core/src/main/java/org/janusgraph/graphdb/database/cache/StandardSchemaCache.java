@@ -47,8 +47,8 @@ public class StandardSchemaCache implements SchemaCache {
     private static final int SCHEMAID_TOTALFORW_SHIFT = 3; //Total number of bits appended - the 1 is for the 1 bit direction
     private static final int SCHEMAID_BACK_SHIFT = 2; //Number of bits to remove from end of schema id since its just the padding
     static {
-        assert IDManager.VertexIDType.Schema.removePadding(1L<<SCHEMAID_BACK_SHIFT)==1;
-        assert SCHEMAID_TOTALFORW_SHIFT-SCHEMAID_BACK_SHIFT>=0;
+        Preconditions.checkState(IDManager.VertexIDType.Schema.removePadding(1L<<SCHEMAID_BACK_SHIFT)==1);
+        Preconditions.checkState(SCHEMAID_TOTALFORW_SHIFT-SCHEMAID_BACK_SHIFT>=0);
     }
 
     private final int maxCachedTypes;
@@ -120,7 +120,7 @@ public class StandardSchemaCache implements SchemaCache {
 
     private long getIdentifier(final long schemaId, final SystemRelationType type, final Direction dir) {
         int edgeDir = EdgeDirection.position(dir);
-        assert edgeDir==0 || edgeDir==1;
+        Preconditions.checkState(edgeDir==0 || edgeDir==1);
 
         long typeId = (schemaId >>> SCHEMAID_BACK_SHIFT);
         int systemTypeId;
@@ -131,18 +131,18 @@ public class StandardSchemaCache implements SchemaCache {
         else throw new AssertionError("Unexpected SystemType encountered in StandardSchemaCache: " + type.name());
 
         //Ensure that there is enough padding
-        assert (systemTypeId<(1<<2));
+        Preconditions.checkState((systemTypeId<(1<<2)));
         return (((typeId<<2)+systemTypeId)<<1)+edgeDir;
     }
 
     @Override
     public EntryList getSchemaRelations(final long schemaId, final BaseRelationType type, final Direction dir) {
-        assert IDManager.isSystemRelationTypeId(type.longId()) && type.longId()>0;
+        Preconditions.checkArgument(IDManager.isSystemRelationTypeId(type.longId()) && type.longId()>0);
         Preconditions.checkArgument(IDManager.VertexIDType.Schema.is(schemaId));
         Preconditions.checkArgument((Long.MAX_VALUE>>>(SCHEMAID_TOTALFORW_SHIFT-SCHEMAID_BACK_SHIFT))>= schemaId);
 
         int edgeDir = EdgeDirection.position(dir);
-        assert edgeDir==0 || edgeDir==1;
+        Preconditions.checkState(edgeDir==0 || edgeDir==1);
 
         final long typePlusRelation = getIdentifier(schemaId,type,dir);
         ConcurrentMap<Long,EntryList> types = schemaRelations;
@@ -171,7 +171,7 @@ public class StandardSchemaCache implements SchemaCache {
                 }
             }
         }
-        assert entries!=null;
+        Preconditions.checkNotNull(entries);
         return entries;
     }
 

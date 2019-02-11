@@ -151,7 +151,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
             InternalRelationType wrappedType = wrapper.getWrappedType();
             Direction direction=null;
             for (Direction dir : Direction.values()) if (wrappedType.isUnidirected(dir)) direction=dir;
-            assert direction!=null;
+            Preconditions.checkNotNull(direction);
 
             StandardJanusGraphTx tx = (StandardJanusGraphTx)graph.get().buildTransaction().readOnly().start();
             try {
@@ -167,7 +167,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
     @Override
     public Predicate<StaticBuffer> getKeyFilter() {
         if (isGlobalGraphIndex()) {
-            assert graphIndexId>0;
+            Preconditions.checkState(graphIndexId>0);
             return (k -> {
                 try {
                     return indexSerializer.getIndexIdFromKey(k) == graphIndexId;

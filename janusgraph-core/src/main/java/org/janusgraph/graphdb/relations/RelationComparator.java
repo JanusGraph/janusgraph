@@ -66,7 +66,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
         InternalRelationType t1 = (InternalRelationType) r1.getType(), t2 = (InternalRelationType) r2.getType();
         int typeCompare = AbstractElement.compare(t1,t2);
         if (typeCompare != 0) return typeCompare;
-        assert t1.equals(t2);
+        Preconditions.checkState(t1.equals(t2));
 
         //4) Direction
         Direction dir1 = null, dir2 = null;
@@ -80,7 +80,8 @@ public class RelationComparator implements Comparator<InternalRelation> {
                 dir2 = EdgeDirection.fromPosition(i);
                 break;
             }
-        assert dir1 != null && dir2 != null; // ("Either relation is not incident on vertex [%s]", vertex);
+        Preconditions.checkNotNull(dir1);
+        Preconditions.checkNotNull(dir2); // ("Either relation is not incident on vertex [%s]", vertex)
         int dirCompare = EdgeDirection.position(dir1) - EdgeDirection.position(dir2);
         if (dirCompare != 0) return dirCompare;
 

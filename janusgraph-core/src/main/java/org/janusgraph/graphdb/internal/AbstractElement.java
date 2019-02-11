@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.internal;
 
+import com.google.common.base.Preconditions;
 import com.google.common.primitives.Longs;
 import org.janusgraph.core.*;
 import org.janusgraph.graphdb.idmanagement.IDManager;
@@ -117,7 +118,7 @@ public abstract class AbstractElement implements InternalElement, Comparable<Jan
 
     @Override
     public void setId(long id) {
-        assert id > 0;
+        Preconditions.checkArgument(id > 0);
         this.id=id;
     }
 

@@ -95,7 +95,7 @@ public class TTLKCVSManager extends KCVSManagerProxy {
     @Override
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException {
         if (!manager.getFeatures().hasStoreTTL()) {
-            assert manager.getFeatures().hasCellTTL();
+            Preconditions.checkState(manager.getFeatures().hasCellTTL());
             for (Map.Entry<String,Map<StaticBuffer, KCVMutation>> sentry : mutations.entrySet()) {
                 Integer ttl = ttlEnabledStores.get(sentry.getKey());
                 if (null != ttl && 0 < ttl) {
@@ -110,7 +110,7 @@ public class TTLKCVSManager extends KCVSManagerProxy {
 
     public static void applyTTL(Collection<Entry> additions, int ttl) {
         for (Entry entry : additions) {
-            assert entry instanceof MetaAnnotatable;
+            Preconditions.checkState(entry instanceof MetaAnnotatable);
             ((MetaAnnotatable)entry).setMetaData(EntryMetaData.TTL, ttl);
         }
     }

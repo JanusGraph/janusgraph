@@ -14,6 +14,7 @@
 
 package org.janusgraph.util.datastructures;
 
+import com.google.common.base.Preconditions;
 /**
  * Utility class for setting and reading individual bits in a byte.
  *
@@ -22,22 +23,22 @@ package org.janusgraph.util.datastructures;
 public class BitMap {
 
     public static byte createMapb(int pos) {
-        assert pos >= 0 && pos < 8;
+        Preconditions.checkArgument(pos >= 0 && pos < 8);
         return (byte) (1 << pos);
     }
 
     public static byte setBitb(byte map, int pos) {
-        assert pos >= 0 && pos < 8;
+        Preconditions.checkArgument(pos >= 0 && pos < 8);
         return (byte) (map | (1 << pos));
     }
 
     public static byte unsetBitb(byte map, int pos) {
-        assert pos >= 0 && pos < 8;
+        Preconditions.checkArgument(pos >= 0 && pos < 8);
         return (byte) (map & ~(1 << pos));
     }
 
     public static boolean readBitb(byte map, int pos) {
-        assert pos >= 0 && pos < 8;
+        Preconditions.checkArgument(pos >= 0 && pos < 8);
         return ((map >>> pos) & 1) == 1;
     }
 

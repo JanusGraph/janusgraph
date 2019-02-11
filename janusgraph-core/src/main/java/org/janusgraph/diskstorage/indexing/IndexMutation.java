@@ -94,7 +94,6 @@ public class IndexMutation extends Mutation<IndexEntry,IndexEntry> {
         if (additions == null || additions.isEmpty())
             return 0;
 
-        Preconditions.checkArgument(!additions.isEmpty());
         int ttl=-1;
         for (IndexEntry add : additions) {
             int ittl = 0;
@@ -107,7 +106,7 @@ public class IndexMutation extends Mutation<IndexEntry,IndexEntry> {
             Preconditions.checkArgument(ttl==ittl,"Index only supports uniform TTL values across all " +
                     "index fields, but got additions: %s",additions);
         }
-        assert ttl>=0;
+        Preconditions.checkArgument(ttl>=0);
         return ttl;
     }
 

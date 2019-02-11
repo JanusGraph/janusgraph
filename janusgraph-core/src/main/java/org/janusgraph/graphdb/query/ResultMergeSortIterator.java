@@ -68,11 +68,11 @@ public class ResultMergeSortIterator<R> implements Iterator<R> {
     public R nextInternal() {
         if (nextFirst == null && first.hasNext()) {
             nextFirst = first.next();
-            assert nextFirst != null;
+            Preconditions.checkNotNull(nextFirst);
         }
         if (nextSecond == null && second.hasNext()) {
             nextSecond = second.next();
-            assert nextSecond != null;
+            Preconditions.checkNotNull(nextSecond);
         }
         final R result;
         if (nextFirst == null && nextSecond == null) {

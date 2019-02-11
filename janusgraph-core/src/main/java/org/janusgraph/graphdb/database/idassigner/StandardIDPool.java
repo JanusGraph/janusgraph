@@ -170,7 +170,7 @@ public class StandardIDPool implements IDPool {
     }
 
     private synchronized void nextBlock() throws InterruptedException {
-        assert currentIndex == currentBlock.numIds();
+        Preconditions.checkState(currentIndex == currentBlock.numIds());
         Preconditions.checkState(!closed,"ID Pool has been closed for partition(%s)-namespace(%s) - cannot apply for new id block",
                 partition,idNamespace);
 
@@ -190,18 +190,18 @@ public class StandardIDPool implements IDPool {
 
         log.debug("ID partition({})-namespace({}) acquired block: [{}]", partition, idNamespace, currentBlock);
 
-        assert currentBlock.numIds()>0;
+        Preconditions.checkState(currentBlock.numIds()>0);
 
         nextBlock = null;
 
-        assert RENEW_ID_COUNT>0;
+        Preconditions.checkState(RENEW_ID_COUNT>0);
         renewBlockIndex = Math.max(0,currentBlock.numIds()-Math.max(RENEW_ID_COUNT, Math.round(currentBlock.numIds()*renewBufferPercentage)));
-        assert renewBlockIndex<currentBlock.numIds() && renewBlockIndex>=currentIndex;
+        Preconditions.checkState(renewBlockIndex<currentBlock.numIds() && renewBlockIndex>=currentIndex);
     }
 
     @Override
     public synchronized long nextID() {
-        assert currentIndex <= currentBlock.numIds();
+        Preconditions.checkState(currentIndex <= currentBlock.numIds());
 
         if (currentIndex == currentBlock.numIds()) {
             try {

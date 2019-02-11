@@ -33,9 +33,6 @@ public class KeyColumn {
         Preconditions.checkNotNull(col);
         this.key = key;
         this.col = col;
-
-        assert null != this.key;
-        assert null != this.col;
     }
 
     public StaticBuffer getKey() {

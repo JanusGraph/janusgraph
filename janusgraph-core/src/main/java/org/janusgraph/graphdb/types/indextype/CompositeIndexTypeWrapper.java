@@ -66,12 +66,12 @@ public class CompositeIndexTypeWrapper extends IndexTypeWrapper implements Compo
                 Preconditions.checkNotNull(value);
                 int pos = value;
                 Preconditions.checkArgument(pos>=0 && pos<numFields,"Invalid field position: %s",pos);
-                assert entry.getSchemaType() instanceof PropertyKey;
+                Preconditions.checkState(entry.getSchemaType() instanceof PropertyKey);
                 result[pos]=IndexField.of((PropertyKey)entry.getSchemaType());
             }
             fields=result;
         }
-        assert result!=null;
+        Preconditions.checkNotNull(result);
         return result;
     }
 

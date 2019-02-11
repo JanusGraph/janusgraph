@@ -58,7 +58,7 @@ public class JanusGraphHadoopSetupImpl extends JanusGraphHadoopSetupCommon {
         //Pre-load schema
         for (JanusGraphSchemaCategory sc : JanusGraphSchemaCategory.values()) {
             for (JanusGraphVertex k : QueryUtil.getVertices(tx, BaseKey.SchemaCategory, sc)) {
-                assert k instanceof JanusGraphSchemaVertex;
+                Preconditions.checkState(k instanceof JanusGraphSchemaVertex);
                 JanusGraphSchemaVertex s = (JanusGraphSchemaVertex)k;
                 if (sc.hasName()) {
                     String name = s.name();

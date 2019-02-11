@@ -79,7 +79,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
 
     @SuppressWarnings("deprecation")
     private void initialize() {
-        assert !initialized;
+        Preconditions.checkState(!initialized);
         initialized = true;
         if (useMultiQuery) {
             if (!starts.hasNext()) {
@@ -92,7 +92,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
                 multiQuery.addVertex(v.get());
             });
             starts.add(vertices.iterator());
-            assert vertices.size() > 0;
+            Preconditions.checkState(vertices.size() > 0);
             makeQuery(multiQuery);
 
             multiQueryResults = (Vertex.class.isAssignableFrom(getReturnClass())) ? multiQuery.vertices() : multiQuery.edges();
@@ -108,7 +108,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     @Override
     protected Iterator<E> flatMap(final Traverser.Admin<Vertex> traverser) {
         if (useMultiQuery) {
-            assert multiQueryResults != null;
+            Preconditions.checkState(multiQueryResults != null);
             return (Iterator<E>) multiQueryResults.get(traverser.get()).iterator();
         } else {
             final JanusGraphVertexQuery query = makeQuery((JanusGraphTraversalUtil.getJanusGraphVertex(traverser)).query());

@@ -37,21 +37,21 @@ public class TypeDefinitionMap extends EnumMap<TypeDefinitionCategory,Object> {
     }
 
     public TypeDefinitionMap setValue(TypeDefinitionCategory type, Object value) {
-        assert type  != null;
-        assert value != null;
-        assert type.verifyAttribute(value);
+        Preconditions.checkNotNull(type);
+        Preconditions.checkNotNull(value);
+        Preconditions.checkArgument(type.verifyAttribute(value));
         super.put(type,value);
         return this;
     }
 
     public<O> O getValue(TypeDefinitionCategory type) {
-        assert type != null;
+        Preconditions.checkNotNull(type);
         Object value = super.get(type);
         return (O) ((value == null) ? type.defaultValue(this) : value);
     }
 
     public<O> O getValue(TypeDefinitionCategory type, Class<O> clazz) {
-        assert type != null;
+        Preconditions.checkNotNull(type);
         Object value = super.get(type);
         return (O) ((value == null) ? type.defaultValue(this) : value);
     }

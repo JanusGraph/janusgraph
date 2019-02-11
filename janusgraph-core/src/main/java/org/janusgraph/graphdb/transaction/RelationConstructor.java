@@ -60,7 +60,7 @@ public class RelationConstructor {
 
             @Override
             public void remove() {
-                Preconditions.checkState(current!=null);
+                Preconditions.checkNotNull(current);
                 current.remove();
             }
         };
@@ -84,7 +84,7 @@ public class RelationConstructor {
         InternalRelationType type = TypeUtil.getBaseType((InternalRelationType) types.getExistingRelationType(relation.typeId));
 
         if (type.isPropertyKey()) {
-            assert relation.direction == Direction.OUT;
+            Preconditions.checkState(relation.direction == Direction.OUT);
             return new CacheVertexProperty(relation.relationId, (PropertyKey) type, vertex, relation.getValue(), data);
         }
 

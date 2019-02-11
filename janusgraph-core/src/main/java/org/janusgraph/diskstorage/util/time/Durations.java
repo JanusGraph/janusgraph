@@ -65,7 +65,7 @@ public class Durations {
             put(abbreviate(unit),unit); //abbreviated name
             String name = unit.toString().toLowerCase();
             put(name,unit); //abbreviated name in singular
-            assert name.endsWith("s");
+            Preconditions.checkState(name.endsWith("s"));
             put(name.substring(0,name.length()-1),unit);
         }
         put("us",ChronoUnit.MICROS);
@@ -73,7 +73,7 @@ public class Durations {
 
     public static TemporalUnit parse(String unitName) {
         TemporalUnit unit = unitNames.get(unitName.toLowerCase());
-        Preconditions.checkArgument(unit!=null,"Unknown unit time: %s",unitName);
+        Preconditions.checkNotNull(unit,"Unknown unit time: %s",unitName);
         return unit;
     }
 

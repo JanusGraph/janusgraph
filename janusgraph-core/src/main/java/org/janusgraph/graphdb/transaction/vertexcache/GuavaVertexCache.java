@@ -44,11 +44,11 @@ public class GuavaVertexCache implements VertexCache {
         cache = CacheBuilder.newBuilder().maximumSize(maxCacheSize).concurrencyLevel(concurrencyLevel)
                 .removalListener((RemovalListener<Long, InternalVertex>) notification -> {
                     if (notification.getCause() == RemovalCause.EXPLICIT) { //Due to invalidation at the end
-                        assert volatileVertices.isEmpty();
+                        Preconditions.checkState(volatileVertices.isEmpty());
                         return;
                     }
                     //Should only get evicted based on size constraint or replaced through add
-                    assert (notification.getCause() == RemovalCause.SIZE || notification.getCause() == RemovalCause.REPLACED) : "Cause: " + notification.getCause();
+                    Preconditions.checkState((notification.getCause() == RemovalCause.SIZE || notification.getCause() == RemovalCause.REPLACED), "Cause: %s", notification.getCause());
                     final InternalVertex v = notification.getValue();
                     if (((AbstractVertex) v).isTxOpen() && v.isModified()) {
                         volatileVertices.putIfAbsent(notification.getKey(), v);
@@ -76,11 +76,11 @@ public class GuavaVertexCache implements VertexCache {
             if (newVertex == null) {
                 newVertex = retriever.get(vertexId);
             }
-            assert newVertex!=null;
+            Preconditions.checkNotNull(newVertex);
             try {
                 vertex = cache.get(vertexId, new NewVertexCallable(newVertex));
             } catch (Exception e) { throw new AssertionError("Should not happen: "+e.getMessage()); }
-            assert vertex!=null;
+            Preconditions.checkNotNull(vertex);
         }
 
         return vertex;

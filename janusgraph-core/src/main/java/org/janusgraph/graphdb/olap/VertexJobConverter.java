@@ -122,7 +122,7 @@ public class VertexJobConverter implements ScanJob {
     @Override
     public void process(StaticBuffer key, Map<SliceQuery, EntryList> entries, ScanMetrics metrics) {
         long vertexId = getVertexId(key);
-        assert entries.get(VERTEX_EXISTS_QUERY)!=null;
+        Preconditions.checkNotNull(entries.get(VERTEX_EXISTS_QUERY));
         if (isGhostVertex(vertexId, entries.get(VERTEX_EXISTS_QUERY))) {
             metrics.incrementCustom(GHOST_VERTEX_COUNT);
             return;
@@ -209,7 +209,7 @@ public class VertexJobConverter implements ScanJob {
         }
 
         public final StandardJanusGraph get() {
-            Preconditions.checkState(graph!=null);
+            Preconditions.checkNotNull(graph);
             return graph;
         }
 

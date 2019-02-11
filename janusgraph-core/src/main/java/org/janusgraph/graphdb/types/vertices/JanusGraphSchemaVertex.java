@@ -54,10 +54,10 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
             } else {
                 p = Iterables.getOnlyElement(query().type(BaseKey.SchemaName).properties(), null);
             }
-            Preconditions.checkState(p!=null,"Could not find type for id: %s", longId());
+            Preconditions.checkNotNull(p,"Could not find type for id: %s", longId());
             name = p.value();
         }
-        assert name != null;
+        Preconditions.checkNotNull(name);
         return JanusGraphSchemaCategory.getName(name);
     }
 
@@ -87,10 +87,10 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
                 Preconditions.checkArgument(desc!=null && desc.getCategory().isProperty());
                 def.setValue(desc.getCategory(), property.value());
             }
-            assert def.size()>0;
+            Preconditions.checkState(def.size()>0);
             definition = def;
         }
-        assert def!=null;
+        Preconditions.checkNotNull(def);
         return def;
     }
 
@@ -100,7 +100,7 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
 
     @Override
     public Iterable<Entry> getRelated(TypeDefinitionCategory def, Direction dir) {
-        assert dir==Direction.OUT || dir==Direction.IN;
+        Preconditions.checkArgument(dir==Direction.OUT || dir==Direction.IN);
         ListMultimap<TypeDefinitionCategory,Entry> relations = dir==Direction.OUT?outRelations:inRelations;
         if (relations==null) {
             ImmutableListMultimap.Builder<TypeDefinitionCategory,Entry> b = ImmutableListMultimap.builder();
@@ -115,11 +115,11 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
             }
             for (JanusGraphEdge edge: edges) {
                 JanusGraphVertex oth = edge.vertex(dir.opposite());
-                assert oth instanceof JanusGraphSchemaVertex;
+                Preconditions.checkState(oth instanceof JanusGraphSchemaVertex);
                 TypeDefinitionDescription desc = edge.valueOrNull(BaseKey.SchemaDefinitionDesc);
                 Object modifier = null;
                 if (desc.getCategory().hasDataType()) {
-                    assert desc.getModifier()!=null && desc.getModifier().getClass().equals(desc.getCategory().getDataType());
+                    Preconditions.checkState(desc.getModifier()!=null && desc.getModifier().getClass().equals(desc.getCategory().getDataType()));
                     modifier = desc.getModifier();
                 }
                 b.put(desc.getCategory(), new Entry((JanusGraphSchemaVertex) oth, modifier));
@@ -128,7 +128,7 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
             if (dir==Direction.OUT) outRelations=relations;
             else inRelations=relations;
         }
-        assert relations!=null;
+        Preconditions.checkNotNull(relations);
         return relations.get(def);
     }
 

@@ -130,7 +130,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             }
         }
 
-        assert query.getSliceStart().compareTo(query.getSliceEnd()) < 0;
+        Preconditions.checkState(query.getSliceStart().compareTo(query.getSliceEnd()) < 0);
         ConsistencyLevel consistency = getTx(txh).getReadConsistencyLevel().getThrift();
         SlicePredicate predicate = new SlicePredicate();
         SliceRange range = new SliceRange();

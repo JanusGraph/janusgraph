@@ -35,8 +35,8 @@ import java.util.*;
 public class QueryUtil {
 
     public static int adjustLimitForTxModifications(StandardJanusGraphTx tx, int uncoveredAndConditions, int limit) {
-        assert limit > 0 && limit <= 1000000000; //To make sure limit computation does not overflow
-        assert uncoveredAndConditions >= 0;
+        Preconditions.checkArgument(limit > 0 && limit <= 1000000000); //To make sure limit computation does not overflow
+        Preconditions.checkArgument(uncoveredAndConditions >= 0);
 
         if (uncoveredAndConditions > 0) {
             final int maxMultiplier = Integer.MAX_VALUE / limit;
@@ -50,18 +50,18 @@ public class QueryUtil {
     }
 
     public static int convertLimit(long limit) {
-        assert limit>=0;
+        Preconditions.checkArgument(limit>=0);
         if (limit>=Integer.MAX_VALUE) return Integer.MAX_VALUE;
         else return (int)limit;
     }
 
     public static int mergeLowLimits(int limit1, int limit2) {
-        assert limit1>=0 && limit2>=0;
+        Preconditions.checkArgument(limit1>=0 && limit2>=0);
         return Math.max(limit1,limit2);
     }
 
     public static int mergeHighLimits(int limit1, int limit2) {
-        assert limit1>=0 && limit2>=0;
+        Preconditions.checkArgument(limit1>=0 && limit2>=0);
         return Math.min(limit1,limit2);
     }
 
@@ -174,7 +174,7 @@ public class QueryUtil {
 
             if (type.isPropertyKey()) {
                 final PropertyKey key = (PropertyKey) type;
-                assert predicate.isValidCondition(value);
+                Preconditions.checkState(predicate.isValidCondition(value));
                 Preconditions.checkArgument(key.dataType()==Object.class || predicate.isValidValueType(key.dataType()), "Data type of key is not compatible with condition");
             } else { //its a label
                 Preconditions.checkArgument(((EdgeLabel) type).isUnidirected());
@@ -289,7 +289,7 @@ public class QueryUtil {
             values.add(value);
         }
         if (masterType==null) return null;
-        assert !values.isEmpty();
+        Preconditions.checkState(!values.isEmpty());
         return new AbstractMap.SimpleImmutableEntry(masterType,values);
     }
 

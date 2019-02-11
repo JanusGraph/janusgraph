@@ -388,7 +388,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             else b = 0;
             partitionId = (partitionId<<8) + b;
         }
-        assert manager.partitionBitWidth>=0 && manager.partitionBitWidth<=32;
+        Preconditions.checkState(manager.partitionBitWidth>=0 && manager.partitionBitWidth<=32);
         //and then extract the number of partitions bits
         if (manager.partitionBitWidth==0) partitionId=0;
         else partitionId = partitionId>>>(32-manager.partitionBitWidth);

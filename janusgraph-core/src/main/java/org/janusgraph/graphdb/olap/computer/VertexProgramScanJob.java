@@ -14,6 +14,13 @@
 
 package org.janusgraph.graphdb.olap.computer;
 
+import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
+import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
+import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
+import org.apache.tinkerpop.gremlin.process.computer.traversal.TraversalVertexProgram;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.ReadOnlyTransactionException;
@@ -30,12 +37,6 @@ import org.janusgraph.graphdb.olap.VertexJobConverter;
 import org.janusgraph.graphdb.olap.VertexScanJob;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphVertexStep;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
-import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
-import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
-import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
-import org.apache.tinkerpop.gremlin.process.computer.traversal.TraversalVertexProgram;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.io.Closeable;
 import java.util.Iterator;
@@ -128,7 +129,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
             if (scope instanceof MessageScope.Global) {
                 queries.addQuery().direction(Direction.BOTH).edges();
             } else {
-                assert scope instanceof MessageScope.Local;
+                Preconditions.checkState(scope instanceof MessageScope.Local);
                 JanusGraphVertexStep<Vertex> startStep = FulgoraUtil.getReverseJanusGraphVertexStep((MessageScope.Local) scope,queries.getTransaction());
                 QueryContainer.QueryBuilder qb = queries.addQuery();
                 startStep.makeQuery(qb);

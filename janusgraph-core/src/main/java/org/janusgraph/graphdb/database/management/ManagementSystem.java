@@ -187,7 +187,7 @@ public class ManagementSystem implements JanusGraphManagement {
             if (option.getType() == ConfigOption.Type.GLOBAL_OFFLINE) {
                 //Verify that there no other open JanusGraph graph instance and no open transactions
                 Set<String> openInstances = getOpenInstancesInternal();
-                assert openInstances.size() > 0;
+                Preconditions.checkState(openInstances.size() > 0);
                 Preconditions.checkArgument(openInstances.size() < 2, "Cannot change offline config option [%s] since multiple instances are currently open: %s", option, openInstances);
                 Preconditions.checkArgument(openInstances.contains(graph.getConfiguration().getUniqueGraphId()),
                         "Only one open instance ("
@@ -342,8 +342,8 @@ public class ManagementSystem implements JanusGraphManagement {
             lm.unidirected(direction);
             maker = lm;
         } else {
-            assert type.isPropertyKey();
-            assert direction == Direction.OUT;
+            Preconditions.checkState(type.isPropertyKey());
+            Preconditions.checkState(direction == Direction.OUT);
             StandardPropertyKeyMaker lm = (StandardPropertyKeyMaker) transaction.makePropertyKey(composedName);
             lm.dataType(((PropertyKey) type).dataType());
             maker = lm;
@@ -388,7 +388,7 @@ public class ManagementSystem implements JanusGraphManagement {
         //Don't use SchemaCache to make code more compact and since we don't need the extra performance here
         JanusGraphVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(transaction, BaseKey.SchemaName, JanusGraphSchemaCategory.getRelationTypeName(composedName)), null);
         if (v == null) return null;
-        assert v instanceof InternalRelationType;
+        Preconditions.checkState(v instanceof InternalRelationType);
         return new RelationTypeIndexWrapper((InternalRelationType) v);
     }
 
@@ -430,7 +430,7 @@ public class ManagementSystem implements JanusGraphManagement {
         return StreamSupport.stream(
             QueryUtil.getVertices(transaction, BaseKey.SchemaCategory, JanusGraphSchemaCategory.GRAPHINDEX).spliterator(), false)
             .map(janusGraphVertex -> {
-                assert janusGraphVertex instanceof JanusGraphSchemaVertex;
+                Preconditions.checkState(janusGraphVertex instanceof JanusGraphSchemaVertex);
                 return ((JanusGraphSchemaVertex) janusGraphVertex).asIndexType();
             })
             .filter(indexType -> indexType.getElement().subsumedBy(elementType))
@@ -1088,9 +1088,9 @@ public class ManagementSystem implements JanusGraphManagement {
         for (JanusGraphEdge edge : vertex.getEdges(TypeDefinitionCategory.INDEX_FIELD, Direction.OUT)) {
             if (!keys.contains(edge.vertex(Direction.IN))) continue; //Only address edges with matching keys
             TypeDefinitionDescription desc = edge.valueOrNull(BaseKey.SchemaDefinitionDesc);
-            assert desc.getCategory() == TypeDefinitionCategory.INDEX_FIELD;
+            Preconditions.checkState(desc.getCategory() == TypeDefinitionCategory.INDEX_FIELD);
             Parameter[] parameters = (Parameter[]) desc.getModifier();
-            assert parameters[parameters.length - 1].key().equals(ParameterType.STATUS.getName());
+            Preconditions.checkState(parameters[parameters.length - 1].key().equals(ParameterType.STATUS.getName()));
             if (parameters[parameters.length - 1].value().equals(status)) continue;
 
             Parameter[] paraCopy = Arrays.copyOf(parameters, parameters.length);
@@ -1216,7 +1216,7 @@ public class ManagementSystem implements JanusGraphManagement {
             InternalRelationType relType = (InternalRelationType) schemaVertex;
             if (relType.getBaseType() != null) {
                 newName = composeRelationTypeIndexName(relType.getBaseType(), newName);
-            } else assert !(element instanceof RelationTypeIndex);
+            } else Preconditions.checkState(!(element instanceof RelationTypeIndex));
 
             JanusGraphSchemaCategory cat = relType.isEdgeLabel() ?
                     JanusGraphSchemaCategory.EDGELABEL : JanusGraphSchemaCategory.PROPERTYKEY;
@@ -1259,9 +1259,9 @@ public class ManagementSystem implements JanusGraphManagement {
         } else if (element instanceof JanusGraphIndex) {
             Preconditions.checkArgument(element instanceof JanusGraphIndexWrapper, "Invalid schema element provided: %s", element);
             IndexType index = ((JanusGraphIndexWrapper) element).getBaseIndex();
-            assert index instanceof IndexTypeWrapper;
+            Preconditions.checkState(index instanceof IndexTypeWrapper);
             SchemaSource base = ((IndexTypeWrapper) index).getSchemaBase();
-            assert base instanceof JanusGraphSchemaVertex;
+            Preconditions.checkState(base instanceof JanusGraphSchemaVertex);
             return (JanusGraphSchemaVertex) base;
         }
         throw new IllegalArgumentException("Invalid schema element provided: " + element);
@@ -1372,7 +1372,7 @@ public class ManagementSystem implements JanusGraphManagement {
             typeVertex = (JanusGraphSchemaVertex) element;
         } else if (element instanceof JanusGraphIndex) {
             IndexType index = ((JanusGraphIndexWrapper) element).getBaseIndex();
-            assert index instanceof IndexTypeWrapper;
+            Preconditions.checkState(index instanceof IndexTypeWrapper);
             SchemaSource base = ((IndexTypeWrapper) index).getSchemaBase();
             typeVertex = (JanusGraphSchemaVertex) base;
         } else throw new IllegalArgumentException("Invalid schema element: " + element);

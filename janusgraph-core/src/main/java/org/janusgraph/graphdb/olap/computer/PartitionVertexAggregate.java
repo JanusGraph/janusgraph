@@ -14,8 +14,9 @@
 
 package org.janusgraph.graphdb.olap.computer;
 
-import org.janusgraph.diskstorage.EntryList;
+import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
+import org.janusgraph.diskstorage.EntryList;
 
 import java.util.Collections;
 import java.util.Map;
@@ -31,7 +32,7 @@ public class PartitionVertexAggregate<M> extends VertexState<M> {
     }
 
     public synchronized void setLoadedProperties(EntryList props) {
-        assert properties==null;
+        Preconditions.checkArgument(properties==null);
         properties = props;
     }
 

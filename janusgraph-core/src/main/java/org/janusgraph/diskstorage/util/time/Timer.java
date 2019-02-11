@@ -47,12 +47,12 @@ public class Timer {
     }
 
     public Instant getStartTime() {
-        Preconditions.checkState(null != start, "Timer never started");
+        Preconditions.checkNotNull(start, "Timer never started");
         return start;
     }
 
     public Timer stop() {
-        Preconditions.checkState(null != start, "Timer stopped before it was started");
+        Preconditions.checkNotNull(start, "Timer stopped before it was started");
         stop = times.getTime();
         return this;
     }

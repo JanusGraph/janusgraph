@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.vertices;
 
+import com.google.common.base.Preconditions;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.graphdb.internal.InternalRelation;
 
@@ -46,7 +47,7 @@ public class RemovableRelationIterator<O extends JanusGraphRelation>
 
     @Override
     public void remove() {
-        assert current != null;
+        Preconditions.checkNotNull(current);
         //iterator.remove();
         current.remove();
     }

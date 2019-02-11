@@ -54,7 +54,7 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
     public String readByteOrder(ScanBuffer buffer) {
         byte prefix = buffer.getByte();
         if (prefix==-1) return null;
-        assert prefix==0;
+        Preconditions.checkState(prefix==0);
         StringBuilder s = new StringBuilder();
         while (true) {
             char c = cs.readByteOrder(buffer);
@@ -100,7 +100,7 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
         if (length==0) return null;
 
         long compressionId = length & COMPRESSOR_BIT_MASK;
-        assert compressionId<MAX_NUM_COMPRESSORS;
+        Preconditions.checkState(compressionId<MAX_NUM_COMPRESSORS);
         CompressionType compression = CompressionType.getFromId((int)compressionId);
         length = (length>>>COMPRESSOR_BIT_LEN);
         String value;
@@ -119,7 +119,7 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
                 } else throw new IllegalArgumentException("Invalid ASCII encoding offset: " + length);
             } else { //variable full UTF encoding
                 length = length>>>1;
-                assert length>0 && length<=Integer.MAX_VALUE;
+                Preconditions.checkState(length>0 && length<=Integer.MAX_VALUE);
                 StringBuilder sb = new StringBuilder((int)length);
                 for (int i = 0; i < length; i++) {
                     int b = buffer.getByte() & 0xFF;
@@ -146,7 +146,7 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
                 value = sb.toString();
             }
         } else {
-            assert length<=Integer.MAX_VALUE;
+            Preconditions.checkState(length<=Integer.MAX_VALUE);
             value = compression.decompress(buffer,(int)length);
         }
         return value;
@@ -163,22 +163,22 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
         } else {
             compression=CompressionType.NO_COMPRESSION;
         }
-        assert compression!=null;
-        assert compression.getId()<MAX_NUM_COMPRESSORS;
+        Preconditions.checkNotNull(compression);
+        Preconditions.checkState(compression.getId()<MAX_NUM_COMPRESSORS);
         if (compression==CompressionType.NO_COMPRESSION) {
-            assert compression.getId()==0;
+            Preconditions.checkState(compression.getId()==0);
             if (StringEncoding.isAsciiString(attribute)) {
                 if (attribute.length()==0) VariableLong.writePositive(buffer, 1L <<NO_COMPRESSION_OFFSET);
                 else VariableLong.writePositive(buffer, 2L <<NO_COMPRESSION_OFFSET);
                 for (int i = 0; i < attribute.length(); i++) {
                     int c = attribute.charAt(i);
-                    assert c <= 127;
+                    Preconditions.checkState(c <= 127);
                     byte b = (byte)c;
                     if (i+1==attribute.length()) b |= 0x80; //End marker
                     buffer.putByte(b);
                 }
             } else {
-                assert attribute.length()>0;
+                Preconditions.checkState(attribute.length()>0);
                 VariableLong.writePositive(buffer,(((long)attribute.length())<<NO_COMPRESSION_OFFSET) + (1L <<COMPRESSOR_BIT_LEN)); //Marker for full UTF encoding
                 for (int i = 0; i < attribute.length(); i++) { //variable encoding of the characters
                     int c = attribute.charAt(i);
@@ -198,7 +198,7 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
         } else {
             byte[] compressed = compression.compress(attribute);
             int length = compressed.length;
-            assert length>0;
+            Preconditions.checkState(length>0);
             VariableLong.writePositive(buffer,(((long)length)<<COMPRESSOR_BIT_LEN) + compression.getId());
             buffer.putBytes(compressed);
         }

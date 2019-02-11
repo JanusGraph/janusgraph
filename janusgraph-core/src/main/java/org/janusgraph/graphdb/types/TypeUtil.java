@@ -71,7 +71,7 @@ public class TypeUtil {
                 if (index.indexesKey(key)) return true;
 //                InternalIndexType iIndex = (InternalIndexType)index;
 //                if (iIndex.getFieldKeys().length==1) {
-//                    assert iIndex.getFieldKeys()[0].getFieldKey().equals(key);
+//                    Preconditions.checkState(iIndex.getFieldKeys()[0].getFieldKey().equals(key));
 //                    return true;
 //                }
             }
@@ -98,9 +98,9 @@ public class TypeUtil {
         for (IndexType index : ((InternalRelationType)key).getKeyIndexes()) {
             if (index.isCompositeIndex()) {
                 CompositeIndexType iIndex = (CompositeIndexType)index;
-                assert index.indexesKey(key);
+                Preconditions.checkState(index.indexesKey(key));
                 if (iIndex.getCardinality()== Cardinality.SINGLE) {
-                    assert iIndex.getElement()==ElementCategory.VERTEX;
+                    Preconditions.checkState(iIndex.getElement()==ElementCategory.VERTEX);
                     indexes.add(iIndex);
                 }
             }

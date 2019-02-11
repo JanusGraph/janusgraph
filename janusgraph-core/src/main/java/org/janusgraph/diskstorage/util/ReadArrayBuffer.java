@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.util;
 
+import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.ReadBuffer;
 
 /**
@@ -70,7 +71,7 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
 
     @Override
     public void movePositionTo(int newPosition) {
-        assert newPosition >= 0 && newPosition <= length();
+        Preconditions.checkArgument(newPosition >= 0 && newPosition <= length());
         position = newPosition;
     }
 

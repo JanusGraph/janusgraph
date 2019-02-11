@@ -340,7 +340,7 @@ public class IDManager {
         abstract boolean isProper();
 
         public final long addPadding(long count) {
-            assert offset()>0;
+            Preconditions.checkState(offset()>0);
             Preconditions.checkArgument(count>0 && count<(1L <<(TOTAL_BITS-offset())),"Count out of range for type [%s]: %s",this,count);
             return (count << offset()) | suffix();
         }
@@ -419,7 +419,7 @@ public class IDManager {
         partitionIDBound = (1L << (partitionBits));
 
         relationCountBound = partitionBits==0?Long.MAX_VALUE:(1L << (TOTAL_BITS - partitionBits));
-        assert VertexIDType.NormalVertex.offset()>0;
+        Preconditions.checkState(VertexIDType.NormalVertex.offset()>0);
         vertexCountBound = (1L << (TOTAL_BITS - partitionBits - USERVERTEX_PADDING_BITWIDTH));
 
 
@@ -471,9 +471,9 @@ public class IDManager {
 
     public long getPartitionId(long vertexId) {
         if (VertexIDType.Schema.is(vertexId)) return SCHEMA_PARTITION;
-        assert isUserVertexId(vertexId) && getUserVertexIDType(vertexId)!=null;
+        Preconditions.checkArgument(isUserVertexId(vertexId) && getUserVertexIDType(vertexId)!=null);
         long partition = (vertexId>>>USERVERTEX_PADDING_BITWIDTH) & (partitionIDBound-1);
-        assert partition>=0;
+        Preconditions.checkState(partition>=0);
         return partition;
     }
 
@@ -482,12 +482,12 @@ public class IDManager {
             //No partition for schema vertices
             return BufferUtil.getLongBuffer(vertexId);
         } else {
-            assert isUserVertexId(vertexId);
+            Preconditions.checkArgument(isUserVertexId(vertexId));
             VertexIDType type = getUserVertexIDType(vertexId);
-            assert type.offset()==USERVERTEX_PADDING_BITWIDTH;
+            Preconditions.checkState(type.offset()==USERVERTEX_PADDING_BITWIDTH);
             long partition = getPartitionId(vertexId);
             long count = vertexId>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
-            assert count>0;
+            Preconditions.checkState(count>0);
             long keyId = (partition<<partitionOffset) | type.addPadding(count);
             return BufferUtil.getLongBuffer(keyId);
         }
@@ -531,7 +531,7 @@ public class IDManager {
             result = result ^ ((id>>>offset) & (partitionIDBound-1));
             offset+=partitionBits;
         }
-        assert result>=0 && result<partitionIDBound;
+        Preconditions.checkState(result>=0 && result<partitionIDBound);
         return result;
     }
 
@@ -553,13 +553,13 @@ public class IDManager {
     public long getPartitionedVertexId(long partitionedVertexId, long otherPartition) {
         Preconditions.checkArgument(VertexIDType.PartitionedVertex.is(partitionedVertexId));
         long count = partitionedVertexId>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
-        assert count>0;
+        Preconditions.checkState(count>0);
         return constructId(count,otherPartition,VertexIDType.PartitionedVertex);
     }
 
     public long[] getPartitionedVertexRepresentatives(long partitionedVertexId) {
         Preconditions.checkArgument(isPartitionedVertex(partitionedVertexId));
-        assert getPartitionBound()<Integer.MAX_VALUE;
+        Preconditions.checkState(getPartitionBound()<Integer.MAX_VALUE);
         long[] ids = new long[(int)getPartitionBound()];
         for (int i=0;i<getPartitionBound();i++) {
             ids[i]=getPartitionedVertexId(partitionedVertexId,i);

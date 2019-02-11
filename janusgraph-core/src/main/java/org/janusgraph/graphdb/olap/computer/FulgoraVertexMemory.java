@@ -61,7 +61,7 @@ public class FulgoraVertexMemory<M> {
     }
 
     private VertexState<M> get(long vertexId, boolean create) {
-        assert vertexId==getCanonicalId(vertexId);
+        Preconditions.checkArgument(vertexId==getCanonicalId(vertexId));
         VertexState<M> state = vertexStates.get(vertexId);
         if (state==null) {
             if (!create) return VertexState.EMPTY_STATE;
@@ -139,7 +139,7 @@ public class FulgoraVertexMemory<M> {
     //######## Partitioned Vertices ##########
 
     private PartitionVertexAggregate<M> getPartitioned(long vertexId) {
-        assert idManager.isPartitionedVertex(vertexId);
+        Preconditions.checkArgument(idManager.isPartitionedVertex(vertexId));
         vertexId=getCanonicalId(vertexId);
         PartitionVertexAggregate<M> state = partitionVertices.get(vertexId);
         if (state==null) {

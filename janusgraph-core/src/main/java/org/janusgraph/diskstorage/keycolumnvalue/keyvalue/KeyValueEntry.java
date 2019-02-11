@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue.keyvalue;
 
+import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.StaticBuffer;
 
 /**
@@ -28,8 +29,8 @@ public class KeyValueEntry {
     private final StaticBuffer value;
 
     public KeyValueEntry(StaticBuffer key, StaticBuffer value) {
-        assert key != null;
-        assert value != null;
+        Preconditions.checkNotNull(key);
+        Preconditions.checkNotNull(value);
         this.key = key;
         this.value = value;
     }

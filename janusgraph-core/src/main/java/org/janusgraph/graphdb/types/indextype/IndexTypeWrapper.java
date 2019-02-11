@@ -83,7 +83,7 @@ public abstract class IndexTypeWrapper implements IndexType {
             result=b.build();
             fieldMap=result;
         }
-        assert result!=null;
+        Preconditions.checkNotNull(result);
         return result.get(key);
     }
 
@@ -105,7 +105,7 @@ public abstract class IndexTypeWrapper implements IndexType {
             } else {
                 constraint =
                         (JanusGraphSchemaType)Iterables.getOnlyElement(related,null).getSchemaType();
-                assert constraint!=null;
+                Preconditions.checkNotNull(constraint);
             }
             schemaTypeConstraint = constraint;
             cachedTypeConstraint = true;

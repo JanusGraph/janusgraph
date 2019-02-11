@@ -89,7 +89,7 @@ public class PartitionedVertexProgramExecutor<M> {
 
         private PartitionedVertexProcessor(long vertexId, EntryList preloaded, StandardJanusGraphTx tx, ScanMetrics metrics) {
             Preconditions.checkArgument(idManager.isPartitionedVertex(vertexId) && idManager.isCanonicalVertexId(vertexId));
-            assert preloaded!=null;
+            Preconditions.checkNotNull(preloaded);
             this.vertexId = vertexId;
             this.preloaded = preloaded;
             this.tx = tx;

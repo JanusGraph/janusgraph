@@ -81,7 +81,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             cassandraConfig = config.get(GraphDatabaseConfiguration.STORAGE_CONF_FILE);
         }
 
-        assert cassandraConfig != null && !cassandraConfig.isEmpty();
+        Preconditions.checkState(cassandraConfig != null && !cassandraConfig.isEmpty());
 
         File ccf = new File(cassandraConfig);
 

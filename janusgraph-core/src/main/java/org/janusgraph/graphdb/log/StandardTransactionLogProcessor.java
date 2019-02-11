@@ -204,7 +204,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
                         for (final MixedIndexType index : getMixedIndexes(rel.getType())) {
                             if (index.getElement()== ElementCategory.VERTEX
                                 && isFailedIndex.apply(index.getBackingIndexName())) {
-                                assert rel.isProperty();
+                                Preconditions.checkState(rel.isProperty());
                                 indexRestores.put(index.getBackingIndexName(), new IndexRestore(
                                     rel.getVertex(0).longId(), ElementCategory.VERTEX, getIndexId(index)));
                             }
@@ -214,7 +214,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
                             for (final MixedIndexType index : getMixedIndexes(relType)) {
                                 if (index.getElement().isInstance(rel)
                                     && isFailedIndex.apply(index.getBackingIndexName())) {
-                                    assert rel.id() instanceof RelationIdentifier;
+                                    Preconditions.checkState(rel.id() instanceof RelationIdentifier);
                                     indexRestores.put(index.getBackingIndexName(), new IndexRestore(rel.id(),
                                         ElementCategory.getByClazz(rel.getClass()), getIndexId(index)));
                                 }
@@ -297,7 +297,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
     private static long getIndexId(IndexType index) {
         SchemaSource base = ((IndexTypeWrapper)index).getSchemaBase();
-        assert base instanceof JanusGraphSchemaVertex;
+        Preconditions.checkState(base instanceof JanusGraphSchemaVertex);
         return base.longId();
     }
 

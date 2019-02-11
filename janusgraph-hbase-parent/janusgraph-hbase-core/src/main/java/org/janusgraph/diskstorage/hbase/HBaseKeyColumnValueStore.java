@@ -177,7 +177,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             if (results == null)
                 return KCVSUtil.emptyResults(keys);
 
-            assert results.length==keys.size();
+            Preconditions.checkState(results.length==keys.size());
 
             for (int i = 0; i < results.length; i++) {
                 final Result result = results[i];

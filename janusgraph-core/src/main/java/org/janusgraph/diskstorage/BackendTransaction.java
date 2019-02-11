@@ -317,7 +317,7 @@ public class BackendTransaction implements LoggableTransaction {
                     throw new JanusGraphException("Could not successfully complete multi-query. " + failureCount.get() + " individual queries failed.");
                 }
                 for (int i=0;i<keys.size();i++) {
-                    assert resultArray[i]!=null;
+                    Preconditions.checkNotNull(resultArray[i]);
                     results.put(keys.get(i),resultArray[i]);
                 }
             }

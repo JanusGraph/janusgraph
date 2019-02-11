@@ -128,7 +128,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
 
         lockedOn(store);
         Map<KeyColumn, StaticBuffer> m = expectedValuesByStore.get(store);
-        assert null != m;
+        Preconditions.checkNotNull(m);
         if (m.containsKey(lockID)) {
             log.debug("Multiple expected values for {}: keeping initial value {} and discarding later value {}",
                 lockID, m.get(lockID), value);
@@ -255,10 +255,10 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
 
         final Iterable<StaticBuffer> actualValues = Iterables.transform(actualEntries, e -> {
             final StaticBuffer actualCol = e.getColumnAs(StaticBuffer.STATIC_FACTORY);
-            assert null != actualCol;
-            assert null != kc.getColumn();
-            assert 0 >= kc.getColumn().compareTo(actualCol);
-            assert 0  > actualCol.compareTo(nextBuf);
+            Preconditions.checkNotNull(actualCol);
+            Preconditions.checkNotNull(kc.getColumn());
+            Preconditions.checkState(0 >= kc.getColumn().compareTo(actualCol));
+            Preconditions.checkState(0  > actualCol.compareTo(nextBuf));
             return e.getValueAs(StaticBuffer.STATIC_FACTORY);
         });
 

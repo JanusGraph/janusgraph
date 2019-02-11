@@ -73,7 +73,7 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
             }
             return satisfiesCondition(null);
         } else {
-            assert ((InternalRelationType)type).multiplicity().isUnique(Direction.OUT);
+            Preconditions.checkState(((InternalRelationType)type).multiplicity().isUnique(Direction.OUT));
             return satisfiesCondition(element.value(type.name()));
         }
     }

@@ -16,6 +16,7 @@ package org.janusgraph.diskstorage.locking.consistentkey;
 
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,14 +121,14 @@ public class ExpectedValueCheckingStore extends KCVSProxy {
     }
 
     protected StoreTransaction unwrapTx(StoreTransaction t) {
-        assert null != t;
-        assert t instanceof ExpectedValueCheckingTransaction;
+        Preconditions.checkNotNull(t);
+        Preconditions.checkArgument(t instanceof ExpectedValueCheckingTransaction);
         return ((ExpectedValueCheckingTransaction) t).getInconsistentTx();
     }
 
     private static StoreTransaction getConsistentTx(StoreTransaction t) {
-        assert null != t;
-        assert t instanceof ExpectedValueCheckingTransaction;
+        Preconditions.checkNotNull(t);
+        Preconditions.checkArgument(t instanceof ExpectedValueCheckingTransaction);
         return ((ExpectedValueCheckingTransaction) t).getConsistentTx();
     }
 }

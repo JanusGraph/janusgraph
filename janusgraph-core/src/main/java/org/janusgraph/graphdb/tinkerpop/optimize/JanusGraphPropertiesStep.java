@@ -78,21 +78,21 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
         if (getReturnType().forProperties()) {
             return (Iterator<E>) iterable.iterator();
         }
-        assert getReturnType().forValues();
+        Preconditions.checkState(getReturnType().forValues());
         return (Iterator<E>) Iterators.transform(iterable.iterator(), Property::value);
     }
 
     @SuppressWarnings("deprecation")
     private void initialize() {
-        assert !initialized;
+        Preconditions.checkState(!initialized);
         initialized = true;
-        assert getReturnType().forProperties() || (orders.isEmpty() && hasContainers.isEmpty());
+        Preconditions.checkState(getReturnType().forProperties() || (orders.isEmpty() && hasContainers.isEmpty()));
 
         if (!starts.hasNext()) throw FastNoSuchElementException.instance();
         final List<Traverser.Admin<Element>> elements = new ArrayList<>();
         starts.forEachRemaining(elements::add);
         starts.add(elements.iterator());
-        assert elements.size() > 0;
+        Preconditions.checkState(elements.size() > 0);
 
         useMultiQuery = useMultiQuery && elements.stream().allMatch(e -> e.get() instanceof Vertex);
 
@@ -114,7 +114,7 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     @Override
     protected Iterator<E> flatMap(final Traverser.Admin<Element> traverser) {
         if (useMultiQuery) { //it is guaranteed that all elements are vertices
-            assert multiQueryResults != null;
+            Preconditions.checkState(multiQueryResults != null);
             return convertIterator(multiQueryResults.get(traverser.get()));
         } else if (traverser.get() instanceof JanusGraphVertex || traverser.get() instanceof WrappedVertex) {
             final JanusGraphVertexQuery query = makeQuery((JanusGraphTraversalUtil.getJanusGraphVertex(traverser)).query());
@@ -123,11 +123,11 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
             //It is some other element (edge or vertex property)
             Iterator<E> iterator;
             if (getReturnType().forValues()) {
-                assert orders.isEmpty() && hasContainers.isEmpty();
+                Preconditions.checkState(orders.isEmpty() && hasContainers.isEmpty());
                 iterator = traverser.get().values(getPropertyKeys());
             } else {
                 //this asks for properties
-                assert orders.isEmpty();
+                Preconditions.checkState(orders.isEmpty());
                 //HasContainers don't apply => empty result set
                 if (!hasContainers.isEmpty()) return Collections.emptyIterator();
                 iterator = (Iterator<E>) traverser.get().properties(getPropertyKeys());

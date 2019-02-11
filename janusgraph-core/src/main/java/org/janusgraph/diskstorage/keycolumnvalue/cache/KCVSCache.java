@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue.cache;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
@@ -45,7 +46,7 @@ public abstract class KCVSCache extends KCVSProxy {
     }
 
     protected void incActionBy(int by, CacheMetricsAction action, StoreTransaction txh) {
-        assert by>=1;
+        Preconditions.checkArgument(by>=1);
         if (metricsName!=null && txh.getConfiguration().hasGroupName()) {
             MetricManager.INSTANCE.getCounter(txh.getConfiguration().getGroupName(), metricsName, action.getName()).inc(by);
         }
@@ -61,13 +62,13 @@ public abstract class KCVSCache extends KCVSProxy {
     }
 
     public void mutateEntries(StaticBuffer key, List<Entry> additions, List<Entry> deletions, StoreTransaction txh) throws BackendException {
-        assert txh instanceof CacheTransaction;
+        Preconditions.checkArgument(txh instanceof CacheTransaction);
         ((CacheTransaction) txh).mutate(this, key, additions, deletions);
     }
 
     @Override
     protected final StoreTransaction unwrapTx(StoreTransaction txh) {
-        assert txh instanceof CacheTransaction;
+        Preconditions.checkArgument(txh instanceof CacheTransaction);
         return ((CacheTransaction) txh).getWrappedTransaction();
     }
 

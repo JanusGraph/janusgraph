@@ -136,7 +136,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
     }
 
     protected void sleepAfterWrite(StoreTransaction txh, MaskedTimestamp mustPass) throws BackendException {
-        assert mustPass.getDeletionTime(times) < mustPass.getAdditionTime(times);
+        Preconditions.checkArgument(mustPass.getDeletionTime(times) < mustPass.getAdditionTime(times));
         try {
             times.sleepPast(mustPass.getAdditionTimeInstant(times));
         } catch (InterruptedException e) {

@@ -36,9 +36,9 @@ public class StaticArrayBuffer implements StaticBuffer {
     private int limit;
 
     public StaticArrayBuffer(byte[] array, int offset, int limit) {
-        assert array != null;
-        assert offset >= 0 && offset <= limit; // offset == limit implies a zero-length array
-        assert limit <= array.length;
+        Preconditions.checkNotNull(array);
+        Preconditions.checkArgument(offset >= 0 && offset <= limit); // offset == limit implies a zero-length array
+        Preconditions.checkArgument(limit <= array.length);
 
         this.array = array;
         this.offset = offset;
@@ -80,8 +80,8 @@ public class StaticArrayBuffer implements StaticBuffer {
     //-------------------
 
     void reset(int newOffset, int newLimit) {
-        assert newOffset >= 0 && newOffset <= newLimit;
-        assert newLimit <= array.length;
+        Preconditions.checkArgument(newOffset >= 0 && newOffset <= newLimit);
+        Preconditions.checkArgument(newLimit <= array.length);
         this.offset=newOffset;
         this.limit=newLimit;
     }
@@ -93,7 +93,7 @@ public class StaticArrayBuffer implements StaticBuffer {
         if (base+size>limit)
             throw new ArrayIndexOutOfBoundsException("Required size [" + size + "] " +
                     "exceeds actual remaining size [" + (limit-base) + "]");
-        assert base + size <= limit;
+        Preconditions.checkState(base + size <= limit);
         return base;
     }
 
@@ -364,7 +364,7 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     private static String toFixedWidthString(byte b) {
         String s = toString(b);
-        assert s.length()<=3 && s.length()>0;
+        Preconditions.checkState(s.length()<=3 && s.length()>0);
         if (s.length()==1) s = "  "+s;
         else if (s.length()==2) s = " " + s;
         return s;
@@ -372,7 +372,7 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     @Override
     public int compareTo(StaticBuffer other) {
-        assert other instanceof StaticArrayBuffer;
+        Preconditions.checkArgument(other instanceof StaticArrayBuffer);
         return compareTo((StaticArrayBuffer) other);
     }
 
@@ -381,12 +381,12 @@ public class StaticArrayBuffer implements StaticBuffer {
     }
 
     protected int compareTo(int length, StaticBuffer buffer, int bufferLen) {
-        assert buffer instanceof StaticArrayBuffer;
+        Preconditions.checkArgument(buffer instanceof StaticArrayBuffer);
         return compareTo(length, (StaticArrayBuffer)buffer, bufferLen);
     }
 
     protected int compareTo(int length, StaticArrayBuffer buffer, int bufferLen) {
-        assert buffer!=null;
+        Preconditions.checkNotNull(buffer);
         Preconditions.checkArgument(length<=length() && bufferLen<=buffer.length());
         return compareTo(array, offset, offset+length, buffer.array, buffer.offset, buffer.offset+bufferLen);
     }

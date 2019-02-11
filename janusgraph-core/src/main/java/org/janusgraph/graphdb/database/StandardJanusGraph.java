@@ -487,9 +487,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
      * @return
      */
     public static int getTTL(InternalRelation rel) {
-        assert rel.isNew();
+        Preconditions.checkArgument(rel.isNew());
         InternalRelationType baseType = (InternalRelationType) rel.getType();
-        assert baseType.getBaseType()==null;
+        Preconditions.checkState(baseType.getBaseType()==null);
         int ttl = 0;
         Integer ettl = baseType.getTTL();
         if (ettl>0) ttl = ettl;
@@ -501,9 +501,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     }
 
     public static int getTTL(InternalVertex v) {
-        assert v.hasId();
+        Preconditions.checkArgument(v.hasId());
         if (IDManager.VertexIDType.UnmodifiableVertex.is(v.longId())) {
-            assert v.isNew() : "Should not be able to add relations to existing static vertices: " + v;
+            Preconditions.checkState(v.isNew(), "Should not be able to add relations to existing static vertices: %v", v);
             return ((InternalVertexLabel)v.vertexLabel()).getTTL();
         } else return 0;
     }
@@ -592,7 +592,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             final List<Entry> deletions = new ArrayList<>(Math.max(10, edges.size() / 10));
             for (final InternalRelation edge : edges) {
                 final InternalRelationType baseType = (InternalRelationType) edge.getType();
-                assert baseType.getBaseType()==null;
+                Preconditions.checkState(baseType.getBaseType()==null);
 
                 for (InternalRelationType type : baseType.getRelationIndexes()) {
                     if (type.getStatus()== SchemaStatus.DISABLED) continue;
@@ -623,7 +623,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         //6) Add index updates
         boolean has2iMods = false;
         for (IndexSerializer.IndexUpdate indexUpdate : indexUpdates) {
-            assert indexUpdate.isAddition() || indexUpdate.isDeletion();
+            Preconditions.checkState(indexUpdate.isAddition() || indexUpdate.isDeletion());
             if (indexUpdate.isCompositeIndex()) {
                 final IndexSerializer.IndexUpdate<StaticBuffer,Entry> update = indexUpdate;
                 if (update.isAddition())
@@ -678,7 +678,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             if (logTransaction) {
                 //[FAILURE] Inability to log transaction fails the transaction by escalation since it's likely due to unavailability of primary
                 //storage backend.
-                Preconditions.checkState(txLog != null, "Transaction log is null");
+                Preconditions.checkNotNull(txLog, "Transaction log is null");
                 txLog.add(txLogHeader.serializeModifications(serializer, LogTxStatus.PRECOMMIT, tx, addedRelations, deletedRelations),txLogHeader.getLogKey());
             }
 
@@ -702,7 +702,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                 try {
                     //[FAILURE] If the preparation throws an exception abort directly - nothing persisted since batch-loading cannot be enabled for schema elements
                     commitSummary = prepareCommit(addedRelations,deletedRelations, SCHEMA_FILTER, schemaMutator, tx, acquireLocks);
-                    assert commitSummary.hasModifications && !commitSummary.has2iModifications;
+                    Preconditions.checkState(commitSummary.hasModifications && !commitSummary.has2iModifications);
                 } catch (Throwable e) {
                     //Roll back schema tx and escalate exception
                     schemaMutator.rollback();

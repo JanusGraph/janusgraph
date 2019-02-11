@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
+import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.BranchStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.OptionalStep;
@@ -21,9 +22,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.MatchStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.PathUtil;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.query.QueryUtil;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
@@ -34,6 +32,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.query.QueryUtil;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.javatuples.Pair;
 
 import java.util.Arrays;
@@ -81,7 +82,7 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
                 //We cannot fold in orders or ranges since they are not local
             }
 
-            assert JanusGraphTraversalUtil.isEdgeReturnStep(vertexStep) || JanusGraphTraversalUtil.isVertexReturnStep(vertexStep);
+            Preconditions.checkState(JanusGraphTraversalUtil.isEdgeReturnStep(vertexStep) || JanusGraphTraversalUtil.isVertexReturnStep(vertexStep));
             final Step nextStep = JanusGraphTraversalUtil.getNextNonIdentityStep(vertexStep);
             if (nextStep instanceof RangeGlobalStep) {
                 final int limit = QueryUtil.convertLimit(((RangeGlobalStep) nextStep).getHighRange());
@@ -156,10 +157,10 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
     private static void unfoldLocalTraversal(final Traversal.Admin<?, ?> traversal,
                                              LocalStep<?,?> localStep, Traversal.Admin localTraversal,
                                              MultiQueriable vertexStep, boolean useMultiQuery) {
-        assert localTraversal.asAdmin().getSteps().size() > 0;
+        Preconditions.checkArgument(localTraversal.asAdmin().getSteps().size() > 0);
         if (localTraversal.asAdmin().getSteps().size() == 1) {
             //Can replace the entire localStep by the vertex step in the outer traversal
-            assert localTraversal.getStartStep() == vertexStep;
+            Preconditions.checkArgument(localTraversal.getStartStep() == vertexStep);
             vertexStep.setTraversal(traversal);
             TraversalHelper.replaceStep(localStep, vertexStep, traversal);
 

@@ -552,7 +552,7 @@ public class Geoshape {
         @Override
         public Geoshape read(ScanBuffer buffer) {
             long l = VariableLong.readPositive(buffer);
-            assert l>0 && l<Integer.MAX_VALUE;
+            Preconditions.checkState(l>0 && l<Integer.MAX_VALUE);
             int length = (int)l;
             int position = ((ReadArrayBuffer) buffer).getPosition();
             InputStream inputStream = new ByteArrayInputStream(buffer.getBytes(length));
@@ -605,7 +605,7 @@ public class Geoshape {
         @Override
         public Geoshape read(Kryo kryo, Input input, Class<Geoshape> aClass) {
             final long l = input.readLong();
-            assert l>0 && l<Integer.MAX_VALUE;
+            Preconditions.checkState(l>0 && l<Integer.MAX_VALUE);
             final int length = (int) l;
             try {
                 final InputStream inputStream = new ByteArrayInputStream(input.readBytes(length));

@@ -14,12 +14,13 @@
 
 package org.janusgraph.graphdb.tinkerpop;
 
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.graphdb.relations.RelationIdentifier;
+import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.JanusGraphEdge;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
 
 /**
  * Created by bryn on 07/05/15.
@@ -63,7 +64,7 @@ public class ElementUtils {
     }
 
     public static void verifyArgsMustBeEitherIdOrElement(Object... ids) {
-        assert ids.length>0;
+        Preconditions.checkArgument(ids.length>0);
         int numElements = 0;
         for (Object id : ids) {
             if (id instanceof Element) numElements++;

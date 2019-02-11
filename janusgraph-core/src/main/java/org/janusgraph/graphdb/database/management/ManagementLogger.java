@@ -114,7 +114,7 @@ public class ManagementLogger implements MessageReader {
                 break;
             }
             default:
-                assert logType == MgmtLogType.CONFIG_MUTATION;
+                Preconditions.checkState(logType == MgmtLogType.CONFIG_MUTATION);
                 break;
         }
 
@@ -132,7 +132,7 @@ public class ManagementLogger implements MessageReader {
         VariableLong.writePositive(out,evictionId);
         VariableLong.writePositive(out,updatedTypes.size());
         for (JanusGraphSchemaVertex type : updatedTypes) {
-            assert type.hasId();
+            Preconditions.checkState(type.hasId());
             VariableLong.writePositive(out,type.longId());
         }
         if (evictGraphFromCache) {
@@ -185,7 +185,7 @@ public class ManagementLogger implements MessageReader {
             for (Callable<Boolean> trigger : updatedTypeTriggers) {
                 try {
                     final boolean success = trigger.call();
-                    assert success;
+                    Preconditions.checkState(success);
                 } catch (Throwable e) {
                     log.error("Could not execute trigger ["+trigger.toString()+"] for eviction ["+evictionId+"]",e);
                 }

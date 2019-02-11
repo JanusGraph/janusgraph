@@ -66,7 +66,7 @@ public class RandomRemovalList<T> implements Collection<T>, Iterator<T> {
     }
 
     public T getRandom() {
-        assert size >= 0;
+        Preconditions.checkState(size >= 0);
         if (size == 0) throw new NoSuchElementException("List is empty");
         int numTries = 0;
         T element;
@@ -94,13 +94,13 @@ public class RandomRemovalList<T> implements Collection<T>, Iterator<T> {
 
     @Override
     public int size() {
-        assert size >= 0;
+        Preconditions.checkState(size >= 0);
         return size;
     }
 
     @Override
     public boolean isEmpty() {
-        assert size >= 0;
+        Preconditions.checkState(size >= 0);
         return size == 0;
     }
 

@@ -14,8 +14,8 @@
 
 package org.janusgraph.graphdb.database.serialize;
 
+import com.google.common.base.Preconditions;
 import org.janusgraph.core.PropertyKey;
-
 import org.janusgraph.core.attribute.Geoshape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +69,7 @@ public class AttributeUtil {
     public static Integer compare(Object a, Object b) {
         if (a==b) return 0;
         if (a==null || b==null) return null;
-        assert a!=null && b!=null;
+        Preconditions.checkArgument(a!=null && b!=null);
         if (a instanceof Number && b instanceof Number) {
             Number an = (Number)a;
             Number bn = (Number)b;

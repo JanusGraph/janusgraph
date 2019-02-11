@@ -91,8 +91,8 @@ public class BufferUtil {
         if (!entry.hasMetaData()) out.putByte((byte)0);
         else {
             Map<EntryMetaData,Object> metadata = entry.getMetaData();
-            assert metadata.size()>0 && metadata.size()<Byte.MAX_VALUE;
-            assert EntryMetaData.values().length<Byte.MAX_VALUE;
+            Preconditions.checkState(metadata.size()>0 && metadata.size()<Byte.MAX_VALUE);
+            Preconditions.checkState(EntryMetaData.values().length<Byte.MAX_VALUE);
             out.putByte((byte)metadata.size());
             for (Map.Entry<EntryMetaData,Object> metas : metadata.entrySet()) {
                 EntryMetaData meta = metas.getKey();
@@ -125,7 +125,7 @@ public class BufferUtil {
         long length = VariableLong.readPositive(in);
         Preconditions.checkArgument(length>=0 && length<=Integer.MAX_VALUE);
         byte[] data = in.getBytes((int)length);
-        assert data.length==length;
+        Preconditions.checkState(data.length==length);
         return new StaticArrayBuffer(data);
     }
 

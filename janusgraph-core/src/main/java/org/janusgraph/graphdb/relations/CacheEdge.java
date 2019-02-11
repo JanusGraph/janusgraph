@@ -39,14 +39,14 @@ public class CacheEdge extends AbstractEdge {
 
     public CacheEdge(long id, EdgeLabel label, InternalVertex start, InternalVertex end, Entry data) {
         super(id, label, start.it(), end.it());
-        assert data != null;
+        Preconditions.checkNotNull(data);
 
         this.data = data;
     }
 
     public Direction getVertexCentricDirection() {
         final RelationCache cache = data.getCache();
-        Preconditions.checkState(cache != null, "Cache is null");
+        Preconditions.checkNotNull(cache, "Cache is null");
         return cache.direction;
     }
 
@@ -64,7 +64,7 @@ public class CacheEdge extends AbstractEdge {
             final long id = super.longId();
             final Iterable<InternalRelation> previous = startVertex.getAddedRelations(
                 internalRelation -> (internalRelation instanceof StandardEdge) && ((StandardEdge) internalRelation).getPreviousID() == id);
-            assert Iterables.size(previous) <= 1 || (isLoop() && Iterables.size(previous) == 2);
+            Preconditions.checkState(Iterables.size(previous) <= 1 || (isLoop() && Iterables.size(previous) == 2));
             it = Iterables.getFirst(previous, null);
         }
 
