@@ -46,8 +46,7 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
     private final List<Subquery> queries;
 
     private JointIndexQuery(List<Subquery> queries) {
-        Preconditions.checkArgument(queries!=null);
-        this.queries = queries;
+        this.queries = Preconditions.checkNotNull(queries);
     }
 
     public JointIndexQuery() {
@@ -112,8 +111,8 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
         private QueryProfiler profiler = QueryProfiler.NO_OP;
 
         private Subquery(IndexType index, BackendQuery query) {
-            Preconditions.checkArgument(index!=null && query!=null && (query instanceof MultiKeySliceQuery || query instanceof IndexQuery));
-            this.index = index;
+            this.index = Preconditions.checkNotNull(index);
+            Preconditions.checkArgument(query instanceof MultiKeySliceQuery || query instanceof IndexQuery);
             this.query = query;
         }
 

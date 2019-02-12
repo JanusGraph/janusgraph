@@ -46,8 +46,8 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
     public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd) {
         Preconditions.checkArgument(sliceStart != null && sliceEnd != null);
 
-        this.sliceStart = sliceStart;
-        this.sliceEnd = sliceEnd;
+        this.sliceStart = Preconditions.checkNotNull(sliceStart);
+        this.sliceEnd = Preconditions.checkNotNull(sliceEnd);
     }
 
     public SliceQuery(final SliceQuery query) {

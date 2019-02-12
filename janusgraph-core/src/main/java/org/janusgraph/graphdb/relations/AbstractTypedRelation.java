@@ -38,7 +38,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
     public AbstractTypedRelation(final long id, final RelationType type) {
         super(id);
-        Preconditions.checkArgument(type != null && type instanceof InternalRelationType);
+        Preconditions.checkArgument(type instanceof InternalRelationType);
         this.type = (InternalRelationType) type;
     }
 

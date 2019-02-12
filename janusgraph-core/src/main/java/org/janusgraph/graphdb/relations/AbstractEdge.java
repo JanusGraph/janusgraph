@@ -34,10 +34,8 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Janu
 
     public AbstractEdge(long id, EdgeLabel label, InternalVertex start, InternalVertex end) {
         super(id, label);
-
-        Preconditions.checkArgument(start != null && end != null);
-        this.start = start;
-        this.end = end;
+        this.start = Preconditions.checkNotNull(start);
+        this.end = Preconditions.checkNotNull(end);
     }
 
     @Override

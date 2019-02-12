@@ -33,9 +33,8 @@ public class DirectionCondition<E extends JanusGraphRelation> extends Literal<E>
     private final Direction direction;
 
     public DirectionCondition(JanusGraphVertex vertex, Direction dir) {
-        Preconditions.checkArgument(vertex != null && dir != null);
-        this.baseVertex = vertex;
-        this.direction = dir;
+        this.baseVertex = Preconditions.checkNotNull(vertex);
+        this.direction = Preconditions.checkNotNull(dir);
     }
 
     @Override

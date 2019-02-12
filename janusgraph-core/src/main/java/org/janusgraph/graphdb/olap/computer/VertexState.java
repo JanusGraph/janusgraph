@@ -67,7 +67,8 @@ public class VertexState<M> {
     }
 
     public synchronized void setMessage(M message, MessageScope scope, Map<MessageScope,Integer> scopeMap) {
-        Preconditions.checkArgument(message!=null && scope!=null);
+        Preconditions.checkNotNull(message);
+        Preconditions.checkNotNull(scope);
         Preconditions.checkArgument(scopeMap.containsKey(scope),"Provided scope was not declared in the VertexProgram: %s",scope);
         initializeCurrentMessages(scopeMap);
         if (scopeMap.size()==1) currentMessages = message;
@@ -76,7 +77,9 @@ public class VertexState<M> {
 
     public synchronized void addMessage(M message, MessageScope scope, Map<MessageScope,Integer> scopeMap,
                                         MessageCombiner<M> combiner) {
-        Preconditions.checkArgument(message!=null && scope!=null && combiner!=null);
+        Preconditions.checkNotNull(message);
+        Preconditions.checkNotNull(scope);
+        Preconditions.checkNotNull(combiner);
         Preconditions.checkArgument(scopeMap.containsKey(scope),"Provided scope was not declared in the VertexProgram: %s",scope);
         Preconditions.checkArgument(scopeMap.containsKey(scope));
         initializeCurrentMessages(scopeMap);
@@ -92,7 +95,8 @@ public class VertexState<M> {
     }
 
     public M getMessage(MessageScope scope, Map<MessageScope,Integer> scopeMap) {
-        Preconditions.checkArgument(scope!=null && isValidIdMap(scopeMap) && scopeMap.containsKey(scope));
+        Preconditions.checkNotNull(scope);
+        Preconditions.checkArgument(isValidIdMap(scopeMap) && scopeMap.containsKey(scope));
         if (scopeMap.size()==1 || (previousMessages==null && currentMessages==null)) return (M)previousMessages;
         else return (M)((Object[])previousMessages)[scopeMap.get(scope)];
     }

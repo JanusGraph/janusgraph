@@ -74,7 +74,8 @@ public class GhostVertexRemover extends VertexJobConverter {
         Preconditions.checkArgument(jobConfig.has(GraphDatabaseConfiguration.JOB_START_TIME),"Invalid configuration for this job. Start time is required.");
         this.jobStartTime = Instant.ofEpochMilli(jobConfig.get(GraphDatabaseConfiguration.JOB_START_TIME));
 
-        Preconditions.checkState(tx!=null && tx.isOpen());
+        Preconditions.checkNotNull(tx);
+        Preconditions.checkState(tx.isOpen());
         tx.rollback();
         StandardTransactionBuilder txb = graph.get().buildTransaction();
         txb.commitTime(jobStartTime);

@@ -45,9 +45,8 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
     private boolean inExecute;
 
     VertexMemoryHandler(FulgoraVertexMemory<M> vertexMemory, PreloadedVertex vertex) {
-        Preconditions.checkArgument(vertex!=null && vertexMemory!=null);
-        this.vertexMemory = vertexMemory;
-        this.vertex = vertex;
+        this.vertexMemory = Preconditions.checkNotNull(vertexMemory);
+        this.vertex = Preconditions.checkNotNull(vertex);
         this.vertexId = vertexMemory.getCanonicalId(vertex.longId());
         this.inExecute = false;
     }
@@ -57,7 +56,8 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
     }
 
     <V> JanusGraphVertexProperty<V> constructProperty(String key, V value) {
-        Preconditions.checkArgument(key!=null && value!=null);
+        Preconditions.checkNotNull(key);
+        Preconditions.checkNotNull(value);
         return new FulgoraVertexProperty<>(this, vertex, key, value);
     }
 
@@ -85,7 +85,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
     @Override
     public <V> JanusGraphVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value) {
         if (!supports(key)) throw GraphComputer.Exceptions.providedKeyIsNotAnElementComputeKey(key);
-        Preconditions.checkArgument(value != null);
+        Preconditions.checkNotNull(value);
         if (cardinality == VertexProperty.Cardinality.single) {
             vertexMemory.setProperty(vertexId, key, value);
         } else {

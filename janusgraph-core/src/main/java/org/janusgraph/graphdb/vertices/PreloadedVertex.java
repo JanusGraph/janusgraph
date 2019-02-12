@@ -58,8 +58,7 @@ public class PreloadedVertex extends CacheVertex {
     }
 
     public void setAccessCheck(final AccessCheck accessCheck) {
-        Preconditions.checkArgument(accessCheck!=null);
-        this.accessCheck=accessCheck;
+        this.accessCheck = Preconditions.checkNotNull(accessCheck);
     }
 
     @Override

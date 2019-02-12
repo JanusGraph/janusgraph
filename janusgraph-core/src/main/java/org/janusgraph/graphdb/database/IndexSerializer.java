@@ -94,8 +94,8 @@ public class IndexSerializer {
     }
 
     public String getDefaultFieldName(final PropertyKey key, final Parameter[] parameters, final String indexName) {
-        Preconditions.checkArgument(!ParameterType.MAPPED_NAME.hasParameter(parameters),"A field name mapping has been specified for key: %s",key);
-        Preconditions.checkArgument(containsIndex(indexName),"Unknown backing index: %s",indexName);
+        Preconditions.checkArgument(!ParameterType.MAPPED_NAME.hasParameter(parameters), "A field name mapping has been specified for key: %s",key);
+        Preconditions.checkArgument(containsIndex(indexName), "Unknown backing index: %s", indexName);
         final String fieldname = configuration.get(INDEX_NAME_MAPPING,indexName)?key.name():keyID2Name(key);
         return mixedIndexes.get(indexName).mapKey2Field(fieldname,
                 new StandardKeyInformation(key,parameters));
@@ -185,14 +185,13 @@ public class IndexSerializer {
         private final JanusGraphElement element;
 
         private IndexUpdate(IndexType index, Type mutationType, K key, E entry, JanusGraphElement element) {
-            Preconditions.checkArgument(index!=null && mutationType!=null && key!=null && entry!=null && element!=null);
+            this.index = Preconditions.checkNotNull(index);
+            this.mutationType = Preconditions.checkNotNull(mutationType);
+            this.key = Preconditions.checkNotNull(key);
+            this.entry = Preconditions.checkNotNull(entry);
+            this.element = Preconditions.checkNotNull(element);
             Preconditions.checkArgument(!index.isCompositeIndex() || (key instanceof StaticBuffer && entry instanceof Entry));
             Preconditions.checkArgument(!index.isMixedIndex() || (key instanceof String && entry instanceof IndexEntry));
-            this.index = index;
-            this.mutationType = mutationType;
-            this.key = key;
-            this.entry = entry;
-            this.element = element;
         }
 
         public JanusGraphElement getElement() {
@@ -279,7 +278,7 @@ public class IndexSerializer {
                     if (record==null) continue;
                     update = new IndexUpdate<>(iIndex, updateType, getIndexKey(iIndex, record), getIndexEntry(iIndex, record, relation), relation);
                 } else {
-                    Preconditions.checkState(relation.valueOrNull(key)!=null);
+                    Preconditions.checkNotNull(relation.valueOrNull(key));
                     if (((MixedIndexType)index).getField(key).getStatus()== SchemaStatus.DISABLED) continue;
                     update = getMixedIndexUpdate(relation, key, relation.valueOrNull(key), (MixedIndexType) index, updateType);
                 }

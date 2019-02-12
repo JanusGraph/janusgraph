@@ -461,7 +461,7 @@ public class Geoshape {
                     if (components.length>=2 && components.length<=4) break;
                     else components=null;
                 }
-                Preconditions.checkArgument(components!=null,"Could not parse coordinates from string: %s",value);
+                Preconditions.checkNotNull(components, "Could not parse coordinates from string: %s",value);
                 double[] coordinates = new double[components.length];
                 try {
                     for (int i=0;i<components.length;i++) {

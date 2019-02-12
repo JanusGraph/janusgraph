@@ -109,14 +109,14 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
 
     @Override
     public GraphComputer result(ResultGraph resultGraph) {
-        Preconditions.checkArgument(resultGraph != null, "Need to specify mode");
+        Preconditions.checkNotNull(resultGraph, "Need to specify mode");
         this.resultGraphMode = resultGraph;
         return this;
     }
 
     @Override
     public GraphComputer persist(Persist persist) {
-        Preconditions.checkArgument(persist != null, "Need to specify mode");
+        Preconditions.checkNotNull(persist, "Need to specify mode");
         this.persistMode = persist;
         return this;
     }
@@ -355,9 +355,9 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
         private final AtomicInteger failures;
 
         private VertexPropertyWriter(List<Map.Entry<Long, Map<String, Object>>> properties, AtomicInteger failures) {
-            Preconditions.checkState(properties != null && !properties.isEmpty() && failures != null);
-            this.properties = properties;
-            this.failures = failures;
+            this.properties = Preconditions.checkNotNull(properties);
+            Preconditions.checkState(!this.properties.isEmpty());
+            this.failures = Preconditions.checkNotNull(failures);
         }
 
         @Override

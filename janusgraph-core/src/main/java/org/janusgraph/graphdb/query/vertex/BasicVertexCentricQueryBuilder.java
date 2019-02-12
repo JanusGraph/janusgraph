@@ -87,8 +87,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
     public BasicVertexCentricQueryBuilder(final StandardJanusGraphTx tx) {
         super(tx);
-        Preconditions.checkArgument(tx!=null);
-        this.tx = tx;
+        this.tx = Preconditions.checkNotNull(tx);
     }
 
     @Override
