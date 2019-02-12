@@ -29,14 +29,12 @@ public class KeySliceQuery extends SliceQuery {
 
     public KeySliceQuery(StaticBuffer key, StaticBuffer sliceStart, StaticBuffer sliceEnd) {
         super(sliceStart, sliceEnd);
-        Preconditions.checkNotNull(key);
-        this.key=key;
+        this.key = Preconditions.checkNotNull(key);
     }
 
     public KeySliceQuery(StaticBuffer key, SliceQuery query) {
         super(query);
-        Preconditions.checkNotNull(key);
-        this.key=key;
+        this.key = Preconditions.checkNotNull(key);
     }
 
     /**

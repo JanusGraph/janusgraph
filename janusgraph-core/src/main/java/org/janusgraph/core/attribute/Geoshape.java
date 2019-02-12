@@ -124,8 +124,7 @@ public class Geoshape {
     private final Shape shape;
 
     protected Geoshape(final Shape shape) {
-        Preconditions.checkNotNull(shape,"Invalid shape (null)");
-        this.shape = shape;
+        this.shape = Preconditions.checkNotNull(shape,"Invalid shape (null)");
     }
 
     @Override
