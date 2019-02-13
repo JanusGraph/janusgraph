@@ -247,6 +247,55 @@
                     <arguments>-DskipTests=true</arguments>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <version>0.13</version>
+                <executions>
+                    <execution>
+                        <id>rat-checks</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <excludeSubProjects>false</excludeSubProjects>
+                    <excludes>
+                        <exclude>**/target/**</exclude>
+                        <exclude>**/.classpath</exclude>
+                        <exclude>**/.project</exclude>
+                        <exclude>**/.settings/**</exclude>
+                        <exclude>**/src/main/resources/META-INF/services/**</exclude>
+                        <exclude>**/src/test/resources/META-INF/services/**</exclude>
+                        <exclude>**/*.iml</exclude>
+                        <exclude>**/*.json</exclude>
+                        <exclude>**/*.xml</exclude>
+                        <exclude>docs/**</exclude>
+                        <exclude>**/*.md</exclude>
+                        <exclude>**/*.txt</exclude>
+                        <exclude>**/*.log</exclude>
+                        <exclude>**/*.patch</exclude>
+                        <exclude>**/*.crt</exclude>
+                        <exclude>**/*.sysconfig</exclude>
+                        <exclude>**/*.csv</exclude>
+                        <exclude>**/*.id</exclude>
+                        <exclude>**/*.gz</exclude>
+                        <exclude>.editorconfig</exclude>
+                        <exclude>CC-BY-4.0.txt</exclude>
+                        <exclude>**/cqlshrc</exclude>
+                        <exclude>**/regionservers</exclude>
+                        <exclude>**/jaas_keytab.conf</exclude>
+                        <exclude>**/src/test/resources/excludes</exclude>
+                        <exclude>**/src/test/resources/longTests1</exclude>
+                        <exclude>**/src/test/resources/longTests2</exclude>
+                        <exclude>**/src/pkg/static/debian/**</exclude>
+                        <exclude>**/src/test/resources/mockito-extensions/**</exclude>
+                        <exclude>**/src/test/resources/org/janusgraph/hadoop/formats/edgelist/rdf/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>        
 
         </plugins>
         <pluginManagement>
