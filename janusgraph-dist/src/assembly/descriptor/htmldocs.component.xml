@@ -14,10 +14,9 @@
         </dependencySet>
     </dependencySets>
 
-    <!-- Manual HTML generated from AsciiDoc -->
     <fileSets>
         <fileSet>
-            <directory>target/docs/chunk</directory>
+            <directory>target/docs</directory>
             <outputDirectory>/docs</outputDirectory>
             <filtered>false</filtered>
         </fileSet>

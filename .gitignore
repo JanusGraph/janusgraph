@@ -35,6 +35,8 @@ janusgraph-hbase/src/test/janusgraph-zookeeper-test/*
 janusgraph-*/pom.xml.versionsBackup
 # JUnitBenchmarks output
 /janusgraph-*/jub.*.xml
+/janusgraph-*/bin/
+/janusgraph-*/janusgraph-*/bin/
 # .deb/.rpm packaging folders
 /debian/
 /redhat/
@@ -52,3 +54,6 @@ coverity_tool.tar.gz
 cov-analysis-linux64/
 cov-int.tar.gz
 cov-int/
+
+structor_linux-amd64
+/site/
