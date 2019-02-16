@@ -444,17 +444,6 @@
                           <server> stanza that matches the
                           <server>github</server> tag below.  Here's
                           an example settings.xml:
-
-                          <settings>
-                            ...
-                            <servers>
-                              ...
-                              <server>
-                                <id>github</id> << must match <username>dalaro</username>
-                                <password>allmypasswordsareliterallypassword</password>
-                              </server>
-                            </servers>
-                          </settings>
                         -->
                         <server>github</server>
                         <repositoryName>janusgraph</repositoryName>

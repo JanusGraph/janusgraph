@@ -1,0 +1,27 @@
+# Advanced TinkerPop
+
+[Tinkerpop](http://tinkerpop.apache.org/) provides a set of common [traversal strategies](http://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/reference#traversalstrategy) that add additional functionality to graphs.
+
+## Using ElementIdStrategy
+
+It is possible to use [ElementIdStrategy](http://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/reference#_elementidstrategy) with JanusGraph. ElementIdStrategy allow an arbitrary property to be used as the element ID instead of JanusGraph's long identifiers.
+
+!!! IMPORTANT
+    The target property key must be created and covered by a unique index in JanusGraph prior to using `ElementIdStrategy` with JanusGraph, otherwise Vertex lookups will result in sequential scans of the graph.
+
+To prepare JanusGraph for ElementIdStrategy, first create the property key. Set the `dataType` of the property key to match the custom IDs that you intend to use. Second, build a unique composite index on the property key. The following example shows how to define and index the property key to support IdGraph with string vertex IDs.
+
+```groovy
+graph = JanusGraphFactory.open("berkeleyje:/tmp/test")
+// Define a property key and index for managed vertex IDs
+mgmt = graph.openManagement()
+idKey = mgmt.makePropertyKey("name").dataType(String.class).make()
+mgmt.buildIndex("byName", Vertex.class).addKey(idKey).unique().buildCompositeIndex()
+mgmt.commit()
+// Create an that manages vertex IDs but not edge IDs
+strategy = ElementIdStrategy.build().idPropertyKey("name").create()
+g = GraphTraversalSource.build().with(strategy).create(graph)
+// Insert example vertex with custom identifier
+hercules = g.addV(id, "hercules")
+g.V("hercules")
+```
