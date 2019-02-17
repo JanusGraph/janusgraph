@@ -207,9 +207,6 @@ following queries.
 g.V().has('name', textContains('hercules')).has('age', inside(20, 50))
 g.V().has('name', textContains('hercules'))
 g.V().has('age', lt(50))
-g.V().has('age', outside(20, 50))
-g.V().has('age', lt(50).or(gte(60)))
-g.V().or(__.has('name', textContains('hercules')), __.has('age', inside(20, 50)))
 ```
 
 Mixed indexes support full-text search, range search, geo search and
@@ -435,11 +432,7 @@ range/interval constraints.
 !!! note
     The property keys used in a vertex-centric index must have an
     explicitly defined data type (i.e. *not* `Object.class`) which
-    supports a native sort order. This means not only that they must
-    implement `Comparable` but that their serializer must impement
-    `OrderPreservingSerializer`. The types that are currently supported
-    are `Boolean`, `UUID`, `Byte`, `Float`, `Long`, `String`, `Integer`,
-    `Date`, `Double`, `Character`, and `Short`
+    supports a native sort order.
 
 If the vertex-centric index is built against an edge label that is
 defined in the same management transaction, the index will be

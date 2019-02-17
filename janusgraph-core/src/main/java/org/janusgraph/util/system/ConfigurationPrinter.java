@@ -179,20 +179,8 @@ public class ConfigurationPrinter {
     }
 
     private String getTableHeader() {
-<<<<<<< HEAD
-        String colWidths = "2,3,1,1"; // Name, Desc, Datatype, Default
-        String colNames = "Name | Description | Datatype | Default Value";
-        if (showMutability) {
-            colWidths += ",1"; // Mutability level
-            colNames  += " | Mutability";
-        }
-        return "[role=\"tss-config-table\",cols=\"" + colWidths + "\",options=\"header\",width=\"100%\"]\n" +
-                "|=====\n" +
-                "| " + colNames; // no terminal newline reqd
-=======
         String colNames = "| Name | Description | Datatype | Default Value | Mutability |";
         return "\n" + colNames+ "\n| ---- | ---- | ---- | ---- | ---- |"; // no terminal newline required
->>>>>>> aa5c9a3e9... mkdocs squash
     }
 
     @SuppressWarnings("unchecked")
