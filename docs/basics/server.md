@@ -459,17 +459,14 @@ host: localhost
 port: 8182
 graphs: {
   graph: conf/janusgraph.properties}
+plugins:
+  - janusgraph.imports
 scriptEngines: {
   gremlin-groovy: {
-    plugins: { org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.server.jsr223.GremlinServerGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.tinkergraph.jsr223.TinkerGraphGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.jsr223.ImportGremlinPlugin: {classImports: [java.lang.Math], methodImports: [java.lang.Math#*]},
-               org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: {files: [scripts/empty-sample.groovy]}}}}
+    scripts: [scripts/janusgraph.groovy]}}
 serializers:
-  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0, config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
-  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0, config: { serializeResultToString: true }}
-  - { className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0, config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { serializeResultToString: true }}
 metrics: {
   slf4jReporter: {enabled: true, interval: 180000}}
 ```
@@ -482,7 +479,7 @@ metrics: {
     and it can be referenced as such in the scripts submitted to it.
 
 2.  In the `plugins` list, there is a reference to
-    `JanusGraphGremlinPlugin`, which tells Gremlin Server to initialize
+    `janusgraph.imports`, which tells Gremlin Server to initialize
     the "JanusGraph Plugin". The "JanusGraph Plugin" will auto-import
     JanusGraph specific classes for usage in scripts.
 
@@ -504,29 +501,30 @@ available to scripts provided to Gremlin Server - `graph` and `g`.
 
 At this point, Gremlin Server is configured and can be used to connect
 to a new or existing JanusGraph database. To start the server:
+```bash
+$ bin/gremlin-server.sh conf/gremlin-server-janusgraph.yaml
+[INFO] GremlinServer -
+         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
 
-    $ bin/gremlin-server.sh conf/gremlin-server-janusgraph.yaml
-    [INFO] GremlinServer -
-             \,,,/
-             (o o)
-    -----oOOo-(3)-oOOo-----
-
-    [INFO] GremlinServer - Configuring Gremlin Server from conf/gremlin-server-janusgraph.yaml
-    [INFO] MetricManager - Configured Metrics Slf4jReporter configured with interval=180000ms and loggerName=org.apache.tinkerpop.gremlin.server.Settings$Slf4jReporterMetrics
-    [INFO] GraphDatabaseConfiguration - Set default timestamp provider MICRO
-    [INFO] GraphDatabaseConfiguration - Generated unique-instance-id=7f0000016240-ubuntu1
-    [INFO] Backend - Initiated backend operations thread pool of size 8
-    [INFO] KCVSLog$MessagePuller - Loaded unidentified ReadMarker start time 2015-10-02T12:28:24.411Z into org.janusgraph.diskstorage.log.kcvs.KCVSLog$MessagePuller@35399441
-    [INFO] GraphManager - Graph [graph] was successfully configured via [conf/janusgraph.properties].
-    [INFO] ServerGremlinExecutor - Initialized Gremlin thread pool.  Threads in pool named with pattern gremlin-*
-    [INFO] ScriptEngines - Loaded gremlin-groovy ScriptEngine
-    [INFO] GremlinExecutor - Initialized gremlin-groovy ScriptEngine with scripts/janusgraph.groovy
-    [INFO] ServerGremlinExecutor - Initialized GremlinExecutor and configured ScriptEngines.
-    [INFO] ServerGremlinExecutor - A GraphTraversalSource is now bound to [g] with graphtraversalsource[standardjanusgraph[berkeleyje:db/berkeley], standard]
-    [INFO] AbstractChannelizer - Configured application/vnd.gremlin-v3.0+gryo with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0
-    [INFO] AbstractChannelizer - Configured application/vnd.gremlin-v3.0+gryo-stringd with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0
-    [INFO] GremlinServer$1 - Gremlin Server configured with worker thread pool of 1, gremlin pool of 8 and boss thread pool of 1.
-    [INFO] GremlinServer$1 - Channel started at port 8182.
+[INFO] GremlinServer - Configuring Gremlin Server from conf/gremlin-server-janusgraph.yaml
+[INFO] MetricManager - Configured Metrics Slf4jReporter configured with interval=180000ms and loggerName=org.apache.tinkerpop.gremlin.server.Settings$Slf4jReporterMetrics
+[INFO] GraphDatabaseConfiguration - Set default timestamp provider MICRO
+[INFO] GraphDatabaseConfiguration - Generated unique-instance-id=7f0000016240-ubuntu1
+[INFO] Backend - Initiated backend operations thread pool of size 8
+[INFO] KCVSLog$MessagePuller - Loaded unidentified ReadMarker start time 2015-10-02T12:28:24.411Z into org.janusgraph.diskstorage.log.kcvs.KCVSLog$MessagePuller@35399441
+[INFO] GraphManager - Graph [graph] was successfully configured via [conf/janusgraph.properties].
+[INFO] ServerGremlinExecutor - Initialized Gremlin thread pool.  Threads in pool named with pattern gremlin-*
+[INFO] ScriptEngines - Loaded gremlin-groovy ScriptEngine
+[INFO] GremlinExecutor - Initialized gremlin-groovy ScriptEngine with scripts/janusgraph.groovy
+[INFO] ServerGremlinExecutor - Initialized GremlinExecutor and configured ScriptEngines.
+[INFO] ServerGremlinExecutor - A GraphTraversalSource is now bound to [g] with graphtraversalsource[standardjanusgraph[berkeleyje:db/berkeley], standard]
+[INFO] AbstractChannelizer - Configured application/vnd.gremlin-v1.0+gryo with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0
+[INFO] AbstractChannelizer - Configured application/vnd.gremlin-v1.0+gryo-stringd with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0
+[INFO] GremlinServer$1 - Gremlin Server configured with worker thread pool of 1, gremlin pool of 8 and boss thread pool of 1.
+[INFO] GremlinServer$1 - Channel started at port 8182.
+```
 
 The following section explains how to connect to the running server.
 
