@@ -25,10 +25,6 @@
         <test.expect.dir>${project.build.directory}/test-classes</test.expect.dir>
         <test.zipfile.path>${project.build.directory}/janusgraph-${project.version}-${hadoop.version.tag}.zip</test.zipfile.path>
 
-        <!-- Doc -->
-        <doc.dir>${project.parent.basedir}/docs</doc.dir>
-        <doc.output.dir>${project.basedir}/target/docs</doc.output.dir>
-
         <!-- RPM/DEB packaging -->
         <pkg.release>1</pkg.release>
         <pkgtools.dir>${project.basedir}/..</pkgtools.dir>
@@ -207,23 +203,6 @@
                     <execution>
                         <id>default-testResources</id>
                         <phase>none</phase>
-                    </execution>
-                    <execution>
-                        <id>copy-docs-to-resources</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <inherited>false</inherited>
-                        <configuration>
-                            <outputDirectory>${doc.output.dir}</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${doc.dir}</directory>
-                                    <filtering>false</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
