@@ -32,17 +32,15 @@ tools must be installed.
 Release Steps
 -------------
 
-### Preparing Documentation
+### Release Documentation update
 
-Update version-sensitive files in the root and documentation sources
-in the `docs` subdirectory:
-
-* `docs/appendices.md`
-
-You may also need to update the following files in the main repo for any new
-or updated dependencies:
-
-* `NOTICE.txt`
+1. Update version-sensitive files in the root and documentation sources in the `docs` subdirectory: 
+    * `docs/changelog.md`
+2. Update the configuration reference: `mvn install -DskipTests=true -pl janusgraph-doc -am`
+3. Build documentation: `mkdocs build`
+4. Zip documentation: `$ zip janusgraph-${JANUSGRAPH_VERSION}-hadoop2-doc.zip site`
+4. You may also need to update the following files in the main repo for any new or updated dependencies:
+    * `NOTICE.txt`
 
 ### Preparing the Local Repository
 

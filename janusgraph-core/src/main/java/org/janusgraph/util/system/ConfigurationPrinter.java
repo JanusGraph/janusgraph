@@ -37,7 +37,7 @@ import static org.janusgraph.util.encoding.StringEncoding.UTF8_ENCODING;
  * Recursively dump the root configuration namespace to either System.out or the
  * named file in a CSV-type format with configurable delimiter, header, and
  * footer. Used to generate a table of all configuration keys for inclusion in
- * the AsciiDoc documentation.
+ * the markdown documentation.
  */
 public class ConfigurationPrinter {
 

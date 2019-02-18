@@ -13,12 +13,4 @@
             </includes>
         </dependencySet>
     </dependencySets>
-
-    <fileSets>
-        <fileSet>
-            <directory>target/docs</directory>
-            <outputDirectory>/docs</outputDirectory>
-            <filtered>false</filtered>
-        </fileSet>
-    </fileSets>
 </component>
