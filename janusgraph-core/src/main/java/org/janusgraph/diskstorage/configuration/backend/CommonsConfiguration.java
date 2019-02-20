@@ -50,8 +50,7 @@ public class CommonsConfiguration implements WriteConfiguration {
     }
 
     public CommonsConfiguration(Configuration config) {
-        Preconditions.checkArgument(config!=null);
-        this.config = config;
+        this.config = Preconditions.checkNotNull(config);
     }
 
     public Configuration getCommonConfiguration() {

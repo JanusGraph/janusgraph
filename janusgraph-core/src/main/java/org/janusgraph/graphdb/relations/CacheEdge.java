@@ -46,7 +46,7 @@ public class CacheEdge extends AbstractEdge {
 
     public Direction getVertexCentricDirection() {
         final RelationCache cache = data.getCache();
-        Preconditions.checkState(cache != null, "Cache is null");
+        Preconditions.checkNotNull(cache, "Cache is null");
         return cache.direction;
     }
 

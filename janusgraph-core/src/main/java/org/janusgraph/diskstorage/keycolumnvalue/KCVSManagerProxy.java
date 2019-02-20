@@ -30,8 +30,7 @@ public class KCVSManagerProxy implements KeyColumnValueStoreManager {
     protected final KeyColumnValueStoreManager manager;
 
     public KCVSManagerProxy(KeyColumnValueStoreManager manager) {
-        Preconditions.checkArgument(manager != null);
-        this.manager = manager;
+        this.manager = Preconditions.checkNotNull(manager);
     }
 
     @Override

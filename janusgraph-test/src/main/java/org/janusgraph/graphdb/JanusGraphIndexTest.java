@@ -753,7 +753,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         final String[] stringsTwo = new String[strings.length];
         for (int i = 0; i < strings.length; i++) stringsTwo[i] = strings[i] + " " + strings[i];
         final int modulo = 5;
-        assert numV % (modulo * strings.length * 2) == 0;
+        assertTrue(numV % (modulo * strings.length * 2) == 0);
 
         for (int i = 0; i < numV; i++) {
             final JanusGraphVertex v = tx.addVertex(i % 2 == 0 ? "person" : "org");

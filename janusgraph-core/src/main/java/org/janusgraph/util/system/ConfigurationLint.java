@@ -77,8 +77,8 @@ public class ConfigurationLint {
             try {
                 ConfigElement.PathIdentifier pid = ConfigElement.parse(GraphDatabaseConfiguration.ROOT_NS, key);
                 // ConfigElement shouldn't return null; failure here probably relates to janusgraph-core, not the file
-                Preconditions.checkState(null != pid);
-                Preconditions.checkState(null != pid.element);
+                Preconditions.checkNotNull(pid);
+                Preconditions.checkNotNull(pid.element);
                 if (!pid.element.isOption()) {
                     log.warn("Config key {} is a namespace (only options can be keys)", key);
                     continue;

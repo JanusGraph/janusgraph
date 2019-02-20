@@ -40,10 +40,9 @@ public class RelationComparator implements Comparator<InternalRelation> {
     }
 
     public RelationComparator(InternalVertex v, OrderList orders) {
-        Preconditions.checkArgument(v!=null && orders!=null);
-        this.vertex = v;
+        this.vertex = Preconditions.checkNotNull(v);
+        this.orders = Preconditions.checkNotNull(orders);
         this.tx = v.tx();
-        this.orders = orders;
     }
 
     @Override

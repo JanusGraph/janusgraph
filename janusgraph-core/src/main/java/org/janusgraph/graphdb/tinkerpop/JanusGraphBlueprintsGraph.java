@@ -77,7 +77,7 @@ public abstract class JanusGraphBlueprintsGraph implements JanusGraph {
         tinkerpopTxContainer.readWrite();
 
         JanusGraphBlueprintsTransaction tx = txs.get();
-        Preconditions.checkState(tx!=null,"Invalid read-write behavior configured: " +
+        Preconditions.checkNotNull(tx,"Invalid read-write behavior configured: " +
                 "Should either open transaction or throw exception.");
         return tx;
     }

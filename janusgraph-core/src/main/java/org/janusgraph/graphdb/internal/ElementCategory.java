@@ -60,7 +60,8 @@ public enum ElementCategory {
     }
 
     public boolean matchesConstraint(JanusGraphSchemaType type, JanusGraphElement element) {
-        Preconditions.checkArgument(type != null && element!=null);
+        Preconditions.checkNotNull(type);
+        Preconditions.checkNotNull(element);
         assert isInstance(element);
         assert isValidConstraint(type);
         switch(this) {

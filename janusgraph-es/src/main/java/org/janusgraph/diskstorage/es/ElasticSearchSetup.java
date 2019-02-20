@@ -90,8 +90,7 @@ public enum ElasticSearchSetup {
         private final ElasticSearchClient client;
 
         public Connection(ElasticSearchClient client) {
-            this.client = client;
-            Preconditions.checkNotNull(this.client, "Unable to instantiate Elasticsearch Client object");
+            this.client = Preconditions.checkNotNull(client, "Unable to instantiate Elasticsearch Client object");
         }
 
         public ElasticSearchClient getClient() {

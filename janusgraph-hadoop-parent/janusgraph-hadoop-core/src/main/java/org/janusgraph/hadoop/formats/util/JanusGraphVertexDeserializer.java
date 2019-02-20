@@ -109,7 +109,7 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
             tv = getOrCreateVertex(vertexId, null, tg);
         }
 
-        Preconditions.checkState(null != tv, "Unable to determine vertex label for vertex with ID %s", vertexId);
+        Preconditions.checkNotNull(tv, "Unable to determine vertex label for vertex with ID %s", vertexId);
 
         // Iterate over and decode edgestore columns (relations) on this vertex
         for (final Entry data : entries) {

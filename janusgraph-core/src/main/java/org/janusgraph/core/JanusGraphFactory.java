@@ -146,7 +146,7 @@ public class JanusGraphFactory {
         final String graphName = config.has(GRAPH_NAME) ? config.get(GRAPH_NAME) : backupName;
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         if (null != graphName) {
-            Preconditions.checkState(jgm != null, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
+            Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
             return (JanusGraph) jgm.openGraph(graphName, gName -> new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(configuration)));
         } else {
             if (jgm != null) {
@@ -169,7 +169,7 @@ public class JanusGraphFactory {
      */
     public static Set<String> getGraphNames() {
        final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
-       Preconditions.checkState(jgm != null, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
+       Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
        return jgm.getGraphNames();
     }
 

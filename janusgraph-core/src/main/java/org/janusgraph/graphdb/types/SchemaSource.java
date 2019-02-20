@@ -47,8 +47,7 @@ public interface SchemaSource {
         private final Object modifier;
 
         public Entry(SchemaSource schemaType, Object modifier) {
-            Preconditions.checkNotNull(schemaType);
-            this.schemaType = schemaType;
+            this.schemaType = Preconditions.checkNotNull(schemaType);
             this.modifier = modifier;
         }
 

@@ -44,7 +44,7 @@ public class StandardScanner  {
     private final AtomicLong jobCounter;
 
     public StandardScanner(final KeyColumnValueStoreManager manager) {
-        Preconditions.checkArgument(manager!=null);
+        Preconditions.checkNotNull(manager);
         Preconditions.checkArgument(manager.getFeatures().hasScan(),"Provided data store does not support scans: %s",manager);
 
         this.manager = manager;
@@ -120,8 +120,7 @@ public class StandardScanner  {
         }
 
         public Builder setTimestampProvider(TimestampProvider times) {
-            Preconditions.checkArgument(times!=null);
-            this.times=times;
+            this.times = Preconditions.checkNotNull(times);
             return this;
         }
 
@@ -136,26 +135,22 @@ public class StandardScanner  {
         }
 
         public Builder setJobId(Object id) {
-            Preconditions.checkArgument(id!=null,"Need to provide a valid id: %s",id);
-            this.jobId = id;
+            this.jobId = Preconditions.checkNotNull(id, "Need to provide a valid id: %s",id);
             return this;
         }
 
         public Builder setJob(ScanJob job) {
-            Preconditions.checkArgument(job!=null);
-            this.job = job;
+            this.job = Preconditions.checkNotNull(job);
             return this;
         }
 
         public Builder setGraphConfiguration(Configuration config) {
-            Preconditions.checkArgument(config!=null);
-            this.graphConfiguration = config;
+            this.graphConfiguration = Preconditions.checkNotNull(config);
             return this;
         }
 
         public Builder setJobConfiguration(Configuration config) {
-            Preconditions.checkArgument(config!=null);
-            this.jobConfiguration = config;
+            this.jobConfiguration = Preconditions.checkNotNull(config);
             return this;
         }
 
@@ -164,15 +159,14 @@ public class StandardScanner  {
         }
 
         public Builder setFinishJob(Consumer<ScanMetrics> finishJob) {
-            Preconditions.checkArgument(finishJob != null);
-            this.finishJob = finishJob;
+            this.finishJob = Preconditions.checkNotNull(finishJob);
             return this;
         }
 
         public JanusGraphManagement.IndexJobFuture execute() throws BackendException {
-            Preconditions.checkArgument(job!=null,"Need to specify a job to execute");
+            Preconditions.checkNotNull(job,"Need to specify a job to execute");
             Preconditions.checkArgument(StringUtils.isNotBlank(dbName),"Need to specify a database to execute against");
-            Preconditions.checkArgument(times!=null,"Need to configure the timestamp provider for this job");
+            Preconditions.checkNotNull(times,"Need to configure the timestamp provider for this job");
             StandardBaseTransactionConfig.Builder txBuilder = new StandardBaseTransactionConfig.Builder();
             txBuilder.timestampProvider(times);
 

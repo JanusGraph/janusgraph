@@ -144,11 +144,11 @@ public abstract class JanusGraphBaseTest {
 
     public static Map<TestConfigOption,Object> validateConfigOptions(Object... settings) {
         //Parse settings
-        Preconditions.checkArgument(settings.length%2==0,"Expected even number of settings: %s",settings);
+        Preconditions.checkArgument(settings.length%2==0, "Expected even number of settings: %s", settings);
         final Map<TestConfigOption,Object> options = Maps.newHashMap();
         for (int i=0;i<settings.length;i=i+2) {
-            Preconditions.checkArgument(settings[i] instanceof TestConfigOption,"Expected configuration option but got: %s",settings[i]);
-            Preconditions.checkNotNull(settings[i+1],"Null setting at position [%s]",i+1);
+            Preconditions.checkArgument(settings[i] instanceof TestConfigOption, "Expected configuration option but got: %s", settings[i]);
+            Preconditions.checkNotNull(settings[i+1], "Null setting at position [%s]", i+1);
             options.put((TestConfigOption)settings[i],settings[i+1]);
         }
         return options;
@@ -250,14 +250,14 @@ public abstract class JanusGraphBaseTest {
                 for (final String partitionedLogName : new String[]{USER_LOG,TRANSACTION_LOG,MANAGEMENT_LOG})
                 configuration.set(KCVSLogManager.LOG_MAX_PARTITIONS,8,partitionedLogName);
             }
-            assert logStoreManager!=null;
+            Preconditions.checkNotNull(logStoreManager);
             if (!logManagers.containsKey(logManagerName)) {
                 //Open log manager - only supports KCVSLog
                 final Configuration logConfig = configuration.restrictTo(logManagerName);
-                Preconditions.checkArgument(logConfig.get(LOG_BACKEND).equals(LOG_BACKEND.getDefaultValue()));
+                Preconditions.checkState(logConfig.get(LOG_BACKEND).equals(LOG_BACKEND.getDefaultValue()));
                 logManagers.put(logManagerName,new KCVSLogManager(logStoreManager,logConfig));
             }
-            assert logManagers.containsKey(logManagerName);
+            Preconditions.checkState(logManagers.containsKey(logManagerName));
             return logManagers.get(logManagerName).openLog(logName);
         } catch (final BackendException e) {
             throw new JanusGraphException("Could not open log: "+ logName,e);
