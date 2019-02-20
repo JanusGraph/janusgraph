@@ -46,20 +46,22 @@ expects that you have those configuration files located under
 Once verified, follow the below steps to add the Hadoop configuration to
 the `CLASSPATH` and start the Gremlin Console, which will play the role
 of the Spark driver program.
-
-    export HADOOP_CONF_DIR=/etc/hadoop/conf
-    export CLASSPATH=$HADOOP_CONF_DIR
-    bin/gremlin.sh
+```bash
+export HADOOP_CONF_DIR=/etc/hadoop/conf
+export CLASSPATH=$HADOOP_CONF_DIR
+bin/gremlin.sh
+```
 
 Once the path to Hadoop configuration has been added to the `CLASSPATH`,
 we can verify whether the Gremlin Console can access the Hadoop cluster
 by following these quick steps:
+```groovy
+gremlin> hdfs
+==>storage[org.apache.hadoop.fs.LocalFileSystem@65bb9029] // BAD
 
-    gremlin> hdfs
-    ==>storage[org.apache.hadoop.fs.LocalFileSystem@65bb9029] // BAD
-
-    gremlin> hdfs
-    ==>storage[DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_1229457199_1, ugi=user (auth:SIMPLE)]]] // GOOD
+gremlin> hdfs
+==>storage[DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_1229457199_1, ugi=user (auth:SIMPLE)]]] // GOOD
+```
 
 OLAP Traversals
 ---------------

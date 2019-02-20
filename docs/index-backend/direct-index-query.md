@@ -90,8 +90,9 @@ the ".vertexTotals()", ".edgeTotals()", and ".propertyTotals()" methods.
 
 The totals can be retrieved using the same query syntax as the
 indexQuery builder, but size is overwritten to be 0.
-
-    graph.indexQuery("vertexByText", "v.text:(farm uncle berry)").vertexTotals()
+```groovy
+graph.indexQuery("vertexByText", "v.text:(farm uncle berry)").vertexTotals()
+```
 
 Gotchas
 -------
@@ -100,8 +101,9 @@ Gotchas
 
 Names of property keys that contain non-alphanumeric characters must be
 placed in quotation marks to ensure that the query is parsed correctly.
-
-    graph.indexQuery("vertexByText", "v.\"first_name\":john").vertices()
+```groovy
+graph.indexQuery("vertexByText", "v.\"first_name\":john").vertices()
+```
 
 Some property key names may be transformed by the JanusGraph indexing
 backend implementation. For instance, an indexing backend that does not
@@ -126,14 +128,16 @@ property element respectively in a query. If the field name or the query
 value contains the same sequence of characters, this can cause a
 collision in the query string and parsing errors as in the following
 example:
-
-    graph.indexQuery("vertexByText", "v.name:v.john").vertices() //DOES NOT WORK!
+```groovy
+graph.indexQuery("vertexByText", "v.name:v.john").vertices() //DOES NOT WORK!
+```
 
 To avoid such identifier collisions, use the `setElementIdentifier`
 method to define a unique element identifier string that does not occur
 in any other parts of the query:
-
-    graph.indexQuery("vertexByText", "$v$name:v.john").setElementIdentifier("$v$").vertices()
+```groovy
+graph.indexQuery("vertexByText", "$v$name:v.john").setElementIdentifier("$v$").vertices()
+```
 
 ### Mixed Index Availability Delay
 

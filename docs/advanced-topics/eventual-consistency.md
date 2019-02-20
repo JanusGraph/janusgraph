@@ -126,7 +126,7 @@ one reads multiple properties. Since JanusGraph allows properties on
 properties, provenance information like `author` can be added to the
 properties to facilitate resolution at read time.
 
-See [multi-properties](#multi-properties) to learn how to define
+See [multi-properties](../basics/schema.md#property-key-cardinality) to learn how to define
 those.
 
 Data Inconsistency

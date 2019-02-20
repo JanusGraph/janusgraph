@@ -30,9 +30,10 @@ storage backend is the authoritative source of the graph.
 However, this can create inconsistencies with the indexes and logs. To
 automatically repair such inconsistencies, JanusGraph can maintain a
 transaction write-ahead log which is enabled through the configuration.
-
-    tx.log-tx = true
-    tx.max-commit-time = 10000
+```conf
+tx.log-tx = true
+tx.max-commit-time = 10000
+```
 
 The max-commit-time property is used to determine when a transaction has
 failed. If the persistence stage of the transaction takes longer than

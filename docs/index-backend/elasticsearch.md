@@ -45,14 +45,16 @@ Running Elasticsearch
 JanusGraph supports connections to a running Elasticsearch cluster.
 JanusGraph provides two options for running local Elasticsearch
 instances for getting started quickly. JanusGraph server (see
-[Getting started](../../intro/#getting-started)) automatically starts a local
+[Getting started](../intro.md#getting-started)) automatically starts a local
 Elasticsearch instance. Alternatively JanusGraph releases include a full
 Elasticsearch distribution to allow users to manually start a local
 Elasticsearch instance (see [this
 page](https://www.elastic.co/guide/en/elasticsearch/guide/current/running-elasticsearch.html)
 for more information).
 
-    $ elasticsearch/bin/elasticsearch
+```
+$ elasticsearch/bin/elasticsearch
+```
 
 !!! note
     For security reasons Elasticsearch must be run under a non-root
@@ -85,23 +87,26 @@ in JanusGraph.
 ### Connecting to Elasticsearch
 
 The Elasticsearch client is specified as follows:
-
-    index.search.backend=elasticsearch
+```conf
+index.search.backend=elasticsearch
+```
 
 When connecting to Elasticsearch a single or list of hostnames for the
 Elasticsearch instances must be provided. These are supplied via
 JanusGraph’s `index.[X].hostname` key.
-
-    index.search.backend=elasticsearch
-    index.search.hostname=10.0.0.10:9200
+```conf
+index.search.backend=elasticsearch
+index.search.hostname=10.0.0.10:9200
+```
 
 Each host or host:port pair specified here will be added to the HTTP
 client’s round-robin list of request targets. Here’s a minimal
 configuration that will round-robin over 10.0.0.10 on the default
 Elasticsearch HTTP port (9200) and 10.0.0.20 on port 7777:
-
-    index.search.backend=elasticsearch
-    index.search.hostname=10.0.0.10, 10.0.0.20:7777
+```conf
+index.search.backend=elasticsearch
+index.search.hostname=10.0.0.10, 10.0.0.20:7777
+```
 
 #### JanusGraph `index.[X]` and `index.[X].elasticsearch` options
 
@@ -147,7 +152,6 @@ Elasticsearch’s ports or by using Elasticsearch extensions such as
 Elasticsearch has two client-facing ports to consider:
 
 -   The HTTP REST API, usually on port 9200
-
 -   The native "transport" protocol, usually on port 9300
 
 A client uses either one protocol/port or the other, but not both
@@ -181,9 +185,7 @@ issued by JanusGraph. Here is a non-exhaustive sample of Elasticsearch
 index settings that can be customized using this mechanism:
 
 -   `index.number_of_replicas`
-
 -   `index.number_of_shards`
-
 -   `index.refresh_interval`
 
 Settings customized through this mechanism are only applied when
@@ -204,11 +206,12 @@ when bootstrapping on Elasticsearch. This allows embedding arbitrary
 index creation settings settings in JanusGraph’s properties. Here’s an
 example configuration fragment that customizes three Elasticsearch index
 settings using the `create.ext` config mechanism:
-
-    index.search.backend=elasticsearch
-    index.search.elasticsearch.create.ext.number_of_shards=15
-    index.search.elasticsearch.create.ext.number_of_replicas=3
-    index.search.elasticsearch.create.ext.shard.check_on_startup=true
+```conf
+index.search.backend=elasticsearch
+index.search.elasticsearch.create.ext.number_of_shards=15
+index.search.elasticsearch.create.ext.number_of_replicas=3
+index.search.elasticsearch.create.ext.shard.check_on_startup=true
+```
 
 The configuration fragment listed above takes advantage of
 Elasticsearch’s assumption, implemented server-side, that unqualified
@@ -216,11 +219,12 @@ Elasticsearch’s assumption, implemented server-side, that unqualified
 to spell out the index prefix explicitly. Here’s a JanusGraph config
 file functionally equivalent to the one listed above, except that the
 `index.` prefix before the index creation settings is explicit:
-
-    index.search.backend=elasticsearch
-    index.search.elasticsearch.create.ext.index.number_of_shards=15
-    index.search.elasticsearch.create.ext.index.number_of_replicas=3
-    index.search.elasticsearch.create.ext.index.shard.check_on_startup=false
+```conf
+index.search.backend=elasticsearch
+index.search.elasticsearch.create.ext.index.number_of_shards=15
+index.search.elasticsearch.create.ext.index.number_of_replicas=3
+index.search.elasticsearch.create.ext.index.shard.check_on_startup=false
+```
 
 !!! tip
     The `create.ext` mechanism for specifying index creation settings is

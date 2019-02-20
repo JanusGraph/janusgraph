@@ -25,10 +25,11 @@ For example, suppose we want to register a special integer attribute
 class called `SpecialInt` and have implemented a custom serializer
 `SpecialIntSerializer` that implements `AttributeSerializer`. We already
 have 9 custom attributes configured in the configuration file, so we
-would add the following lines \`\`\`
+would add the following lines 
+```conf
 attributes.custom.attribute10.attribute-class = com.example.SpecialInt
-attributes.custom.attribute10.serializer-class =
-com.example.SpecialIntSerializer \`\`\`
+attributes.custom.attribute10.serializer-class = com.example.SpecialIntSerializer
+```
 
 Custom Object Serialization
 ---------------------------

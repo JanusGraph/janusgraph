@@ -24,7 +24,7 @@ To use a custom class as data type in JanusGraph, either register a
 custom serializer or ensure that the class has a no-argument constructor
 and implements the `equals` method because JanusGraph will verify that
 it can successfully de-/serialize objects of that class. Please see
-[???](#serializer) for more information.
+[Datatype and Attribute Serializer Configuration](../advanced-topics/serializer.md) for more information.
 
 Transactional Scope for Edges
 -----------------------------
@@ -99,7 +99,7 @@ javaagent parameter when launching the JVM (e.g.
 `-javaagent:path/to/jamm.jar`) through either `janusgraph.sh`,
 `gremlin.sh`, or Gremlin Server:
 
-    export JANUSGRAPH_JAVA_OPTS=-javaagent:$JANUSGRAPH_HOME/lib/jamm-$MAVEN{jamm.version}.jar
+    export JANUSGRAPH_JAVA_OPTS=-javaagent:$JANUSGRAPH_HOME/lib/jamm-{{ jamm_version }}.jar
 
 Cassandra Connection Problem
 ----------------------------
@@ -128,14 +128,16 @@ To drop a database using the Gremlin Console you can call
 defined prior to running the drop method.
 
 With ConfiguredGraphFactory
-
-    graph = ConfiguredGraphFactory.open('example')
-    ConfiguredGraphFactory.drop('example');
+```groovy
+graph = ConfiguredGraphFactory.open('example')
+ConfiguredGraphFactory.drop('example');
+```
 
 With JanusGraphFactory
-
-    graph = JanusGraphFactory.open('path/to/configuration.properties')
-    JanusGraphFactory.drop(graph);
+```groovy
+graph = JanusGraphFactory.open('path/to/configuration.properties')
+JanusGraphFactory.drop(graph);
+```
 
 Note that on JanusGraph versions prior to 0.3.0 if multiple Gremlin
 Server instances are connecting to the graph that has been dropped it is

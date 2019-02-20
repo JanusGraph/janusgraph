@@ -82,10 +82,12 @@ There are several example configuration files in the `conf/` directory
 that can be used to get started with JanusGraph quickly. Paths to these
 files can be passed to `JanusGraphFactory.open(...)` as shown below:
 
-    // Connect to Cassandra on localhost using a default configuration
-    graph = JanusGraphFactory.open("conf/janusgraph-cql.properties")
-    // Connect to HBase on localhost using a default configuration
-    graph = JanusGraphFactory.open("conf/janusgraph-hbase.properties")
+```groovy
+// Connect to Cassandra on localhost using a default configuration
+graph = JanusGraphFactory.open("conf/janusgraph-cql.properties")
+// Connect to HBase on localhost using a default configuration
+graph = JanusGraphFactory.open("conf/janusgraph-hbase.properties")
+```
 
 Using Configuration
 -------------------
@@ -102,8 +104,9 @@ which makes it easy to get started and interact with JanusGraph. Invoke
 `bin/gremlin.sh` (Unix/Linux) or `bin/gremlin.bat` (Windows) to start
 the Console and then open a JanusGraph graph using the factory with the
 configuration stored in an accessible properties configuration file:
-
-    graph = JanusGraphFactory.open('path/to/configuration.properties')
+```groovy
+graph = JanusGraphFactory.open('path/to/configuration.properties')
+```
 
 #### JanusGraph Embedded
 
@@ -118,10 +121,10 @@ If the JanusGraph graph cluster has been previously configured and/or
 only the storage backend needs to be defined, JanusGraphFactory accepts
 a colon-separated string representation of the storage backend name and
 hostname or directory.
-
-    graph = JanusGraphFactory.open('cql:localhost')
-
-    graph = JanusGraphFactory.open('berkeleyje:/tmp/graph')
+```groovy
+graph = JanusGraphFactory.open('cql:localhost')
+graph = JanusGraphFactory.open('berkeleyje:/tmp/graph')
+```
 
 ### JanusGraph Server
 
@@ -208,16 +211,17 @@ is done through JanusGraph’s management API. To access the management
 API, call `g.getManagementSystem()` on an open JanusGraph instance
 handle `g`. For example, to change the default caching behavior on a
 JanusGraph cluster:
-
-    mgmt = graph.openManagement()
-    mgmt.get('cache.db-cache')
-    // Prints the current config setting
-    mgmt.set('cache.db-cache', true)
-    // Changes option
-    mgmt.get('cache.db-cache')
-    // Prints 'true'
-    mgmt.commit()
-    // Changes take effect
+```groovy
+mgmt = graph.openManagement()
+mgmt.get('cache.db-cache')
+// Prints the current config setting
+mgmt.set('cache.db-cache', true)
+// Changes option
+mgmt.get('cache.db-cache')
+// Prints 'true'
+mgmt.commit()
+// Changes take effect
+```
 
 ### Changing Offline Options
 
@@ -227,15 +231,14 @@ configuration options requires restarting the cluster so that the
 changes take effect immediately for all instances. To change
 *GLOBAL\_OFFLINE* options follow these steps:
 
--   Close all but one JanusGraph instance in the cluster
--   Connect to the single instance
--   Ensure all running transactions are closed
--   Ensure no new transactions are started (i.e. the cluster must be
-    offline)
--   Open the management API
--   Change the configuration option(s)
--   Call commit which will automatically shut down the graph instance
--   Restart all instances
+- Close all but one JanusGraph instance in the cluster
+- Connect to the single instance
+- Ensure all running transactions are closed
+- Ensure no new transactions are started (i.e. the cluster must be offline)
+- Open the management API
+- Change the configuration option(s)
+- Call commit which will automatically shut down the graph instance
+- Restart all instances
 
 Refer to the full list of configuration options in [Configuration Reference](configuration-reference.md) for more information including the configuration
 scope of each option.

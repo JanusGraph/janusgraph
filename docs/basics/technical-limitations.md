@@ -83,7 +83,7 @@ JanusGraph.
 ### Limited Mixed Index Support
 
 Mixed indexes only support a subset of the data types that JanusGraph
-supports. See [Mixed Index Data Types](#mixeddatatypes) for a current
+supports. See [Mixed Index Data Types](../index-backend/search-predicates.md#data-type-support) for a current
 listing. Also, mixed indexes do not currently support property keys with
 SET or LIST cardinality.
 
@@ -95,7 +95,7 @@ facilitates faster loading into the storage backend, it does not use
 storage backend specific batch loading techniques that prepare the data
 in memory for disk storage. As such, batch loading in JanusGraph is
 currently slower than batch loading modes provided by single machine
-databases. [???](../advanced-topics/bulk-loading.md) contains information on speeding up
+databases. [Bulk Loading](../advanced-topics/bulk-loading.md) contains information on speeding up
 batch loading in JanusGraph.
 
 Another limitation related to batch loading is the failure to load

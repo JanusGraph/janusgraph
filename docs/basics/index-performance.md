@@ -17,9 +17,10 @@ Graph indexes are global index structures over the entire graph which
 allow efficient retrieval of vertices or edges by their properties for
 sufficiently selective conditions. For instance, consider the following
 queries
-
-    g.V().has('name', 'hercules')
-    g.E().has('reason', textContains('loves'))
+```java
+g.V().has('name', 'hercules')
+g.E().has('reason', textContains('loves'))
+```
 
 The first query asks for all vertices with the name `hercules`. The
 second asks for all edges where the property reason contains the word
@@ -65,7 +66,7 @@ same transaction as the initial schema.
 Composite indexes retrieve vertices or edges by one or a (fixed)
 composition of multiple keys. Consider the following composite index
 definitions.
-```groovy
+```java
 graph.tx().rollback() //Never create new indexes while a transaction is active
 mgmt = graph.openManagement()
 name = mgmt.getPropertyKey('name')

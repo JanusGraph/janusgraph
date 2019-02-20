@@ -4,12 +4,16 @@ InMemory Storage Backend
 JanusGraph ships with an in-memory storage backend which can be used
 through the following configuration:
 
-    storage.backend=inmemory
+```conf
+storage.backend=inmemory
+```
 
 Alternatively, an in-memory JanusGraph graph can be opened directly in
 the Gremlin Console:
 
-    graph = JanusGraphFactory.build().set('storage.backend', 'inmemory').open()
+```java
+graph = JanusGraphFactory.build().set('storage.backend', 'inmemory').open()
+```
 
 There are no additional configuration options for the in-memory storage
 backend. As the name suggests, this backend holds all data in memory.

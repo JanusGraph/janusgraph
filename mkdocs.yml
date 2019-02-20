@@ -91,7 +91,11 @@ nav:
         - Useful Tools:
             - Advanced TinkerPop: usefultools/advblueprints.md
             - Generating Artificial Natural Graphs: usefultools/generating.md
-        - Connecting to JanusGraph: connecting.md
+        - Connecting to JanusGraph:
+            - Introduction: connecting/index.md
+            - Using Java: connecting/java.md
+            - Using Python: connecting/python.md
+            - Using .Net: connecting/dotnet.md
         - Internals: internals.md
         - Development: development.md
         - Appendices: appendices.md
@@ -104,3 +108,4 @@ extra:
     snapshot_version: 0.2.3-SNAPSHOT
     tinkerpop_version: 3.2.9
     hadoop2_version: 2.7.2
+    jamm_version: 0.3.0

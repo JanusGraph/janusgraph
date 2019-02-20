@@ -110,8 +110,7 @@ Potentially temporary failures are those related to resource
 unavailability and IO hiccups (e.g. network timeouts). JanusGraph
 automatically tries to recover from temporary failures by retrying to
 persist the transactional state after some delay. The number of retry
-attempts and the retry delay are configurable (see [Configuration
-Reference](#config-ref)).
+attempts and the retry delay are configurable (see [Configuration Reference](configuration-reference.md)).
 
 Permanent failures can be caused by complete connection loss, hardware
 failure or lock contention. To understand the cause of lock contention,
@@ -172,8 +171,7 @@ Concurrent Algorithms
 Thread independent transactions started through `createThreadedTx()` are
 particularly useful when implementing concurrent graph algorithms. Most
 traversal or message-passing (ego-centric) like graph algorithms are
-[embarrassingly
-parallel](http://en.wikipedia.org/wiki/Embarrassingly_parallel) which
+[embarrassingly parallel](http://en.wikipedia.org/wiki/Embarrassingly_parallel) which
 means they can be parallelized and executed through multiple threads
 with little effort. Each of these threads can operate on a single
 `Graph` object returned by `createThreadedTx()` without blocking each
@@ -268,8 +266,8 @@ Transaction Configuration
 -------------------------
 
 JanusGraph’s `JanusGraph.buildTransaction()` method gives the user the
-ability to configure and start a new [multi-threaded transaction](#multi-threaded-transactions) against a `JanusGraph`. Hence, it is
-identical to `JanusGraph.newTransaction()` with additional configuration
+ability to configure and start a new [multi-threaded transaction](#multi-threaded-transactions) 
+against a `JanusGraph`. Hence, it is identical to `JanusGraph.newTransaction()` with additional configuration
 options.
 
 `buildTransaction()` returns a `TransactionBuilder` which allows the

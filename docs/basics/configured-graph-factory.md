@@ -109,20 +109,24 @@ server to use the `ConfigurationManagementGraph` APIs. To do this, you
 have to inject a graph variable named "ConfigurationManagementGraph" in
 your server’s YAML’s `graphs` map. For example:
 
-    graphManager: org.janusgraph.graphdb.management.JanusGraphManager
-    graphs: {
-      ConfigurationManagementGraph: conf/JanusGraph-configurationmanagement.properties
-    }
+```yaml
+graphManager: org.janusgraph.graphdb.management.JanusGraphManager
+graphs: {
+  ConfigurationManagementGraph: conf/JanusGraph-configurationmanagement.properties
+}
+```
 
 In this example, our `ConfigurationManagementGraph` graph will be
 configured using the properties stored inside
 `conf/JanusGraph-configurationmanagement.properties`, which for example,
 look like:
 
-    gremlin.graph=org.janusgraph.core.JanusGraphFactory
-    storage.backend=cql
-    graph.graphname=ConfigurationManagementGraph
-    storage.hostname=127.0.0.1
+```conf
+gremlin.graph=org.janusgraph.core.JanusGraphFactory
+storage.backend=cql
+graph.graphname=ConfigurationManagementGraph
+storage.hostname=127.0.0.1
+```
 
 Assuming the GremlinServer started successfully and the
 `ConfigurationManagementGraph` was successfully instantiated, then all
@@ -162,39 +166,45 @@ The `ConfigurationManagementGraph` singleton allows you to create
 configurations used to open specific graphs, referenced by the
 `graph.graphname` property. For example:
 
-    map = new HashMap<String, Object>();
-    map.put("storage.backend", "cql");
-    map.put("storage.hostname", "127.0.0.1");
-    map.put("graph.graphname", "graph1");
-    ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
+```groovy
+map = new HashMap<String, Object>();
+map.put("storage.backend", "cql");
+map.put("storage.hostname", "127.0.0.1");
+map.put("graph.graphname", "graph1");
+ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
+```
 
 Then you could access this graph on any JanusGraph node using:
-
-    ConfiguredGraphFactory.open("graph1");
+```groovy
+ConfiguredGraphFactory.open("graph1");
+```
 
 ### Template Configuration
 
 The `ConfigurationManagementGraph` also allows you to create one
 template configuration, which you can use to create many graphs using
 the same configuration template. For example:
-
-    map = new HashMap<String, Object>();
-    map.put("storage.backend", "cql");
-    map.put("storage.hostname", "127.0.0.1");
-    ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
+```groovy
+map = new HashMap<String, Object>();
+map.put("storage.backend", "cql");
+map.put("storage.hostname", "127.0.0.1");
+ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
+```
 
 After doing this, you can create graphs using the template
 configuration:
-
-    ConfiguredGraphFactory.create("graph2");
+```groovy
+ConfiguredGraphFactory.create("graph2");
+```
 
 This method will first create a new configuration for "graph2" by
 copying over all the properties associated with the template
 configuration and storing it on a configuration for this specific graph.
 This means that this graph can be accessed in, on any JanusGraph node,
 in the future by doing:
-
-    ConfiguredGraphFactory.open("graph2");
+```groovy
+ConfiguredGraphFactory.open("graph2");
+```
 
 ### Updating Configurations
 
@@ -346,11 +356,13 @@ parameter but supplied at server start in your graphs object in your
 denoted by their `key` supplied for that graph. For example, if your
 .yaml graphs object looks like:
 
-    graphManager: org.janusgraph.graphdb.management.JanusGraphManager
-    graphs {
-      graph1: conf/graph1.properties,
-      graph2: conf/graph2.properties
-    }
+```yaml
+graphManager: org.janusgraph.graphdb.management.JanusGraphManager
+graphs {
+  graph1: conf/graph1.properties,
+  graph2: conf/graph2.properties
+}
+```
 
 but `conf/graph1.properties` and `conf/graph2.properties` do not include
 the property `graph.graphname`, then these graphs will be stored in the
@@ -380,31 +392,33 @@ Below are some example use cases:
 1) Create a template configuration for my Cassandra backend such that
 each graph created using this configuration gets a unique keyspace
 equivalent to the `String` &lt;graphName&gt; provided to the factory:
+```groovy
+map = new HashMap();
+map.put("storage.backend", "cql");
+map.put("storage.hostname", "127.0.0.1");
+ConfiguredGraphFactory.createTemplateConfiguration(new
+MapConfiguration(map));
 
-    map = new HashMap();
-    map.put("storage.backend", "cql");
-    map.put("storage.hostname", "127.0.0.1");
-    ConfiguredGraphFactory.createTemplateConfiguration(new
-    MapConfiguration(map));
-
-    g1 = ConfiguredGraphFactory.create("graph1"); //keyspace === graph1
-    g2 = ConfiguredGraphFactory.create("graph2"); //keyspace === graph2
-    g3 = ConfiguredGraphFactory.create("graph3"); //keyspace === graph3
+g1 = ConfiguredGraphFactory.create("graph1"); //keyspace === graph1
+g2 = ConfiguredGraphFactory.create("graph2"); //keyspace === graph2
+g3 = ConfiguredGraphFactory.create("graph3"); //keyspace === graph3
+```
 
 2) Create a template configuration for my BerkeleyJE backend such that
 each graph created using this configuration gets a unique storage
 directory equivalent to the
 "&lt;storage.root&gt;/&lt;graph.graphname&gt;":
+```groovy
+map = new HashMap();
+map.put("storage.backend", "berkeleyje");
+map.put("storage.root", "/data/graphs");
+ConfiguredGraphFactory.createTemplateConfiguration(new
+MapConfiguration(map));
 
-    map = new HashMap();
-    map.put("storage.backend", "berkeleyje");
-    map.put("storage.root", "/data/graphs");
-    ConfiguredGraphFactory.createTemplateConfiguration(new
-    MapConfiguration(map));
-
-    g1 = ConfiguredGraphFactory.create("graph1"); //storage directory === /data/graphs/graph1
-    g2 = ConfiguredGraphFactory.create("graph2"); //storage directory === /data/graphs/graph2
-    g3 = ConfiguredGraphFactory.create("graph3"); //storage directory === /data/graphs/graph3
+g1 = ConfiguredGraphFactory.create("graph1"); //storage directory === /data/graphs/graph1
+g2 = ConfiguredGraphFactory.create("graph2"); //storage directory === /data/graphs/graph2
+g3 = ConfiguredGraphFactory.create("graph3"); //storage directory === /data/graphs/graph3
+```
 
 Examples
 --------
@@ -413,69 +427,69 @@ It is reccomended to use a sessioned connection when creating a
 Configured Graph Factory template. If a sessioned connection is not used
 the Configured Graph Factory Template creation must be sent to the
 server as a single line using semi-colons. See details on sessions can
-be found in [Connecting to Gremlin
-Server](#first-example-connecting-gremlin-server).
+be found in [Connecting to Gremlin Server](../connecting/index.md).
+```groovy
+gremlin> :remote connect tinkerpop.server conf/remote.yaml session
+==>Configured localhost/127.0.0.1:8182
 
-    gremlin> :remote connect tinkerpop.server conf/remote.yaml session
-    ==>Configured localhost/127.0.0.1:8182
+gremlin> :remote console
+==>All scripts will now be sent to Gremlin Server - [localhost:8182]-[5206cdde-b231-41fa-9e6c-69feac0fe2b2] - type ':remote console' to return to local mode
 
-    gremlin> :remote console
-    ==>All scripts will now be sent to Gremlin Server - [localhost:8182]-[5206cdde-b231-41fa-9e6c-69feac0fe2b2] - type ':remote console' to return to local mode
+gremlin> ConfiguredGraphFactory.open("graph");
+Please create configuration for this graph using the
+ConfigurationManagementGraph API.
 
-    gremlin> ConfiguredGraphFactory.open("graph");
-    Please create configuration for this graph using the
-    ConfigurationManagementGraph API.
+gremlin> ConfiguredGraphFactory.create("graph");
+Please create a template Configuration using the
+ConfigurationManagementGraph API.
 
-    gremlin> ConfiguredGraphFactory.create("graph");
-    Please create a template Configuration using the
-    ConfigurationManagementGraph API.
+gremlin> map = new HashMap();
+gremlin> map.put("storage.backend", "cql");
+gremlin> map.put("storage.hostname", "127.0.0.1");
+gremlin> map.put("GraphName", "graph1");
+gremlin> ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
+Please include in your configuration the property "graph.graphname".
 
-    gremlin> map = new HashMap();
-    gremlin> map.put("storage.backend", "cql");
-    gremlin> map.put("storage.hostname", "127.0.0.1");
-    gremlin> map.put("GraphName", "graph1");
-    gremlin> ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
-    Please include in your configuration the property "graph.graphname".
+gremlin> map = new HashMap();
+gremlin> map.put("storage.backend", "cql");
+gremlin> map.put("storage.hostname", "127.0.0.1");
+gremlin> map.put("graph.graphname", "graph1");
+gremlin> ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
+==>null
 
-    gremlin> map = new HashMap();
-    gremlin> map.put("storage.backend", "cql");
-    gremlin> map.put("storage.hostname", "127.0.0.1");
-    gremlin> map.put("graph.graphname", "graph1");
-    gremlin> ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
-    ==>null
+gremlin> ConfiguredGraphFactory.open("graph1").vertices();
 
-    gremlin> ConfiguredGraphFactory.open("graph1").vertices();
+gremlin> map = new HashMap(); map.put("storage.backend",
+"cql"); map.put("storage.hostname", "127.0.0.1");
+gremlin> map.put("graph.graphname", "graph1");
+gremlin> ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
+Your template configuration may not contain the property
+"graph.graphname".
 
-    gremlin> map = new HashMap(); map.put("storage.backend",
-    "cql"); map.put("storage.hostname", "127.0.0.1");
-    gremlin> map.put("graph.graphname", "graph1");
-    gremlin> ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
-    Your template configuration may not contain the property
-    "graph.graphname".
+gremlin> map = new HashMap();
+gremlin> map.put("storage.backend",
+"cql"); map.put("storage.hostname", "127.0.0.1");
+gremlin> ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
+==>null
 
-    gremlin> map = new HashMap();
-    gremlin> map.put("storage.backend",
-    "cql"); map.put("storage.hostname", "127.0.0.1");
-    gremlin> ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
-    ==>null
+// Each graph is now acting in unique keyspaces equivalent to the
+graphnames.
+gremlin> g1 = ConfiguredGraphFactory.open("graph1");
+gremlin> g2 = ConfiguredGraphFactory.create("graph2");
+gremlin> g3 = ConfiguredGraphFactory.create("graph3");
+gremlin> g2.addVertex();
+gremlin> l = [];
+gremlin> l << g1.vertices().size();
+==>0
+gremlin> l << g2.vertices().size();
+==>1
+gremlin> l << g3.vertices().size();
+==>0
 
-    // Each graph is now acting in unique keyspaces equivalent to the
-    graphnames.
-    gremlin> g1 = ConfiguredGraphFactory.open("graph1");
-    gremlin> g2 = ConfiguredGraphFactory.create("graph2");
-    gremlin> g3 = ConfiguredGraphFactory.create("graph3");
-    gremlin> g2.addVertex();
-    gremlin> l = [];
-    gremlin> l << g1.vertices().size();
-    ==>0
-    gremlin> l << g2.vertices().size();
-    ==>1
-    gremlin> l << g3.vertices().size();
-    ==>0
+// After a graph is created, you must access it using .open()
+gremlin> g2 = ConfiguredGraphFactory.create("graph2"); g2.vertices().size();
+Configuration for graph "graph2" already exists.
 
-    // After a graph is created, you must access it using .open()
-    gremlin> g2 = ConfiguredGraphFactory.create("graph2"); g2.vertices().size();
-    Configuration for graph "graph2" already exists.
-
-    gremlin> g2 = ConfiguredGraphFactory.open("graph2"); g2.vertices().size();
-    ==>1
+gremlin> g2 = ConfiguredGraphFactory.open("graph2"); g2.vertices().size();
+==>1
+```

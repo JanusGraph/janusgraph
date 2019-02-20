@@ -52,7 +52,6 @@ BerkeleyDB specific configuration options:
     lead to better performance it can cause to inconsistencies and even
     corrupt the database if multiple JanusGraph instances interact with
     the same instance of BerkeleyDB.
-
 -   **cache-percentage**: The percentage of JVM heap space (configured
     via -Xmx) to be allocated to BerkeleyDB for its cache. Try to give
     BerkeleyDB as much space as possible without causing memory problems

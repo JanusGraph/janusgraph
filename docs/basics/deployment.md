@@ -51,7 +51,7 @@ Advanced Scenario
 -----------------
 
 The advanced scenario is an evolution of the [Getting Started
-Scenario](../../intro/#getting-started-scenario). Instead of hosting the JanusGraph
+Scenario](../intro.md#getting-started-scenario). Instead of hosting the JanusGraph
 Server instances together with the storage backend and optionally also
 the index backend, they are now separated on different servers. The
 advantage of hosting the different components (JanusGraph Server,

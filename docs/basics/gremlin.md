@@ -32,7 +32,7 @@ information on Gremlin, refer to the following resources:
 - [Gremlin for SQL developers](http://sql2gremlin.com): Learn Gremlin
     using typical patterns found when querying data with SQL.
 
-In addition to these resources, [???](#connecting) explains how Gremlin
+In addition to these resources, [Connecting to JanusGraph](../connecting/index.md) explains how Gremlin
 can be used in different programming languages to query a JanusGraph
 Server.
 
@@ -41,7 +41,7 @@ Introductory Traversals
 
 A Gremlin query is a chain of operations/functions that are evaluated
 from left to right. A simple grandfather query is provided below over
-the *Graph of the Gods* dataset discussed in [???](#getting-started).
+the *Graph of the Gods* dataset discussed in [Getting Started](../intro.md#getting-started).
 ```groovy
 gremlin> g.V().has('name', 'hercules').out('father').out('father').values('name')
 ==>saturn
@@ -156,7 +156,7 @@ traversal above is correct.
 !!! note
     The Gremlin overview presented in this section focused on the
     Gremlin-Groovy language implementation used in the Gremlin Console.
-    Refer to [???](#connecting) for information about connecting to
+    Refer to [Connecting to JanusGraph](../connecting/index.md) for information about connecting to
     JanusGraph with other languages than Groovy and independent of the
     Gremlin Console.
 

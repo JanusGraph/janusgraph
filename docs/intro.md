@@ -13,62 +13,44 @@ and its underlying, supported persistence solutions.
 
 ### General JanusGraph Benefits
 
--   Support for very large graphs. JanusGraph graphs scale with the
+- Support for very large graphs. JanusGraph graphs scale with the
     number of machines in the cluster.
-
--   Support for very many concurrent transactions and operational graph
+- Support for very many concurrent transactions and operational graph
     processing. JanusGraph’s transactional capacity scales with the
     number of machines in the cluster and answers complex traversal
     queries on huge graphs in milliseconds.
-
--   Support for global graph analytics and batch graph processing
+- Support for global graph analytics and batch graph processing
     through the Hadoop framework.
-
--   Support for geo, numeric range, and full text search for vertices
+- Support for geo, numeric range, and full text search for vertices
     and edges on very large graphs.
-
--   Native support for the popular property graph data model exposed by
+- Native support for the popular property graph data model exposed by
     [Apache TinkerPop](http://tinkerpop.apache.org/).
-
--   Native support for the graph traversal language
+- Native support for the graph traversal language
     [Gremlin](http://tinkerpop.apache.org/gremlin.html).
-
--   -   Numerous graph-level configurations provide knobs for tuning
+  - Numerous graph-level configurations provide knobs for tuning
     performance.
-
--   Vertex-centric indices provide vertex-level querying to alleviate
-    issues with the infamous [super node
-    problem](http://thinkaurelius.com/2012/10/25/a-solution-to-the-supernode-problem/).
-
--   Provides an optimized disk representation to allow for efficient use
+- Vertex-centric indices provide vertex-level querying to alleviate
+    issues with the infamous [super node problem](http://thinkaurelius.com/2012/10/25/a-solution-to-the-supernode-problem/).
+- Provides an optimized disk representation to allow for efficient use
     of storage and speed of access.
-
--   Open source under the liberal [Apache 2
-    license](http://en.wikipedia.org/wiki/Apache_License).
+- Open source under the liberal [Apache 2 license](http://en.wikipedia.org/wiki/Apache_License).
 
 ### Benefits of JanusGraph with Apache Cassandra
 
 ![](images/cassandra-small.svg)
 
--   [Continuously
-    available](http://en.wikipedia.org/wiki/Continuous_availability)
+-   [Continuously available](http://en.wikipedia.org/wiki/Continuous_availability)
     with no single point of failure.
-
 -   No read/write bottlenecks to the graph as there is no master/slave
     architecture.
 
--   [Elastic
-    scalability](http://en.wikipedia.org/wiki/Elastic_computing) allows
+-   [Elastic scalability](http://en.wikipedia.org/wiki/Elastic_computing) allows
     for the introduction and removal of machines.
-
 -   Caching layer ensures that continuously accessed data is available
     in memory.
-
 -   Increase the size of the cache by adding more machines to the
     cluster.
-
 -   Integration with [Apache Hadoop](http://hadoop.apache.org/).
-
 -   Open source under the liberal Apache 2 license.
 
 ### Benefits of JanusGraph with HBase
@@ -124,19 +106,12 @@ adapters. JanusGraph comes standard with the following adapters, but
 JanusGraph’s modular architecture supports third-party adapters.
 
 -   Data storage:
-
     -   [Apache Cassandra](storage-backend/cassandra.md)
-
     -   [Apache HBase](storage-backend/hbase.md)
-
     -   [Oracle Berkeley DB Java Edition](storage-backend/bdb.md)
-
 -   Indices, which speed up and enable more complex queries:
-
     -   [Elasticsearch](index-backend/elasticsearch.md)
-
     -   [Apache Solr](index-backend/solr.md)
-
     -   [Apache Lucene](index-backend/lucene.md)
 
 Broadly speaking, applications can interact with JanusGraph in two ways:

@@ -34,17 +34,17 @@ JanusGraph over HBase requires the following setup steps:
 -   Start HBase by invoking the `start-hbase.sh` script in the *bin*
     directory inside the extracted HBase directory. To stop HBase, use
     `stop-hbase.sh`.
-
-<!-- -->
-
-    $ ./bin/start-hbase.sh
-    starting master, logging to ../logs/hbase-master-machine-name.local.out
+```bash
+$ ./bin/start-hbase.sh
+starting master, logging to ../logs/hbase-master-machine-name.local.out
+```
 
 Now, you can create an HBase JanusGraph as follows:
-
-    JanusGraph graph = JanusGraphFactory.build()
-            .set("storage.backend", "hbase")
-            .open();
+```java
+JanusGraph graph = JanusGraphFactory.build()
+    .set("storage.backend", "hbase")
+    .open();
+```
 
 Note, that you do not need to specify a hostname since a localhost
 connection is attempted by default. Also, in the Gremlin Console, you
@@ -67,11 +67,12 @@ For example, suppose we have a running HBase cluster with a ZooKeeper
 quorum composed of three machines at IP address 77.77.77.77,
 77.77.77.78, and 77.77.77.79, then connecting JanusGraph with the
 cluster is accomplished as follows:
-
-    JanusGraph g = JanusGraphFactory.build()
-            .set("storage.backend", "hbase")
-            .set("storage.hostname", "77.77.77.77, 77.77.77.78, 77.77.77.79")
-            .open();
+```java
+JanusGraph g = JanusGraphFactory.build()
+    .set("storage.backend", "hbase")
+    .set("storage.hostname", "77.77.77.77, 77.77.77.78, 77.77.77.79")
+    .open();
+```
 
 `storage.hostname` accepts a comma separated list of IP addresses and
 hostname for any subset of machines in the HBase cluster JanusGraph
@@ -152,36 +153,45 @@ Tips and Tricks for Managing an HBase Cluster
 
 The [HBase shell](http://wiki.apache.org/hadoop/Hbase/Shell) on the
 master server can be used to get an overall status check of the cluster.
-
-    $HBASE_HOME/bin/hbase shell
+```bash
+$HBASE_HOME/bin/hbase shell
+```
 
 From the shell, the following commands are generally useful for
 understanding the status of the cluster.
 
-    status 'janusgraph'
-    status 'simple'
-    status 'detailed'
+```bash
+status 'janusgraph'
+status 'simple'
+status 'detailed'
+```
 
 The above commands can identify if a region server has gone down. If so,
 it is possible to `ssh` into the failed region server machines and do
 the following:
 
-    sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh stop regionserver
-    sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh start regionserver
+```bash
+sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh stop regionserver
+sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh start regionserver
+```
 
 The use of [pssh](http://code.google.com/p/parallel-ssh/) can make this
 process easy as there is no need to log into each machine individually
 to run the commands. Put the IP addresses of the regionservers into a
 `hosts.txt` file and then execute the following.
 
-    pssh -h host.txt sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh stop regionserver
-    pssh -h host.txt sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh start regionserver
+```bash
+pssh -h host.txt sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh stop regionserver
+pssh -h host.txt sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh start regionserver
+```
 
 Next, sometimes you need to restart the master server (e.g. connection
 refused exceptions). To do so, on the master execute the following:
 
-    sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh stop master
-    sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh start master
+```bash
+sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh stop master
+sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh start master
+```
 
 Finally, if an HBase cluster has already been deployed and more memory
 is required of the master or region servers, simply edit the

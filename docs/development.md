@@ -8,29 +8,20 @@ larger bodies of work and significant updates and additions, the
 following process shall be followed. Significant work may include, but
 is not limited to:
 
--   A major new feature or subproject, e.g., a new storage adapter
-
--   Incrementing the version of a core dependency such as a Apache
-    TinkerPop
-
--   Addition or deprecation of a public API
-
--   Internal shared data structure or API change
-
--   Addition of a new major dependency
+- A major new feature or subproject, e.g., a new storage adapter
+- Incrementing the version of a core dependency such as a Apache TinkerPop
+- Addition or deprecation of a public API
+- Internal shared data structure or API change
+- Addition of a new major dependency
 
 For these sorts of changes, contributors will:
-
--   Create one or more issues in the GitHub issue tracker
-
--   Start a DISCUSS thread on the
+- Create one or more issues in the GitHub issue tracker
+- Start a DISCUSS thread on the
     [janusgraph-dev](https://groups.google.com/forum/#!forum/janusgraph-dev)
     list where the proposed change may be discussed by committers and
     other community members
-
--   When the proposer feels it appropriate, a VOTE shall be called
-
--   Two +1 votes are required for the change to be accepted
+- When the proposer feels it appropriate, a VOTE shall be called
+- Two +1 votes are required for the change to be accepted
 
 ## Branching
 
@@ -73,19 +64,14 @@ into consideration and are still very valuable community input. The
 following rules apply to the voting process.
 
 -   Approval flows
-
     -   2 committer approvals are required to merge a pull request
-
     -   If a committer submits the pull request, it has their implicit
         approval so it requires 1 additional committer approval
-
     -   1 committer approval followed a one week review period for
         objections at which point a lazy consensus is assumed
-
 -   One or more -1 votes within a change request will veto the pull
     request until the noted issue(s) are addressed and the -1 vote is
     withdrawn
-
 -   Change requests will not be considered valid without an explanation
 
 ### Commit-Then-Review (CTR)
@@ -96,11 +82,9 @@ invoking CTR is to reduce the burden on the committers and minimize the
 turnaround time for merging trivial changes. Changes of this sort may
 include:
 
--   Documentation typo or small documentation addition
-
--   Addition of a new test case
-
--   Merging approved fixes into an upstream branch
+- Documentation typo or small documentation addition
+- Addition of a new test case
+- Merging approved fixes into an upstream branch
 
 Any commit that is made following CTR shall include the fact that it is
 a CTR in the commit comments. Community members who wish to review CTRs
@@ -124,7 +108,9 @@ branch (e.g., `0.2`) into the next downstream branch (e.g., `0.3`), and
 so on until you merge the last release branch into `master`. Afterwards
 push all release branches, ideally with an atomic commit:
 
-    git push --atomic origin master 0.3 0.2
+```bash
+git push --atomic origin master 0.3 0.2
+```
 
 This approach keeps merge conflicts to a minimum when a release branch
 is merged into a downstream release branch.
@@ -139,16 +125,11 @@ included in the release. After consensus is reached the release manager
 will perform the following tasks:
 
 -   Create a release branch so that work may continue on `master`
-
 -   Prepare the release artifacts
-
 -   Call a vote to approve the release on
     [janusgraph-dev](https://groups.google.com/forum/#!forum/janusgraph-dev)
-
 -   Committers will be given 72 hours to review and vote on the release
     artifacts
-
 -   Three +1 votes are required for a release to be approved
-
 -   One or more -1 votes with explanation will veto the release until
     the noted issues are addressed and the -1 votes are withdrawn

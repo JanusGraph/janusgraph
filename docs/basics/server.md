@@ -7,7 +7,7 @@ against one or more JanusGraph instances hosted within it. This section
 will describe how to use the WebSocket configuration, as well as
 describe how to configure JanusGraph Server to handle HTTP endpoint
 interactions. For information about how to connect to a JanusGraph
-Server from different languages refer to [Connecting to JanusGraph](../connecting.md).
+Server from different languages refer to [Connecting to JanusGraph](../connecting/index.md).
 
 Getting Started
 ---------------
@@ -40,37 +40,39 @@ together. To use this default configuration:
     under a non-root account.
 
 <!-- -->
-
-    $ bin/janusgraph.sh start
-    Forking Cassandra...
-    Running `nodetool statusthrift`.. OK (returned exit status 0 and printed string "running").
-    Forking Elasticsearch...
-    Connecting to Elasticsearch (127.0.0.1:9300)... OK (connected to 127.0.0.1:9300).
-    Forking Gremlin-Server...
-    Connecting to Gremlin-Server (127.0.0.1:8182)... OK (connected to 127.0.0.1:8182).
-    Run gremlin.sh to connect.
+```bash
+$ bin/janusgraph.sh start
+Forking Cassandra...
+Running `nodetool statusthrift`.. OK (returned exit status 0 and printed string "running").
+Forking Elasticsearch...
+Connecting to Elasticsearch (127.0.0.1:9300)... OK (connected to 127.0.0.1:9300).
+Forking Gremlin-Server...
+Connecting to Gremlin-Server (127.0.0.1:8182)... OK (connected to 127.0.0.1:8182).
+Run gremlin.sh to connect.
+```
 
 #### Connecting to Gremlin Server
 
 After running `janusgraph.sh`, Gremlin Server will be ready to listen
 for WebSocket connections. The easiest way to test the connection is
 with Gremlin Console.
-
-    $  bin/gremlin.sh
-             \,,,/
-             (o o)
-    -----oOOo-(3)-oOOo-----
-    plugin activated: tinkerpop.server
-    plugin activated: tinkerpop.hadoop
-    plugin activated: tinkerpop.utilities
-    plugin activated: janusgraph.imports
-    plugin activated: tinkerpop.tinkergraph
-    gremlin> :remote connect tinkerpop.server conf/remote.yaml
-    ==>Connected - localhost/127.0.0.1:8182
-    gremlin> :> graph.addVertex("name", "stephen")
-    ==>v[256]
-    gremlin> :> g.V().values('name')
-    ==>stephen
+```bash
+$  bin/gremlin.sh
+         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+plugin activated: tinkerpop.server
+plugin activated: tinkerpop.hadoop
+plugin activated: tinkerpop.utilities
+plugin activated: janusgraph.imports
+plugin activated: tinkerpop.tinkergraph
+gremlin> :remote connect tinkerpop.server conf/remote.yaml
+==>Connected - localhost/127.0.0.1:8182
+gremlin> :> graph.addVertex("name", "stephen")
+==>v[256]
+gremlin> :> g.V().values('name')
+==>stephen
+```
 
 The `:remote` command tells the console to configure a remote connection
 to Gremlin Server using the `conf/remote.yaml` file to connect. That
@@ -85,31 +87,32 @@ with a session by specifying
 when creating the connection. A [console
 session](https://tinkerpop.apache.org/docs/current/reference/#console-sessions)
 allows you to reuse variables across several lines of input.
-
-    gremlin> :remote connect tinkerpop.server conf/remote.yaml
-    ==>Configured localhost/127.0.0.1:8182
-    gremlin> graph
-    ==>standardjanusgraph[cql:[127.0.0.1]]
-    gremlin> g
-    ==>graphtraversalsource[standardjanusgraph[cql:[127.0.0.1]], standard]
-    gremlin> g.V()
-    gremlin> user = "Chris"
-    ==>Chris
-    gremlin> graph.addVertex("name", user)
-    No such property: user for class: Script21
-    Type ':help' or ':h' for help.
-    Display stack trace? [yN]
-    gremlin> :remote connect tinkerpop.server conf/remote.yaml session
-    ==>Configured localhost/127.0.0.1:8182-[9acf239e-a3ed-4301-b33f-55c911e04052]
-    gremlin> g.V()
-    gremlin> user = "Chris"
-    ==>Chris
-    gremlin> user
-    ==>Chris
-    gremlin> graph.addVertex("name", user)
-    ==>v[4344]
-    gremlin> g.V().values('name')
-    ==>Chris
+```groovy
+gremlin> :remote connect tinkerpop.server conf/remote.yaml
+==>Configured localhost/127.0.0.1:8182
+gremlin> graph
+==>standardjanusgraph[cql:[127.0.0.1]]
+gremlin> g
+==>graphtraversalsource[standardjanusgraph[cql:[127.0.0.1]], standard]
+gremlin> g.V()
+gremlin> user = "Chris"
+==>Chris
+gremlin> graph.addVertex("name", user)
+No such property: user for class: Script21
+Type ':help' or ':h' for help.
+Display stack trace? [yN]
+gremlin> :remote connect tinkerpop.server conf/remote.yaml session
+==>Configured localhost/127.0.0.1:8182-[9acf239e-a3ed-4301-b33f-55c911e04052]
+gremlin> g.V()
+gremlin> user = "Chris"
+==>Chris
+gremlin> user
+==>Chris
+gremlin> graph.addVertex("name", user)
+==>v[4344]
+gremlin> g.V().values('name')
+==>Chris
+```
 
 Cleaning up after the Pre-Packaged Distribution
 -----------------------------------------------
@@ -117,16 +120,17 @@ Cleaning up after the Pre-Packaged Distribution
 If you want to start fresh and remove the database and logs you can use
 the clean command with `janusgraph.sh`. The server should be stopped
 before running the clean operation.
-
-    $ cd /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/
-    $ ./bin/janusgraph.sh stop
-    Killing Gremlin-Server (pid 91505)...
-    Killing Elasticsearch (pid 91402)...
-    Killing Cassandra (pid 91219)...
-    $ ./bin/janusgraph.sh clean
-    Are you sure you want to delete all stored data and logs? [y/N] y
-    Deleted data in /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/db
-    Deleted logs in /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/log
+```bash
+$ cd /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/
+$ ./bin/janusgraph.sh stop
+Killing Gremlin-Server (pid 91505)...
+Killing Elasticsearch (pid 91402)...
+Killing Cassandra (pid 91219)...
+$ ./bin/janusgraph.sh clean
+Are you sure you want to delete all stored data and logs? [y/N] y
+Deleted data in /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/db
+Deleted logs in /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/log
+```
 
 JanusGraph Server as a WebSocket Endpoint
 -----------------------------------------
@@ -297,12 +301,13 @@ To enable Basic authentication in JanusGraph Server include the
 following configuration in your `gremlin-server.yaml`.
 
 ```yaml
-authentication: { authenticator:
-org.janusgraph.graphdb.tinkerpop.gremlin.server.auth.JanusGraphSimpleAuthenticator,
-authenticationHandler:
-org.apache.tinkerpop.gremlin.server.handler.HttpBasicAuthenticationHandler,
-config: { defaultUsername: user, defaultPassword: password,
-credentialsDb: conf/janusgraph-credentials-server.properties } }
+authentication: { 
+    authenticator: org.janusgraph.graphdb.tinkerpop.gremlin.server.auth.JanusGraphSimpleAuthenticator,
+    authenticationHandler: org.apache.tinkerpop.gremlin.server.handler.HttpBasicAuthenticationHandler,
+    config: { 
+        defaultUsername: user, 
+        defaultPassword: password,
+        credentialsDb: conf/janusgraph-credentials-server.properties } }
 ```
 
 Verify that basic authentication is configured correctly. For example
@@ -329,12 +334,13 @@ To enable SASL authentication include the following configuration in the
 `gremlin-server.yaml`
 
 ```yaml
-authentication: { authenticator:
-org.janusgraph.graphdb.tinkerpop.gremlin.server.auth.JanusGraphSimpleAuthenticator,
-authenticationHandler:
-org.apache.tinkerpop.gremlin.server.handler.SaslAuthenticationHandler,
-config: { defaultUsername: user, defaultPassword: password,
-credentialsDb: conf/janusgraph-credentials-server.properties } }
+authentication: { 
+    authenticator: org.janusgraph.graphdb.tinkerpop.gremlin.server.auth.JanusGraphSimpleAuthenticator,
+    authenticationHandler: org.apache.tinkerpop.gremlin.server.handler.SaslAuthenticationHandler,
+    config: { 
+        defaultUsername: user, 
+        defaultPassword: password,
+        credentialsDb: conf/janusgraph-credentials-server.properties } }
 ```
 
 !!! important
@@ -367,12 +373,14 @@ the password using basic auth.
 The `gremlin-server.yaml` should include the following configurations
 
 ```yaml
-authentication: { authenticator:
-org.janusgraph.graphdb.tinkerpop.gremlin.server.auth.SaslAndHMACAuthenticator,
-authenticationHandler:
-org.janusgraph.graphdb.tinkerpop.gremlin.server.handler.SaslAndHMACAuthenticationHandler,
-config: { defaultUsername: user, defaultPassword: password, hmacSecret:
-secret, credentialsDb: conf/janusgraph-credentials-server.properties } }
+authentication: { 
+    authenticator: org.janusgraph.graphdb.tinkerpop.gremlin.server.auth.SaslAndHMACAuthenticator,
+    authenticationHandler: org.janusgraph.graphdb.tinkerpop.gremlin.server.handler.SaslAndHMACAuthenticationHandler,
+    config: { 
+        defaultUsername: user, 
+        defaultPassword: password, 
+        hmacSecret: secret, 
+        credentialsDb: conf/janusgraph-credentials-server.properties } }
 ```
 
 !!! important
@@ -427,8 +435,9 @@ configure the BerkeleyDB backend for JanusGraph in Gremlin Server. As
 stated earlier, Gremlin Server needs JanusGraph dependencies on its
 classpath. Invoke the following command replacing `$VERSION` with the
 version of JanusGraph to use:
-
-    bin/gremlin-server.sh -i org.janusgraph janusgraph-all $VERSION
+```bash
+bin/gremlin-server.sh -i org.janusgraph janusgraph-all $VERSION
+```
 
 When this process completes, Gremlin Server should now have all the
 JanusGraph dependencies available to it and will thus be able to
@@ -488,10 +497,10 @@ metrics: {
     script for Gremlin Server and that particular ScriptEngine. Create
     `scripts/janusgraph.groovy` with the following contents:
 
-<!-- -->
-
-    def globals = [:]
-    globals << [g : graph.traversal()]
+```groovy
+def globals = [:]
+globals << [g : graph.traversal()]
+```
 
 The above script creates a `Map` called `globals` and assigns to it a
 key/value pair. The key is `g` and its value is a `TraversalSource`

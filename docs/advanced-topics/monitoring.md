@@ -19,9 +19,10 @@ measure the following:
 
 To enable Metrics collection, set the following in JanusGraph’s
 properties file:
-
-    # Required to enable Metrics in JanusGraph
-    metrics.enabled = true
+```conf
+# Required to enable Metrics in JanusGraph
+metrics.enabled = true
+```
 
 This setting makes JanusGraph record measurements at runtime using
 Metrics classes like Timer, Counter, Histogram, etc. To access these
@@ -34,9 +35,10 @@ JanusGraph prefixes all metric names with "org.janusgraph" by default.
 This prefix can be set through the `metrics.prefix` configuration
 property. For example, to shorten the default "org.janusgraph" prefix to
 just "janusgraph":
-
-    # Optional
-    metrics.prefix = janusgraph
+```conf
+# Optional
+metrics.prefix = janusgraph
+```
 
 #### Transaction-Specific Metrics Names
 
@@ -49,10 +51,11 @@ of metric names and their associated objects in memory, so it’s probably
 a good idea to keep the number of distinct metric prefixes small.
 
 To do this, call `TransactionBuilder.setMetricsPrefix(String)`:
-
-    JanusGraph graph = ...;
-    TransactionBuilder tbuilder = graph.buildTransaction();
-    JanusGraphTransaction tx = tbuilder.groupName("foobar").start();
+```java
+JanusGraph graph = ...;
+TransactionBuilder tbuilder = graph.buildTransaction();
+JanusGraphTransaction tx = tbuilder.groupName("foobar").start();
+```
 
 #### Separating Metrics by Backend Store
 
@@ -70,17 +73,11 @@ Configuring Metrics Reporting
 JanusGraph supports the following Metrics reporters:
 
 -   [Console](#console-reporter)
-
 -   [CSV](#csv-file-reporter)
-
 -   [Ganglia](#ganglia-reporter)
-
 -   [Graphite](#graphite-reporter)
-
 -   [JMX](#jmx-reporter)
-
 -   [Slf4j](#slf4j-reporter)
-
 -   [User-provided/Custom](#custom-reporter)
 
 Each reporter type is independent of and can coexist with the others.
@@ -113,10 +110,11 @@ directed above).
 
 Example janusgraph.properties snippet that prints metrics to the console
 once a minute:
-
-    metrics.enabled = true
-    # Required; specify logging interval in milliseconds
-    metrics.console.interval = 60000
+```conf
+metrics.enabled = true
+# Required; specify logging interval in milliseconds
+metrics.console.interval = 60000
+```
 
 ### CSV File Reporter
 
@@ -149,11 +147,12 @@ once a minute:
 Example janusgraph.properties snippet that writes CSV files once a
 minute to the directory `./foo/bar/` (relative to the process’s working
 directory):
-
-    metrics.enabled = true
-    # Required; specify logging interval in milliseconds
-    metrics.csv.interval = 60000
-    metrics.csv.directory = foo/bar
+```conf
+metrics.enabled = true
+# Required; specify logging interval in milliseconds
+metrics.csv.interval = 60000
+metrics.csv.directory = foo/bar
+```
 
 ### Ganglia Reporter
 
@@ -230,25 +229,27 @@ directory):
 
 Example janusgraph.properties snippet that sends unicast UDP datagrams
 to localhost on the default port once every 30 seconds:
-
-    metrics.enabled = true
-    # Required; IP or hostname string
-    metrics.ganglia.hostname = 127.0.0.1
-    # Required; specify logging interval in milliseconds
-    metrics.ganglia.interval = 30000
+```conf
+metrics.enabled = true
+# Required; IP or hostname string
+metrics.ganglia.hostname = 127.0.0.1
+# Required; specify logging interval in milliseconds
+metrics.ganglia.interval = 30000
+```
 
 Example janusgraph.properties snippet that sends unicast UDP datagrams
 to a non-default destination port and which also spoofs the IP and
 hostname reported to Ganglia:
-
-    metrics.enabled = true
-    # Required; IP or hostname string
-    metrics.ganglia.hostname = 1.2.3.4
-    # Required; specify logging interval in milliseconds
-    metrics.ganglia.interval = 60000
-    # Optional
-    metrics.ganglia.port = 6789
-    metrics.ganglia.spoof = 10.0.0.1:zombo.com
+```conf
+metrics.enabled = true
+# Required; IP or hostname string
+metrics.ganglia.hostname = 1.2.3.4
+# Required; specify logging interval in milliseconds
+metrics.ganglia.interval = 60000
+# Optional
+metrics.ganglia.port = 6789
+metrics.ganglia.spoof = 10.0.0.1:zombo.com
+```
 
 ### Graphite Reporter
 
@@ -292,12 +293,13 @@ hostname reported to Ganglia:
 
 Example janusgraph.properties snippet that sends metrics to a Graphite
 server on 192.168.0.1 every minute:
-
-    metrics.enabled = true
-    # Required; IP or hostname string
-    metrics.graphite.hostname = 192.168.0.1
-    # Required; specify logging interval in milliseconds
-    metrics.graphite.interval = 60000
+```conf
+metrics.enabled = true
+# Required; IP or hostname string
+metrics.graphite.hostname = 192.168.0.1
+# Required; specify logging interval in milliseconds
+metrics.graphite.interval = 60000
+```
 
 ### JMX Reporter
 
@@ -334,13 +336,14 @@ server on 192.168.0.1 every minute:
 </table>
 
 Example janusgraph.properties snippet:
-
-    metrics.enabled = true
-    # Required
-    metrics.jmx.enabled = true
-    # Optional; if omitted, then Metrics uses its default values
-    metrics.jmx.domain = foo
-    metrics.jmx.agentid = baz
+```conf
+metrics.enabled = true
+# Required
+metrics.jmx.enabled = true
+# Optional; if omitted, then Metrics uses its default values
+metrics.jmx.domain = foo
+metrics.jmx.agentid = baz
+```
 
 ### Slf4j Reporter
 
@@ -372,21 +375,23 @@ Example janusgraph.properties snippet:
 
 Example janusgraph.properties snippet that logs metrics once a minute to
 the logger named `foo`:
-
-    metrics.enabled = true
-    # Required; specify logging interval in milliseconds
-    metrics.slf4j.interval = 60000
-    # Optional; uses Metrics default when unset
-    metrics.slf4j.logger = foo
+```conf
+metrics.enabled = true
+# Required; specify logging interval in milliseconds
+metrics.slf4j.interval = 60000
+# Optional; uses Metrics default when unset
+metrics.slf4j.logger = foo
+```
 
 ### User-Provided/Custom Reporter
 
 In case the Metrics reporter configuration options listed above are
 insufficient, JanusGraph provides a utility method to access the single
 `MetricRegistry` instance which holds all of its measurements.
-
-    com.codahale.metrics.MetricRegistry janusgraphRegistry =
-        org.janusgraph.util.stats.MetricManager.INSTANCE.getRegistry();
+```java
+com.codahale.metrics.MetricRegistry janusgraphRegistry = 
+    org.janusgraph.util.stats.MetricManager.INSTANCE.getRegistry();
+```
 
 Code that accesses `janusgraphRegistry` this way can then attach
 non-standard reporter types or standard reporter types with exotic

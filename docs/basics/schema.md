@@ -66,11 +66,12 @@ following multiplicity settings.
 The default multiplicity is MULTI. The definition of an edge label is
 completed by calling the `make()` method on the builder which returns
 the defined edge label as shown in the following example.
-
-    mgmt = graph.openManagement()
-    follow = mgmt.makeEdgeLabel('follow').multiplicity(MULTI).make()
-    mother = mgmt.makeEdgeLabel('mother').multiplicity(MANY2ONE).make()
-    mgmt.commit()
+```groovy
+mgmt = graph.openManagement()
+follow = mgmt.makeEdgeLabel('follow').multiplicity(MULTI).make()
+mother = mgmt.makeEdgeLabel('mother').multiplicity(MANY2ONE).make()
+mgmt.commit()
+```
 
 Defining Property Keys
 ----------------------
@@ -103,65 +104,22 @@ configured data type is not allowed.
 
 JanusGraph natively supports the following data types.
 
-<table>
-<caption>Native JanusGraph Data Types</caption>
-<thead>
-<tr class="header">
-<th>Name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>String</td>
-<td>Character sequence</td>
-</tr>
-<tr class="even">
-<td>Character</td>
-<td>Individual character</td>
-</tr>
-<tr class="odd">
-<td>Boolean</td>
-<td>true or false</td>
-</tr>
-<tr class="even">
-<td>Byte</td>
-<td>byte value</td>
-</tr>
-<tr class="odd">
-<td>Short</td>
-<td>short value</td>
-</tr>
-<tr class="even">
-<td>Integer</td>
-<td>integer value</td>
-</tr>
-<tr class="odd">
-<td>Long</td>
-<td>long value</td>
-</tr>
-<tr class="even">
-<td>Float</td>
-<td>4 byte floating point number</td>
-</tr>
-<tr class="odd">
-<td>Double</td>
-<td>8 byte floating point number</td>
-</tr>
-<tr class="even">
-<td>Date</td>
-<td>Specific instant in time (<code>java.util.Date</code>)</td>
-</tr>
-<tr class="odd">
-<td>Geoshape</td>
-<td>Geographic shape like point, circle or box</td>
-</tr>
-<tr class="even">
-<td>UUID</td>
-<td>Universally unique identifier (<code>java.util.UUID</code>)</td>
-</tr>
-</tbody>
-</table>
+<center>Native JanusGraph Data Types</center>
+
+| Name | Description |
+| ---- | ----- |
+| String | Character sequence |
+| Character | Individual character |
+| Boolean | true or false |
+| Byte | byte value |
+| Short | short value |
+| Integer | integer value |
+| Long | long value |
+| Float | 4 byte floating point number |
+| Double | 8 byte floating point number |
+| Date | Specific instant in time (`java.util.Date`) |
+| Geoshape | Geographic shape like point, circle or box |
+| UUID | Universally unique identifier (`java.util.UUID`) |
 
 ### Property Key Cardinality
 

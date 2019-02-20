@@ -82,11 +82,12 @@ removing the hot spot.
 JanusGraph cuts vertices by label. A vertex label can be defined as
 *partitioned* which means that all vertices of that label will be
 partitioned across the cluster in the manner described above.
-
-    mgmt = graph.openManagement()
-    mgmt.makeVertexLabel('user').make()
-    mgmt.makeVertexLabel('product').partition().make()
-    mgmt.commit()
+```groovy
+mgmt = graph.openManagement()
+mgmt.makeVertexLabel('user').make()
+mgmt.makeVertexLabel('product').partition().make()
+mgmt.commit()
+```
 
 In the example above, `product` is defined as a partitioned vertex label
 whereas `user` is a normal label. This configuration is beneficial for

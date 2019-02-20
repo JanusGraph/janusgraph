@@ -135,23 +135,25 @@ releases and therefore unstable and likely to change. Unless one is
 interested in the most recent development status of JanusGraph, we
 recommend to use the stable JanusGraph release instead.
 
-```xml
+```xml tab='Maven'
 <dependency>
-   <groupId>org.janusgraph</groupId>
-   <artifactId>janusgraph-core</artifactId>
-   <version>{{ snapshot_version }}</version>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>{{ snapshot_version }}</version>
 </dependency>
 ```
 
-Check the [master
-branch](https://github.com/JanusGraph/janusgraph/tree/master) for the
-most current release version. SNAPSHOTs will be available through the
-[Sonatype
-repository](https://oss.sonatype.org/content/repositories/snapshots/org/janusgraph/).
+```groovy tab='Gradle'
+compile "org.janusgraph:janusgraph-core:{{ snapshot_version }}"
+```
 
-When adding this dependency, be sure to add the following repository to
-the `pom.xml`:
-```xml
+Check the [master branch](https://github.com/JanusGraph/janusgraph/tree/master) for the
+most current release version. SNAPSHOTs will be available through the
+[Sonatype repository](https://oss.sonatype.org/content/repositories/snapshots/org/janusgraph/).
+
+When adding this dependency, be sure to add the following repository to build file:
+
+```xml tab='Maven'
 <repository>
   <id>ossrh</id>
   <name>Sonatype Nexus Snapshots</name>
@@ -163,6 +165,15 @@ the `pom.xml`:
     <enabled>true</enabled>
   </snapshots>
 </repository>
+```
+
+```groovy tab='Gradle'
+maven {
+  url "https://oss.sonatype.org/content/repositories/snapshots"
+  mavenContent {
+    snapshotsOnly()
+  }
+}
 ```
 
 ## JanusGraph Bus

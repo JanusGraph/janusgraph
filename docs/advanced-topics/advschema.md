@@ -11,10 +11,11 @@ Static Vertices
 Vertex labels can be defined as **static** which means that vertices
 with that label cannot be modified outside the transaction in which they
 were created.
-
-    mgmt = graph.openManagement()
-    tweet = mgmt.makeVertexLabel('tweet').setStatic().make()
-    mgmt.commit()
+```groovy
+mgmt = graph.openManagement()
+tweet = mgmt.makeVertexLabel('tweet').setStatic().make()
+mgmt.commit()
+```
 
 Static vertex labels are a method of controlling the data lifecycle and
 useful when loading data into the graph that should not be modified
@@ -45,11 +46,12 @@ The following storage backends support edge and vertex TTL.
 Edge TTL is defined on a per-edge label basis, meaning that all edges of
 that label have the same time-to-live. Note that the backend must
 support cell level TTL. Currently only Cassandra and HBase support this.
-
-    mgmt = graph.openManagement()
-    visits = mgmt.makeEdgeLabel('visits').make()
-    mgmt.setTTL(visits, Duration.ofDays(7))
-    mgmt.commit()
+```groovy
+mgmt = graph.openManagement()
+visits = mgmt.makeEdgeLabel('visits').make()
+mgmt.setTTL(visits, Duration.ofDays(7))
+mgmt.commit()
+```
 
 Note, that modifying an edge resets the TTL for that edge. Also note,
 that the TTL of an edge label can be modified but it might take some
@@ -63,11 +65,12 @@ Property TTL is very similar to edge TTL and defined on a per-property
 key basis, meaning that all properties of that key have the same
 time-to-live. Note that the backend must support cell level TTL.
 Currently only Cassandra and HBase support this.
-
-    mgmt = graph.openManagement()
-    sensor = mgmt.makePropertyKey('sensor').cardinality(Cardinality.LIST).dataType(Double.class).make()
-    mgmt.setTTL(sensor, Duration.ofDays(21))
-    mgmt.commit()
+```groovy
+mgmt = graph.openManagement()
+sensor = mgmt.makePropertyKey('sensor').cardinality(Cardinality.LIST).dataType(Double.class).make()
+mgmt.setTTL(sensor, Duration.ofDays(21))
+mgmt.commit()
+```
 
 As with edge TTL, modifying an existing property resets the TTL for that
 property and modifying the TTL for a property key might not immediately
@@ -83,11 +86,12 @@ vertex label must be defined as *static* before a TTL can be set to rule
 out any modifications that would invalidate the vertex TTL. Vertex TTL
 only applies to static vertex labels. Note that the backend must support
 store level TTL. Currently only Cassandra and HBase support this.
-
-    mgmt = graph.openManagement()
-    tweet = mgmt.makeVertexLabel('tweet').setStatic().make()
-    mgmt.setTTL(tweet, Duration.ofHours(36))
-    mgmt.commit()
+```groovy
+mgmt = graph.openManagement()
+tweet = mgmt.makeVertexLabel('tweet').setStatic().make()
+mgmt.setTTL(tweet, Duration.ofHours(36))
+mgmt.commit()
+```
 
 Note, that the TTL of a vertex label can be modified but it might take
 some time for this change to propagate to all running JanusGraph
@@ -137,10 +141,11 @@ limited in the types of traversals they support. Unidirected edges are
 conceptually similar to hyperlinks in the world-wide-web in the sense
 that the out-vertex can traverse through the edge, but the in-vertex is
 unaware of its existence.
-
-    mgmt = graph.openManagement()
-    mgmt.makeEdgeLabel('author').unidirected().make()
-    mgmt.commit()
+```groovy
+mgmt = graph.openManagement()
+mgmt.makeEdgeLabel('author').unidirected().make()
+mgmt.commit()
+```
 
 Note, that unidirected edges do not get automatically deleted when their
 in-vertices are deleted. The user must ensure that such inconsistencies

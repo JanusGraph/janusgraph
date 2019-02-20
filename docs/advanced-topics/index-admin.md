@@ -50,7 +50,6 @@ vertex-centric index) since this information is needed when reindexing.
 There is a choice between two execution frameworks for reindex jobs:
 
 -   MapReduce
-
 -   JanusGraphManagement
 
 Reindex on MapReduce supports large, horizontally-distributed databases.
@@ -62,7 +61,6 @@ Reindexing requires:
 
 -   The index name (a string — the user provides this to JanusGraph when
     building a new index)
-
 -   The index type (a string — the name of the edge label or property
     key on which the vertex-centric index is built). This applies only
     to vertex-centric indexes - leave blank for global graph indexes.
@@ -73,16 +71,10 @@ The recommended way to generate and run a reindex job on MapReduce is
 through the `MapReduceIndexManagement` class. Here is a rough outline of
 the steps to run a reindex job using this class:
 
--   Open a `JanusGraph` instance
-
--   Pass the graph instance into `MapReduceIndexManagement`'s
-    constructor
-
--   Call `updateIndex(<index>, SchemaAction.REINDEX)` on the
-    `MapReduceIndexManagement` instance
-
--   If the index has not yet been enabled, enable it through
-    `JanusGraphManagement`
+- Open a `JanusGraph` instance
+- Pass the graph instance into `MapReduceIndexManagement`'s constructor
+- Call `updateIndex(<index>, SchemaAction.REINDEX)` on the `MapReduceIndexManagement` instance
+- If the index has not yet been enabled, enable it through `JanusGraphManagement`
 
 This class implements an `updateIndex` method that supports only the
 `REINDEX` and `REMOVE_INDEX` actions for its `SchemaAction` parameter.
@@ -164,11 +156,12 @@ g.V().has("desc", containsText("baz"))
 To run a reindex job on JanusGraphManagement, invoke
 `JanusGraphManagement.updateIndex` with the `SchemaAction.REINDEX`
 argument. For example:
-
-    m = graph.openManagement()
-    i = m.getGraphIndex('indexName')
-    m.updateIndex(i, SchemaAction.REINDEX).get()
-    m.commit()
+```groovy
+m = graph.openManagement()
+i = m.getGraphIndex('indexName')
+m.updateIndex(i, SchemaAction.REINDEX).get()
+m.commit()
+```
 
 #### Example for JanusGraphManagement
 
@@ -268,14 +261,14 @@ mgmt.commit()
 Once the status of all keys on the index changes to `DISABLED`, the
 index is ready to be removed. A utility in ManagementSystem can automate
 the wait-for-`DISABLED` step:
-
-    ManagementSystem.awaitGraphIndexStatus(graph, 'byName').status(SchemaStatus.DISABLED).call()
+```groovy
+ManagementSystem.awaitGraphIndexStatus(graph, 'byName').status(SchemaStatus.DISABLED).call()
+```
 
 After a composite index is `DISABLED`, there is a choice between two
 execution frameworks for its removal:
 
 -   MapReduce
-
 -   JanusGraphManagement
 
 Index removal on MapReduce supports large, horizontally-distributed
@@ -287,7 +280,6 @@ Index removal requires:
 
 -   The index name (a string — the user provides this to JanusGraph when
     building a new index)
-
 -   The index type (a string — the name of the edge label or property
     key on which the vertex-centric index is built). This applies only
     to vertex-centric indexes - leave blank for global graph indexes.
@@ -304,15 +296,10 @@ removal job on MapReduce is through the `MapReduceIndexManagement`
 class. Here is a rough outline of the steps to run an index removal job
 using this class:
 
--   Open a `JanusGraph` instance
-
--   If the index has not yet been disabled, disable it through
-    `JanusGraphManagement`
-
--   Pass the graph instance into `MapReduceIndexManagement`'s
-    constructor
-
--   Call `updateIndex(<index>, SchemaAction.REMOVE_INDEX)`
+- Open a `JanusGraph` instance
+- If the index has not yet been disabled, disable it through `JanusGraphManagement`
+- Pass the graph instance into `MapReduceIndexManagement`'s constructor
+- Call `updateIndex(<index>, SchemaAction.REMOVE_INDEX)`
 
 A commented code example follows in the next subsection.
 
@@ -434,7 +421,7 @@ Note, that the acknowledgment might fail due to JanusGraph instance
 failure. In other words, the cluster might wait indefinitely on the
 acknowledgment of a failed instance. In this case, the user must
 manually remove the failed instance from the cluster registry as
-described in [???](#failure-recovery). After the cluster state has been
+described in [Failure & Recovery](recovery.md). After the cluster state has been
 restored, the acknowledgment process must be reinitiated by manually
 registering the index again in the management system.
 

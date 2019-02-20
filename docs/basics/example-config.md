@@ -10,14 +10,15 @@ files in the `conf/` directory.
 
 BerkeleyDB
 ----------
+```conf
+storage.backend=berkeleyje
+storage.directory=/tmp/graph
 
-    storage.backend=berkeleyje
-    storage.directory=/tmp/graph
-
-    index.search.backend=elasticsearch
-    index.search.directory=/tmp/searchindex
-    index.search.elasticsearch.client-only=false
-    index.search.elasticsearch.local-mode=true
+index.search.backend=elasticsearch
+index.search.directory=/tmp/searchindex
+index.search.elasticsearch.client-only=false
+index.search.elasticsearch.local-mode=true
+```
 
 This configuration file configures JanusGraph to use [BerkeleyDB](../storage-backend/bdb.md)
 as an embedded storage backend, meaning, JanusGraph will start
@@ -35,12 +36,14 @@ Cassandra
 
 ### Cassandra Remote
 
-    storage.backend=cql
-    storage.hostname=100.100.100.1, 100.100.100.2
+```conf
+storage.backend=cql
+storage.hostname=100.100.100.1, 100.100.100.2
 
-    index.search.backend=elasticsearch
-    index.search.hostname=100.100.101.1, 100.100.101.2
-    index.search.elasticsearch.client-only=true
+index.search.backend=elasticsearch
+index.search.hostname=100.100.101.1, 100.100.101.2
+index.search.elasticsearch.client-only=true
+```
 
 This configuration file configures JanusGraph to use
 [Cassandra](../storage-backend/cassandra.md) as a remote storage backend. It assumes that a
@@ -56,13 +59,15 @@ Configuring an index backend is optional.
 
 ### Embedded Cassandra
 
-    storage.backend=embeddedcassandra
-    storage.conf-file=config/cassandra.yaml
+```conf
+storage.backend=embeddedcassandra
+storage.conf-file=config/cassandra.yaml
 
-    index.search.backend=elasticsearch
-    index.search.directory=/tmp/searchindex
-    index.search.elasticsearch.client-only=false
-    index.search.elasticsearch.local-mode=true
+index.search.backend=elasticsearch
+index.search.directory=/tmp/searchindex
+index.search.elasticsearch.client-only=false
+index.search.elasticsearch.local-mode=true
+```
 
 This configuration file configures JanusGraph to start
 [Cassandra](../storage-backend/cassandra.md) internally embedded in JanusGraph and specifies
@@ -76,13 +81,15 @@ configuration described above.
 HBase
 -----
 
-    storage.backend=hbase
-    storage.hostname=127.0.0.1
-    storage.port=2181
+```conf
+storage.backend=hbase
+storage.hostname=127.0.0.1
+storage.port=2181
 
-    index.search.backend=elasticsearch
-    index.search.hostname=127.0.0.1
-    index.search.elasticsearch.client-only=true
+index.search.backend=elasticsearch
+index.search.hostname=127.0.0.1
+index.search.elasticsearch.client-only=true
+```
 
 This configuration file configures JanusGraph to use [HBase](../storage-backend/hbase.md) as
 a remote storage backend. It assumes that an HBase cluster is running

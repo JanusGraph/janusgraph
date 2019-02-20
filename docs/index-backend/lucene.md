@@ -12,7 +12,7 @@ Apache Lucene
 JanusGraph supports [Apache Lucene](http://lucene.apache.org/) as a
 single-machine, embedded index backend. Lucene has a slightly extended
 feature set and performs better in small-scale applications compared to
-[Elasticsearch](#elasticsearch), but is limited to single-machine
+[Elasticsearch](elasticsearch.md), but is limited to single-machine
 deployments.
 
 Lucene Embedded Configuration
@@ -24,9 +24,10 @@ JanusGraph starts and interfaces with Lucene internally.
 To run Lucene embedded, add the following configuration options to the
 graph configuration file where `/data/searchindex` specifies the
 directory where Lucene should store the index data:
-
-    index.search.backend=lucene
-    index.search.directory=/data/searchindex
+```conf
+index.search.backend=lucene
+index.search.directory=/data/searchindex
+```
 
 In the above configuration, the index backend is named `search`. Replace
 `search` by a different name to change the name of the index.
@@ -36,15 +37,12 @@ Feature Support
 
 -   **Full-Text**: Supports all `Text` predicates to search for text
     properties that matches a given word, prefix or regular expression.
-
 -   **Geo**: Supports `Geo` predicates to search for geo properties that
     are intersecting, within, or contained in a given query geometry.
     Supports points, lines and polygons for indexing. Supports circles
     and boxes for querying point properties and all shapes for querying
     non-point properties.
-
 -   **Numeric Range**: Supports all numeric comparisons in `Compare`.
-
 -   **Temporal**: Nanosecond granularity temporal indexing.
 
 Configuration Options
@@ -60,8 +58,9 @@ index backend. For instance, if the index backend is named *search* then
 these configuration options need to be prefixed with `index.search.`. To
 configure an index backend named *search* to use Lucene as the index
 system, set the following configuration option:
-
-    index.search.backend=lucene
+```conf
+index.search.backend=lucene
+```
 
 Further Reading
 ---------------

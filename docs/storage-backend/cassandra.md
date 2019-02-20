@@ -76,11 +76,12 @@ JanusGraph over Cassandra requires the following setup steps:
     that Cassandra started successfully.
 
     Now, you can create a Cassandra JanusGraph as follows  
-
-    JanusGraph g = JanusGraphFactory.build().
-    set("storage.backend", "cql").
-    set("storage.hostname", "127.0.0.1").
-    open();
+```java
+JanusGraph g = JanusGraphFactory.build().
+set("storage.backend", "cql").
+set("storage.hostname", "127.0.0.1").
+open();
+```
 
 In the Gremlin Console, you can not define the type of the variables
 `conf` and `g`. Therefore, simply leave off the type declaration.
@@ -106,8 +107,10 @@ clients. Ports 7000, 7001 and 7099 are for inter-node communication.
 Version 3.11 of Cassandra was the latest compatible version for
 JanusGraph 0.2.0 and is specified in the reference command below.
 
-    docker run --name jg-cassandra -d -e CASSANDRA_START_RPC=true -p 9160:9160 \
-    -p 9042:9042 -p 7199:7199 -p 7001:7001 -p 7000:7000 cassandra:3.11
+```bash
+docker run --name jg-cassandra -d -e CASSANDRA_START_RPC=true -p 9160:9160 \
+  -p 9042:9042 -p 7199:7199 -p 7001:7001 -p 7000:7000 cassandra:3.11
+```
 
 Remote Server Mode
 ------------------
@@ -126,11 +129,12 @@ For example, suppose we have a running Cassandra cluster where one of
 the machines has the IP address 77.77.77.77, then connecting JanusGraph
 with the cluster is accomplished as follows (comma separate IP addresses
 to reference more than one machine):
-
-    JanusGraph graph = JanusGraphFactory.build().
-    set("storage.backend", "cql").
-    set("storage.hostname", "77.77.77.77").
-    open();
+```java
+JanusGraph graph = JanusGraphFactory.build().
+  set("storage.backend", "cql").
+  set("storage.hostname", "77.77.77.77").
+  open();
+```
 
 In the Gremlin Console, you can not define the type of the variables
 `conf` and `g`. Therefore, simply leave off the type declaration.
@@ -150,10 +154,11 @@ reference and compute on the graph.
 Start Gremlin Server using `bin/gremlin-server.sh` and then in an
 external Gremlin Console session using `bin/gremlin.sh` you can send
 Gremlin commands over the wire:
-
-    :plugin use tinkerpop.server
-    :remote connect tinkerpop.server conf/remote.yaml
-    :> g.addV()
+```groovy
+:plugin use tinkerpop.server
+:remote connect tinkerpop.server conf/remote.yaml
+:> g.addV()
+```
 
 In this case, each Gremlin Server would be configured to connect to the
 Cassandra cluster. The following shows the graph specific fragment of
@@ -218,10 +223,8 @@ Cassandra specific configuration options:
 
 -   **read-consistency-level**: Cassandra consistency level for read
     operations
-
 -   **write-consistency-level**: Cassandra consistency level for write
     operations
-
 -   **replication-factor**: The replication factor to use. The higher
     the replication factor, the more robust the graph database is to
     machine failure at the expense of data duplication. **The default
@@ -229,12 +232,10 @@ Cassandra specific configuration options:
     robustness. A value of 3 is recommended.** This replication factor
     can only be set when the keyspace is initially created. **On an
     existing keyspace, this value is ignored.**
-
 -   **thrift.frame\_size\_mb**: The maximum frame size to be used by
     thrift for transport. Increase this value when retrieving very large
     result sets. **Only applicable when
     storage.backend=cassandrathrift**
-
 -   **keyspace**: The name of the keyspace to store the JanusGraph graph
     in. Allows multiple JanusGraph graphs to co-exist in the same
     Cassandra cluster.
@@ -316,22 +317,18 @@ For example:
     desired configurations. These tags exist only at the EC2
     administrative level and have no effect on the Cassandra daemons'
     configuration or operation.
-
 -   On the Create Key Pair page of the Request Instances Wizard, either
     select an existing key pair or create a new one. The PEM file
     containing the private half of the selected key pair will be
     required to connect to these instances.
-
 -   On the Configure Firewall page of the Request Instances Wizard,
     select the security group created earlier.
-
 -   Review and launch instances on the final wizard page.
 
 ### Verify Successful Instance Launch
 
 -   SSH into any Cassandra instance node:
     `ssh -i [your-private-key].pem ubuntu@[public-dns-name-of-any-cassandra-instance]`
-
 -   Run the Cassandra nodetool `nodetool -h 127.0.0.1 ring` to inspect
     the state of the Cassandra token ring. You should see as many nodes
     in this command’s output as instances launched in the previous
@@ -357,23 +354,21 @@ configuration depends on your use case.
     on the amount of resources you need. Use the default configuration
     options and select the same Key Pair and Security Group as for the
     Cassandra cluster configured in the previous step.
-
 -   SSH into the newly created instance via
     `ssh -i [your-private-key].pem ec2-user@[public-dns-name-of-the-instance]`.
     You may have to wait a little for the instance to launch.
-
 -   [Download](https://github.com/JanusGraph/janusgraph/releases) the
     current JanusGraph distribution with `wget` and unpack the archive
     locally to the home directory. Start the Gremlin Console to verify
     that JanusGraph runs successfully. For more information on how to
     unpack JanusGraph and start the Gremlin Console, please refer to the
     [Getting Started guide](../intro.md#getting-started)
-
 -   Create a configuration file with `vi janusgraph.properties` and add
     the following lines::
-
-        storage.backend = cql
-        storage.hostname = [IP-address-of-one-Cassandra-EC2-instance]
+```conf
+storage.backend = cql
+storage.hostname = [IP-address-of-one-Cassandra-EC2-instance]
+```
 
 You may add additional configuration options found on this page or in
 [Configuration Reference](../basics/configuration-reference.md).
@@ -382,7 +377,6 @@ You may add additional configuration options found on this page or in
 ```groovy
 gremlin> graph = JanusGraphFactory.open('janusgraph.properties')
 ==>janusgraph[cql:[IP-address-of-one-Cassandra-EC2-instance]]
-
 ```
 
 !!! note

@@ -16,19 +16,14 @@ JanusGraph:
 
 -   **Full-Text**: Supports all `Text` predicates to search for text
     properties that matches a given word, prefix or regular expression.
-
 -   **Geo**: Supports all `Geo` predicates to search for geo properties
     that are intersecting, within, disjoint to or contained in a given
     query geometry. Supports points, lines and polygons for indexing.
     Supports circles, boxes and polygons for querying point properties
     and all shapes for querying non-point properties.
-
 -   **Numeric Range**: Supports all numeric comparisons in `Compare`.
-
 -   **TTL**: Supports automatically expiring indexed elements.
-
 -   **Temporal**: Millisecond granularity temporal indexing.
-
 -   **Custom Analyzer**: Choose to use a custom analyzer
 
 Please see [Version Compatibility](../appendices.md#version-compatibility) 
@@ -46,7 +41,9 @@ former being the default value. For example, to explicitly specify that
 Solr is running in a SolrCloud configuration the following property is
 specified as a JanusGraph configuration property:
 
-    index.search.solr.mode=cloud
+```conf
+index.search.solr.mode=cloud
+```
 
 These are some key Solr terms:
 
@@ -65,9 +62,11 @@ When connecting to a SolrCloud cluster by setting the `mode` equal to
 `cloud`, the Zookeeper URL (and optionally port) must be specified so
 that JanusGraph can discover and interact with the Solr cluster.
 
-    index.search.backend=solr
-    index.search.solr.mode=cloud
-    index.search.solr.zookeeper-url=localhost:2181
+```conf
+index.search.backend=solr
+index.search.solr.mode=cloud
+index.search.solr.zookeeper-url=localhost:2181
+```
 
 A number of additional configuration options pertaining to the creation
 of new collections (which is only supported in SolrCloud operation mode)
@@ -104,16 +103,20 @@ uploaded into Zookeeper, using the same collection name `verticesByAge`
 for the configset name. Refer to the [Solr Reference Guide](https://lucene.apache.org/solr/guide/6_6/solr-control-script-reference.html#SolrControlScriptReference-CollectionsandCores)
 for available parameters.
 
-    # create the collection
-    $SOLR_HOME/bin/solr create -c verticesByAge -d $JANUSGRAPH_HOME/conf/solr
+```bash
+# create the collection
+$SOLR_HOME/bin/solr create -c verticesByAge -d $JANUSGRAPH_HOME/conf/solr
+```
 
 Define a mixed index using `JanusGraphManagement` and the same
 collection name.
 
-    mgmt = graph.openManagement()
-    age = mgmt.makePropertyKey("age").dataType(Integer.class).make()
-    mgmt.buildIndex("verticesByAge", Vertex.class).addKey(age).buildMixedIndex("search")
-    mgmt.commit()
+```groovy
+mgmt = graph.openManagement()
+age = mgmt.makePropertyKey("age").dataType(Integer.class).make()
+mgmt.buildIndex("verticesByAge", Vertex.class).addKey(age).buildMixedIndex("search")
+mgmt.commit()
+```
 
 #### Using a Shared Configset
 
@@ -124,30 +127,36 @@ the default JanusGraph configuration for Solr that is found in the
 distribution. Refer to the [Solr Reference Guide](https://lucene.apache.org/solr/guide/6_6/solr-control-script-reference.html#SolrControlScriptReference-CollectionsandCores)
 for available parameters.
 
-    # upload the shared configset into Zookeeper
-    # Solr 5
-    $SOLR_HOME/server/scripts/cloud-scripts/zkcli.sh -cmd upconfig -z localhost:2181 \
-        -d $JANUSGRAPH_HOME/conf/solr -n janusgraph-configset
-    # Solr 6 and higher
-    $SOLR_HOME/bin/solr zk upconfig -d $JANUSGRAPH_HOME/conf/solr -n janusgraph-configset \
-        -z localhost:2181
+```bash
+# upload the shared configset into Zookeeper
+# Solr 5
+$SOLR_HOME/server/scripts/cloud-scripts/zkcli.sh -cmd upconfig -z localhost:2181 \
+    -d $JANUSGRAPH_HOME/conf/solr -n janusgraph-configset
+# Solr 6 and higher
+$SOLR_HOME/bin/solr zk upconfig -d $JANUSGRAPH_HOME/conf/solr -n janusgraph-configset \
+    -z localhost:2181
+```
 
 When configuring the SolrCloud indexing backend for JanusGraph, make
 sure to provide the name of the shared configset using the
 `index.search.solr.configset` property.
 
-    index.search.backend=solr
-    index.search.solr.mode=cloud
-    index.search.solr.zookeeper-url=localhost:2181
-    index.search.solr.configset=janusgraph-configset
+```conf
+index.search.backend=solr
+index.search.solr.mode=cloud
+index.search.solr.zookeeper-url=localhost:2181
+index.search.solr.configset=janusgraph-configset
+```
 
 Define a mixed index using `JanusGraphManagement` and the collection
 name.
 
-    mgmt = graph.openManagement()
-    age = mgmt.makePropertyKey("age").dataType(Integer.class).make()
-    mgmt.buildIndex("verticesByAge", Vertex.class).addKey(age).buildMixedIndex("search")
-    mgmt.commit()
+```groovy
+mgmt = graph.openManagement()
+age = mgmt.makePropertyKey("age").dataType(Integer.class).make()
+mgmt.buildIndex("verticesByAge", Vertex.class).addKey(age).buildMixedIndex("search")
+mgmt.commit()
+```
 
 Connecting to Solr Standalone (HTTP)
 ------------------------------------
@@ -156,9 +165,11 @@ When connecting to Solr Standalone via HTTP by setting the `mode` equal
 to `http`, a single or list of URLs for the Solr instances must be
 provided.
 
-    index.search.backend=solr
-    index.search.solr.mode=http
-    index.search.solr.http-urls=http://localhost:8983/solr
+```conf
+index.search.backend=solr
+index.search.solr.mode=http
+index.search.solr.http-urls=http://localhost:8983/solr
+```
 
 Additional configuration options for controlling the maximum number of
 connections, connection timeout and transmission compression are
@@ -177,7 +188,9 @@ for available parameters. In this example, a core named `verticesByAge`
 is created using the default JanusGraph configuration for Solr that is
 found in the distribution.
 
-    $SOLR_HOME/bin/solr create -c verticesByAge -d $JANUSGRAPH_HOME/conf/solr
+```bash
+$SOLR_HOME/bin/solr create -c verticesByAge -d $JANUSGRAPH_HOME/conf/solr
+```
 
 Define a mixed index using `JanusGraphManagement` and the same core
 name.
@@ -244,7 +257,6 @@ definition. This can be achieved in one of two ways:
 1.  Configuring the name of the field by providing a `mapped-name`
     parameter when adding the property key to the index. See
     [Individual Field Mapping](field-mapping.md#individual-field-mapping) for more information.
-
 2.  By enabling the `map-name` configuration option for the Solr index
     which will use the property key name as the field name in Solr. See
     [Global Field Mapping](field-mapping.md#global-field-mapping) for more information.
@@ -268,7 +280,7 @@ Troubleshooting
 
 The collection (and all of the required configuration files) must be
 initialized before a defined index can use the collection. See
-[Connecting to SolrCloud](solr.md#_connecting_to_solrcloud) for more
+[Connecting to SolrCloud](#_connecting_to_solrcloud) for more
 information.
 
 When using SolrCloud, the Zookeeper zkCli.sh command line tool can be
@@ -280,12 +292,11 @@ copied is correct.
 ### Cannot Find the Specified Configset
 
 When using SolrCloud, a configset is required to create a mixed index
-for JanusGraph. See [Configset Configuration](solr.md#configset_configuration) for more
+for JanusGraph. See [Configset Configuration](#configset_configuration) for more
 information.
 
 -   If using an individual configset, the collection must be created
     manually first.
-
 -   If using a shared configset, the configset must be uploaded into
     Zookeeper first.
 
@@ -293,11 +304,13 @@ You can verify that the configset and its configuration files are in
 Zookeeper under `/configs`. Refer to the [Solr Reference Guide](https://lucene.apache.org/solr/guide/6_6/solr-control-script-reference.html#SolrControlScriptReference-ZooKeeperOperations)
 for other Zookeeper operations.
 
-    # verify the configset in Zookeeper
-    # Solr 5
-    $SOLR_HOME/server/scripts/cloud-scripts/zkcli.sh -cmd list -z localhost:2181
-    # Solr 6 and higher
-    $SOLR_HOME/bin/solr zk ls -r /configs/configset-name -z localhost:2181
+```bash
+# verify the configset in Zookeeper
+# Solr 5
+$SOLR_HOME/server/scripts/cloud-scripts/zkcli.sh -cmd list -z localhost:2181
+# Solr 6 and higher
+$SOLR_HOME/bin/solr zk ls -r /configs/configset-name -z localhost:2181
+```
 
 ### HTTP Error 404
 
@@ -322,7 +335,7 @@ at http://localhost:8983/solr: Expected mime type application/octet-stream but g
 ```
 
 Make sure to create the core manually before attempting to store data
-into the index. See [Core Configuration](solr.md#core-configuration)
+into the index. See [Core Configuration](#core-configuration)
 for more information.
 
 ### Invalid core or collection name
@@ -354,34 +367,38 @@ root cause is identical.
 
 Here’s a representative example from a Solr server log:
 
-    ERROR [http-8983-exec-5] 2014-10-07 02:54:06, 665 SolrCoreResourceManager.java (line 344) com/vividsolutions/jts/geom/Geometry
-    java.lang.NoClassDefFoundError: com/vividsolutions/jts/geom/Geometry
-            at com.spatial4j.core.context.jts.JtsSpatialContextFactory.newSpatialContext(JtsSpatialContextFactory.java:30)
-            at com.spatial4j.core.context.SpatialContextFactory.makeSpatialContext(SpatialContextFactory.java:83)
-            at org.apache.solr.schema.AbstractSpatialFieldType.init(AbstractSpatialFieldType.java:95)
-            at org.apache.solr.schema.AbstractSpatialPrefixTreeFieldType.init(AbstractSpatialPrefixTreeFieldType.java:43)
-            at org.apache.solr.schema.SpatialRecursivePrefixTreeFieldType.init(SpatialRecursivePrefixTreeFieldType.java:37)
-            at org.apache.solr.schema.FieldType.setArgs(FieldType.java:164)
-            at org.apache.solr.schema.FieldTypePluginLoader.init(FieldTypePluginLoader.java:141)
-            at org.apache.solr.schema.FieldTypePluginLoader.init(FieldTypePluginLoader.java:43)
-            at org.apache.solr.util.plugin.AbstractPluginLoader.load(AbstractPluginLoader.java:190)
-            at org.apache.solr.schema.IndexSchema.readSchema(IndexSchema.java:470)
-            at com.datastax.bdp.search.solr.CassandraIndexSchema.readSchema(CassandraIndexSchema.java:72)
-            at org.apache.solr.schema.IndexSchema.<init>(IndexSchema.java:168)
-            at com.datastax.bdp.search.solr.CassandraIndexSchema.<init>(CassandraIndexSchema.java:54)
-            at com.datastax.bdp.search.solr.core.CassandraCoreContainer.create(CassandraCoreContainer.java:210)
-            at com.datastax.bdp.search.solr.core.SolrCoreResourceManager.createCore(SolrCoreResourceManager.java:256)
-            at com.datastax.bdp.search.solr.handler.admin.CassandraCoreAdminHandler.handleCreateAction(CassandraCoreAdminHandler.java:117)
-            ...
+```java
+ERROR [http-8983-exec-5] 2014-10-07 02:54:06, 665 SolrCoreResourceManager.java (line 344) com/vividsolutions/jts/geom/Geometry
+java.lang.NoClassDefFoundError: com/vividsolutions/jts/geom/Geometry
+    at com.spatial4j.core.context.jts.JtsSpatialContextFactory.newSpatialContext(JtsSpatialContextFactory.java:30)
+    at com.spatial4j.core.context.SpatialContextFactory.makeSpatialContext(SpatialContextFactory.java:83)
+    at org.apache.solr.schema.AbstractSpatialFieldType.init(AbstractSpatialFieldType.java:95)
+    at org.apache.solr.schema.AbstractSpatialPrefixTreeFieldType.init(AbstractSpatialPrefixTreeFieldType.java:43)
+    at org.apache.solr.schema.SpatialRecursivePrefixTreeFieldType.init(SpatialRecursivePrefixTreeFieldType.java:37)
+    at org.apache.solr.schema.FieldType.setArgs(FieldType.java:164)
+    at org.apache.solr.schema.FieldTypePluginLoader.init(FieldTypePluginLoader.java:141)
+    at org.apache.solr.schema.FieldTypePluginLoader.init(FieldTypePluginLoader.java:43)
+    at org.apache.solr.util.plugin.AbstractPluginLoader.load(AbstractPluginLoader.java:190)
+    at org.apache.solr.schema.IndexSchema.readSchema(IndexSchema.java:470)
+    at com.datastax.bdp.search.solr.CassandraIndexSchema.readSchema(CassandraIndexSchema.java:72)
+    at org.apache.solr.schema.IndexSchema.<init>(IndexSchema.java:168)
+    at com.datastax.bdp.search.solr.CassandraIndexSchema.<init>(CassandraIndexSchema.java:54)
+    at com.datastax.bdp.search.solr.core.CassandraCoreContainer.create(CassandraCoreContainer.java:210)
+    at com.datastax.bdp.search.solr.core.SolrCoreResourceManager.createCore(SolrCoreResourceManager.java:256)
+    at com.datastax.bdp.search.solr.handler.admin.CassandraCoreAdminHandler.handleCreateAction(CassandraCoreAdminHandler.java:117)
+    ...
+```
 
 Here’s what normally appears in the output of the client that issued the
 associated `CREATE` command to the CoreAdmin API:
 
-    org.apache.solr.common.SolrException: com/vividsolutions/jts/geom/Geometry
-            at com.datastax.bdp.search.solr.core.SolrCoreResourceManager.createCore(SolrCoreResourceManager.java:345)
-            at com.datastax.bdp.search.solr.handler.admin.CassandraCoreAdminHandler.handleCreateAction(CassandraCoreAdminHandler.java:117)
-            at org.apache.solr.handler.admin.CoreAdminHandler.handleRequestBody(CoreAdminHandler.java:152)
-            ...
+```java
+org.apache.solr.common.SolrException: com/vividsolutions/jts/geom/Geometry
+    at com.datastax.bdp.search.solr.core.SolrCoreResourceManager.createCore(SolrCoreResourceManager.java:345)
+    at com.datastax.bdp.search.solr.handler.admin.CassandraCoreAdminHandler.handleCreateAction(CassandraCoreAdminHandler.java:117)
+    at org.apache.solr.handler.admin.CoreAdminHandler.handleRequestBody(CoreAdminHandler.java:152)
+    ...
+```
 
 This is resolved by adding the JTS jar to the classpath of JanusGraph
 and/or the Solr server. JTS is not included in JanusGraph distributions
@@ -416,23 +433,27 @@ Install DataStax Enterprise as directed by the page [Installing DataStax Enterpr
 
 Export `DSE_HOME` and append to `PATH` in your shell environment. Here’s
 an example using Bash syntax:
-
-    export DSE_HOME=/path/to/dse-version.number
-    export PATH="$DSE_HOME"/bin:"$PATH"
+```bash
+export DSE_HOME=/path/to/dse-version.number
+export PATH="$DSE_HOME"/bin:"$PATH"
+```
 
 Install JTS for Solr. The appropriate version varies with the Spatial4j
 version. As of DSE 4.5.2, the appropriate version is 1.13.
-
-    cd $DSE_HOME/resources/solr/lib
-    curl -O 'http://central.maven.org/maven2/com/vividsolutions/jts/1.13/jts-1.13.jar'
+```bash
+cd $DSE_HOME/resources/solr/lib
+curl -O 'http://central.maven.org/maven2/com/vividsolutions/jts/1.13/jts-1.13.jar'
+```
 
 Start DSE Cassandra and Solr in a single background daemon:
 
-    # The "dse-data" path below was chosen to match the
-    # "Installing DataStax Enterprise using the binary tarball"
-    # documentation page from DataStax.  The exact path is not
-    # significant.
-    dse cassandra -s -Ddse.solr.data.dir="$DSE_HOME"/dse-data/solr
+```bash
+# The "dse-data" path below was chosen to match the
+# "Installing DataStax Enterprise using the binary tarball"
+# documentation page from DataStax.  The exact path is not
+# significant.
+dse cassandra -s -Ddse.solr.data.dir="$DSE_HOME"/dse-data/solr
+```
 
 The previous command will write some startup information to the console
 and to the logfile path `log4j.appender.R.File` configured in
@@ -442,13 +463,15 @@ Once DSE with Cassandra and Solr has started normally, check the cluster
 health with `nodetool status`. A single-instance ring should show one
 node with flags \*U\*p and \*N\*ormal:
 
-    nodetool status
-    Note: Ownership information does not include topology; for complete information, specify a keyspace
-    = Datacenter: Solr
-    Status=Up/Down
-    |/ State=Normal/Leaving/Joining/Moving
-    --  Address    Load       Owns   Host ID                               Token                                    Rack
-    UN  127.0.0.1  99.89 KB   100.0%  5484ef7b-ebce-4560-80f0-cbdcd9e9f496  -7317038863489909889                     rack1
+```bash
+nodetool status
+Note: Ownership information does not include topology; for complete information, specify a keyspace
+= Datacenter: Solr
+Status=Up/Down
+|/ State=Normal/Leaving/Joining/Moving
+--  Address    Load       Owns   Host ID                               Token                                    Rack
+UN  127.0.0.1  99.89 KB   100.0%  5484ef7b-ebce-4560-80f0-cbdcd9e9f496  -7317038863489909889                     rack1
+```
 
 Next, switch to Gremlin Console and open a JanusGraph database against
 the DSE instance. This will create JanusGraph’s keyspace and column
@@ -474,46 +497,48 @@ core. Then we’ll come back to this console to load some sample data.
 Next, upload configuration files for JanusGraph’s Solr collection, then
 create the core in DSE:
 
-    # Change to the directory where JanusGraph was extracted.  Later commands
-    # use relative paths to the Solr config files shipped with the JanusGraph
-    # distribution.
-    cd $JANUSGRAPH_HOME
+```bash
+# Change to the directory where JanusGraph was extracted.  Later commands
+# use relative paths to the Solr config files shipped with the JanusGraph
+# distribution.
+cd $JANUSGRAPH_HOME
 
-    # The name must be URL safe and should contain one dot/full-stop
-    # character. The part of the name after the dot must not conflict with
-    # any of JanusGraph's internal CF names.  Starting the part after the dot
-    # "solr" will avoid a conflict with JanusGraph's internal CF names.
-    CORE_NAME=janusgraph.solr1
-    # Where to upload collection configuration and send CoreAdmin requests.
-    SOLR_HOST=localhost:8983
+# The name must be URL safe and should contain one dot/full-stop
+# character. The part of the name after the dot must not conflict with
+# any of JanusGraph's internal CF names.  Starting the part after the dot
+# "solr" will avoid a conflict with JanusGraph's internal CF names.
+CORE_NAME=janusgraph.solr1
+# Where to upload collection configuration and send CoreAdmin requests.
+SOLR_HOST=localhost:8983
 
-    # The value of index.[X].solr.http-urls in JanusGraph's config file
-    # should match $SOLR_HOST and $CORE_NAME.  For example, given the
-    # $CORE_NAME and $SOLR_HOST values above, JanusGraph's config file would
-    # contain (assuming "search" is the desired index alias):
-    #
-    # index.search.solr.http-urls=http://localhost:8983/solr/janusgraph.solr1
-    #
-    # The stock JanusGraph config file conf/janusgraph-cql-solr.properties
-    # ships with this http-urls value.
+# The value of index.[X].solr.http-urls in JanusGraph's config file
+# should match $SOLR_HOST and $CORE_NAME.  For example, given the
+# $CORE_NAME and $SOLR_HOST values above, JanusGraph's config file would
+# contain (assuming "search" is the desired index alias):
+#
+# index.search.solr.http-urls=http://localhost:8983/solr/janusgraph.solr1
+#
+# The stock JanusGraph config file conf/janusgraph-cql-solr.properties
+# ships with this http-urls value.
 
-    # Upload Solr config files to DSE Search daemon
-    for xml in conf/solr/{solrconfig, schema, elevate}.xml ; do
-        curl -v http://"$SOLR_HOST"/solr/resource/"$CORE_NAME/$xml" \
-          --data-binary @"$xml" -H 'Content-type:text/xml; charset=utf-8'
-    done
-    for txt in conf/solr/{protwords, stopwords, synonyms}.txt ; do
-        curl -v http://"$SOLR_HOST"/solr/resource/"$CORE_NAME/$txt" \
-          --data-binary @"$txt" -H 'Content-type:text/plain; charset=utf-8'
-    done
-    sleep 5
+# Upload Solr config files to DSE Search daemon
+for xml in conf/solr/{solrconfig, schema, elevate}.xml ; do
+    curl -v http://"$SOLR_HOST"/solr/resource/"$CORE_NAME/$xml" \
+      --data-binary @"$xml" -H 'Content-type:text/xml; charset=utf-8'
+done
+for txt in conf/solr/{protwords, stopwords, synonyms}.txt ; do
+    curl -v http://"$SOLR_HOST"/solr/resource/"$CORE_NAME/$txt" \
+      --data-binary @"$txt" -H 'Content-type:text/plain; charset=utf-8'
+done
+sleep 5
 
-    # Create core using the Solr config files just uploaded above
-    curl "http://"$SOLR_HOST"/solr/admin/cores?action=CREATE&name=$CORE_NAME"
-    sleep 5
+# Create core using the Solr config files just uploaded above
+curl "http://"$SOLR_HOST"/solr/admin/cores?action=CREATE&name=$CORE_NAME"
+sleep 5
 
-    # Retrieve and print the status of the core we just created
-    curl "http://localhost:8983/solr/admin/cores?action=STATUS&core=$CORE_NAME"
+# Retrieve and print the status of the core we just created
+curl "http://localhost:8983/solr/admin/cores?action=STATUS&core=$CORE_NAME"
+```
 
 Now the JanusGraph database and backing Solr core are ready for use. We
 can test it out with the [Graph of the Gods](../intro.md#getting-started) dataset.
