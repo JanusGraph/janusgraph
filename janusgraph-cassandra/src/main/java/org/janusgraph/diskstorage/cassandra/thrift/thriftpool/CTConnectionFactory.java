@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.cassandra.auth.IAuthenticator;
+import org.apache.cassandra.auth.PasswordAuthenticator;
 import org.apache.cassandra.thrift.AuthenticationRequest;
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.commons.lang.StringUtils;
@@ -112,8 +112,8 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
 
         if (cfg.username != null) {
             Map<String, String> credentials = new HashMap<String, String>() {{
-                put(IAuthenticator.USERNAME_KEY, cfg.username);
-                put(IAuthenticator.PASSWORD_KEY, cfg.password);
+                put(PasswordAuthenticator.USERNAME_KEY, cfg.username);
+                put(PasswordAuthenticator.PASSWORD_KEY, cfg.password);
             }};
 
             try {

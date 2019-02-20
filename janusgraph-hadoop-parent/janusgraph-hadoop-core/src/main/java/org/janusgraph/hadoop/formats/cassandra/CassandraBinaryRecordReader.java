@@ -18,7 +18,6 @@ import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
-import org.apache.cassandra.db.Cell;
 import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -67,11 +66,11 @@ public class CassandraBinaryRecordReader extends RecordReader<StaticBuffer, Iter
                 incompleteKV = null;
             } else {
                 StaticArrayBuffer key = StaticArrayBuffer.of(reader.getCurrentKey());
-                SortedMap<ByteBuffer, Cell> valueSortedMap = reader.getCurrentValue();
+                SortedMap<ByteBuffer, ColumnFamilyRecordReader.Column> valueSortedMap = reader.getCurrentValue();
                 List<Entry> entries = new ArrayList<>(valueSortedMap.size());
-                for (Map.Entry<ByteBuffer, Cell> ent : valueSortedMap.entrySet()) {
+                for (Map.Entry<ByteBuffer, ColumnFamilyRecordReader.Column> ent : valueSortedMap.entrySet()) {
                     ByteBuffer col = ent.getKey();
-                    ByteBuffer val = ent.getValue().value();
+                    ByteBuffer val = ent.getValue().value;
                     entries.add(StaticArrayEntry.of(StaticArrayBuffer.of(col), StaticArrayBuffer.of(val)));
                 }
 
