@@ -5,6 +5,15 @@
 Please follow these instructions when upgrading from Titan or an older
 JanusGraph release.
 
+=== Upgrading to JanusGraph 0.4.0
+
+==== Cassandra: Upgrade from 2.1 to 2.2
+The version of Cassandra that is included in the distribution of JanusGraph was upgraded from 2.1.20 to 2.2.13.
+Refer to https://github.com/apache/cassandra/blob/174cf761f7897443080b8a840b649b7eab17ae25/NEWS.txt#L787[the upgrade documentation of Cassandra]
+for detailed instructions to perform this upgrade.
+Users who operate their own Cassandra cluster instead of using Cassandra distributed together with JanusGraph are not affected by this upgrade.
+This also does not change the different versions of Cassandra that are supported by JanusGraph (see <<version-compat>> for a detailed list of the supported versions).
+
 === Upgrading to JanusGraph 0.3.0
 IMPORTANT: You should back-up your data prior to attempting an upgrade! Also please note that once an upgrade has been completed you will no longer be able to connect to your graph with client versions prior to 0.3.0.
 

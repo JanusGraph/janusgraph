@@ -108,17 +108,13 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
      * To match the behavior of the standard Cassandra thrift API endpoint, the
      * {@code nowMillis} argument should be the number of milliseconds since the
      * UNIX Epoch (e.g. System.currentTimeMillis() or equivalent obtained
-     * through a {@link TimestampProvider}). This is per
-     * {@link org.apache.cassandra.thrift.CassandraServer#get_range_slices(ColumnParent, SlicePredicate, KeyRange, ConsistencyLevel)},
-     * which passes the server's System.currentTimeMillis() to the
-     * {@code RangeSliceCommand} constructor.
+     * through a {@link TimestampProvider}).
      */
     private List<Row> getKeySlice(Token start,
                                   Token end,
                                   @Nullable SliceQuery sliceQuery,
                                   int pageSize,
                                   long nowMillis) throws BackendException {
-        IPartitioner partitioner = StorageService.getPartitioner();
 
         SliceRange columnSlice = new SliceRange();
         if (sliceQuery == null) {
@@ -133,8 +129,8 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         /* Note: we need to fetch columns for each row as well to remove "range ghosts" */
         SlicePredicate predicate = new SlicePredicate().setSlice_range(columnSlice);
 
-        RowPosition startPosition = start.minKeyBound(partitioner);
-        RowPosition endPosition = end.minKeyBound(partitioner);
+        RowPosition startPosition = start.minKeyBound();
+        RowPosition endPosition = end.minKeyBound();
 
         List<Row> rows;
 
@@ -311,28 +307,8 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
          * even if the iterator runs more than one distinct slice query while
          * paging. <b>This field must be in units of milliseconds since
          * the UNIX Epoch</b>.
-         * <p>
-         * This timestamp is passed to three methods/constructors:
-         * <ul>
-         *  <li>{@link org.apache.cassandra.db.Column#isMarkedForDelete(long now)}</li>
-         *  <li>{@link org.apache.cassandra.db.ColumnFamily#hasOnlyTombstones(long)}</li>
-         *  <li>
-         *   the {@link RangeSliceCommand} constructor via the last argument
-         *   to {@link CassandraEmbeddedKeyColumnValueStore#getKeySlice(Token, Token, SliceQuery, int, long)}
-         *  </li>
-         * </ul>
-         * The second list entry just calls the first and almost doesn't deserve
-         * a mention at present, but maybe the implementation will change in the future.
-         * <p>
          * When this value needs to be compared to TTL seconds expressed in seconds,
          * Cassandra internals do the conversion.
-         * Consider {@link ExpiringColumn#isMarkedForDelete(long)}, which is implemented,
-         * as of 2.0.6, by the following one-liner:
-         * <p>
-         * {@code return (int) (now / 1000) >= getLocalDeletionTime()}
-         * <p>
-         * The {@code now / 1000} does the conversion from milliseconds to seconds
-         * (the units of getLocalDeletionTime()).
          */
         private final long nowMillis;
 
@@ -497,7 +473,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             return ((Murmur3Partitioner) partitioner).getMinimumToken();
         } else if (partitioner instanceof ByteOrderedPartitioner) {
             //TODO: This makes the assumption that its an EdgeStore (i.e. 8 byte keys)
-            return new BytesToken(org.janusgraph.diskstorage.util.ByteBufferUtil.zeroByteBuffer(8));
+            return new ByteOrderedPartitioner.BytesToken(org.janusgraph.diskstorage.util.ByteBufferUtil.zeroByteBuffer(8));
         } else {
             throw new PermanentBackendException("Unsupported partitioner: " + partitioner);
         }
@@ -507,12 +483,12 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         IPartitioner partitioner = StorageService.getPartitioner();
 
         if (partitioner instanceof RandomPartitioner) {
-            return new BigIntegerToken(RandomPartitioner.MAXIMUM);
+            return new RandomPartitioner.BigIntegerToken(RandomPartitioner.MAXIMUM);
         } else if (partitioner instanceof Murmur3Partitioner) {
-            return new LongToken(Murmur3Partitioner.MAXIMUM);
+            return new Murmur3Partitioner.LongToken(Murmur3Partitioner.MAXIMUM);
         } else if (partitioner instanceof ByteOrderedPartitioner) {
             //TODO: This makes the assumption that its an EdgeStore (i.e. 8 byte keys)
-            return new BytesToken(org.janusgraph.diskstorage.util.ByteBufferUtil.oneByteBuffer(8));
+            return new ByteOrderedPartitioner.BytesToken(org.janusgraph.diskstorage.util.ByteBufferUtil.oneByteBuffer(8));
         } else {
             throw new PermanentBackendException("Unsupported partitioner: " + partitioner);
         }
