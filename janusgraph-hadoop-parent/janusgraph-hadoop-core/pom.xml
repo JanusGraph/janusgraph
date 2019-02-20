@@ -53,6 +53,13 @@
             <classifier>tests</classifier>
             <!-- TODO this should be scoped test -->
         </dependency>
+        <!-- JNA is needed by Cassandra, but janusgraph-cassandra only defines it as an optional dependency. -->
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>${jna.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>janusgraph-es</artifactId>

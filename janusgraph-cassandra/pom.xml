@@ -10,7 +10,7 @@
     <name>JanusGraph-Cassandra: Distributed Graph Database</name>
     <url>http://janusgraph.org</url>
     <properties>
-        <astyanax.version>3.8.0</astyanax.version>
+        <astyanax.version>3.10.2</astyanax.version>
         <jamm.group>com.github.jbellis</jamm.group>
         <dependency.plugin.version>2.8</dependency.plugin.version>
         <test.extra.jvm.opts>-javaagent:${basedir}/target/jamm-${jamm.version}.jar</test.extra.jvm.opts>
@@ -33,8 +33,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.codahale.metrics</groupId>
-            <artifactId>metrics-core</artifactId>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-jvm</artifactId>
         </dependency>
         <dependency>
             <groupId>com.carrotsearch</groupId>
@@ -100,8 +100,25 @@
                     <artifactId>jbcrypt</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>jline</groupId>
-                    <artifactId>jline</artifactId>
+                    <groupId>net.java.dev.jna</groupId>
+                    <artifactId>jna</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>jcl-over-slf4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.dropwizard.metrics</groupId>
+                    <artifactId>metrics-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.dropwizard.metrics</groupId>
+                    <artifactId>metrics-jvm</artifactId>
+                </exclusion>
+                <!-- We already use slf4j-log4j12, having both on the class path leads to cyclic dependency:  https://www.slf4j.org/codes.html#log4jDelegationLoop -->
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>log4j-over-slf4j</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>junit</groupId>

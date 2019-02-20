@@ -104,7 +104,14 @@
 
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-inline</artifactId>
+            <artifactId>mockito-inline</artifactId>		
+			<scope>test</scope>
+		</dependency>
+        <!-- JNA is needed by Cassandra, but janusgraph-cassandra only defines it as an optional dependency. -->
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>${jna.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

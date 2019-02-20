@@ -69,6 +69,13 @@
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
+        <!-- JNA is needed by Cassandra, but janusgraph-cassandra only defines it as an optional dependency. -->
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>${jna.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-test</artifactId>
