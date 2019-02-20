@@ -30,7 +30,7 @@ import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.janusgraph.diskstorage.util.StaticArrayEntryList;
-import org.apache.cassandra.dht.BytesToken;
+import org.apache.cassandra.dht.ByteOrderedPartitioner.BytesToken;
 import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 
@@ -116,8 +116,8 @@ public class CassandraHelper {
         BytesToken l = (BytesToken) leftKeyExclusive;
         BytesToken r = (BytesToken) rightKeyInclusive;
 
-        byte[] leftTokenValue = l.getTokenValue();
-        byte[] rightTokenValue = r.getTokenValue();
+        byte[] leftTokenValue = (byte[]) l.getTokenValue();
+        byte[] rightTokenValue = (byte[]) r.getTokenValue();
 
         Preconditions.checkArgument(leftTokenValue.length == rightTokenValue.length,
                 "Tokens have unequal length");
