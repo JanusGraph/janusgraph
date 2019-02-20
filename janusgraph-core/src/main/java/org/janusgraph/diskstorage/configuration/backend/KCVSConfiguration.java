@@ -64,17 +64,16 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
 
     public KCVSConfiguration(BackendOperation.TransactionalProvider txProvider, Configuration config,
                              KeyColumnValueStore store, String identifier) throws BackendException {
-        Preconditions.checkArgument(txProvider!=null && store!=null && config!=null);
+        Preconditions.checkNotNull(config);
         Preconditions.checkArgument(StringUtils.isNotBlank(identifier));
-        this.txProvider = txProvider;
+        this.txProvider = Preconditions.checkNotNull(txProvider);
         this.times = config.get(TIMESTAMP_PROVIDER);
-        this.store = store;
+        this.store = Preconditions.checkNotNull(store);
         this.rowKey = string2StaticBuffer(identifier);
         this.serializer = new StandardSerializer();
     }
 
     public void setMaxOperationWaitTime(Duration waitTime) {
-
         Preconditions.checkArgument(Duration.ZERO.compareTo(waitTime) < 0,
                 "Wait time must be nonnegative: %s", waitTime);
         this.maxOperationWaitTime = waitTime;

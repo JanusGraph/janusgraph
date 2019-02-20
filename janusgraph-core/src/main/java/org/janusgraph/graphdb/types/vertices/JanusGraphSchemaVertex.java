@@ -54,7 +54,7 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
             } else {
                 p = Iterables.getOnlyElement(query().type(BaseKey.SchemaName).properties(), null);
             }
-            Preconditions.checkState(p!=null,"Could not find type for id: %s", longId());
+            Preconditions.checkNotNull(p,"Could not find type for id: %s", longId());
             name = p.value();
         }
         assert name != null;

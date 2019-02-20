@@ -47,7 +47,6 @@ public class TypeDefinitionDescriptionSerializer implements AttributeSerializer<
 
     @Override
     public void setSerializer(Serializer serializer) {
-        Preconditions.checkNotNull(serializer);
-        this.serializer=serializer;
+        this.serializer = Preconditions.checkNotNull(serializer);
     }
 }

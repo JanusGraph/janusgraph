@@ -132,7 +132,7 @@ public class CqlBridgeRecordReader extends RecordReader<StaticBuffer, Iterable<E
         }
         // cluster should be represent to a valid cluster now
         session = cluster.connect(quote(keyspace));
-        Preconditions.checkState(session != null, "Can't create connection session");
+        Preconditions.checkNotNull(session, "Can't create connection session");
         //get negotiated serialization protocol
         nativeProtocolVersion = cluster.getConfiguration().getProtocolOptions().getProtocolVersion().toInt();
 

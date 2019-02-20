@@ -49,8 +49,7 @@ public class QueryContainer {
     private final SetMultimap<SliceQuery, Query> inverseQueries;
 
     public QueryContainer(StandardJanusGraphTx tx) {
-        Preconditions.checkArgument(tx != null);
-        this.tx = tx;
+        this.tx = Preconditions.checkNotNull(tx);
         queries = new HashSet<>(6);
         inverseQueries = HashMultimap.create();
         hardQueryLimit = DEFAULT_HARD_QUERY_LIMIT;

@@ -47,12 +47,9 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     public StandardRelationTypeMaker(final StandardJanusGraphTx tx, String name,
                                      final IndexSerializer indexSerializer,
                                      final AttributeHandler attributeHandler) {
-        Preconditions.checkNotNull(tx);
-        Preconditions.checkNotNull(indexSerializer);
-        Preconditions.checkNotNull(attributeHandler);
-        this.tx = tx;
-        this.indexSerializer = indexSerializer;
-        this.attributeHandler = attributeHandler;
+        this.tx = Preconditions.checkNotNull(tx);
+        this.indexSerializer = Preconditions.checkNotNull(indexSerializer);
+        this.attributeHandler = Preconditions.checkNotNull(attributeHandler);
         name(name);
 
         //Default assignments
@@ -122,8 +119,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     }
 
     public StandardRelationTypeMaker multiplicity(Multiplicity multiplicity) {
-        Preconditions.checkNotNull(multiplicity);
-        this.multiplicity=multiplicity;
+        this.multiplicity = Preconditions.checkNotNull(multiplicity);
         return this;
     }
 
@@ -135,8 +131,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     }
 
     public StandardRelationTypeMaker status(SchemaStatus status) {
-        Preconditions.checkArgument(status!=null);
-        this.status=status;
+        this.status = Preconditions.checkNotNull(status);
         return this;
     }
 
@@ -178,8 +173,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
      * @see #sortKey(PropertyKey... keys)
      */
     public StandardRelationTypeMaker sortOrder(Order order) {
-        Preconditions.checkNotNull(order);
-        this.sortOrder=order;
+        this.sortOrder = Preconditions.checkNotNull(order);
         return this;
     }
 

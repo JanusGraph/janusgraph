@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
 import org.janusgraph.core.PropertyKey;
@@ -101,7 +102,7 @@ public abstract class JanusGraphIterativeBenchmark extends JanusGraphBaseTest {
         ExecutorService exe = Executors.newFixedThreadPool(numThreads);
         for (int i=0;i<numVertices/verticesPerTask;i++) {
             while (tasks.size()>=maxQueue) Thread.sleep(maxQueue);
-            assert tasks.size()<maxQueue;
+            Preconditions.checkState(tasks.size()<maxQueue);
             exe.submit(() -> {
                 final JanusGraphTransaction tx = graph.newTransaction();
                 final JanusGraphVertex[] vs = new JanusGraphVertex[verticesPerTask];

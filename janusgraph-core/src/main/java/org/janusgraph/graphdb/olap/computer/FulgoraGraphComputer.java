@@ -109,14 +109,14 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
 
     @Override
     public GraphComputer result(ResultGraph resultGraph) {
-        Preconditions.checkArgument(resultGraph != null, "Need to specify mode");
+        Preconditions.checkNotNull(resultGraph, "Need to specify mode");
         this.resultGraphMode = resultGraph;
         return this;
     }
 
     @Override
     public GraphComputer persist(Persist persist) {
-        Preconditions.checkArgument(persist != null, "Need to specify mode");
+        Preconditions.checkNotNull(persist, "Need to specify mode");
         this.persistMode = persist;
         return this;
     }

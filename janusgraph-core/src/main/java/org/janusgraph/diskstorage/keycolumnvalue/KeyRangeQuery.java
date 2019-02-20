@@ -39,18 +39,14 @@ public class KeyRangeQuery extends SliceQuery {
 
     public KeyRangeQuery(StaticBuffer keyStart, StaticBuffer keyEnd, StaticBuffer sliceStart, StaticBuffer sliceEnd) {
         super(sliceStart, sliceEnd);
-        Preconditions.checkNotNull(keyStart);
-        Preconditions.checkNotNull(keyEnd);
-        this.keyStart=keyStart;
-        this.keyEnd = keyEnd;
+        this.keyStart = Preconditions.checkNotNull(keyStart);
+        this.keyEnd = Preconditions.checkNotNull(keyEnd);
     }
 
     public KeyRangeQuery(StaticBuffer keyStart, StaticBuffer keyEnd, SliceQuery query) {
         super(query);
-        Preconditions.checkNotNull(keyStart);
-        Preconditions.checkNotNull(keyEnd);
-        this.keyStart=keyStart;
-        this.keyEnd = keyEnd;
+        this.keyStart = Preconditions.checkNotNull(keyStart);
+        this.keyEnd = Preconditions.checkNotNull(keyEnd);
     }
 
 

@@ -485,8 +485,7 @@ public class Backend implements LockerProvider, AutoCloseable {
      * @return
      */
     public IDAuthority getIDAuthority() {
-        Preconditions.checkNotNull(idAuthority, "Backend has not yet been initialized");
-        return idAuthority;
+        return Preconditions.checkNotNull(idAuthority, "Backend has not yet been initialized");
     }
 
     /**

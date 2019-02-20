@@ -33,10 +33,8 @@ public abstract class AbstractVertexProperty<V> extends AbstractTypedRelation im
 
     public AbstractVertexProperty(long id, PropertyKey type, InternalVertex vertex, Object value) {
         super(id, type);
-        Preconditions.checkNotNull(vertex, "null vertex");
-        Preconditions.checkNotNull(value, "null value for property key %s",type);
-        this.vertex=vertex;
-        this.value=value;
+        this.vertex = Preconditions.checkNotNull(vertex, "null vertex");
+        this.value = Preconditions.checkNotNull(value, "null value for property key %s",type);
     }
 
     @Override

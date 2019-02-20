@@ -113,7 +113,7 @@ public abstract class GiraphInputFormat extends InputFormat<NullWritable, Vertex
         }
 
         public synchronized void release() throws Exception {
-            Preconditions.checkState(null != current);
+            Preconditions.checkNotNull(current);
             Preconditions.checkState(0 < refCount);
 
             refCount--;

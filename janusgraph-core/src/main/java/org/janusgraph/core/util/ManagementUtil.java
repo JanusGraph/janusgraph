@@ -74,11 +74,11 @@ public class ManagementUtil {
                 if (StringUtils.isNotBlank(relationTypeName)) {
                     RelationTypeIndex idx = management.getRelationIndex(management.getRelationType(relationTypeName)
                             ,indexName);
-                    Preconditions.checkArgument(idx!=null,"Index could not be found: %s @ %s",indexName,relationTypeName);
+                    Preconditions.checkNotNull(idx, "Index could not be found: %s @ %s",indexName,relationTypeName);
                     isStable = idx.getIndexStatus().isStable();
                 } else {
                     JanusGraphIndex idx = management.getGraphIndex(indexName);
-                    Preconditions.checkArgument(idx!=null,"Index could not be found: %s",indexName);
+                    Preconditions.checkNotNull(idx, "Index could not be found: %s",indexName);
                     isStable = true;
                     for (PropertyKey key : idx.getFieldKeys()) {
                         if (!idx.getIndexStatus(key).isStable()) isStable = false;

@@ -70,10 +70,10 @@ public class SolrRunner {
 
 
         File templateDirectory = new File(solrHome + File.separator + TEMPLATE_DIRECTORY);
-        assert templateDirectory.exists();
+        Preconditions.checkState(templateDirectory.exists());
 
         File temp = new File(TMP_DIRECTORY + File.separator + "solr-" + System.nanoTime());
-        assert !temp.exists();
+        Preconditions.checkState(!temp.exists());
 
         Preconditions.checkState(temp.mkdirs(), "Unable to create solr temporary directory {}", temp.getAbsolutePath());
         temp.deleteOnExit();
@@ -94,7 +94,7 @@ public class SolrRunner {
 
         for (String core : COLLECTIONS) {
             File coreDirectory = new File(temp.getAbsolutePath() + File.separator + core);
-            assert coreDirectory.mkdirs();
+            Preconditions.checkState(coreDirectory.mkdirs());
             FileUtils.copyDirectory(templateDirectory, coreDirectory);
             miniSolrCloudCluster.uploadConfigSet(Paths.get(coreDirectory.getAbsolutePath()), core);
         }
