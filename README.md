@@ -41,6 +41,7 @@ tools:
 * [Graphexp](https://github.com/bricaud/graphexp)
 * [KeyLines by Cambridge Intelligence](https://cambridge-intelligence.com/visualizing-janusgraph-new-titandb-fork/)
 * [Linkurious](https://doc.linkurio.us/ogma/latest/tutorials/janusgraph/)
+* [ArcadeAnalytics](https://arcadeanalytics.com/usermanual/#gremlin)
 
 ## Community
 
