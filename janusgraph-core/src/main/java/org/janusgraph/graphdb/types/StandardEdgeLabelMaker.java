@@ -59,8 +59,7 @@ public class StandardEdgeLabelMaker extends StandardRelationTypeMaker implements
     }
 
     public StandardEdgeLabelMaker unidirected(Direction dir) {
-        Preconditions.checkNotNull(dir);
-        unidirectionality = dir;
+        unidirectionality = Preconditions.checkNotNull(dir);
         return this;
     }
 

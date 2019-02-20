@@ -36,11 +36,9 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
     private final Object value;
 
     public PredicateCondition(K key, JanusGraphPredicate predicate, Object value) {
-        Preconditions.checkNotNull(key);
         Preconditions.checkArgument(key instanceof String || key instanceof RelationType);
-        Preconditions.checkNotNull(predicate);
         this.key = key;
-        this.predicate = predicate;
+        this.predicate = Preconditions.checkNotNull(predicate);
         this.value = value;
     }
 

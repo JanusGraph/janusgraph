@@ -46,7 +46,7 @@ public class CQLTransaction extends AbstractStoreTransaction {
     }
 
     static CQLTransaction getTransaction(final StoreTransaction storeTransaction) {
-        Preconditions.checkArgument(storeTransaction != null);
+        Preconditions.checkNotNull(storeTransaction);
         Preconditions.checkArgument(storeTransaction instanceof CQLTransaction, "Unexpected transaction type %s", storeTransaction.getClass().getName());
         return (CQLTransaction) storeTransaction;
     }

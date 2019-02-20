@@ -33,8 +33,7 @@ public class KCVSProxy implements KeyColumnValueStore {
     protected final KeyColumnValueStore store;
 
     public KCVSProxy(KeyColumnValueStore store) {
-        Preconditions.checkArgument(store!=null);
-        this.store = store;
+        this.store = Preconditions.checkNotNull(store);
     }
 
     protected StoreTransaction unwrapTx(StoreTransaction txh) {

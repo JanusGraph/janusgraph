@@ -60,7 +60,7 @@ public class RelationConstructor {
 
             @Override
             public void remove() {
-                Preconditions.checkState(current!=null);
+                Preconditions.checkNotNull(current);
                 current.remove();
             }
         };

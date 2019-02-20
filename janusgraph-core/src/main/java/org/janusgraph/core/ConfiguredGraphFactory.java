@@ -79,13 +79,13 @@ public class ConfiguredGraphFactory {
         final Map<String, Object> graphConfigMap = configManagementGraph.getConfiguration(graphName);
         Preconditions.checkState(null == graphConfigMap, String.format("Configuration for graph %s already exists.", graphName));
         final Map<String, Object> templateConfigMap = configManagementGraph.getTemplateConfiguration();
-        Preconditions.checkState(null != templateConfigMap,
+        Preconditions.checkNotNull(templateConfigMap,
                                 "Please create a template Configuration using the ConfigurationManagementGraph#createTemplateConfiguration API.");
         templateConfigMap.put(ConfigurationManagementGraph.PROPERTY_GRAPH_NAME, graphName);
         templateConfigMap.put(ConfigurationManagementGraph.PROPERTY_CREATED_USING_TEMPLATE, true);
 
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
-        Preconditions.checkState(jgm != null, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
+        Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
         final CommonsConfiguration config = new CommonsConfiguration(new MapConfiguration(templateConfigMap));
         final JanusGraph g = (JanusGraph) jgm.openGraph(graphName, (String gName) -> new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(config)));
         configManagementGraph.createConfiguration(new MapConfiguration(templateConfigMap));
@@ -107,10 +107,10 @@ public class ConfiguredGraphFactory {
     public static JanusGraph open(String graphName) {
         final ConfigurationManagementGraph configManagementGraph = getConfigGraphManagementInstance();
         final Map<String, Object> graphConfigMap = configManagementGraph.getConfiguration(graphName);
-        Preconditions.checkState(null != graphConfigMap,
+        Preconditions.checkNotNull(graphConfigMap,
                                 "Please create configuration for this graph using the ConfigurationManagementGraph#createConfiguration API.");
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
-        Preconditions.checkState(jgm != null, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
+        Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
         final CommonsConfiguration config = new CommonsConfiguration(new MapConfiguration(graphConfigMap));
         return (JanusGraph) jgm.openGraph(graphName, (String gName) -> new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(config)));
     }
@@ -137,7 +137,7 @@ public class ConfiguredGraphFactory {
      */
     public static JanusGraph close(String graphName) throws Exception {
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
-        Preconditions.checkState(jgm != null, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
+        Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
         final Graph graph = jgm.removeGraph(graphName);
         if (null != graph) graph.close();
         return (JanusGraph) graph;
@@ -242,7 +242,7 @@ public class ConfiguredGraphFactory {
 
     private static void removeGraphFromCache(final JanusGraph graph) {
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
-        Preconditions.checkState(jgm != null, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
+        Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
         jgm.removeGraph(((StandardJanusGraph) graph).getGraphName());
         final ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
         mgmt.evictGraphFromCache();

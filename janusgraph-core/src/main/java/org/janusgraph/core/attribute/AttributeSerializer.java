@@ -69,7 +69,7 @@ public interface AttributeSerializer<V> {
      * @param value to verify
      */
     default void verifyAttribute(V value) {
-        Preconditions.checkArgument(value != null,"Provided value cannot be null");
+        Preconditions.checkNotNull(value,"Provided value cannot be null");
     }
 
     /**

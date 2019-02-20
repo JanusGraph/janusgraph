@@ -356,7 +356,7 @@ public class ElasticSearchIndex implements IndexProvider {
      * @throws IOException if the index status could not be checked or index could not be created
      */
     private void checkForOrCreateIndex(String index) throws IOException {
-        Preconditions.checkState(null != client);
+        Preconditions.checkNotNull(client);
         Preconditions.checkNotNull(index);
 
         // Create index if it does not useExternalMappings and if it does not already exist

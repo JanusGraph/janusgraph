@@ -45,6 +45,7 @@ import com.carrotsearch.junitbenchmarks.IResultsConsumer;
 import com.carrotsearch.junitbenchmarks.Result;
 import com.carrotsearch.junitbenchmarks.WriterConsumer;
 import com.carrotsearch.junitbenchmarks.XMLConsumer;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 /**
@@ -218,16 +219,16 @@ public class JUnitBenchmarkProvider {
             int t = 0;
             String name       = tokens[t++];
             String rawscalar  = tokens[t++];
-            assert tokensPerLine == t;
+            Preconditions.checkState(tokensPerLine == t);
 
-            assert null != name;
+            Preconditions.checkNotNull(name);
 
             if (0 == name.length()) {
                 log.warn("Parse error at {}:{}: zero-length method name (skipping this line)", filename, ln);
                 continue;
             }
 
-            assert 0 < name.length();
+            Preconditions.checkState(0 < name.length());
 
             Double scalar;
             try {

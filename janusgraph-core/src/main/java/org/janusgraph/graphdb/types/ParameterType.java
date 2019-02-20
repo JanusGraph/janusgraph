@@ -71,7 +71,7 @@ public enum ParameterType {
         for (Parameter p : parameters) {
             if (p.key().equalsIgnoreCase(name)) {
                 Object value = p.value();
-                Preconditions.checkArgument(value!=null,"Invalid mapping specified: %s",value);
+                Preconditions.checkNotNull(value, "Invalid mapping specified: %s",value);
                 Preconditions.checkArgument(result==null,"Multiple mappings specified");
                 result = (V)value;
             }

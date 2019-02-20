@@ -94,8 +94,8 @@ public class IndexSerializer {
     }
 
     public String getDefaultFieldName(final PropertyKey key, final Parameter[] parameters, final String indexName) {
-        Preconditions.checkArgument(!ParameterType.MAPPED_NAME.hasParameter(parameters),"A field name mapping has been specified for key: %s",key);
-        Preconditions.checkArgument(containsIndex(indexName),"Unknown backing index: %s",indexName);
+        Preconditions.checkArgument(!ParameterType.MAPPED_NAME.hasParameter(parameters), "A field name mapping has been specified for key: %s",key);
+        Preconditions.checkArgument(containsIndex(indexName), "Unknown backing index: %s", indexName);
         final String fieldname = configuration.get(INDEX_NAME_MAPPING,indexName)?key.name():keyID2Name(key);
         return mixedIndexes.get(indexName).mapKey2Field(fieldname,
                 new StandardKeyInformation(key,parameters));
@@ -154,7 +154,7 @@ public class IndexSerializer {
                 @Override
                 public KeyInformation.StoreRetriever get(final String store) {
                     if (indexes.get(store)==null) {
-                        Preconditions.checkState(transaction!=null,"Retriever has not been initialized");
+                        Preconditions.checkNotNull(transaction,"Retriever has not been initialized");
                         final MixedIndexType extIndex = getMixedIndex(store, transaction);
                         assert extIndex.getBackingIndexName().equals(index);
                         final ImmutableMap.Builder<String,KeyInformation> b = ImmutableMap.builder();

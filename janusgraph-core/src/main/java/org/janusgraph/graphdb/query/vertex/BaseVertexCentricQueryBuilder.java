@@ -95,13 +95,14 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
 
     @Override
     public Q adjacent(Vertex vertex) {
-        Preconditions.checkArgument(vertex != null && (vertex instanceof JanusGraphVertex), "Not a valid vertex provided for adjacency constraint");
+        Preconditions.checkArgument(vertex instanceof JanusGraphVertex, "Not a valid vertex provided for adjacency constraint");
         this.adjacentVertex = (JanusGraphVertex) vertex;
         return getThis();
     }
 
     private Q addConstraint(String type, JanusGraphPredicate rel, Object value) {
-        Preconditions.checkArgument(type != null && StringUtils.isNotBlank(type) && rel != null);
+        Preconditions.checkArgument(StringUtils.isNotBlank(type));
+        Preconditions.checkNotNull(rel);
         //Treat special cases
         if (type.equals(ImplicitKey.ADJACENT_ID.name())) {
             Preconditions.checkArgument(rel == Cmp.EQUAL, "Only equality constraints are supported for %s", type);
@@ -110,7 +111,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
             return adjacent(getVertex(vertexId));
         } else if (type.equals(ImplicitKey.ID.name())) {
             RelationIdentifier rid = ElementUtils.getEdgeId(value);
-            Preconditions.checkArgument(rid != null, "Expected valid relation id: %s", value);
+            Preconditions.checkNotNull(rid, "Expected valid relation id: %s", value);
             return addConstraint(ImplicitKey.JANUSGRAPHID.name(), rel, rid.getRelationId());
         } else {
             Preconditions.checkArgument(rel.isValidCondition(value), "Invalid condition provided: " + value);

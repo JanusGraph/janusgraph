@@ -26,8 +26,7 @@ public class IndexField {
     private final PropertyKey key;
 
     IndexField(PropertyKey key) {
-        Preconditions.checkNotNull(key);
-        this.key = key;
+        this.key = Preconditions.checkNotNull(key);
     }
 
     public PropertyKey getFieldKey() {

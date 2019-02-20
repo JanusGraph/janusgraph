@@ -209,7 +209,7 @@ public class VertexJobConverter implements ScanJob {
         }
 
         public final StandardJanusGraph get() {
-            Preconditions.checkState(graph!=null);
+            Preconditions.checkNotNull(graph);
             return graph;
         }
 

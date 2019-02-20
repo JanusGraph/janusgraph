@@ -31,11 +31,9 @@ public class RegisteredAttributeClass<T> {
 
     public RegisteredAttributeClass(int position, Class<T> type, AttributeSerializer<T> serializer) {
         Preconditions.checkArgument(position>=0,"Position must be a positive integer, given: %s",position);
-        Preconditions.checkNotNull(type);
-        Preconditions.checkNotNull(serializer);
-        this.position=position;
-        this.type = type;
-        this.serializer = serializer;
+        this.position = position;
+        this.type = Preconditions.checkNotNull(type);
+        this.serializer = Preconditions.checkNotNull(serializer);
     }
 
 

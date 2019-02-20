@@ -31,12 +31,9 @@ public class CombinerLock implements TransactionLock {
     private final TimestampProvider times;
 
     public CombinerLock(final TransactionLock first, final TransactionLock second, TimestampProvider times) {
-        this.first = first;
-        this.second = second;
-        this.times = times;
-        Preconditions.checkNotNull(this.first);
-        Preconditions.checkNotNull(this.second);
-        Preconditions.checkNotNull(this.times);
+        this.first = Preconditions.checkNotNull(first);
+        this.second = Preconditions.checkNotNull(second);
+        this.times = Preconditions.checkNotNull(times);
     }
 
     @Override

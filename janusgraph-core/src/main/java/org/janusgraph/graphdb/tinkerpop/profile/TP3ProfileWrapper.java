@@ -44,7 +44,8 @@ public class TP3ProfileWrapper implements QueryProfiler {
 
     @Override
     public QueryProfiler setAnnotation(String key, Object value) {
-        Preconditions.checkArgument(key != null && value != null, "Key and value must be not null");
+        Preconditions.checkNotNull(key, "Key must be not null");
+        Preconditions.checkNotNull(value, "Value must be not null");
         if (!(value instanceof String) && !(value instanceof Number)) value = value.toString();
         metrics.setAnnotation(key,value);
         return this;

@@ -85,7 +85,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
     @Override
     public <V> JanusGraphVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value) {
         if (!supports(key)) throw GraphComputer.Exceptions.providedKeyIsNotAnElementComputeKey(key);
-        Preconditions.checkArgument(value != null);
+        Preconditions.checkNotNull(value);
         if (cardinality == VertexProperty.Cardinality.single) {
             vertexMemory.setProperty(vertexId, key, value);
         } else {

@@ -135,7 +135,7 @@ public class EdgeSerializer implements RelationReader {
                 in.movePositionTo(data.getValuePosition());
                 other = readPropertyValue(in,key);
             }
-            Preconditions.checkState(other!=null,
+            Preconditions.checkNotNull(other,
                 "Encountered error in deserializer [null value returned]. Check serializer compatibility.");
         }
         assert other!=null;
