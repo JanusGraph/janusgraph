@@ -20,7 +20,8 @@ import static org.apache.tinkerpop.gremlin.server.auth.SimpleAuthenticator.CONFI
 import java.net.InetAddress;
 import java.util.Map;
 
-import org.apache.tinkerpop.gremlin.groovy.jsr223.dsl.credential.CredentialGraph;
+import org.apache.tinkerpop.gremlin.groovy.jsr223.dsl.credential.CredentialTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.server.auth.Authenticator;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.Cardinality;
@@ -53,10 +54,12 @@ abstract public class JanusGraphAbstractAuthenticator implements Authenticator {
      */
     public static final String CONFIG_DEFAULT_PASSWORD = "defaultPassword";
 
-    private static final String USERNAME_INDEX_NAME = "byUsername";
+    /**
+     * Name of the index that enables an efficient retrievals by usernames.
+     */
+    public static final String USERNAME_INDEX_NAME = "byUsername";
 
-    protected CredentialGraph credentialStore;
-    protected JanusGraph backingGraph;
+    private CredentialTraversalSource credentials;
 
     @Override
     public boolean requireAuthentication() {
@@ -66,8 +69,8 @@ abstract public class JanusGraphAbstractAuthenticator implements Authenticator {
     @Override
     abstract public SaslNegotiator newSaslNegotiator(final InetAddress remoteAddress);
 
-    public CredentialGraph createCredentialGraph(JanusGraph graph) {
-        return new CredentialGraph(graph);
+    public CredentialTraversalSource createCredentials(JanusGraph graph) {
+        return graph.traversal(CredentialTraversalSource.class);
     }
 
     public JanusGraph openGraph(String conf) {
@@ -80,18 +83,16 @@ abstract public class JanusGraphAbstractAuthenticator implements Authenticator {
         Preconditions.checkArgument(config != null, String.format(
                     "Could not configure a %s - provide a 'config' in the 'authentication' settings",
                     this.getClass().getName()));
-        
 
         Preconditions.checkState(config.containsKey(CONFIG_CREDENTIALS_DB), String.format(
-                    "Credential configuration missing the %s key that points to a graph config file or graph name", CONFIG_CREDENTIALS_DB));
-
-        if (!config.containsKey(CONFIG_DEFAULT_USER) || !config.containsKey(CONFIG_DEFAULT_PASSWORD)) {
-            logger.warn(String.format("%s and %s should be defined to bootstrap authentication", CONFIG_DEFAULT_USER, CONFIG_DEFAULT_PASSWORD));
-        }
+            "Credential configuration missing the %s key that points to a graph config file or graph name", CONFIG_CREDENTIALS_DB));
+        Preconditions.checkState(config.containsKey(CONFIG_DEFAULT_USER), String.format(
+            "Credential configuration missing the %s key for the default user", CONFIG_DEFAULT_USER));
+        Preconditions.checkState(config.containsKey(CONFIG_DEFAULT_PASSWORD), String.format(
+            "Credential configuration missing the %s key for the default password", CONFIG_DEFAULT_PASSWORD));
 
         final JanusGraph graph = openGraph(config.get(CONFIG_CREDENTIALS_DB).toString());
-        backingGraph = graph;
-        credentialStore = createCredentialGraph(graph);
+        credentials = createCredentials(graph);
         graph.tx().rollback();
         ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
         if (!mgmt.containsGraphIndex(USERNAME_INDEX_NAME)) {
@@ -114,8 +115,32 @@ abstract public class JanusGraphAbstractAuthenticator implements Authenticator {
         }
 
         final String defaultUser = config.get(CONFIG_DEFAULT_USER).toString();
-        if (credentialStore.findUser(defaultUser) == null) {
-            credentialStore.createUser(defaultUser, config.get(CONFIG_DEFAULT_PASSWORD).toString());
+        if (!userExists(defaultUser)) {
+            createUser(defaultUser, config.get(CONFIG_DEFAULT_PASSWORD).toString());
+        }
+    }
+
+    protected Vertex findUser(final String username) {
+        credentials.tx().rollback();
+        final GraphTraversal<Vertex,Vertex> t = credentials.users(username);
+        final Vertex v = t.hasNext() ? t.next() : null;
+        if (t.hasNext()) throw new IllegalStateException(String.format("Multiple users with username %s", username));
+        return v;
+    }
+
+    private boolean userExists(final String username) {
+        return findUser(username) != null;
+    }
+
+    private void createUser(final String username, final String password) {
+        credentials.tx().rollback();
+
+        try {
+            credentials.user(username,password).iterate();
+            credentials.tx().commit();
+        } catch (Exception ex) {
+            credentials.tx().rollback();
+            throw new RuntimeException(ex);
         }
     }
 }

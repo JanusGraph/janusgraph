@@ -126,7 +126,8 @@ public class HMACAuthenticator extends JanusGraphAbstractAuthenticator {
             return user;
         } else if (credentials.get(PROPERTY_TOKEN) != null) {
             if (validateToken(credentials)) {
-                return new AuthenticatedUser(credentials.get(PROPERTY_USERNAME));
+                final Map<String, String> tokenMap = parseToken(credentials.get(PROPERTY_TOKEN));
+                return new AuthenticatedUser(tokenMap.get(PROPERTY_USERNAME));
             } else {
                 throw new AuthenticationException("Invalid token");
             }
@@ -136,7 +137,7 @@ public class HMACAuthenticator extends JanusGraphAbstractAuthenticator {
     }
 
     private AuthenticatedUser authenticateUser(final Map<String, String> credentials) throws AuthenticationException {
-        final Vertex v = credentialStore.findUser(credentials.get(PROPERTY_USERNAME));
+        final Vertex v = findUser(credentials.get(PROPERTY_USERNAME));
         if (null == v || !BCrypt.checkpw(credentials.get(PROPERTY_PASSWORD), v.value(PROPERTY_PASSWORD))) {
             throw new AuthenticationException(AUTH_ERROR);
         }
@@ -148,7 +149,7 @@ public class HMACAuthenticator extends JanusGraphAbstractAuthenticator {
         final Map<String, String> tokenMap = parseToken(token);
         final String username = tokenMap.get(PROPERTY_USERNAME);
         final String time = tokenMap.get("time");
-        final String password = credentialStore.findUser(username).value(PROPERTY_PASSWORD);
+        final String password = findUser(username).value(PROPERTY_PASSWORD);
         final String salt = getBcryptSaltFromStoredPassword(password);
         final String expected = generateToken(username, salt, time);
         final Long timeLong = Long.parseLong(time);
@@ -198,7 +199,7 @@ public class HMACAuthenticator extends JanusGraphAbstractAuthenticator {
 
     private String getToken(final Map<String, String> credentials) {
         final String username = credentials.get(PROPERTY_USERNAME);
-        final Vertex user = credentialStore.findUser(username);
+        final Vertex user = findUser(username);
         final String password = user.value(PROPERTY_PASSWORD);
         final String salt = getBcryptSaltFromStoredPassword(password);
         final String time = Long.toString(new Date().getTime());
