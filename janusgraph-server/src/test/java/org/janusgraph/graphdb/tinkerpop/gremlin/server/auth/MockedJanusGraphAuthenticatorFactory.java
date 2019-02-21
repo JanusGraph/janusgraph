@@ -1,4 +1,4 @@
-// Copyright 2017 JanusGraph Authors
+// Copyright 2019 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,20 +14,11 @@
 
 package org.janusgraph.graphdb.tinkerpop.gremlin.server.auth;
 
-public class JanusGraphSimpleAuthenticatorTest extends JanusGraphAbstractAuthenticatorTest {
+import org.janusgraph.core.JanusGraph;
 
-    @Override
-    public JanusGraphAbstractAuthenticator createAuthenticator() {
-        return new JanusGraphSimpleAuthenticator();
-    }
+import java.util.Map;
 
-    @Override
-    public MockedJanusGraphAuthenticatorFactory mockedAuthenticatorFactory() {
-        return new MockedSimpleAuthenticatorFactory();
-    }
-
-    @Override
-    public ConfigBuilder configBuilder() {
-        return ConfigBuilder.build();
-    }
+public interface MockedJanusGraphAuthenticatorFactory {
+    JanusGraphAbstractAuthenticator createInitializedAuthenticator(final Map<String, Object> config,
+                                                                   final JanusGraph graph);
 }
