@@ -1,4 +1,4 @@
-// Copyright 2017 JanusGraph Authors
+// Copyright 2019 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,20 +14,18 @@
 
 package org.janusgraph.graphdb.tinkerpop.gremlin.server.auth;
 
-public class JanusGraphSimpleAuthenticatorTest extends JanusGraphAbstractAuthenticatorTest {
-
-    @Override
-    public JanusGraphAbstractAuthenticator createAuthenticator() {
-        return new JanusGraphSimpleAuthenticator();
+public class HmacConfigBuilder extends ConfigBuilder {
+    public HmacConfigBuilder() {
+        super();
+        config.put(HMACAuthenticator.CONFIG_HMAC_SECRET, "secret");
     }
 
-    @Override
-    public MockedJanusGraphAuthenticatorFactory mockedAuthenticatorFactory() {
-        return new MockedSimpleAuthenticatorFactory();
+    public ConfigBuilder tokenTimeout(int timeoutInMs) {
+        config.put(HMACAuthenticator.CONFIG_TOKEN_TIMEOUT, timeoutInMs);
+        return this;
     }
 
-    @Override
-    public ConfigBuilder configBuilder() {
-        return ConfigBuilder.build();
+    public static HmacConfigBuilder build() {
+        return new HmacConfigBuilder();
     }
 }
