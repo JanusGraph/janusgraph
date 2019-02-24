@@ -46,8 +46,8 @@ public class ReadConfigurationBuilder {
 
     private static final Logger log = LoggerFactory.getLogger(ReadConfigurationBuilder.class);
 
-    private static final String BACKLEVEL_STORAGE_VERSION_EXCEPTION = "The storage version on the client or server is lower than the storage version of the graph: graph storage version %s vs. client storage version %s when opening graph %s.";
-    private static final String INCOMPATIBLE_STORAGE_VERSION_EXCEPTION = "Storage version is incompatible with current client: graph storage version %s vs. client storage version %s when opening graph %s.";
+    static final String BACKLEVEL_STORAGE_VERSION_EXCEPTION = "The storage version on the client or server is lower than the storage version of the graph: graph storage version %s vs. client storage version %s when opening graph %s.";
+    static final String INCOMPATIBLE_STORAGE_VERSION_EXCEPTION = "Storage version is incompatible with current client: graph storage version %s vs. client storage version %s when opening graph %s.";
 
     public ReadConfiguration buildGlobalConfiguration(ReadConfiguration localConfig,
                                                       BasicConfiguration localBasicConfiguration,
