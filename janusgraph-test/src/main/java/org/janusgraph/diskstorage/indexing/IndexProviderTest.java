@@ -31,6 +31,7 @@ import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.types.ParameterType;
+import org.janusgraph.testutil.FlakyTest;
 import org.janusgraph.testutil.RandomGenerator;
 
 import org.junit.jupiter.api.AfterEach;
@@ -743,7 +744,7 @@ public abstract class IndexProviderTest {
         assertTrue(results.contains("restore-doc1"));
     }
 
-    @Test
+    @FlakyTest
     public void testTTL() throws Exception {
         if (!index.getFeatures().supportsDocumentTTL())
             return;
