@@ -37,6 +37,15 @@ All of JanusGraph's tests are written for JUnit.  JanusGraph's JUnit tests are a
 
 *Implementation Note.*  The Maven property naming pattern "test.skip.x=boolean" is needlessly verbose, a cardinal sin for command line options.  A more concise alternative would be "test.x" with the boolean sense negated.  However, this complicates the pom.xml configuration for the Surefire plugin since it precludes direct use of the Surefire plugin's `<skip>` configuration tag, as in `<skip>${test.skip.perf}</skip>`.  There doesn't seem to be a straightforward way to negate a boolean or otherwise make this easy, at least without resorting to profiles or a custom plugin, though I might be missing something.  Also, the mold is arguably already set by Surefire's "maven.test.skip" property, though that has slightly different interpretation semantics than the properties above.
 
+### Marking tests as flaky
+
+If a test should be marked as flaky add following annotation to the test and open an issue.
+
+```java
+@FlakyTest
+public void testFlakyFailsSometimes(){}
+```
+
 ### Running a Single Test via Maven
 
 The standard maven-surefire-plugin option applies for most tests:
