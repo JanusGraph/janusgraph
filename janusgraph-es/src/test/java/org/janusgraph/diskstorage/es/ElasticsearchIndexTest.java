@@ -23,7 +23,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.*;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -50,6 +49,8 @@ import org.json.simple.parser.ParseException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -57,16 +58,16 @@ import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.UUID;
 
-import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@Testcontainers
+public class ElasticsearchIndexTest extends IndexProviderTest {
 
-public class ElasticSearchIndexTest extends IndexProviderTest {
-
-    static ElasticsearchRunner esr;
+    @Container
+    public static JanusGraphElasticsearchContainer esr = new JanusGraphElasticsearchContainer();
     static HttpHost host;
     static CloseableHttpClient httpClient;
     static ObjectMapper objectMapper;
@@ -74,13 +75,11 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
     private static char REPLACEMENT_CHAR = '\u2022';
 
     @BeforeAll
-    public static void startElasticsearch() throws Exception {
-        esr = new ElasticsearchRunner();
-        esr.start();
+    public static void prepareElasticsearch() throws Exception {
         httpClient = HttpClients.createDefault();
         objectMapper = new ObjectMapper();
-        host = new HttpHost(InetAddress.getByName(esr.getHostname()), ElasticsearchRunner.PORT);
-        if (esr.getEsMajorVersion().value > 2) {
+        host = new HttpHost(InetAddress.getByName(esr.getHostname()), esr.getPort());
+        if (JanusGraphElasticsearchContainer.getEsMajorVersion().value > 2) {
             IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("_ingest/pipeline/pipeline_1")));
             final HttpPut newPipeline = new HttpPut("_ingest/pipeline/pipeline_1");
             newPipeline.setHeader("Content-Type", "application/json");
@@ -90,10 +89,9 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
     }
 
     @AfterAll
-    public static void stopElasticsearch() throws ClientProtocolException, IOException {
+    public static void cleanupElasticsearch() throws IOException {
         IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("janusgraph*")));
         IOUtils.closeQuietly(httpClient);
-        esr.stop();
     }
 
     @Override
@@ -122,7 +120,7 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         if (esr.getEsMajorVersion().value > 2) {
             cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
         }
-        return esr.setElasticsearchConfiguration(new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,cc, BasicConfiguration.Restriction.NONE), index)
+        return esr.setConfiguration(new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,cc, BasicConfiguration.Restriction.NONE), index)
             .set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index)
             .restrictTo(index);
     }
@@ -174,18 +172,29 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         add("vertex", "failing-doc", doc1, true);
         add("vertex", "non-failing-doc", getRandomDocument(), true);
 
-        try {
+        JanusGraphException janusGraphException = assertThrows(JanusGraphException.class, () -> {
             tx.commit();
-            fail("Commit should not have succeeded.");
-        } catch (JanusGraphException e) {
-            // Looking for a NumberFormatException since we tried to stick a string of text into a time field.
-            if (!Throwables.getRootCause(e).getMessage().contains("number_format_exception")
-                && !Throwables.getRootCause(e).getMessage().contains("NumberFormatException")) {
-                throw e;
-            }
-        } finally {
-            tx = null;
+        }, "Commit should not have succeeded.");
+
+        String message = Throwables.getRootCause(janusGraphException).getMessage();
+
+        switch (JanusGraphElasticsearchContainer.getEsMajorVersion().value){
+            case 6:
+                assertTrue(message.contains("mapper_parsing_exception"));
+                break;
+            case 5:
+            case 2:
+                assertTrue(message.contains("number_format_exception"));
+                break;
+            case 1:
+                assertTrue(message.contains("NumberFormatException"));
+                break;
+            default:
+                fail();
+                break;
         }
+
+        tx = null;
     }
 
     @Test
