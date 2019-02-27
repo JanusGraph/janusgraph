@@ -105,7 +105,7 @@ script:
       echo "Skipping module tests on Coverity branch/job";
     else
       echo "Testing janusgraph-${MODULE}";
-      travis_retry travis_wait 50 mvn clean verify --projects janusgraph-${MODULE} -Pcoverage ${ARGS};
+      travis_wait 50 mvn clean verify --projects janusgraph-${MODULE} -Pcoverage ${ARGS};
     fi
 
 after_success:
