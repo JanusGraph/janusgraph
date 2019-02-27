@@ -20,6 +20,7 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 
+import org.janusgraph.testutil.FlakyTest;
 import org.junit.jupiter.api.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,6 +32,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -59,10 +61,13 @@ public abstract class LogTest {
 
     private LogManager manager;
 
+    private static final String requiresOrderPreserving = "requiresOrderPreserving";
+
     @BeforeEach
     public void setup(TestInfo testInfo) throws Exception {
         //Tests that assume that write order is preserved when reading from the log must suffix their test names with "serial"
-        boolean requiresOrderPreserving = testInfo.getDisplayName().toLowerCase().endsWith("serial()");
+        Set<String> tags = testInfo.getTags();
+        boolean requiresOrderPreserving = tags.contains(LogTest.requiresOrderPreserving);
         log.debug("Starting {}.{} - Order preserving {}", getClass().getSimpleName(), testInfo.getTestMethod().toString(), requiresOrderPreserving);
         manager = openLogManager(DEFAULT_SENDER_ID,requiresOrderPreserving);
     }
@@ -78,16 +83,19 @@ public abstract class LogTest {
     }
 
     @Test
+    @Tag(LogTest.requiresOrderPreserving)
     public void smallSendReceiveSerial() throws Exception {
         simpleSendReceive(100, 50);
     }
 
     @Test
+    @Tag(LogTest.requiresOrderPreserving)
     public void mediumSendReceiveSerial() throws Exception {
         simpleSendReceive(2000,1);
     }
 
-    @Test
+    @FlakyTest
+    @Tag(LogTest.requiresOrderPreserving)
     public void testMultipleReadersOnSingleLogSerial() throws Exception {
         sendReceive(4, 2000, 5, true, TIMEOUT_MS);
     }
@@ -112,6 +120,7 @@ public abstract class LogTest {
     }
 
     @Test
+    @Tag(LogTest.requiresOrderPreserving)
     public void testLogIsDurableAcrossReopenSerial() throws Exception {
         final long past = System.currentTimeMillis() - 10L;
         Log l;
@@ -132,6 +141,7 @@ public abstract class LogTest {
     }
 
     @Test
+    @Tag(LogTest.requiresOrderPreserving)
     public void testMultipleLogsWithSingleReaderSerial() throws Exception {
         final int nl = 3;
         Log logs[] = new Log[nl];
@@ -181,6 +191,7 @@ public abstract class LogTest {
     }
 
     @Test
+    @Tag(LogTest.requiresOrderPreserving)
     public void testFuzzMessagesSerial() throws Exception {
         final int maxLen = 1024 * 4;
         final int rounds = 32;
@@ -225,6 +236,7 @@ public abstract class LogTest {
     }
 
     @Test
+    @Tag(LogTest.requiresOrderPreserving)
     public void testUnregisterReaderSerial() throws Exception {
         Log log = manager.openLog("test1");
 

@@ -15,6 +15,7 @@
 package org.janusgraph.diskstorage.solr;
 
 import org.janusgraph.graphdb.JanusGraphIndexTest;
+import org.janusgraph.testutil.FlakyTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -63,6 +64,12 @@ public abstract class SolrJanusGraphIndexTest extends JanusGraphIndexTest {
     @Override @Test @Disabled
     public void testClearStorage() throws Exception {
         super.testClearStorage();
+    }
+
+    @Override
+    @FlakyTest(minSuccess = 1, invocationCount = 6)
+    public void testIndexReplay() throws Exception {
+        super.testIndexReplay();
     }
 
 }
