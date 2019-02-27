@@ -85,26 +85,28 @@ Finally the `solr.test.version` property can be used to test against arbitrary S
 mvn clean install -pl janusgraph-solr -Pdocker -Dsolr.test.version=5.5.4
 ```
 
-### Running Tests with an External Elasticsearch
+### Running Tests an Elasticsearch
 
-Elasticsearch tests can be run against an external Elasticsearch instance. For convenience the `es-docker` Maven profile is provided to manage an Elasticsearch Docker container through the Maven Failsafe Plugin. The default test version will be the same as the Elasticsearch client version.
+**Note** Running Elasticsearch tests requires docker.
+
+Elasticsearch tests run against an external Elasticsearch instance. The default test version will be the same as the Elasticsearch client version.
 
 ```bash
-mvn clean install -pl janusgraph-es -Pes-docker
+mvn clean install -pl janusgraph-es
 ```
 
 Additional Maven profiles are defined for testing against default versions of other supported major Elasticsearch releases.
 
 ```bash
-mvn clean install -pl janusgraph-es -Pes-docker,elasticsearch5
+mvn clean install -pl janusgraph-es -Pelasticsearch5
 ```
 
-Finally the `elasticsearch.docker.test.version` property can be used to test against arbitrary Elasticsearch versions. This is more complicated however because of differences across major versions in required server settings, Docker image names and zipfile artifact availability. The examples below illustrate the differences based on the Elasticsearch major version.
+Finally the `elasticsearch.docker.version` property can be used to test against arbitrary Elasticsearch versions. This is more complicated however because of differences across major versions in required server settings and Docker image names. The examples below illustrate the differences based on the Elasticsearch major version.
 
 ```bash
-mvn clean install -pl janusgraph-es -Pes-docker -Delasticsearch.docker.test.version=5.3.2
-mvn clean install -pl janusgraph-es -Pes-docker -Delasticsearch.test.version=2.3.3 -Delasticsearch.test.groovy.inline="script.engine.groovy.inline.update: true" -Des.docker.image=elasticsearch
-mvn clean install -pl janusgraph-es -Pes-docker -Delasticsearch.docker.test.version=1.5.1 -Delasticsearch.test.version=2.4.4 -Delasticsearch.test.groovy.inline="script.disable_dynamic: false" -Des.docker.image=elasticsearch
+mvn clean install -pl janusgraph-es -Delasticsearch.docker.version=5.3.2
+mvn clean install -pl janusgraph-es -Delasticsearch.docker.image=elasticsearch
+mvn clean install -pl janusgraph-es -Delasticsearch.docker.version=1.5.1 -Delasticsearch.docker.image=elasticsearch
 ```
 
 ### Running Tests with an External Cassandra
