@@ -88,9 +88,9 @@ public class AdjacentVertexFilterOptimizerStrategy extends AbstractTraversalStra
                                 && (direction == Direction.BOTH || direction.equals(vertexStep.getDirection().opposite()))) {
                             //Now replace the step with a has condition
                             TraversalHelper.replaceStep(originalStep,
-                                    new HasStep(traversal,
-                                            HasContainer.makeHasContainers(ImplicitKey.ADJACENT_ID.name(), P.eq(vertex))),
-                                    traversal);
+                                new HasStep(traversal,
+                                    new HasContainer(ImplicitKey.ADJACENT_ID.name(), P.eq(vertex))),
+                                traversal);
                         }
                     }
 
