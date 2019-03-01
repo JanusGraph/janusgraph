@@ -122,6 +122,10 @@ public interface JanusGraphMultiVertexQuery<Q extends JanusGraphMultiVertexQuery
      */
     Map<JanusGraphVertex, Iterable<JanusGraphVertexProperty>> properties();
 
+    /**
+     * Makes a call to properties to pre-fetch the properties into the vertex cache
+     */
+    void preFetch();
 
     /**
      * Returns an iterable over all incident relations that match this query for each vertex
