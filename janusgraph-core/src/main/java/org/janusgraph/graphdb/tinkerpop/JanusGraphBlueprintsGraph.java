@@ -181,13 +181,11 @@ public abstract class JanusGraphBlueprintsGraph implements JanusGraph {
     }
 
     @Override
-    @Deprecated
     public JanusGraphMultiVertexQuery multiQuery(JanusGraphVertex... vertices) {
         return getAutoStartTx().multiQuery(vertices);
     }
 
     @Override
-    @Deprecated
     public JanusGraphMultiVertexQuery multiQuery(Collection<JanusGraphVertex> vertices) {
         return getAutoStartTx().multiQuery(vertices);
     }

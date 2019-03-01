@@ -30,6 +30,7 @@ public interface QueryProfiler {
     String LIMIT_ANNOTATION = "limit";
 
     String MULTIQUERY_ANNOTATION = "multi";
+    String MULTIPREFETCH_ANNOTATION = "multiPreFetch";
     String NUMVERTICES_ANNOTATION = "vertices";
     String PARTITIONED_VERTEX_ANNOTATION = "partitioned";
 

@@ -80,14 +80,12 @@ public interface Transaction extends Graph, SchemaManager {
      * @return
      * @see JanusGraph#multiQuery(org.janusgraph.core.JanusGraphVertex...)
      */
-    @Deprecated
     JanusGraphMultiVertexQuery<? extends JanusGraphMultiVertexQuery> multiQuery(JanusGraphVertex... vertices);
 
     /**
      * @return
      * @see JanusGraph#multiQuery(java.util.Collection)
      */
-    @Deprecated
     JanusGraphMultiVertexQuery<? extends JanusGraphMultiVertexQuery> multiQuery(Collection<JanusGraphVertex> vertices);
 
     @Override

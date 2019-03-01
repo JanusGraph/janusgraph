@@ -1930,7 +1930,6 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
      * are bound to single-threaded graph transactions
      */
     @Test
-    @SuppressWarnings("deprecation")
     public void testThreadBoundTx() {
         PropertyKey t = mgmt.makePropertyKey("type").dataType(Integer.class).make();
         mgmt.buildIndex("etype", Edge.class).addKey(t).buildCompositeIndex();
@@ -2695,7 +2694,6 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         testVertexCentricQuery(10000 /*noVertices*/);
     }
 
-    @SuppressWarnings("deprecation")
     public void testVertexCentricQuery(int noVertices) {
         makeVertexIndexedUniqueKey("name", String.class);
         PropertyKey time = makeKey("time", Integer.class);
@@ -3901,7 +3899,6 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         }
 
         Traversal t;
-        TraversalMetrics metrics;
         GraphTraversalSource gts = graph.traversal();
 
         //Edge
@@ -3952,6 +3949,30 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).limit(10)), JanusGraphStep.class, JanusGraphVertexStep.class);
         assertNumStep(superV * 10, 1, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)), JanusGraphStep.class);
         assertNumStep(superV * 10, 0, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)), LocalStep.class);
+
+        // Verify that the batch property pre-fetching is not applied when the configuration option is not set
+        t = gts.V().has("id", sid).outE("knows").has("weight", P.between(1, 3)).inV().has("weight", P.between(1, 3)).profile("~metrics");
+        assertNumStep(superV * (numV / 5 * 2), 2, (GraphTraversal)t, JanusGraphStep.class, JanusGraphVertexStep.class);
+        assertFalse(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIPREFETCH_ANNOTATION));
+
+        clopen(option(BATCH_PROPERTY_PREFETCHING), true);
+        gts = graph.traversal();
+
+        // This tests an edge property before inV and will trigger the multiQuery property pre-fetch optimisation in JanusGraphEdgeVertexStep
+        t = gts.V().has("id", sid).outE("knows").has("weight", P.between(1, 3)).inV().has("weight", P.between(1, 3)).profile("~metrics");
+        assertNumStep(superV * (numV / 5 * 2), 2, (GraphTraversal)t, JanusGraphStep.class, JanusGraphVertexStep.class);
+        assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIPREFETCH_ANNOTATION));
+
+        // This tests a vertex property after inV and will trigger the multiQuery property pre-fetch optimisation in JanusGraphVertexStep
+        t = gts.V().has("id", sid).outE("knows").inV().has("weight", P.between(1, 3)).profile("~metrics");
+        assertNumStep(superV * (numV / 5 * 2), 2, (GraphTraversal)t, JanusGraphStep.class, JanusGraphVertexStep.class);
+        assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIPREFETCH_ANNOTATION));
+
+        // As above but with a limit after the has step meaning property pre-fetch won't know how much to fetch and so should not be used
+        t = gts.V().has("id", sid).outE("knows").inV().has("weight", P.between(1, 3)).limit(1000).profile("~metrics");
+        assertNumStep(superV * (numV / 5 * 2), 2, (GraphTraversal)t, JanusGraphStep.class, JanusGraphVertexStep.class);
+        assertFalse(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIPREFETCH_ANNOTATION));
+
         clopen(option(USE_MULTIQUERY), true);
         gts = graph.traversal();
 
@@ -3965,12 +3986,12 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         //Verify traversal metrics when all reads are from cache (i.e. no backend queries)
         t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)).profile("~metrics");
         assertCount(superV * 10, t);
-        metrics = t.asAdmin().getSideEffects().get("~metrics");
+        assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
 
         //Verify that properties also use multi query
         t = gts.V().has("id", sid).values("names").profile("~metrics");
         assertCount(superV * numV, t);
-        metrics = t.asAdmin().getSideEffects().get("~metrics");
+        assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
 
         clopen(option(USE_MULTIQUERY), true);
         gts = graph.traversal();
@@ -3978,13 +3999,17 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         //Verify traversal metrics when having to read from backend [same query as above]
         t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).order().by("weight", decr).limit(10)).profile("~metrics");
         assertCount(superV * 10, t);
-        metrics = t.asAdmin().getSideEffects().get("~metrics");
+        assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
 
         //Verify that properties also use multi query [same query as above]
         t = gts.V().has("id", sid).values("names").profile("~metrics");
         assertCount(superV * numV, t);
-        metrics = t.asAdmin().getSideEffects().get("~metrics");
+        assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
+    }
 
+    private static boolean queryProfilerAnnotationIsPresent(Traversal t, String queryProfilerAnnotation) {
+        TraversalMetrics metrics = t.asAdmin().getSideEffects().get("~metrics");
+        return metrics.toString().contains(queryProfilerAnnotation + "=true");
     }
 
     private static void assertNumStep(int expectedResults, int expectedSteps, GraphTraversal traversal, Class<? extends Step>... expectedStepTypes) {

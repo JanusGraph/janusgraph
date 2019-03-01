@@ -40,13 +40,22 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> implements HasStepFolder<Vertex, E>, Profiling, MultiQueriable<Vertex,E> {
+
+    private boolean initialized = false;
+    private boolean useMultiQuery = false;
+    private boolean batchPropertyPrefetching = false;
+    private Map<JanusGraphVertex, Iterable<? extends JanusGraphElement>> multiQueryResults = null;
+    private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
+    private int txVertexCacheSize = 20000;
 
     public JanusGraphVertexStep(VertexStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.getDirection(), originalStep.getEdgeLabels());
@@ -55,14 +64,17 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
         this.limit = Query.NO_LIMIT;
     }
 
-    private boolean initialized = false;
-    private boolean useMultiQuery = false;
-    private Map<JanusGraphVertex, Iterable<? extends JanusGraphElement>> multiQueryResults = null;
-    private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
-
     @Override
     public void setUseMultiQuery(boolean useMultiQuery) {
         this.useMultiQuery = useMultiQuery;
+    }
+
+    public void setBatchPropertyPrefetching(boolean batchPropertyPrefetching) {
+        this.batchPropertyPrefetching = batchPropertyPrefetching;
+    }
+
+    public void setTxVertexCacheSize(int txVertexCacheSize) {
+        this.txVertexCacheSize = txVertexCacheSize;
     }
 
     public <Q extends BaseVertexQuery> Q makeQuery(Q query) {
@@ -77,7 +89,6 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
         return query;
     }
 
-    @SuppressWarnings("deprecation")
     private void initialize() {
         assert !initialized;
         initialized = true;
@@ -107,13 +118,36 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
 
     @Override
     protected Iterator<E> flatMap(final Traverser.Admin<Vertex> traverser) {
+
+        Iterable<? extends JanusGraphElement> result;
+
         if (useMultiQuery) {
             assert multiQueryResults != null;
-            return (Iterator<E>) multiQueryResults.get(traverser.get()).iterator();
+
+            result = multiQueryResults.get(traverser.get());
         } else {
             final JanusGraphVertexQuery query = makeQuery((JanusGraphTraversalUtil.getJanusGraphVertex(traverser)).query());
-            return (Vertex.class.isAssignableFrom(getReturnClass())) ? query.vertices().iterator() : query.edges().iterator();
+            result = (Vertex.class.isAssignableFrom(getReturnClass())) ? query.vertices() : query.edges();
         }
+
+        if (batchPropertyPrefetching) {
+            Set<Vertex> vertices = Sets.newHashSet();
+            result.forEach(v -> {
+                if (vertices.size() < txVertexCacheSize ) {
+                    vertices.add((Vertex) v);
+                }
+            });
+
+            // If there are multiple vertices then fetch the properties for all of them in a single multiQuery to
+            // populate the vertex cache so subsequent queries of properties don't have to go to the storage back end
+            if (vertices.size() > 1) {
+                JanusGraphMultiVertexQuery propertyMultiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
+                ((BasicVertexCentricQueryBuilder) propertyMultiQuery).profiler(queryProfiler);
+                propertyMultiQuery.addAllVertices(vertices).preFetch();
+            }
+        }
+
+        return (Iterator<E>) result.iterator();
     }
 
     @Override

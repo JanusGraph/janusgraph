@@ -82,7 +82,6 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
         return (Iterator<E>) Iterators.transform(iterable.iterator(), Property::value);
     }
 
-    @SuppressWarnings("deprecation")
     private void initialize() {
         assert !initialized;
         initialized = true;

@@ -264,6 +264,12 @@ public class GraphDatabaseConfiguration {
                     "performance improvement if there is a non-trivial latency to the backend.",
             ConfigOption.Type.MASKABLE, false);
 
+    public static final ConfigOption<Boolean> BATCH_PROPERTY_PREFETCHING = new ConfigOption<>(QUERY_NS,"batch-property-prefetch",
+            "Whether to do a batched pre-fetch of all properties on adjacent vertices against the storage backend prior to evaluating a has condition against those vertices. " +
+                    "Because these vertex properties will be loaded into the transaction-level cache of recently-used vertices when the condition is evaluated this can " +
+                    "lead to significant performance improvement if there are many edges to adjacent vertices and there is a non-trivial latency to the backend.",
+            ConfigOption.Type.MASKABLE, false);
+
     // ################ SCHEMA #######################
     // ################################################
 
@@ -1214,6 +1220,7 @@ public class GraphDatabaseConfiguration {
     private Boolean propertyPrefetching;
     private boolean adjustQueryLimit;
     private Boolean useMultiQuery;
+    private Boolean batchPropertyPrefetching;
     private boolean allowVertexIdSetting;
     private boolean logTransactions;
     private String metricsPrefix;
@@ -1298,6 +1305,10 @@ public class GraphDatabaseConfiguration {
 
     public boolean useMultiQuery() {
         return useMultiQuery;
+    }
+
+    public boolean batchPropertyPrefetching() {
+        return batchPropertyPrefetching;
     }
 
     public boolean adjustQueryLimit() {
@@ -1410,6 +1421,7 @@ public class GraphDatabaseConfiguration {
 
         propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
         useMultiQuery = configuration.get(USE_MULTIQUERY);
+        batchPropertyPrefetching = configuration.get(BATCH_PROPERTY_PREFETCHING);
         adjustQueryLimit = configuration.get(ADJUST_LIMIT);
         allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
