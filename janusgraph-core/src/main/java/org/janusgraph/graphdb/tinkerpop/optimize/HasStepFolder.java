@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.tinkerpop.optimize;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
@@ -29,7 +30,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
-import org.apache.tinkerpop.gremlin.process.traversal.step.Ranging;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.OrStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
@@ -42,9 +42,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.javatuples.Pair;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -328,5 +326,35 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                 traversal.removeStep(nextStep);
             }
         }
+    }
+
+    /**
+     * @param janusgraphStep The step to test
+     * @return True if there are 'has' steps following this step and no subsequent range limit step
+     */
+    static boolean foldableHasContainerNoLimit(FlatMapStep<?, ?> janusgraphStep) {
+        boolean foldableHasContainerNoLimit = false;
+        Step<?, ?> currentStep = janusgraphStep.getNextStep();
+        while (true) {
+            if (currentStep instanceof OrStep) {
+                for (final Traversal.Admin<?, ?> child : ((OrStep<?>) currentStep).getLocalChildren()) {
+                    if (!validFoldInHasContainer(child.getStartStep(), false)){
+                        return false;
+                    }
+                }
+                foldableHasContainerNoLimit =  true;
+            } else if (currentStep instanceof HasContainerHolder) {
+                if  (validFoldInHasContainer(currentStep, true)) {
+                    foldableHasContainerNoLimit =  true;
+                }
+            } else if (currentStep instanceof RangeGlobalStep) {
+                return false;
+            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep)) {
+                break;
+            }
+            currentStep = currentStep.getNextStep();
+        }
+
+        return foldableHasContainerNoLimit;
     }
 }

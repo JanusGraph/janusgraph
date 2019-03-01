@@ -141,6 +141,12 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
     }
 
     @Override
+    public void preFetch() {
+        profiler.setAnnotation(QueryProfiler.MULTIPREFETCH_ANNOTATION, true);
+        properties();
+    }
+
+    @Override
     public Map<JanusGraphVertex, Iterable<JanusGraphRelation>> relations() {
         return (Map)(isImplicitKeyQuery(RelationCategory.RELATION)?
                 executeImplicitKeyQuery():

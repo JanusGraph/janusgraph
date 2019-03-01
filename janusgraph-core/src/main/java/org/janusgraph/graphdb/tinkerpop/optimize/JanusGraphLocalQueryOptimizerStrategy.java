@@ -14,18 +14,18 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.BranchStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.OptionalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.MatchStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
-import org.apache.tinkerpop.gremlin.process.traversal.util.PathUtil;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal.Admin;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
@@ -34,11 +34,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.javatuples.Pair;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -90,6 +89,10 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
 
             if (useMultiQuery && !(isChildOf(vertexStep, MULTIQUERY_INCOMPATIBLE_STEPS))) {
                 vertexStep.setUseMultiQuery(true);
+            }
+
+            if (janusGraph.getConfiguration().batchPropertyPrefetching()) {
+                applyBatchPropertyPrefetching(traversal, vertexStep, nextStep, janusGraph.getConfiguration().getTxVertexCacheSize());
             }
         });
 
@@ -151,6 +154,33 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
             }
 
         });
+    }
+
+    /**
+     * If this step is followed by a subsequent has step then the properties will need to be
+     * known when that has step is executed. The batch property pre-fetching optimisation
+     * loads those properties into the vertex cache with a multiQuery preventing the need to
+     * go back to the storage back-end for each vertex to fetch the properties.
+     * 
+     * @param traversal The traversal containing the step
+     * @param vertexStep The step to potentially apply the optimisation to
+     * @param nextStep The next step in the traversal
+     * @param txVertexCacheSize The size of the vertex cache
+     */
+    private void applyBatchPropertyPrefetching(final Admin<?, ?> traversal, final JanusGraphVertexStep vertexStep, final Step nextStep, final int txVertexCacheSize) {
+        if (Vertex.class.isAssignableFrom(vertexStep.getReturnClass())) {
+            if (HasStepFolder.foldableHasContainerNoLimit(vertexStep)) {
+                vertexStep.setBatchPropertyPrefetching(true);
+                vertexStep.setTxVertexCacheSize(txVertexCacheSize);
+            }
+        }
+        else if (nextStep instanceof EdgeVertexStep) {
+            EdgeVertexStep edgeVertexStep = (EdgeVertexStep)nextStep;
+            if (HasStepFolder.foldableHasContainerNoLimit(edgeVertexStep)) {
+                JanusGraphEdgeVertexStep estep = new JanusGraphEdgeVertexStep(edgeVertexStep, txVertexCacheSize);
+                TraversalHelper.replaceStep(nextStep, estep, traversal);
+            }
+        }
     }
 
     private static void unfoldLocalTraversal(final Traversal.Admin<?, ?> traversal,
