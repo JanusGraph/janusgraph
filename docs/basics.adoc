@@ -842,7 +842,7 @@ For purposes of demonstration, these instructions will outline how to configure 
 
 [source,bourne]
 ----
-bin/gremlin-server.sh -i org.janusgraph janusgraph-all $VERSION
+bin/gremlin-server.sh install org.janusgraph janusgraph-all $VERSION
 ----
 
 When this process completes, Gremlin Server should now have all the JanusGraph dependencies available to it and will thus be able to instantiate `JanusGraph` objects.
