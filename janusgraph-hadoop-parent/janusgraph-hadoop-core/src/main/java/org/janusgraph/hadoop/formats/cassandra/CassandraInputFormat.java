@@ -14,9 +14,9 @@
 
 package org.janusgraph.hadoop.formats.cassandra;
 
-import org.janusgraph.hadoop.formats.util.GiraphInputFormat;
+import org.janusgraph.hadoop.formats.util.HadoopInputFormat;
 
-public class CassandraInputFormat extends GiraphInputFormat {
+public class CassandraInputFormat extends HadoopInputFormat {
     public CassandraInputFormat() {
         super(new CassandraBinaryInputFormat());
     }

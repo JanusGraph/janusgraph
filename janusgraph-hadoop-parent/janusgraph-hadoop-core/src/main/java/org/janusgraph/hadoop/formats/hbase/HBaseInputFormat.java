@@ -14,9 +14,9 @@
 
 package org.janusgraph.hadoop.formats.hbase;
 
-import org.janusgraph.hadoop.formats.util.GiraphInputFormat;
+import org.janusgraph.hadoop.formats.util.HadoopInputFormat;
 
-public class HBaseInputFormat extends GiraphInputFormat {
+public class HBaseInputFormat extends HadoopInputFormat {
     public HBaseInputFormat() {
         super(new HBaseBinaryInputFormat());
     }
