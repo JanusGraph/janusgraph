@@ -1,7 +1,6 @@
 org.apache.tinkerpop.gremlin.console.jsr223.DriverGremlinPlugin
 org.apache.tinkerpop.gremlin.tinkergraph.jsr223.TinkerGraphGremlinPlugin
 org.apache.tinkerpop.gremlin.hadoop.jsr223.HadoopGremlinPlugin
-org.apache.tinkerpop.gremlin.spark.jsr223.GiraphGremlinPlugin
 org.apache.tinkerpop.gremlin.spark.jsr223.SparkGremlinPlugin
 org.apache.tinkerpop.gremlin.console.jsr223.UtilitiesGremlinPlugin
 org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin
