@@ -37,18 +37,15 @@ import java.util.Optional;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class GiraphRecordReader extends RecordReader<NullWritable, VertexWritable> {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(GiraphRecordReader.class);
+public class HadoopRecordReader extends RecordReader<NullWritable, VertexWritable> {
 
     private final RecordReader<StaticBuffer, Iterable<Entry>> reader;
-    private final GiraphInputFormat.RefCountedCloseable countedDeserializer;
+    private final HadoopInputFormat.RefCountedCloseable countedDeserializer;
     private JanusGraphVertexDeserializer deserializer;
     private VertexWritable vertex;
     private GraphFilter graphFilter;
 
-    public GiraphRecordReader(final GiraphInputFormat.RefCountedCloseable<JanusGraphVertexDeserializer> countedDeserializer,
+    public HadoopRecordReader(final HadoopInputFormat.RefCountedCloseable<JanusGraphVertexDeserializer> countedDeserializer,
                               final RecordReader<StaticBuffer, Iterable<Entry>> reader) {
         this.countedDeserializer = countedDeserializer;
         this.reader = reader;
@@ -89,12 +86,12 @@ public class GiraphRecordReader extends RecordReader<NullWritable, VertexWritabl
     }
 
     @Override
-    public NullWritable getCurrentKey() throws IOException, InterruptedException {
+    public NullWritable getCurrentKey() {
         return NullWritable.get();
     }
 
     @Override
-    public VertexWritable getCurrentValue() throws IOException, InterruptedException {
+    public VertexWritable getCurrentValue() {
         return vertex;
     }
 

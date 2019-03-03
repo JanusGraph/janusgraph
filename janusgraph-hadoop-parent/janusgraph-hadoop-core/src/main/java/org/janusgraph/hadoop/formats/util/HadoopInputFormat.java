@@ -34,7 +34,7 @@ import java.util.function.Function;
 import static org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon.SETUP_CLASS_NAME;
 import static org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon.SETUP_PACKAGE_PREFIX;
 
-public abstract class GiraphInputFormat extends InputFormat<NullWritable, VertexWritable> implements Configurable, GraphFilterAware {
+public abstract class HadoopInputFormat extends InputFormat<NullWritable, VertexWritable> implements Configurable, GraphFilterAware {
 
     private final InputFormat<StaticBuffer, Iterable<Entry>> inputFormat;
     private static final RefCountedCloseable<JanusGraphVertexDeserializer> refCounter;
@@ -54,7 +54,7 @@ public abstract class GiraphInputFormat extends InputFormat<NullWritable, Vertex
 
 
 
-    public GiraphInputFormat(InputFormat<StaticBuffer, Iterable<Entry>> inputFormat) {
+    public HadoopInputFormat(InputFormat<StaticBuffer, Iterable<Entry>> inputFormat) {
         this.inputFormat = inputFormat;
         Preconditions.checkState(Configurable.class.isAssignableFrom(inputFormat.getClass()));
     }
@@ -66,7 +66,7 @@ public abstract class GiraphInputFormat extends InputFormat<NullWritable, Vertex
 
     @Override
     public RecordReader<NullWritable, VertexWritable> createRecordReader(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
-        return new GiraphRecordReader(refCounter, inputFormat.createRecordReader(split, context));
+        return new HadoopRecordReader(refCounter, inputFormat.createRecordReader(split, context));
     }
 
     @Override
