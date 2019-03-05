@@ -161,7 +161,6 @@
                                     <arguments>
                                         <argument>-classpath</argument>
                                         <argument>${project.build.directory}/dependency/janusgraph-es-${project.version}-tests.jar:${project.build.directory}/dependency/*</argument>
-                                        <argument>org.janusgraph.diskstorage.es.ElasticsearchRunner</argument>
                                         <argument>${project.build.directory}/conf/janusgraph-berkeleyje-es.properties</argument>
                                     </arguments>
                                 </configuration>

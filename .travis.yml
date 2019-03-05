@@ -43,9 +43,10 @@ env:
     - MODULE='solr' ARGS='-Pdocker,solr6'
     - MODULE='solr' ARGS='-Pdocker,solr5'
     - MODULE='es' ARGS='-Pelasticsearch6'
+    - MODULE='es' ARGS='-Pelasticsearch60'
     - MODULE='es' ARGS='-Pelasticsearch5'
     - MODULE='es' ARGS='-Pelasticsearch2'
-    - MODULE='es' ARGS='-Pelasticsearch1,es-docker'
+    - MODULE='es' ARGS='-Pelasticsearch1'
     - MODULE='berkeleyje'
     - MODULE='test'
     - MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
@@ -76,7 +77,7 @@ matrix:
   # https://docs.travis-ci.com/user/customizing-the-build#Rows-that-are-Allowed-to-Fail
   allow_failures:
     # Elasticsearch 1.x tests can fail non-deterministically
-    - env: MODULE='es' ARGS='-Pelasticsearch1,es-docker'
+    - env: MODULE='es' ARGS='-Pelasticsearch1'
 
 install:
   - if [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] && [ -n "${COVERITY_ONLY:-}" ]; then
