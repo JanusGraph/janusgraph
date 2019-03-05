@@ -570,7 +570,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         counter.dec(counter.getCount());
     }
 
-    private void resetMetrics() {
+    protected void resetMetrics() {
         MetricManager.INSTANCE.getRegistry().removeMatching(MetricFilter.ALL);
     }
 
