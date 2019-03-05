@@ -31,6 +31,7 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 
 import java.net.InetAddress;
 import java.time.Instant;
@@ -43,11 +44,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author David Clement (david.clement90@laposte.net)
  */
-public class ElasticSearchMultiTypeIndexTest extends ElasticSearchIndexTest {
+@EnabledIf("org.janusgraph.diskstorage.es.JanusGraphElasticsearchContainer.getEsMajorVersion().value < 6")
+public class ElasticsearchMultiTypeIndexTest extends ElasticsearchIndexTest {
 
     @BeforeEach @Override
     public void setUp() throws Exception {
-        clear();
         super.setUp();
     }
 
@@ -59,7 +60,7 @@ public class ElasticSearchMultiTypeIndexTest extends ElasticSearchIndexTest {
 
     private void clear() throws Exception {
         try (final CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            final HttpHost host = new HttpHost(InetAddress.getByName(esr.getHostname()), ElasticsearchRunner.PORT);
+            final HttpHost host = new HttpHost(InetAddress.getByName(esr.getHostname()), esr.getPort());
             IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("janusgraph*")));
         }
     }
@@ -67,10 +68,10 @@ public class ElasticSearchMultiTypeIndexTest extends ElasticSearchIndexTest {
     public Configuration getESTestConfig() {
         final String index = "es";
         final CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
-        if (esr.getEsMajorVersion().value > 2) {
+        if (JanusGraphElasticsearchContainer.getEsMajorVersion().value > 2) {
             cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
         }
-        final ModifiableConfiguration config = esr.setElasticsearchConfiguration(new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,cc, BasicConfiguration.Restriction.NONE), index);
+        final ModifiableConfiguration config = esr.setConfiguration(new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,cc, BasicConfiguration.Restriction.NONE), index);
         config.set(USE_DEPRECATED_MULTITYPE_INDEX, true, index);
         config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index);
         return config.restrictTo(index);
