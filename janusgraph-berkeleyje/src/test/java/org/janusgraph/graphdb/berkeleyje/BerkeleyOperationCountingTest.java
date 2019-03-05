@@ -17,6 +17,8 @@ package org.janusgraph.graphdb.berkeleyje;
 import org.janusgraph.BerkeleyStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphOperationCountingTest;
+import org.janusgraph.testutil.FlakyTest;
+import org.junit.jupiter.api.AfterEach;
 
 public class BerkeleyOperationCountingTest extends JanusGraphOperationCountingTest {
 
@@ -25,4 +27,14 @@ public class BerkeleyOperationCountingTest extends JanusGraphOperationCountingTe
         return BerkeleyStorageSetup.getBerkeleyJEGraphConfiguration();
     }
 
+    @Override
+    @FlakyTest
+    public void testIdCounts() {
+        super.testIdCounts();
+    }
+
+    @AfterEach
+    public void resetCounts() {
+        resetMetrics(); // Metrics is a singleton, so subsequents test runs have wrong counts if we don't clean up.
+    }
 }
