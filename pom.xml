@@ -91,7 +91,8 @@
         <jackson1.version>1.9.13</jackson1.version>
         <jackson2.version>2.6.6</jackson2.version>
         <lucene-solr.version>7.0.0</lucene-solr.version>
-        <elasticsearch.version>6.0.1</elasticsearch.version>
+        <elasticsearch-driver.version>6.6.0</elasticsearch-driver.version>
+        <elasticsearch-server.version>6.0.1</elasticsearch-server.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <joda.version>2.8.2</joda.version>
@@ -126,6 +127,7 @@
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <cassandra-driver.version>3.3.2</cassandra-driver.version>
+        <testcontainers.version>1.10.6</testcontainers.version>
     </properties>
     <modules>
         <module>janusgraph-codepipelines-ci</module>
@@ -530,6 +532,59 @@
     </build>
     <dependencyManagement>
         <dependencies>
+            <!-- Tinkerpop 3.x -->
+            <dependency>
+                <groupId>org.apache.tinkerpop</groupId>
+                <artifactId>gremlin-core</artifactId>
+                <version>${tinkerpop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tinkerpop</groupId>
+                <artifactId>gremlin-server</artifactId>
+                <version>${tinkerpop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tinkerpop</groupId>
+                <artifactId>gremlin-console</artifactId>
+                <version>${tinkerpop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tinkerpop</groupId>
+                <artifactId>gremlin-groovy</artifactId>
+                <version>${tinkerpop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tinkerpop</groupId>
+                <artifactId>gremlin-driver</artifactId>
+                <version>${tinkerpop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tinkerpop</groupId>
+                <artifactId>gremlin-test</artifactId>
+                <version>${tinkerpop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tinkerpop</groupId>
+                <artifactId>tinkergraph-gremlin</artifactId>
+                <version>${tinkerpop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tinkerpop</groupId>
+                <artifactId>hadoop-gremlin</artifactId>
+                <version>${tinkerpop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tinkerpop</groupId>
+                <artifactId>spark-gremlin</artifactId>
+                <version>${tinkerpop.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.eclipse.jetty.orbit</groupId>
+                        <artifactId>javax.servlet</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
             <!-- Jackson 2.x -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -1095,7 +1150,7 @@
                 <version>${cassandra.version}</version>
                 <!-- Using avro-ipc 1.5.3 caused the following when opening the graphdb:
                      java.lang.NoSuchMethodError: org.apache.avro.io.DecoderFactory.configureDirectDecoder(Z)Lorg/apache/avro/io/DecoderFactory
-    
+
                      Stock avro 1.4.0 or 1.4.1 might work, but I'd like to see
                      what customizations were made in the cassandra copy of avro
                      before trying to drop it for the stock artifact...
@@ -1157,6 +1212,32 @@
                 <groupId>jdk.tools</groupId>
                 <artifactId>jdk.tools</artifactId>
                 <version>1.8</version>
+            </dependency>
+            <dependency>
+                <groupId>org.elasticsearch.client</groupId>
+                <artifactId>elasticsearch-rest-client</artifactId>
+                <version>${elasticsearch-driver.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers</artifactId>
+                <version>${testcontainers.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>net.java.dev.jna</groupId>
+                        <artifactId>jna</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>elasticsearch</artifactId>
+                <version>${testcontainers.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${testcontainers.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
