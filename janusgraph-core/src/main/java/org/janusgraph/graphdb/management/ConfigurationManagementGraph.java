@@ -89,6 +89,11 @@ public class ConfigurationManagementGraph {
         instance = this;
     }
 
+    // To be used for testing purposes
+    protected static void shutdownConfigurationManagementGraph() {
+        instance = null;
+    }
+
     /**
      * If one of your "graphs" key was equivalent to "ConfigurationManagementGraph" in your
      * YAML file supplied at server start, then we return the ConfigurationManagementGraph
@@ -303,6 +308,9 @@ public class ConfigurationManagementGraph {
             }
             management.commit();
             graph.tx().commit();
+        } else {
+            management.rollback();
+            graph.tx().rollback();
         }
     }
 
