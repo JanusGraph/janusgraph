@@ -21,4 +21,5 @@ public final class TestCategory {
     public static final String UNORDERED_KEY_STORE_TESTS = "UNORDERED_KEY_STORE_TESTS";
     public static final String MEMORY_TESTS = "MEMORY_TESTS";
     public static final String PERFORMANCE_TESTS = "PERFORMANCE_TESTS";
+    public static final String CELL_TTL_TESTS = "CELL_TTL_TESTS";
 }
