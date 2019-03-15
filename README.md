@@ -35,6 +35,7 @@ provides links to documentation, getting-started guides and release downloads.
 To visualize graphs stored in JanusGraph, you can use any of the following
 tools:
 
+* [Arcade Analytics](https://arcadeanalytics.com/usermanual/#arcade-analytics)
 * [Cytoscape](http://www.cytoscape.org/)
 * [Gephi](http://tinkerpop.apache.org/docs/current/reference/#gephi-plugin)
   plugin for Apache TinkerPop
