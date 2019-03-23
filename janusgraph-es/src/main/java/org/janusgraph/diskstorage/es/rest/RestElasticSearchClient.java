@@ -297,18 +297,13 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     public RestSearchResponse search(String scrollId) throws IOException {
         final String path;
         final byte[] requestData;
-        if (ElasticMajorVersion.ONE == majorVersion) {
-             path = REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll" + REQUEST_PARAM_BEGINNING + "scroll=" + scrollKeepAlive;
-             requestData = scrollId.getBytes(UTF8_CHARSET);
-        } else {
-            path = REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll";
-            final Map<String, Object> request = new HashMap<>();
-            request.put("scroll", scrollKeepAlive);
-            request.put("scroll_id", scrollId);
-            requestData = mapper.writeValueAsBytes(request);
-            if (log.isDebugEnabled()) {
-                log.debug("Elasticsearch request: " + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(request));
-            }
+        path = REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll";
+        final Map<String, Object> request = new HashMap<>();
+        request.put("scroll", scrollKeepAlive);
+        request.put("scroll_id", scrollId);
+        requestData = mapper.writeValueAsBytes(request);
+        if (log.isDebugEnabled()) {
+            log.debug("Elasticsearch request: " + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(request));
         }
         final Response response = performRequest(REQUEST_TYPE_POST, path, requestData);
         try (final InputStream inputStream = response.getEntity().getContent()) {
@@ -318,11 +313,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     @Override
     public void deleteScroll(String scrollId) throws IOException {
-        if (ElasticMajorVersion.ONE == majorVersion) {
-            performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll", scrollId.getBytes(UTF8_CHARSET));
-        } else {
-            delegate.performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll" + REQUEST_SEPARATOR + scrollId);
-        }
+        delegate.performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll" + REQUEST_SEPARATOR + scrollId);
     }
 
     public void setBulkRefresh(String bulkRefresh) {
