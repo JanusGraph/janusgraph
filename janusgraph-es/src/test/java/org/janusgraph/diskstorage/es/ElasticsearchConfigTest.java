@@ -156,7 +156,6 @@ public class ElasticsearchConfigTest {
         final Configuration indexConfig = esr.setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME)
             .set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME).restrictTo(INDEX_NAME);
         final IndexProvider idx = open(indexConfig);
-        final ElasticMajorVersion version = ((ElasticSearchIndex) idx).getVersion();
 
         // Test that the "date" property throws an exception.
         final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest
@@ -171,7 +170,7 @@ public class ElasticsearchConfigTest {
         }
 
         final HttpPut newMapping = new HttpPut("janusgraph_"+storeName);
-        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(readMapping(version, "/strict_mapping.json")), Charset.forName("UTF-8")));
+        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(readMapping("/strict_mapping.json")), Charset.forName("UTF-8")));
         executeRequest(newMapping);
 
         // Test that the "date" property works well.
@@ -187,24 +186,9 @@ public class ElasticsearchConfigTest {
         idx.close();
     }
 
-    private IndexMappings readMapping(final ElasticMajorVersion version, final String mappingFilePath) throws IOException {
+    private IndexMappings readMapping(final String mappingFilePath) throws IOException {
         try (final InputStream inputStream = getClass().getResourceAsStream(mappingFilePath)) {
-            final IndexMappings mappings = objectMapper.readValue(inputStream, new TypeReference<IndexMappings>() {});
-            if (version.getValue() < 5) {
-                // downgrade from text to string and keyword to string/not-analyzed
-                mappings.getMappings().values().stream()
-                    .flatMap(mapping -> mapping.getProperties().entrySet().stream())
-                    .map(entry -> (Map<String, Object>) entry.getValue())
-                    .forEach(properties -> {
-                        if (properties.get("type").equals("keyword")) {
-                            properties.put("type", "string");
-                            properties.put("index", "not_analyzed");
-                        } else if (properties.get("type").equals("text")) {
-                            properties.put("type", "string");
-                        }
-                    });
-            }
-            return mappings;
+            return objectMapper.readValue(inputStream, new TypeReference<IndexMappings>() {});
         }
     }
 
@@ -227,10 +211,9 @@ public class ElasticsearchConfigTest {
         final Configuration indexConfig = esr.setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME)
             .set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME).restrictTo(INDEX_NAME);
         final IndexProvider idx = open(indexConfig);
-        final ElasticMajorVersion version = ((ElasticSearchIndex) idx).getVersion();
 
         final HttpPut newTemplate = new HttpPut("_template/template_1");
-        final Map<String, Object> content = ImmutableMap.of("template", "janusgraph_test_mapping*", "mappings", readMapping(version, "/strict_mapping.json").getMappings());
+        final Map<String, Object> content = ImmutableMap.of("template", "janusgraph_test_mapping*", "mappings", readMapping("/strict_mapping.json").getMappings());
         newTemplate.setEntity(new StringEntity(objectMapper.writeValueAsString(content), Charset.forName("UTF-8")));
         executeRequest(newTemplate);
         final HttpPut newMapping = new HttpPut("janusgraph_" + storeName);
@@ -353,7 +336,6 @@ public class ElasticsearchConfigTest {
         final Configuration indexConfig = buildIndexConfigurationForExternalDynamic(withUpdateMapping);
 
         final IndexProvider idx = open(indexConfig);
-        final ElasticMajorVersion version = ((ElasticSearchIndex) idx).getVersion();
 
         // Test that the "date" property throws an exception.
         final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest
@@ -368,7 +350,7 @@ public class ElasticsearchConfigTest {
         }
 
         final HttpPut newMapping = new HttpPut("janusgraph_"+storeName);
-        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(readMapping(version, "/dynamic_mapping.json")), Charset.forName("UTF-8")));
+        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(readMapping("/dynamic_mapping.json")), Charset.forName("UTF-8")));
         executeRequest(newMapping);
 
         // Test that the "date" property works well.

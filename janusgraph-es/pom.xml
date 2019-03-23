@@ -11,8 +11,6 @@
     <url>http://janusgraph.org</url>
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
-        <elasticsearch1.docker.version>1.7.6</elasticsearch1.docker.version>
-        <elasticsearch2.docker.version>2.4.6</elasticsearch2.docker.version>
         <elasticsearch5.docker.version>5.6.14</elasticsearch5.docker.version>
         <elasticsearch60.docker.version>6.0.1</elasticsearch60.docker.version>
         <elasticsearch6.docker.version>6.6.0</elasticsearch6.docker.version>
@@ -183,20 +181,6 @@
     </build>
 
     <profiles>
-        <profile>
-            <id>elasticsearch1</id>
-            <properties>
-                <elasticsearch.docker.version>${elasticsearch1.docker.version}</elasticsearch.docker.version>
-                <elasticsearch.docker.image>elasticsearch</elasticsearch.docker.image>
-            </properties>
-        </profile>
-        <profile>
-            <id>elasticsearch2</id>
-            <properties>
-                <elasticsearch.docker.version>${elasticsearch2.docker.version}</elasticsearch.docker.version>
-                <elasticsearch.docker.image>elasticsearch</elasticsearch.docker.image>
-            </properties>
-        </profile>
         <profile>
             <id>elasticsearch5</id>
             <properties>

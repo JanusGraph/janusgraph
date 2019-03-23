@@ -53,8 +53,6 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 
 import org.janusgraph.diskstorage.es.IndexMappings.IndexMapping;
 import org.janusgraph.diskstorage.es.compat.AbstractESCompat;
-import org.janusgraph.diskstorage.es.compat.ES1Compat;
-import org.janusgraph.diskstorage.es.compat.ES2Compat;
 import org.janusgraph.diskstorage.es.compat.ES5Compat;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
@@ -301,16 +299,6 @@ public class ElasticSearchIndex implements IndexProvider {
         log.debug("Configured ES query nb result by query to {}", batchSize);
 
         switch (client.getMajorVersion()) {
-            case ONE:
-                compat = new ES1Compat();
-                Preconditions.checkArgument(ingestPipelines.isEmpty(),
-                        "Ingest pipelines are not supported by Elasticsearch 1.x.");
-                break;
-            case TWO:
-                compat = new ES2Compat();
-                Preconditions.checkArgument(ingestPipelines.isEmpty(),
-                        "Ingest pipelines are not supported by Elasticsearch 2.x.");
-                break;
             case FIVE:
                 compat = new ES5Compat();
                 break;
@@ -1289,9 +1277,5 @@ public class ElasticSearchIndex implements IndexProvider {
         } catch (final IOException e) {
             throw new PermanentBackendException("Could not check if index " + indexName + " exists", e);
         }
-    }
-
-    ElasticMajorVersion getVersion() {
-        return client.getMajorVersion();
     }
 }

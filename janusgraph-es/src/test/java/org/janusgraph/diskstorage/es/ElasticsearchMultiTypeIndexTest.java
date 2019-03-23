@@ -68,9 +68,7 @@ public class ElasticsearchMultiTypeIndexTest extends ElasticsearchIndexTest {
     public Configuration getESTestConfig() {
         final String index = "es";
         final CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
-        if (JanusGraphElasticsearchContainer.getEsMajorVersion().value > 2) {
-            cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
-        }
+        cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
         final ModifiableConfiguration config = esr.setConfiguration(new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,cc, BasicConfiguration.Restriction.NONE), index);
         config.set(USE_DEPRECATED_MULTITYPE_INDEX, true, index);
         config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index);

@@ -3,6 +3,7 @@ target/
 .idea/
 *.iml
 *.DS_Store
+.vscode/
 /_bsp/
 /output/
 /docker/*.zip
