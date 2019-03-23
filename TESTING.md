@@ -101,12 +101,12 @@ Additional Maven profiles are defined for testing against default versions of ot
 mvn clean install -pl janusgraph-es -Pelasticsearch5
 ```
 
-Finally the `elasticsearch.docker.version` property can be used to test against arbitrary Elasticsearch versions. This is more complicated however because of differences across major versions in required server settings and Docker image names. The examples below illustrate the differences based on the Elasticsearch major version.
+Finally the `elasticsearch.docker.version` property can be used to test against arbitrary Elasticsearch versions >= `5.0.0`. This is more complicated however because of differences across major versions in required server settings and Docker image names. The examples below illustrate the differences based on the Elasticsearch major version.
 
 ```bash
 mvn clean install -pl janusgraph-es -Delasticsearch.docker.version=5.3.2
 mvn clean install -pl janusgraph-es -Delasticsearch.docker.image=elasticsearch
-mvn clean install -pl janusgraph-es -Delasticsearch.docker.version=1.5.1 -Delasticsearch.docker.image=elasticsearch
+mvn clean install -pl janusgraph-es -Delasticsearch.docker.version=6.0.0 -Delasticsearch.docker.image=elasticsearch
 ```
 
 ### Running Tests with an External Cassandra

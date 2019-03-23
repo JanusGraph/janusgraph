@@ -79,13 +79,11 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         httpClient = HttpClients.createDefault();
         objectMapper = new ObjectMapper();
         host = new HttpHost(InetAddress.getByName(esr.getHostname()), esr.getPort());
-        if (JanusGraphElasticsearchContainer.getEsMajorVersion().value > 2) {
-            IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("_ingest/pipeline/pipeline_1")));
-            final HttpPut newPipeline = new HttpPut("_ingest/pipeline/pipeline_1");
-            newPipeline.setHeader("Content-Type", "application/json");
-            newPipeline.setEntity(new StringEntity("{\"description\":\"Test pipeline\",\"processors\":[{\"set\":{\"field\":\"" +STRING+ "\",\"value\":\"hello\"}}]}", Charset.forName("UTF-8")));
-            IOUtils.closeQuietly(httpClient.execute(host, newPipeline));
-        }
+        IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("_ingest/pipeline/pipeline_1")));
+        final HttpPut newPipeline = new HttpPut("_ingest/pipeline/pipeline_1");
+        newPipeline.setHeader("Content-Type", "application/json");
+        newPipeline.setEntity(new StringEntity("{\"description\":\"Test pipeline\",\"processors\":[{\"set\":{\"field\":\"" +STRING+ "\",\"value\":\"hello\"}}]}", Charset.forName("UTF-8")));
+        IOUtils.closeQuietly(httpClient.execute(host, newPipeline));
     }
 
     @AfterAll
@@ -117,9 +115,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
     public Configuration getESTestConfig() {
         final String index = "es";
         final CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
-        if (esr.getEsMajorVersion().value > 2) {
-            cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
-        }
+        cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
         return esr.setConfiguration(new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,cc, BasicConfiguration.Restriction.NONE), index)
             .set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index)
             .restrictTo(index);
@@ -183,11 +179,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
                 assertTrue(message.contains("mapper_parsing_exception"));
                 break;
             case 5:
-            case 2:
                 assertTrue(message.contains("number_format_exception"));
-                break;
-            case 1:
-                assertTrue(message.contains("NumberFormatException"));
                 break;
             default:
                 fail();
@@ -250,15 +242,13 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
      */
     @Test
     public void testIngestPipeline() throws Exception {
-        if (esr.getEsMajorVersion().value > 2) {
-            initialize("ingestvertex");
-            final Multimap<String, Object> docs = HashMultimap.create();
-            docs.put(TEXT, "bob");
-            add("ingestvertex", "pipeline", docs, true);
-            clopen();
-            assertEquals(1, tx.queryStream(new IndexQuery("ingestvertex", PredicateCondition.of(TEXT, Text.CONTAINS, "bob"))).count());
-            assertEquals(1, tx.queryStream(new IndexQuery("ingestvertex", PredicateCondition.of(STRING, Cmp.EQUAL, "hello"))).count());
-        }
+        initialize("ingestvertex");
+        final Multimap<String, Object> docs = HashMultimap.create();
+        docs.put(TEXT, "bob");
+        add("ingestvertex", "pipeline", docs, true);
+        clopen();
+        assertEquals(1, tx.queryStream(new IndexQuery("ingestvertex", PredicateCondition.of(TEXT, Text.CONTAINS, "bob"))).count());
+        assertEquals(1, tx.queryStream(new IndexQuery("ingestvertex", PredicateCondition.of(STRING, Cmp.EQUAL, "hello"))).count());
     }
 
     @Test
