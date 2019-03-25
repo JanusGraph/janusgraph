@@ -110,7 +110,7 @@ example, look like:
 
 [source, properties]
 ----
-gremlin.graph=org.janusgraph.core.JanusGraphFactory
+gremlin.graph=org.janusgraph.core.ConfiguredGraphFactory
 storage.backend=cql
 graph.graphname=ConfigurationManagementGraph
 storage.hostname=127.0.0.1
