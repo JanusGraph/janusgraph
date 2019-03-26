@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+<xsl:stylesheet xmlns:xsl="https://www.w3.org/1999/XSL/Transform"
                 xmlns:exsl="http://exslt.org/common"
                 xmlns:set="http://exslt.org/sets"
                 exclude-result-prefixes="exsl set"
@@ -44,7 +44,7 @@
   </xsl:copy>
 </xsl:template>
 
-<xsl:template xmlns:html="http://www.w3.org/1999/xhtml"
+<xsl:template xmlns:html="https://www.w3.org/1999/xhtml"
               match="html:p|p" mode="insert.html.p">
   <xsl:param name="mark" select="'?'"/>
   <xsl:copy>
@@ -119,10 +119,10 @@
   </xsl:choose>
 </xsl:template>
 
-<xsl:template xmlns:html="http://www.w3.org/1999/xhtml"
+<xsl:template xmlns:html="https://www.w3.org/1999/xhtml"
               match="html:p|p" mode="unwrap.p">
   <!-- xmlns:html is necessary for the xhtml stylesheet case -->
-  <xsl:variable name="blocks" xmlns:html="http://www.w3.org/1999/xhtml"
+  <xsl:variable name="blocks" xmlns:html="https://www.w3.org/1999/xhtml"
                 select="address|blockquote|div|hr|h1|h2|h3|h4|h5|h6
                         |layer|p|pre|table|dl|menu|ol|ul|form
                         |html:address|html:blockquote|html:div|html:hr
@@ -310,7 +310,7 @@
   </xsl:choose>
 </xsl:template>
 
-<xsl:template xmlns:html="http://www.w3.org/1999/xhtml"
+<xsl:template xmlns:html="https://www.w3.org/1999/xhtml"
               match="html:p|p|html:div|div" mode="remove.empty.div">
   <xsl:if test="node()">
     <xsl:copy>

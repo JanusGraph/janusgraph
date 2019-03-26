@@ -1,7 +1,7 @@
 [[connecting-via-dotnet]]
 == Connecting from .NET
 
-JanusGraph can be queried from a .NET application with Apache TinkerPop's http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference/#gremlin-DotNet[Gremlin.Net].
+JanusGraph can be queried from a .NET application with Apache TinkerPop's https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference/#gremlin-DotNet[Gremlin.Net].
 
 Gremlin traversals can be constructed with Gremlin.Net just like in Gremlin-Java or Gremiln-Groovy.
 Refer to <<gremlin>> for an introduction to Gremlin and pointers to further resources.
@@ -39,7 +39,7 @@ var herculesAge = g.V().Has("name", "hercules").Values<int>("age").Next();
 Console.WriteLine($"Hercules is {herculesAge} years old.");
 ----
 +
-`Next()` is a terminal step that submits the traversal to the Gremlin Server and returns a single result. Other terminal steps can be found http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference/#_remoteconnection_submission_2[in TinkerPop's reference documentation].
+`Next()` is a terminal step that submits the traversal to the Gremlin Server and returns a single result. Other terminal steps can be found https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference/#_remoteconnection_submission_2[in TinkerPop's reference documentation].
 +
 The traversal can also be executed asynchronously by using `Promise()` which is the recommended way as the underlying driver in Gremlin.Net also works asynchronously:
 +

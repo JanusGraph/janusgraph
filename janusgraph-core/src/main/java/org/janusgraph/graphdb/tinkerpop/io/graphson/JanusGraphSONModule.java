@@ -41,7 +41,7 @@ import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphPSerializer;
 
 /**
- * @author Stephen Mallette (http://stephen.genoprime.com)
+ * @author Stephen Mallette (https://stephen.genoprime.com)
  */
 public abstract class JanusGraphSONModule extends TinkerPopJacksonModule {
 

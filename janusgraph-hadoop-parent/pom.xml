@@ -1,4 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.janusgraph</groupId>
@@ -9,7 +9,7 @@
     <artifactId>janusgraph-hadoop-parent</artifactId>
     <name>JanusGraph-Hadoop: Parent Module</name>
     <packaging>pom</packaging>
-    <url>http://janusgraph.org</url>
+    <url>https://janusgraph.org</url>
 
     <properties>
         <top.level.basedir>${project.parent.basedir}</top.level.basedir>
@@ -31,7 +31,7 @@
         <developer>
             <name>Marko A. Rodriguez</name>
             <email>marko@markorodriguez.com</email>
-            <url>http://markorodriguez.com</url>
+            <url>https://markorodriguez.com</url>
         </developer>
     </developers>
 
@@ -39,7 +39,7 @@
         <contributor>
             <name>Stephen Mallette</name>
             <email>spmva@genoprime.com</email>
-            <url>http://stephen.genoprime.com</url>
+            <url>https://stephen.genoprime.com</url>
         </contributor>
         <contributor>
             <name>Matthias Broecheler</name>

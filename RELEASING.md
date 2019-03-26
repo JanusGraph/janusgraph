@@ -8,7 +8,7 @@ The release process has only been tested on Linux.  The following
 tools must be installed.
 
 * [expect](http://expect.sourceforge.net/)
-* [gpg](http://www.gnupg.org/) with a running agent
+* [gpg](https://www.gnupg.org/) with a running agent
 
 ~/.m2/settings.xml will need the following entries.
 

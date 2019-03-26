@@ -104,7 +104,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * @author Marko A. Rodriguez (http://markorodriguez.com)
+ * @author Marko A. Rodriguez (https://markorodriguez.com)
  */
 public class JanusGraphGremlinPlugin extends AbstractGremlinPlugin {
 

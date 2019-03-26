@@ -26,7 +26,7 @@ RPM_VERSION="$VER_MAJOR.$VER_MINOR.$VER_PATCH"
 # Set .rpm release value
 if [ "SNAPSHOT" = "$VER_QUALIFIER" ]; then
     # Generate Fedora-compliant pre-release string from pkgcommon/etc/version.sh
-    # http://fedoraproject.org/wiki/Packaging:NamingGuidelines#Package_Versioning
+    # https://fedoraproject.org/wiki/Packaging:NamingGuidelines#Package_Versioning
     RPM_RELEASE="0.1.`date +%Y%m%d`snap"
 else
     # Copy release number
@@ -41,7 +41,7 @@ DEB_VERSION="$VER_MAJOR.$VER_MINOR.$VER_PATCH"
 # Set .deb package release
 if [ "SNAPSHOT" = "${VER_QUALIFIER}" ]; then
     # Generate Debian-policy-compliant pre-release string
-    # http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Version
+    # https://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Version
     DEB_RELEASE='~snap'"`date +%Y%m%d`"
 else
     # Copy release number

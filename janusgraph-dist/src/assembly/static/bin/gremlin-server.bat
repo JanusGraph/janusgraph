@@ -47,7 +47,7 @@ IF NOT DEFINED HADOOP_HOME (
         SET HADOOP_HOME=%JANUSGRAPH_HOME%
     ) ELSE (
         ECHO HADOOP_HOME is not set.
-        ECHO Download http://public-repo-1.hortonworks.com/hdp-win-alpha/winutils.exe
+        ECHO Download https://public-repo-1.hortonworks.com/hdp-win-alpha/winutils.exe
         ECHO Place it under !JANUSGRAPH_WINUTILS!
         PAUSE
         GOTO :eof

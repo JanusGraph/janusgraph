@@ -22,8 +22,8 @@ import org.janusgraph.graphdb.relations.RelationIdentifier;
  * <p>
  * All vertex and edge retrievals are channeled by a graph transaction which bundles all such retrievals, creations and
  * deletions into one transaction. A graph transaction is analogous to a
- * <a href="http://en.wikipedia.org/wiki/Database_transaction">database transaction</a>.
- * The isolation level and <a href="http://en.wikipedia.org/wiki/ACID">ACID support</a> are configured through the storage
+ * <a href="https://en.wikipedia.org/wiki/Database_transaction">database transaction</a>.
+ * The isolation level and <a href="https://en.wikipedia.org/wiki/ACID">ACID support</a> are configured through the storage
  * backend, meaning whatever level of isolation is supported by the storage backend is mirrored by a graph transaction.
  * <p>
  * A graph transaction supports:

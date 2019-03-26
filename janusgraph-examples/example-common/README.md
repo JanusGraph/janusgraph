@@ -13,7 +13,7 @@ a subclass of `GraphApp` using JanusGraph-specific methods to create the schema.
 ## In-Memory configuration
 
 [`jgex-inmemory.properties`](conf/jgex-inmemory.properties) contains the
-settings for the JanusGraph [in-memory storage backend](http://docs.janusgraph.org/latest/inmemorystorage.html).
+settings for the JanusGraph [in-memory storage backend](https://docs.janusgraph.org/latest/inmemorystorage.html).
 This backend is primarily for testing purposes.
 
 ## Dependencies

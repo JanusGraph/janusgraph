@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:d="http://docbook.org/ns/docbook"
-xmlns:mml="http://www.w3.org/1998/Math/MathML"
+<xsl:stylesheet xmlns:xsl="https://www.w3.org/1999/XSL/Transform"
+                xmlns:d="https://docbook.org/ns/docbook"
+xmlns:mml="https://www.w3.org/1998/Math/MathML"
                 exclude-result-prefixes="mml d"
                 version='1.0'>
 
@@ -32,7 +32,7 @@ xmlns:mml="http://www.w3.org/1998/Math/MathML"
 
 <!-- "Support" for MathML -->
 
-<xsl:template match="mml:*" xmlns:mml="http://www.w3.org/1998/Math/MathML">
+<xsl:template match="mml:*" xmlns:mml="https://www.w3.org/1998/Math/MathML">
   <xsl:copy>
     <xsl:copy-of select="@*"/>
     <xsl:apply-templates/>
