@@ -6,7 +6,7 @@ There are a number of configuration options and tools that make ingesting large 
 There are a number of use cases for bulk loading data into JanusGraph, including:
 
 * Introducing JanusGraph into an existing environment with existing data and migrating or duplicating this data into a new JanusGraph cluster.
-* Using JanusGraph as an end point of an http://en.wikipedia.org/wiki/Extract,_transform,_load[ETL] process.
+* Using JanusGraph as an end point of an https://en.wikipedia.org/wiki/Extract,_transform,_load[ETL] process.
 * Adding an existing or external graph datasets (e.g. publicly available http://linkeddata.org/[RDF datasets]) to a running JanusGraph cluster.
 * Updating a JanusGraph graph with results from a graph analytics job.
 
@@ -72,7 +72,7 @@ During bulk loading, the load on the cluster typically increases making it more 
 
 //==== BatchGraph
 
-//For medium size graph datasets (up to 100s million edges), TinkerPop ' http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/#_batchgraph[BatchGraph] is a useful tool for bulk loading data into JanusGraph from a single machine through JanusGraph's native Blueprints interface. BatchGraph effectively caches externally provided vertex ids to eliminate reads against JanusGraph. This allows bulk loading with minimal read load.
+//For medium size graph datasets (up to 100s million edges), TinkerPop ' https://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/#_batchgraph[BatchGraph] is a useful tool for bulk loading data into JanusGraph from a single machine through JanusGraph's native Blueprints interface. BatchGraph effectively caches externally provided vertex ids to eliminate reads against JanusGraph. This allows bulk loading with minimal read load.
 
 //BatchGraph is limited to single machine bulk loading use cases and requires enough local RAM to hold the entire vertex id cache in memory. BatchGraph supports id compression to reduce the memory requirements. Please refer to the https://github.com/tinkerpop/blueprints/wiki/Batch-Implementation[BatchGraph documentation] for more information on how to use BatchGraph most effectively.
 
@@ -95,7 +95,7 @@ If Hadoop cannot be used for parallelizing the bulk loading process, here are so
 // TODO: BatchGraph no longer exists, what should we point users to instead (and does sorting matter there)?
 //==== Data Sorting
 //
-//Presorting the data to be bulk loaded can significantly increase the loading performance through BatchGraph.  The http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/#_batchgraph[BatchGraph] documentation describes this strategy in more detail. It has been reported that loading times were decreased by a factor of 2 or more when presorting the bulk loaded data.
+//Presorting the data to be bulk loaded can significantly increase the loading performance through BatchGraph.  The https://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/#_batchgraph[BatchGraph] documentation describes this strategy in more detail. It has been reported that loading times were decreased by a factor of 2 or more when presorting the bulk loaded data.
 
 === Q&A
 

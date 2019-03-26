@@ -36,17 +36,17 @@
 <!ENTITY scope 'count(ancestor::node()|$scope) = count(ancestor::node()) and ($role = @role or $type = @type or (string-length($role) = 0 and string-length($type) = 0))'>
 
 <!ENTITY setup-language-variable '
-<xsl:variable name="language" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:variable name="language" xmlns:xsl="https://www.w3.org/1999/XSL/Transform">
   <xsl:call-template name="l10n.language"/>
 </xsl:variable>
 
-<xsl:variable name="lowercase" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:variable name="lowercase" xmlns:xsl="https://www.w3.org/1999/XSL/Transform">
   <xsl:call-template name="gentext">
     <xsl:with-param name="key">normalize.sort.input</xsl:with-param>
   </xsl:call-template>
 </xsl:variable>
 
-<xsl:variable name="uppercase" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:variable name="uppercase" xmlns:xsl="https://www.w3.org/1999/XSL/Transform">
   <xsl:call-template name="gentext">
     <xsl:with-param name="key">normalize.sort.output</xsl:with-param>
   </xsl:call-template>

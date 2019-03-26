@@ -23,7 +23,7 @@
 
    More information about options available in this configuration file, 
    and Solr Core administration can be found online:
-   http://wiki.apache.org/solr/CoreAdmin
+   https://wiki.apache.org/solr/CoreAdmin
 -->
 
 <solr>

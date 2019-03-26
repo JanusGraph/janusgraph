@@ -119,7 +119,7 @@ JanusGraph, by itself, is simply a set of jar files with no thread of execution.
 . JanusGraph can be used by embedding JanusGraph calls in a client program where the program provides the thread of execution.
 . JanusGraph packages a long running server process that, when started, allows a remote client or logic running in a separate program to make JanusGraph calls.  This long running server process is called *JanusGraph Server*.
 
-For the JanusGraph Server, JanusGraph uses http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-server[Gremlin Server] of the http://tinkerpop.apache.org/[Apache TinkerPop] stack to service client requests.  JanusGraph provides an out-of-the-box configuration for a quick start with JanusGraph Server, but the configuration can be changed to provide a wide range of server capabilities.
+For the JanusGraph Server, JanusGraph uses https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-server[Gremlin Server] of the https://tinkerpop.apache.org/[Apache TinkerPop] stack to service client requests.  JanusGraph provides an out-of-the-box configuration for a quick start with JanusGraph Server, but the configuration can be changed to provide a wide range of server capabilities.
 
 Configuring JanusGraph Server is accomplished through a JanusGraph Server yaml configuration file located in the ./conf/gremlin-server directory in the JanusGraph distribution. To configure JanusGraph Server with a graph instance (`JanusGraph`), the JanusGraph Server configuration file requires the following settings:
 
@@ -374,19 +374,19 @@ mgmt.commit()
 [[gremlin]]
 == Gremlin Query Language
 
-image:http://tinkerpop.apache.org/docs/{tinkerpop_version}/images/gremlin-logo.png[width=370,height=143]
+image:https://tinkerpop.apache.org/docs/{tinkerpop_version}/images/gremlin-logo.png[width=370,height=143]
 
-http://tinkerpop.apache.org/gremlin.html[Gremlin] is JanusGraph's query language used to retrieve data from and modify data in the graph. Gremlin is a path-oriented language which succinctly expresses complex graph traversals and mutation operations. Gremlin is a http://en.wikipedia.org/wiki/Functional_programming[functional language] whereby traversal operators are chained together to form path-like expressions. For example, "from Hercules, traverse to his father and then his father's father and return the grandfather's name."
+https://tinkerpop.apache.org/gremlin.html[Gremlin] is JanusGraph's query language used to retrieve data from and modify data in the graph. Gremlin is a path-oriented language which succinctly expresses complex graph traversals and mutation operations. Gremlin is a https://en.wikipedia.org/wiki/Functional_programming[functional language] whereby traversal operators are chained together to form path-like expressions. For example, "from Hercules, traverse to his father and then his father's father and return the grandfather's name."
 
-Gremlin is a component of http://tinkerpop.apache.org[Apache TinkerPop]. It is developed independently from JanusGraph and is supported by most graph databases. By building applications on top of JanusGraph through the Gremlin query language, users avoid vendor-lock in because their application can be migrated to other graph databases supporting Gremlin.
+Gremlin is a component of https://tinkerpop.apache.org[Apache TinkerPop]. It is developed independently from JanusGraph and is supported by most graph databases. By building applications on top of JanusGraph through the Gremlin query language, users avoid vendor-lock in because their application can be migrated to other graph databases supporting Gremlin.
 
 This section is a brief overview of the Gremlin query language. For more information on Gremlin, refer to the following resources:
 
-* http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference[Complete Gremlin Manual]: Reference manual for all of the Gremlin steps.
-* http://tinkerpop.apache.org/docs/{tinkerpop_version}/tutorials/the-gremlin-console/[Gremlin Console Tutorial]: Learn how to use the Gremlin Console effectively to traverse and analyze a graph interactively.
+* https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference[Complete Gremlin Manual]: Reference manual for all of the Gremlin steps.
+* https://tinkerpop.apache.org/docs/{tinkerpop_version}/tutorials/the-gremlin-console/[Gremlin Console Tutorial]: Learn how to use the Gremlin Console effectively to traverse and analyze a graph interactively.
 * https://github.com/krlawrence/graph#practical-gremlin-an-apache-tinkerpop-tutorial[Practical Gremlin Book]: A getting started guide for users of graph databases and the Gremlin query language.
-* http://tinkerpop.apache.org/docs/{tinkerpop_version}/recipes/[Gremlin Recipes]: A collection of best practices and common traversal patterns for Gremlin.
-* http://tinkerpop.apache.org/index.html#language-drivers[Gremlin Language Drivers]: Connect to a Gremlin Server with different programming languages, including Go, JavaScript, .NET/C#, PHP, Python, Ruby, Scala, and TypeScript.
+* https://tinkerpop.apache.org/docs/{tinkerpop_version}/recipes/[Gremlin Recipes]: A collection of best practices and common traversal patterns for Gremlin.
+* https://tinkerpop.apache.org/index.html#language-drivers[Gremlin Language Drivers]: Connect to a Gremlin Server with different programming languages, including Go, JavaScript, .NET/C#, PHP, Python, Ruby, Scala, and TypeScript.
 * http://sql2gremlin.com[Gremlin for SQL developers]: Learn Gremlin using typical patterns found when querying data with SQL.
 
 In addition to these resources, <<connecting>> explains how Gremlin can be used in different programming languages to query a JanusGraph Server.
@@ -456,7 +456,7 @@ gremlin> g.V(hercules).out('battled').valueMap()
 ==>{name=hydra}
 ==>{name=cerberus}
 
-Each _step_ (denoted by a separating `.`) is a function that operates on the objects emitted from the previous step. There are numerous steps in the Gremlin language (see http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#graph-traversal-steps[Gremlin Steps]). By simply changing a step or order of the steps, different traversal semantics are enacted. The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. "co-battlers" or perhaps, "allies").
+Each _step_ (denoted by a separating `.`) is a function that operates on the objects emitted from the previous step. There are numerous steps in the Gremlin language (see https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#graph-traversal-steps[Gremlin Steps]). By simply changing a step or order of the steps, different traversal semantics are enacted. The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. "co-battlers" or perhaps, "allies").
 
 Given that _The Graph of the Gods_ only has one battler (Hercules), another battler (for the sake of example) is added to the graph with Gremlin showcasing how vertices and edges are added to the graph.
 
@@ -492,7 +492,7 @@ The Gremlin overview presented in this section focused on the Gremlin-Groovy lan
 
 === Iterating the Traversal
 
-One convenient feature of the Gremlin Console is that it automatically iterates all results from a query executed from the `gremlin>` prompt. This works well within the http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] environment as it shows you the results as a String. As you transition towards writing a Gremlin application, it is important to understand how to iterate a traversal explicitly because your application's traversals will not iterate automatically. These are some of the common ways to iterate the http://tinkerpop.apache.org/javadocs/{tinkerpop_version}/full/org/apache/tinkerpop/gremlin/process/traversal/Traversal.html[`Traversal`]:
+One convenient feature of the Gremlin Console is that it automatically iterates all results from a query executed from the `gremlin>` prompt. This works well within the https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] environment as it shows you the results as a String. As you transition towards writing a Gremlin application, it is important to understand how to iterate a traversal explicitly because your application's traversals will not iterate automatically. These are some of the common ways to iterate the https://tinkerpop.apache.org/javadocs/{tinkerpop_version}/full/org/apache/tinkerpop/gremlin/process/traversal/Traversal.html[`Traversal`]:
 
 * `iterate()` - Zero results are expected or can be ignored.
 * `next()` - Get one result. Make sure to check `hasNext()` first.
@@ -519,7 +519,7 @@ List<Vertex> gods = g.V().hasLabel("god").toList(); // Find all the gods
 [[server]]
 == JanusGraph Server
 
-JanusGraph uses the http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-server[Gremlin Server] engine as the server component to process and answer client queries.  When packaged in JanusGraph, Gremlin Server is called JanusGraph Server.
+JanusGraph uses the https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-server[Gremlin Server] engine as the server component to process and answer client queries.  When packaged in JanusGraph, Gremlin Server is called JanusGraph Server.
 
 JanusGraph Server must be started manually in order to use it.  JanusGraph Server provides a way to remotely execute Gremlin traversals against one or more JanusGraph instances hosted within it. This section will describe how to use the WebSocket configuration, as well as describe how to configure JanusGraph Server to handle HTTP endpoint interactions. For information about how to connect to a JanusGraph Server from different languages refer to <<connecting>>.
 
@@ -551,7 +551,7 @@ Run gremlin.sh to connect.
 
 After running `janusgraph.sh`, Gremlin Server will be ready to listen for WebSocket connections.  The easiest way to test the connection is with Gremlin Console.
 
-Start http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-console[Gremlin Console] with `bin/gremlin.sh` and use the `:remote` and `:>` commands to issue Gremlin to Gremlin Server:
+Start https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-console[Gremlin Console] with `bin/gremlin.sh` and use the `:remote` and `:>` commands to issue Gremlin to Gremlin Server:
 
 [source, text]
 ----
@@ -832,11 +832,11 @@ curl -v http://localhost:8182/session -XPOST -d '{"gremlin": "g.V().count()"}' -
 ==== Using TinkerPop Gremlin Server with JanusGraph
 
 Since JanusGraph Server is a TinkerPop Gremlin Server packaged with configuration files for JanusGraph, a version compatible
-TinkerPop Gremlin Server can be downloaded separately and used with JanusGraph.  Get started by link:http://tinkerpop.apache.org/downloads.html[downloading] the appropriate version of Gremlin Server, which needs to <<versions.txt#version-compat,match a version>> supported by the JanusGraph version in use ({tinkerpop_version}).
+TinkerPop Gremlin Server can be downloaded separately and used with JanusGraph.  Get started by link:https://tinkerpop.apache.org/downloads.html[downloading] the appropriate version of Gremlin Server, which needs to <<versions.txt#version-compat,match a version>> supported by the JanusGraph version in use ({tinkerpop_version}).
 
 IMPORTANT: Any references to file paths in this section refer to paths under a TinkerPop distribution for Gremlin Server and not a JanusGraph distribution with the JanusGraph Server, unless specifically noted.
 
-Configuring a standalone Gremlin Server to work with JanusGraph is similar to configuring the packaged JanusGraph Server. You should be familiar with link:http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#_configuring_2[graph configuration].  Basically, the Gremlin Server yaml file points to graph-specific configuration files that are used to instantiate `JanusGraph` instances that it will then host.  In order to instantiate these `Graph` instances, Gremlin Server requires that the appropriate libraries and dependencies for the `JanusGraph` be available on its classpath.
+Configuring a standalone Gremlin Server to work with JanusGraph is similar to configuring the packaged JanusGraph Server. You should be familiar with link:https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#_configuring_2[graph configuration].  Basically, the Gremlin Server yaml file points to graph-specific configuration files that are used to instantiate `JanusGraph` instances that it will then host.  In order to instantiate these `Graph` instances, Gremlin Server requires that the appropriate libraries and dependencies for the `JanusGraph` be available on its classpath.
 
 For purposes of demonstration, these instructions will outline how to configure the BerkeleyDB backend for JanusGraph in Gremlin Server. As stated earlier, Gremlin Server needs JanusGraph dependencies on its classpath.  Invoke the following command replacing `$VERSION` with the version of JanusGraph to use:
 
@@ -847,7 +847,7 @@ bin/gremlin-server.sh -i org.janusgraph janusgraph-all $VERSION
 
 When this process completes, Gremlin Server should now have all the JanusGraph dependencies available to it and will thus be able to instantiate `JanusGraph` objects.
 
-IMPORTANT: The above command uses Groovy Grape and if it is not configured properly download errors may ensue.  Please refer to link:http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-applications[this section] of the TinkerPop documentation for more information around setting up `~/.groovy/grapeConfig.xml`.
+IMPORTANT: The above command uses Groovy Grape and if it is not configured properly download errors may ensue.  Please refer to link:https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-applications[this section] of the TinkerPop documentation for more information around setting up `~/.groovy/grapeConfig.xml`.
 
 Create a file called `GREMLIN_SERVER_HOME/conf/janusgraph.properties` with the following contents:
 
@@ -1327,7 +1327,7 @@ Permanent exceptions that can fail a transaction include:
 [[multi-thread-tx]]
 === Multi-Threaded Transactions
 
-JanusGraph supports multi-threaded transactions through TinkerPop's http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#_threaded_transactions[threaded transactions]. Hence, to speed up transaction processing and utilize multi-core architectures multiple threads can run concurrently in a single transaction.
+JanusGraph supports multi-threaded transactions through TinkerPop's https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#_threaded_transactions[threaded transactions]. Hence, to speed up transaction processing and utilize multi-core architectures multiple threads can run concurrently in a single transaction.
 
 With TinkerPop's default transaction handling, each thread automatically opens its own transaction against the graph database. To open a thread-independent transaction, use the `createThreadedTx()` method.
 
@@ -1349,7 +1349,7 @@ JanusGraph relies on optimized concurrent data structures to support hundreds of
 
 === Concurrent Algorithms
 
-Thread independent transactions started through `createThreadedTx()` are particularly useful when implementing concurrent graph algorithms. Most traversal or message-passing (ego-centric) like graph algorithms are http://en.wikipedia.org/wiki/Embarrassingly_parallel[embarrassingly parallel] which means they can be parallelized and executed through multiple threads with little effort. Each of these threads can operate on a single `Graph` object returned by `createThreadedTx()` without blocking each other.
+Thread independent transactions started through `createThreadedTx()` are particularly useful when implementing concurrent graph algorithms. Most traversal or message-passing (ego-centric) like graph algorithms are https://en.wikipedia.org/wiki/Embarrassingly_parallel[embarrassingly parallel] which means they can be parallelized and executed through multiple threads with little effort. Each of these threads can operate on a single `Graph` object returned by `createThreadedTx()` without blocking each other.
 
 === Nested Transactions
 

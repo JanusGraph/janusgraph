@@ -2,7 +2,7 @@
 
 ## About Remote Graph
 
-[Gremlin Server](http://tinkerpop.apache.org/docs/3.2.6/reference/#gremlin-server)
+[Gremlin Server](https://tinkerpop.apache.org/docs/3.2.6/reference/#gremlin-server)
 allows a JanusGraph instance to run on a standalone server. This enables
 multiple clients to connect to the same JanusGraph instance. It also allows
 clients to connect via non-JVM languages. By default, the Gremlin Server
@@ -10,9 +10,9 @@ communicates over WebSocket.
 
 [`RemoteGraphApp.java`](src/main/java/org/janusgraph/example/RemoteGraphApp.java)
 is an example Java program that connects to the Gremlin Server in two ways:
-* [Gremlin Driver](http://tinkerpop.apache.org/docs/3.2.6/reference/#connecting-via-java)
+* [Gremlin Driver](https://tinkerpop.apache.org/docs/3.2.6/reference/#connecting-via-java)
 client. Sumbit scripts as a `String` for evaluation on the server.
-* [Remote Graph](http://tinkerpop.apache.org/docs/3.2.6/reference/#connecting-via-remotegraph)
+* [Remote Graph](https://tinkerpop.apache.org/docs/3.2.6/reference/#connecting-via-remotegraph)
 uses the same client connection but enables you to compose queries as code.
 
 ## JanusGraph configuration
@@ -38,7 +38,7 @@ uses the script `scripts/empty-graph.groovy` to define the graph traversal sourc
 ### JanusGraph pre-packaged distribution
 
 Rather than installing Cassandra and Elasticsearch separately, the JanusGraph
-[pre-packaged distribution](http://docs.janusgraph.org/latest/server.html#_using_the_pre_packaged_distribution)
+[pre-packaged distribution](https://docs.janusgraph.org/latest/server.html#_using_the_pre_packaged_distribution)
 is provided for convenience. The distribution starts a local Cassandra,
 Elasticsearch, and Gremlin Server.
 
@@ -46,13 +46,13 @@ Elasticsearch, and Gremlin Server.
 
 * [`jgex-remote.properties`](conf/jgex-remote.properties) contains the remote
 connection class, the Gremlin Driver configuration file location, and the graph
-traversal source name. Refer to the [Remote Graph documentation](http://tinkerpop.apache.org/docs/3.2.6/reference/#connecting-via-remotegraph)
+traversal source name. Refer to the [Remote Graph documentation](https://tinkerpop.apache.org/docs/3.2.6/reference/#connecting-via-remotegraph)
 for additional details.
 
 * [`remote-objects.yaml`](conf/remote-objects.yaml) contains server location
 and serializer options. The default serializer is Gryo, and it is important
 that the server is configured with the same serializer. Refer to the
-[Gremlin Driver documentation](http://tinkerpop.apache.org/docs/3.2.6/reference/#_configuration)
+[Gremlin Driver documentation](https://tinkerpop.apache.org/docs/3.2.6/reference/#_configuration)
 for additional properties.
 
 ## Dependencies

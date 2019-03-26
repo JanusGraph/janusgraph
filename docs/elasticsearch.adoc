@@ -193,7 +193,7 @@ public class AWSV4AuthHttpClientConfigCallback extends RestClientAuthenticatorBa
         final Supplier<LocalDateTime> clock = () -> LocalDateTime.now(ZoneOffset.UTC);
 
         // using default region provider chain
-        // (http://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/java-dg-region-selection.html)
+        // (https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/java-dg-region-selection.html)
         DefaultAwsRegionProviderChain regionProviderChain = new DefaultAwsRegionProviderChain();
         final String awsRegion = regionProviderChain.getRegion();
 

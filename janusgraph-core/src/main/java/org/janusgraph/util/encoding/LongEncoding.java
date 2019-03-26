@@ -18,9 +18,9 @@ import com.google.common.base.Preconditions;
 
 /**
  * Utility class for encoding longs in strings based on:
- * See <a href="http://stackoverflow.com/questions/2938482/encode-decode-a-long-to-a-string-using-a-fixed-set-of-letters-in-java">stackoverflow</a>
+ * See <a href="https://stackoverflow.com/questions/2938482/encode-decode-a-long-to-a-string-using-a-fixed-set-of-letters-in-java">stackoverflow</a>
  *
- * @author http://stackoverflow.com/users/276101/polygenelubricants
+ * @author https://stackoverflow.com/users/276101/polygenelubricants
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class LongEncoding {

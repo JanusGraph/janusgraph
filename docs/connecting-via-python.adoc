@@ -1,7 +1,7 @@
 [[connecting-via-python]]
 == Connecting from Python
 
-JanusGraph can be queried from a Python application with Apache TinkerPop's http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference/#gremlin-python[Gremlin-Python].
+JanusGraph can be queried from a Python application with Apache TinkerPop's https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference/#gremlin-python[Gremlin-Python].
 
 Gremlin traversals can be constructed with Gremlin-Python just like in Gremlin-Java or Gremiln-Groovy.
 Refer to <<gremlin>> for an introduction to Gremlin and pointers to further resources.
@@ -45,7 +45,7 @@ herculesAge = g.V().has('name', 'hercules').values('age').next()
 print('Hercules is {} years old.'.format(herculesAge))
 +
 `next()` is a terminal step that submits the traversal to the Gremlin Server and returns a single result.
-Other terminal steps can be found http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference/#_remoteconnection_submission[in TinkerPop's reference documentation].
+Other terminal steps can be found https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference/#_remoteconnection_submission[in TinkerPop's reference documentation].
 
 === JanusGraph Specific Types and Predicates
 

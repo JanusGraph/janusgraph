@@ -2,13 +2,13 @@
 
 ## About HBase and Solr
 
-[Apache HBase](http://hbase.apache.org/) is a scalable, distributed big data
+[Apache HBase](https://hbase.apache.org/) is a scalable, distributed big data
 store.
 
-[Apache Solr](http://lucene.apache.org/solr/) is a scalable, distributed
+[Apache Solr](https://lucene.apache.org/solr/) is a scalable, distributed
 search engine.
 
-> Check the JanusGraph [version compatibility](http://docs.janusgraph.org/latest/version-compat.html)
+> Check the JanusGraph [version compatibility](https://docs.janusgraph.org/latest/version-compat.html)
 to ensure you select versions of HBase and Solr compatible with this
 JanusGraph release.
 
@@ -16,7 +16,7 @@ JanusGraph release.
 
 * Be aware that Solr has two configuration options: SolrCloud or HTTP. With
 either option, there is manual configuration required for the Solr cores (config
-sets). Refer to the JanusGraph [Solr documentation](http://docs.janusgraph.org/latest/solr.html)
+sets). Refer to the JanusGraph [Solr documentation](https://docs.janusgraph.org/latest/solr.html)
 for additional details.
 
     * [`jgex-hbase-solr-cloud.properties`](conf/jgex-hbase-solr-cloud.properties)
@@ -27,7 +27,7 @@ for additional details.
 
 * By providing different values for `storage.hbase.table` and `index.jgex.index-name`,
 you can store multiple graphs on the same HBase and Solr servers. Refer to
-the JanusGraph [configuration reference](http://docs.janusgraph.org/latest/config-ref.html)
+the JanusGraph [configuration reference](https://docs.janusgraph.org/latest/config-ref.html)
 for additional properties.
 
 * [`logback.xml`](conf/logback.xml) configures logging with [Logback](https://logback.qos.ch/).

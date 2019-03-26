@@ -1,9 +1,9 @@
 <?xml version='1.0'?>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+<xsl:stylesheet xmlns:xsl="https://www.w3.org/1999/XSL/Transform"
                 xmlns:exsl="http://exslt.org/common"
-                xmlns:fo="http://www.w3.org/1999/XSL/Format"
-                xmlns:xlink="http://www.w3.org/1999/xlink"
-                xmlns:d="http://docbook.org/ns/docbook"
+                xmlns:fo="https://www.w3.org/1999/XSL/Format"
+                xmlns:xlink="https://www.w3.org/1999/xlink"
+                xmlns:d="https://docbook.org/ns/docbook"
                 xmlns:saxon="http://icl.com/saxon"
                 xmlns:NodeInfo="http://org.apache.xalan.lib.NodeInfo"
                 exclude-result-prefixes="d exsl saxon NodeInfo"
@@ -14,7 +14,7 @@
 <!-- Template to add the namespace to non-namespaced documents -->
 <xsl:template match="*" mode="addNS">
   <xsl:element name="{local-name()}" 
-          namespace="http://docbook.org/ns/docbook">
+          namespace="https://docbook.org/ns/docbook">
     <xsl:copy-of select="@*"/>
 
     <!-- Add xml:base so relative paths don't get lost -->
