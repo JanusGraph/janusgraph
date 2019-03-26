@@ -43,9 +43,6 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.queryparser.xml.builders.BooleanQueryBuilder;
-import org.apache.lucene.queryparser.xml.builders.RangeQueryBuilder;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanQuery.Builder;
 import org.apache.lucene.spatial.SpatialStrategy;
@@ -58,7 +55,6 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -701,9 +697,9 @@ public class LuceneIndex implements IndexProvider {
     public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
         final Query q;
         try {
-            final Analyzer analyzer = delegatingAnalyzerFor(query.getStore(), information);//writers.get(query.getStore()).getAnalyzer();
-            q = new QueryParser("_all", analyzer).parse(query.getQuery());
-            // Lucene query parser does not take additional parameters so any parameters on the RawQuery are ignored. 
+            final Analyzer analyzer = delegatingAnalyzerFor(query.getStore(), information);
+            q = new NumericTranslationQueryParser(information.get(query.getStore()), "_all", analyzer).parse(query.getQuery());
+            // Lucene query parser does not take additional parameters so any parameters on the RawQuery are ignored.
         } catch (final ParseException e) {
             throw new PermanentBackendException("Could not parse raw query: " + query.getQuery(), e);
         }
@@ -736,8 +732,8 @@ public class LuceneIndex implements IndexProvider {
     public Long totals(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
         final Query q;
         try {
-            final Analyzer analyzer = delegatingAnalyzerFor(query.getStore(), information);//writers.get(query.getStore()).getAnalyzer();
-            q = new QueryParser("_all", analyzer).parse(query.getQuery());
+            final Analyzer analyzer = delegatingAnalyzerFor(query.getStore(), information);
+            q = new NumericTranslationQueryParser(information.get(query.getStore()), "_all", analyzer).parse(query.getQuery());
         } catch (final ParseException e) {
             throw new PermanentBackendException("Could not parse raw query: "+query.getQuery(),e);
         }
