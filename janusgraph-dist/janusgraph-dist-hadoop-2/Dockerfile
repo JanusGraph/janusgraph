@@ -9,7 +9,7 @@ RUN apt-get update -y && apt-get install -y zip && \
     rm /var/${server_base}.zip && \
     ln -s /var/${server_base} /var/janusgraph && \
     groupadd -g 999 janusgraph && \
-    useradd -r -u 999 -g janusgraph janusgraph && \
+    useradd -d /home/janusgraph -m -r -u 999 -g janusgraph janusgraph && \
     chown -R janusgraph:janusgraph /var/${server_base} && \
     chmod 755 /var/${server_base} && \
     chown -R janusgraph:janusgraph /var/janusgraph && \
