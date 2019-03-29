@@ -43,8 +43,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
     @Override
     public InternalRelation it() {
-        InternalVertex v = getVertex(0);
-        if (v.it().equals(v)) {
+        if (isLoadedInThisTx()) {
             return this;
         }
 
@@ -54,6 +53,11 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
         }
 
         return next;
+    }
+
+    private boolean isLoadedInThisTx() {
+        InternalVertex v = getVertex(0);
+        return v == v.it();
     }
 
     @Override
