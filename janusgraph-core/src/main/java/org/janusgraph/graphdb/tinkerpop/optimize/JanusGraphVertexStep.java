@@ -26,17 +26,26 @@ import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.Traverser.Admin;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep.RepeatEndStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.SideEffectStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.ProfileStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +65,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     private Map<JanusGraphVertex, Iterable<? extends JanusGraphElement>> multiQueryResults = null;
     private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
     private int txVertexCacheSize = 20000;
+    private JanusGraphMultiQueryStep parentMultiQueryStep;
 
     public JanusGraphVertexStep(VertexStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.getDirection(), originalStep.getEdgeLabels());
@@ -93,20 +103,76 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
         assert !initialized;
         initialized = true;
         if (useMultiQuery) {
+            setParentMultiQueryStep();
+
             if (!starts.hasNext()) {
                 throw FastNoSuchElementException.instance();
             }
-            final JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
             final List<Traverser.Admin<Vertex>> vertices = new ArrayList<>();
             starts.forEachRemaining(v -> {
                 vertices.add(v);
-                multiQuery.addVertex(v.get());
             });
             starts.add(vertices.iterator());
-            assert vertices.size() > 0;
-            makeQuery(multiQuery);
+            initializeMultiQuery(vertices);
+        }
+    }
 
-            multiQueryResults = (Vertex.class.isAssignableFrom(getReturnClass())) ? multiQuery.vertices() : multiQuery.edges();
+    /**
+     * This initialisation method is called the first time this instance is used and also when
+     * an attempt to retrieve a vertex from the cached multiQuery results doesn't find an entry.
+     * If initialised with just a single vertex this might be a drip feed from a parent so it
+     * will additionally include any cached starts the parent step may have.
+     * @param vertices A list of vertices with which to initialise the multiQuery
+     */
+    private void initializeMultiQuery(final List<Traverser.Admin<Vertex>> vertices) {
+        assert vertices.size() > 0;
+        List<Admin<Vertex>> parentStarts = new ArrayList<>();
+        if (vertices.size() == 1 && parentMultiQueryStep != null) {
+            parentStarts = parentMultiQueryStep.getCachedStarts();
+        }
+        final JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
+        vertices.forEach(v -> multiQuery.addVertex(v.get()));
+        parentStarts.forEach(v -> multiQuery.addVertex(v.get()));
+        makeQuery(multiQuery);
+
+        Map<JanusGraphVertex, Iterable<? extends JanusGraphElement>> results = (Vertex.class.isAssignableFrom(getReturnClass())) ? multiQuery.vertices() : multiQuery.edges();
+        if (multiQueryResults == null) {
+            multiQueryResults = results;
+        } else {
+            multiQueryResults.putAll(results);
+        }
+    }
+
+    /**
+     * Many parent traversals drip feed their start vertices in one at a time. To best exploit
+     * the multiQuery we need to load all possible starts in one go so this method will attempt
+     * to find a JanusGraphMultiQueryStep with the starts of the parent, and if found cache it.
+     */
+    private void setParentMultiQueryStep() {
+        Step firstStep = traversal.getStartStep();
+        while (firstStep instanceof StartStep || firstStep instanceof SideEffectStep) {
+            // Want the next step if this is a side effect
+            firstStep = firstStep.getNextStep();
+        }
+        if (this.equals(firstStep)) {
+            Step<?, ?> parentStep = traversal.getParent().asStep();
+            if (JanusGraphTraversalUtil.isMultiQueryCompatibleStep(parentStep)) {
+                Step<?, ?> parentPreviousStep = parentStep.getPreviousStep();
+                if (parentStep instanceof RepeatStep) {
+                    RepeatStep repeatStep = (RepeatStep)parentStep;
+                    List<RepeatEndStep> repeatEndSteps = TraversalHelper.getStepsOfClass(RepeatEndStep.class, repeatStep.getRepeatTraversal());
+                    if (repeatEndSteps.size() == 1) {
+                        parentPreviousStep = repeatEndSteps.get(0).getPreviousStep();
+                    }
+                }
+                if (parentPreviousStep instanceof ProfileStep) {
+                    parentPreviousStep = parentPreviousStep.getPreviousStep();
+                }
+                if (parentPreviousStep instanceof JanusGraphMultiQueryStep) {
+                    JanusGraphMultiQueryStep multiQueryStep = (JanusGraphMultiQueryStep)parentPreviousStep;
+                    parentMultiQueryStep = multiQueryStep;
+                }
+            }
         }
     }
 
@@ -122,8 +188,9 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
         Iterable<? extends JanusGraphElement> result;
 
         if (useMultiQuery) {
-            assert multiQueryResults != null;
-
+            if (multiQueryResults == null || !multiQueryResults.containsKey(traverser.get())) {
+                initializeMultiQuery(Arrays.asList(traverser));
+            }
             result = multiQueryResults.get(traverser.get());
         } else {
             final JanusGraphVertexQuery query = makeQuery((JanusGraphTraversalUtil.getJanusGraphVertex(traverser)).query());
