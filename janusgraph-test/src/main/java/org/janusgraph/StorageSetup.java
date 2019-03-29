@@ -75,6 +75,10 @@ public class StorageSetup {
     public static JanusGraph getInMemoryGraph() {
         return JanusGraphFactory.open(getInMemoryConfiguration());
     }
+    
+    public static JanusGraph getInMemoryGraphWithMultiQuery() {
+        return JanusGraphFactory.open(getInMemoryConfiguration().set(USE_MULTIQUERY, true));
+    }
 
     public static WriteConfiguration addPermanentCache(ModifiableConfiguration conf) {
         conf.set(DB_CACHE, true);
