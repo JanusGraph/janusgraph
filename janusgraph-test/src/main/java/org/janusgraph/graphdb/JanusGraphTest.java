@@ -2016,6 +2016,19 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testPropertyIdAccessInDifferentTransaction() {
+        JanusGraphVertex v1 = graph.addVertex();
+        Object expectedId = v1.property("name", "foo").id();
+        graph.tx().commit();
+
+        VertexProperty p = getOnlyElement(v1.properties("name"));
+
+        // access property id in new transaction
+        graph.tx().commit();
+        assertEquals(expectedId, p.id());
+    }
+
+    @Test
     public void testNestedTransactions() {
         Vertex v1 = graph.addVertex();
         newTx();
@@ -5136,6 +5149,19 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         e = Iterables.getOnlyElement(v3.query().direction(Direction.OUT).labels("knows").edges());
         assertEquals(222, e.<Integer>value("uid").intValue());
+    }
+
+    @Test
+    public void testRemoveEdge() {
+        JanusGraphVertex v1 = graph.addVertex();
+        JanusGraphVertex v2 = graph.addVertex();
+        JanusGraphEdge e = v1.addEdge("related", v2);
+        graph.tx().commit();
+
+        e.remove();
+        graph.tx().commit();
+
+        assertFalse(tx.query().edges().iterator().hasNext());
     }
 
    /* ==================================================================================
