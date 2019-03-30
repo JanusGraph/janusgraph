@@ -778,25 +778,35 @@ public class ElasticSearchIndex implements IndexProvider {
     private String getAdditionScript(KeyInformation.IndexRetriever information, String storeName,
                                      IndexMutation mutation) throws PermanentBackendException {
         final StringBuilder script = new StringBuilder();
+
         for (final IndexEntry e : mutation.getAdditions()) {
             final KeyInformation keyInformation = information.get(storeName).get(e.field);
-            switch (keyInformation.getCardinality()) {
-                case SET:
-                case LIST:
-                    script.append("if(ctx._source[\"").append(e.field).append("\"] == null) ctx._source[\"").append(e.field).append("\"] = [];");
-                    script.append("ctx._source[\"").append(e.field).append("\"].add(").append(convertToJsType(e.value, compat.scriptLang(), Mapping.getMapping(keyInformation))).append(");");
-                    if (hasDualStringMapping(keyInformation)) {
-                        script.append("if(ctx._source[\"").append(getDualMappingName(e.field)).append("\"] == null) ctx._source[\"").append(getDualMappingName(e.field)).append("\"] = [];");
-                        script.append("ctx._source[\"").append(getDualMappingName(e.field)).append("\"].add(").append(convertToJsType(e.value, compat.scriptLang(), Mapping.getMapping(keyInformation))).append(");");
-                    }
-                    break;
-                default:
-                    break;
+            final Cardinality cardinality = keyInformation.getCardinality();
 
+            if (cardinality != Cardinality.SET && cardinality != Cardinality.LIST) {
+                continue;
             }
 
+            String value = convertToJsType(e.value, compat.scriptLang(), Mapping.getMapping(keyInformation));
+
+            appendAdditionScript(script, value, e.field, cardinality == Cardinality.SET);
+
+            if (hasDualStringMapping(keyInformation)) {
+                appendAdditionScript(script, value, getDualMappingName(e.field), cardinality == Cardinality.SET);
+            }
         }
+
         return script.toString();
+    }
+
+    private void appendAdditionScript(StringBuilder script, String value, String fieldName, Boolean distinct) {
+        script.append("if (ctx._source[\"").append(fieldName).append("\"] == null) ctx._source[\"").append(fieldName).append("\"] = [];");
+
+        if (distinct) {
+            script.append("if (ctx._source[\"").append(fieldName).append("\"].indexOf(").append(value).append(") == -1) ");
+        }
+
+        script.append("ctx._source[\"").append(fieldName).append("\"].add(").append(value).append(");");
     }
 
     private Map<String,Object> getAdditionDoc(KeyInformation.IndexRetriever information,
