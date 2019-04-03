@@ -1,5 +1,4 @@
-Building JanusGraph
---------------
+# Building JanusGraph
 
 Required:
 
@@ -101,3 +100,16 @@ To find the Java binary in your environment, run the appropriate command for you
 * Linux/macOS: `which java`
 * Windows: `for %i in (java.exe) do @echo. %~$PATH:i`
 
+## Building documentation
+
+### Required dependencies to build the documentation
+MkDocs need to be installed to build and serve the documentation locally.
+
+1. Install `python3` and `pip3` (newest version of pip) 
+    * You can also checkout the installation guide of [material-mkdocs](https://squidfunk.github.io/mkdocs-material/getting-started/)
+2. Install requirements using `pip3 install -r requirements.txt`
+
+### Build and serve documentation
+
+1. To create a test build locally use command `mkdocs build`
+2. To serve the documentation locally use command `mkdocs serve`
