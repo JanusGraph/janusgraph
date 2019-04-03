@@ -1,0 +1,5 @@
+While JanusGraph's composite graph indexes are natively supported through the primary storage backend, mixed graph indexes require that an indexing backend is configured. Mixed indexes provide support for geo, numeric range, and full-text search.
+
+The choice of index backend determines which search features are supported, as well as the performance and scalability of the index. JanusGraph currently supports three index backends: [Elasticsearch](elasticsearch.md), [Apache Solr](solr.md) and [Apache Lucene](lucene.md).
+
+Use [Elasticsearch](elasticsearch.md) or [Apache Solr](solr.md) when there is an expectation that JanusGraph will be distributed across multiple machines. [Apache Lucene](lucene.md) performs better in small scale, single machine applications. It performs better in unit tests, for instance.
