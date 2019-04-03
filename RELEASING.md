@@ -1,8 +1,6 @@
-Releasing JanusGraph
-====================
+# Releasing JanusGraph
 
-Prerequisites
--------------
+## Prerequisites
 
 The release process has only been tested on Linux.  The following
 tools must be installed.
@@ -29,26 +27,17 @@ tools must be installed.
 </settings>
 ```
 
-Release Steps
--------------
+## Release Steps
 
-### Preparing Documentation
+### Release Documentation update
 
-Update version-sensitive files in the root and documentation sources
-in the `docs` subdirectory:
-
-* `docs/changelog.txt`
-* `docs/versions.txt`
-* `docs/upgrade.txt`
-
-Use the [`docs/build-and-copy-docs.sh`](docs/build-and-copy-docs.sh) script to
-build a set of docs for this release and copy them to the cloned
-`docs.janusgraph.org` repo which you will update later.
-
-You may also need to update the following files in the main repo for any new
-or updated dependencies:
-
-* `NOTICE.txt`
+1. Update version-sensitive files in the root and documentation sources in the `docs` subdirectory: 
+    * `docs/changelog.md`
+    * `mkdocs.yml`
+2. Update the configuration reference: `mvn install -DskipTests=true -pl janusgraph-doc -am`
+3. For building documentation: see `building.md`
+4. Zip documentation: `$ zip janusgraph-${JANUSGRAPH_VERSION}-hadoop2-doc.zip site`
+5. You may also need to update the following file in the main repo for any new or updated dependencies: `NOTICE.txt`
 
 ### Preparing the Local Repository
 
@@ -68,8 +57,6 @@ Recommended but not required:
 # * Locally commits the release using the release plugin
 # * Deploys Maven artifacts to Sonatype OSS (staging, not released yet)
 # * Uploads zipfiles to S3
-# * Locally commits gh-pages updates (index.html and javadocs)
-# * Uploads AsciiDoc-generated documentation to S3
 #
 # Although it uploads to Sonatype OSS Staging and S3, it does
 # not push to github nor does it release the Sonatype repo.
@@ -103,7 +90,6 @@ Finally, push your local changes to Github:
 # cd to the janusgraph repository root if not already there
 git push origin $BRANCH_NAME
 git push origin refs/tags/$RELEASE_VERSION
-git push origin gh-pages
 ```
 
 Update these pages on the Github wiki:
