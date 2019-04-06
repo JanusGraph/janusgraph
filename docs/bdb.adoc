@@ -1,14 +1,14 @@
 [[bdb]]
 == Oracle Berkeley DB Java Edition
 
-[quote, 'http://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html[Oracle Berkeley DB Java Edition Homepage]']
+[quote, 'https://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html[Oracle Berkeley DB Java Edition Homepage]']
 Oracle Berkeley DB Java Edition is an open source, embeddable, transactional
 storage engine written entirely in Java. It takes full advantage of the Java
 environment to simplify development and deployment. The architecture of
 Oracle Berkeley DB Java Edition supports very high performance and concurrency
 for both read-intensive and write-intensive workloads.
 
-The http://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html[Oracle Berkeley DB Java Edition] storage backend runs in the same JVM as JanusGraph and provides local persistence on a single machine. Hence, the BerkeleyDB storage backend requires that all of the graph data fits on the local disk and all of the frequently accessed graph elements fit into main memory. This imposes a practical limitation of graphs with 10-100s million vertices on commodity hardware. However, for graphs of that size the BerkeleyDB storage backend exhibits high performance because all data can be accessed locally within the same JVM.
+The https://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html[Oracle Berkeley DB Java Edition] storage backend runs in the same JVM as JanusGraph and provides local persistence on a single machine. Hence, the BerkeleyDB storage backend requires that all of the graph data fits on the local disk and all of the frequently accessed graph elements fit into main memory. This imposes a practical limitation of graphs with 10-100s million vertices on commodity hardware. However, for graphs of that size the BerkeleyDB storage backend exhibits high performance because all data can be accessed locally within the same JVM.
 
 === BerkeleyDB JE Setup
 

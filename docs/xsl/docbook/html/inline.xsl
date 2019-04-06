@@ -3,9 +3,9 @@
 <!ENTITY % common.entities SYSTEM "../common/entities.ent">
 %common.entities;
 ]>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:d="http://docbook.org/ns/docbook"
-xmlns:xlink='http://www.w3.org/1999/xlink'
+<xsl:stylesheet xmlns:xsl="https://www.w3.org/1999/XSL/Transform"
+                xmlns:d="https://docbook.org/ns/docbook"
+xmlns:xlink='https://www.w3.org/1999/xlink'
                 xmlns:suwl="http://nwalsh.com/xslt/ext/com.nwalsh.saxon.UnwrapLinks"
                 exclude-result-prefixes="xlink suwl d"
                 version='1.0'>

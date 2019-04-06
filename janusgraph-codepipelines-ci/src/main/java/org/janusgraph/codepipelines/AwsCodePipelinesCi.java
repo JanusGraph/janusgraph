@@ -67,7 +67,7 @@ public class AwsCodePipelinesCi {
         createRequiredOneArgOption("pipelines","Path to JSON file containing abbreviated pipeline definitions");
     private static final Option CODE_BUILD_SERVICE_ROLE_ARN_OPTION =
         createRequiredOneArgOption("codebuild-role-arn",
-            "ARN of the service role for CodeBuild (http://docs.aws.amazon.com/codebuild/latest/userguide/setting-up.html#setting-up-service-role)");
+            "ARN of the service role for CodeBuild (https://docs.aws.amazon.com/codebuild/latest/userguide/setting-up.html#setting-up-service-role)");
     private static final Option CODE_BUILD_COMPUTE_IMAGE = createOptionalOneArgOption("codebuild-compute-image",
         "Compute image to use for CodeBuild");
 

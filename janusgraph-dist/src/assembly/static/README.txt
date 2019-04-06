@@ -5,4 +5,4 @@ and processing large-scale graphs within a multi-machine cluster.
 
 JanusGraph documentation can be found online at:
 
-  http://docs.janusgraph.org
+  https://docs.janusgraph.org

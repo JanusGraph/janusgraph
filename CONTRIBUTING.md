@@ -106,7 +106,7 @@ Make that feature or bugfix awesome!
 ## Commit changes and sign the Developer Certificate of Origin
 
 The Linux Foundation requires that each contributor to its projects signs the
-[Developer Certificate of Origin](http://developercertificate.org), also
+[Developer Certificate of Origin](https://developercertificate.org), also
 available in this repo as [`DCO.txt`](DCO.txt). To sign it, just use the `commit
 -s` command:
 

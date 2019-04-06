@@ -34,7 +34,7 @@ import org.janusgraph.core.schema.JanusGraphSchemaType;
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  * @see JanusGraphRelation
  * @see org.janusgraph.core.schema.RelationTypeMaker
- * @see <a href="http://docs.janusgraph.org/latest/schema.html">"Schema and Data Modeling" manual chapter</a>
+ * @see <a href="https://docs.janusgraph.org/latest/schema.html">"Schema and Data Modeling" manual chapter</a>
  */
 public interface RelationType extends JanusGraphVertex, JanusGraphSchemaType {
 

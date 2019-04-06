@@ -2,10 +2,10 @@
 == Apache Solr
 
 
-[quote, 'http://lucene.apache.org/solr/[Apache Solr Homepage]']
+[quote, 'https://lucene.apache.org/solr/[Apache Solr Homepage]']
 Solr is the popular, blazing fast open source enterprise search platform from the Apache Lucene project. Solr is a standalone enterprise search server with a REST-like API. Solr is highly reliable, scalable and fault tolerant, providing distributed indexing, replication and load-balanced querying, automated failover and recovery, centralized configuration and more.
 
-JanusGraph supports http://lucene.apache.org/solr/[Apache Solr] as an index backend.  Here are some of the Solr features supported by JanusGraph:
+JanusGraph supports https://lucene.apache.org/solr/[Apache Solr] as an index backend.  Here are some of the Solr features supported by JanusGraph:
 
 * *Full-Text*: Supports all `Text` predicates to search for text properties that matches a given word, prefix or regular expression.
 * *Geo*: Supports all `Geo` predicates to search for geo properties that are intersecting, within, disjoint to or contained in a given query geometry. Supports points, lines and polygons for indexing. Supports circles, boxes and polygons for querying point properties and all shapes for querying non-point properties.
@@ -312,9 +312,9 @@ org.apache.solr.common.SolrException: com/vividsolutions/jts/geom/Geometry
         ...
 ----
 
-This is resolved by adding the JTS jar to the classpath of JanusGraph and/or the Solr server.  JTS is not included in JanusGraph distributions by default due to its LGPL license. Users must download the http://search.maven.org/remotecontent?filepath=com/vividsolutions/jts/1.13/jts-1.13.jar[JTS jar file] separately and copy it into the JanusGraph and/or Solr server lib directory.  If using Solr's built in web server, the JTS jar may be copied to the example/solr-webapp/webapp/WEB-INF/lib directory to include it in the classpath.  Solr can be restarted, and the exception should be gone. Solr must be started once with the correct schema.xml file in place first, for the example/solr-webapp/webapp/WEB-INF/lib directory to exist.
+This is resolved by adding the JTS jar to the classpath of JanusGraph and/or the Solr server.  JTS is not included in JanusGraph distributions by default due to its LGPL license. Users must download the https://search.maven.org/remotecontent?filepath=com/vividsolutions/jts/1.13/jts-1.13.jar[JTS jar file] separately and copy it into the JanusGraph and/or Solr server lib directory.  If using Solr's built in web server, the JTS jar may be copied to the example/solr-webapp/webapp/WEB-INF/lib directory to include it in the classpath.  Solr can be restarted, and the exception should be gone. Solr must be started once with the correct schema.xml file in place first, for the example/solr-webapp/webapp/WEB-INF/lib directory to exist.
 
-To determine the ideal JTS version for Solr server, first check the version of Spatial4j in use by the Solr cluster, then determine the version of JTS against which that Spatial4j version was compiled.  Spatial4j declares its target JTS version in the http://search.maven.org/#search|gav|1|g%3A%22com.spatial4j%22%20AND%20a%3A%22spatial4j%22[pom for the `com.spatial4j:spatial4j` artifact].
+To determine the ideal JTS version for Solr server, first check the version of Spatial4j in use by the Solr cluster, then determine the version of JTS against which that Spatial4j version was compiled.  Spatial4j declares its target JTS version in the https://search.maven.org/#search|gav|1|g%3A%22com.spatial4j%22%20AND%20a%3A%22spatial4j%22[pom for the `com.spatial4j:spatial4j` artifact].
 Copy the JTS jar to the server/solr-webapp/webapp/WEB-INF/lib directory in your solr installation.
 
 === Advanced Solr Configuration
@@ -324,7 +324,7 @@ Copy the JTS jar to the server/solr-webapp/webapp/WEB-INF/lib directory in your 
 
 This section covers installation and configuration of JanusGraph with DataStax Enterprise (DSE) Search.  There are multiple ways to install DSE, but this section focuses on DSE's binary tarball install option on Linux.  Most of the steps in this section can be generalized to the other install options for DSE.
 
-Install DataStax Enterprise as directed by the page http://www.datastax.com/documentation/datastax_enterprise/4.5/datastax_enterprise/install/installTARdse.html[Installing DataStax Enterprise using the binary tarball].
+Install DataStax Enterprise as directed by the page https://www.datastax.com/documentation/datastax_enterprise/4.5/datastax_enterprise/install/installTARdse.html[Installing DataStax Enterprise using the binary tarball].
 
 Export `DSE_HOME` and append to `PATH` in your shell environment.  Here's an example using Bash syntax:
 

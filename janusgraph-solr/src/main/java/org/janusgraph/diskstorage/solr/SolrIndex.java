@@ -1204,7 +1204,7 @@ public class SolrIndex implements IndexProvider {
                 Preconditions.checkNotNull(slices, "Could not find collection:" + collection);
 
                // change paths for Replica.State per Solr refactoring
-               // remove SYNC state per: http://tinyurl.com/pag6rwt
+               // remove SYNC state per: https://tinyurl.com/pag6rwt
                for (final Map.Entry<String, Slice> entry : slices.entrySet()) {
                     final Map<String, Replica> shards = entry.getValue().getReplicasMap();
                     for (final Map.Entry<String, Replica> shard : shards.entrySet()) {

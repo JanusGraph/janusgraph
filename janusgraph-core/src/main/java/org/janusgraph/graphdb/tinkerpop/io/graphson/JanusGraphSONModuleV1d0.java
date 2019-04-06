@@ -18,7 +18,7 @@ import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 
 /**
- * @author Stephen Mallette (http://stephen.genoprime.com)
+ * @author Stephen Mallette (https://stephen.genoprime.com)
  */
 public class JanusGraphSONModuleV1d0 extends JanusGraphSONModule {
 

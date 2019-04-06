@@ -428,7 +428,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
         // In case of an addition and deletion with identical timestamps, the
         // deletion tombstone wins.
-        // http://hbase.apache.org/book/versions.html#d244e4250
+        // https://hbase.apache.org/book/versions.html#d244e4250
         final Map<StaticBuffer, Pair<List<Put>, Delete>> commandsPerKey =
                 convertToCommands(
                         mutations,
