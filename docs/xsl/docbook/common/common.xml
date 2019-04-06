@@ -21,7 +21,7 @@
 
   </partintro>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.is.component">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.is.component">
 <refnamediv>
 <refname>is.component</refname>
 <refpurpose>Tests if a given node is a component-level element</refpurpose>
@@ -56,7 +56,7 @@
 
 </refsect1></refentry>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.is.section">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.is.section">
 <refnamediv>
 <refname>is.section</refname>
 <refpurpose>Tests if a given node is a section-level element</refpurpose>
@@ -91,7 +91,7 @@
 
 </refsect1></refentry>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.section.level">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.section.level">
 <refnamediv>
 <refname>section.level</refname>
 <refpurpose>Returns the hierarchical level of a section</refpurpose>
@@ -132,7 +132,7 @@ Defaults to the context node.</para>
 
 </refsect1></refentry>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.qanda.section.level">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.qanda.section.level">
 <refnamediv>
 <refname>qanda.section.level</refname>
 <refpurpose>Returns the hierarchical level of a QandASet</refpurpose>
@@ -152,7 +152,7 @@ Defaults to the context node.</para>
 
 </refsect1></refentry>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.select.mediaobject">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.select.mediaobject">
 <refnamediv>
 <refname>select.mediaobject</refname>
 <refpurpose>Selects and processes an appropriate media object from a list</refpurpose>
@@ -197,7 +197,7 @@ in the list is appropriate.</para>
 
 </refsect1></refentry>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.select.mediaobject.index">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.select.mediaobject.index">
 <refnamediv>
 <refname>select.mediaobject.index</refname>
 <refpurpose>Selects the position of the appropriate media object from a list</refpurpose>
@@ -261,7 +261,7 @@ recursive process.</para>
 
 </refsect1></refentry>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.is.acceptable.mediaobject">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.is.acceptable.mediaobject">
 <refnamediv>
 <refname>is.acceptable.mediaobject</refname>
 <refpurpose>Returns '1' if the specified media object is recognized</refpurpose>
@@ -295,7 +295,7 @@ object is recognized as a graphic.</para>
 
 </refsect1></refentry>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.check.id.unique">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.check.id.unique">
 <refnamediv>
 <refname>check.id.unique</refname>
 <refpurpose>Warn users about references to non-unique IDs</refpurpose>
@@ -315,7 +315,7 @@ the ID is not unique.</para>
 
 </refsect1></refentry>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.check.idref.targets">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.check.idref.targets">
 <refnamediv>
 <refname>check.idref.targets</refname>
 <refpurpose>Warn users about incorrectly typed references</refpurpose>
@@ -336,7 +336,7 @@ pointed to by the link is one of the elements listed in
 
 </refsect1></refentry>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.copyright.years">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.copyright.years">
 <refnamediv>
 <refname>copyright.years</refname>
 <refpurpose>Print a set of years with collapsed ranges</refpurpose>
@@ -415,7 +415,7 @@ year range is <quote>1991-1992</quote> but discretely it's
 
 </refsect1></refentry>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.find.path.params">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.find.path.params">
 <refnamediv>
 <refname>find.path.params</refname>
 <refpurpose>Search in a table for the "best" match for the node</refpurpose>
@@ -440,7 +440,7 @@ node location.</para>
 
 </refsect1></refentry>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.string.upper">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.string.upper">
 <refnamediv>
 <refname>string.upper</refname>
 <refpurpose>Converts a string to all uppercase letters</refpurpose>
@@ -476,7 +476,7 @@ unchanged.</para>
 
 </refsect1></refentry>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.string.lower">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.string.lower">
 <refnamediv>
 <refname>string.lower</refname>
 <refpurpose>Converts a string to all lowercase letters</refpurpose>
@@ -512,7 +512,7 @@ unchanged.</para>
 
 </refsect1></refentry>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.select.choice.separator">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.select.choice.separator">
 <refnamediv>
 <refname>select.choice.separator</refname>
 <refpurpose>Returns localized choice separator</refpurpose>
@@ -561,7 +561,7 @@ unchanged.</para>
     </warning>
   </refsect1></refentry>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.evaluate.info.profile">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.evaluate.info.profile">
 <refnamediv>
 <refname>evaluate.info.profile</refname>
 <refpurpose>Evaluates an info profile</refpurpose>
@@ -619,7 +619,7 @@ unchanged.</para>
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.graphic.format.content-type">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.graphic.format.content-type">
 <refnamediv>
 <refname>graphic.format.content-type</refname>
 <refpurpose>Returns mimetype for media format</refpurpose>

@@ -1094,12 +1094,12 @@ want mixed Latin-alphabet words sorted.</para>
 <itemizedlist>
 <listitem>
 <para>For a whitepaper describing the extensions, see:
-<link xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="http://www.innodata-isogen.com/knowledge_center/white_papers/back_of_book_for_xsl_fo.pdf">http://www.innodata-isogen.com/knowledge_center/white_papers/back_of_book_for_xsl_fo.pdf</link>.
+<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.innodata-isogen.com/knowledge_center/white_papers/back_of_book_for_xsl_fo.pdf">http://www.innodata-isogen.com/knowledge_center/white_papers/back_of_book_for_xsl_fo.pdf</link>.
 </para>
 </listitem>
 <listitem>
 <para>To download the extension library, see
-<link xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="http://www.innodata-isogen.com/knowledge_center/tools_downloads/i18nsupport">http://www.innodata-isogen.com/knowledge_center/tools_downloads/i18nsupport</link>.
+<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.innodata-isogen.com/knowledge_center/tools_downloads/i18nsupport">http://www.innodata-isogen.com/knowledge_center/tools_downloads/i18nsupport</link>.
 </para>
 </listitem>
 </itemizedlist>
@@ -1634,14 +1634,14 @@ in the CALS table.
         either Saxon or Xalan as your XSLT processor (it doesn&#8217;t
         work with xsltproc), along with either the DocBook Saxon
         extensions or DocBook Xalan extensions (for more
-        information about those extensions, see <link xmlns:xlink="https://www.w3.org/1999/xlink" role="tcg" xlink:href="InstallingAProcessor.html#SaxonExtensions">DocBook Saxon Extensions</link> and <link xmlns:xlink="https://www.w3.org/1999/xlink" role="tcg" xlink:href="InstallingAProcessor.html#XalanExtensions">DocBook Xalan Extensions</link>), and you must set both
+        information about those extensions, see <link xmlns:xlink="http://www.w3.org/1999/xlink" role="tcg" xlink:href="InstallingAProcessor.html#SaxonExtensions">DocBook Saxon Extensions</link> and <link xmlns:xlink="http://www.w3.org/1999/xlink" role="tcg" xlink:href="InstallingAProcessor.html#XalanExtensions">DocBook Xalan Extensions</link>), and you must set both
         the <parameter>use.extensions</parameter> and
         <parameter>textinsert.extension</parameter> parameters to
         <literal>1</literal>.</para>
       <para>As an alternative to using the textinsert element,
         consider using an Xinclude element with the
         <literal>parse="text"</literal> attribute and value
-        specified, as detailed in <link xmlns:xlink="https://www.w3.org/1999/xlink" role="tcg" xlink:href="ExternalCode.html#XIncludeCode">Using XInclude for text inclusions</link>.</para>
+        specified, as detailed in <link xmlns:xlink="http://www.w3.org/1999/xlink" role="tcg" xlink:href="ExternalCode.html#XIncludeCode">Using XInclude for text inclusions</link>.</para>
     </note>
   </refsection>
   <refsection><info><title>See Also</title></info>
@@ -1653,9 +1653,9 @@ in the CALS table.
   <refsection><info><title>More information</title></info>
     <para>For how-to documentation on inserting contents of
       external code files and other text files into output, see
-      <link xmlns:xlink="https://www.w3.org/1999/xlink" role="tcg" xlink:href="ExternalCode.html">External code files</link>.</para>
+      <link xmlns:xlink="http://www.w3.org/1999/xlink" role="tcg" xlink:href="ExternalCode.html">External code files</link>.</para>
     <para>For guidelines on inserting contents of
-      HTML files into output, see <link xmlns:xlink="https://www.w3.org/1999/xlink" role="tcg" xlink:href="InsertExtHtml.html">Inserting external HTML code</link>.</para>
+      HTML files into output, see <link xmlns:xlink="http://www.w3.org/1999/xlink" role="tcg" xlink:href="InsertExtHtml.html">Inserting external HTML code</link>.</para>
   </refsection>
 </refentry>
 
@@ -2666,7 +2666,7 @@ XSLT processor.</para>
 
 <refsection><info><title>Description</title></info>
 
-<para>If non-zero, and if the <link xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="http://www.exslt.org/">EXSLT</link>
+<para>If non-zero, and if the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.exslt.org/">EXSLT</link>
 extensions are supported by your processor, the resulting HTML will be
 <quote>cleaned up</quote>. This improves the chances that the
 resulting HTML will be valid. It may also improve the formatting of
@@ -3729,7 +3729,7 @@ auto-generated id value, and <parameter>html.ext</parameter> value.
 
 <para>The value of
 <parameter>html.head.legalnotice.link.types</parameter> is a
-space-separated list of link types, as described in <link xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="https://www.w3.org/TR/html401/types.html#type-links">Section 6.12
+space-separated list of link types, as described in <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.w3.org/TR/html401/types.html#type-links">Section 6.12
 of the HTML 4.01 specification</link>. If the value of the
 <parameter>generate.legalnotice.link</parameter> parameter is
 non-zero, then the stylesheet generates (in the
@@ -3771,7 +3771,7 @@ For example:
   DocBook <tag>legalnotice</tag> is typically license
   information, not copyright information. However, the default value
   is &#8220;<literal>copyright</literal>&#8221; for pragmatic reasons: because
-  that&#8217;s among the set of &#8220;recognized link types&#8221; listed in <link xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="https://www.w3.org/TR/html401/types.html#type-links">Section
+  that&#8217;s among the set of &#8220;recognized link types&#8221; listed in <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.w3.org/TR/html401/types.html#type-links">Section
   6.12 of the HTML 4.01 specification</link>, and because certain
   browsers and browser extensions are preconfigured to recognize that
   value.</para>
@@ -4190,7 +4190,7 @@ length (not a percentage).</para>
 <refsection><info><title>Description</title></info>
 
 <para>If non-zero, specifies the thickness of borders on table
-cells. The units are points. See <link xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="https://www.w3.org/TR/CSS21/box.html#border-width-properties">
+cells. The units are points. See <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.w3.org/TR/CSS21/box.html#border-width-properties">
 CSS</link></para>
 
 <note>
@@ -4221,7 +4221,7 @@ CSS</link></para>
 <refsection><info><title>Description</title></info>
 
 <para>Set the color of table cell borders. If non-zero, the value is used
-for the border coloration. See <link xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="https://www.w3.org/TR/CSS21/syndata.html#value-def-color">CSS</link>. A
+for the border coloration. See <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.w3.org/TR/CSS21/syndata.html#value-def-color">CSS</link>. A
 <literal>color</literal> is either a keyword or a numerical RGB specification.
 Keywords are aqua, black, blue, fuchsia, gray, green, lime, maroon,
 navy, olive, orange, purple, red, silver, teal, white, and
@@ -5433,7 +5433,7 @@ of this parameter.</para>
 stylesheets to make use of the cross reference style:</para>
 
 <programlisting>&lt;?xml version="1.0"?&gt;
-&lt;xsl:stylesheet xmlns:xsl="https://www.w3.org/1999/XSL/Transform"
+&lt;xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0"&gt;
 
 &lt;xsl:import href="../xsl/html/docbook.xsl"/&gt;
@@ -5782,7 +5782,7 @@ after each <tag>term</tag>).</para>
 <literal>iso690</literal> styles are supported.</para>
 
 <para>In order to use ISO690 style to the full extent you might need
-to use additional markup described on <link xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="http://wiki.docbook.org/topic/ISO690Bibliography">the
+to use additional markup described on <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://wiki.docbook.org/topic/ISO690Bibliography">the
 following WiKi page</link>.</para>
 
 </refsection>
@@ -5854,7 +5854,7 @@ like this:</para>
 
 &lt;bibliomixed id="xml-rec"&gt;&lt;abbrev&gt;XML 1.0&lt;/abbrev&gt;Tim Bray,
 Jean Paoli, C. M. Sperberg-McQueen, and Eve Maler, editors.
-&lt;citetitle&gt;&lt;ulink url="https://www.w3.org/TR/REC-xml"&gt;Extensible Markup
+&lt;citetitle&gt;&lt;ulink url="http://www.w3.org/TR/REC-xml"&gt;Extensible Markup
 Language (XML) 1.0 Second Edition&lt;/ulink&gt;&lt;/citetitle&gt;.
 World Wide Web Consortium, 2000.
 &lt;/bibliomixed&gt;
@@ -5862,7 +5862,7 @@ World Wide Web Consortium, 2000.
 &lt;bibliomixed id="xml-names"&gt;&lt;abbrev&gt;Namespaces&lt;/abbrev&gt;Tim Bray,
 Dave Hollander,
 and Andrew Layman, editors.
-&lt;citetitle&gt;&lt;ulink url="https://www.w3.org/TR/REC-xml-names/"&gt;Namespaces in
+&lt;citetitle&gt;&lt;ulink url="http://www.w3.org/TR/REC-xml-names/"&gt;Namespaces in
 XML&lt;/ulink&gt;&lt;/citetitle&gt;.
 World Wide Web Consortium, 1999.
 &lt;/bibliomixed&gt;
@@ -6566,7 +6566,7 @@ CSS instead.</para>
 <para>Properties that specify the style of shaded verbatim listings. The
 parameters specified (the border and background color) are added to
 the styling of the xsl-fo output. A border might be specified as "thin
-black solid" for example. See <link xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="https://www.w3.org/TR/2004/WD-xsl11-20041216/#border">xsl-fo</link></para>
+black solid" for example. See <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.w3.org/TR/2004/WD-xsl11-20041216/#border">xsl-fo</link></para>
 
 </refsection>
 </refentry>
@@ -6698,7 +6698,7 @@ output.</para>
 <refsection><info><title>More information</title></info>
   <para>For how-to documentation on embedding TeX equations and
     generating output from them, see
-    <link xmlns:xlink="https://www.w3.org/1999/xlink" role="tcg" xlink:href="TexMath.html">DBTeXMath</link>.</para>
+    <link xmlns:xlink="http://www.w3.org/1999/xlink" role="tcg" xlink:href="TexMath.html">DBTeXMath</link>.</para>
 </refsection>
 </refentry>
 
@@ -6764,7 +6764,7 @@ you should set this parameter to 0.</para>
 
 <para>When lengths are converted to pixels, this value is used to
 determine the size of a pixel. The default value is taken from the
-<link xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="https://www.w3.org/TR/2004/WD-xsl11-20041216/">XSL
+<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.w3.org/TR/2004/WD-xsl11-20041216/">XSL
 Recommendation</link>.
 </para>
 
@@ -7078,7 +7078,7 @@ downloaded separately (see below).</para>
 <para>In order to use this extension, you must</para> 
 
 <listitem><para>add <filename>xslthl-2.x.x.jar</filename> to your Java classpath. The latest version is available
-from <link xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="https://sourceforge.net/projects/xslthl">the XSLT syntax highlighting project</link> 
+from <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://sourceforge.net/projects/xslthl">the XSLT syntax highlighting project</link> 
 at SourceForge.</para>
 </listitem>
 <listitem>
@@ -7529,7 +7529,7 @@ and the <tag class="attribute">format</tag> attribute is
 
 <para>If specified, this value will be used for the
 <tag class="attribute">width</tag> attribute on images that do not specify any 
-<emphasis xmlns:xlink="https://www.w3.org/1999/xlink" xlink:title="DocBook 5: The Definitive Guide" xlink:href="https://docbook.org/tdg5/en/html/imagedata.html#viewport.area">viewport dimensions</emphasis>.</para>
+<emphasis xmlns:xlink="http://www.w3.org/1999/xlink" xlink:title="DocBook 5: The Definitive Guide" xlink:href="https://docbook.org/tdg5/en/html/imagedata.html#viewport.area">viewport dimensions</emphasis>.</para>
 
 </refsection>
 </refentry>
@@ -7924,8 +7924,8 @@ this parameter.
 </para>
 <para>This parameter specifies the media type that should be used by the
 chunking stylesheet. This should be one from those defined in
-<link xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="https://www.ietf.org/rfc/rfc2045.txt">[RFC2045]</link>  and
- <link xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="https://www.ietf.org/rfc/rfc2046.txt">[RFC2046]</link> </para>
+<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://www.ietf.org/rfc/rfc2045.txt">[RFC2045]</link>  and
+ <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://www.ietf.org/rfc/rfc2046.txt">[RFC2046]</link> </para>
 <note>
 <para>This parameter is documented here, but the declaration is actually
 in the <filename>chunker.xsl</filename> stylesheet module.</para>
@@ -8037,7 +8037,7 @@ If you want to suppress entity references for characters with direct representat
 <parameter>chunker.output.encoding</parameter>, set the parameter value to <literal>native</literal>. 
 </para>
 
-<para> For more information, see <link xmlns:xlink="https://www.w3.org/1999/xlink" role="tcg" xlink:href="OutputEncoding.html#SaxonCharacter">Saxon output character representation</link>.</para>
+<para> For more information, see <link xmlns:xlink="http://www.w3.org/1999/xlink" role="tcg" xlink:href="OutputEncoding.html#SaxonCharacter">Saxon output character representation</link>.</para>
 
 <note>
 <para>This parameter is documented here, but the declaration is actually
@@ -8617,7 +8617,7 @@ If false (zero), then only the words 'Next' and 'Previous'
 <partintro xml:id="partintro">
 <para>The following parameters can be used for attribute-based
 profiling of your document. For more information about profiling, see 
-<link xmlns:xlink="https://www.w3.org/1999/xlink" role="tcg" xlink:href="Profiling.html">Profiling (conditional text)</link>.</para>
+<link xmlns:xlink="http://www.w3.org/1999/xlink" role="tcg" xlink:href="Profiling.html">Profiling (conditional text)</link>.</para>
 </partintro>
 <refentry version="5.0" xml:id="profile.arch">
 <refmeta>
@@ -9223,7 +9223,7 @@ ones (<filename>docbook.xsl</filename>,
 <refsection><info><title>Description</title></info>
 
 <para>The HTML Help Compiler is not UTF-8 aware, so you should always use an
-appropriate single-byte encoding here. See also <link xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="HtmlHelp.html#HelpProcOptions" role="tcg">Processing options</link>.</para>
+appropriate single-byte encoding here. See also <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="HtmlHelp.html#HelpProcOptions" role="tcg">Processing options</link>.</para>
 
 </refsection>
 </refentry>
@@ -10339,7 +10339,7 @@ window. E.g.</para>
 <refsection><info><title>Description</title></info>
 
 <para>If non-zero, the index is created using the HHK file (instead of using <tag role="html">object</tag>
-elements in the HTML files). For more information, see <link xmlns:xlink="https://www.w3.org/1999/xlink" role="tcg" xlink:href="HtmlHelp.html#HHGenIndex">Generating an index</link>.</para>
+elements in the HTML files). For more information, see <link xmlns:xlink="http://www.w3.org/1999/xlink" role="tcg" xlink:href="HtmlHelp.html#HHGenIndex">Generating an index</link>.</para>
 </refsection>
 </refentry>
 
@@ -10849,7 +10849,7 @@ resulting text will be something like this:</para>
 <refsection><info><title>Description</title></info>
 
 <para>If non-zero, ensure that the values for all <tag class="attribute">lang</tag> attributes in HTML output are RFC
-compliant<footnote><para>Section 8.1.1, <link xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="https://www.w3.org/TR/REC-html40/struct/dirlang.html#h-8.1.1">Language Codes</link>, in the HTML 4.0 Recommendation states that:
+compliant<footnote><para>Section 8.1.1, <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.w3.org/TR/REC-html40/struct/dirlang.html#h-8.1.1">Language Codes</link>, in the HTML 4.0 Recommendation states that:
 
 <blockquote><para>[RFC1766] defines and explains the language codes
 that must be used in HTML documents.</para>
@@ -10858,7 +10858,7 @@ empty series of subcodes:
 
 <literallayout class="monospaced">language-code = primary-code ( "-" subcode )*</literallayout>
 </para>
-<para>And in RFC 1766, <link xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="https://www.ietf.org/rfc/rfc1766.txt">Tags for the Identification
+<para>And in RFC 1766, <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://www.ietf.org/rfc/rfc1766.txt">Tags for the Identification
 of Languages</link>, the EBNF for "language tag" is given as:
 
 <literallayout class="monospaced">Language-Tag = Primary-tag *( "-" Subtag )

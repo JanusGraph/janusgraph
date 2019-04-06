@@ -1,5 +1,5 @@
 <?xml version='1.0'?> <!-- -*- nxml -*- vim: set foldlevel=2: -->
-<xsl:stylesheet xmlns:xsl="https://www.w3.org/1999/XSL/Transform"
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:fm="http://freshmeat.net/projects/freshmeat-submit/"
   xmlns:sf="https://sourceforge.net/"
   xmlns:dyn="http://exslt.org/dynamic"

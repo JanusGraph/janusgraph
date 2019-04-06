@@ -1,4 +1,4 @@
-<assembly xmlns="https://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2" xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+<assembly xmlns="https://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="https://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 https://maven.apache.org/xsd/assembly-1.1.2.xsd">
 
     <id>archive</id>
