@@ -73,7 +73,7 @@ All of the channelizers share the exact same functionality as their TinkerPop co
 [[tinkerpop-with-remote]]
 ===== Using TinkerPop's withRemote Functionality
 
-Since traversal references are bound on the JanusGraph servers, we can make use of http://tinkerpop.apache.org/docs/current/reference/#connecting-via-remotegraph[TinkerPop's withRemote functionality]. This will allow one to run gremlin queries locally, against a remote graph reference. Traditionally, one runs queries against remote Gremlin Servers by sending String script representations, which are processed on the remote server and the response serialized and sent back. However, TinkerPop also allows for the use of `remoteGraph`, which could be useful if you are building a TinkerPop compliant graph infrastructure that is easily transferable to multiple implementations.
+Since traversal references are bound on the JanusGraph servers, we can make use of https://tinkerpop.apache.org/docs/current/reference/#connecting-via-remotegraph[TinkerPop's withRemote functionality]. This will allow one to run gremlin queries locally, against a remote graph reference. Traditionally, one runs queries against remote Gremlin Servers by sending String script representations, which are processed on the remote server and the response serialized and sent back. However, TinkerPop also allows for the use of `remoteGraph`, which could be useful if you are building a TinkerPop compliant graph infrastructure that is easily transferable to multiple implementations.
 
 
 To use this functionality in JanusGraph, we must first ensure we have created a graph on the remote JanusGraph cluster:

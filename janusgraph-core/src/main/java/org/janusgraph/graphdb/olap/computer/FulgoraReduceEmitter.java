@@ -24,7 +24,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * @author Marko A. Rodriguez (http://markorodriguez.com)
+ * @author Marko A. Rodriguez (https://markorodriguez.com)
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class FulgoraReduceEmitter<OK, OV> implements MapReduce.ReduceEmitter<OK, OV> {

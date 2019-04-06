@@ -1,7 +1,7 @@
 [[connecting-via-java]]
 == Connecting from Java
 
-JanusGraph can be queried from a Java application with Apache TinkerPop's http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference/#connecting-via-java[Gremlin Driver].
+JanusGraph can be queried from a Java application with Apache TinkerPop's https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference/#connecting-via-java[Gremlin Driver].
 While it is possible to embed JanusGraph as a library inside a Java application and then directly connect to the backend, this section assumes that the application connects to JanusGraph Server.
 For information on how to embed JanusGraph, see the https://github.com/JanusGraph/janusgraph/tree/master/janusgraph-examples[JanusGraph Examples projects].
 
@@ -81,7 +81,7 @@ System.out.println("Hercules is " + herculesAge + " years old.");
 ----
 +
 `next()` is a terminal step that submits the traversal to the Gremlin Server and returns a single result.
-Other terminal steps can be found http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference/#terminal-steps[in TinkerPop's reference documentation].
+Other terminal steps can be found https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference/#terminal-steps[in TinkerPop's reference documentation].
 
 === JanusGraph Specific Types and Predicates
 

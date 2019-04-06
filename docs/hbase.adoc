@@ -2,10 +2,10 @@
 == Apache HBase
 
 [.tss-center.tss-width-250]
-image:http://hbase.apache.org/images/hbase_logo.png[link="http://hbase.apache.org"]
+image:https://hbase.apache.org/images/hbase_logo.png[link="https://hbase.apache.org"]
 
-[quote, 'http://hbase.apache.org/[Apache HBase Homepage]']
-Apache HBase is an open-source, distributed, versioned, non-relational database modeled after http://static.googleusercontent.com/media/research.google.com/en/us/archive/bigtable-osdi06.pdf[Google's Bigtable: A Distributed Storage System for Structured Data by Chang et al.] Just as Bigtable leverages the distributed data storage provided by the Google File System, Apache HBase provides Bigtable-like capabilities on top of Hadoop and HDFS.
+[quote, 'https://hbase.apache.org/[Apache HBase Homepage]']
+Apache HBase is an open-source, distributed, versioned, non-relational database modeled after https://static.googleusercontent.com/media/research.google.com/en/us/archive/bigtable-osdi06.pdf[Google's Bigtable: A Distributed Storage System for Structured Data by Chang et al.] Just as Bigtable leverages the distributed data storage provided by the Google File System, Apache HBase provides Bigtable-like capabilities on top of Hadoop and HDFS.
 
 === HBase Setup
 
@@ -17,7 +17,7 @@ image:modes-local.png[]
 
 HBase can be run as a standalone database on the same local host as JanusGraph and the end-user application. In this model, JanusGraph and HBase communicate with one another via a `localhost` socket. Running JanusGraph over HBase requires the following setup steps:
 
-* Download and extract a stable HBase from http://www.apache.org/dyn/closer.cgi/hbase/stable/.
+* Download and extract a stable HBase from https://www.apache.org/dyn/closer.cgi/hbase/stable/.
 * Start HBase by invoking the `start-hbase.sh` script in the _bin_ directory inside the extracted HBase directory. To stop HBase, use `stop-hbase.sh`.
 
 [source, bourne]
@@ -86,7 +86,7 @@ When configuring HBase it is recommended to consider the following HBase specifi
 
 * *storage.hbase.table*: Name of the HBase table in which to store the JanusGraph graph. Allows multiple JanusGraph graphs to co-exist in the same HBase cluster.
 
-Please refer to the http://hbase.apache.org/book/config.files.html[HBase configuration documentation] for more HBase configuration options and their description. By prefixing the respective HBase configuration option with `storage.hbase.ext` in the JanusGraph configuration it will be passed on to HBase at initialization time. For example, to use the znode /hbase-secure for HBase, set the property: `storage.hbase.ext.zookeeper.znode.parent=/hbase-secure`. The prefix allows arbitrary HBase configuration options to be configured through JanusGraph.
+Please refer to the https://hbase.apache.org/book/config.files.html[HBase configuration documentation] for more HBase configuration options and their description. By prefixing the respective HBase configuration option with `storage.hbase.ext` in the JanusGraph configuration it will be passed on to HBase at initialization time. For example, to use the znode /hbase-secure for HBase, set the property: `storage.hbase.ext.zookeeper.znode.parent=/hbase-secure`. The prefix allows arbitrary HBase configuration options to be configured through JanusGraph.
 
 [IMPORTANT]
 HBase backend uses millisecond for timestamps. In JanusGraph 0.2.0 and earlier, if the `graph.timestamps` property is not explicitly set, the default is `MICRO`.
@@ -98,7 +98,7 @@ JanusGraph over HBase supports global vertex and edge iteration. However, note t
 
 === Tips and Tricks for Managing an HBase Cluster
 
-The http://wiki.apache.org/hadoop/Hbase/Shell[HBase shell] on the master server can be used to get an overall status check of the cluster.
+The https://wiki.apache.org/hadoop/Hbase/Shell[HBase shell] on the master server can be used to get an overall status check of the cluster.
 
 [source, bourne]
 $HBASE_HOME/bin/hbase shell
@@ -116,7 +116,7 @@ The above commands can identify if a region server has gone down. If so, it is p
 sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh stop regionserver
 sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh start regionserver
 
-The use of http://code.google.com/p/parallel-ssh/[pssh] can make this process easy as there is no need to log into each machine individually to run the commands. Put the IP addresses of the regionservers into a `hosts.txt` file and then execute the following.
+The use of https://code.google.com/p/parallel-ssh/[pssh] can make this process easy as there is no need to log into each machine individually to run the commands. Put the IP addresses of the regionservers into a `hosts.txt` file and then execute the following.
 
 [source, bourne]
 pssh -h host.txt sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh stop regionserver

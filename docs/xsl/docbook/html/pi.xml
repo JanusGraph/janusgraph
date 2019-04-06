@@ -24,7 +24,7 @@
 
   </partintro>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_background-color">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_background-color">
 <refnamediv>
 <refname>dbhtml_background-color</refname>
 <refpurpose>Sets background color for an image</refpurpose>
@@ -60,7 +60,7 @@
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_bgcolor">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_bgcolor">
 <refnamediv>
 <refname>dbhtml_bgcolor</refname>
 <refpurpose>Sets background color on a CALS table row or table cell</refpurpose>
@@ -93,7 +93,7 @@
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_cellpadding">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_cellpadding">
 <refnamediv>
 <refname>dbhtml_cellpadding</refname>
 <refpurpose>Specifies cellpadding in CALS table or qandaset output</refpurpose>
@@ -133,7 +133,7 @@
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_cellspacing">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_cellspacing">
 <refnamediv>
 <refname>dbhtml_cellspacing</refname>
 <refpurpose>Specifies cellspacing in CALS table or qandaset output</refpurpose>
@@ -173,7 +173,7 @@
 
     </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_class">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_class">
 <refnamediv>
 <refname>dbhtml_class</refname>
 <refpurpose>Set value of the class attribute for a CALS table row</refpurpose>
@@ -207,7 +207,7 @@
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_dir">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_dir">
 <refnamediv>
 <refname>dbhtml_dir</refname>
 <refpurpose>Specifies a directory name in which to write files</refpurpose>
@@ -277,7 +277,7 @@ at the same level, use:</para>
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_filename">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_filename">
 <refnamediv>
 <refname>dbhtml_filename</refname>
 <refpurpose>Specifies a filename for a chunk</refpurpose>
@@ -325,7 +325,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_funcsynopsis-style">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_funcsynopsis-style">
 <refnamediv>
 <refname>dbhtml_funcsynopsis-style</refname>
 <refpurpose>Specifies presentation style for a funcsynopsis</refpurpose>
@@ -367,7 +367,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_img.src.path">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_img.src.path">
 <refnamediv>
 <refname>dbhtml_img.src.path</refname>
 <refpurpose>Specifies a path to the location of an image file</refpurpose>
@@ -410,7 +410,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_label-width">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_label-width">
 <refnamediv>
 <refname>dbhtml_label-width</refname>
 <refpurpose>Specifies the label width for a qandaset</refpurpose>
@@ -443,7 +443,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_linenumbering.everyNth">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_linenumbering.everyNth">
 <refnamediv>
 <refname>dbhtml_linenumbering.everyNth</refname>
 <refpurpose>Specifies interval for line numbers in verbatims</refpurpose>
@@ -483,7 +483,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_linenumbering.separator">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_linenumbering.separator">
 <refnamediv>
 <refname>dbhtml_linenumbering.separator</refname>
 <refpurpose>Specifies separator text for line numbers in verbatims</refpurpose>
@@ -522,7 +522,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_linenumbering.width">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_linenumbering.width">
 <refnamediv>
 <refname>dbhtml_linenumbering.width</refname>
 <refpurpose>Specifies width for line numbers in verbatims</refpurpose>
@@ -561,7 +561,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_list-presentation">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_list-presentation">
 <refnamediv>
 <refname>dbhtml_list-presentation</refname>
 <refpurpose>Specifies presentation style for a variablelist or
@@ -619,7 +619,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_list-width">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_list-width">
 <refnamediv>
 <refname>dbhtml_list-width</refname>
 <refpurpose>Specifies the width of a variablelist or simplelist</refpurpose>
@@ -653,7 +653,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_row-height">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_row-height">
 <refnamediv>
 <refname>dbhtml_row-height</refname>
 <refpurpose>Specifies the height for a CALS table row</refpurpose>
@@ -686,7 +686,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_start">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_start">
 <refnamediv>
 <refname>dbhtml_start</refname>
 <refpurpose>(obsolete) Sets the starting number on an ordered list</refpurpose>
@@ -725,7 +725,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_stop-chunking">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_stop-chunking">
 <refnamediv>
 <refname>dbhtml_stop-chunking</refname>
 <refpurpose>Do not chunk any descendants of this element.</refpurpose>
@@ -753,7 +753,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_table-summary">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_table-summary">
 <refnamediv>
 <refname>dbhtml_table-summary</refname>
 <refpurpose>Specifies summary for CALS table, variablelist, segmentedlist, or qandaset output</refpurpose>
@@ -790,7 +790,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_table-width">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_table-width">
 <refnamediv>
 <refname>dbhtml_table-width</refname>
 <refpurpose>Specifies the width for a CALS table</refpurpose>
@@ -828,7 +828,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_term-presentation">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_term-presentation">
 <refnamediv>
 <refname>dbhtml_term-presentation</refname>
 <refpurpose>Sets character formatting for terms in a variablelist</refpurpose>
@@ -876,7 +876,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_term-separator">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_term-separator">
 <refnamediv>
 <refname>dbhtml_term-separator</refname>
 <refpurpose>Specifies separator text among terms in a varlistentry</refpurpose>
@@ -914,7 +914,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_term-width">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_term-width">
 <refnamediv>
 <refname>dbhtml_term-width</refname>
 <refpurpose>Specifies the term width for a variablelist</refpurpose>
@@ -948,7 +948,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml_toc">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml_toc">
 <refnamediv>
 <refname>dbhtml_toc</refname>
 <refpurpose>Specifies whether a TOC should be generated for a qandaset</refpurpose>
@@ -991,7 +991,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbcmdlist">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbcmdlist">
 <refnamediv>
 <refname>dbcmdlist</refname>
 <refpurpose>Generates a hyperlinked list of commands</refpurpose>
@@ -1016,7 +1016,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbfunclist">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbfunclist">
 <refnamediv>
 <refname>dbfunclist</refname>
 <refpurpose>Generates a hyperlinked list of functions</refpurpose>
@@ -1041,7 +1041,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhtml-include_href">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhtml-include_href">
 <refnamediv>
 <refname>dbhtml-include_href</refname>
 <refpurpose>Copies an external well-formed HTML/XML file into current doc</refpurpose>
@@ -1109,7 +1109,7 @@ specifications in one processing instruction:
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbhh">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbhh">
 <refnamediv>
 <refname>dbhh</refname>
 <refpurpose>Sets topic name and topic id for context-sensitive HTML Help</refpurpose>

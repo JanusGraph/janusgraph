@@ -36,7 +36,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * Example Graph factory that creates a {@link JanusGraph} based on roman mythology.
  * Used in the documentation examples and tutorials.
  *
- * @author Marko A. Rodriguez (http://markorodriguez.com)
+ * @author Marko A. Rodriguez (https://markorodriguez.com)
  */
 public class GraphOfTheGodsFactory {
 

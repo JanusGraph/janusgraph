@@ -1,7 +1,7 @@
 [[cassandra]]
 == Apache Cassandra
 
-[quote, 'http://cassandra.apache.org/[Apache Cassandra Homepage]']
+[quote, 'https://cassandra.apache.org/[Apache Cassandra Homepage]']
 The Apache Cassandra database is the right choice when you need
 scalability and high availability without compromising
 performance. Linear scalability and proven fault-tolerance on
@@ -43,7 +43,7 @@ image:modes-local.png[]
 
 Cassandra can be run as a standalone database on the same local host as JanusGraph and the end-user application. In this model, JanusGraph and Cassandra communicate with one another via a `localhost` socket. Running JanusGraph over Cassandra requires the following setup steps:
 
-. http://cassandra.apache.org/download/[Download Cassandra], unpack it, and set filesystem paths in `conf/cassandra.yaml` and `conf/log4j-server.properties`
+. https://cassandra.apache.org/download/[Download Cassandra], unpack it, and set filesystem paths in `conf/cassandra.yaml` and `conf/log4j-server.properties`
 . Connecting Gremlin Server to Cassandra using the default configuration files provided in the pre-packaged distribution requires that Cassandra Thrift is enabled. To enable Cassandra Thrift open `conf/cassandra.yaml` and update `start_rpc: false` to `start_rpc: true`. If Cassandra is already running Thrift can be started manually with `bin/nodetool enablethrift`. the Thrift status can be verified with `bin/nodetool` statusthrift.
 . Start Cassandra by invoking `bin/cassandra -f` on the command line in the directory where Cassandra was unpacked.  Read output to check that Cassandra started successfully.
 
@@ -112,7 +112,7 @@ scriptEngines: {
                org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: {files: [scripts/empty-sample.groovy]}}}}
 ...
 ----
-For more information about Gremlin Server see the http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#gremlin-server[Apache TinkerPop documentation]
+For more information about Gremlin Server see the https://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#gremlin-server[Apache TinkerPop documentation]
 
 === JanusGraph Embedded Mode
 
@@ -138,7 +138,7 @@ When configuring Cassandra it is recommended to consider the following Cassandra
 * *thrift.frame_size_mb*: The maximum frame size to be used by thrift for transport. Increase this value when retrieving very large result sets. **Only applicable when storage.backend=cassandrathrift**
 * *keyspace*: The name of the keyspace to store the JanusGraph graph in. Allows multiple JanusGraph graphs to co-exist in the same Cassandra cluster.
 
-For more information on Cassandra consistency levels and acceptable values, please refer to the http://wiki.apache.org/cassandra/API10[Cassandra Thrift API]. In general, higher levels are more consistent and robust but have higher latency.
+For more information on Cassandra consistency levels and acceptable values, please refer to the https://wiki.apache.org/cassandra/API10[Cassandra Thrift API]. In general, higher levels are more consistent and robust but have higher latency.
 
 === Global Graph Operations
 
@@ -146,7 +146,7 @@ JanusGraph over Cassandra supports global vertex and edge iteration. However, no
 
 === Deploying on Amazon EC2
 
-[quote, 'http://aws.amazon.com/ec2/[Amazon EC2]']
+[quote, 'https://aws.amazon.com/ec2/[Amazon EC2]']
 Amazon Elastic Compute Cloud (Amazon EC2) is a web service that provides resizable compute capacity in the cloud. It is designed to make web-scale computing easier for developers.
 
 Follow these steps to setup a Cassandra cluster on EC2 and deploy JanusGraph over Cassandra. To follow these instructions, you need an Amazon AWS account with established authentication credentials and some basic knowledge of AWS and EC2.
@@ -207,7 +207,7 @@ Launch additional EC2 instances to run JanusGraph which are either configured in
 
 ==== Example JanusGraph Instance on Amazon Linux AMI
 
-* Launch the http://aws.amazon.com/amazon-linux-ami[Amazon Linux AMI] in the same zone of the Cassandra cluster. Choose your desired EC2 instance type depending on the amount of resources you need. Use the default configuration options and select the same Key Pair and Security Group as for the Cassandra cluster configured in the previous step.
+* Launch the https://aws.amazon.com/amazon-linux-ami[Amazon Linux AMI] in the same zone of the Cassandra cluster. Choose your desired EC2 instance type depending on the amount of resources you need. Use the default configuration options and select the same Key Pair and Security Group as for the Cassandra cluster configured in the previous step.
 
 * SSH into the newly created instance via `ssh -i [your-private-key].pem ec2-user@[public-dns-name-of-the-instance]`. You may have to wait a little for the instance to launch.
 

@@ -1,7 +1,7 @@
 [[data-model]]
 == JanusGraph Data Model
 
-JanusGraph stores graphs in http://en.wikipedia.org/wiki/Adjacency_list[adjacency list format] which means that a graph is stored as a collection of vertices with their adjacency list. The adjacency list of a vertex contains all of the vertex's incident edges (and properties). 
+JanusGraph stores graphs in https://en.wikipedia.org/wiki/Adjacency_list[adjacency list format] which means that a graph is stored as a collection of vertices with their adjacency list. The adjacency list of a vertex contains all of the vertex's incident edges (and properties). 
 
 By storing a graph in adjacency list format JanusGraph ensures that all of a vertex's incident edges and properties are stored compactly in the storage backend which speeds up traversals. The downside is that each edge has to be stored twice - once for each end vertex of the edge.
 
@@ -14,7 +14,7 @@ JanusGraph stores the adjacency list representation of a graph in any <<storage-
 [.tss-center]
 image:bigtablemodel.png[]
 
-Under the http://en.wikipedia.org/wiki/Bigtable[Bigtable data model] each table is a collection of rows. Each row is uniquely identified by a key. Each row is comprised of an arbitrary (large, but limited) number of cells. A cell is composed of a column and value. A cell is uniquely identified by a column within a given row. Rows in the Bigtable model are called "wide rows" because they support a large number of cells and the columns of those cells don't have to be defined up front as is required in relational databases.
+Under the https://en.wikipedia.org/wiki/Bigtable[Bigtable data model] each table is a collection of rows. Each row is uniquely identified by a key. Each row is comprised of an arbitrary (large, but limited) number of cells. A cell is composed of a column and value. A cell is uniquely identified by a column within a given row. Rows in the Bigtable model are called "wide rows" because they support a large number of cells and the columns of those cells don't have to be defined up front as is required in relational databases.
 
 JanusGraph has an additional requirement for the Bigtable data model: The cells must be sorted by their columns and a subset of the cells specified by a column range must be efficiently retrievable (e.g. by using index structures, skip lists, or binary search).
 

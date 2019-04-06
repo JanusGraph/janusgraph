@@ -101,7 +101,7 @@ metrics.csv.directory = foo/bar
 [[metrics-ganglia]]
 ==== Ganglia Reporter
 
-NOTE: Configuration of link:http://ganglia.sourceforge.net/[Ganglia] requires an additional library that is not packaged with JanusGraph due to its LGPL licensing that conflicts with the JanusGraph's Apache 2.0 License.  To run with Ganglia monitoring, download the `org.acplt:oncrpc` jar from link:http://repo1.maven.org/maven2/org/acplt/oncrpc/1.0.7/[here] and copy it to the JanusGraph `/lib` directory before starting the server.
+NOTE: Configuration of link:http://ganglia.sourceforge.net/[Ganglia] requires an additional library that is not packaged with JanusGraph due to its LGPL licensing that conflicts with the JanusGraph's Apache 2.0 License.  To run with Ganglia monitoring, download the `org.acplt:oncrpc` jar from link:https://repo1.maven.org/maven2/org/acplt/oncrpc/1.0.7/[here] and copy it to the JanusGraph `/lib` directory before starting the server.
 
 .Metrics Ganglia Reporter Configuration Options
 [cols="2,1,5,1", options="header"]

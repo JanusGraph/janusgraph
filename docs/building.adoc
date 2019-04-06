@@ -1,7 +1,7 @@
 [[building]]
 == Building JanusGraph
 
-To build JanusGraph you need http://git-scm.com/[git] and http://maven.apache.org/[Maven].
+To build JanusGraph you need https://git-scm.com/[git] and https://maven.apache.org/[Maven].
 
 . Clone the https://github.com/JanusGraph/janusgraph[JanusGraph repository from GitHub] to a local directory.
 . In that directory, execute `mvn clean install`. This will build JanusGraph and run the internal test suite. The internal test suite has no external dependencies. Note, that running all test cases requires a significant amount of time. To skip the tests when building JanusGraph, execute `mvn clean install -DskipTests`

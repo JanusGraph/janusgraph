@@ -37,7 +37,7 @@ import org.apache.tinkerpop.gremlin.driver.simple.WebSocketClient;
 import java.net.URI;
 
 /**
- * @author Stephen Mallette (http://stephen.genoprime.com)
+ * @author Stephen Mallette (https://stephen.genoprime.com)
  */
 public final class TestClientFactory {
 

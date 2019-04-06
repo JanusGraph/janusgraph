@@ -217,7 +217,7 @@ mvn clean install -pl :janusgraph-hadoop-2 -DskipHBase -DskipCassandra -DskipCas
 
 ### Running Tests with ScyllaDB
 
-Thrift and CQL tests can be run against an externally-managed [ScyllaDB](http://www.scylladb.com/) instance. For convenience the `scylladb-test` Maven profile is provided to manage a ScyllaDB Docker container through the Maven Failsafe Plugin. Note this only runs tests with the `Murmur3Partitioner` partitioner and also skips SSL tests.
+Thrift and CQL tests can be run against an externally-managed [ScyllaDB](https://www.scylladb.com/) instance. For convenience the `scylladb-test` Maven profile is provided to manage a ScyllaDB Docker container through the Maven Failsafe Plugin. Note this only runs tests with the `Murmur3Partitioner` partitioner and also skips SSL tests.
 
 ```bash
 mvn clean install -pl janusgraph-cql -Pscylladb-test

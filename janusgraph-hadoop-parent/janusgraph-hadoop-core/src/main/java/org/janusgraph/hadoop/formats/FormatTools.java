@@ -21,7 +21,7 @@ import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
 import static org.janusgraph.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
 /**
- * @author Marko A. Rodriguez (http://markorodriguez.com)
+ * @author Marko A. Rodriguez (https://markorodriguez.com)
  */
 public class FormatTools {
 

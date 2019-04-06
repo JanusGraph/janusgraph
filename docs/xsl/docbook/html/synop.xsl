@@ -3,8 +3,8 @@
 <!ENTITY nbsp "&#160;">
 ]>
 <xsl:stylesheet exclude-result-prefixes="d"
-                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:d="http://docbook.org/ns/docbook"
+                 xmlns:xsl="https://www.w3.org/1999/XSL/Transform"
+                xmlns:d="https://docbook.org/ns/docbook"
 version='1.0'>
 
 <!-- ********************************************************************
