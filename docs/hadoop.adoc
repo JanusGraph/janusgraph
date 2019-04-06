@@ -224,4 +224,4 @@ gremlin> g.E().count()
 
 Apache TinkerPop provides various vertex programs. A vertex program runs on each vertex until either a termination criteria is attained or a fixed number of iterations has been reached. Due to the parallel nature of vertex programs, they can leverage parallel computing frameworks like Spark or Giraph to improve their performance.
 
-Once you are familiar with how to configure JanusGraph to work with Spark, you can run all the other vertex programs provided by Apache TinkerPop, like Page Rank, Bulk Loading and Peer Pressure. See the http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference/#vertexprogram[TinkerPop VertexProgram docs] for more details.
+Once you are familiar with how to configure JanusGraph to work with Spark, you can run all the other vertex programs provided by Apache TinkerPop, like Page Rank, Bulk Loading and Peer Pressure. See the https://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference/#vertexprogram[TinkerPop VertexProgram docs] for more details.

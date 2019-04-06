@@ -1,9 +1,9 @@
 <?xml version='1.0'?>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:d="http://docbook.org/ns/docbook"
+<xsl:stylesheet xmlns:xsl="https://www.w3.org/1999/XSL/Transform"
+                xmlns:d="https://docbook.org/ns/docbook"
 xmlns:suwl="http://nwalsh.com/xslt/ext/com.nwalsh.saxon.UnwrapLinks"
                 xmlns:exsl="http://exslt.org/common"
-                xmlns:xlink='http://www.w3.org/1999/xlink'
+                xmlns:xlink='https://www.w3.org/1999/xlink'
                 exclude-result-prefixes="suwl exsl xlink d"
                 version='1.0'>
 
@@ -260,7 +260,7 @@ xmlns:suwl="http://nwalsh.com/xslt/ext/com.nwalsh.saxon.UnwrapLinks"
     <!-- handle html or xhtml -->
     <xsl:when test="local-name(.) = 'a'
                     and (namespace-uri(.) = ''
-                         or namespace-uri(.) = 'http://www.w3.org/1999/xhtml')">
+                         or namespace-uri(.) = 'https://www.w3.org/1999/xhtml')">
       <xsl:choose>
         <xsl:when test="(@name and count(@*) = 1)
                         or (@id and count(@*) = 1)

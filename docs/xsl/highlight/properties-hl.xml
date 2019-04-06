@@ -3,7 +3,7 @@
 Highlighter for Java Property List files.
 These are similar to but slightly different from INI files.
 
-http://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load%28java.io.Reader%29
+https://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load%28java.io.Reader%29
  -->
 <highlighters>
     <highlighter type="oneline-comment">

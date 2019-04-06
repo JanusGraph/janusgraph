@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:d="http://docbook.org/ns/docbook"
-xmlns:xlink="http://www.w3.org/1999/xlink"
+<xsl:stylesheet xmlns:xsl="https://www.w3.org/1999/XSL/Transform"
+                xmlns:d="https://docbook.org/ns/docbook"
+xmlns:xlink="https://www.w3.org/1999/xlink"
                 xmlns:stext="http://nwalsh.com/xslt/ext/com.nwalsh.saxon.TextFactory"
                 xmlns:simg="http://nwalsh.com/xslt/ext/com.nwalsh.saxon.ImageIntrinsics"
                 xmlns:ximg="xalan://com.nwalsh.xalan.ImageIntrinsics"
@@ -1241,11 +1241,11 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
 
   <xsl:choose>
     <!-- Handle MathML and SVG markup in imagedata -->
-    <xsl:when test="mml:*" xmlns:mml="http://www.w3.org/1998/Math/MathML">
+    <xsl:when test="mml:*" xmlns:mml="https://www.w3.org/1998/Math/MathML">
       <xsl:apply-templates/>
     </xsl:when>
     
-    <xsl:when test="svg:*" xmlns:svg="http://www.w3.org/2000/svg">
+    <xsl:when test="svg:*" xmlns:svg="https://www.w3.org/2000/svg">
       <xsl:apply-templates/>
     </xsl:when>
 
@@ -1556,7 +1556,7 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
 <!-- ==================================================================== -->
 <!-- "Support" for SVG -->
 
-<xsl:template match="svg:*" xmlns:svg="http://www.w3.org/2000/svg">
+<xsl:template match="svg:*" xmlns:svg="https://www.w3.org/2000/svg">
   <xsl:copy>
     <xsl:copy-of select="@*"/>
     <xsl:apply-templates/>

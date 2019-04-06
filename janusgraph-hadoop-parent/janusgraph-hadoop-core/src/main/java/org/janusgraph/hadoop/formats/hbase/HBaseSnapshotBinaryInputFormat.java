@@ -66,7 +66,7 @@ import com.google.common.collect.BiMap;
  * It is also required that the Hadoop configuration directory, which contains
  * core-site.xml, is in the classpath for access to the hadoop cluster. This
  * requirement is similar to the configuration requirement for <a href=
- * "http://tinkerpop.apache.org/docs/current/reference/#hadoop-gremlin">hadoop-gremlin</a>
+ * "https://tinkerpop.apache.org/docs/current/reference/#hadoop-gremlin">hadoop-gremlin</a>
  * <p>
  * Additionally, the HBase configuration directory, which contains hbase-site.xml,
  * should be placed in the classpath as well. If it is not, hbase.rootdir property

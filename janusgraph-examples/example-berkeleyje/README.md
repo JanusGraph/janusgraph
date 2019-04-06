@@ -2,11 +2,11 @@
 
 ## About BerkeleyJE and Lucene
 
-[Oracle Berkeley DB Java Edition](http://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html)
+[Oracle Berkeley DB Java Edition](https://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html)
 is an embedded database, so it runs within your application rather than as
 a standalone server. The data is stored in a directory on the file system.
 
-[Apache Lucene](http://lucene.apache.org/) is an embedded index, so it runs
+[Apache Lucene](https://lucene.apache.org/) is an embedded index, so it runs
 within your application rather than as a standalone server. The data is
 stored in a directory on the file system.
 
@@ -15,7 +15,7 @@ stored in a directory on the file system.
 [`jgex-berkeleyje.properties`](conf/jgex-berkeleyje.properties) contains
 the directory locations for BerkeleyJE and Lucene.
 
-Refer to the JanusGraph [configuration reference](http://docs.janusgraph.org/latest/config-ref.html)
+Refer to the JanusGraph [configuration reference](https://docs.janusgraph.org/latest/config-ref.html)
 for additional properties.
 
 ## Dependencies

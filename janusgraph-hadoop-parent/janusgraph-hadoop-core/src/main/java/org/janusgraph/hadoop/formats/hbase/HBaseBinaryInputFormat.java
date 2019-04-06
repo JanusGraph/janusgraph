@@ -97,7 +97,7 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
         scanner.addFamily(edgeStoreFamily);
 
         //scanner.setFilter(getColumnFilter(janusgraphSetup.inputSlice(this.vertexQuery))); // TODO
-        //TODO (minor): should we set other options in http://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Scan.html for optimization?
+        //TODO (minor): should we set other options in https://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Scan.html for optimization?
         // This is a workaround, to be removed when convertScanToString becomes public in hbase
         // package.
         Method converter;
