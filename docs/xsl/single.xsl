@@ -8,7 +8,7 @@
   stylesheets. This means you don't need to edit the <xsl:import> elements on
   a machine by machine basis.
 -->
-<xsl:stylesheet xmlns:xsl="https://www.w3.org/1999/XSL/Transform" version="1.0"
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
     xmlns:sbhl="java:net.sf.xslthl.ConnectorSaxonB"
     xmlns:xslthl="http://xslthl.sf.net"
     extension-element-prefixes="sbhl xslthl">
@@ -21,7 +21,7 @@
       method="html"
       encoding="utf-8"
       doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"
-      doctype-system="https://www.w3.org/TR/html4/loose.dtd"
+      doctype-system="http://www.w3.org/TR/html4/loose.dtd"
       indent="yes" />
   
   <xsl:param name="generate.toc">

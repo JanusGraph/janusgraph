@@ -4,9 +4,9 @@
 <svg
    xmlns:dc="https://purl.org/dc/elements/1.1/"
    xmlns:cc="https://creativecommons.org/ns#"
-   xmlns:rdf="https://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="https://www.w3.org/2000/svg"
-   xmlns="https://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
    version="1.1"
    width="279.18411"
    height="187.47701"

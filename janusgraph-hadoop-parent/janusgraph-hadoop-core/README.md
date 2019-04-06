@@ -8,7 +8,7 @@ JanusGraph Hadoop module provides a [property graph](https://github.com/tinkerpo
     * [Apache HBase](https://hbase.apache.org/)
   * [GraphSON](https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library) text format stored in HDFS
   *  EdgeList multi-relational text format stored in HDFS
-    * [RDF](https://www.w3.org/RDF/) text formats stored in HDFS
+    * [RDF](http://www.w3.org/RDF/) text formats stored in HDFS
   * Hadoop binary [sequence files](https://wiki.apache.org/hadoop/SequenceFile) stored in HDFS
   * User defined import/export scripts
 * Native integration with the [TinkerPop](http://www.tinkerpop.com) graph stack:

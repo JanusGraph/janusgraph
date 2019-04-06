@@ -36,7 +36,7 @@
 
   </partintro>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.apply-character-map">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.apply-character-map">
 <refnamediv>
 <refname>apply-character-map</refname>
 <refpurpose>Applies an XSLT character map</refpurpose>
@@ -50,7 +50,7 @@
 </refsynopsisdiv>
 <refsect1><title>Description</title>
     
-<para>This template applies an <link xlink:href="https://www.w3.org/TR/xslt20/#character-maps">XSLT character map</link>; that is, it causes certain
+<para>This template applies an <link xlink:href="http://www.w3.org/TR/xslt20/#character-maps">XSLT character map</link>; that is, it causes certain
       individual characters to be substituted with strings of one
       or more characters. It is useful mainly for replacing
       multiple “special” characters or symbols in the same target
@@ -111,7 +111,7 @@
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="template.read-character-map">
+<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="template.read-character-map">
 <refnamediv>
 <refname>read-character-map</refname>
 <refpurpose>Reads in all or part of an XSLT character map</refpurpose>
@@ -126,7 +126,7 @@
 </refsynopsisdiv>
 <refsect1><title>Description</title>
     
-<para>The XSLT 2.0 specification describes <link xlink:href="https://www.w3.org/TR/xslt20/#character-maps">character maps</link> and explains how they may be used
+<para>The XSLT 2.0 specification describes <link xlink:href="http://www.w3.org/TR/xslt20/#character-maps">character maps</link> and explains how they may be used
       to allow a specific character appearing in a text or
       attribute node in a final result tree to be substituted by
       a specified string of characters during serialization. The

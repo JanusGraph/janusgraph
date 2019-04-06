@@ -8,7 +8,7 @@
 <!ENTITY lang 'concat(/*/@lang, /*/@xml:lang)'>
 
 ]>
-<xsl:stylesheet xmlns:xsl="https://www.w3.org/1999/XSL/Transform"
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:d="https://docbook.org/ns/docbook"
 xmlns:k="http://www.isogen.com/functions/com.isogen.saxoni18n.Saxoni18nService"
                 exclude-result-prefixes="k d"

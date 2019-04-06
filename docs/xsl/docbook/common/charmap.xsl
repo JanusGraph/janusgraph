@@ -1,10 +1,10 @@
 <?xml version='1.0'?>
-<xsl:stylesheet xmlns:xsl="https://www.w3.org/1999/XSL/Transform"
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:d="https://docbook.org/ns/docbook"
 xmlns:doc="http://nwalsh.com/xsl/documentation/1.0"
                 xmlns:dyn="http://exslt.org/dynamic"
                 xmlns:saxon="http://icl.com/saxon"
-                xmlns:xlink="https://www.w3.org/1999/xlink"
+                xmlns:xlink="http://www.w3.org/1999/xlink"
                 exclude-result-prefixes="doc dyn saxon d"
                 version='1.0'>
 
@@ -51,7 +51,7 @@ xmlns:doc="http://nwalsh.com/xsl/documentation/1.0"
   <refpurpose>Applies an XSLT character map</refpurpose>
   <refdescription id="apply-character-map-desc">
     <para>This template applies an <link
-      xlink:href="https://www.w3.org/TR/xslt20/#character-maps"
+      xlink:href="http://www.w3.org/TR/xslt20/#character-maps"
       >XSLT character map</link>; that is, it causes certain
       individual characters to be substituted with strings of one
       or more characters. It is useful mainly for replacing
@@ -139,7 +139,7 @@ xmlns:doc="http://nwalsh.com/xsl/documentation/1.0"
   <refpurpose>Reads in all or part of an XSLT character map</refpurpose>
   <refdescription id="read-character-map-desc">
     <para>The XSLT 2.0 specification describes <link
-        xlink:href="https://www.w3.org/TR/xslt20/#character-maps"
+        xlink:href="http://www.w3.org/TR/xslt20/#character-maps"
         >character maps</link> and explains how they may be used
       to allow a specific character appearing in a text or
       attribute node in a final result tree to be substituted by

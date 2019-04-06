@@ -1,8 +1,8 @@
 <?xml version='1.0'?>
 <xsl:stylesheet exclude-result-prefixes="d"
-                 xmlns:xsl="https://www.w3.org/1999/XSL/Transform"
+                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:d="https://docbook.org/ns/docbook"
-xmlns:xi="https://www.w3.org/2001/XInclude"
+xmlns:xi="http://www.w3.org/2001/XInclude"
                 version='1.0'>
 
 <!-- ********************************************************************
