@@ -17,17 +17,17 @@ DataStax) and the following individuals:
 
 It also includes software from other open source projects including, but not limited to (check pom.xml for complete listing):
 
- * Apache Cassandra [http://cassandra.apache.org/]
- * Apache Commons [http://commons.apache.org/]
+ * Apache Cassandra [https://cassandra.apache.org/]
+ * Apache Commons [https://commons.apache.org/]
  * Apache Groovy [http://groovy-lang.org/]
  * Apache HBase [https://hbase.apache.org/]
- * Apache Hadoop [http://hadoop.apache.org/]
+ * Apache Hadoop [https://hadoop.apache.org/]
  * Apache Kerby [https://github.com/apache/directory-kerby]
  * Apache Log4j [https://logging.apache.org/log4j]
  * Apache Lucene [https://lucene.apache.org/]
  * Apache MRUnit [https://mrunit.apache.org/]
- * Apache Solr [http://lucene.apache.org/solr/]
- * Apache TinkerPop [http://tinkerpop.apache.org/]
+ * Apache Solr [https://lucene.apache.org/solr/]
+ * Apache TinkerPop [https://tinkerpop.apache.org/]
  * Astyanax [https://github.com/Netflix/astyanax]
  * AWS SDK for Java [https://aws.amazon.com/sdkforjava]
  * DataStax Driver for Apache Cassandra  [https://github.com/datastax/java-driver]
@@ -35,22 +35,22 @@ It also includes software from other open source projects including, but not lim
  * Elasticsearch [https://www.elastic.co/]
  * Google Cloud Bigtable [https://github.com/googlecloudplatform/cloud-bigtable-client]
  * Google Guava [https://github.com/google/guava]
- * H2 [http://h2database.com]
+ * H2 [https://h2database.com]
  * HPPC [https://labs.carrotsearch.com/hppc.html]
- * JUnit [http://www.junit.org/]
+ * JUnit [https://www.junit.org/]
  * Jackson [https://github.com/FasterXML/jackson]
  * Junit Benchmark [https://labs.carrotsearch.com/junit-benchmarks.html]
  * Kryo [https://github.com/EsotericSoftware/kryo]
- * Metrics [http://metrics.dropwizard.io]
- * Mockito [http://site.mockito.org/]
+ * Metrics [https://metrics.dropwizard.io]
+ * Mockito [https://site.mockito.org/]
  * Noggit [https://github.com/yonik/noggit]
  * OpenRDF [http://rdf4j.org/]
- * Oracle BerkeleyDB Java Edition [http://www.oracle.com/technetwork/products/berkeleydb/] (see license below)
+ * Oracle BerkeleyDB Java Edition [https://www.oracle.com/technetwork/products/berkeleydb/] (see license below)
  * Project Lombok [https://projectlombok.org/]
  * Reflections [https://github.com/ronmamo/reflections]
  * SLF4J [https://www.slf4j.org/]
  * Spatial4j [https://github.com/locationtech/spatial4j]
- * Vavr [http://www.vavr.io/]
+ * Vavr [https://www.vavr.io/]
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Copyright (C) 2002, 2016, Oracle  and/or its affiliates. All rights reserved.

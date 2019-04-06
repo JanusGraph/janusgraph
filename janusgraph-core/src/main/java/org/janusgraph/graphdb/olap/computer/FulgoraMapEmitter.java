@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * @author Marko A. Rodriguez (http://markorodriguez.com)
+ * @author Marko A. Rodriguez (https://markorodriguez.com)
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class FulgoraMapEmitter<K, V> implements MapReduce.MapEmitter<K, V> {

@@ -16,7 +16,7 @@ image:getting-started-scenario.svg[Getting started deployment scenario diagram, 
 
 A setup like this can be extended by simply adding more servers of the same kind or by moving one of the components onto dedicated servers. The latter describes a growth path to transform the deployment into the <<advanced-scenario,Advanced Scenario>>.
 
-Any of the scalable storage backends can be used with this scenario. Note however that for Scylla http://docs.scylladb.com/getting-started/scylla_in_a_shared_environment/[some configuration is required when it is hosted co-located with other services] like in this scenario. When an index backend should be used in this scenario then it also needs to be one that is scalable.
+Any of the scalable storage backends can be used with this scenario. Note however that for Scylla https://docs.scylladb.com/getting-started/scylla_in_a_shared_environment/[some configuration is required when it is hosted co-located with other services] like in this scenario. When an index backend should be used in this scenario then it also needs to be one that is scalable.
 
 [[advanced-scenario]]
 === Advanced Scenario

@@ -1,4 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.janusgraph</groupId>
     <artifactId>janusgraph</artifactId>
@@ -8,7 +8,7 @@
         <maven>2.2.1</maven>
     </prerequisites>
     <name>JanusGraph: Distributed Graph Database</name>
-    <url>http://janusgraph.org</url>
+    <url>https://janusgraph.org</url>
 
     <description>
         JanusGraph is a distributed graph database optimized for processing massive-scale graphs represented over a machine
@@ -29,19 +29,19 @@
         <developer>
             <name>Pavel Yaskevich</name>
             <email>povel.y@gmail.com</email>
-            <url>http://github.com/xedin</url>
+            <url>https://github.com/xedin</url>
         </developer>
     </developers>
     <contributors>
         <contributor>
             <name>Marko A. Rodriguez</name>
             <email>marko@markorodriguez.com</email>
-            <url>http://markorodriguez.com</url>
+            <url>https://markorodriguez.com</url>
         </contributor>
         <contributor>
             <name>Stephen Mallette</name>
             <email>spmva@genoprime.com</email>
-            <url>http://stephen.genoprime.com</url>
+            <url>https://stephen.genoprime.com</url>
         </contributor>
     </contributors>
     <inceptionYear>2012</inceptionYear>
@@ -174,7 +174,7 @@
             <!-- for org.restlet.jee:org.restlet:jar -->
             <id>spring-releases</id>
             <name>Spring Release Repository</name>
-            <url>http://repo.spring.io/libs-release-remote/</url>
+            <url>https://repo.spring.io/libs-release-remote/</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
@@ -1270,7 +1270,7 @@
               when this profile is automatically activated or whenever
               else it is manually activated.
     
-              Stolen from: http://blog.sonatype.com/people/2010/01/how-to-generate-pgp-signatures-with-maven/
+              Stolen from: https://blog.sonatype.com/people/2010/01/how-to-generate-pgp-signatures-with-maven/
             -->
             <build>
                 <plugins>

@@ -35,7 +35,7 @@ import java.io.IOException;
 import java.util.Optional;
 
 /**
- * @author Marko A. Rodriguez (http://markorodriguez.com)
+ * @author Marko A. Rodriguez (https://markorodriguez.com)
  */
 public class HadoopRecordReader extends RecordReader<NullWritable, VertexWritable> {
 

@@ -1,4 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.janusgraph</groupId>
@@ -8,7 +8,7 @@
     </parent>
     <artifactId>janusgraph-all</artifactId>
     <name>JanusGraph-All: Complete JanusGraph Distribution</name>
-    <url>http://janusgraph.org</url>
+    <url>https://janusgraph.org</url>
 
     <!--
       This project depends on the rest of JanusGraph, so Maven users and
@@ -94,7 +94,7 @@
              Without these dependencies, janusgraph-all users can end up with
              1.9 + 1.8 jars together, and this leads to linkage errors.
              It might be a better idea to dependencyManagement imports if your Maven version supports it:
-             http://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Importing_Dependencies -->
+             https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Importing_Dependencies -->
         <!-- Jackson 1.x -->
         <dependency>
             <groupId>org.codehaus.jackson</groupId>

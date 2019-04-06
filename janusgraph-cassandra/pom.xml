@@ -1,4 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.janusgraph</groupId>
@@ -8,7 +8,7 @@
     </parent>
     <artifactId>janusgraph-cassandra</artifactId>
     <name>JanusGraph-Cassandra: Distributed Graph Database</name>
-    <url>http://janusgraph.org</url>
+    <url>https://janusgraph.org</url>
     <properties>
         <astyanax.version>3.10.2</astyanax.version>
         <jamm.group>com.github.jbellis</jamm.group>
@@ -81,7 +81,7 @@
             operations.  DataStax describes JNA as "required for
             production installations":
 
-            http://www.datastax.com/docs/1.2/install/install_jre
+            https://www.datastax.com/docs/1.2/install/install_jre
         -->
         <dependency>
             <groupId>net.java.dev.jna</groupId>

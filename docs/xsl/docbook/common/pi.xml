@@ -24,7 +24,7 @@
 
   </partintro>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbchoice_choice">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbchoice_choice">
 <refnamediv>
 <refname>dbchoice_choice</refname>
 <refpurpose>Generates a localized choice separator</refpurpose>
@@ -77,7 +77,7 @@
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbtimestamp">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbtimestamp">
 <refnamediv>
 <refname>dbtimestamp</refname>
 <refpurpose>Inserts a date timestamp</refpurpose>
@@ -122,7 +122,7 @@
 
   </refsect1></refentry>
 
-<refentry xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="dbtex_delims">
+<refentry xmlns:xlink="https://www.w3.org/1999/xlink" xml:id="dbtex_delims">
 <refnamediv>
 <refname>dbtex_delims</refname>
 <refpurpose>Generates delimiters around embedded TeX equations
