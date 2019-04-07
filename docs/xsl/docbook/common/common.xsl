@@ -3,7 +3,7 @@
 <!ENTITY lowercase "'abcdefghijklmnopqrstuvwxyz'">
 <!ENTITY uppercase "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'">
  ]>
-<xsl:stylesheet xmlns:xsl="https://www.w3.org/1999/XSL/Transform"
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:d="https://docbook.org/ns/docbook"
 xmlns:doc="http://nwalsh.com/xsl/documentation/1.0"
                 xmlns:dyn="http://exslt.org/dynamic"
@@ -1119,7 +1119,7 @@ object is recognized as a graphic.</para>
 
   <xsl:choose>
     <xsl:when test="$use.svg = 0 and $format = 'SVG'">0</xsl:when>
-    <xsl:when xmlns:svg="https://www.w3.org/2000/svg"
+    <xsl:when xmlns:svg="http://www.w3.org/2000/svg"
               test="$use.svg != 0 and $object/svg:*">1</xsl:when>
     <xsl:when test="$graphic.format = '1'">1</xsl:when>
     <xsl:when test="$graphic.ext = '1'">1</xsl:when>

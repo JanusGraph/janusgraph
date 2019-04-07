@@ -3,7 +3,7 @@
 <!ENTITY % common.entities SYSTEM "../common/entities.ent">
 %common.entities;
 ]>
-<xsl:stylesheet xmlns:xsl="https://www.w3.org/1999/XSL/Transform"
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:d="https://docbook.org/ns/docbook"
 xmlns:i="urn:cz-kosek:functions:index"
                 xmlns:l="http://docbook.sourceforge.net/xmlns/l10n/1.0"

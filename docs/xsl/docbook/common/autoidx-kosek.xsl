@@ -3,13 +3,13 @@
 <!ENTITY % common.entities SYSTEM "entities.ent">
 %common.entities;
 ]>
-<xsl:stylesheet xmlns:xsl="https://www.w3.org/1999/XSL/Transform"
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:d="https://docbook.org/ns/docbook"
 version="1.0"
                 xmlns:func="http://exslt.org/functions"
                 xmlns:exslt="http://exslt.org/common"
                 xmlns:l="http://docbook.sourceforge.net/xmlns/l10n/1.0"
-                xmlns:fo="https://www.w3.org/1999/XSL/Format"
+                xmlns:fo="http://www.w3.org/1999/XSL/Format"
                 extension-element-prefixes="func exslt"
                 exclude-result-prefixes="func exslt i l d"
                 xmlns:i="urn:cz-kosek:functions:index">

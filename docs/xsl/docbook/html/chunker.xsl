@@ -1,4 +1,4 @@
-<xsl:stylesheet xmlns:xsl="https://www.w3.org/1999/XSL/Transform"
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:d="https://docbook.org/ns/docbook"
 xmlns:saxon="http://icl.com/saxon"
                 xmlns:lxslt="http://xml.apache.org/xslt"
