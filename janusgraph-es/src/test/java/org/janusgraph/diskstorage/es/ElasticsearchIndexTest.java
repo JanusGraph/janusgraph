@@ -16,6 +16,7 @@ package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 
 import org.apache.commons.configuration.BaseConfiguration;
@@ -49,6 +50,8 @@ import org.json.simple.parser.ParseException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -57,6 +60,7 @@ import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -321,6 +325,46 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertEquals(parameterValue.toString(), returnedProperty);
 
         IOUtils.closeQuietly(response);
+    }
+
+    public static Stream<String> cardinalityTestCollectionNameParams() {
+        return ImmutableList.of(PHONE_SET, PHONE_LIST).stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("cardinalityTestCollectionNameParams")
+    public void testCollectionCardinality(String collectionName) throws Exception {
+        initialize("vertex");
+
+        Multimap<String, Object> initialDoc = HashMultimap.create();
+        initialDoc.put(collectionName, "12345");
+
+        add("vertex", "test", initialDoc, true);
+
+        clopen();
+
+        Multimap<String, Object> updateDoc = HashMultimap.create();
+        updateDoc.put(collectionName, "123456");
+
+        add("vertex", "test", updateDoc, false);
+
+        clopen();
+
+        add("vertex", "test", initialDoc, false);
+
+        clopen();
+
+        tx.delete("vertex", "test", collectionName, "12345", false);
+
+        clopen();
+
+        assertEquals("test", tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(collectionName, Cmp.EQUAL, "123456"))).toArray()[0]);
+
+        if(PHONE_SET.equals(collectionName)){
+            assertEquals(0, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "12345"))).count());
+        } else {
+            assertEquals("test", tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "12345"))).toArray()[0]);
+        }
     }
 
     private CloseableHttpResponse getESMapping(String indexName, String mappingTypeName) throws IOException {
