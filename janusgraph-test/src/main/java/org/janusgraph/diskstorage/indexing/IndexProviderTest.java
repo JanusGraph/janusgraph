@@ -240,14 +240,30 @@ public abstract class IndexProviderTest {
             result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderTimeDesc))
                     .collect(Collectors.toList());
             assertEquals(ImmutableList.of("doc2", "doc1"), result);
+            result = tx.queryStream(new RawQuery(store, "text:\"world\"", orderTimeDesc, NO_PARAS))
+                                                      .map(RawQuery.Result::getResult)
+                                                      .collect(Collectors.toList());
+            assertEquals(ImmutableList.of("doc2", "doc1"), result);
             result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderWeightDesc))
                     .collect(Collectors.toList());
+            assertEquals(ImmutableList.of("doc2", "doc1"), result);
+            result = tx.queryStream(new RawQuery(store, "text:\"world\"", orderWeightDesc, NO_PARAS))
+                       .map(RawQuery.Result::getResult)
+                       .collect(Collectors.toList());
             assertEquals(ImmutableList.of("doc2", "doc1"), result);
             result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderTimeAsc))
                     .collect(Collectors.toList());
             assertEquals(ImmutableList.of("doc1", "doc2"), result);
+            result = tx.queryStream(new RawQuery(store, "text:\"world\"", orderTimeAsc, NO_PARAS))
+                       .map(RawQuery.Result::getResult)
+                       .collect(Collectors.toList());
+            assertEquals(ImmutableList.of("doc1", "doc2"), result);
             result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderWeightAsc))
                     .collect(Collectors.toList());
+            assertEquals(ImmutableList.of("doc1", "doc2"), result);
+            result = tx.queryStream(new RawQuery(store, "text:\"world\"", orderWeightAsc, NO_PARAS))
+                       .map(RawQuery.Result::getResult)
+                       .collect(Collectors.toList());
             assertEquals(ImmutableList.of("doc1", "doc2"), result);
             result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), jointOrder))
                     .collect(Collectors.toList());

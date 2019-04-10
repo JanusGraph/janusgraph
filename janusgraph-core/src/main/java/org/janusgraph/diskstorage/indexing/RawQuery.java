@@ -15,6 +15,7 @@
 package org.janusgraph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.graphdb.query.BaseQuery;
 import org.apache.commons.lang.StringUtils;
@@ -27,17 +28,23 @@ public class RawQuery extends BaseQuery {
     private final String store;
     private final String query;
     private final Parameter[] parameters;
+    private ImmutableList<IndexQuery.OrderEntry> orders;
     private int offset;
 
-
     public RawQuery(String store, String query, Parameter[] parameters) {
+        this(store, query, ImmutableList.of(), parameters);
+    }
+
+    public RawQuery(String store, String query, ImmutableList<IndexQuery.OrderEntry> orders, Parameter[] parameters) {
         Preconditions.checkNotNull(store);
         Preconditions.checkArgument(StringUtils.isNotBlank(query));
+        Preconditions.checkNotNull(orders);
         Preconditions.checkNotNull(parameters);
         this.store = store;
         this.query = query;
         this.parameters = parameters;
         this.offset = 0;
+        this.orders = orders;
     }
 
     public RawQuery setOffset(int offset) {
@@ -62,6 +69,10 @@ public class RawQuery extends BaseQuery {
 
     public String getQuery() {
         return query;
+    }
+
+    public ImmutableList<IndexQuery.OrderEntry> getOrders() {
+        return orders;
     }
 
     public Parameter[] getParameters() {

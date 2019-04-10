@@ -422,8 +422,11 @@ public class LuceneIndex implements IndexProvider {
     }
 
     private static Sort getSortOrder(IndexQuery query) {
+        return getSortOrder(query.getOrder());
+    }
+
+    private static Sort getSortOrder(List<IndexQuery.OrderEntry> orders) {
         final Sort sort = new Sort();
-        final List<IndexQuery.OrderEntry> orders = query.getOrder();
         if (!orders.isEmpty()) {
             final SortField[] fields = new SortField[orders.size()];
             for (int i = 0; i < orders.size(); i++) {
@@ -715,7 +718,12 @@ public class LuceneIndex implements IndexProvider {
             int adjustedLimit = query.hasLimit() ? query.getLimit() : Integer.MAX_VALUE - 1;
             if (adjustedLimit < Integer.MAX_VALUE - 1 - offset) adjustedLimit += offset;
             else adjustedLimit = Integer.MAX_VALUE - 1;
-            final TopDocs docs = searcher.search(q, adjustedLimit);
+            final TopDocs docs;
+            if (!query.getOrders().isEmpty()) {
+                docs = searcher.search(q, adjustedLimit, getSortOrder(query.getOrders()));
+            } else {
+                docs = searcher.search(q, adjustedLimit);
+            }
             log.debug("Executed query [{}] in {} ms", q, System.currentTimeMillis() - time);
             final List<RawQuery.Result<String>> result = new ArrayList<>(docs.scoreDocs.length);
             for (int i = offset; i < docs.scoreDocs.length; i++) {
