@@ -17,6 +17,7 @@ package org.janusgraph.diskstorage.lucene;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.lucene.util.BytesRef;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
 
@@ -373,29 +374,37 @@ public class LuceneIndex implements IndexProvider {
                 final String str = (String) e.value;
                 final Mapping mapping = Mapping.getMapping(store, e.field, information);
                 final Field field;
+                final Field sortField;
                 switch (mapping) {
                     case DEFAULT:
                     case TEXT:
                         // lowering the case for case insensitive text search
                         field = new TextField(e.field, str.toLowerCase(), Field.Store.YES);
+                        sortField = null;
                         break;
                     case STRING:
                         // if this field uses a custom analyzer, it must be stored as a TextField
                         // (or the analyzer, even if it is a KeywordAnalyzer won't be used)
                         field = new TextField(e.field, str, Field.Store.YES);
+                        sortField = new SortedDocValuesField(e.field, new BytesRef(str));
                         break;
                     default:
                         throw new IllegalArgumentException("Illegal mapping specified: " + mapping);
                 }
                 doc.add(field);
+                if (sortField != null) {
+                    doc.add(sortField);
+                }
             } else if (e.value instanceof Geoshape) {
                 final Shape shape = ((Geoshape) e.value).getShape();
                 geoFields.put(e.field, shape);
                 doc.add(new StoredField(e.field, GEOID + e.value.toString()));
             } else if (e.value instanceof Date) {
                 doc.add(new LongPoint(e.field, (((Date) e.value).getTime())));
+                doc.add(new NumericDocValuesField(e.field, (((Date) e.value).getTime())));
             } else if (e.value instanceof Instant) {
                 doc.add(new LongPoint(e.field, (((Instant) e.value).toEpochMilli())));
+                doc.add(new NumericDocValuesField(e.field, (((Instant) e.value).toEpochMilli())));
             } else if (e.value instanceof Boolean) {
                 doc.add(new IntPoint(e.field, ((Boolean) e.value) ? 1 : 0));
             } else if (e.value instanceof UUID) {
@@ -437,6 +446,7 @@ public class LuceneIndex implements IndexProvider {
                 if (AttributeUtil.isString(dataType)) sortType = SortField.Type.STRING;
                 else if (AttributeUtil.isWholeNumber(dataType)) sortType = SortField.Type.LONG;
                 else if (AttributeUtil.isDecimal(dataType)) sortType = SortField.Type.DOUBLE;
+                else if (dataType.equals(Instant.class) || dataType.equals(Date.class)) sortType = SortField.Type.LONG;
                 else
                     Preconditions.checkArgument(false, "Unsupported order specified on field [%s] with datatype [%s]", order.getKey(), dataType);
 
