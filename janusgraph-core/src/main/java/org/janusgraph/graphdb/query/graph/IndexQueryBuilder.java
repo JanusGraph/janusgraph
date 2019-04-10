@@ -15,8 +15,10 @@
 package org.janusgraph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.graphdb.database.IndexSerializer;
@@ -68,6 +70,10 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
      */
     private String query;
     /**
+     * Sorting parameters
+     */
+    private final List<Parameter<Order>> orders;
+    /**
      * Parameters passed to the indexing backend during query execution to modify the execution behavior.
      */
     private final List<Parameter> parameters;
@@ -87,7 +93,6 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
      */
     private int offset;
 
-
     public IndexQueryBuilder(StandardJanusGraphTx tx, IndexSerializer serializer) {
         Preconditions.checkNotNull(tx);
         Preconditions.checkNotNull(serializer);
@@ -95,6 +100,7 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
         this.serializer = serializer;
 
         parameters = Lists.newArrayList();
+        orders = Lists.newArrayList();
         unknownKeyName = tx.getGraph().getConfiguration().getUnknownIndexKeyName();
         this.offset=0;
     }
@@ -108,11 +114,15 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     }
 
     public Parameter[] getParameters() {
-        return parameters.toArray(new Parameter[parameters.size()]);
+        return parameters.toArray(new Parameter[0]);
     }
 
     public String getQuery() {
         return query;
+    }
+
+    public ImmutableList<Parameter<Order>> getOrders() {
+        return ImmutableList.copyOf(orders);
     }
 
     public int getOffset() {
@@ -155,6 +165,13 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     public IndexQueryBuilder offset(int offset) {
         Preconditions.checkArgument(offset>=0,"Invalid offset provided: %s",offset);
         this.offset=offset;
+        return this;
+    }
+
+    @Override
+    public JanusGraphIndexQuery orderBy(String key, Order order) {
+        Preconditions.checkArgument(key!=null && order!=null,"Need to specify and key and an order");
+        orders.add(Parameter.of(key, order));
         return this;
     }
 
@@ -234,7 +251,7 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
         setPrefixInternal(PROPERTY_PREFIX);
         return execute(ElementCategory.PROPERTY, JanusGraphVertexProperty.class);
     }
-    
+
     @Override
     public Long vertexTotals() {
         setPrefixInternal(VERTEX_PREFIX);
