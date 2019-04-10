@@ -96,9 +96,10 @@
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-cassandra</artifactId>
+            <artifactId>janusgraph-cql</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
+            <classifier>tests</classifier>
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
@@ -324,6 +325,7 @@
                             <configuration>
                                 <includes>
                                     <include>**/*Cassandra*IT.java</include>
+                                    <include>**/*Cql*IT.java</include>
                                 </includes>
                                 <excludes>
                                     <exclude>**/*Cassandra3*IT.java</exclude>
@@ -344,6 +346,7 @@
                             <configuration>
                                 <includes>
                                     <include>**/*Cassandra3*IT.java</include>
+                                    <include>**/*Cql*IT.java</include>
                                 </includes>
                                 <skipTests>${skipCassandra3}</skipTests>
                                 <reuseForks>false</reuseForks>
