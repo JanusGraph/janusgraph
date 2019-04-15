@@ -367,6 +367,26 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         }
     }
 
+    @Test
+    public void testTextStringMapping() throws Exception {
+        initialize("vertex");
+
+        Multimap<String, Object> firstDoc = HashMultimap.create();
+        firstDoc.put(TEXT_STRING, "John Doe");
+
+        Multimap<String, Object> secondDoc = HashMultimap.create();
+        secondDoc.put(TEXT_STRING, "John");
+
+        add("vertex", "test1", firstDoc, true);
+        add("vertex", "test2", secondDoc, true);
+
+        clopen();
+
+        assertEquals(1, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Cmp.EQUAL, "John"))).count());
+        assertEquals(1, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Cmp.EQUAL, "John Doe"))).count());
+        assertEquals(2, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Text.CONTAINS, "John"))).count());
+    }
+
     private CloseableHttpResponse getESMapping(String indexName, String mappingTypeName) throws IOException {
         final HttpGet httpGet = new HttpGet(indexName+"/_mapping/"+mappingTypeName);
         return httpClient.execute(host, httpGet);
