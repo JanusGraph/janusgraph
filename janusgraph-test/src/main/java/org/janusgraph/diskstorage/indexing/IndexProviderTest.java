@@ -65,7 +65,7 @@ public abstract class IndexProviderTest {
 
     public static final String TEXT = "text", TIME = "time", WEIGHT = "weight", LOCATION = "location",
             BOUNDARY = "boundary", NAME = "name", PHONE_LIST = "phone_list", PHONE_SET = "phone_set", DATE = "date",
-            STRING="string", ANALYZED="analyzed", FULL_TEXT="full_text", KEYWORD="keyword";
+            STRING="string", ANALYZED="analyzed", FULL_TEXT="full_text", KEYWORD="keyword", TEXT_STRING="text_string";
 
     public static StandardKeyInformation of(Class<?> clazz, Cardinality cardinality,  Parameter<?>... paras) {
         return new StandardKeyInformation(clazz, cardinality, paras);
@@ -113,6 +113,7 @@ public abstract class IndexProviderTest {
                 put(FULL_TEXT, new StandardKeyInformation(String.class, Cardinality.SINGLE,
                         Mapping.TEXTSTRING.asParameter(), new Parameter<>(ParameterType.STRING_ANALYZER.getName(), englishAnalyzerName),
                     new Parameter<>(ParameterType.TEXT_ANALYZER.getName(), englishAnalyzerName)));
+                put(TEXT_STRING, new StandardKeyInformation(String.class, Cardinality.SINGLE, Mapping.TEXTSTRING.asParameter()));
             }
             put(KEYWORD, new StandardKeyInformation(String.class, Cardinality.SINGLE, textParameter, new Parameter<>(ParameterType.TEXT_ANALYZER.getName(), keywordAnalyzerName)));
         }};
