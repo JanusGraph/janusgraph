@@ -55,7 +55,7 @@ public class LuceneIndexTest extends IndexProviderTest {
 
     @Override
     public boolean supportsLuceneStyleQueries() {
-        return false;
+        return true;
     }
 
     @Override

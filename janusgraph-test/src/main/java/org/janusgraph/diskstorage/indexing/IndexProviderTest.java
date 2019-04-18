@@ -437,6 +437,9 @@ public abstract class IndexProviderTest {
                 assertEquals(0, tx.queryStream(new RawQuery(store,"text:(you there Hello Bob)",NO_PARAS).setLimit(1).setOffset(2)).count());
                 assertEquals(2, tx.queryStream(new RawQuery(store,"text:\"world\"",NO_PARAS)).count());
                 assertEquals(2, tx.queryStream(new RawQuery(store,"time:[1000 TO 1020]",NO_PARAS)).count());
+                assertEquals(2, tx.queryStream(new RawQuery(store,"time:[1000 TO *]",NO_PARAS)).count());
+                assertEquals(3, tx.queryStream(new RawQuery(store,"time:[* TO *]",NO_PARAS)).count());
+                assertEquals(1, tx.queryStream(new RawQuery(store,"weight:[5.1 TO 8.3]",NO_PARAS)).count());
                 assertEquals(1, tx.queryStream(new RawQuery(store,"text:world AND time:1001",NO_PARAS)).count());
                 assertEquals(1, tx.queryStream(new RawQuery(store,"name:\"Hello world\"",NO_PARAS)).count());
             }
