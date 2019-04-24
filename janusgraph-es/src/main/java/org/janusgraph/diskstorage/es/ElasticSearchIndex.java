@@ -912,14 +912,14 @@ public class ElasticSearchIndex implements IndexProvider {
                     throw new IllegalArgumentException("Text mapped string values only support CONTAINS and Compare queries and not: " + predicate);
                 if (mapping==Mapping.STRING && Text.HAS_CONTAINS.contains(predicate))
                     throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + predicate);
-                if (mapping==Mapping.TEXTSTRING && !(Text.HAS_CONTAINS.contains(predicate) || predicate instanceof Cmp)) {
+                if (mapping==Mapping.TEXTSTRING && !(Text.HAS_CONTAINS.contains(predicate) || (predicate instanceof Cmp && predicate != Cmp.EQUAL))) {
                     fieldName = getDualMappingName(key);
                 } else {
                     fieldName = key;
                 }
 
                 if (predicate == Text.CONTAINS || predicate == Cmp.EQUAL) {
-                    return compat.match(key, value);
+                    return compat.match(fieldName, value);
                 } else if (predicate == Text.CONTAINS_PREFIX) {
                     if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
                         value = ((String) value).toLowerCase();
