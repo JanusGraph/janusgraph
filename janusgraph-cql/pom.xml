@@ -58,37 +58,34 @@
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-cassandra</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-cassandra</artifactId>
-            <version>${project.version}</version>
-            <classifier>tests</classifier>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-test</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.jbellis</groupId>
+            <artifactId>jamm</artifactId>
+            <version>${jamm.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>cassandra</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
-        <testResources>
-            <testResource>
-                <directory>src/test/resources</directory>
-                <excludes>
-                    <exclude>cassandra/</exclude>
-                    <exclude>keystores/</exclude>
-                    <exclude>properties/</exclude>
-                </excludes>
-                <filtering>true</filtering>
-            </testResource>
-        </testResources>
         <plugins>
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -103,84 +100,6 @@
                 </executions>
             </plugin>
             <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>filter-${test.byteorderedpartitioner}</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/cassandra/${test.byteorderedpartitioner}/conf</outputDirectory>
-                            <filters>
-                                <filter>${project.build.testResources[0].directory}/properties/${test.byteorderedpartitioner}.properties</filter>
-                            </filters>
-                            <resources>
-                                <resource>
-                                    <directory>${project.build.testResources[0].directory}/cassandra</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>filter-${test.murmur}</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/cassandra/${test.murmur}/conf</outputDirectory>
-                            <filters>
-                                <filter>${project.build.testResources[0].directory}/properties/${test.murmur}.properties</filter>
-                            </filters>
-                            <resources>
-                                <resource>
-                                    <directory>${project.build.testResources[0].directory}/cassandra</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>filter-${test.murmur-ssl}</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/cassandra/${test.murmur-ssl}/conf</outputDirectory>
-                            <filters>
-                                <filter>${project.build.testResources[0].directory}/properties/${test.murmur-ssl}.properties</filter>
-                            </filters>
-                            <resources>
-                                <resource>
-                                    <directory>${project.build.testResources[0].directory}/cassandra</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>filter-${test.murmur-ssl}-static</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/cassandra/${test.murmur-ssl}/conf</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${project.build.testResources[0].directory}/keystores</directory>
-                                    <filtering>false</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <argLine>${test.jvm.opts}</argLine>
@@ -191,6 +110,7 @@
                     <threadCount>1</threadCount>
                     <systemPropertyVariables>
                         <log4j.configuration>file:${project.build.testOutputDirectory}/log4j.properties</log4j.configuration>
+                        <cassandra.docker.version>${cassandra.docker.version}</cassandra.docker.version>
                     </systemPropertyVariables>
                 </configuration>
                 <executions>
@@ -209,14 +129,7 @@
                             <groups />
                             <reportNameSuffix>${test.byteorderedpartitioner}</reportNameSuffix>
                             <systemProperties>
-                                <property>
-                                    <name>test.cassandra.confdir</name>
-                                    <value>${project.build.directory}/cassandra/${test.byteorderedpartitioner}/conf</value>
-                                </property>
-                                <property>
-                                    <name>test.cassandra.datadir</name>
-                                    <value>${project.build.directory}/cassandra/${test.byteorderedpartitioner}/data</value>
-                                </property>
+                                <cassandra.docker.partitioner>${test.byteorderedpartitioner}</cassandra.docker.partitioner>
                             </systemProperties>
                             <skip>${test.skip.byteorderedpartitioner}</skip>
                         </configuration>
@@ -232,14 +145,7 @@
                             <groups />
                             <reportNameSuffix>${test.murmur}</reportNameSuffix>
                             <systemProperties>
-                                <property>
-                                    <name>test.cassandra.confdir</name>
-                                    <value>${project.build.directory}/cassandra/${test.murmur}/conf</value>
-                                </property>
-                                <property>
-                                    <name>test.cassandra.datadir</name>
-                                    <value>${project.build.directory}/cassandra/${test.murmur}/data</value>
-                                </property>
+                                <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
                             </systemProperties>
                             <skip>${test.skip.murmur}</skip>
                         </configuration>
@@ -259,14 +165,7 @@
                             <runOrder>alphabetical</runOrder>
                             <reportNameSuffix>${test.murmur}-serial</reportNameSuffix>
                             <systemProperties>
-                                <property>
-                                    <name>test.cassandra.confdir</name>
-                                    <value>${project.build.directory}/cassandra/${test.murmur}/conf</value>
-                                </property>
-                                <property>
-                                    <name>test.cassandra.datadir</name>
-                                    <value>${project.build.directory}/cassandra/${test.murmur}/data</value>
-                                </property>
+                                <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
                             </systemProperties>
                             <skip>${test.skip.murmur-serial}</skip>
                         </configuration>
@@ -288,14 +187,7 @@
                             <threadCount>1</threadCount>
                             <reportNameSuffix>${test.murmur-ssl}</reportNameSuffix>
                             <systemProperties>
-                                <property>
-                                    <name>test.cassandra.confdir</name>
-                                    <value>${project.build.directory}/cassandra/${test.murmur-ssl}/conf</value>
-                                </property>
-                                <property>
-                                    <name>test.cassandra.datadir</name>
-                                    <value>${project.build.directory}/cassandra/${test.murmur-ssl}/data</value>
-                                </property>
+                                <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
                             </systemProperties>
                             <skip>${test.skip.murmur-ssl}</skip>
                         </configuration>
@@ -314,96 +206,40 @@
 	              <test.extra.jvm.opts>${jacoco.opts} ${test.javaagent.opts}</test.extra.jvm.opts>
 	          </properties>
         </profile>
+        <profile>
+            <id>cassandra2</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <cassandra.docker.version>2.2.14</cassandra.docker.version>
+                test.skip.byteorderedpartitioner>false</test.skip.byteorderedpartitioner>
+                <test.skip.murmur>false</test.skip.murmur>
+                <test.skip.murmur-serial>false</test.skip.murmur-serial>
+                <test.skip.murmur-ssl>false</test.skip.murmur-ssl>
+            </properties>
+        </profile>
+        <profile>
+            <id>cassandra3</id>
+            <properties>
+                <cassandra.docker.version>3.11.4</cassandra.docker.version>
+                <test.skip.byteorderedpartitioner>false</test.skip.byteorderedpartitioner>
+                <test.skip.murmur>false</test.skip.murmur>
+                <test.skip.murmur-serial>false</test.skip.murmur-serial>
+                <test.skip.murmur-ssl>false</test.skip.murmur-ssl>
+            </properties>
+        </profile>
 
         <profile>
-            <!-- Run Thrift tests with ScyllaDB (requires Docker) -->
-            <id>scylladb-test</id>
+            <id>scylladb</id>
             <properties>
-                <!-- Tests are run under failsafe so skip them under surefire -->
+                <cassandra.docker.version>3.0.4</cassandra.docker.version>
+                <cassandra.docker.image>scylladb/scylla</cassandra.docker.image>
                 <test.skip.byteorderedpartitioner>true</test.skip.byteorderedpartitioner>
                 <test.skip.murmur>true</test.skip.murmur>
                 <test.skip.murmur-serial>true</test.skip.murmur-serial>
                 <test.skip.murmur-ssl>true</test.skip.murmur-ssl>
             </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <configuration>
-                            <skipITs>false</skipITs>
-                            <includes>
-                                <include>**/org/janusgraph/diskstorage/cql/*.java</include>
-                                <include>**/org/janusgraph/graphdb/cql/*.java</include>
-                            </includes>
-                            <!-- Exclude default (performance/memory) tests. Also exclude SSL tests (fail under Scylla) -->
-                            <excludedGroups>${test.excluded.groups},CASSANDRA_SSL_TESTS</excludedGroups>
-                            <systemProperties>
-                                <!-- Run tests against the containerized Scylla test server -->
-                                <property>
-                                    <name>storage.hostname</name>
-                                    <value>0.0.0.0</value>
-                                </property>
-                            </systemProperties>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                        <version>0.18.1</version>
-                        <configuration>
-                            <images>
-                                <image>
-                                    <alias>scylladb</alias>
-                                    <name>scylladb/scylla:${scylladb.version}</name>
-                                    <run>
-                                        <!-- Limit to two CPUs -->
-                                        <cmd>--smp 2</cmd>
-                                        <!-- Expose Thrift and CQL ports -->
-                                        <ports>
-                                            <port>9160:9160</port>
-                                            <port>9042:9042</port>
-                                        </ports>
-                                        <wait>
-                                            <tcp>
-                                                <ports>
-                                                    <port>9160</port>
-                                                    <port>9042</port>
-                                                </ports>
-                                            </tcp>
-                                            <time>60000</time>
-                                        </wait>
-                                    </run>
-                                </image>
-                            </images>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>docker-start</id>
-                                <phase>pre-integration-test</phase>
-                                <goals>
-                                    <goal>start</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>docker-stop</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                    <goal>remove</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
     </profiles>
 </project>

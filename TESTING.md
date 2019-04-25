@@ -109,6 +109,35 @@ mvn clean install -pl janusgraph-es -Delasticsearch.docker.image=elasticsearch
 mvn clean install -pl janusgraph-es -Delasticsearch.docker.version=1.5.1 -Delasticsearch.docker.image=elasticsearch
 ```
 
+### Running CQL Tests with a Cassandra
+
+**Note** Running Cql tests requires docker.
+
+```bash
+mvn clean install -pl janusgraph-cql -Pcassandra2
+mvn clean install -pl janusgraph-cql -Pcassandra3
+```
+
+Finally the `cassandra.docker.version` property can be used to test against arbitrary Cassandra versions. This is more complicated however because of differences across major versions in required server settings and Docker image names. The examples below illustrate the differences based on the Cassandra major version.
+
+```bash
+mvn clean install -pl janusgraph-cql -Dcassandra.docker.version=2.2.14
+mvn clean install -pl janusgraph-cql -Dcassandra.docker.image=cassandra
+mvn clean install -pl janusgraph-cql -Dcassandra.docker.version=3.11.2 -Dcassandra.docker.image=cassandra
+```
+
+#### ScyllaDB
+
+```bash
+mvn clean install -pl janusgraph-cql -Pscylla2
+```
+
+#### Tinkerpop tests
+
+```bash
+mvn clean install -Dtest.skip.tp=false -DskipTests=true -pl janusgraph-cql -Pcassandra2
+```
+
 ### Running Tests with an External Cassandra
 
 Default and TinkerPop tests can be run against an externally-managed Cassandra instance. For convenience a Docker Compose file is provided in the JanusGraph-Cassandra source distribution for managing a Cassandra instance in a Docker container.
@@ -189,12 +218,10 @@ To run default Astyanax or CQL tests change the `test` property value in the abo
 
 #### TinkerPop Tests
 
-TinkerPop Thrift and CQL tests:
-
 ```bash
 CASSANDRA_VERSION=3.11.0 CASSANDRA_ENABLE_BOP=true docker-compose -f janusgraph-cassandra/src/test/resources/docker-compose.yml up -d
 # wait for instance to start (see above)
-mvn clean install -Dtest.skip.tp=false -DskipTests=true -pl janusgraph-cassandra,janusgraph-cql -fn -Dstorage.hostname=$STORAGE_HOSTNAME
+mvn clean install -Dtest.skip.tp=false -DskipTests=true -pl janusgraph-cassandra -fn -Dstorage.hostname=$STORAGE_HOSTNAME
 ```
 
 #### Hadoop Tests
@@ -213,12 +240,4 @@ Hadoop tests with Cassandra 3 (note that default Cassandra 2 tests must be skipp
 CASSANDRA_VERSION=3.11.0 docker-compose -f janusgraph-cassandra/src/test/resources/docker-compose.yml up -d
 # wait for instance to start (see above)
 mvn clean install -pl :janusgraph-hadoop-2 -DskipHBase -DskipCassandra -DskipCassandra3=false -Dstorage.hostname=$STORAGE_HOSTNAME
-```
-
-### Running Tests with ScyllaDB
-
-Thrift and CQL tests can be run against an externally-managed [ScyllaDB](https://www.scylladb.com/) instance. For convenience the `scylladb-test` Maven profile is provided to manage a ScyllaDB Docker container through the Maven Failsafe Plugin. Note this only runs tests with the `Murmur3Partitioner` partitioner and also skips SSL tests.
-
-```bash
-mvn clean install -pl janusgraph-cql -Pscylladb-test
 ```
