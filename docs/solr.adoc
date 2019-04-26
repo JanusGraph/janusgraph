@@ -212,6 +212,9 @@ JanusGraph can also interact with a SolrCloud cluster that is configured for htt
 
 Note, however, that schemaless mode is recommended only for prototyping and initial application development and NOT recommended for production use.
 
+==== Handling Updates on Non-Singular Property Values
+For properties with non-singular cardinality (such as Cardinality.LIST), the default behavior when updating the value of such a property is to preserve the old value(s) and insert the new value into the list. This is not always desirable in implementations where the entire attribute list is updated in one transaction, in which case the previous attribute list should be overwritten. This can lead to invalid search results, such as when a property's attribute list has been updated and a query run for a value from the old list still returns that property as a match. The config option `replace-stale-values` can be set to true so that when a property is updated, any previous/stale values for that property are removed and only the new attribute list is preserved.
+
 
 === Troubleshooting
 

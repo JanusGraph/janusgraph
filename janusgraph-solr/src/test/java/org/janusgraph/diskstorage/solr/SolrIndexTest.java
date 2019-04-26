@@ -15,7 +15,9 @@
 package org.janusgraph.diskstorage.solr;
 
 import java.util.Date;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
@@ -31,13 +33,21 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexProviderTest;
+import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
 import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -45,6 +55,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author Jared Holmberg (jholmberg@bericotechnologies.com)
  */
 public class SolrIndexTest extends IndexProviderTest {
+	//used to set testing-stale-values to true in SolrIndex config for relevant unit tests
+	private boolean testingStaleValues = false;
 
     @BeforeAll
     public static void setUpMiniCluster() throws Exception {
@@ -82,6 +94,9 @@ public class SolrIndexTest extends IndexProviderTest {
 
         config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getZookeeperUrls(), index);
         config.set(SolrIndex.WAIT_SEARCHER, true, index);
+        if(testingStaleValues) {
+        	config.set(SolrIndex.REPLACE_STALE_VALUES, true, index);
+        }
         config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index);
         return config.restrictTo(index);
     }
@@ -174,5 +189,48 @@ public class SolrIndexTest extends IndexProviderTest {
     public void testMapKey2Field_MappingSpaces() {
         KeyInformation keyInfo = new StandardKeyInformation(Boolean.class, Cardinality.SINGLE);
         assertEquals("field•name•with•spaces_b", index.mapKey2Field("field name with spaces", keyInfo));
+    }
+    
+    public static Stream<Boolean> collectionCardinalityReplaceStaleValue() {
+        return ImmutableSet.of(true, false).stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("collectionCardinalityReplaceStaleValue")
+    public void testCollectionCardinalityStaleValues(Boolean replaceStaleValue) throws BackendException {
+        final String store = "vertex";
+        final String docid = "docid";
+        final String defText = "1";
+        final String revisedText = "2";
+
+        if(replaceStaleValue) {
+            testingStaleValues = true;
+            index = new SolrIndex(getLocalSolrTestConfig());
+        }
+
+        initialize(store);
+        Multimap<String, Object> initialProps = ImmutableMultimap.of(PHONE_LIST, defText);
+        add(store, docid, initialProps, true);
+        clopen();
+
+        // Sanity check
+        assertEquals(docid, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "1"))).findFirst().get());
+
+        tx.add(store, docid, PHONE_LIST, revisedText, false);
+        tx.commit();
+        clopen();
+
+        if(replaceStaleValue) {
+            // Should no longer return old text
+            assertEquals(Optional.empty(), tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, defText))).findFirst(), "Expected the old value to be absent since the replace-stale-values flag is set to true");
+        } else {
+            // Without the replace-stale-values flag, the old value should still be present
+            assertEquals(docid, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, defText))).findFirst().get(), "Expected the old value to be present since the replace-stale-values flag is set to false");
+        }
+
+        // the new value should also be present
+        assertEquals(docid, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, revisedText))).findFirst().get(), "Expected the new value to be present");
+
+        testingStaleValues = false;
     }
 }

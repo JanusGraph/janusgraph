@@ -219,6 +219,10 @@ public class SolrIndex implements IndexProvider {
     public static final ConfigOption<Boolean> WAIT_SEARCHER = new ConfigOption<>(SOLR_NS, "wait-searcher",
             "When mutating - wait for the index to reflect new mutations before returning. This can have a negative impact on performance.",
             ConfigOption.Type.LOCAL, false);
+ 
+    public static final ConfigOption<Boolean> REPLACE_STALE_VALUES = new ConfigOption<>(SOLR_NS, "replace-stale-values",
+    		"When mutating - For non-singular cardinality, don't preserve old values when updating or deleting a property.",
+    		ConfigOption.Type.LOCAL, false);
 
 
     /** Security Configuration */
@@ -249,6 +253,7 @@ public class SolrIndex implements IndexProvider {
     private final int batchSize;
     private final boolean waitSearcher;
     private final boolean kerberosEnabled;
+    private final boolean replaceStaleValues;
 
     public SolrIndex(final Configuration config) throws BackendException {
         Preconditions.checkArgument(config!=null);
@@ -260,6 +265,7 @@ public class SolrIndex implements IndexProvider {
         batchSize = config.get(INDEX_MAX_RESULT_SET_SIZE);
         ttlField = config.get(TTL_FIELD);
         waitSearcher = config.get(WAIT_SEARCHER);
+        replaceStaleValues = config.get(REPLACE_STALE_VALUES);
 
         if (kerberosEnabled) {
             logger.debug("Kerberos is enabled. Configuring SOLR for Kerberos.");
@@ -428,14 +434,14 @@ public class SolrIndex implements IndexProvider {
 
                 final List<String> deleteIds = new ArrayList<>();
                 final Collection<SolrInputDocument> changes = new ArrayList<>();
-
+                
                 for (final Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
                     final String docId = entry.getKey();
                     final IndexMutation mutation = entry.getValue();
                     Preconditions.checkArgument(!(mutation.isNew() && mutation.isDeleted()));
                     Preconditions.checkArgument(!mutation.isNew() || !mutation.hasDeletions());
                     Preconditions.checkArgument(!mutation.isDeleted() || !mutation.hasAdditions());
-
+                    
                     //Handle any deletions
                     if (mutation.hasDeletions()) {
                         if (mutation.isDeleted()) {
@@ -468,11 +474,12 @@ public class SolrIndex implements IndexProvider {
                         // the index so we don't overwrite existing values.
                         adds.keySet().forEach(v-> {
                             final KeyInformation keyInformation = information.get(collectionName, v);
-                            final String solrOp = keyInformation.getCardinality() == Cardinality.SINGLE ? "set" : "add";
+                            final String solrOp = keyInformation.getCardinality() == Cardinality.SINGLE || replaceStaleValues ? "set" : "add";
                             doc.setField(v, isNewDoc ? adds.get(v) :
                                 new HashMap<String, Object>(1) {{put(solrOp, adds.get(v));}}
                             );
                         });
+
                         if (ttl>0) {
                             Preconditions.checkArgument(isNewDoc,
                                     "Solr only supports TTL on new documents [%s]", docId);
@@ -506,6 +513,7 @@ public class SolrIndex implements IndexProvider {
             // in the event of multiple removals in one mutation.
             final Map<String, Object> deletes = collectFieldValues(fieldDeletions, collectionName, information);
             deletes.keySet().forEach(vertex -> {
+            	
                 final Map<String, Object> remove;
                 if (keyInformation.getCardinality() == Cardinality.SINGLE) {
                     remove = (Map) fieldDeletes;
