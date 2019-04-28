@@ -15,30 +15,24 @@
 package org.janusgraph.graphdb;
 
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import org.janusgraph.TestCategory;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.Multiplicity;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.SchemaViolationException;
+import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphConfigurationException;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphFactory;
-import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphQuery;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.JanusGraphVertexQuery;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.RelationType;
+import org.janusgraph.core.SchemaViolationException;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.VertexList;
 import org.janusgraph.core.attribute.Cmp;
@@ -48,13 +42,13 @@ import org.janusgraph.core.log.Change;
 import org.janusgraph.core.log.LogProcessorFramework;
 import org.janusgraph.core.log.TransactionRecovery;
 import org.janusgraph.core.schema.ConsistencyModifier;
+import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.core.schema.JanusGraphSchemaType;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.core.schema.RelationTypeIndex;
 import org.janusgraph.core.schema.SchemaAction;
 import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.core.schema.JanusGraphIndex;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.core.schema.JanusGraphSchemaType;
 import org.janusgraph.core.util.ManagementUtil;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
@@ -97,18 +91,19 @@ import org.janusgraph.graphdb.schema.SchemaContainer;
 import org.janusgraph.graphdb.schema.VertexLabelDefinition;
 import org.janusgraph.graphdb.serializer.SpecialInt;
 import org.janusgraph.graphdb.serializer.SpecialIntSerializer;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphPropertiesStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphVertexStep;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.graphdb.types.StandardPropertyKeyMaker;
 import org.janusgraph.graphdb.types.system.BaseVertexLabel;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
-import org.janusgraph.TestCategory;
 import org.janusgraph.testutil.TestGraphConfigs;
+
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.TextP;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -126,19 +121,31 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -147,7 +154,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.Date;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -156,14 +162,27 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
-import static org.janusgraph.graphdb.internal.RelationCategory.*;
-import static org.janusgraph.testutil.JanusGraphAssert.*;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.decr;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.incr;
-import static org.apache.tinkerpop.gremlin.structure.Direction.*;
+import static org.apache.tinkerpop.gremlin.structure.Direction.BOTH;
+import static org.apache.tinkerpop.gremlin.structure.Direction.IN;
+import static org.apache.tinkerpop.gremlin.structure.Direction.OUT;
 import static org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality.single;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.internal.RelationCategory.EDGE;
+import static org.janusgraph.graphdb.internal.RelationCategory.PROPERTY;
+import static org.janusgraph.graphdb.internal.RelationCategory.RELATION;
+import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
+import static org.janusgraph.testutil.JanusGraphAssert.assertEmpty;
+import static org.janusgraph.testutil.JanusGraphAssert.assertNotEmpty;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 /**
@@ -4761,6 +4780,56 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testTinkerPopTextContainingFindsCorrectValue() {
+        initializeGraphWithVerticesHavingNames("marko", "stephen");
+        GraphTraversalSource g = graph.traversal();
+
+        assertEquals("marko", g.V().has("name",
+            org.apache.tinkerpop.gremlin.process.traversal.TextP.containing("ark")).values("name").next());
+    }
+
+    @Test
+    public void testTinkerPopTextContainingFindsRightNumberOfValues() {
+        initializeGraphWithVerticesHavingNames("marko", "ark", "arko", "park", "stephen");
+        GraphTraversalSource g = graph.traversal();
+
+        assertEquals(4, g.V().has("name",
+            org.apache.tinkerpop.gremlin.process.traversal.TextP.containing("ark")).count().next());
+    }
+
+    @Test
+    public void testTinkerPopTextPredicatesConnectedViaAnd() {
+        initializeGraphWithVerticesHavingNames("marko", "mark", "notmarko", "notmark", "stephen");
+        GraphTraversalSource g = graph.traversal();
+
+        assertEquals(1, g.V().has("name",
+            org.apache.tinkerpop.gremlin.process.traversal.TextP.startingWith("mark").and(TextP.endingWith("ark"))).count().next());
+    }
+
+    private void initializeGraphWithVerticesHavingNames(String... names) {
+        makeKey("name", String.class);
+        finishSchema();
+        GraphTraversalSource g = graph.traversal();
+        for (String name : names) {
+            g.addV().property("name", name).iterate();
+        }
+        g.tx().commit();
+    }
+
+    @Test
+    public void testTinkerPopTextStartingWith() {
+        makeKey("name", String.class);
+        mgmt.makeVertexLabel("person").make();
+        finishSchema();
+        GraphTraversalSource g = graph.traversal();
+        g.addV("person").property("name", "marko").iterate();
+        g.tx().commit();
+
+        assertEquals("marko", g.V().has("person", "name",
+            org.apache.tinkerpop.gremlin.process.traversal.TextP.containing("ark")).values("name").next());
+    }
+
+    @Test
     public void testIndexUniqueness() {
         PropertyKey time = makeKey("time", Long.class);
         PropertyKey text = makeKey("text", String.class);
@@ -5680,4 +5749,39 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             "Data type not identified correctly by auto schema maker");
     }
 
+    /* ==================================================================================
+                            IO
+     ==================================================================================*/
+
+    @Test
+    public void testWriteAndReadWithJanusGraphIoRegistryWithGryo(@TempDir Path tempDir) {
+        final Path file = tempDir.resolve("testgraph_" + this.getClass().getCanonicalName() + ".kryo");
+        testWritingAndReading(file.toFile());
+    }
+
+    @Test
+    public void testWriteAndReadWithJanusGraphIoRegistryWithGraphson(@TempDir Path tempDir) {
+        final Path file = tempDir.resolve("testgraph_" + this.getClass().getCanonicalName() + ".json");
+        testWritingAndReading(file.toFile());
+    }
+
+    private void testWritingAndReading(File f) {
+        GraphTraversalSource g = graph.traversal();
+        g.addV().property("name", f.getName()).iterate();
+        g.tx().commit();
+        assertEquals(0, f.length());
+
+        g.io(f.getAbsolutePath()).write().iterate();
+
+        assertTrue(f.length() > 0, "File " + f.getAbsolutePath() + " was expected to be not empty, but is");
+
+        clopen();
+        g = graph.traversal();
+        g.V().has("name", f.getName()).drop().iterate();
+        g.tx().commit();
+
+        g.io(f.getAbsolutePath()).read().iterate();
+
+        assertEquals(1, g.V().has("name", f.getName()).count().next());
+    }
 }

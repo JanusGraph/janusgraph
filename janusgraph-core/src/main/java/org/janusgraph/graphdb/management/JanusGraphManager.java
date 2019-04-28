@@ -137,15 +137,6 @@ public class JanusGraphManager implements GraphManager {
         instance = null;
     }
 
-    /**
-     * @deprecated
-     */
-    @Deprecated
-    @Override
-    public Map getGraphs() {
-        return graphs;
-    }
-
     @Override
     public Set<String> getGraphNames() {
         return graphs.keySet();
@@ -159,15 +150,6 @@ public class JanusGraphManager implements GraphManager {
     @Override
     public void putGraph(String gName, Graph g) {
         graphs.put(gName, g);
-    }
-
-    /**
-     * @deprecated
-     */
-    @Override
-    @Deprecated
-    public Map<String, TraversalSource> getTraversalSources() {
-        return traversalSources;
     }
 
     @Override

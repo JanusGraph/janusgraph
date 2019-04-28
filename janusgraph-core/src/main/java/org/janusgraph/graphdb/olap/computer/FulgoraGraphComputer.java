@@ -21,6 +21,7 @@ import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphComputer;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScanner;
@@ -31,11 +32,14 @@ import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.GraphFilter;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
-import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
+import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
+import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
+import org.apache.tinkerpop.gremlin.process.computer.search.path.ShortestPathVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.util.DefaultComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.util.GraphComputerHelper;
 import org.apache.tinkerpop.gremlin.process.computer.util.VertexProgramHelper;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -55,6 +59,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -64,7 +69,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class FulgoraGraphComputer implements JanusGraphComputer {
 
     private static final Logger log =
-            LoggerFactory.getLogger(FulgoraGraphComputer.class);
+        LoggerFactory.getLogger(FulgoraGraphComputer.class);
 
     private VertexProgram<?> vertexProgram;
     private final Set<MapReduce> mapReduces = new HashSet<>();
@@ -143,14 +148,25 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
 
     @Override
     public Future<ComputerResult> submit() {
+        guardAgainstDuplicateSubmission();
+        ensureSettingsAreValid();
+
+        initializeMemory();
+
+        return CompletableFuture.supplyAsync(() -> submitAsync());
+    }
+
+    private void guardAgainstDuplicateSubmission() {
         if (executed)
             throw Exceptions.computerHasAlreadyBeenSubmittedAVertexProgram();
         else
             executed = true;
+    }
 
+    private void ensureSettingsAreValid() {
         // it is not possible execute a computer if it has no vertex program nor map-reducers
         if (null == vertexProgram && mapReduces.isEmpty())
-            throw GraphComputer.Exceptions.computerHasNoVertexProgramNorMapReducers();
+            throw Exceptions.computerHasNoVertexProgramNorMapReducers();
         // it is possible to run map-reducers without a vertex program
         if (null != vertexProgram) {
             GraphComputerHelper.validateProgramOnComputer(this, vertexProgram);
@@ -162,192 +178,250 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
         this.resultGraphMode = GraphComputerHelper.getResultGraphState(Optional.ofNullable(this.vertexProgram), Optional.ofNullable(this.resultGraphMode));
         // determine the legality persistence and result graph options
         if (!this.features().supportsResultGraphPersistCombination(this.resultGraphMode, this.persistMode))
-            throw GraphComputer.Exceptions.resultGraphPersistCombinationNotSupported(this.resultGraphMode, this.persistMode);
+            throw Exceptions.resultGraphPersistCombinationNotSupported(this.resultGraphMode, this.persistMode);
         // ensure requested workers are not larger than supported workers
         if (this.numThreads > this.features().getMaxWorkers())
-            throw GraphComputer.Exceptions.computerRequiresMoreWorkersThanSupported(this.numThreads, this.features().getMaxWorkers());
-
-        memory = new FulgoraMemory(vertexProgram, mapReduces);
-
-        return CompletableFuture.supplyAsync(() -> {
-            final long time = System.currentTimeMillis();
-            if (null != vertexProgram) {
-                // ##### Execute vertex program
-                vertexMemory = new FulgoraVertexMemory(expectedNumVertices, graph.getIDManager(), vertexProgram);
-                // execute the vertex program
-                vertexProgram.setup(memory);
-
-                try (VertexProgramScanJob.Executor job = VertexProgramScanJob.getVertexProgramScanJob(graph, memory, vertexMemory, vertexProgram)) {
-                    for (int iteration = 1; ; iteration++) {
-                        memory.completeSubRound();
-                        vertexMemory.nextIteration(vertexProgram.getMessageScopes(memory));
-
-                        jobId = name + "#" + iteration;
-                        StandardScanner.Builder scanBuilder = graph.getBackend().buildEdgeScanJob();
-                        scanBuilder.setJobId(jobId);
-                        scanBuilder.setNumProcessingThreads(numThreads);
-                        scanBuilder.setWorkBlockSize(readBatchSize);
-                        scanBuilder.setJob(job);
-                        PartitionedVertexProgramExecutor programExecutor = new PartitionedVertexProgramExecutor(graph, memory, vertexMemory, vertexProgram);
-                        try {
-                            //Iterates over all vertices and computes the vertex program on all non-partitioned vertices. For partitioned ones, the data is aggregated
-                            ScanMetrics jobResult = scanBuilder.execute().get();
-                            long failures = jobResult.get(ScanMetrics.Metric.FAILURE);
-                            if (failures > 0) {
-                                throw new JanusGraphException("Failed to process [" + failures + "] vertices in vertex program iteration [" + iteration + "]. Computer is aborting.");
-                            }
-                            //Runs the vertex program on all aggregated, partitioned vertices.
-                            programExecutor.run(numThreads, jobResult);
-                            failures = jobResult.getCustom(PartitionedVertexProgramExecutor.PARTITION_VERTEX_POSTFAIL);
-                            if (failures > 0) {
-                                throw new JanusGraphException("Failed to process [" + failures + "] partitioned vertices in vertex program iteration [" + iteration + "]. Computer is aborting.");
-                            }
-                        } catch (Exception e) {
-                            throw new JanusGraphException(e);
-                        }
-
-                        vertexMemory.completeIteration();
-                        memory.completeSubRound();
-                        try {
-                            if (this.vertexProgram.terminate(this.memory)) {
-                                break;
-                            }
-                        } finally {
-                            memory.incrIteration();
-                        }
-                    }
-                }
-            }
-
-            // ##### Execute map-reduce jobs
-            // Collect map jobs
-            Map<MapReduce, FulgoraMapEmitter> mapJobs = new HashMap<>(mapReduces.size());
-            for (MapReduce mapReduce : mapReduces) {
-                if (mapReduce.doStage(MapReduce.Stage.MAP)) {
-                    FulgoraMapEmitter mapEmitter = new FulgoraMapEmitter<>(mapReduce.doStage(MapReduce.Stage.REDUCE));
-                    mapJobs.put(mapReduce, mapEmitter);
-                }
-            }
-            // Execute map jobs
-            jobId = name + "#map";
-            try (VertexMapJob.Executor job = VertexMapJob.getVertexMapJob(graph, vertexMemory, mapJobs)) {
-                StandardScanner.Builder scanBuilder = graph.getBackend().buildEdgeScanJob();
-                scanBuilder.setJobId(jobId);
-                scanBuilder.setNumProcessingThreads(numThreads);
-                scanBuilder.setWorkBlockSize(readBatchSize);
-                scanBuilder.setJob(job);
-                try {
-                    ScanMetrics jobResult = scanBuilder.execute().get();
-                    long failures = jobResult.get(ScanMetrics.Metric.FAILURE);
-                    if (failures > 0) {
-                        throw new JanusGraphException("Failed to process [" + failures + "] vertices in map phase. Computer is aborting.");
-                    }
-                    failures = jobResult.getCustom(VertexMapJob.MAP_JOB_FAILURE);
-                    if (failures > 0) {
-                        throw new JanusGraphException("Failed to process [" + failures + "] individual map jobs. Computer is aborting.");
-                    }
-                } catch (Exception e) {
-                    throw new JanusGraphException(e);
-                }
-                // Execute reduce phase and add to memory
-                for (Map.Entry<MapReduce, FulgoraMapEmitter> mapJob : mapJobs.entrySet()) {
-                    FulgoraMapEmitter<?, ?> mapEmitter = mapJob.getValue();
-                    MapReduce mapReduce = mapJob.getKey();
-                    mapEmitter.complete(mapReduce); // sort results if a map output sort is defined
-                    if (mapReduce.doStage(MapReduce.Stage.REDUCE)) {
-                        final FulgoraReduceEmitter<?, ?> reduceEmitter = new FulgoraReduceEmitter<>();
-                        try (WorkerPool workers = new WorkerPool(numThreads)) {
-                            workers.submit(() -> mapReduce.workerStart(MapReduce.Stage.REDUCE));
-                            for (final Map.Entry queueEntry : mapEmitter.reduceMap.entrySet()) {
-                                if (null == queueEntry) break;
-                                workers.submit(() -> mapReduce.reduce(queueEntry.getKey(), ((Iterable) queueEntry.getValue()).iterator(), reduceEmitter));
-                            }
-                            workers.submit(() -> mapReduce.workerEnd(MapReduce.Stage.REDUCE));
-                        } catch (Exception e) {
-                            throw new JanusGraphException("Exception while executing reduce phase", e);
-                        }
-//                    mapEmitter.reduceMap.entrySet().parallelStream().forEach(entry -> mapReduce.reduce(entry.getKey(), entry.getValue().iterator(), reduceEmitter));
-
-
-                        reduceEmitter.complete(mapReduce); // sort results if a reduce output sort is defined
-                        mapReduce.addResultToMemory(this.memory, reduceEmitter.reduceQueue.iterator());
-                    } else {
-                        mapReduce.addResultToMemory(this.memory, mapEmitter.mapQueue.iterator());
-                    }
-                }
-            }
-            memory.attachReferenceElements(graph);
-
-            // #### Write mutated properties back into graph
-            Graph resultgraph = graph;
-            if (persistMode == Persist.NOTHING && resultGraphMode == ResultGraph.NEW) {
-                resultgraph = EmptyGraph.instance();
-            } else if (persistMode != Persist.NOTHING && vertexProgram != null && !vertexProgram.getVertexComputeKeys().isEmpty()) {
-                //First, create property keys in graph if they don't already exist
-                JanusGraphManagement management = graph.openManagement();
-                try {
-                    for (VertexComputeKey key : vertexProgram.getVertexComputeKeys()) {
-                        if (!management.containsPropertyKey(key.getKey()))
-                            log.warn("Property key [{}] is not part of the schema and will be created. It is advised to initialize all keys.", key.getKey());
-                        management.getOrCreatePropertyKey(key.getKey());
-                    }
-                    management.commit();
-                } finally {
-                    if (management != null && management.isOpen()) management.rollback();
-                }
-
-                //TODO: Filter based on VertexProgram
-                Map<Long, Map<String, Object>> mutatedProperties = Maps.transformValues(vertexMemory.getMutableVertexProperties(),
-                        new Function<Map<String, Object>, Map<String, Object>>() {
-                            @Nullable
-                            @Override
-                            public Map<String, Object> apply(final Map<String, Object> o) {
-                                return Maps.filterKeys(o, s -> !VertexProgramHelper.isTransientVertexComputeKey(s, vertexProgram.getVertexComputeKeys()));
-                            }
-                        });
-
-                if (resultGraphMode == ResultGraph.ORIGINAL) {
-                    AtomicInteger failures = new AtomicInteger(0);
-                    try (WorkerPool workers = new WorkerPool(numThreads)) {
-                        List<Map.Entry<Long, Map<String, Object>>> subset = new ArrayList<>(writeBatchSize / vertexProgram.getVertexComputeKeys().size());
-                        int currentSize = 0;
-                        for (Map.Entry<Long, Map<String, Object>> entry : mutatedProperties.entrySet()) {
-                            subset.add(entry);
-                            currentSize += entry.getValue().size();
-                            if (currentSize >= writeBatchSize) {
-                                workers.submit(new VertexPropertyWriter(subset, failures));
-                                subset = new ArrayList<>(subset.size());
-                                currentSize = 0;
-                            }
-                        }
-                        if (!subset.isEmpty()) workers.submit(new VertexPropertyWriter(subset, failures));
-                    } catch (Exception e) {
-                        throw new JanusGraphException("Exception while attempting to persist result into graph", e);
-                    }
-                    if (failures.get() > 0)
-                        throw new JanusGraphException("Could not persist program results to graph. Check log for details.");
-                } else if (resultGraphMode == ResultGraph.NEW) {
-                    resultgraph = graph.newTransaction();
-                    for (Map.Entry<Long, Map<String, Object>> vertexProperty : mutatedProperties.entrySet()) {
-                        Vertex v = resultgraph.vertices(vertexProperty.getKey()).next();
-                        for (Map.Entry<String, Object> prop : vertexProperty.getValue().entrySet()) {
-                            if (prop.getValue() instanceof List) {
-                                ((List) prop.getValue())
-                                    .forEach(value -> v.property(VertexProperty.Cardinality.list, prop.getKey(), value));
-                            } else {
-                                v.property(VertexProperty.Cardinality.single, prop.getKey(), prop.getValue());
-                            }
-                        }
-                    }
-                }
-            }
-            // update runtime and return the newly computed graph
-            this.memory.setRuntime(System.currentTimeMillis() - time);
-            this.memory.complete();
-            return new DefaultComputerResult(resultgraph, this.memory);
-        });
+            throw Exceptions.computerRequiresMoreWorkersThanSupported(this.numThreads, this.features().getMaxWorkers());
     }
 
+    private void initializeMemory() {
+        memory = new FulgoraMemory(vertexProgram, mapReduces);
+    }
+
+    private ComputerResult submitAsync() {
+        final long time = System.currentTimeMillis();
+        executeVertexProgram();
+
+        Map<MapReduce, FulgoraMapEmitter> mapJobs = collectMapJobs();
+        executeMapJobs(mapJobs);
+
+        Graph resultgraph = writeMutatedPropertiesBackIntoGraph();
+        // update runtime and return the newly computed graph
+        this.memory.setRuntime(System.currentTimeMillis() - time);
+        this.memory.complete();
+        return new DefaultComputerResult(resultgraph, this.memory);
+    }
+
+    private void executeVertexProgram() {
+        if (null == vertexProgram) return;
+
+        vertexMemory = new FulgoraVertexMemory(expectedNumVertices, graph.getIDManager(), vertexProgram);
+        vertexProgram.setup(memory);
+
+        try (VertexProgramScanJob.Executor job = VertexProgramScanJob.getVertexProgramScanJob(graph, memory, vertexMemory, vertexProgram)) {
+            for (int iteration = 1; ; iteration++) {
+                memory.completeSubRound();
+                executeIterationOfJob(job, iteration);
+                memory.completeSubRound();
+                try {
+                    if (this.vertexProgram.terminate(this.memory)) {
+                        break;
+                    }
+                } finally {
+                    memory.incrIteration();
+                }
+            }
+        }
+    }
+
+    private void executeIterationOfJob(VertexProgramScanJob.Executor job, int iteration) {
+        initializeVertexMemoryForIteration();
+        StandardScanner.Builder scanBuilder = createScanBuilderForJob(job, iteration);
+        PartitionedVertexProgramExecutor programExecutor = new PartitionedVertexProgramExecutor(graph, memory, vertexMemory, vertexProgram);
+        try {
+            //Iterates over all vertices and computes the vertex program on all non-partitioned vertices. For partitioned ones, the data is aggregated
+            ScanMetrics jobResult = executeOnNonPartitionedVertices(iteration, scanBuilder);
+
+            executeOnPartitionedVertices(iteration, programExecutor, jobResult);
+        } catch (Exception e) {
+            throw new JanusGraphException(e);
+        }
+
+        vertexMemory.completeIteration();
+    }
+
+    private void initializeVertexMemoryForIteration() {
+        if (vertexProgram instanceof ShortestPathVertexProgram) {
+            HashSet<MessageScope> locals = new HashSet<>();
+            locals.add(MessageScope.Local.of(__::bothE));
+            locals.add(MessageScope.Global.instance());
+            vertexMemory.nextIteration(locals);
+        } else {
+            vertexMemory.nextIteration(vertexProgram.getMessageScopes(memory));
+        }
+    }
+
+    private StandardScanner.Builder createScanBuilderForJob(VertexProgramScanJob.Executor job, int iteration) {
+        jobId = name + "#" + iteration;
+        StandardScanner.Builder scanBuilder = graph.getBackend().buildEdgeScanJob();
+        scanBuilder.setJobId(jobId);
+        scanBuilder.setNumProcessingThreads(numThreads);
+        scanBuilder.setWorkBlockSize(readBatchSize);
+        scanBuilder.setJob(job);
+        return scanBuilder;
+    }
+
+    private ScanMetrics executeOnNonPartitionedVertices(int iteration, StandardScanner.Builder scanBuilder) throws InterruptedException, ExecutionException, BackendException {
+        ScanMetrics jobResult = scanBuilder.execute().get();
+        long failures = jobResult.get(ScanMetrics.Metric.FAILURE);
+        if (failures > 0) {
+            throw new JanusGraphException("Failed to process [" + failures + "] vertices in vertex program iteration " +
+                "[" + iteration + "]. Computer is aborting.");
+        }
+        return jobResult;
+    }
+
+    private void executeOnPartitionedVertices(int iteration, PartitionedVertexProgramExecutor programExecutor, ScanMetrics jobResult) {
+        programExecutor.run(numThreads, jobResult);
+        long failures = jobResult.getCustom(PartitionedVertexProgramExecutor.PARTITION_VERTEX_POSTFAIL);
+        if (failures > 0) {
+            throw new JanusGraphException("Failed to process [" + failures + "] partitioned vertices in vertex " +
+                "program iteration [" + iteration + "]. Computer is aborting.");
+        }
+    }
+
+    private Map<MapReduce, FulgoraMapEmitter> collectMapJobs() {
+        Map<MapReduce, FulgoraMapEmitter> mapJobs = new HashMap<>(mapReduces.size());
+        for (MapReduce mapReduce : mapReduces) {
+            if (mapReduce.doStage(MapReduce.Stage.MAP)) {
+                FulgoraMapEmitter mapEmitter = new FulgoraMapEmitter<>(mapReduce.doStage(MapReduce.Stage.REDUCE));
+                mapJobs.put(mapReduce, mapEmitter);
+            }
+        }
+        return mapJobs;
+    }
+
+    private void executeMapJobs(Map<MapReduce, FulgoraMapEmitter> mapJobs) {
+        jobId = name + "#map";
+        try (VertexMapJob.Executor job = VertexMapJob.getVertexMapJob(graph, vertexMemory, mapJobs)) {
+            executeMapJob(job);
+            executeReducePhase(mapJobs);
+        }
+        memory.attachReferenceElements(graph);
+    }
+
+    private void executeMapJob(VertexMapJob.Executor job) {
+        StandardScanner.Builder scanBuilder = graph.getBackend().buildEdgeScanJob();
+        scanBuilder.setJobId(jobId);
+        scanBuilder.setNumProcessingThreads(numThreads);
+        scanBuilder.setWorkBlockSize(readBatchSize);
+        scanBuilder.setJob(job);
+        try {
+            ScanMetrics jobResult = scanBuilder.execute().get();
+            long failures = jobResult.get(ScanMetrics.Metric.FAILURE);
+            if (failures > 0) {
+                throw new JanusGraphException("Failed to process [" + failures + "] vertices in map phase. Computer is aborting.");
+            }
+            failures = jobResult.getCustom(VertexMapJob.MAP_JOB_FAILURE);
+            if (failures > 0) {
+                throw new JanusGraphException("Failed to process [" + failures + "] individual map jobs. Computer is aborting.");
+            }
+        } catch (JanusGraphException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new JanusGraphException(e);
+        }
+    }
+
+    private void executeReducePhase(Map<MapReduce, FulgoraMapEmitter> mapJobs) {
+        for (Map.Entry<MapReduce, FulgoraMapEmitter> mapJob : mapJobs.entrySet()) {
+            FulgoraMapEmitter<?, ?> mapEmitter = mapJob.getValue();
+            MapReduce mapReduce = mapJob.getKey();
+            mapEmitter.complete(mapReduce); // sort results if a map output sort is defined
+            if (mapReduce.doStage(MapReduce.Stage.REDUCE)) {
+                final FulgoraReduceEmitter<?, ?> reduceEmitter = new FulgoraReduceEmitter<>();
+                try (WorkerPool workers = new WorkerPool(numThreads)) {
+                    workers.submit(() -> mapReduce.workerStart(MapReduce.Stage.REDUCE));
+                    for (final Map.Entry queueEntry : mapEmitter.reduceMap.entrySet()) {
+                        if (null == queueEntry) break;
+                        workers.submit(() -> mapReduce.reduce(queueEntry.getKey(),
+                            ((Iterable) queueEntry.getValue()).iterator(), reduceEmitter));
+                    }
+                    workers.submit(() -> mapReduce.workerEnd(MapReduce.Stage.REDUCE));
+                } catch (Exception e) {
+                    throw new JanusGraphException("Exception while executing reduce phase", e);
+                }
+//                    mapEmitter.reduceMap.entrySet().parallelStream().forEach(entry -> mapReduce.reduce(entry.getKey(), entry.getValue().iterator(), reduceEmitter));
+
+                reduceEmitter.complete(mapReduce); // sort results if a reduce output sort is defined
+                mapReduce.addResultToMemory(this.memory, reduceEmitter.reduceQueue.iterator());
+            } else {
+                mapReduce.addResultToMemory(this.memory, mapEmitter.mapQueue.iterator());
+            }
+        }
+    }
+
+    private Graph writeMutatedPropertiesBackIntoGraph() {
+        Graph resultgraph = graph;
+        if (persistMode == Persist.NOTHING && resultGraphMode == ResultGraph.NEW) {
+            resultgraph = EmptyGraph.instance();
+        } else if (persistMode != Persist.NOTHING && vertexProgram != null && !vertexProgram.getVertexComputeKeys().isEmpty()) {
+            //First, create property keys in graph if they don't already exist
+            JanusGraphManagement management = graph.openManagement();
+            try {
+                for (VertexComputeKey key : vertexProgram.getVertexComputeKeys()) {
+                    if (!management.containsPropertyKey(key.getKey())) {
+                        log.warn("Property key [{}] is not part of the schema and will be created. It is advised to initialize all keys.", key.getKey());
+                    }
+                    management.getOrCreatePropertyKey(key.getKey());
+                }
+                management.commit();
+            } finally {
+                if (management != null && management.isOpen()) {
+                    management.rollback();
+                }
+            }
+
+            //TODO: Filter based on VertexProgram
+            Map<Long, Map<String, Object>> mutatedProperties = Maps.transformValues(vertexMemory.getMutableVertexProperties(),
+                new Function<Map<String, Object>, Map<String, Object>>() {
+                    @Nullable
+                    @Override
+                    public Map<String, Object> apply(final Map<String, Object> o) {
+                        return Maps.filterKeys(o, s -> !VertexProgramHelper.isTransientVertexComputeKey(s, vertexProgram.getVertexComputeKeys()));
+                    }
+                });
+
+            if (resultGraphMode == ResultGraph.ORIGINAL) {
+                AtomicInteger failures = new AtomicInteger(0);
+                try (WorkerPool workers = new WorkerPool(numThreads)) {
+                    List<Map.Entry<Long, Map<String, Object>>> subset = new ArrayList<>(writeBatchSize / vertexProgram.getVertexComputeKeys().size());
+                    int currentSize = 0;
+                    for (Map.Entry<Long, Map<String, Object>> entry : mutatedProperties.entrySet()) {
+                        subset.add(entry);
+                        currentSize += entry.getValue().size();
+                        if (currentSize >= writeBatchSize) {
+                            workers.submit(new VertexPropertyWriter(subset, failures));
+                            subset = new ArrayList<>(subset.size());
+                            currentSize = 0;
+                        }
+                    }
+                    if (!subset.isEmpty()) {
+                        workers.submit(new VertexPropertyWriter(subset, failures));
+                    }
+                } catch (Exception e) {
+                    throw new JanusGraphException("Exception while attempting to persist result into graph", e);
+                }
+                if (failures.get() > 0) {
+                    throw new JanusGraphException("Could not persist program results to graph. Check log for details.");
+                }
+            } else if (resultGraphMode == ResultGraph.NEW) {
+                resultgraph = graph.newTransaction();
+                for (Map.Entry<Long, Map<String, Object>> vertexProperty : mutatedProperties.entrySet()) {
+                    Vertex v = resultgraph.vertices(vertexProperty.getKey()).next();
+                    for (Map.Entry<String, Object> prop : vertexProperty.getValue().entrySet()) {
+                        if (prop.getValue() instanceof List) {
+                            ((List) prop.getValue())
+                                .forEach(value -> v.property(VertexProperty.Cardinality.list, prop.getKey(), value));
+                        } else {
+                            v.property(VertexProperty.Cardinality.single, prop.getKey(), prop.getValue());
+                        }
+                    }
+                }
+            }
+        }
+        return resultgraph;
+    }
 
     private class VertexPropertyWriter implements Runnable {
 
