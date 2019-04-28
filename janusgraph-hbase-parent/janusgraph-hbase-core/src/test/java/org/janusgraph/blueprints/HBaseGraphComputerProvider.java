@@ -17,9 +17,7 @@ package org.janusgraph.blueprints;
 import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
-import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.GraphProvider;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.io.IOException;
 
@@ -31,19 +29,14 @@ public class HBaseGraphComputerProvider extends AbstractJanusGraphComputerProvid
 
     @Override
     public ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test, String testMethodName) {
-        ModifiableConfiguration config = super.getJanusGraphConfiguration(graphName, test, testMethodName);
-        config.setAll(HBaseStorageSetup.getHBaseConfiguration(graphName).getAll());
-        return config;
-    }
-
-    @Override
-    public Graph openTestGraph(final Configuration config) {
         try {
             HBaseStorageSetup.startHBase();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return super.openTestGraph(config);
+        ModifiableConfiguration config = super.getJanusGraphConfiguration(graphName, test, testMethodName);
+        config.setAll(HBaseStorageSetup.getHBaseConfiguration(graphName).getAll());
+        return config;
     }
 
 }

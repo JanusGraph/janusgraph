@@ -20,6 +20,12 @@
             <artifactId>hadoop-client</artifactId>
             <version>${hadoop2.version}</version>
             <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-compress</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.mrunit</groupId>

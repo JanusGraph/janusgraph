@@ -85,6 +85,17 @@ mgmt.commit()
 
 Note that the data will be stored in the index twice, once for exact matching and once for fuzzy matching.
 
+==== TinkerPop Text Predicates
+
+It is also possible to use the TinkerPop text predicates with JanusGraph, but these predicates do not make use of
+indices which means that they require filtering in memory which can be very costly.
+
+[source, gremlin]
+import static org.apache.tinkerpop.gremlin.process.traversal.TextP.*;
+g.V().has('bookname', startingWith('uni'))
+g.V().has('bookname', endingWith('corn'))
+g.V().has('bookname', containing('nico'))
+
 [[geo-search]]
 === Geo Mapping
 
