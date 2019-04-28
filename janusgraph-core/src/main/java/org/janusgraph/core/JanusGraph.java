@@ -58,6 +58,37 @@ import org.apache.tinkerpop.gremlin.util.Gremlin;
         reason = "JanusGraph test graph computer (FulgoraGraphComputer) " +
             "currently does not support graph filters but does not throw proper exception because doing so breaks numerous " +
             "tests in gremlin-test ProcessComputerSuite.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.computer.search.path.ShortestPathVertexProgramTest",
+        method = "*",
+        reason = "ShortestPathVertexProgram currently has two bugs that prevent us from using it correctly. See " +
+            "https://issues.apache.org/jira/browse/TINKERPOP-2187 for more information.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ShortestPathTest$Traversals",
+        method = "*",
+        reason = "ShortestPathVertexProgram currently has two bugs that prevent us from using it correctly. See " +
+            "https://issues.apache.org/jira/browse/TINKERPOP-2187 for more information.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ConnectedComponentTest",
+        method = "g_V_hasLabelXsoftwareX_connectedComponent_project_byXnameX_byXcomponentX",
+        reason = "The test assumes that a certain vertex has always the lowest id which is not the case for " +
+            "JanusGraph. See https://issues.apache.org/jira/browse/TINKERPOP-2189 for more information.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ConnectedComponentTest",
+        method = "g_V_connectedComponent_withXEDGES_bothEXknowsXX_withXPROPERTY_NAME_clusterX_project_byXnameX_byXclusterX",
+        reason = "The test assumes that a certain vertex has always the lowest id which is not the case for " +
+            "JanusGraph. See https://issues.apache.org/jira/browse/TINKERPOP-2189 for more information.")
+@Graph.OptOut(
+    test = "org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatTest",
+    method = "g_VX3X_repeatXbothX_createdXX_untilXloops_is_40XXemit_repeatXin_knowsXX_emit_loopsXisX1Xdedup_values",
+    reason = "The test assumes that a certain vertex has always the lowest id which is not the case for " +
+        "JanusGraph. See https://issues.apache.org/jira/browse/TINKERPOP-2189 for more information.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ConnectedComponentTest",
+        method = "g_V_dedup_connectedComponent_hasXcomponentX",
+        reason = "The test involves serializing and deserializing of vertices, especially of CacheVertex. This class" +
+            "is however not serializable and it is non-trivial to enable serialization as the class is tied to a" +
+            "transaction. See #1519 for more information.")
 public interface JanusGraph extends Transaction {
 
    /* ---------------------------------------------------------------

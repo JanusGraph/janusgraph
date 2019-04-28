@@ -42,4 +42,8 @@ public class JanusGraphIoRegistry extends AbstractIoRegistry {
     public static JanusGraphIoRegistry getInstance() {
         return INSTANCE;
     }
+
+    public static JanusGraphIoRegistry instance() {
+        return INSTANCE;
+    }
 }

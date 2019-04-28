@@ -14,17 +14,11 @@
 
 package org.janusgraph.blueprints.process;
 
-import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.blueprints.HBaseMultiQueryGraphProvider;
 import org.janusgraph.core.JanusGraph;
-import org.apache.hadoop.hbase.util.VersionInfo;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.apache.tinkerpop.gremlin.process.ProcessStandardSuite;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.runner.RunWith;
-
-import java.io.IOException;
 
 /**
  * @author Ted Wilmese (twilmes@gmail.com)
@@ -32,20 +26,4 @@ import java.io.IOException;
 @RunWith(ProcessStandardSuite.class)
 @GraphProviderClass(provider = HBaseMultiQueryGraphProvider.class, graph = JanusGraph.class)
 public class HBaseMultiQueryProcessTest {
-
-    @BeforeAll
-    public static void startHBase() {
-        try {
-            HBaseStorageSetup.startHBase();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @AfterAll
-    public static void stopHBase() {
-        // Workaround for https://issues.apache.org/jira/browse/HBASE-10312
-        if (VersionInfo.getVersion().startsWith("0.96"))
-            HBaseStorageSetup.killIfRunning();
-    }
 }

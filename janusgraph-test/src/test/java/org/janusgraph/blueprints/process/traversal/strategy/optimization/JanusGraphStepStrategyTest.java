@@ -228,17 +228,25 @@ public class JanusGraphStepStrategyTest {
             arguments(g.V().hasId(1).has("name", "marko"), g_V(T.id, 1, "name", eq("marko")), Collections.emptyList()),
             arguments(g.V().hasId(1).hasLabel("Person"), g_V(T.id, 1, "~label", eq("Person")), Collections.emptyList()),
             arguments(g.V().hasLabel("Person").has("lang", "java").order().by("name"),
-                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.incr)), Collections.emptyList()),
-            arguments(g.V().hasLabel("Person").has("lang", "java").order().by(new ElementValueComparator("name", Order.incr)),
-                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.incr)), Collections.emptyList()),
+                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.asc)),
+                Collections.emptyList()),
+            arguments(g.V().hasLabel("Person").has("lang", "java").order().by(new ElementValueComparator("name",
+                    Order.asc)),
+                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.asc)),
+                Collections.emptyList()),
             // same as above, different order
-            arguments(g.V().hasLabel("Person").has("lang", "java").order().by("name", Order.decr),
-                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.decr)), Collections.emptyList()),
-            arguments(g.V().hasLabel("Person").has("lang", "java").order().by(new ElementValueComparator("name", Order.incr)),
-                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.incr)), Collections.emptyList()),
+            arguments(g.V().hasLabel("Person").has("lang", "java").order().by("name", Order.desc),
+                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.desc)),
+                Collections.emptyList()),
+            arguments(g.V().hasLabel("Person").has("lang", "java").order().by(new ElementValueComparator("name",
+                    Order.asc)),
+                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.asc)),
+                Collections.emptyList()),
             // if multiple order steps are specified in a row, only the last will be folded in because it overrides previous ordering
-            arguments(g.V().hasLabel("Person").has("lang", "java").order().by("lang", Order.incr).order().by("name", Order.decr),
-                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.decr)), Collections.emptyList()),
+            arguments(g.V().hasLabel("Person").has("lang", "java").order().by("lang", Order.asc).order().by("name",
+                Order.desc),
+                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.desc)),
+                Collections.emptyList()),
             // do not folder in orders that include a nested traversal
             arguments(g.V().hasLabel("Person").order().by(values("age")),
                 g_V("~label", eq("Person")).order().by(values("age")), Collections.emptyList()),
@@ -255,10 +263,13 @@ public class JanusGraphStepStrategyTest {
                 g_V(__.or(g_V("length", lt(160)), g_V("age", gt(32), __.range(1, 5)))), Collections.emptyList()),
             arguments(g.V().or(has("length", lt(160)), has("age", gt(32)).range(1, 5)).range(10, 20),
                 g_V(__.or(g_V("length", lt(160)), g_V("age", gt(32), __.range(1, 5))), __.range(10, 20)), Collections.emptyList()),
-            arguments(g.V().or(__.has("name", "marko"), has("lang", "java").order().by("name", Order.decr)),
-                g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.decr)))), Collections.emptyList()),
-            arguments(g.V().or(__.has("name", "marko"), has("lang", "java").order().by("name", Order.decr)).order().by("lang", Order.incr),
-                g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.decr))), new HasStepFolder.OrderEntry("lang", Order.incr)), Collections.emptyList())
+            arguments(g.V().or(has("name", "marko"), has("lang", "java").order().by("name", Order.desc)),
+                g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), new HasStepFolder.OrderEntry("name",
+                    Order.desc)))), Collections.emptyList()),
+            arguments(g.V().or(has("name", "marko"), has("lang", "java").order().by("name", Order.desc)).order().by(
+                "lang", Order.asc),
+                g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), new HasStepFolder.OrderEntry("name",
+                    Order.desc))), new HasStepFolder.OrderEntry("lang", Order.asc)), Collections.emptyList())
         });
     }
     

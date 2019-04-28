@@ -29,17 +29,12 @@ public class HBaseMultiQueryGraphProvider extends AbstractJanusGraphProvider {
 
     @Override
     public ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test, String testMethodName) {
-        return HBaseStorageSetup.getHBaseConfiguration(graphName)
-            .set(GraphDatabaseConfiguration.USE_MULTIQUERY, true);
-    }
-
-    @Override
-    public Graph openTestGraph(final Configuration config) {
         try {
             HBaseStorageSetup.startHBase();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return super.openTestGraph(config);
+        return HBaseStorageSetup.getHBaseConfiguration(graphName)
+            .set(GraphDatabaseConfiguration.USE_MULTIQUERY, true);
     }
 }
