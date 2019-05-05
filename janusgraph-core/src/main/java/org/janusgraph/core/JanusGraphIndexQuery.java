@@ -14,6 +14,7 @@
 
 package org.janusgraph.core;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.janusgraph.core.schema.Parameter;
 import java.util.stream.Stream;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -43,6 +44,16 @@ public interface JanusGraphIndexQuery {
      * @return
      */
     JanusGraphIndexQuery offset(int offset);
+
+    /**
+     * Orders the element results of this query according
+     * to their property for the given key in the given order (increasing/decreasing).
+     *
+     * @param key   The key of the properties on which to order
+     * @param order the ordering direction
+     * @return
+     */
+    JanusGraphIndexQuery orderBy(String key, Order order);
 
     /**
      * Adds the given parameter to the list of parameters of this query.
