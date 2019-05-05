@@ -205,7 +205,10 @@ public abstract class IndexProviderTest {
         final ImmutableList<IndexQuery.OrderEntry> orderTimeDesc = ImmutableList.of(new IndexQuery.OrderEntry(TIME, Order.DESC, Integer.class));
         final ImmutableList<IndexQuery.OrderEntry> orderWeightDesc = ImmutableList.of(new IndexQuery.OrderEntry(WEIGHT, Order.DESC, Double.class));
         final ImmutableList<IndexQuery.OrderEntry> jointOrder = ImmutableList.of(new IndexQuery.OrderEntry(WEIGHT, Order.DESC, Double.class), new IndexQuery.OrderEntry(TIME, Order.DESC, Integer.class));
-
+        final ImmutableList<IndexQuery.OrderEntry> orderNameAsc = ImmutableList.of(new IndexQuery.OrderEntry(NAME, Order.ASC, String.class));
+        final ImmutableList<IndexQuery.OrderEntry> orderNameDesc = ImmutableList.of(new IndexQuery.OrderEntry(NAME, Order.DESC, String.class));
+        final ImmutableList<IndexQuery.OrderEntry> orderDateAsc = ImmutableList.of(new IndexQuery.OrderEntry(DATE, Order.ASC, Instant.class));
+        final ImmutableList<IndexQuery.OrderEntry> orderDateDesc = ImmutableList.of(new IndexQuery.OrderEntry(DATE, Order.DESC, Instant.class));
 
         clopen();
 
@@ -252,6 +255,18 @@ public abstract class IndexProviderTest {
             assertEquals(ImmutableList.of("doc1", "doc2"), result);
             result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), jointOrder))
                     .collect(Collectors.toList());
+            assertEquals(ImmutableList.of("doc2", "doc1"), result);
+            result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderNameAsc))
+                    .collect(Collectors.toList());
+            assertEquals(ImmutableList.of("doc1", "doc2"), result);
+            result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderNameDesc))
+                    .collect(Collectors.toList());
+            assertEquals(ImmutableList.of("doc2", "doc1"), result);
+            result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderDateAsc))
+                       .collect(Collectors.toList());
+            assertEquals(ImmutableList.of("doc1", "doc2"), result);
+            result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderDateDesc))
+                       .collect(Collectors.toList());
             assertEquals(ImmutableList.of("doc2", "doc1"), result);
 
             result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_PREFIX, "w")))
