@@ -1088,14 +1088,7 @@ public class ElasticSearchIndex implements IndexProvider {
         final Map<String,Object> esQuery = getFilter(query.getCondition(), informations.get(query.getStore()));
         sr.setQuery(compat.prepareQuery(esQuery));
         if (!query.getOrder().isEmpty()) {
-            final List<IndexQuery.OrderEntry> orders = query.getOrder();
-            for (final IndexQuery.OrderEntry orderEntry : orders) {
-                final String order = orderEntry.getOrder().name();
-                final KeyInformation information = informations.get(query.getStore()).get(orderEntry.getKey());
-                final Mapping mapping = Mapping.getMapping(information);
-                final Class<?> datatype = orderEntry.getDatatype();
-                sr.addSort(orderEntry.getKey(), order.toLowerCase(), convertToEsDataType(datatype, mapping));
-            }
+            addOrderToQuery(informations, sr, query.getOrder(), query.getStore());
         }
         sr.setFrom(0);
         if (query.hasLimit()) {
@@ -1152,10 +1145,13 @@ public class ElasticSearchIndex implements IndexProvider {
         return null;
     }
 
-    private ElasticSearchResponse runCommonQuery(RawQuery query, BaseTransaction tx, int size,
+    private ElasticSearchResponse runCommonQuery(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx, int size,
                                                  boolean useScroll) throws BackendException{
         final ElasticSearchRequest sr = new ElasticSearchRequest();
         sr.setQuery(compat.queryString(query.getQuery()));
+        if (!query.getOrders().isEmpty()) {
+            addOrderToQuery(informations, sr, query.getOrders(), query.getStore());
+        }
         sr.setFrom(0);
         sr.setSize(size);
         try {
@@ -1166,11 +1162,22 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
+    private void addOrderToQuery(KeyInformation.IndexRetriever informations, ElasticSearchRequest sr, final List<IndexQuery.OrderEntry> orders,
+                                 String store) {
+        for (final IndexQuery.OrderEntry orderEntry : orders) {
+            final String order = orderEntry.getOrder().name();
+            final KeyInformation information = informations.get(store).get(orderEntry.getKey());
+            final Mapping mapping = Mapping.getMapping(information);
+            final Class<?> datatype = orderEntry.getDatatype();
+            sr.addSort(orderEntry.getKey(), order.toLowerCase(), convertToEsDataType(datatype, mapping));
+        }
+    }
+
     @Override
     public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever information,
                                                  BaseTransaction tx) throws BackendException {
         final int size = query.hasLimit() ? Math.min(query.getLimit() + query.getOffset(), batchSize) : batchSize;
-        final ElasticSearchResponse response = runCommonQuery(query, tx, size, size >= batchSize );
+        final ElasticSearchResponse response = runCommonQuery(query, information, tx, size, size >= batchSize );
         log.debug("First Executed query [{}] in {} ms", query.getQuery(), response.getTook());
         final ElasticSearchScroll resultIterator = new ElasticSearchScroll(client, response, size);
         final Stream<RawQuery.Result<String>> toReturn
@@ -1183,7 +1190,7 @@ public class ElasticSearchIndex implements IndexProvider {
     public Long totals(RawQuery query, KeyInformation.IndexRetriever information,
                        BaseTransaction tx) throws BackendException {
         final int size = query.hasLimit() ? Math.min(query.getLimit() + query.getOffset(), batchSize) : batchSize;
-        final ElasticSearchResponse response = runCommonQuery(query, tx, size, false);
+        final ElasticSearchResponse response = runCommonQuery(query, information, tx, size, false);
         log.debug("Executed query [{}] in {} ms", query.getQuery(), response.getTook());
         return response.getTotal();
     }
