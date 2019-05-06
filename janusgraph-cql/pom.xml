@@ -80,7 +80,7 @@
     <build>
         <testResources>
             <testResource>
-                <directory>src/test/resources</directory>
+                <directory>${basedir}/src/test/resources</directory>
                 <excludes>
                     <exclude>cassandra/</exclude>
                     <exclude>keystores/</exclude>
