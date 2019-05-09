@@ -67,30 +67,30 @@ public class BerkeleyLuceneTest extends JanusGraphIndexTest {
         GraphOfTheGodsFactory.load(graph);
         mgmt = graph.openManagement();
 
-        String expected = "99EB9D82CE85D15A9120E31969B3F861";
+        String expected = "A18422278042949EE2B162837EC27A63";
         String output = mgmt.printSchema();
         String outputHash = DigestUtils.md5Hex(output).toUpperCase();
-        assertEquals(outputHash, expected);
+        assertEquals(expected, outputHash);
 
         expected = "2114C009DC359B1C9AD7D0655AC6C9BF";
         output = mgmt.printVertexLabels();
         outputHash = DigestUtils.md5Hex(output).toUpperCase();
-        assertEquals(outputHash, expected);
+        assertEquals(expected, outputHash);
 
         expected = "1E8AAE2C887544E490948F2ACBBFE312";
         output = mgmt.printEdgeLabels();
         outputHash = DigestUtils.md5Hex(output).toUpperCase();
-        assertEquals(outputHash, expected);
+        assertEquals(expected, outputHash);
 
         expected = "35851C8867321C8CB3E275886F40E8B9";
         output = mgmt.printPropertyKeys();
         outputHash = DigestUtils.md5Hex(output).toUpperCase();
-        assertEquals(outputHash, expected);
+        assertEquals(expected, outputHash);
 
-        expected = "FB629F06E8410B033167DCBF2434CB1D";
+        expected = "3951BBB935D39EE0FF74CE2D5F7CA997";
         output = mgmt.printIndexes();
         outputHash = DigestUtils.md5Hex(output).toUpperCase();
-        assertEquals(outputHash, expected);
+        assertEquals(expected, outputHash);
     }
 
 }

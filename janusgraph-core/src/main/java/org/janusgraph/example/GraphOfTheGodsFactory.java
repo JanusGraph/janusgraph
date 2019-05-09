@@ -96,7 +96,7 @@ public class GraphOfTheGodsFactory {
         management.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
         management.makeEdgeLabel("mother").multiplicity(Multiplicity.MANY2ONE).make();
         EdgeLabel battled = management.makeEdgeLabel("battled").signature(time).make();
-        management.buildEdgeIndex(battled, "battlesByTime", Direction.BOTH, Order.decr, time);
+        management.buildEdgeIndex(battled, "battlesByTime", Direction.BOTH, Order.desc, time);
         management.makeEdgeLabel("lives").signature(reason).make();
         management.makeEdgeLabel("pet").make();
         management.makeEdgeLabel("brother").make();

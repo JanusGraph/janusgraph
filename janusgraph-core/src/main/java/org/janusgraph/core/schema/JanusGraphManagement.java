@@ -56,7 +56,7 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
 
     /**
      * Identical to {@link #buildEdgeIndex(org.janusgraph.core.EdgeLabel, String, org.apache.tinkerpop.gremlin.structure.Direction, org.apache.tinkerpop.gremlin.process.traversal.Order, org.janusgraph.core.PropertyKey...)}
-     * with default sort order {@link org.apache.tinkerpop.gremlin.process.traversal.Order#incr}.
+     * with default sort order {@link org.apache.tinkerpop.gremlin.process.traversal.Order#asc}.
      *
      * @param label
      * @param name
@@ -84,7 +84,7 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
 
     /**
      * Identical to {@link #buildPropertyIndex(org.janusgraph.core.PropertyKey, String, org.apache.tinkerpop.gremlin.process.traversal.Order, org.janusgraph.core.PropertyKey...)}
-     * with default sort order {@link org.apache.tinkerpop.gremlin.process.traversal.Order#incr}.
+     * with default sort order {@link org.apache.tinkerpop.gremlin.process.traversal.Order#asc}.
      *
      * @param key
      * @param name
