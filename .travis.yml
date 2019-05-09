@@ -40,8 +40,6 @@ env:
     - MODULE='hadoop-parent/janusgraph-hadoop-2'
     - MODULE='lucene'
     - MODULE='solr' ARGS='-Pdocker,solr7'
-    - MODULE='solr' ARGS='-Pdocker,solr6'
-    - MODULE='solr' ARGS='-Pdocker,solr5'
     - MODULE='es' ARGS='-Pelasticsearch6'
     - MODULE='es' ARGS='-Pelasticsearch60'
     - MODULE='es' ARGS='-Pelasticsearch5'
