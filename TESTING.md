@@ -74,15 +74,16 @@ mvn clean install -pl janusgraph-solr -Pdocker
 ```
 
 Additional Maven profiles are defined for testing against default versions of other supported major Solr releases.
+(Currently, only Solr 7 is supported.)
 
 ```bash
-mvn clean install -pl janusgraph-solr -Pdocker,solr5
+mvn clean install -pl janusgraph-solr -Pdocker,solr7
 ```
 
 Finally the `solr.test.version` property can be used to test against arbitrary Solr versions.
 
 ```bash
-mvn clean install -pl janusgraph-solr -Pdocker -Dsolr.test.version=5.5.4
+mvn clean install -pl janusgraph-solr -Pdocker -Dsolr.test.version=7.0.0
 ```
 
 ### Running Tests an Elasticsearch

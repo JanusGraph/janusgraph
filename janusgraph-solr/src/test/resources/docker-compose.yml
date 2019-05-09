@@ -23,7 +23,7 @@ services:
       - "3888:3888"
 
   solr:
-    image: solr:5.5.4
+    image: solr:7.7
     container_name: solr
     ports:
       - "8983:8983"
