@@ -20,6 +20,12 @@ This file format change is forward compatible with previous versions of Berkeley
 However, once the data has been read in with the newer version of BerkeleyDB, those files can no longer be read by the older version.
 Users are encouraged to backup the BerkeleyDB storage directory before attempting to use it with the JanusGraph release.
 
+==== Solr: Compatible Lucene version changed from 5.0.0 to 7.0.0 in distributed config
+The JanusGraph distribution contains a `solrconfig.xml` file that can be used to configure Solr.
+The value `luceneMatchVersion` in this config that tells Solr to behave according to that Lucene version was changed from 5.0.0 to 7.0.0 as that is the default version currently used by JanusGraph.
+Users should generally set this value to the version of their Solr installation.
+If the config distributed by JanusGraph is used for an existing Solr installation that used a lower version before (like 5.0.0 from a previous versions of this file), it is highly recommended that a re-indexing is performed.
+
 === Upgrading to JanusGraph 0.3.0
 IMPORTANT: You should back-up your data prior to attempting an upgrade! Also please note that once an upgrade has been completed you will no longer be able to connect to your graph with client versions prior to 0.3.0.
 

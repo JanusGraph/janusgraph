@@ -12,8 +12,6 @@
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
         <solr7.test.version>7.0.0</solr7.test.version>
-        <solr6.test.version>6.6.1</solr6.test.version>
-        <solr5.test.version>5.5.4</solr5.test.version>
         <solr.test.version>${solr7.test.version}</solr.test.version>
         <skip.solr.test>${skipTests}</skip.solr.test>
     </properties>
@@ -214,18 +212,6 @@
             <id>solr7</id>
             <properties>
                 <solr.test.version>${solr7.test.version}</solr.test.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>solr6</id>
-            <properties>
-                <solr.test.version>${solr6.test.version}</solr.test.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>solr5</id>
-            <properties>
-                <solr.test.version>${solr5.test.version}</solr.test.version>
             </properties>
         </profile>
         <profile>
