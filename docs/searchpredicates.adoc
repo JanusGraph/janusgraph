@@ -55,10 +55,10 @@ The following query examples demonstrate some of the predicates on the tutorial 
 g.V().has("name", "hercules")
 // 2) Find all vertices with an age greater than 50
 g.V().has("age", gt(50))
-// or find all vertices between 1000 (inclusive) and 5000 (exclusive) years of age and order by increasing age
-g.V().has("age", inside(1000, 5000)).order().by("age", incr)
+// or find all vertices between 1000 (inclusive) and 5000 (exclusive) years of age and order by ascending age
+g.V().has("age", inside(1000, 5000)).order().by("age", asc)
 // which returns the same result set as the following query but in reverse order
-g.V().has("age", inside(1000, 5000)).order().by("age", decr)
+g.V().has("age", inside(1000, 5000)).order().by("age", desc)
 // 3) Find all edges where the place is at most 50 kilometers from the given latitude-longitude pair
 g.E().has("place", geoWithin(Geoshape.circle(37.97, 23.72, 50)))
 // 4) Find all edges where reason contains the word "loves"

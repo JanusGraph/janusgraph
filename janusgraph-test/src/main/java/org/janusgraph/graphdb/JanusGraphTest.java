@@ -166,8 +166,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.Order.decr;
-import static org.apache.tinkerpop.gremlin.process.traversal.Order.incr;
+import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
+import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
 import static org.apache.tinkerpop.gremlin.structure.Direction.BOTH;
 import static org.apache.tinkerpop.gremlin.structure.Direction.IN;
 import static org.apache.tinkerpop.gremlin.structure.Direction.OUT;
@@ -1345,7 +1345,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         );
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
         EdgeLabel friend = mgmt.makeEdgeLabel("friend").multiplicity(Multiplicity.SIMPLE).make();
-        mgmt.buildEdgeIndex(friend, "byTime", Direction.OUT, decr, time);
+        mgmt.buildEdgeIndex(friend, "byTime", Direction.OUT, desc, time);
         finishSchema();
         assertEquals(SchemaStatus.ENABLED, mgmt.getRelationIndex(mgmt.getRelationType("friend"), "byTime").getIndexStatus());
         JanusGraphVertex v = tx.addVertex();
@@ -1354,7 +1354,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             JanusGraphVertex o = tx.addVertex();
             v.addEdge("friend", o, "time", i);
         }
-        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 199, 210).orderBy("time", decr),
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 199, 210).orderBy("time", desc),
             EDGE, 10, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
         tx.commit();
         finishSchema();
@@ -1368,7 +1368,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         );
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SET).make();
-        mgmt.buildPropertyIndex(name, "byTime", decr, time);
+        mgmt.buildPropertyIndex(name, "byTime", desc, time);
         finishSchema();
         assertEquals(SchemaStatus.ENABLED, mgmt.getRelationIndex(mgmt.getRelationType("name"), "byTime").getIndexStatus());
         JanusGraphVertex v = tx.addVertex();
@@ -1376,7 +1376,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         for (int i = 200; i < 210; i++) {
             v.property("name", String.valueOf(i), "time", i);
         }
-        evaluateQuery(v.query().keys("name").interval("time", 199, 210).orderBy("time", decr),
+        evaluateQuery(v.query().keys("name").interval("time", 199, 210).orderBy("time", desc),
             PROPERTY, 10, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
         tx.commit();
         finishSchema();
@@ -1390,7 +1390,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         );
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).cardinality(Cardinality.LIST).make();
         EdgeLabel friend = mgmt.makeEdgeLabel("friend").multiplicity(Multiplicity.MULTI).make();
-        mgmt.buildEdgeIndex(friend, "byTime", Direction.OUT, decr, time);
+        mgmt.buildEdgeIndex(friend, "byTime", Direction.OUT, desc, time);
         finishSchema();
         JanusGraphVertex v = tx.addVertex();
         for (int i = 200; i < 210; i++) {
@@ -1398,7 +1398,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             v.addEdge("friend", o, "time", i);
         }
         assertEquals(SchemaStatus.ENABLED, mgmt.getRelationIndex(mgmt.getRelationType("friend"), "byTime").getIndexStatus());
-        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 201, 205).orderBy("time", decr),
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 201, 205).orderBy("time", desc),
             EDGE, 4, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
         tx.commit();
         finishSchema();
@@ -1412,14 +1412,14 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         );
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).cardinality(Cardinality.LIST).make();
         PropertyKey sensor = mgmt.makePropertyKey("sensor").dataType(Integer.class).cardinality(Cardinality.LIST).make();
-        mgmt.buildPropertyIndex(sensor, "byTime", decr, time);
+        mgmt.buildPropertyIndex(sensor, "byTime", desc, time);
         finishSchema();
         JanusGraphVertex v = tx.addVertex();
         for (int i = 200; i < 210; i++) {
             v.property("sensor", i, "time", i);
         }
         assertEquals(SchemaStatus.ENABLED, mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime").getIndexStatus());
-        evaluateQuery(v.query().keys("sensor").interval("time", 201, 205).orderBy("time", decr),
+        evaluateQuery(v.query().keys("sensor").interval("time", 201, 205).orderBy("time", desc),
             PROPERTY, 4, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
         tx.commit();
         finishSchema();
@@ -1449,13 +1449,13 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         newTx();
         //Indexes should not yet be in use
         v = getV(tx, v);
-        evaluateQuery(v.query().keys("sensor").interval("time", 1, 5).orderBy("time", decr),
+        evaluateQuery(v.query().keys("sensor").interval("time", 1, 5).orderBy("time", desc),
                 PROPERTY, 4, 1, new boolean[]{false, false}, tx.getPropertyKey("time"), Order.DESC);
-        evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time", decr),
+        evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time", desc),
                 PROPERTY, 0, 1, new boolean[]{false, false}, tx.getPropertyKey("time"), Order.DESC);
-        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 1, 5).orderBy("time", decr),
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 1, 5).orderBy("time", desc),
                 EDGE, 4, 1, new boolean[]{false, false}, tx.getPropertyKey("time"), Order.DESC);
-        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 101, 105).orderBy("time", decr),
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 101, 105).orderBy("time", desc),
                 EDGE, 0, 1, new boolean[]{false, false}, tx.getPropertyKey("time"), Order.DESC);
         evaluateQuery(tx.query().has("name", "v5"),
                 ElementCategory.VERTEX, 1, new boolean[]{false, true});
@@ -1469,8 +1469,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         time = mgmt.getPropertyKey("time");
         name = mgmt.getPropertyKey("name");
         friend = mgmt.getEdgeLabel("friend");
-        mgmt.buildPropertyIndex(sensor, "byTime", decr, time);
-        mgmt.buildEdgeIndex(friend, "byTime", Direction.OUT, decr, time);
+        mgmt.buildPropertyIndex(sensor, "byTime", desc, time);
+        mgmt.buildEdgeIndex(friend, "byTime", Direction.OUT, desc, time);
         mgmt.buildIndex("bySensorReading", Vertex.class).addKey(name).buildCompositeIndex();
         finishSchema();
         newTx();
@@ -1544,17 +1544,17 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         newTx();
         //Use indexes now but only see new data for property and graph index
         v = getV(tx, v);
-        evaluateQuery(v.query().keys("sensor").interval("time", 1, 5).orderBy("time", decr),
+        evaluateQuery(v.query().keys("sensor").interval("time", 1, 5).orderBy("time", desc),
                 PROPERTY, 4, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
-        evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time", decr),
+        evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time", desc),
                 PROPERTY, 4, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
-        evaluateQuery(v.query().keys("sensor").interval("time", 201, 205).orderBy("time", decr),
+        evaluateQuery(v.query().keys("sensor").interval("time", 201, 205).orderBy("time", desc),
                 PROPERTY, 4, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
-        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 1, 5).orderBy("time", decr),
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 1, 5).orderBy("time", desc),
                 EDGE, 0, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
-        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 101, 105).orderBy("time", decr),
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 101, 105).orderBy("time", desc),
                 EDGE, 4, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
-        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 201, 205).orderBy("time", decr),
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 201, 205).orderBy("time", desc),
                 EDGE, 4, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
         evaluateQuery(tx.query().has("name", "v5"),
                 ElementCategory.VERTEX, 1, new boolean[]{true, true}, "bySensorReading");
@@ -1573,11 +1573,11 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         newTx();
         //It should now have all the answers
         v = getV(tx, v);
-        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 1, 5).orderBy("time", decr),
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 1, 5).orderBy("time", desc),
                 EDGE, 4, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
-        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 101, 105).orderBy("time", decr),
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 101, 105).orderBy("time", desc),
                 EDGE, 4, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
-        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 201, 205).orderBy("time", decr),
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 201, 205).orderBy("time", desc),
                 EDGE, 4, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
 
         pindex2 = mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime");
@@ -1601,17 +1601,17 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         newTx();
         //The two disabled indexes should force full scans
         v = getV(tx, v);
-        evaluateQuery(v.query().keys("sensor").interval("time", 1, 5).orderBy("time", decr),
+        evaluateQuery(v.query().keys("sensor").interval("time", 1, 5).orderBy("time", desc),
                 PROPERTY, 4, 1, new boolean[]{false, false}, tx.getPropertyKey("time"), Order.DESC);
-        evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time", decr),
+        evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time", desc),
                 PROPERTY, 4, 1, new boolean[]{false, false}, tx.getPropertyKey("time"), Order.DESC);
-        evaluateQuery(v.query().keys("sensor").interval("time", 201, 205).orderBy("time", decr),
+        evaluateQuery(v.query().keys("sensor").interval("time", 201, 205).orderBy("time", desc),
                 PROPERTY, 4, 1, new boolean[]{false, false}, tx.getPropertyKey("time"), Order.DESC);
-        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 1, 5).orderBy("time", decr),
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 1, 5).orderBy("time", desc),
                 EDGE, 4, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
-        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 101, 105).orderBy("time", decr),
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 101, 105).orderBy("time", desc),
                 EDGE, 4, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
-        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 201, 205).orderBy("time", decr),
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 201, 205).orderBy("time", desc),
                 EDGE, 4, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
         evaluateQuery(tx.query().has("name", "v5"),
                 ElementCategory.VERTEX, 1, new boolean[]{false, true});
@@ -3048,9 +3048,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         RelationTypeIndex name1 = mgmt.buildPropertyIndex(name, "weightDesc", weight);
 
-        RelationTypeIndex connect1 = mgmt.buildEdgeIndex(connect, "weightAsc", Direction.BOTH, incr, weight);
-        RelationTypeIndex connect2 = mgmt.buildEdgeIndex(connect, "weightDesc", Direction.OUT, decr, weight);
-        RelationTypeIndex connect3 = mgmt.buildEdgeIndex(connect, "time+weight", Direction.OUT, decr, time, weight);
+        RelationTypeIndex connect1 = mgmt.buildEdgeIndex(connect, "weightAsc", Direction.BOTH, asc, weight);
+        RelationTypeIndex connect2 = mgmt.buildEdgeIndex(connect, "weightDesc", Direction.OUT, desc, weight);
+        RelationTypeIndex connect3 = mgmt.buildEdgeIndex(connect, "time+weight", Direction.OUT, desc, time, weight);
 
         RelationTypeIndex child1 = mgmt.buildEdgeIndex(child, "time", Direction.OUT, time);
 
@@ -3175,11 +3175,11 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         evaluateQuery(v.query().keys("name").has("weight", Cmp.GREATER_THAN, 3.6),
                 PROPERTY, 2 * numV / 10, 1, new boolean[]{false, true});
-        evaluateQuery(v.query().keys("name").has("weight", Cmp.LESS_THAN, 0.9).orderBy("weight", incr),
+        evaluateQuery(v.query().keys("name").has("weight", Cmp.LESS_THAN, 0.9).orderBy("weight", asc),
                 PROPERTY, 2 * numV / 10, 1, new boolean[]{true, true}, weight, Order.ASC);
-        evaluateQuery(v.query().keys("name").interval("weight", 1.1, 2.2).orderBy("weight", decr).limit(numV / 10),
+        evaluateQuery(v.query().keys("name").interval("weight", 1.1, 2.2).orderBy("weight", desc).limit(numV / 10),
                 PROPERTY, numV / 10, 1, new boolean[]{true, false}, weight, Order.DESC);
-        evaluateQuery(v.query().keys("name").has("time", Cmp.EQUAL, 5).orderBy("weight", decr),
+        evaluateQuery(v.query().keys("name").has("time", Cmp.EQUAL, 5).orderBy("weight", desc),
                 PROPERTY, 1, 1, new boolean[]{false, false}, weight, Order.DESC);
         evaluateQuery(v.query().keys("name"),
                 PROPERTY, numV, 1, new boolean[]{true, true});
@@ -3188,9 +3188,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 EDGE, 1, 1, new boolean[]{true, true});
         evaluateQuery(v.query().labels("child").direction(BOTH).has("time", Cmp.EQUAL, 5),
                 EDGE, 1, 2, new boolean[0]);
-        evaluateQuery(v.query().labels("child").direction(OUT).interval("time", 10, 20).orderBy("weight", decr).limit(5),
+        evaluateQuery(v.query().labels("child").direction(OUT).interval("time", 10, 20).orderBy("weight", desc).limit(5),
                 EDGE, 5, 1, new boolean[]{true, false}, weight, Order.DESC);
-        evaluateQuery(v.query().labels("child").direction(BOTH).interval("weight", 0.0, 1.0).orderBy("weight", decr),
+        evaluateQuery(v.query().labels("child").direction(BOTH).interval("weight", 0.0, 1.0).orderBy("weight", desc),
                 EDGE, 2 * numV / 10, 2, new boolean[]{false, false}, weight, Order.DESC);
         evaluateQuery(v.query().labels("child").direction(OUT).interval("weight", 0.0, 1.0),
                 EDGE, 2 * numV / 10, 1, new boolean[]{false, true});
@@ -3206,9 +3206,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(2 * numV / 10, vl.size());
         assertTrue(vl.isSorted());
         assertTrue(isSortedByID(vl));
-        evaluateQuery(v.query().labels("child").interval("time", 70, 80).direction(OUT).orderBy("time", incr),
+        evaluateQuery(v.query().labels("child").interval("time", 70, 80).direction(OUT).orderBy("time", asc),
                 EDGE, 10, 1, new boolean[]{true, true}, time, Order.ASC);
-        vl = v.query().labels("child").interval("time", 70, 80).direction(OUT).orderBy("time", incr).vertexIds();
+        vl = v.query().labels("child").interval("time", 70, 80).direction(OUT).orderBy("time", asc).vertexIds();
         assertEquals(10, vl.size());
         assertFalse(vl.isSorted());
         assertFalse(isSortedByID(vl));
@@ -3222,15 +3222,15 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 EDGE, 1, 2, new boolean[0]);
         evaluateQuery(v.query().labels("connect").interval("time", 10, 20).interval("weight", 0.0, 5.0).direction(OUT),
                 EDGE, 10, 1, new boolean[]{false, true});
-        evaluateQuery(v.query().labels("connect").direction(OUT).orderBy("weight", incr).limit(10),
+        evaluateQuery(v.query().labels("connect").direction(OUT).orderBy("weight", asc).limit(10),
                 EDGE, 10, 1, new boolean[]{true, true}, weight, Order.ASC);
-        evaluateQuery(v.query().labels("connect").direction(OUT).orderBy("weight", decr).limit(10),
+        evaluateQuery(v.query().labels("connect").direction(OUT).orderBy("weight", desc).limit(10),
                 EDGE, 10, 1, new boolean[]{true, true}, weight, Order.DESC);
-        evaluateQuery(v.query().labels("connect").direction(OUT).interval("weight", 1.4, 2.75).orderBy("weight", decr),
+        evaluateQuery(v.query().labels("connect").direction(OUT).interval("weight", 1.4, 2.75).orderBy("weight", desc),
                 EDGE, 3 * numV / 10, 1, new boolean[]{true, true}, weight, Order.DESC);
-        evaluateQuery(v.query().labels("connect").direction(OUT).has("time", Cmp.EQUAL, 22).orderBy("weight", decr),
+        evaluateQuery(v.query().labels("connect").direction(OUT).has("time", Cmp.EQUAL, 22).orderBy("weight", desc),
                 EDGE, 1, 1, new boolean[]{true, true}, weight, Order.DESC);
-        evaluateQuery(v.query().labels("connect").direction(OUT).has("time", Cmp.EQUAL, 22).orderBy("weight", incr),
+        evaluateQuery(v.query().labels("connect").direction(OUT).has("time", Cmp.EQUAL, 22).orderBy("weight", asc),
                 EDGE, 1, 1, new boolean[]{true, false}, weight, Order.ASC);
         evaluateQuery(v.query().labels("connect").direction(OUT).adjacent(u),
                 EDGE, 1, 1, new boolean[]{true, true});
@@ -3259,11 +3259,11 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         evaluateQuery(v.query().keys("name").has("weight", Cmp.GREATER_THAN, 3.6),
                 PROPERTY, 2 * numV / 10, 1, new boolean[]{false, true});
-        evaluateQuery(v.query().keys("name").has("weight", Cmp.LESS_THAN, 0.9).orderBy("weight", incr),
+        evaluateQuery(v.query().keys("name").has("weight", Cmp.LESS_THAN, 0.9).orderBy("weight", asc),
                 PROPERTY, 2 * numV / 10, 1, new boolean[]{true, true}, weight, Order.ASC);
-        evaluateQuery(v.query().keys("name").interval("weight", 1.1, 2.2).orderBy("weight", decr).limit(numV / 10),
+        evaluateQuery(v.query().keys("name").interval("weight", 1.1, 2.2).orderBy("weight", desc).limit(numV / 10),
                 PROPERTY, numV / 10, 1, new boolean[]{true, false}, weight, Order.DESC);
-        evaluateQuery(v.query().keys("name").has("time", Cmp.EQUAL, 5).orderBy("weight", decr),
+        evaluateQuery(v.query().keys("name").has("time", Cmp.EQUAL, 5).orderBy("weight", desc),
                 PROPERTY, 1, 1, new boolean[]{false, false}, weight, Order.DESC);
         evaluateQuery(v.query().keys("name"),
                 PROPERTY, numV, 1, new boolean[]{true, true});
@@ -3272,9 +3272,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 EDGE, 1, 1, new boolean[]{true, true});
         evaluateQuery(v.query().labels("child").direction(BOTH).has("time", Cmp.EQUAL, 5),
                 EDGE, 1, 2, new boolean[0]);
-        evaluateQuery(v.query().labels("child").direction(OUT).interval("time", 10, 20).orderBy("weight", decr).limit(5),
+        evaluateQuery(v.query().labels("child").direction(OUT).interval("time", 10, 20).orderBy("weight", desc).limit(5),
                 EDGE, 5, 1, new boolean[]{true, false}, weight, Order.DESC);
-        evaluateQuery(v.query().labels("child").direction(BOTH).interval("weight", 0.0, 1.0).orderBy("weight", decr),
+        evaluateQuery(v.query().labels("child").direction(BOTH).interval("weight", 0.0, 1.0).orderBy("weight", desc),
                 EDGE, 2 * numV / 10, 2, new boolean[]{false, false}, weight, Order.DESC);
         evaluateQuery(v.query().labels("child").direction(OUT).interval("weight", 0.0, 1.0),
                 EDGE, 2 * numV / 10, 1, new boolean[]{false, true});
@@ -3290,9 +3290,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(2 * numV / 10, vl.size());
         assertTrue(vl.isSorted());
         assertTrue(isSortedByID(vl));
-        evaluateQuery(v.query().labels("child").interval("time", 70, 80).direction(OUT).orderBy("time", incr),
+        evaluateQuery(v.query().labels("child").interval("time", 70, 80).direction(OUT).orderBy("time", asc),
                 EDGE, 10, 1, new boolean[]{true, true}, time, Order.ASC);
-        vl = v.query().labels("child").interval("time", 70, 80).direction(OUT).orderBy("time", incr).vertexIds();
+        vl = v.query().labels("child").interval("time", 70, 80).direction(OUT).orderBy("time", asc).vertexIds();
         assertEquals(10, vl.size());
         assertFalse(vl.isSorted());
         assertFalse(isSortedByID(vl));
@@ -3306,15 +3306,15 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 EDGE, 1, 2, new boolean[0]);
         evaluateQuery(v.query().labels("connect").interval("time", 10, 20).interval("weight", 0.0, 5.0).direction(OUT),
                 EDGE, 10, 1, new boolean[]{false, true});
-        evaluateQuery(v.query().labels("connect").direction(OUT).orderBy("weight", incr).limit(10),
+        evaluateQuery(v.query().labels("connect").direction(OUT).orderBy("weight", asc).limit(10),
                 EDGE, 10, 1, new boolean[]{true, true}, weight, Order.ASC);
-        evaluateQuery(v.query().labels("connect").direction(OUT).orderBy("weight", decr).limit(10),
+        evaluateQuery(v.query().labels("connect").direction(OUT).orderBy("weight", desc).limit(10),
                 EDGE, 10, 1, new boolean[]{true, true}, weight, Order.DESC);
-        evaluateQuery(v.query().labels("connect").direction(OUT).interval("weight", 1.4, 2.75).orderBy("weight", decr),
+        evaluateQuery(v.query().labels("connect").direction(OUT).interval("weight", 1.4, 2.75).orderBy("weight", desc),
                 EDGE, 3 * numV / 10, 1, new boolean[]{true, true}, weight, Order.DESC);
-        evaluateQuery(v.query().labels("connect").direction(OUT).has("time", Cmp.EQUAL, 22).orderBy("weight", decr),
+        evaluateQuery(v.query().labels("connect").direction(OUT).has("time", Cmp.EQUAL, 22).orderBy("weight", desc),
                 EDGE, 1, 1, new boolean[]{true, true}, weight, Order.DESC);
-        evaluateQuery(v.query().labels("connect").direction(OUT).has("time", Cmp.EQUAL, 22).orderBy("weight", incr),
+        evaluateQuery(v.query().labels("connect").direction(OUT).has("time", Cmp.EQUAL, 22).orderBy("weight", asc),
                 EDGE, 1, 1, new boolean[]{true, false}, weight, Order.ASC);
         evaluateQuery(v.query().labels("connect").direction(OUT).adjacent(u),
                 EDGE, 1, 1, new boolean[]{true, true});
@@ -3358,7 +3358,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 PROPERTY, 2 * numV / 10, 1, new boolean[]{false, true});
         evaluateQuery(v.query().keys("name").interval("time", numV / 2 - 10, numV / 2 + 10),
                 PROPERTY, 10, 1, new boolean[]{false, true});
-        evaluateQuery(v.query().keys("name").interval("time", numV / 2 - 10, numV / 2 + 10).orderBy("weight", decr),
+        evaluateQuery(v.query().keys("name").interval("time", numV / 2 - 10, numV / 2 + 10).orderBy("weight", desc),
                 PROPERTY, 10, 1, new boolean[]{false, false}, weight, Order.DESC);
         evaluateQuery(v.query().keys("name").interval("time", numV, numV + 10).limit(5),
                 PROPERTY, 5, 1, new boolean[]{false, true});
@@ -3367,9 +3367,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 EDGE, 0, 1, new boolean[]{true, true});
         evaluateQuery(v.query().labels("child").direction(OUT).has("time", Cmp.EQUAL, numV + 5),
                 EDGE, 1, 1, new boolean[]{true, true});
-        evaluateQuery(v.query().labels("child").direction(OUT).interval("time", 10, 20).orderBy("weight", decr).limit(5),
+        evaluateQuery(v.query().labels("child").direction(OUT).interval("time", 10, 20).orderBy("weight", desc).limit(5),
                 EDGE, 0, 1, new boolean[]{true, false}, weight, Order.DESC);
-        evaluateQuery(v.query().labels("child").direction(OUT).interval("time", numV + 10, numV + 20).orderBy("weight", decr).limit(5),
+        evaluateQuery(v.query().labels("child").direction(OUT).interval("time", numV + 10, numV + 20).orderBy("weight", desc).limit(5),
                 EDGE, 5, 1, new boolean[]{true, false}, weight, Order.DESC);
 
 
@@ -3394,7 +3394,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 PROPERTY, 2 * numV / 10, 1, new boolean[]{false, true});
         evaluateQuery(v.query().keys("name").interval("time", numV / 2 - 10, numV / 2 + 10),
                 PROPERTY, 10, 1, new boolean[]{false, true});
-        evaluateQuery(v.query().keys("name").interval("time", numV / 2 - 10, numV / 2 + 10).orderBy("weight", decr),
+        evaluateQuery(v.query().keys("name").interval("time", numV / 2 - 10, numV / 2 + 10).orderBy("weight", desc),
                 PROPERTY, 10, 1, new boolean[]{false, false}, weight, Order.DESC);
         evaluateQuery(v.query().keys("name").interval("time", numV, numV + 10).limit(5),
                 PROPERTY, 5, 1, new boolean[]{false, true});
@@ -3403,9 +3403,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 EDGE, 0, 1, new boolean[]{true, true});
         evaluateQuery(v.query().labels("child").direction(OUT).has("time", Cmp.EQUAL, numV + 5),
                 EDGE, 1, 1, new boolean[]{true, true});
-        evaluateQuery(v.query().labels("child").direction(OUT).interval("time", 10, 20).orderBy("weight", decr).limit(5),
+        evaluateQuery(v.query().labels("child").direction(OUT).interval("time", 10, 20).orderBy("weight", desc).limit(5),
                 EDGE, 0, 1, new boolean[]{true, false}, weight, Order.DESC);
-        evaluateQuery(v.query().labels("child").direction(OUT).interval("time", numV + 10, numV + 20).orderBy("weight", decr).limit(5),
+        evaluateQuery(v.query().labels("child").direction(OUT).interval("time", numV + 10, numV + 20).orderBy("weight", desc).limit(5),
                 EDGE, 5, 1, new boolean[]{true, false}, weight, Order.DESC);
 
 
@@ -3896,11 +3896,11 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         mgmt.buildIndex("byIdWeight", Vertex.class).addKey(id).addKey(weight).buildCompositeIndex();
 
         EdgeLabel knows = mgmt.makeEdgeLabel("knows").make();
-        mgmt.buildEdgeIndex(knows, "byWeightDecr", Direction.OUT, decr, weight);
-        mgmt.buildEdgeIndex(knows, "byWeightIncr", Direction.OUT, incr, weight);
+        mgmt.buildEdgeIndex(knows, "byWeightDesc", Direction.OUT, desc, weight);
+        mgmt.buildEdgeIndex(knows, "byWeightAsc", Direction.OUT, asc, weight);
 
         PropertyKey names = mgmt.makePropertyKey("names").cardinality(Cardinality.LIST).dataType(String.class).make();
-        mgmt.buildPropertyIndex(names, "namesByWeight", decr, weight);
+        mgmt.buildPropertyIndex(names, "namesByWeight", desc, weight);
 
         finishSchema();
 
@@ -3930,18 +3930,18 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertNumStep(numV, 1, gts.V(sv[0]).out("knows"), JanusGraphVertexStep.class);
         assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").limit(10)), JanusGraphVertexStep.class);
         assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").range(10, 20)), LocalStep.class);
-        assertNumStep(numV, 2, gts.V(sv[0]).outE("knows").order().by("weight", decr), JanusGraphVertexStep.class, OrderGlobalStep.class);
+        assertNumStep(numV, 2, gts.V(sv[0]).outE("knows").order().by("weight", desc), JanusGraphVertexStep.class, OrderGlobalStep.class);
         // Ensure the LocalStep is dropped because the Order can be folded in the JanusGraphVertexStep which in turn
         // will allow JanusGraphLocalQueryOptimizationStrategy to drop the LocalStep as the local ordering will be
         // provided by the single JanusGraphVertex step
-        assertNumStep(10, 0, gts.V(sv[0]).local(__.outE("knows").order().by("weight", decr).limit(10)), LocalStep.class);
-        assertNumStep(numV / 5, 2, gts.V(sv[0]).outE("knows").has("weight", 1).order().by("weight", incr), JanusGraphVertexStep.class, OrderGlobalStep.class);
-        assertNumStep(10, 0, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).order().by("weight", incr).limit(10)), LocalStep.class);
+        assertNumStep(10, 0, gts.V(sv[0]).local(__.outE("knows").order().by("weight", desc).limit(10)), LocalStep.class);
+        assertNumStep(numV / 5, 2, gts.V(sv[0]).outE("knows").has("weight", 1).order().by("weight", asc), JanusGraphVertexStep.class, OrderGlobalStep.class);
+        assertNumStep(10, 0, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).order().by("weight", asc).limit(10)), LocalStep.class);
         // Note that for this test, the upper offset of the range will be folded into the JanusGraphVertexStep
         // by JanusGraphLocalQueryOptimizationStrategy, but not the lower offset. The RangeGlobalStep will in turn be kept
         // to enforce this lower bound and the LocalStep will be left as is as the local behavior will have not been
         // entirely subsumed by the JanusGraphVertexStep
-        assertNumStep(5, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).has("weight", 1).order().by("weight", incr).range(10, 15)), LocalStep.class);
+        assertNumStep(5, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).has("weight", 1).order().by("weight", asc).range(10, 15)), LocalStep.class);
         assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.inV().is(vs[50])), JanusGraphVertexStep.class);
         assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.otherV().is(vs[50])), JanusGraphVertexStep.class);
         assertNumStep(1, 1, gts.V(sv[0]).bothE("knows").filter(__.otherV().is(vs[50])), JanusGraphVertexStep.class);
@@ -3950,7 +3950,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         //Property
         assertNumStep(numV / 5, 1, gts.V(sv[0]).properties("names").has("weight", 1), JanusGraphPropertiesStep.class);
         assertNumStep(numV, 1, gts.V(sv[0]).properties("names"), JanusGraphPropertiesStep.class);
-        assertNumStep(10, 0, gts.V(sv[0]).local(__.properties("names").order().by("weight", decr).limit(10)), LocalStep.class);
+        assertNumStep(10, 0, gts.V(sv[0]).local(__.properties("names").order().by("weight", desc).limit(10)), LocalStep.class);
         assertNumStep(numV, 2, gts.V(sv[0]).outE("knows").values("weight"), JanusGraphVertexStep.class, JanusGraphPropertiesStep.class);
 
 
@@ -3970,8 +3970,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertNumStep(superV * (numV / 5 * 2), 2, gts.V().has("id", sid).outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)), JanusGraphStep.class, JanusGraphVertexStep.class);
         assertNumStep(superV * (numV / 5 * 2), 2, gts.V().has("id", sid).outE("knows").has("weight", P.between(1, 3)), JanusGraphStep.class, JanusGraphVertexStep.class);
         assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).limit(10)), JanusGraphStep.class, JanusGraphVertexStep.class);
-        assertNumStep(superV * 10, 1, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)), JanusGraphStep.class);
-        assertNumStep(superV * 10, 0, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)), LocalStep.class);
+        assertNumStep(superV * 10, 1, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", desc).limit(10)), JanusGraphStep.class);
+        assertNumStep(superV * 10, 0, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", desc).limit(10)), LocalStep.class);
 
         // Verify that the batch property pre-fetching is not applied when the configuration option is not set
         t = gts.V().has("id", sid).outE("knows").has("weight", P.between(1, 3)).inV().has("weight", P.between(1, 3)).profile("~metrics");
@@ -4024,12 +4024,12 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertNumStep(superV * (numV / 5), 2, gts.V().has("id", sid).outE("knows").has("weight", 1), JanusGraphStep.class, JanusGraphVertexStep.class);
         assertNumStep(superV * (numV / 5 * 2), 2, gts.V().has("id", sid).outE("knows").has("weight", P.between(1, 3)), JanusGraphStep.class, JanusGraphVertexStep.class);
         assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).limit(10)), JanusGraphStep.class, JanusGraphVertexStep.class);
-        assertNumStep(superV * 10, 1, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)), JanusGraphStep.class);
-        assertNumStep(superV * 10, 0, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)), LocalStep.class);
+        assertNumStep(superV * 10, 1, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", desc).limit(10)), JanusGraphStep.class);
+        assertNumStep(superV * 10, 0, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", desc).limit(10)), LocalStep.class);
         assertNumStep(superV * numV, 2, gts.V().has("id", sid).values("names"), JanusGraphStep.class, JanusGraphPropertiesStep.class);
 
         //Verify traversal metrics when all reads are from cache (i.e. no backend queries)
-        t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)).profile("~metrics");
+        t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", desc).limit(10)).profile("~metrics");
         assertCount(superV * 10, t);
         assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
 
@@ -4042,7 +4042,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         gts = graph.traversal();
 
         //Verify traversal metrics when having to read from backend [same query as above]
-        t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).order().by("weight", decr).limit(10)).profile("~metrics");
+        t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).order().by("weight", desc).limit(10)).profile("~metrics");
         assertCount(superV * 10, t);
         assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
 
@@ -5164,10 +5164,10 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     private static void assertElementOrderForWithoutIndex(StandardJanusGraph graph) {
-        verifyElementOrder(graph.query().orderBy("kid", incr).limit(500).vertices(), "kid", Order.ASC, 500);
-        verifyElementOrder(graph.query().orderBy("kid", incr).limit(300).edges(), "kid", Order.ASC, 300);
-        verifyElementOrder(graph.query().orderBy("kid", decr).limit(400).vertices(), "kid", Order.DESC, 400);
-        verifyElementOrder(graph.query().orderBy("kid", decr).limit(200).edges(), "kid", Order.DESC, 200);
+        verifyElementOrder(graph.query().orderBy("kid", asc).limit(500).vertices(), "kid", Order.ASC, 500);
+        verifyElementOrder(graph.query().orderBy("kid", asc).limit(300).edges(), "kid", Order.ASC, 300);
+        verifyElementOrder(graph.query().orderBy("kid", desc).limit(400).vertices(), "kid", Order.DESC, 400);
+        verifyElementOrder(graph.query().orderBy("kid", desc).limit(200).edges(), "kid", Order.DESC, 200);
     }
 
 
@@ -5189,8 +5189,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     public void testVertexCentricIndexWithNull() {
         EdgeLabel bought = makeLabel("bought");
         PropertyKey time = makeKey("time", Long.class);
-        mgmt.buildEdgeIndex(bought, "byTimeDesc", BOTH, decr, time);
-        mgmt.buildEdgeIndex(bought, "byTimeIncr", BOTH, incr, time);
+        mgmt.buildEdgeIndex(bought, "byTimeDesc", BOTH, desc, time);
+        mgmt.buildEdgeIndex(bought, "byTimeAsc", BOTH, asc, time);
         finishSchema();
 
         JanusGraphVertex v1 = tx.addVertex(), v2 = tx.addVertex();
@@ -5381,7 +5381,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         int ttl = 1; // artificially low TTL for test
         final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         EdgeLabel wavedAt = mgmt.makeEdgeLabel("wavedAt").signature(time).make();
-        mgmt.buildEdgeIndex(wavedAt, "timeindex", Direction.BOTH, decr, time);
+        mgmt.buildEdgeIndex(wavedAt, "timeindex", Direction.BOTH, desc, time);
         mgmt.buildIndex("edge-time", Edge.class).addKey(time).buildCompositeIndex();
         mgmt.setTTL(wavedAt, Duration.ofSeconds(ttl));
         assertEquals(Duration.ZERO, mgmt.getTTL(time));

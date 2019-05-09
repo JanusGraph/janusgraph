@@ -1129,9 +1129,9 @@ When adding a property key to a mixed index - either through the index builder o
 The order in which the results of a graph query are returned can be defined using the `order().by()` directive. The `order().by()` method expects two parameters:
 
 * The name of the property key by which to order the results. The results will be ordered by the value of the vertices or edges for this property key.
-* The sort order: either increasing `incr` or decreasing `decr`
+* The sort order: either ascending `asc` or descending `desc`
 
-For example, the query `g.V().has('name', textContains('hercules')).order().by('age', decr).limit(10)` retrieves the ten oldest individuals with 'hercules' in their name.
+For example, the query `g.V().has('name', textContains('hercules')).order().by('age', desc).limit(10)` retrieves the ten oldest individuals with 'hercules' in their name.
 
 When using `order().by()` it is important to note that:
 
@@ -1185,7 +1185,7 @@ graph.tx().rollback()  //Never create new indexes while a transaction is active
 mgmt = graph.openManagement()
 time = mgmt.getPropertyKey('time')
 battled = mgmt.getEdgeLabel('battled')
-mgmt.buildEdgeIndex(battled, 'battlesByTime', Direction.BOTH, Order.decr, time)
+mgmt.buildEdgeIndex(battled, 'battlesByTime', Direction.BOTH, Order.desc, time)
 mgmt.commit()
 //Wait for the index to become available
 ManagementSystem.awaitRelationIndexStatus(graph, 'battlesByTime').call()
@@ -1194,7 +1194,7 @@ mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("battlesByTime"), SchemaAction.REINDEX).get()
 mgmt.commit()
 
-This example builds a vertex-centric index which indexes `battled` edges in both direction by time in decreasing order.
+This example builds a vertex-centric index which indexes `battled` edges in both direction by time in descending order.
 A vertex-centric index is built against a particular edge label which is the first argument to the index construction method `JanusGraphManagement.buildEdgeIndex()`. The index only applies to edges of this label - `battled` in the example above. The second argument is a unique name for the index. The third argument is the edge direction in which the index is built. The index will only apply to traversals along edges in this direction. In this example, the vertex-centric index is built in both direction which means that time restricted traversals along `battled` edges can be served by this index in both the `IN` and `OUT` direction. JanusGraph will maintain a vertex-centric index on both the in- and out-vertex of `battled` edges. Alternatively, one could define the index to apply to the `OUT` direction only which would speed up traversals from Hercules to the monsters but not in the reverse direction. This would only require maintaining one index and hence half the index maintenance and storage cost.
 The last two arguments are the sort order of the index and a list of property keys to index by. The sort order is optional and defaults to ascending order (i.e. `Order.ASC`). The list of property keys must be non-empty and defines the keys by which to index the edges of the given label. A vertex-centric index can be defined with multiple keys.
 
@@ -1204,7 +1204,7 @@ mgmt = graph.openManagement()
 time = mgmt.getPropertyKey('time')
 rating = mgmt.makePropertyKey('rating').dataType(Double.class).make()
 battled = mgmt.getEdgeLabel('battled')
-mgmt.buildEdgeIndex(battled, 'battlesByRatingAndTime', Direction.OUT, Order.decr, rating, time)
+mgmt.buildEdgeIndex(battled, 'battlesByRatingAndTime', Direction.OUT, Order.desc, rating, time)
 mgmt.commit()
 //Wait for the index to become available
 ManagementSystem.awaitRelationIndexStatus(graph, 'battlesByRatingAndTime', 'battled').call()
@@ -1213,7 +1213,7 @@ mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getRelationIndex(battled, 'battlesByRatingAndTime'), SchemaAction.REINDEX).get()
 mgmt.commit()
 
-This example extends the schema by a `rating` property on `battled` edges and builds a vertex-centric index which indexes `battled` edges in the out-going direction by rating and time in decreasing order. Note, that the order in which the property keys are specified is important because vertex-centric indexes are prefix indexes. This means, that `battled` edges are indexed by `rating` _first_ and `time` _second_.
+This example extends the schema by a `rating` property on `battled` edges and builds a vertex-centric index which indexes `battled` edges in the out-going direction by rating and time in descending order. Note, that the order in which the property keys are specified is important because vertex-centric indexes are prefix indexes. This means, that `battled` edges are indexed by `rating` _first_ and `time` _second_.
 
 [source, gremlin]
 //Add some rating data
@@ -1243,12 +1243,12 @@ The following queries specify an order in which the incident edges are to be tra
 
 [source, gremlin]
 h = g..V().has('name', 'hercules').next()
-g.V(h).local(outE('battled').order().by('time', decr).limit(10)).inV().values('name')
-g.V(h).local(outE('battled').has('rating', 5.0).order().by('time', decr).limit(10)).values('place')
+g.V(h).local(outE('battled').order().by('time', desc).limit(10)).inV().values('name')
+g.V(h).local(outE('battled').has('rating', 5.0).order().by('time', desc).limit(10)).values('place')
 
 The first query asks for the names of the 10 most recently battled monsters by Hercules. The second query asks for the places of the 10 most recent battles of Hercules that are rated 5 stars. In both cases, the query is constrained by an order on a property key with a limit on the number of elements to be returned.
 
-Such queries can also be efficiently answered by vertex-centric indexes if the order key matches the key of the index and the requested order (i.e. increasing or decreasing) is the same as the one defined for the index. The `battlesByTime` index would be used to answer the first query and `battlesByRatingAndTime` applies to the second. Note, that the `battlesByRatingAndTime` index cannot be used to answer the first query because an equality constraint on `rating` must be present for the second key in the index to be effective.
+Such queries can also be efficiently answered by vertex-centric indexes if the order key matches the key of the index and the requested order (i.e. ascending or descending) is the same as the one defined for the index. The `battlesByTime` index would be used to answer the first query and `battlesByRatingAndTime` applies to the second. Note, that the `battlesByRatingAndTime` index cannot be used to answer the first query because an equality constraint on `rating` must be present for the second key in the index to be effective.
 
 [NOTE]
 Ordered vertex queries are a JanusGraph extension to Gremlin which causes the verbose syntax and requires the `_()` step to convert the JanusGraph result back into a Gremlin pipeline.
