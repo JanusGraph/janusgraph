@@ -38,4 +38,4 @@ size = 100000; ids = [g.addVertex().id()]; rand = new Random()
 === Computing the In-Degree Distribution of the Graph
 
 [source, gremlin]
-g.V().local(inE().count()).groupCount().order(local).by(valueDecr)
+g.V().local(inE().count()).groupCount().order(local).by(values, desc)

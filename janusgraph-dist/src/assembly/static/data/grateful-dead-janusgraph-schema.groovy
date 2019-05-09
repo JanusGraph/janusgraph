@@ -52,6 +52,6 @@ def defineGratefulDeadSchema(janusGraph) {
     m.buildIndex("artistsByName", Vertex.class).addKey(name).indexOnly(artist).buildCompositeIndex()
     m.buildIndex("songsByName", Vertex.class).addKey(name).indexOnly(song).buildCompositeIndex()
     // vertex centric indices
-    m.buildEdgeIndex(followedBy, "followedByWeight", Direction.BOTH, Order.decr, weight)
+    m.buildEdgeIndex(followedBy, "followedByWeight", Direction.BOTH, Order.desc, weight)
     m.commit()
 }

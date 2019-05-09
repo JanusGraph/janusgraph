@@ -56,16 +56,16 @@ public enum Order {
 
     public org.apache.tinkerpop.gremlin.process.traversal.Order getTP() {
         switch (this) {
-            case ASC :return org.apache.tinkerpop.gremlin.process.traversal.Order.incr;
-            case DESC: return org.apache.tinkerpop.gremlin.process.traversal.Order.decr;
+            case ASC :return org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
+            case DESC: return org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
             default: throw new AssertionError();
         }
     }
 
     public static Order convert(org.apache.tinkerpop.gremlin.process.traversal.Order order) {
         switch(order) {
-            case incr: return ASC;
-            case decr: return DESC;
+            case asc: case incr: return ASC;
+            case desc: case decr: return DESC;
             default: throw new AssertionError();
         }
     }
