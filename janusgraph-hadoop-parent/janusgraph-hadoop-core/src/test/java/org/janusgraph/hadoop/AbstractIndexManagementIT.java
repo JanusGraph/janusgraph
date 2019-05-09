@@ -164,7 +164,7 @@ public abstract class AbstractIndexManagementIT extends JanusGraphBaseTest {
         JanusGraphManagement m = graph.openManagement();
         PropertyKey reason = m.getPropertyKey("reason");
         EdgeLabel lives = m.getEdgeLabel("lives");
-        m.buildEdgeIndex(lives, "livesByReason", Direction.BOTH, Order.decr, reason);
+        m.buildEdgeIndex(lives, "livesByReason", Direction.BOTH, Order.desc, reason);
         m.commit();
         graph.tx().commit();
 
