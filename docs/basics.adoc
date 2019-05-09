@@ -197,6 +197,15 @@ The schema type - i.e. edge label, property key, or vertex label - is assigned t
 
 Beyond the schema definition options explained in this section, schema types provide performance tuning options that are discussed in <<advanced-schema>>.
 
+=== Displaying Schema Information
+There are methods to view specific elements of the graph schema within the management API.
+These methods are `mgmt.printIndexes()`, `mgmt.printPropertyKeys()`, `mgmt.printVertexLabels()`, and `mgmt.printEdgeLabels()`.
+There is also a method that displays all the combined output named `printSchema()`.
+
+[source, gremlin]
+mgmt = graph.openManagement()
+mgmt.printSchema()
+
 === Defining Edge Labels
 
 Each edge connecting two vertices has a label which defines the semantics of the relationship. For instance, an edge labeled `friend` between vertices A and B encodes a friendship between the two individuals.
@@ -561,7 +570,7 @@ gremlin> g.V().values('name')
 
 === Cleaning up after the Pre-Packaged Distribution
 
-If you want to start fresh and remove the database and logs you can use the clean command with `janusgraph.sh`. The server should be stopped before running the clean operation. 
+If you want to start fresh and remove the database and logs you can use the clean command with `janusgraph.sh`. The server should be stopped before running the clean operation.
 [source, text]
 ----
 $ cd /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/
