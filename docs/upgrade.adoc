@@ -14,6 +14,12 @@ for detailed instructions to perform this upgrade.
 Users who operate their own Cassandra cluster instead of using Cassandra distributed together with JanusGraph are not affected by this upgrade.
 This also does not change the different versions of Cassandra that are supported by JanusGraph (see <<version-compat>> for a detailed list of the supported versions).
 
+==== BerkeleyDB : Upgrade from 7.4 to 7.5
+The BerkeleyDB version has been updated, and it contains changes to the file format stored on disk (see https://docs.oracle.com/cd/E17277_02/html/changelog.html[the BerkeleyDB changelog for reference]).
+This file format change is forward compatible with previous versions of BerkeleyDB, so existing graph data stored with JanusGraph can be read in.
+However, once the data has been read in with the newer version of BerkeleyDB, those files can no longer be read by the older version.
+Users are encouraged to backup the BerkeleyDB storage directory before attempting to use it with the JanusGraph release.
+
 === Upgrading to JanusGraph 0.3.0
 IMPORTANT: You should back-up your data prior to attempting an upgrade! Also please note that once an upgrade has been completed you will no longer be able to connect to your graph with client versions prior to 0.3.0.
 
