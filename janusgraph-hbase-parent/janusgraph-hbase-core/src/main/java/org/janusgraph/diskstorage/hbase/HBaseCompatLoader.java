@@ -28,7 +28,7 @@ public class HBaseCompatLoader {
         "org.janusgraph.diskstorage.hbase.HBaseCompat1_0";
 
     private static final String[] HBASE_SUPPORTED_VERSIONS =
-        new String[] { "1.0", "1.1", "1.2", "1.3", "1.4", "2.0", "2.1" };
+        new String[] { "1.2", "1.3", "1.4", "2.0", "2.1" };
 
     private static HBaseCompat cachedCompat;
 
