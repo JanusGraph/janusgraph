@@ -79,7 +79,7 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
         final Map<String, IndexMutation> storeMutations = mutations.computeIfAbsent(store, k -> new HashMap<>(DEFAULT_INNER_MAP_SIZE));
         IndexMutation m = storeMutations.get(documentId);
         if (m==null) {
-            m = new IndexMutation(isNew,isDeleted);
+            m = new IndexMutation(keyInformation.get(store), isNew, isDeleted);
             storeMutations.put(documentId, m);
         } else {
             //IndexMutation already exists => if we deleted and re-created it we need to remove the deleted flag
