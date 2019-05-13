@@ -107,6 +107,13 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
     }
 
     @Test
+    public void testExternalLocking() throws BackendException {
+        assertFalse(this.manager.getFeatures().hasLocking());
+        assertTrue(openStorageManager(getBaseStorageConfiguration()
+                .set(USE_EXTERNAL_LOCKING, true)).getFeatures().hasLocking());
+    }
+
+    @Test
     public void testDefaultCompactStorage() throws BackendException {
         final String cf = TEST_CF_NAME + "_defaultcompact";
 
