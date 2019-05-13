@@ -42,6 +42,7 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_LOCATION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_PASSWORD;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.WRITE_CONSISTENCY;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.USE_EXTERNAL_LOCKING;
 import static org.janusgraph.diskstorage.cql.CQLKeyColumnValueStore.EXCEPTION_MAPPER;
 import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_PASSWORD;
@@ -185,11 +186,14 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
         final Boolean onlyUseLocalConsistency = configuration.get(ONLY_USE_LOCAL_CONSISTENCY_FOR_SYSTEM_OPERATIONS);
 
+        final Boolean useExternalLocking = configuration.get(USE_EXTERNAL_LOCKING);
+
         final StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder();
 
         fb.batchMutation(true).distributed(true);
         fb.timestamps(true).cellTTL(true);
         fb.keyConsistent((onlyUseLocalConsistency ? local : global), local);
+        fb.locking(useExternalLocking);
         fb.optimisticLocking(true);
         fb.multiQuery(false);
 
