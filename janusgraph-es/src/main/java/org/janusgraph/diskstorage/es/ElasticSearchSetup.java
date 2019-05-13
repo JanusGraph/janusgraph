@@ -71,6 +71,12 @@ public enum ElasticSearchSetup {
             if (config.has(ElasticSearchIndex.MAX_RETRY_TIMEOUT)) {
                 rcb.setMaxRetryTimeoutMillis(config.get(ElasticSearchIndex.MAX_RETRY_TIMEOUT));
             }
+
+            rcb.setRequestConfigCallback(builder -> builder
+                    .setConnectTimeout(config.get(ElasticSearchIndex.MAX_CONNECT_TIMEOUT))
+                    .setSocketTimeout(config.get(ElasticSearchIndex.MAX_CONNECT_TIMEOUT))
+                    .setConnectionRequestTimeout(0));
+
             final RestClient rc = rcb.build();
 
             final int scrollKeepAlive = config.get(ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE);

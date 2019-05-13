@@ -127,6 +127,11 @@ public class ElasticSearchIndex implements IndexProvider {
             "Sets the maximum timeout (in milliseconds) to honour in case of multiple retries of the same request " +
             "sent using the ElasticSearch Rest Client by JanusGraph.", ConfigOption.Type.MASKABLE, Integer.class);
 
+    public static final ConfigOption<Integer> MAX_CONNECT_TIMEOUT =
+            new ConfigOption<>(ELASTICSEARCH_NS, "max-connect-timeout",
+                    "Sets the maximum timeout (in milliseconds) to to connect to ElasticSearch.",
+                    ConfigOption.Type.MASKABLE, Integer.class, 3000);
+
     public static final ConfigOption<String> BULK_REFRESH =
             new ConfigOption<>(ELASTICSEARCH_NS, "bulk-refresh",
             "Elasticsearch bulk API refresh setting used to control when changes made by this request are made " +
