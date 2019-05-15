@@ -563,6 +563,8 @@
                                 <dockerDirectory>${project.basedir}/janusgraph-dist-hadoop-2</dockerDirectory>
                                 <buildArgs>
                                     <server_zip>target/janusgraph-${project.version}-hadoop2.zip</server_zip>
+                                    <http_proxy>${env.http_proxy}</http_proxy>
+                                    <https_proxy>${env.https_proxy}</https_proxy>
                                 </buildArgs>
                                 <forceTags>true</forceTags>
                                 <imageName>janusgraph/server</imageName>
