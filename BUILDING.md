@@ -59,6 +59,8 @@ mvn docker:build -Pjanusgraph-docker -pl janusgraph-dist
 docker-compose -f janusgraph-dist/janusgraph-dist-hadoop-2/docker-compose.yml up
 ```
 
+If you are building the Docker image behind a proxy please set an environment variable for either http_proxy or https_proxy accordingly.
+
 Note the above `docker-compose` call launches containers in the foreground and is convenient for monitoring logs but add "-d" to instead run in the background.
 
 To connect to the server in the same container on the console:
