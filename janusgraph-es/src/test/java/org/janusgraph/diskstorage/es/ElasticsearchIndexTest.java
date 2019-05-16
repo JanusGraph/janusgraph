@@ -16,6 +16,9 @@ package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 
 import org.apache.commons.configuration.BaseConfiguration;
@@ -49,6 +52,8 @@ import org.json.simple.parser.ParseException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -56,7 +61,9 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.util.Date;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -73,6 +80,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
     static ObjectMapper objectMapper;
 
     private static char REPLACEMENT_CHAR = '\u2022';
+    private boolean testingStaleValues = false;
 
     @BeforeAll
     public static void prepareElasticsearch() throws Exception {
@@ -121,7 +129,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
             cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
         }
         return esr.setConfiguration(new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,cc, BasicConfiguration.Restriction.NONE), index)
-            .set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index)
+            .set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index).set(ElasticSearchIndex.REPLACE_STALE_VALUES, testingStaleValues, index)
             .restrictTo(index);
     }
 
@@ -331,6 +339,68 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertEquals(parameterValue.toString(), returnedProperty);
 
         IOUtils.closeQuietly(response);
+    }
+
+    @Test
+    public void testTextStringMapping() throws Exception {
+        initialize("vertex");
+
+        Multimap<String, Object> firstDoc = HashMultimap.create();
+        firstDoc.put(TEXT_STRING, "John Doe");
+
+        Multimap<String, Object> secondDoc = HashMultimap.create();
+        secondDoc.put(TEXT_STRING, "John");
+
+        add("vertex", "test1", firstDoc, true);
+        add("vertex", "test2", secondDoc, true);
+
+        clopen();
+
+        assertEquals(1, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Cmp.EQUAL, "John"))).count());
+        assertEquals(1, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Cmp.EQUAL, "John Doe"))).count());
+        assertEquals(2, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Text.CONTAINS, "John"))).count());
+    }
+  
+    public static Stream<Boolean> collectionCardinalityReplaceStaleValue() {
+        return ImmutableSet.of(true, false).stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("collectionCardinalityReplaceStaleValue")
+    public void testCollectionCardinalityStaleValues(Boolean replaceStaleValue) throws BackendException {
+        final String store = "vertex";
+        final String docid = "docid";
+        final String defText = "1";
+        final String revisedText = "2";
+
+        if(replaceStaleValue) {
+            testingStaleValues = true;
+            index = new ElasticSearchIndex(getESTestConfig());
+        }
+
+        initialize(store);
+        Multimap<String, Object> initialProps = ImmutableMultimap.of(PHONE_LIST, defText);
+        add(store, docid, initialProps, true);
+        clopen();
+
+        // Sanity check
+        assertEquals(docid, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "1"))).findFirst().get());
+
+        tx.add(store, docid, PHONE_LIST, revisedText, false);
+        tx.commit();
+        clopen();
+
+        if(replaceStaleValue) {
+            // Should no longer return old text
+            assertEquals(Optional.empty(), tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, defText))).findFirst(), "Expected the old value to be absent since the replace-stale-values flag is set to true");
+        } else {
+            // Without the replace-stale-values flag, the old value should still be present
+            assertEquals(docid, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, defText))).findFirst().get(), "Expected the old value to still be present since the replace-stale-values flag is set to false");
+        }
+
+        // the new value should also be present
+        assertEquals(docid, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, revisedText))).findFirst().get(), "Expected the new value to be present");
+        testingStaleValues = false;
     }
 
     private CloseableHttpResponse getESMapping(String indexName, String mappingTypeName) throws IOException {

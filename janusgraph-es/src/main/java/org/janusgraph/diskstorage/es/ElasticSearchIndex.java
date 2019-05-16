@@ -177,6 +177,10 @@ public class ElasticSearchIndex implements IndexProvider {
     public static final ConfigNamespace SSL_NS =
             new ConfigNamespace(ELASTICSEARCH_NS, "ssl", "Elasticsearch SSL configuration");
 
+    public static final ConfigOption<Boolean> REPLACE_STALE_VALUES = new ConfigOption<>(ELASTICSEARCH_NS, "replace-stale-values",
+            "When mutating - For non-singular cardinality, don't preserve old values when updating or deleting a property.",
+            ConfigOption.Type.LOCAL, false);
+
     public static final ConfigOption<Boolean> SSL_ENABLED =
             new ConfigOption<>(SSL_NS, "enabled",
             "Controls use of the SSL connection to Elasticsearch.", ConfigOption.Type.LOCAL, false);
@@ -286,6 +290,7 @@ public class ElasticSearchIndex implements IndexProvider {
     private final boolean useAllField;
     private final boolean useMultitypeIndex;
     private final Map<String, Object> ingestPipelines;
+    private final boolean replaceStaleValues;
 
     public ElasticSearchIndex(Configuration config) throws BackendException {
         indexName = config.get(INDEX_NAME);
@@ -294,6 +299,7 @@ public class ElasticSearchIndex implements IndexProvider {
         allowMappingUpdate = config.get(ALLOW_MAPPING_UPDATE);
         createSleep = config.get(CREATE_SLEEP);
         ingestPipelines = config.getSubset(ES_INGEST_PIPELINES);
+        replaceStaleValues = config.get(REPLACE_STALE_VALUES);
         final ElasticSearchSetup.Connection c = interfaceConfiguration(config);
         client = c.getClient();
 
@@ -816,7 +822,7 @@ public class ElasticSearchIndex implements IndexProvider {
         final Map<String,Object> doc = new HashMap<>();
         for (final IndexEntry e : mutation.getAdditions()) {
             final KeyInformation keyInformation = information.get(store).get(e.field);
-            if (keyInformation.getCardinality() == Cardinality.SINGLE) {
+            if (keyInformation.getCardinality() == Cardinality.SINGLE || replaceStaleValues) {
                 doc.put(e.field, convertToEsType(e.value, Mapping.getMapping(keyInformation)));
                 if (hasDualStringMapping(keyInformation)) {
                     doc.put(getDualMappingName(e.field), convertToEsType(e.value, Mapping.getMapping(keyInformation)));
@@ -914,14 +920,14 @@ public class ElasticSearchIndex implements IndexProvider {
                     throw new IllegalArgumentException("Text mapped string values only support CONTAINS and Compare queries and not: " + predicate);
                 if (mapping==Mapping.STRING && Text.HAS_CONTAINS.contains(predicate))
                     throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + predicate);
-                if (mapping==Mapping.TEXTSTRING && !(Text.HAS_CONTAINS.contains(predicate) || predicate instanceof Cmp)) {
+                if (mapping==Mapping.TEXTSTRING && !(Text.HAS_CONTAINS.contains(predicate) || (predicate instanceof Cmp && predicate != Cmp.EQUAL))) {
                     fieldName = getDualMappingName(key);
                 } else {
                     fieldName = key;
                 }
 
                 if (predicate == Text.CONTAINS || predicate == Cmp.EQUAL) {
-                    return compat.match(key, value);
+                    return compat.match(fieldName, value);
                 } else if (predicate == Text.CONTAINS_PREFIX) {
                     if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
                         value = ((String) value).toLowerCase();

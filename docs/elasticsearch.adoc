@@ -222,6 +222,9 @@ For example https://www.elastic.co/guide/en/elasticsearch/reference/current/date
 
 See https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html[ingest documentation] for more information about ingest pipelines and https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest-processors.html[processors documentation] for more information about ingest processors.
 
+==== Handling Updates on Non-Singular Property Values
+For properties with non-singular cardinality (such as Cardinality.LIST), the default behavior when updating the value of such a property is to preserve the old value(s) and insert the new value into the list. This is not always desirable in implementations where the entire attribute list is updated in one transaction, in which case the previous attribute list should be overwritten. This can lead to invalid search results, such as when a property's attribute list has been updated and a query run for a value from the old list still returns that property as a match. The config option `replace-stale-values` can be set to true so that when a property is updated, any previous/stale values for that property are removed and only the new attribute list is preserved.
+
 === Secure Elasticsearch
 
 Elasticsearch does not perform authentication or authorization. A client that can connect to Elasticsearch is trusted by Elasticsearch. When Elasticsearch runs on an unsecured or public network, particularly the Internet, it should be deployed with some type of external security. This is generally done with a combination of firewalling, tunneling of Elasticsearch's ports or by using Elasticsearch extensions such as https://www.elastic.co/guide/en/x-pack/current/index.html[X-Pack]. Elasticsearch has two client-facing ports to consider:
