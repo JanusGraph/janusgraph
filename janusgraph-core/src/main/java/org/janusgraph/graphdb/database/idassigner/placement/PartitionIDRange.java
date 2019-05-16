@@ -27,8 +27,8 @@ import java.util.Random;
 
 /**
  * An instance of this class describes a range of partition ids. This range if defined by a lower id (inclusive)
- * and upper id (exclusive). When lowerId < upperId this partition range is called a proper range since it describes the
- * contiguous block of ids from lowerId until upperId. When lowerId >= upperID then the partition block "wraps around" the
+ * and upper id (exclusive). When lowerId &lt; upperId this partition range is called a proper range since it describes the
+ * contiguous block of ids from lowerId until upperId. When lowerId &gt;= upperID then the partition block "wraps around" the
  * specified idUpperBound. In other words, it describes the ids from [lowerId,idUpperBound) AND [0,upperId).
  *
  * It is always true that lowerID and upperID are smaller or equal than idUpperBound.

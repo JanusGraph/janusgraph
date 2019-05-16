@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  * starts and stops each backend at least twice in the course of opening a
  * single database instance. So the old reference counting and killing approach is out.
  *
- * @author Dan LaRocque <dalaro@hopcount.org>
+ * @author Dan LaRocque &lt;dalaro@hopcount.org&gt;
  */
 public class CassandraDaemonWrapper {
 
@@ -88,9 +88,5 @@ public class CassandraDaemonWrapper {
 
     public static synchronized boolean isStarted() {
         return started;
-    }
-
-    public static void stop() {
-        // Do nothing
     }
 }

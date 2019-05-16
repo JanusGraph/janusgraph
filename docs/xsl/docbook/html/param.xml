@@ -5456,7 +5456,7 @@ stylesheets to make use of the cross reference style:</para>
 
 <programlisting>&lt;?xml version="1.0" encoding="utf-8"?&gt;
 &lt;!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-                  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd"&gt;
+                  "https://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd"&gt;
 &lt;book id="book"&gt;&lt;title&gt;Book&lt;/title&gt;
 
 &lt;preface&gt;
@@ -5849,7 +5849,7 @@ like this:</para>
 <informalexample>
 <programlisting>&lt;!DOCTYPE bibliography
   PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
-  "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd"&gt;
+  "https://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd"&gt;
 &lt;bibliography&gt;&lt;title&gt;References&lt;/title&gt;
 
 &lt;bibliomixed id="xml-rec"&gt;&lt;abbrev&gt;XML 1.0&lt;/abbrev&gt;Tim Bray,
@@ -6048,7 +6048,7 @@ entry has an ID.</para>
 &lt;?xml version="1.0" encoding="utf-8"?&gt;
 &lt;!DOCTYPE glossary
   PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
-  "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd"&gt;
+  "https://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd"&gt;
 &lt;glossary&gt;
 &lt;glossaryinfo&gt;
 &lt;editor&gt;&lt;firstname&gt;Eric&lt;/firstname&gt;&lt;surname&gt;Raymond&lt;/surname&gt;&lt;/editor&gt;
@@ -7078,7 +7078,7 @@ downloaded separately (see below).</para>
 <para>In order to use this extension, you must</para> 
 
 <listitem><para>add <filename>xslthl-2.x.x.jar</filename> to your Java classpath. The latest version is available
-from <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://sourceforge.net/projects/xslthl">the XSLT syntax highlighting project</link> 
+from <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://sourceforge.net/projects/xslthl">the XSLT syntax highlighting project</link> 
 at SourceForge.</para>
 </listitem>
 <listitem>
@@ -7529,7 +7529,7 @@ and the <tag class="attribute">format</tag> attribute is
 
 <para>If specified, this value will be used for the
 <tag class="attribute">width</tag> attribute on images that do not specify any 
-<emphasis xmlns:xlink="http://www.w3.org/1999/xlink" xlink:title="DocBook 5: The Definitive Guide" xlink:href="http://docbook.org/tdg5/en/html/imagedata.html#viewport.area">viewport dimensions</emphasis>.</para>
+<emphasis xmlns:xlink="http://www.w3.org/1999/xlink" xlink:title="DocBook 5: The Definitive Guide" xlink:href="https://docbook.org/tdg5/en/html/imagedata.html#viewport.area">viewport dimensions</emphasis>.</para>
 
 </refsection>
 </refentry>
@@ -7924,8 +7924,8 @@ this parameter.
 </para>
 <para>This parameter specifies the media type that should be used by the
 chunking stylesheet. This should be one from those defined in
-<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.ietf.org/rfc/rfc2045.txt">[RFC2045]</link>  and
- <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.ietf.org/rfc/rfc2046.txt">[RFC2046]</link> </para>
+<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://www.ietf.org/rfc/rfc2045.txt">[RFC2045]</link>  and
+ <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://www.ietf.org/rfc/rfc2046.txt">[RFC2046]</link> </para>
 <note>
 <para>This parameter is documented here, but the declaration is actually
 in the <filename>chunker.xsl</filename> stylesheet module.</para>
@@ -10858,7 +10858,7 @@ empty series of subcodes:
 
 <literallayout class="monospaced">language-code = primary-code ( "-" subcode )*</literallayout>
 </para>
-<para>And in RFC 1766, <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.ietf.org/rfc/rfc1766.txt">Tags for the Identification
+<para>And in RFC 1766, <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://www.ietf.org/rfc/rfc1766.txt">Tags for the Identification
 of Languages</link>, the EBNF for "language tag" is given as:
 
 <literallayout class="monospaced">Language-Tag = Primary-tag *( "-" Subtag )

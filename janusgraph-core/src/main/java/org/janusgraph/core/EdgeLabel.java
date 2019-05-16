@@ -15,9 +15,11 @@
 
 package org.janusgraph.core;
 
+import java.util.Collection;
+
 /**
  * EdgeLabel is an extension of {@link RelationType} for edges. Each edge in JanusGraph has a label.
- * <p/>
+ * <p>
  * An edge label defines the following characteristics of an edge:
  * <ul>
  * <li><strong>Directionality:</strong> An edge is either directed or unidirected. A directed edge can be thought of
@@ -54,5 +56,19 @@ public interface EdgeLabel extends RelationType {
      * @return
      */
     Multiplicity multiplicity();
+
+    /**
+     * Collects all property constraints.
+     *
+     * @return a list of {@link PropertyKey} which represents all property constraints for a {@link EdgeLabel}.
+     */
+    Collection<PropertyKey> mappedProperties();
+
+    /**
+     * Collects all connection constraints.
+     *
+     * @return a list of {@link Connection} which represents all connection constraints for a {@link EdgeLabel}.
+     */
+    Collection<Connection> mappedConnections();
 
 }

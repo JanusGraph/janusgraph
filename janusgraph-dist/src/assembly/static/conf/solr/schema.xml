@@ -26,7 +26,7 @@
  It should be kept correct and concise, usable out-of-the-box.
 
  For more information, on how to customize this file, please see
- http://wiki.apache.org/solr/SchemaXml
+ https://wiki.apache.org/solr/SchemaXml
 -->
 
 <schema name="example-janusgraph" version="1.5">
@@ -281,7 +281,7 @@
          matching across fields.
 
          For more info on customizing your analyzer chain, please see
-         http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters
+         https://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters
      -->
 
     <!-- One can also specify an existing Analyzer class that has a
@@ -463,7 +463,7 @@
              See the Java Regular Expression documentation for more
              information on pattern and replacement string syntax.
 
-             http://docs.oracle.com/javase/7/docs/api/java/util/regex/package-summary.html
+             https://docs.oracle.com/javase/7/docs/api/java/util/regex/package-summary.html
           -->
         <filter class="solr.PatternReplaceFilterFactory"
                 pattern="([^a-z])" replacement="" replace="all"
@@ -501,7 +501,7 @@
 
     <!-- An alternative geospatial field type new to Solr 4.  It supports multiValued and polygon shapes.
       For more information about this and other Spatial fields new to Solr 4, see:
-      http://wiki.apache.org/solr/SolrAdaptersForLuceneSpatial4
+      https://wiki.apache.org/solr/SolrAdaptersForLuceneSpatial4
     -->
     <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
         geo="true" distErrPct="0.025" maxDistErr="0.001" distanceUnits="kilometers" />
@@ -513,7 +513,7 @@
                geo="true" distanceUnits="kilometers" numberType="_bbox_coord" />
     <fieldType name="_bbox_coord" class="solr.TrieDoubleField" precisionStep="8" docValues="true" stored="false"/>
 
-   <!-- Money/currency field type. See http://wiki.apache.org/solr/MoneyFieldType
+   <!-- Money/currency field type. See https://wiki.apache.org/solr/MoneyFieldType
         Parameters:
           defaultCurrency: Specifies the default currency if none specified. Defaults to "USD"
           precisionStep:   Specifies the precisionStep for the TrieLong field used for the amount

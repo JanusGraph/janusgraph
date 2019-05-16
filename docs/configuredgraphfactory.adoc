@@ -67,6 +67,8 @@ You can either use `ConfiguredGraphFactory.create("graphName")`
 or `ConfiguredGraphFactory.open("graphName")`. Learn more about the difference
 between these two options by reading the section below about the `ConfigurationManagementGraph`.
 
+You can also access your graphs by using the bindings. Read more about this in the <<graph-and-traversal-bindings>> section.
+
 [[listing-the-graphs]]
 === Listing the Graphs
 
@@ -83,7 +85,7 @@ for which you have instantiated _and_ the references are stored inside the `Janu
 
 IMPORTANT: This is an irreversible operation that will delete all graph and index data.
 
-IMPORTANT: To ensure all graph representations are consistent across all JanusGraph nodes in your cluster, remove the graph from the `JanusGraphManager` graph reference tracker on all nodes in your cluster: `ConfiguredGraphFactory.close("graphName");`.
+IMPORTANT: To ensure all graph representations are consistent across all JanusGraph nodes in your cluster, this removes the graph from the `JanusGraphManager` graph cache on every node in the cluster, assuming each node has been properly configured to use the `JanusGraphManager`. Learn more about this feature and how to configure your server to use said feature <<multinodejanusgraphcluster.adoc#graph-reference-consistency, here>>.
 
 [[configuring-JanusGraph-server-for-configuredgraphfactory]]
 === Configuring JanusGraph Server for ConfiguredGraphFactory
@@ -108,8 +110,8 @@ example, look like:
 
 [source, properties]
 ----
-gremlin.graph=org.janusgraph.core.JanusGraphFactory
-storage.backend=cassandrathrift
+gremlin.graph=org.janusgraph.core.ConfiguredGraphFactory
+storage.backend=cql
 graph.graphname=ConfigurationManagementGraph
 storage.hostname=127.0.0.1
 ----
@@ -151,8 +153,8 @@ configurations used to open specific graphs, referenced by the
 
 [source, gremlin]
 ----
-Map<String, Object> map = new HashMap<String, Object>();
-map.put("storage.backend", "cassandrathrift");
+map = new HashMap<String, Object>();
+map.put("storage.backend", "cql");
 map.put("storage.hostname", "127.0.0.1");
 map.put("graph.graphname", "graph1");
 ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
@@ -174,8 +176,8 @@ the same configuration template. For example:
 
 [source, gremlin]
 ----
-Map<String, Object> map = new HashMap<String, Object>();
-map.put("storage.backend", "cassandrathrift");
+map = new HashMap<String, Object>();
+map.put("storage.backend", "cql");
 map.put("storage.hostname", "127.0.0.1");
 ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
 ----
@@ -208,16 +210,7 @@ the property `graph.graphname` go through the `JanusGraphManager` which
 keeps track of graph references created on the given JVM. Think of it as
 a graph cache. For this reason:
 
-IMPORTANT: Any updates to a configuration are not guaranteed to take effect until
-you remove the graph in question on every JanusGraph node in your
-cluster.
-
-You can do so by calling:
-
-[source, gremlin]
-----
-ConfiguredGraphFactory.close("graph2");
-----
+IMPORTANT: Any updates to a graph configuration results in the eviction of the relevant graph from the graph cache on every node in the JanusGraph cluster, assuming each node has been configured properly to use the `JanusGraphManager`. Learn more about this feature and how to configure your server to use said feature <<multinodejanusgraphcluster.adoc#graph-reference-consistency, here>>.
 
 Since graphs created using the template configuration first create a
 configuration for that graph in question using a copy and create method,
@@ -230,8 +223,7 @@ configuration are not guaranteed to take effect on the specific graph
 until:
 
 1. The relevant configuration is removed: `ConfiguredGraphFactory.removeConfiguration("graph2");`
-2. The graph in question has been closed on every JanusGraph node: `ConfiguredGraphFactory.close("graph2");`
-3. The graph is recreated using the template configuration: `ConfiguredGraphFactory.create("graph2");`
+2. The graph is recreated using the template configuration: `ConfiguredGraphFactory.create("graph2");`
 ====
 
 [[update-examples]]
@@ -242,70 +234,64 @@ IP address:
 
 [source, gremlin]
 ----
-Map map = new HashMap();
-map.put("storage.backend", "cassandrathrift");
+map = new HashMap();
+map.put("storage.backend", "cql");
 map.put("storage.hostname", "127.0.0.1");
 map.put("graph.graphname", "graph1");
 ConfiguredGraphFactory.createConfiguration(new
 MapConfiguration(map));
 
-def g1 = ConfiguredGraphFactory.open("graph1");
+g1 = ConfiguredGraphFactory.open("graph1");
 
 // Update configuration
-Map map = new HashMap();
+map = new HashMap();
 map.put("storage.hostname", "10.0.0.1");
 ConfiguredGraphFactory.updateConfiguration("graph1",
 map);
 
-// Close graph
-ConfiguredGraphFactory.close("graph1");
-
 // We are now guaranteed to use the updated configuration
-def g1 = ConfiguredGraphFactory.open("graph1");
+g1 = ConfiguredGraphFactory.open("graph1");
 ----
 
 2) We added an Elasticsearch node to our setup:
 
 [source, gremlin]
 ----
-Map map = new HashMap();
-map.put("storage.backend", "cassandrathrift");
+map = new HashMap();
+map.put("storage.backend", "cql");
 map.put("storage.hostname", "127.0.0.1");
 map.put("graph.graphname", "graph1");
 ConfiguredGraphFactory.createConfiguration(new
 MapConfiguration(map));
 
-def g1 = ConfiguredGraphFactory.open("graph1");
+g1 = ConfiguredGraphFactory.open("graph1");
 
 // Update configuration
-Map map = new HashMap();
+map = new HashMap();
 map.put("index.search.backend", "elasticsearch");
 map.put("index.search.hostname", "127.0.0.1");
 map.put("index.search.elasticsearch.transport-scheme", "http");
 ConfiguredGraphFactory.updateConfiguration("graph1",
 map);
 
-// Close graph
-ConfiguredGraphFactory.close("graph1");
-
 // We are now guaranteed to use the updated configuration
-def g1 = ConfiguredGraphFactory.open("graph1");
+g1 = ConfiguredGraphFactory.open("graph1");
 ----
 
 3) Update a graph configuration that was created using a template configuration that has been updated:
 
 [source, gremlin]
 ----
-Map map = new HashMap();
-map.put("storage.backend", "cassandrathrift");
+map = new HashMap();
+map.put("storage.backend", "cql");
 map.put("storage.hostname", "127.0.0.1");
 ConfiguredGraphFactory.createTemplateConfiguration(new
 MapConfiguration(map));
 
-def g1 = ConfiguredGraphFactory.create("graph1");
+g1 = ConfiguredGraphFactory.create("graph1");
 
 // Update template configuration
-Map map = new HashMap();
+map = new HashMap();
 map.put("index.search.backend", "elasticsearch");
 map.put("index.search.hostname", "127.0.0.1");
 map.put("index.search.elasticsearch.transport-scheme", "http");
@@ -314,9 +300,6 @@ MapConfiguration(map));
 
 // Remove Configuration
 ConfiguredGraphFactory.removeConfiguration("graph1");
-
-// Close graph on all JanusGraph nodes
-ConfiguredGraphFactory.close("graph1");
 
 // Recreate
 ConfiguredGraphFactory.create("graph1");
@@ -372,38 +355,68 @@ Below are some example use cases:
 
 [source, gremlin]
 ----
-Map map = new HashMap();
-map.put("storage.backend", "cassandrathrift");
+map = new HashMap();
+map.put("storage.backend", "cql");
 map.put("storage.hostname", "127.0.0.1");
 ConfiguredGraphFactory.createTemplateConfiguration(new
 MapConfiguration(map));
 
-def g1 = ConfiguredGraphFactory.create("graph1"); //keyspace === graph1
-def g2 = ConfiguredGraphFactory.create("graph2"); //keyspace === graph2
-def g3 = ConfiguredGraphFactory.create("graph3"); //keyspace === graph3
+g1 = ConfiguredGraphFactory.create("graph1"); //keyspace === graph1
+g2 = ConfiguredGraphFactory.create("graph2"); //keyspace === graph2
+g3 = ConfiguredGraphFactory.create("graph3"); //keyspace === graph3
 ----
 
 2) Create a template configuration for my BerkeleyJE backend such that each graph created using this configuration gets a unique storage directory equivalent to the "<storage.root>/<graph.graphname>":
 
 [source, gremlin]
 ----
-Map map = new HashMap();
+map = new HashMap();
 map.put("storage.backend", "berkeleyje");
 map.put("storage.root", "/data/graphs");
 ConfiguredGraphFactory.createTemplateConfiguration(new
 MapConfiguration(map));
 
-def g1 = ConfiguredGraphFactory.create("graph1"); //storage directory === /data/graphs/graph1
-def g2 = ConfiguredGraphFactory.create("graph2"); //storage directory === /data/graphs/graph2
-def g3 = ConfiguredGraphFactory.create("graph3"); //storage directory === /data/graphs/graph3
+g1 = ConfiguredGraphFactory.create("graph1"); //storage directory === /data/graphs/graph1
+g2 = ConfiguredGraphFactory.create("graph2"); //storage directory === /data/graphs/graph2
+g3 = ConfiguredGraphFactory.create("graph3"); //storage directory === /data/graphs/graph3
+----
+
+[[graph-and-traversal-bindings]]
+=== Graph and Traversal Bindings
+
+Graphs created using the ConfiguredGraphFactory are bound to the executor context on the Gremlin Server by the "graph.graphname" property, and the graph's traversal reference is bound to the context by "<graphname>_traversal". This means, on subsequent connections to the server after the first time you create/open a graph, you can access the graph and traversal references by the "<graphname>" and "<graphname>_traversal" properties.
+
+Learn more about this feature and how to configure your server to use said feature <<multinodejanusgraphcluster.adoc#dynamic-graph-and-traversal-bindings, here>>.
+
+IMPORTANT: If you are connected to a remote Gremlin Server using the Gremlin Console and a *sessioned* connection, then you will have to reconnect to the server to bind the variables. This is also true for any sessioned WebSocket connection.
+
+IMPORTANT: The JanusGraphManager rebinds every graph stored on the ConfigurationManagementGraph (or those for which you have created configurations) every 20 seconds. This means your graph and traversal bindings for graphs created using the ConfigredGraphFactory will be available on all JanusGraph nodes with a maximum of a 20 second lag. It also means that a binding will still be available on a node after a server restart.
+
+[[binding-example]]
+==== Binding Example
+
+[source, gremlin]
+----
+gremlin> :remote connect tinkerpop.server conf/remote.yaml
+==>Configured localhost/127.0.0.1:8182
+gremlin> :remote console
+==>All scripts will now be sent to Gremlin Server - [localhost/127.0.0.1:8182] - type ':remote console' to return to local mode
+gremlin> ConfiguredGraphFactory.open("graph1")
+==>standardjanusgraph[cassandrathrift:[127.0.0.1]]
+gremlin> graph1
+==>standardjanusgraph[cassandrathrift:[127.0.0.1]]
+gremlin> graph1_traversal
+==>graphtraversalsource[standardjanusgraph[cassandrathrift:[127.0.0.1]], standard]
 ----
 
 [[examples]]
 === Examples
 
+It is reccomended to use a sessioned connection when creating a Configured Graph Factory template. If a sessioned connection is not used the Configured Graph Factory Template creation must be sent to the server as a single line using semi-colons. See details on sessions can be found in <<first-example-connecting-gremlin-server>>.
+
 [source, gremlin]
 ----
-gremlin> :remote connect tinkerpop.server conf/remote.yaml
+gremlin> :remote connect tinkerpop.server conf/remote.yaml session
 ==>Configured localhost/127.0.0.1:8182
 
 gremlin> :remote console
@@ -417,53 +430,53 @@ gremlin> ConfiguredGraphFactory.create("graph");
 Please create a template Configuration using the
 ConfigurationManagementGraph API.
 
-gremlin> Map map = new HashMap(); map.put("storage.backend",
-"cassandrathrift"); map.put("storage.hostname", "127.0.0.1");
-map.put("GraphName", "graph1");
-ConfiguredGraphFactory.createConfiguration(new
-MapConfiguration(map));
+gremlin> map = new HashMap();
+gremlin> map.put("storage.backend", "cql");
+gremlin> map.put("storage.hostname", "127.0.0.1");
+gremlin> map.put("GraphName", "graph1");
+gremlin> ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
 Please include in your configuration the property "graph.graphname".
 
-gremlin> Map map = new HashMap(); map.put("storage.backend",
-"cassandrathrift"); map.put("storage.hostname", "127.0.0.1");
-map.put("graph.graphname", "graph1");
-ConfiguredGraphFactory.createConfiguration(new
-MapConfiguration(map));
+gremlin> map = new HashMap();
+gremlin> map.put("storage.backend", "cql");
+gremlin> map.put("storage.hostname", "127.0.0.1");
+gremlin> map.put("graph.graphname", "graph1");
+gremlin> ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
 ==>null
 
 gremlin> ConfiguredGraphFactory.open("graph1").vertices();
 
-gremlin> Map map = new HashMap(); map.put("storage.backend",
-"cassandrathrift"); map.put("storage.hostname", "127.0.0.1");
-map.put("graph.graphname", "graph1");
-ConfiguredGraphFactory.createTemplateConfiguration(new
-MapConfiguration(map));
+gremlin> map = new HashMap(); map.put("storage.backend",
+"cql"); map.put("storage.hostname", "127.0.0.1");
+gremlin> map.put("graph.graphname", "graph1");
+gremlin> ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
 Your template configuration may not contain the property
 "graph.graphname".
 
-gremlin> Map map = new HashMap(); map.put("storage.backend",
-"cassandrathrift"); map.put("storage.hostname", "127.0.0.1");
-ConfiguredGraphFactory.createTemplateConfiguration(new
-MapConfiguration(map));
+gremlin> map = new HashMap();
+gremlin> map.put("storage.backend",
+"cql"); map.put("storage.hostname", "127.0.0.1");
+gremlin> ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
 ==>null
 
 // Each graph is now acting in unique keyspaces equivalent to the
 graphnames.
-gremlin> def g1 = ConfiguredGraphFactory.open("graph1"); def g2 =
-ConfiguredGraphFactory.create("graph2"); def g3 =
-ConfiguredGraphFactory.create("graph3"); g2.addVertex(); l = []; l <<
-g1.vertices().size(); l << g2.vertices().size(); l <<
-g3.vertices().size(); l;
+gremlin> g1 = ConfiguredGraphFactory.open("graph1");
+gremlin> g2 = ConfiguredGraphFactory.create("graph2");
+gremlin> g3 = ConfiguredGraphFactory.create("graph3");
+gremlin> g2.addVertex();
+gremlin> l = [];
+gremlin> l << g1.vertices().size();
 ==>0
+gremlin> l << g2.vertices().size();
 ==>1
+gremlin> l << g3.vertices().size();
 ==>0
 
 // After a graph is created, you must access it using .open()
-gremlin> def g2 = ConfiguredGraphFactory.create("graph2");
-g2.vertices().size();
+gremlin> g2 = ConfiguredGraphFactory.create("graph2"); g2.vertices().size();
 Configuration for graph "graph2" already exists.
 
-gremlin> def g2 = ConfiguredGraphFactory.open("graph2");
-g2.vertices().size();
+gremlin> g2 = ConfiguredGraphFactory.open("graph2"); g2.vertices().size();
 ==>1
 ----

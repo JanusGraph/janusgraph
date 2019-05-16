@@ -1,5 +1,5 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:d="http://docbook.org/ns/docbook"
+                xmlns:d="https://docbook.org/ns/docbook"
 xmlns:doc="http://nwalsh.com/xsl/documentation/1.0"
 		version="1.0"
                 exclude-result-prefixes="doc d">
@@ -226,7 +226,7 @@ xmlns:doc="http://nwalsh.com/xsl/documentation/1.0"
     </xsl:when>
     
     <!-- include extra test for Xalan quirk -->
-    <xsl:when test="namespace-uri(*[1]) != 'http://docbook.org/ns/docbook'">
+    <xsl:when test="namespace-uri(*[1]) != 'https://docbook.org/ns/docbook'">
  <xsl:call-template name="log.message">
  <xsl:with-param name="level">Note</xsl:with-param>
  <xsl:with-param name="source"><xsl:call-template name="get.doc.title"/></xsl:with-param>
@@ -243,7 +243,7 @@ xmlns:doc="http://nwalsh.com/xsl/documentation/1.0"
   <xsl:apply-templates select="exsl:node-set($addns)"/>
 </xsl:when>
     <!-- Can't process unless namespace removed -->
-    <xsl:when test="namespace-uri(*[1]) != 'http://docbook.org/ns/docbook'">
+    <xsl:when test="namespace-uri(*[1]) != 'https://docbook.org/ns/docbook'">
  <xsl:call-template name="log.message">
  <xsl:with-param name="level">Note</xsl:with-param>
  <xsl:with-param name="source"><xsl:call-template name="get.doc.title"/></xsl:with-param>

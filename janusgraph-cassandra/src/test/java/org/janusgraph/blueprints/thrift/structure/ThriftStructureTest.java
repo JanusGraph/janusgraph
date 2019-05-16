@@ -28,7 +28,7 @@ import org.junit.runner.RunWith;
 public class ThriftStructureTest {
 
 //    TP3 ignores @BeforeClass -- the following method is never executed
-//    @BeforeClass
+//    @BeforeAll
 //    public static void beforeSuite() {
 //        CassandraStorageSetup.startCleanEmbedded();
 //    }

@@ -14,22 +14,21 @@
 
 package org.janusgraph.graphdb.embedded;
 
-import org.junit.BeforeClass;
-import org.junit.experimental.categories.Category;
-
 import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.TestCategory;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphConcurrentTest;
-import org.janusgraph.testcategory.PerformanceTests;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-@Category({PerformanceTests.class})
+@Tag(TestCategory.PERFORMANCE_TESTS)
 public class EmbeddedGraphConcurrentTest extends JanusGraphConcurrentTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void startCassandra() {
         CassandraStorageSetup.startCleanEmbedded();
     }

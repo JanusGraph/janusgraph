@@ -24,7 +24,7 @@ import java.util.NoSuchElementException;
  * The idea is that the wrapped iterator is based on data that is fairly expensive to retrieve (e.g. from a database).
  * As such, we don't want to retrieve all of it but "just enough". However, if more data is requested, then we want
  * the wrapped iterator to be updated (i.e. additional data be retrieved).
- * </p>
+ * <p>
  * The limit for the wrapped iterator is updated by a factor of 2. When the iterator is updated, the iterator must be
  * iterated through to the point of the last returned element. While this may seem expensive, it is less expensive than
  * retrieving more than needed elements in the first place. However, this still means the initial currentLimit in the

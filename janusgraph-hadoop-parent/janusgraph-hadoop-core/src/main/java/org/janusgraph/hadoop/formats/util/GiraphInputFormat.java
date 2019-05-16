@@ -19,6 +19,8 @@ import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetup;
 import org.janusgraph.util.system.ConfigurationUtil;
+import org.apache.tinkerpop.gremlin.hadoop.structure.io.GraphFilterAware;
+import org.apache.tinkerpop.gremlin.process.computer.GraphFilter;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.VertexWritable;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
@@ -32,7 +34,7 @@ import java.util.function.Function;
 import static org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon.SETUP_CLASS_NAME;
 import static org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon.SETUP_PACKAGE_PREFIX;
 
-public abstract class GiraphInputFormat extends InputFormat<NullWritable, VertexWritable> implements Configurable {
+public abstract class GiraphInputFormat extends InputFormat<NullWritable, VertexWritable> implements Configurable, GraphFilterAware {
 
     private final InputFormat<StaticBuffer, Iterable<Entry>> inputFormat;
     private static final RefCountedCloseable<JanusGraphVertexDeserializer> refCounter;
@@ -77,6 +79,11 @@ public abstract class GiraphInputFormat extends InputFormat<NullWritable, Vertex
     @Override
     public Configuration getConf() {
         return ((Configurable)inputFormat).getConf();
+    }
+
+    @Override
+    public void setGraphFilter(final GraphFilter graphFilter) {
+        // do nothing -- loaded via configuration
     }
 
     public static class RefCountedCloseable<T extends AutoCloseable> {

@@ -17,9 +17,10 @@ package org.janusgraph.graphdb.configuration;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
-import org.junit.Test;
+import org.janusgraph.graphdb.idmanagement.UniqueInstanceIdRetriever;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -28,7 +29,7 @@ public class GraphDatabaseConfigurationTest {
 
     @Test
     public void testUniqueNames() {
-        assertFalse(StringUtils.containsAny(GraphDatabaseConfiguration.getOrGenerateUniqueInstanceId(Configuration.EMPTY), ConfigElement.ILLEGAL_CHARS));
+        assertFalse(StringUtils.containsAny(UniqueInstanceIdRetriever.getInstance().getOrGenerateUniqueInstanceId(Configuration.EMPTY), ConfigElement.ILLEGAL_CHARS));
     }
 
 

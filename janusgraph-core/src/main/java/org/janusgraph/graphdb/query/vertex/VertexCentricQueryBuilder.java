@@ -29,14 +29,14 @@ import java.util.List;
  * Implementation of {@link JanusGraphVertexQuery} that extends {@link BasicVertexCentricQueryBuilder}
  * for all the query building and optimization and adds only the execution logic in
  * {@link #constructQuery(org.janusgraph.graphdb.internal.RelationCategory)}. However, there is
- * one important special case: If the constructed query is simple (i.e. {@link org.janusgraph.graphdb.query.vertex.VertexCentricQuery#isSimple()=true}
+ * one important special case: If the constructed query is simple 
  * then we use the {@link SimpleVertexQueryProcessor} to execute the query instead of the generic {@link QueryProcessor}
  * for performance reasons and we compute the result sets differently to make things faster and more memory efficient.
- * </p>
+ * <p>
  * The simplified vertex processing only applies to loaded (i.e. non-mutated) vertices. The query can be configured
  * to only included loaded relations in the result set (which is needed, for instance, when computing index deltas in
  * {@link org.janusgraph.graphdb.database.IndexSerializer}) via {@link #queryOnlyLoaded()}.
- * </p>
+ * <p>
  * All other methods just prepare or transform that result set to fit the particular method semantics.
  *
  * @author Matthias Broecheler (me@matthiasb.com)

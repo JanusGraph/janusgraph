@@ -1,7 +1,7 @@
 <?xml version='1.0'?> <!-- -*- nxml -*- vim: set foldlevel=2: -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:fm="http://freshmeat.net/projects/freshmeat-submit/"
-  xmlns:sf="http://sourceforge.net/"
+  xmlns:sf="https://sourceforge.net/"
   xmlns:dyn="http://exslt.org/dynamic"
   xmlns:saxon="http://icl.com/saxon"
   exclude-result-prefixes="fm sf"
@@ -41,13 +41,13 @@
 <!-- * Minor security fixes -->
 <!-- * Major security fixes -->
   </fm:Release-Focus>
-  <fm:Home-Page-URL>http://sourceforge.net/projects/docbook/</fm:Home-Page-URL>
+  <fm:Home-Page-URL>https://sourceforge.net/projects/docbook/</fm:Home-Page-URL>
   <fm:Gzipped-Tar-URL>http://prdownloads.sourceforge.net/docbook/{DISTRONAME-VERSION}.tar.gz?download</fm:Gzipped-Tar-URL>
   <fm:Zipped-Tar-URL>http://prdownloads.sourceforge.net/docbook/{DISTRONAME-VERSION}.zip?download</fm:Zipped-Tar-URL>
   <fm:Bzipped-Tar-URL>http://prdownloads.sourceforge.net/docbook/{DISTRONAME-VERSION}.bz2?download</fm:Bzipped-Tar-URL>
-  <fm:Changelog-URL>http://sourceforge.net/project/shownotes.php?release_id={SFRELID}</fm:Changelog-URL>
+  <fm:Changelog-URL>https://sourceforge.net/project/shownotes.php?release_id={SFRELID}</fm:Changelog-URL>
   <fm:CVS-URL>http://docbook.svn.sourceforge.net/viewvc/docbook/</fm:CVS-URL>
-  <fm:Mailing-List-URL>http://lists.oasis-open.org/archives/docbook-apps/</fm:Mailing-List-URL>
+  <fm:Mailing-List-URL>https://lists.oasis-open.org/archives/docbook-apps/</fm:Mailing-List-URL>
   <fm:Changes>This is a release with bugfixes and some enhancements.</fm:Changes>
 </fm:project>
 

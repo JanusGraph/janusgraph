@@ -1,5 +1,5 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:d="http://docbook.org/ns/docbook"
+                xmlns:d="https://docbook.org/ns/docbook"
 xmlns:exsl="http://exslt.org/common"
 		version="1.0"
                 exclude-result-prefixes="exsl d">

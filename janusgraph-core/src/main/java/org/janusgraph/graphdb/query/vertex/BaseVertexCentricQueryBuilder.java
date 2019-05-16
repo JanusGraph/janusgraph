@@ -232,7 +232,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
 
     /**
      * Whether this query is asking for the value of an {@link org.janusgraph.graphdb.types.system.ImplicitKey}.
-     * </p>
+     * <p>
      * Handling of implicit keys is completely distinct from "normal" query execution and handled extra
      * for completeness reasons.
      *

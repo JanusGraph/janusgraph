@@ -14,32 +14,28 @@
 
 package org.janusgraph.diskstorage.cql;
 
+import org.janusgraph.TestCategory;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.DistributedStoreManagerTest;
 import org.janusgraph.diskstorage.common.DistributedStoreManager.Deployment;
-import org.janusgraph.testcategory.OrderedKeyStoreTests;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.*;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CQLDistributedStoreManagerTest extends DistributedStoreManagerTest<CQLStoreManager> {
 
-    @BeforeClass
+    @BeforeAll
     public static void startCassandra() {
         CassandraStorageSetup.startCleanEmbedded();
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws BackendException {
         manager = new CachingCQLStoreManager(CassandraStorageSetup.getCQLConfiguration(this.getClass().getSimpleName()));
         store = manager.openDatabase("distributedcf");
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws BackendException {
         if (null != manager)
             manager.close();
@@ -47,7 +43,7 @@ public class CQLDistributedStoreManagerTest extends DistributedStoreManagerTest<
 
     @Override
     @Test
-    @Category({ OrderedKeyStoreTests.class })
+    @Tag(TestCategory.ORDERED_KEY_STORE_TESTS)
     public void testGetDeployment() {
         final Deployment deployment = CassandraStorageSetup.HOSTNAME == null ? Deployment.LOCAL : Deployment.REMOTE;
         assertEquals(deployment, manager.getDeployment());

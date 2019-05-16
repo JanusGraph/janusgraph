@@ -14,29 +14,29 @@
 
 package org.janusgraph.graphdb.configuration;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class TinkerpopFeaturesTest
 {
 
     private JanusGraph graph;
 
-    @Before
+    @BeforeEach
     public void setupGraph()
     {
         graph = open(false);
     }
 
-    @After
+    @AfterEach
     public void closeGraph()
     {
         if (null != graph)

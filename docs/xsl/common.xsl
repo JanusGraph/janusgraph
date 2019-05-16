@@ -1,5 +1,5 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:d="http://docbook.org/ns/docbook"
+                xmlns:d="https://docbook.org/ns/docbook"
                 version="1.0">
 
   <!-- Navigation and section labels -->
@@ -86,9 +86,21 @@
     <div class="header-wrapper">
       <header id="header">
         <ul class="header-list">
-          <li class="header-item"><a href="http://janusgraph.org"><img src="images/janusgraph-logo.png" alt="JanusGraph" class="normal_logo" /></a></li>
+          <li class="header-item"><a href="https://janusgraph.org"><img src="images/janusgraph-logo.png" alt="JanusGraph" class="normal_logo" /></a></li>
           <li class="header-item-right"><a href="https://github.com/JanusGraph/janusgraph/releases">Download JanusGraph</a></li>
-          <li class="header-item-right"><a href="https://github.com/JanusGraph/janusgraph/releases">Other Versions</a></li>
+          <li class="header-item-right dropdown"><a href="https://docs.janusgraph.org/latest/doc-versions.html">Other Doc Versions</a>
+              <div class="dropdown-content">
+                <a href="https://docs.janusgraph.org/latest/index.html">Latest</a>
+                <a href="https://docs.janusgraph.org/0.3.2/index.html">Version 0.3.2</a>
+                <a href="https://docs.janusgraph.org/0.3.1/index.html">Version 0.3.1</a>
+                <a href="https://docs.janusgraph.org/0.3.0/index.html">Version 0.3.0</a>
+                <a href="https://docs.janusgraph.org/0.2.2/index.html">Version 0.2.2</a>
+                <a href="https://docs.janusgraph.org/0.2.1/index.html">Version 0.2.1</a>
+                <a href="https://docs.janusgraph.org/0.2.0/index.html">Version 0.2.0</a>
+                <a href="https://docs.janusgraph.org/0.1.1/index.html">Version 0.1.1</a>
+                <a href="https://docs.janusgraph.org/0.1.0/index.html">Version 0.1.0</a>
+            </div>
+	  </li>
           <li class="header-item-right"><a href="index.html">Documentation ($MAVEN{project.version})</a></li>
         </ul>
       </header>
@@ -123,7 +135,7 @@
               trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage</a> page.<br />
               Cassandra, Groovy, HBase, Hadoop, Lucene, Solr, and TinkerPop are trademarks of the Apache Software Foundation.<br />
               Berkeley DB and Berkeley DB Java Edition are trademarks of Oracle.<br />
-              Documentation generated with <a href="http://www.methods.co.nz/asciidoc/">AsciiDoc</a>, <a href="http://asciidoctor.org/">AsciiDoctor</a>, <a href="http://docbook.sourceforge.net/">DocBook</a>, and <a href="http://saxon.sourceforge.net/">Saxon</a>.
+              Documentation generated with <a href="https://www.methods.co.nz/asciidoc/">AsciiDoc</a>, <a href="https://asciidoctor.org/">AsciiDoctor</a>, <a href="http://docbook.sourceforge.net/">DocBook</a>, and <a href="http://saxon.sourceforge.net/">Saxon</a>.
         	  </div>
         	</footer>
         </div>

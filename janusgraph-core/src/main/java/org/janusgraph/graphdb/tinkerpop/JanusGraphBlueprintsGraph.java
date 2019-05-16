@@ -14,14 +14,10 @@
 
 package org.janusgraph.graphdb.tinkerpop;
 
-import com.google.common.base.Preconditions;
-import org.janusgraph.core.*;
-import org.janusgraph.core.schema.EdgeLabelMaker;
-import org.janusgraph.core.schema.PropertyKeyMaker;
-import org.janusgraph.core.schema.VertexLabelMaker;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.function.Consumer;
+
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -29,14 +25,30 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.Io;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONVersion;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoVersion;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphIndexQuery;
+import org.janusgraph.core.JanusGraphMultiVertexQuery;
+import org.janusgraph.core.JanusGraphQuery;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.RelationType;
+import org.janusgraph.core.VertexLabel;
+import org.janusgraph.core.schema.EdgeLabelMaker;
+import org.janusgraph.core.schema.PropertyKeyMaker;
+import org.janusgraph.core.schema.VertexLabelMaker;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.function.Consumer;
+import com.google.common.base.Preconditions;
 
 /**
  * Blueprints specific implementation for {@link JanusGraph}.
@@ -70,13 +82,12 @@ public abstract class JanusGraphBlueprintsGraph implements JanusGraph {
         return tx;
     }
 
-    private JanusGraphBlueprintsTransaction startNewTx() {
+    private void startNewTx() {
         JanusGraphBlueprintsTransaction tx = txs.get();
         if (tx!=null && tx.isOpen()) throw Transaction.Exceptions.transactionAlreadyOpen();
         tx = (JanusGraphBlueprintsTransaction) newThreadBoundTransaction();
         txs.set(tx);
         log.debug("Created new thread-bound transaction {}", tx);
-        return tx;
     }
 
     public JanusGraphTransaction getCurrentThreadTx() {
@@ -113,7 +124,13 @@ public abstract class JanusGraphBlueprintsGraph implements JanusGraph {
 
     @Override
     public <I extends Io> I io(final Io.Builder<I> builder) {
-        return (I) builder.graph(this).onMapper(mapper ->  mapper.addRegistry(JanusGraphIoRegistry.getInstance())).create();
+        if (builder.requiresVersion(GryoVersion.V1_0) || builder.requiresVersion(GraphSONVersion.V1_0)) {
+            return (I) builder.graph(this).onMapper(mapper ->  mapper.addRegistry(JanusGraphIoRegistryV1d0.getInstance())).create();
+        } else if (builder.requiresVersion(GraphSONVersion.V2_0)) {
+            return (I) builder.graph(this).onMapper(mapper ->  mapper.addRegistry(JanusGraphIoRegistry.getInstance())).create();
+        } else {
+            return (I) builder.graph(this).onMapper(mapper ->  mapper.addRegistry(JanusGraphIoRegistry.getInstance())).create();
+        }
     }
 
     // ########## TRANSACTIONAL FORWARDING ###########################
@@ -191,6 +208,21 @@ public abstract class JanusGraphBlueprintsGraph implements JanusGraph {
     @Override
     public VertexLabelMaker makeVertexLabel(String name) {
         return getAutoStartTx().makeVertexLabel(name);
+    }
+
+    @Override
+    public VertexLabel addProperties(VertexLabel vertexLabel, PropertyKey... keys) {
+        return getAutoStartTx().addProperties(vertexLabel, keys);
+    }
+
+    @Override
+    public EdgeLabel addProperties(EdgeLabel edgeLabel, PropertyKey... keys) {
+        return getAutoStartTx().addProperties(edgeLabel, keys);
+    }
+
+    @Override
+    public EdgeLabel addConnection(EdgeLabel edgeLabel, VertexLabel outVLabel, VertexLabel inVLabel) {
+        return getAutoStartTx().addConnection(edgeLabel, outVLabel, inVLabel);
     }
 
     @Override

@@ -4,7 +4,7 @@
 %common.entities;
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:d="http://docbook.org/ns/docbook"
+                xmlns:d="https://docbook.org/ns/docbook"
 xmlns:xlink='http://www.w3.org/1999/xlink'
                 exclude-result-prefixes="xlink d"
                 version='1.0'>

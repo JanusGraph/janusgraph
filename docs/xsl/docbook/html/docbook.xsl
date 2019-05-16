@@ -1,8 +1,8 @@
 <?xml version='1.0'?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:d="http://docbook.org/ns/docbook"
-xmlns:ng="http://docbook.org/docbook-ng"
-                xmlns:db="http://docbook.org/ns/docbook"
+                xmlns:d="https://docbook.org/ns/docbook"
+xmlns:ng="https://docbook.org/docbook-ng"
+                xmlns:db="https://docbook.org/ns/docbook"
                 xmlns:exsl="http://exslt.org/common"
                 xmlns:exslt="http://exslt.org/common"
                 exclude-result-prefixes="db ng exsl exslt d"
@@ -428,7 +428,7 @@ Used by docbook.xsl, chunk-code.xsl and chunkfast.xsl -->
   <xsl:choose>
     
     <!-- include extra test for Xalan quirk -->
-    <xsl:when test="namespace-uri(*[1]) != 'http://docbook.org/ns/docbook'">
+    <xsl:when test="namespace-uri(*[1]) != 'https://docbook.org/ns/docbook'">
  <xsl:call-template name="log.message">
  <xsl:with-param name="level">Note</xsl:with-param>
  <xsl:with-param name="source"><xsl:call-template name="get.doc.title"/></xsl:with-param>
@@ -445,7 +445,7 @@ Used by docbook.xsl, chunk-code.xsl and chunkfast.xsl -->
   <xsl:apply-templates select="exsl:node-set($addns)"/>
 </xsl:when>
     <!-- Can't process unless namespace removed -->
-    <xsl:when test="namespace-uri(*[1]) != 'http://docbook.org/ns/docbook'">
+    <xsl:when test="namespace-uri(*[1]) != 'https://docbook.org/ns/docbook'">
  <xsl:call-template name="log.message">
  <xsl:with-param name="level">Note</xsl:with-param>
  <xsl:with-param name="source"><xsl:call-template name="get.doc.title"/></xsl:with-param>

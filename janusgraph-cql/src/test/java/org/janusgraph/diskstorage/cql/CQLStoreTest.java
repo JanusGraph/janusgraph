@@ -14,36 +14,48 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import static org.janusgraph.diskstorage.cql.CassandraStorageSetup.*;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.*;
-import static org.junit.Assert.*;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.datastax.driver.core.*;
+import org.janusgraph.TestCategory;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.KeyColumnValueStoreTest;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.testcategory.OrderedKeyStoreTests;
-import org.janusgraph.testcategory.UnorderedKeyStoreTests;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.*;
+import static org.janusgraph.diskstorage.cql.CassandraStorageSetup.getCQLConfiguration;
+import static org.janusgraph.diskstorage.cql.CassandraStorageSetup.startCleanEmbedded;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
 public class CQLStoreTest extends KeyColumnValueStoreTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CQLStoreTest.class);
 
     private static final String TEST_CF_NAME = "testcf";
     private static final String DEFAULT_COMPRESSOR_PACKAGE = "org.apache.cassandra.io.compress";
+    private static final String TEST_KEYSPACE_NAME = "test_keyspace";
 
-    @BeforeClass
+    public CQLStoreTest() throws BackendException {
+    }
+
+    @BeforeAll
     public static void startCassandra() {
         startCleanEmbedded();
     }
@@ -62,14 +74,14 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
     }
 
     @Test
-    @Category({ UnorderedKeyStoreTests.class })
-    public void testUnorderedConfiguration() {
+    @Tag(TestCategory.UNORDERED_KEY_STORE_TESTS)
+    public void testUnorderedConfiguration(TestInfo testInfo) {
         if (!this.manager.getFeatures().hasUnorderedScan()) {
             LOGGER.warn(
-                    "Can't test key-unordered features on incompatible store.  "
-                            + "This warning could indicate reduced test coverage and "
-                            + "a broken JUnit configuration.  Skipping test {}.",
-                            this.name.getMethodName());
+                "Can't test key-unordered features on incompatible store.  "
+                    + "This warning could indicate reduced test coverage and "
+                    + "a broken JUnit configuration.  Skipping test {}.",
+                testInfo.getDisplayName());
             return;
         }
 
@@ -79,19 +91,55 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
     }
 
     @Test
-    @Category({ OrderedKeyStoreTests.class })
-    public void testOrderedConfiguration() {
+    @Tag(TestCategory.ORDERED_KEY_STORE_TESTS)
+    public void testOrderedConfiguration(TestInfo testInfo) {
         if (!this.manager.getFeatures().hasOrderedScan()) {
             LOGGER.warn(
-                    "Can't test key-ordered features on incompatible store.  "
-                            + "This warning could indicate reduced test coverage and "
-                            + "a broken JUnit configuration.  Skipping test {}.",
-                            this.name.getMethodName());
+                "Can't test key-ordered features on incompatible store.  "
+                    + "This warning could indicate reduced test coverage and "
+                    + "a broken JUnit configuration.  Skipping test {}.",
+                testInfo.getDisplayName());
             return;
         }
 
         final StoreFeatures features = this.manager.getFeatures();
         assertTrue(features.isKeyOrdered());
+    }
+
+    @Test
+    public void testDefaultCompactStorage() throws BackendException {
+        final String cf = TEST_CF_NAME + "_defaultcompact";
+
+        final CQLStoreManager cqlStoreManager = openStorageManager();
+        cqlStoreManager.openDatabase(cf);
+
+        // COMPACT STORAGE is allowed on Cassandra 2 or earlier
+        // when COMPACT STORAGE is allowed, the default is to enable it
+        assertTrue(cqlStoreManager.isCompactStorageAllowed() == cqlStoreManager.getTableMetadata(cf).getOptions().isCompactStorage());
+    }
+
+    @Test
+    public void testUseCompactStorage() throws BackendException {
+        final String cf = TEST_CF_NAME + "_usecompact";
+        final ModifiableConfiguration config = getBaseStorageConfiguration();
+        config.set(CF_COMPACT_STORAGE, true);
+
+        final CQLStoreManager cqlStoreManager = openStorageManager(config);
+        cqlStoreManager.openDatabase(cf);
+
+        assertTrue(cqlStoreManager.getTableMetadata(cf).getOptions().isCompactStorage());
+    }
+
+    @Test
+    public void testNoCompactStorage() throws BackendException {
+        final String cf = TEST_CF_NAME + "_nocompact";
+        final ModifiableConfiguration config = getBaseStorageConfiguration();
+        config.set(CF_COMPACT_STORAGE, false);
+
+        final CQLStoreManager cqlStoreManager = openStorageManager(config);
+        cqlStoreManager.openDatabase(cf);
+
+        assertFalse(cqlStoreManager.getTableMetadata(cf).getOptions().isCompactStorage());
     }
 
     @Test
@@ -155,6 +203,75 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
     public void testTTLSupported() {
         final StoreFeatures features = this.manager.getFeatures();
         assertTrue(features.hasCellTTL());
+    }
+
+    @Mock
+    private Cluster cluster;
+    @Mock
+    private Session session;
+
+    @InjectMocks
+    private CQLStoreManager mockManager = new CQLStoreManager(getBaseStorageConfiguration());
+
+    @Test
+    public void testExistKeyspaceSession() {
+        Metadata metadata = mock(Metadata.class);
+        KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
+        when(cluster.getMetadata()).thenReturn(metadata);
+        when(metadata.getKeyspace(TEST_KEYSPACE_NAME)).thenReturn(keyspaceMetadata);
+        when(cluster.connect()).thenReturn(session);
+
+        mockManager.initializeSession(TEST_KEYSPACE_NAME);
+
+        verify(cluster).connect();
+        verify(session, never()).execute(any(Statement.class));
+    }
+
+    @Test
+    public void testNewKeyspaceSession() {
+        Metadata metadata = mock(Metadata.class);
+        when(cluster.getMetadata()).thenReturn(metadata);
+        when(metadata.getKeyspace(TEST_KEYSPACE_NAME)).thenReturn(null);
+        when(cluster.connect()).thenReturn(session);
+
+        mockManager.initializeSession(TEST_KEYSPACE_NAME);
+
+        verify(cluster).connect();
+        verify(session, times(1)).execute(any(Statement.class));
+    }
+
+    @Test
+    public void testExistTableOpenDatabase() throws BackendException {
+        //arrange
+        String someTableName = "foo";
+        Metadata metadata = mock(Metadata.class);
+        KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
+        when(keyspaceMetadata.getTable(someTableName)).thenReturn(mock(TableMetadata.class));
+        when(cluster.getMetadata()).thenReturn(metadata);
+        when(metadata.getKeyspace(mockManager.getKeyspaceName())).thenReturn(keyspaceMetadata);
+
+        //act
+        mockManager.openDatabase(someTableName, null);
+
+        //assert
+        verify(session, never()).execute(any(Statement.class));
+    }
+
+    @Test
+    public void testNewTableOpenDatabase() throws BackendException {
+        //arrange
+        String someTableName = "foo";
+        Metadata metadata = mock(Metadata.class);
+        KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
+        when(keyspaceMetadata.getTable(someTableName)).thenReturn(null);
+        when(cluster.getMetadata()).thenReturn(metadata);
+        when(metadata.getKeyspace(mockManager.getKeyspaceName())).thenReturn(keyspaceMetadata);
+
+        //act
+        mockManager.openDatabase(someTableName, null);
+
+        //assert
+        verify(session, times(1)).execute(any(Statement.class));
     }
 
     @Override

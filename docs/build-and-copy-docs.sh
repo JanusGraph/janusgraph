@@ -22,7 +22,7 @@
 # It will build the docs in the first repo and copy them to the second repo, such
 # that a PR can be created in the second repo and pushed for review. Once the
 # PR in docs.janusgraph.org is submitted, it is published to
-# http://docs.janusgraph.org within minutes by GitHub since that domain is hosted
+# https://docs.janusgraph.org within minutes by GitHub since that domain is hosted
 # by GitHub directly from the repo.
 
 ################################################################################

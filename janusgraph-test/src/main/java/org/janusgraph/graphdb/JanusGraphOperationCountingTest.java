@@ -37,21 +37,21 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.janusgraph.graphdb.database.cache.MetricInstrumentedSchemaCache.*;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexType;
-import org.janusgraph.testcategory.SerialTests;
+import org.janusgraph.TestCategory;
 import org.janusgraph.util.stats.MetricManager;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -60,7 +60,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-@Category({ SerialTests.class })
+@Tag(TestCategory.SERIAL_TESTS)
 public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest {
 
     public MetricManager metric;
@@ -90,12 +90,12 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
     }
 
 
-    private void verifyLockingOverwrite(String storeName, long num) {
+    private void verifyLockingOverwrite(long num) {
         if (storeUsesConsistentKeyLocker()) {
-            verifyStoreMetrics(storeName, ImmutableMap.of(M_GET_SLICE, 2*num));
-            verifyStoreMetrics(storeName+LOCK_STORE_SUFFIX, ImmutableMap.of(M_GET_SLICE, num, M_MUTATE, 2*num));
+            verifyStoreMetrics(org.janusgraph.diskstorage.Backend.INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 2*num));
+            verifyStoreMetrics(org.janusgraph.diskstorage.Backend.INDEXSTORE_NAME +LOCK_STORE_SUFFIX, ImmutableMap.of(M_GET_SLICE, num, M_MUTATE, 2*num));
         } else {
-            verifyStoreMetrics(storeName, ImmutableMap.of(M_GET_SLICE, num, M_ACQUIRE_LOCK, num));
+            verifyStoreMetrics(org.janusgraph.diskstorage.Backend.INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, num, M_ACQUIRE_LOCK, num));
         }
     }
 
@@ -139,7 +139,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         tx.makeVertexLabel("person").make();
         tx.commit();
         verifyStoreMetrics(EDGESTORE_NAME);
-        verifyLockingOverwrite(INDEXSTORE_NAME, 3);
+        verifyLockingOverwrite(3);
         verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1L));
 
         resetMetrics();
@@ -204,7 +204,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         e.property("name", "edge");
         tx.commit();
         verifyStoreMetrics(EDGESTORE_NAME);
-        verifyLockingOverwrite(INDEXSTORE_NAME, 1);
+        verifyLockingOverwrite(1);
 
         for (int i = 1; i <= 30; i++) {
             metricsPrefix = "op"+i+cache;
@@ -230,11 +230,13 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
     }
 
     @Test
-    public void testSettingProperty() throws Exception {
+    public void testSettingProperty() {
         metricsPrefix = "testSettingProperty";
 
         mgmt.makePropertyKey("foo").dataType(String.class).cardinality(Cardinality.SINGLE).make();
         finishSchema();
+
+        clopen(option(SCHEMA_CONSTRAINTS), true);
 
         JanusGraphVertex v = tx.addVertex();
         v.property("foo","bar");
@@ -244,20 +246,22 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         JanusGraphTransaction tx = graph.buildTransaction().checkExternalVertexExistence(false).groupName(metricsPrefix).start();
         v = tx.getVertex(v.longId());
         v.property("foo", "bus");
-//        printAllMetrics();
+        long numLookupPropertyConstraints = 1;
+        //printAllMetrics(metricsPrefix);
         tx.commit();
-        verifyStoreMetrics(EDGESTORE_NAME);
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, numLookupPropertyConstraints));
         verifyStoreMetrics(INDEXSTORE_NAME);
         verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1L));
 
         tx = graph.buildTransaction().checkExternalVertexExistence(false).groupName(metricsPrefix).start();
         v = tx.getVertex(v.longId());
         v.property("foo", "band");
+        numLookupPropertyConstraints +=1;
         assertEquals("band", v.property("foo").value());
         assertEquals(1, Iterators.size(v.properties("foo")));
         assertEquals(1, Iterators.size(v.properties()));
         tx.commit();
-        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 2L));
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 2L + numLookupPropertyConstraints));
         verifyStoreMetrics(INDEXSTORE_NAME);
         verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 2L));
         verifyStoreMetrics(getConfig().get(IDS_STORE_NAME));
@@ -265,7 +269,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
 
 
     @Test
-    public void testKCVSAccess1() throws InterruptedException {
+    public void testKCVSAccess1() {
         metricsPrefix = "testKCVSAccess1";
 
         JanusGraphTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
@@ -274,7 +278,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         v.addEdge("knows", u);
         tx.commit();
         verifyStoreMetrics(EDGESTORE_NAME);
-        verifyLockingOverwrite(INDEXSTORE_NAME, 3);
+        verifyLockingOverwrite(3);
         verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1L + (features.hasTxIsolation()?0:1)));
 
         verifyTypeCacheMetrics(3, 0);
@@ -312,7 +316,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         verifyTypeCacheMetrics(5, 10);
         tx.commit();
 
-        verifyLockingOverwrite(INDEXSTORE_NAME, 3);
+        verifyLockingOverwrite(3);
         verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1L + (features.hasTxIsolation()?0:1)));
 
     }
@@ -333,7 +337,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         assertEquals(25,v.property("age").value());
         tx.commit();
         verifyStoreMetrics(EDGESTORE_NAME);
-        verifyLockingOverwrite(INDEXSTORE_NAME, 1);
+        verifyLockingOverwrite(1);
         verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1L));
 
         resetMetrics();
@@ -403,7 +407,8 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         for (String operation : OPERATION_NAMES) {
             Long count = operationCounts.get(operation);
             if (count==null) count = 0L;
-            assertEquals(Joiner.on(".").join(prefix, storeName, operation, MetricInstrumentedStore.M_CALLS),count.longValue(), metric.getCounter(prefix, storeName, operation, MetricInstrumentedStore.M_CALLS).getCount());
+            assertEquals(count.longValue(), metric.getCounter(prefix, storeName, operation, MetricInstrumentedStore.M_CALLS).getCount(),
+                Joiner.on(".").join(prefix, storeName, operation, MetricInstrumentedStore.M_CALLS));
         }
     }
 
@@ -413,10 +418,12 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
 
     public void verifyTypeCacheMetrics(String prefix, int nameMisses, int relationMisses) {
 //        assertEquals("On type cache name retrievals",nameRetrievals, metric.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, METRICS_TYPENAME, CacheMetricsAction.RETRIEVAL.getName()).getCount());
-        assertEquals("On type cache name misses",nameMisses, metric.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, METRICS_TYPENAME, CacheMetricsAction.MISS.getName()).getCount());
+        assertEquals(nameMisses, metric.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, METRICS_TYPENAME, CacheMetricsAction.MISS.getName()).getCount(),
+            "On type cache name misses");
         assertTrue(nameMisses <= metric.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, METRICS_TYPENAME, CacheMetricsAction.RETRIEVAL.getName()).getCount());
 //        assertEquals("On type cache relation retrievals",relationRetrievals, metric.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, METRICS_RELATIONS, CacheMetricsAction.RETRIEVAL.getName()).getCount());
-        assertEquals("On type cache relation misses", relationMisses, metric.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, METRICS_RELATIONS, CacheMetricsAction.MISS.getName()).getCount());
+        assertEquals(relationMisses, metric.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, METRICS_RELATIONS, CacheMetricsAction.MISS.getName()).getCount(),
+            "On type cache relation misses");
         assertTrue(relationMisses <= metric.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, METRICS_RELATIONS, CacheMetricsAction.RETRIEVAL.getName()).getCount());
     }
 
@@ -466,7 +473,8 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
                 option(GraphDatabaseConfiguration.DB_CACHE_SIZE),0.25,
                 option(GraphDatabaseConfiguration.BASIC_METRICS),true,
                 option(GraphDatabaseConfiguration.METRICS_MERGE_STORES),false,
-                option(GraphDatabaseConfiguration.METRICS_PREFIX),metricsPrefix};
+                option(GraphDatabaseConfiguration.METRICS_PREFIX),metricsPrefix,
+                option(GraphDatabaseConfiguration.SCHEMA_CONSTRAINTS),true};
         clopen(newConfig);
         final String prop = "someProp";
         makeKey(prop,Integer.class);
@@ -504,7 +512,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
                 boolean postCommit = postcommit[pos].get();
                 final Integer value = v.value(prop);
                 lookups.incrementAndGet();
-                assertNotNull("On pos [" + pos + "]", value);
+                assertNotNull(value, "On pos [" + pos + "]");
                 if (!precommit[pos].get()) assertEquals(0, value.intValue());
                 else if (postCommit) assertEquals(1, value.intValue());
                 graph.tx().commit();
@@ -541,9 +549,10 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         System.out.println("Hits: " + (getEdgeCacheRetrievals()-getEdgeCacheMisses()));
         System.out.println("Misses: " + getEdgeCacheMisses());
         assertEquals(numReads, lookups.get());
-        assertEquals(2 * numReads + numV, getEdgeCacheRetrievals());
+        final int numLookupPropertyConstraints = numV;
+        assertEquals(2 * numReads + numV + numLookupPropertyConstraints, getEdgeCacheRetrievals());
         int minMisses = 2*numV;
-        assertTrue("Min misses ["+minMisses+"] vs actual ["+getEdgeCacheMisses()+"]",minMisses<=getEdgeCacheMisses() && 4*minMisses>=getEdgeCacheMisses());
+        assertTrue(minMisses<=getEdgeCacheMisses() && 4*minMisses>=getEdgeCacheMisses(), "Min misses ["+minMisses+"] vs actual ["+getEdgeCacheMisses()+"]");
     }
 
     private long getEdgeCacheRetrievals() {
@@ -561,7 +570,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         counter.dec(counter.getCount());
     }
 
-    private void resetMetrics() {
+    protected void resetMetrics() {
         MetricManager.INSTANCE.getRegistry().removeMatching(MetricFilter.ALL);
     }
 
@@ -624,7 +633,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         timeHotGlobal = timeHotGlobal/measurements;
 
         System.out.println(round(timeColdGlobal) + "\t" + round(timeWarmGlobal) + "\t" + round(timeHotGlobal));
-        assertTrue(timeColdGlobal + " vs " + timeWarmGlobal, timeColdGlobal>timeWarmGlobal*2);
+        assertTrue(timeColdGlobal>timeWarmGlobal*2, timeColdGlobal + " vs " + timeWarmGlobal);
         //assertTrue(timeWarmGlobal + " vs " + timeHotGlobal, timeWarmGlobal>timeHotGlobal); Sometimes, this is not true
     }
 

@@ -87,7 +87,7 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
      * Creates a new vertex in the graph with the given vertex id.
      * Note, that an exception is thrown if the vertex id is not a valid JanusGraph vertex id or if a vertex with the given
      * id already exists. Only accepts long ids - all others are ignored.
-     * <p/>
+     * <p>
      * Custom id setting must be enabled via the configuration option {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}
      * and valid JanusGraph vertex ids must be provided. Use {@link org.janusgraph.graphdb.idmanagement.IDManager#toVertexId(long)}
      * to construct a valid JanusGraph vertex id from a user id, where <code>idManager</code> can be obtained through

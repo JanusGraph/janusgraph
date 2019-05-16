@@ -17,7 +17,7 @@ package org.janusgraph.graphdb.database.serialize.attribute;
 import org.janusgraph.diskstorage.util.ReadArrayBuffer;
 import org.janusgraph.diskstorage.util.WriteByteBuffer;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
@@ -37,6 +37,21 @@ public class UUIDSerializerTest {
         //And read it in again
         ReadArrayBuffer readBuffer = new ReadArrayBuffer(buffer.getStaticBuffer().getBytes(0, 16));
         UUID uuid2 = serializer.read(readBuffer);
+
+        Assert.assertEquals(uuid1, uuid2);
+    }
+
+    @Test
+    public void testRoundTripByteOrder() {
+        //Write the UUID
+        UUIDSerializer serializer = new UUIDSerializer();
+        UUID uuid1 = UUID.randomUUID();
+        WriteByteBuffer buffer = new WriteByteBuffer();
+        serializer.writeByteOrder(buffer, uuid1);
+
+        //And read it in again
+        ReadArrayBuffer readBuffer = new ReadArrayBuffer(buffer.getStaticBuffer().getBytes(0, 16));
+        UUID uuid2 = serializer.readByteOrder(readBuffer);
 
         Assert.assertEquals(uuid1, uuid2);
     }

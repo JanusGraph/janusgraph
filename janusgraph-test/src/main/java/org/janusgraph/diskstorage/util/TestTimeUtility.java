@@ -15,14 +15,14 @@
 package org.janusgraph.diskstorage.util;
 
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 
 import java.time.Instant;
 import java.util.Random;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -37,7 +37,7 @@ public class TestTimeUtility {
         Instant[] times = new Instant[10];
         for (int i = 0; i < times.length; i++) {
             times[i] = TimestampProviders.NANO.getTime();
-            if (i > 0) assertTrue(times[i] + " > " + times[i - 1], times[i].compareTo(times[i - 1])>0);
+            if (i > 0) assertTrue(times[i].compareTo(times[i - 1])>0, times[i] + " > " + times[i - 1]);
             Thread.sleep(r.nextInt(50) + 2);
         }
     }

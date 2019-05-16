@@ -38,18 +38,28 @@ mvn clean install -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true
 This command generates the distribution archive in `janusgraph-dist/janusgraph-dist-hadoop-2/target/janusgraph-$VERSION-hadoop2.zip`.
 For more details information, please see [here](janusgraph-dist/README.md#building-zip-archives)
 
-## Building Docker Image for JanusGraph Gremlin Server
+## Building Docker Image for JanusGraph Server
 
-In order to build Docker image for JanusGraph Gremlin Server, a
-distribution archive is needed. Refer to `To build the distribution archive`
-section to build the distribution archive first. Then use the following command
-to build and run Docker images with JanusGraph and Gremlin Server, configured
+In order to build Docker image for JanusGraph Server, a
+distribution archive is needed. If you wish to build an image from source
+refer to `To build the distribution archive` section to build the distribution
+archive first. You can also use an [official release](https://github.com/JanusGraph/janusgraph/releases) to avoid building.
+To do so check out the release tag you wish to build, example: `git checkout v0.2.0`. Then create target
+directory that houses the distribution zip with `mkdir janusgraph-dist/janusgraph-dist-hadoop-2/target`.
+The [downloaded release](https://github.com/JanusGraph/janusgraph/releases)
+is then placed in the recently created target directory. Note that if the
+tag is not found you can run `git fetch --all --tags --prune` and then rerun the checkout command.
+
+Once the distribution is in place use the following command
+to build and run Docker images with JanusGraph Server, configured
 to run the BerkeleyJE backend and Elasticsearch (requires [Docker Compose](https://docs.docker.com/compose/)):
 
 ```bash
 mvn docker:build -Pjanusgraph-docker -pl janusgraph-dist
 docker-compose -f janusgraph-dist/janusgraph-dist-hadoop-2/docker-compose.yml up
 ```
+
+If you are building the Docker image behind a proxy please set an environment variable for either http_proxy or https_proxy accordingly.
 
 Note the above `docker-compose` call launches containers in the foreground and is convenient for monitoring logs but add "-d" to instead run in the background.
 

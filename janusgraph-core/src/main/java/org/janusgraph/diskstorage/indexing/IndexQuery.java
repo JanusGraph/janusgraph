@@ -29,7 +29,7 @@ import java.util.List;
 
 /**
  * An external index query executed on an {@link IndexProvider}.
- * <p/>
+ * <p>
  * A query is comprised of the store identifier against which the query ought to be executed and a query condition
  * which defines which entries match the query.
  *
@@ -51,7 +51,6 @@ public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
         Preconditions.checkNotNull(store);
         Preconditions.checkNotNull(condition);
         Preconditions.checkArgument(orders != null);
-        Preconditions.checkArgument(QueryUtil.isQueryNormalForm(condition));
         this.condition = condition;
         this.orders = orders;
         this.store = store;
@@ -103,14 +102,14 @@ public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
         if (this == other) return true;
         else if (other == null) return false;
         else if (!getClass().isInstance(other)) return false;
-        IndexQuery oth = (IndexQuery) other;
+        final IndexQuery oth = (IndexQuery) other;
         return store.equals(oth.store) && orders.equals(oth.orders)
                 && condition.equals(oth.condition) && getLimit() == oth.getLimit();
     }
 
     @Override
     public String toString() {
-        StringBuilder b = new StringBuilder();
+        final StringBuilder b = new StringBuilder();
         b.append("[").append(condition.toString()).append("]");
         if (!orders.isEmpty()) b.append(orders);
         if (hasLimit()) b.append("(").append(getLimit()).append(")");
@@ -155,7 +154,7 @@ public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
             if (this == oth) return true;
             else if (oth == null) return false;
             else if (!getClass().isInstance(oth)) return false;
-            OrderEntry o = (OrderEntry) oth;
+            final OrderEntry o = (OrderEntry) oth;
             return key.equals(o.key) && order == o.order;
         }
 

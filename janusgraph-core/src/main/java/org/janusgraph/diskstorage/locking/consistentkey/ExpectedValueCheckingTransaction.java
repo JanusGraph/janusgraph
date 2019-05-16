@@ -40,8 +40,8 @@ import java.util.concurrent.Callable;
  * A {@link StoreTransaction} that supports locking via
  * {@link LocalLockMediator} and writing and reading lock records in a
  * {@link ExpectedValueCheckingStore}.
- * <p/>
- * <p/>
+ * <p>
+ * <p>
  * <b>This class is not safe for concurrent use by multiple threads.
  * Multithreaded access must be prevented or externally synchronized.</b>
  */
@@ -198,7 +198,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
      * . This transaction can't be used in subsequent calls to
      * {@link ExpectedValueCheckingStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      * .
-     * <p/>
+     * <p>
      * Calling this method at the appropriate time is handled automatically by
      * {@link ExpectedValueCheckingStore}. JanusGraph users don't need to call this
      * method by hand.

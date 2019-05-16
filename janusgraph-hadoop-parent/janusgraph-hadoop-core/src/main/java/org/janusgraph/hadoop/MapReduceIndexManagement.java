@@ -54,6 +54,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -177,7 +178,7 @@ public class MapReduceIndexManagement {
         janusGraphMapReduceConfiguration.set(JanusGraphHadoopConfiguration.SCAN_JOB_CONFIG_ROOT,
                 GraphDatabaseConfiguration.class.getName() + "#JOB_NS");
         // Copy the StandardJanusGraph configuration under JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS
-        org.apache.commons.configuration.Configuration localConfiguration = graph.getConfiguration().getLocalConfiguration();
+        org.apache.commons.configuration.Configuration localConfiguration = graph.getConfiguration().getConfigurationAtOpen();
         localConfiguration.clearProperty(Graph.GRAPH);
         copyInputKeys(hadoopConf, localConfiguration);
 
@@ -192,22 +193,18 @@ public class MapReduceIndexManagement {
 
     private static void copyInputKeys(org.apache.hadoop.conf.Configuration hadoopConf, org.apache.commons.configuration.Configuration source) {
         // Copy IndexUpdateJob settings into the hadoop-backed cfg
-        Iterator<String> iterator = source.getKeys();
-        while (iterator.hasNext()) {
-            String key = iterator.next();
-            ConfigElement.PathIdentifier pid;
-            try {
-                pid = ConfigElement.parse(ROOT_NS, key);
-            } catch (RuntimeException e) {
-                log.debug("[inputkeys] Skipping {}", key, e);
-                continue;
-            }
-
-            if (!pid.element.isOption())
-                continue;
+        Iterator<String> keyIter = source.getKeys();
+        while (keyIter.hasNext()) {
+            String key = keyIter.next();
 
             String k = ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + key;
-            String v = source.getProperty(key).toString();
+            Object vObject = source.getProperty(key);
+            String v;
+            if (vObject instanceof Collection) {
+                v = Joiner.on(",").join((Collection<String>) vObject);
+            } else {
+                v = vObject.toString();
+            }
 
             hadoopConf.set(k, v);
             log.debug("[inputkeys] Set {}={}", k, v);

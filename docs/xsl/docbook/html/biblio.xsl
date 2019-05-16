@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 <xsl:stylesheet exclude-result-prefixes="d"
                  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:d="http://docbook.org/ns/docbook"
+                xmlns:d="https://docbook.org/ns/docbook"
 version='1.0'>
 
 <!-- ********************************************************************
@@ -882,13 +882,13 @@ version='1.0'>
   </span>
 </xsl:template>
 
-<!-- See FR #1934434 and http://doi.org -->
+<!-- See FR #1934434 and https://doi.org -->
 <xsl:template match="d:biblioid[@class='doi']"
               mode="bibliography.mode">
   <span>
     <xsl:call-template name="common.html.attributes"/>
     <xsl:call-template name="id.attribute"/>
-    <a href="{concat('http://dx.doi.org/', .)}">doi:<xsl:value-of select="."/></a>
+    <a href="{concat('https://dx.doi.org/', .)}">doi:<xsl:value-of select="."/></a>
   </span>
 </xsl:template>
 
@@ -1369,13 +1369,13 @@ version='1.0'>
   </span>
 </xsl:template>
 
-<!-- See FR #1934434 and http://doi.org -->
+<!-- See FR #1934434 and https://doi.org -->
 <xsl:template match="d:biblioid[@class='doi']"
               mode="bibliomixed.mode">
   <span>
     <xsl:call-template name="common.html.attributes"/>
     <xsl:call-template name="id.attribute"/>
-    <a href="{concat('http://dx.doi.org/', .)}">doi:<xsl:value-of select="."/></a>
+    <a href="{concat('https://dx.doi.org/', .)}">doi:<xsl:value-of select="."/></a>
   </span>
 </xsl:template>
 

@@ -25,14 +25,14 @@ public class ModifiableHadoopConfiguration extends ModifiableConfiguration {
 
     private final Configuration conf;
 
-    private ModifiableHadoopConfiguration(ConfigNamespace root, Configuration c, Restriction restriction) {
-        super(root, new HadoopConfiguration(c), restriction);
+    private ModifiableHadoopConfiguration(ConfigNamespace root, Configuration c) {
+        super(root, new HadoopConfiguration(c), Restriction.NONE);
         this.conf = c;
     }
 
     public static ModifiableHadoopConfiguration of(ConfigNamespace root, Configuration c) {
         Preconditions.checkNotNull(c);
-        return new ModifiableHadoopConfiguration(root, c, Restriction.NONE);
+        return new ModifiableHadoopConfiguration(root, c);
     }
 
     public static ModifiableConfiguration prefixView(ConfigNamespace newRoot, ConfigNamespace prefixRoot,

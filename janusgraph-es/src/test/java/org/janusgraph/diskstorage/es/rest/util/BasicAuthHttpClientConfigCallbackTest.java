@@ -14,7 +14,7 @@
 
 package org.janusgraph.diskstorage.es.rest.util;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import org.apache.http.auth.AuthScope;
@@ -22,37 +22,35 @@ import org.apache.http.auth.Credentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.MockitoAnnotations;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({HttpAsyncClientBuilder.class})
+@ExtendWith(MockitoExtension.class)
 public class BasicAuthHttpClientConfigCallbackTest {
 
     private static final String HTTP_USER = "testuser";
     private static final String HTTP_PASSWORD = "testpass";
     private static final String HTTP_REALM = "testrealm";
 
-    private final HttpAsyncClientBuilder httpAsyncClientBuilderMock = PowerMockito.mock(HttpAsyncClientBuilder.class);
+    @Mock
+    private HttpAsyncClientBuilder httpAsyncClientBuilderMock;
 
-    @Before
-    public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
-        when(httpAsyncClientBuilderMock.setDefaultCredentialsProvider(anyObject())).thenReturn(httpAsyncClientBuilderMock);
+    @BeforeEach
+    public void setUp() {
+        when(httpAsyncClientBuilderMock.setDefaultCredentialsProvider(any())).thenReturn(httpAsyncClientBuilderMock);
     }
 
-    private CredentialsProvider basicAuthTestBase(final String realm, final String username, final String password) {
-        final BasicAuthHttpClientConfigCallback cb = new BasicAuthHttpClientConfigCallback(realm, username, password);
+    private CredentialsProvider basicAuthTestBase(final String realm) {
+        final BasicAuthHttpClientConfigCallback cb = new BasicAuthHttpClientConfigCallback(realm,
+            BasicAuthHttpClientConfigCallbackTest.HTTP_USER, BasicAuthHttpClientConfigCallbackTest.HTTP_PASSWORD);
 
         cb.customizeHttpClient(httpAsyncClientBuilderMock);
 
-        final ArgumentCaptor<BasicCredentialsProvider> cpCaptor = ArgumentCaptor.forClass(BasicCredentialsProvider.class);
+        final ArgumentCaptor<CredentialsProvider> cpCaptor = ArgumentCaptor.forClass(BasicCredentialsProvider.class);
 
         verify(httpAsyncClientBuilderMock).setDefaultCredentialsProvider(cpCaptor.capture());
 
@@ -65,7 +63,7 @@ public class BasicAuthHttpClientConfigCallbackTest {
     @Test
     public void testSetDefaultCredentialsProviderNoRealm() throws Exception {
 
-        final CredentialsProvider cp = basicAuthTestBase("", HTTP_USER, HTTP_PASSWORD);
+        final CredentialsProvider cp = basicAuthTestBase("");
 
         // expected: will match any host and any realm
         final Credentials credentialsForRealm1 = cp.getCredentials(new AuthScope("dummyhost1", 1234, "dummyrealm1"));
@@ -76,7 +74,7 @@ public class BasicAuthHttpClientConfigCallbackTest {
     @Test
     public void testSetDefaultCredentialsProviderWithRealm() throws Exception {
 
-        final CredentialsProvider cp = basicAuthTestBase(HTTP_REALM, HTTP_USER, HTTP_PASSWORD);
+        final CredentialsProvider cp = basicAuthTestBase(HTTP_REALM);
 
         // expected: will match any host in that specific realm
         final Credentials credentialsForRealm1 = cp.getCredentials(new AuthScope("dummyhost1", 1234, HTTP_REALM));

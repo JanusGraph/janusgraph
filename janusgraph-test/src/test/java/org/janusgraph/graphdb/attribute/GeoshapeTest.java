@@ -17,23 +17,23 @@ package org.janusgraph.graphdb.attribute;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.janusgraph.core.attribute.Geoshape;
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.LinearRing;
-import com.vividsolutions.jts.geom.Polygon;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.LinearRing;
+import org.locationtech.jts.geom.Polygon;
 
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.apache.tinkerpop.shaded.jackson.databind.module.SimpleModule;
 import org.janusgraph.core.attribute.JtsGeoshapeHelper;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -108,10 +108,12 @@ public class GeoshapeTest {
         assertEquals(Geoshape.box(10, 20, 30, 40), serializer.convert(Arrays.asList(10, 20, 30, 40)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testFailParseCollection() {
-        Geoshape.GeoshapeSerializer serializer = new Geoshape.GeoshapeSerializer();
-        serializer.convert(Arrays.asList(10, "Foo"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            Geoshape.GeoshapeSerializer serializer = new Geoshape.GeoshapeSerializer();
+            serializer.convert(Arrays.asList(10, "Foo"));
+        });
     }
 
 
@@ -132,10 +134,11 @@ public class GeoshapeTest {
     }
 
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testGeoJsonPointNotParseable() throws IOException {
-        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
-        Map json = new ObjectMapper().readValue("{\n" +
+        assertThrows(IllegalArgumentException.class, () -> {
+            Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+            Map json = new ObjectMapper().readValue("{\n" +
                 "  \"type\": \"Feature\",\n" +
                 "  \"geometry\": {\n" +
                 "    \"type\": \"Point\",\n" +
@@ -145,7 +148,8 @@ public class GeoshapeTest {
                 "    \"name\": \"Dinagat Islands\"\n" +
                 "  }\n" +
                 "}", HashMap.class);
-        s.convert(json);
+            s.convert(json);
+        });
     }
 
 
@@ -166,10 +170,11 @@ public class GeoshapeTest {
         assertEquals(Geoshape.circle(10.5, 20.5, 30.5), s.convert(json));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testGeoJsonCircleMissingRadius() throws IOException {
-        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
-        Map json = new ObjectMapper().readValue("{\n" +
+        assertThrows(IllegalArgumentException.class, () -> {
+            Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+            Map json = new ObjectMapper().readValue("{\n" +
                 "  \"type\": \"Feature\",\n" +
                 "  \"geometry\": {\n" +
                 "    \"type\": \"Circle\",\n" +
@@ -179,7 +184,8 @@ public class GeoshapeTest {
                 "    \"name\": \"Dinagat Islands\"\n" +
                 "  }\n" +
                 "}", HashMap.class);
-        s.convert(json);
+            s.convert(json);
+        });
     }
 
     @Test
@@ -211,10 +217,11 @@ public class GeoshapeTest {
         assertEquals(Geoshape.box(10.5, 20.5, 12.5, 22.5), s.convert(json));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testGeoJsonInvalidBox1() throws IOException {
-        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
-        Map json = new ObjectMapper().readValue("{\n" +
+        assertThrows(IllegalArgumentException.class, () -> {
+            Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+            Map json = new ObjectMapper().readValue("{\n" +
                 "  \"type\": \"Feature\",\n" +
                 "  \"geometry\": {\n" +
                 "    \"type\": \"Polygon\",\n" +
@@ -224,14 +231,15 @@ public class GeoshapeTest {
                 "    \"name\": \"Dinagat Islands\"\n" +
                 "  }\n" +
                 "}", HashMap.class);
-        s.convert(json);
-
+            s.convert(json);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testGeoJsonInvalidBox2() throws IOException {
-        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
-        Map json = new ObjectMapper().readValue("{\n" +
+        assertThrows(IllegalArgumentException.class, () -> {
+            Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+            Map json = new ObjectMapper().readValue("{\n" +
                 "  \"type\": \"Feature\",\n" +
                 "  \"geometry\": {\n" +
                 "    \"type\": \"Polygon\",\n" +
@@ -241,8 +249,8 @@ public class GeoshapeTest {
                 "    \"name\": \"Dinagat Islands\"\n" +
                 "  }\n" +
                 "}", HashMap.class);
-         s.convert(json);
-
+            s.convert(json);
+        });
     }
 
     @Test
@@ -338,7 +346,7 @@ public class GeoshapeTest {
         om.registerModule(module);
         JtsSpatialContext context = (JtsSpatialContext) Geoshape.getSpatialContext();
         assertEquals("{\"type\":\"Point\",\"coordinates\":[20.5,10.5]}", om.writeValueAsString(Geoshape.point(10.5, 20.5)));
-        assertEquals("{\"type\":\"Polygon\",\"coordinates\": [[[20.5,10.5],[20.5,12.5],[22.5,12.5],[22.5,10.5],[20.5,10.5]]]}", om.writeValueAsString(Geoshape.box(10.5, 20.5, 12.5, 22.5)));
+        assertEquals("{\"type\":\"Polygon\",\"coordinates\":[[[20.5,10.5],[20.5,12.5],[22.5,12.5],[22.5,10.5],[20.5,10.5]]]}", om.writeValueAsString(Geoshape.box(10.5, 20.5, 12.5, 22.5)));
         assertEquals("{\"type\":\"Circle\",\"coordinates\":[20.5,10.5],\"radius\":30.5,\"properties\":{\"radius_units\":\"km\"}}", om.writeValueAsString(Geoshape.circle(10.5, 20.5, 30.5)));
         assertEquals("{\"type\":\"LineString\",\"coordinates\":[[20.5,10.5],[22.5,10.5],[22.5,12.5]]}", om.writeValueAsString(Geoshape.line(Arrays.asList(new double[][] {{20.5,10.5},{22.5,10.5},{22.5,12.5}}))));
         assertEquals("{\"type\":\"Polygon\",\"coordinates\":[[[20.5,10.5],[21.75,8],[22.5,10.5],[25,11.75],[22.5,12.5],[21,15],[20.5,12.5],[18,11.75],[20.5,10.5]]]}",

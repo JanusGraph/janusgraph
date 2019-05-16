@@ -14,7 +14,6 @@
 
 package org.janusgraph.diskstorage.inmemory;
 
-import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.IDAuthorityTest;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -39,13 +38,13 @@ public class InMemoryIDAuthorityTest extends IDAuthorityTest {
      */
     private final InMemoryStoreManager sharedManager;
 
-    public InMemoryIDAuthorityTest(WriteConfiguration baseConfig) {
-        super(baseConfig);
+    public InMemoryIDAuthorityTest() {
+        super();
         sharedManager = new InMemoryStoreManager();
     }
 
     @Override
-    public KeyColumnValueStoreManager openStorageManager() throws BackendException {
+    public KeyColumnValueStoreManager openStorageManager() {
         return sharedManager;
     }
 }

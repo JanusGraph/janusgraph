@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:d="http://docbook.org/ns/docbook"
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:d="https://docbook.org/ns/docbook"
 xmlns:exsl="http://exslt.org/common" version="1.0" exclude-result-prefixes="exsl d">
 
 <!-- This stylesheet was created by template/titlepage.xsl-->

@@ -1,13 +1,13 @@
 <?xml version='1.0'?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 
-		xmlns:d="http://docbook.org/ns/docbook"
+		xmlns:d="https://docbook.org/ns/docbook"
 xmlns:s6hl="http://net.sf.xslthl/ConnectorSaxon6" 
 		xmlns:sbhl="http://net.sf.xslthl/ConnectorSaxonB" 
 		xmlns:xhl="http://net.sf.xslthl/ConnectorXalan"
 		xmlns:saxon6="http://icl.com/saxon" 
 		xmlns:saxonb="http://saxon.sf.net/" 
-		xmlns:xalan="http://xml.apache.org/xalan"
+		xmlns:xalan="https://xml.apache.org/xalan"
 		
 		xmlns:exsl="http://exslt.org/common"
 		xmlns:xslthl="http://xslthl.sf.net"

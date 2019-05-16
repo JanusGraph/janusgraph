@@ -64,7 +64,7 @@ public class ElementHelper {
     }
 
     /**
-     * This is essentially an adjusted copy&paste from TinkerPop's ElementHelper class.
+     * This is essentially an adjusted copy&amp;paste from TinkerPop's ElementHelper class.
      * The reason for copying it is so that we can determine the cardinality of a property key based on
      * JanusGraph's schema which is tied to this particular transaction and not the graph.
      *

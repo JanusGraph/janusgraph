@@ -22,7 +22,7 @@ import java.util.Set;
 
 /**
  * Constructs {@link Iterable}s over all {@link org.janusgraph.core.JanusGraphEdge}s connecting a provided set of vertices.
- * <p/>
+ * <p>
  * Given a set of vertices, one may be interested in all edges that are contained in the subgraph spanned
  * by those vertices.
  *
@@ -35,7 +35,7 @@ public class AllEdgesIterable {
 
     /**
      * Returns an iterable over all edges incident on the vertices returned by the given Iterable over vertices.
-     * <p/>
+     * <p>
      * Note that this method assumes that the given Iterable will return all vertices in the connected component,
      * otherwise the behavior of this method is undefined.
      *
@@ -48,7 +48,7 @@ public class AllEdgesIterable {
 
     /**
      * Returns an iterable over all edges contained in the subgraph spanned by the given vertices.
-     * <p/>
+     * <p>
      * This method will return all edges whose end points are contained in the given set of vertices.
      *
      * @param vertices Set of vertices

@@ -24,7 +24,7 @@ import org.janusgraph.graphdb.tinkerpop.io.graphson.JanusGraphSONModuleV1d0;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
- * @author Stephen Mallette (http://stephen.genoprime.com)
+ * @author Stephen Mallette (https://stephen.genoprime.com)
  */
 public class JanusGraphIoRegistryV1d0 extends AbstractIoRegistry {
 

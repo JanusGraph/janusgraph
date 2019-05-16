@@ -14,9 +14,17 @@
 
 package org.janusgraph.graphdb.types;
 
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.Connection;
+import org.janusgraph.core.VertexLabel;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
+
+import java.util.Collection;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -36,6 +44,20 @@ public class VertexLabelVertex extends JanusGraphSchemaVertex implements Interna
     @Override
     public boolean isStatic() {
         return getDefinition().getValue(TypeDefinitionCategory.STATIC, Boolean.class);
+    }
+
+    @Override
+    public Collection<PropertyKey> mappedProperties() {
+        return StreamSupport.stream( getRelated(TypeDefinitionCategory.PROPERTY_KEY_EDGE, Direction.OUT).spliterator(), false)
+            .map(entry -> (PropertyKey) entry.getSchemaType())
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public Collection<Connection> mappedConnections() {
+        return StreamSupport.stream(getRelated(TypeDefinitionCategory.CONNECTION_EDGE, Direction.OUT).spliterator(), false)
+            .map(entry -> new Connection((String) entry.getModifier(), this, (VertexLabel) entry.getSchemaType()))
+            .collect(Collectors.toList());
     }
 
     @Override

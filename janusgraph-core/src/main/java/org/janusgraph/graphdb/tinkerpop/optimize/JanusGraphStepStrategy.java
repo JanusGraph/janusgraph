@@ -44,12 +44,12 @@ public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
                 final JanusGraphStep<?, ?> janusGraphStep = new JanusGraphStep<>(originalGraphStep);
                 TraversalHelper.replaceStep(originalGraphStep, janusGraphStep, traversal);
                 HasStepFolder.foldInIds(janusGraphStep, traversal);
-                HasStepFolder.foldInHasContainer(janusGraphStep, traversal);
-                HasStepFolder.foldInOrder(janusGraphStep, traversal, traversal, janusGraphStep.returnsVertex());
-                HasStepFolder.foldInRange(janusGraphStep, traversal);
+                HasStepFolder.foldInHasContainer(janusGraphStep, traversal, traversal);
+                HasStepFolder.foldInOrder(janusGraphStep, janusGraphStep.getNextStep(), traversal, traversal, janusGraphStep.returnsVertex(), null);
+                HasStepFolder.foldInRange(janusGraphStep, JanusGraphTraversalUtil.getNextNonIdentityStep(janusGraphStep), traversal, null);
             } else {
                 //Make sure that any provided "start" elements are instantiated in the current transaction
-                Object[] ids = originalGraphStep.getIds();
+                final Object[] ids = originalGraphStep.getIds();
                 ElementUtils.verifyArgsMustBeEitherIdOrElement(ids);
                 if (ids[0] instanceof Element) {
                     //GraphStep constructor ensures that the entire array is elements
@@ -62,6 +62,7 @@ public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
                             ((Graph) originalGraphStep.getTraversal().getGraph().get()).edges(elementIds));
                 }
             }
+
         });
     }
 

@@ -15,20 +15,17 @@
 package org.janusgraph.graphdb;
 
 import com.google.common.collect.Iterables;
+import org.janusgraph.TestCategory;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.EdgeLabelMaker;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.testcategory.PerformanceTests;
 import org.janusgraph.testutil.JUnitBenchmarkProvider;
 import org.janusgraph.testutil.RandomGenerator;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.*;
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,13 +36,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * High concurrency test cases to spot deadlocks and other failures that can occur under high degrees of parallelism.
  */
-@Category({PerformanceTests.class})
+@Tag(TestCategory.PERFORMANCE_TESTS)
 public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
 
     @Rule
@@ -66,9 +63,9 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
     private ExecutorService executor;
 
     @Override
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
+    @BeforeEach
+    public void setUp(TestInfo testInfo) throws Exception {
+        super.setUp(testInfo);
         executor = Executors.newFixedThreadPool(THREAD_COUNT);
     }
 
@@ -98,7 +95,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
     }
 
     @Override
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         executor.shutdown();
         if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
@@ -175,7 +172,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
      * but also start some threads that add and remove relationships and
      * properties while the readers are working; all tasks share a common
      * transaction.
-     * <p/>
+     * <p>
      * The readers do not look for the properties or relationships the
      * writers are mutating, since this is all happening on a common transaction.
      *
@@ -282,9 +279,9 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
     /**
      * Load-then-read test of standard-indexed vertex properties. This test
      * contains no edges.
-     * <p/>
+     * <p>
      * The load stage is serial. The read stage is concurrent.
-     * <p/>
+     * <p>
      * Create a set of vertex property types with standard indices
      * (threadPoolSize * 5 by default) serially. Serially write 1k vertices with
      * values for all of the indexed property types. Concurrently query the
@@ -296,11 +293,11 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
      */
     @Test
     public void testStandardIndexVertexPropertyReads() throws InterruptedException, ExecutionException {
-        testStandardIndexVertexPropertyReadsLogic(THREAD_COUNT);
+        testStandardIndexVertexPropertyReadsLogic();
     }
 
-    protected void testStandardIndexVertexPropertyReadsLogic(int numThreads) throws InterruptedException, ExecutionException {
-        final int propCount = numThreads * 5;
+    protected void testStandardIndexVertexPropertyReadsLogic() throws InterruptedException, ExecutionException {
+        final int propCount = JanusGraphConcurrentTest.THREAD_COUNT * 5;
         final int vertexCount = 1000;
         // Create props with standard indexes
         log.info("Creating types");
@@ -416,7 +413,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
         }
 
         @Override
-        protected void doRun() throws Exception {
+        protected void doRun() {
             JanusGraphVertex v = Iterables.getOnlyElement(tx.query().has(idKey, vertexId).vertices());
 
             for (int i = 0; i < nodeTraversalCount; i++) {
@@ -440,7 +437,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
             this.stopLatch = stopLatch;
         }
 
-        protected abstract void doRun() throws Exception;
+        protected abstract void doRun();
 
         @Override
         public void run() {

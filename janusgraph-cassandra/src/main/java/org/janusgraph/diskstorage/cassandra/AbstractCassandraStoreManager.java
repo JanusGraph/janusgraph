@@ -194,35 +194,13 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
             throw new IllegalArgumentException(SSL_TRUSTSTORE_LOCATION.getName() + " could not be empty when SSL is enabled.");
 
         if (config.has(REPLICATION_OPTIONS)) {
-            String[] options = config.get(REPLICATION_OPTIONS);
-
-            if (options.length % 2 != 0)
-                throw new IllegalArgumentException(REPLICATION_OPTIONS.getName() + " should have even number of elements.");
-
-            final Map<String, String> converted = new HashMap<>(options.length / 2);
-
-            for (int i = 0; i < options.length; i += 2) {
-                converted.put(options[i], options[i + 1]);
-            }
-
-            this.strategyOptions = ImmutableMap.copyOf(converted);
+            this.strategyOptions = convertOptionsToMap(REPLICATION_OPTIONS, config);
         } else {
             this.strategyOptions = ImmutableMap.of("replication_factor", String.valueOf(config.get(REPLICATION_FACTOR)));
         }
 
         if (config.has(COMPACTION_OPTIONS)) {
-            String[] options = config.get(COMPACTION_OPTIONS);
-
-            if (options.length % 2 != 0)
-                throw new IllegalArgumentException(COMPACTION_OPTIONS.getName() + " should have even number of elements.");
-
-            final Map<String, String> converted = new HashMap<>(options.length / 2);
-
-            for (int i = 0; i < options.length; i += 2) {
-                converted.put(options[i], options[i + 1]);
-            }
-
-            this.compactionOptions = ImmutableMap.copyOf(converted);
+            this.compactionOptions = convertOptionsToMap(COMPACTION_OPTIONS, config);
         } else {
             this.compactionOptions = ImmutableMap.of();
         }
@@ -336,5 +314,21 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     protected String determineKeyspaceName(Configuration config) {
         if ((!config.has(CASSANDRA_KEYSPACE) && (config.has(GRAPH_NAME)))) return config.get(GRAPH_NAME);
         return config.get(CASSANDRA_KEYSPACE);
+    }
+
+    private Map<String, String> convertOptionsToMap(ConfigOption<String[]> optionsKey, Configuration config){
+
+        String[] options = config.get(optionsKey);
+
+        if (options.length % 2 != 0)
+            throw new IllegalArgumentException(optionsKey.getName() + " should have even number of elements.");
+
+        final Map<String, String> converted = new HashMap<>(options.length / 2);
+
+        for (int i = 0; i < options.length; i += 2) {
+            converted.put(options[i], options[i + 1]);
+        }
+
+        return ImmutableMap.copyOf(converted);
     }
 }

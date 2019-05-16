@@ -19,10 +19,13 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import org.apache.commons.configuration.BaseConfiguration;
 import org.janusgraph.core.JanusGraphConfigurationException;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.configuration.*;
+import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.configuration.backend.builder.KCVSConfigurationBuilder;
 import org.janusgraph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import org.janusgraph.diskstorage.indexing.*;
 import org.janusgraph.diskstorage.keycolumnvalue.*;
@@ -45,7 +48,6 @@ import org.janusgraph.diskstorage.configuration.backend.KCVSConfiguration;
 import org.janusgraph.diskstorage.util.MetricInstrumentedStoreManager;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.transaction.TransactionConfiguration;
 import org.janusgraph.util.system.ConfigurationUtil;
 
@@ -78,7 +80,7 @@ public class Backend implements LockerProvider, AutoCloseable {
      * These are the names for the edge store and property index databases, respectively.
      * The edge store contains all edges and properties. The property index contains an
      * inverted index from attribute value to vertex.
-     * <p/>
+     * <p>
      * These names are fixed and should NEVER be changed. Changing these strings can
      * disrupt storage adapters that rely on these names for specific configurations.
      * In the past, the store name for the ID table, janusgraph_ids, was also marked here,
@@ -273,7 +275,8 @@ public class Backend implements LockerProvider, AutoCloseable {
 
             //Open global configuration
             KeyColumnValueStore systemConfigStore = storeManagerLocking.openDatabase(SYSTEM_PROPERTIES_STORE_NAME);
-            systemConfig = getGlobalConfiguration(new BackendOperation.TransactionalProvider() {
+            KCVSConfigurationBuilder kcvsConfigurationBuilder = new KCVSConfigurationBuilder();
+            systemConfig = kcvsConfigurationBuilder.buildGlobalConfiguration(new BackendOperation.TransactionalProvider() {
                 @Override
                 public StoreTransaction openTx() throws BackendException {
                     return storeManagerLocking.beginTransaction(StandardBaseTransactionConfig.of(
@@ -286,7 +289,7 @@ public class Backend implements LockerProvider, AutoCloseable {
                     //Do nothing, storeManager is closed explicitly by Backend
                 }
             },systemConfigStore,configuration);
-            userConfig = getConfiguration(new BackendOperation.TransactionalProvider() {
+            userConfig = kcvsConfigurationBuilder.buildConfiguration(new BackendOperation.TransactionalProvider() {
                 @Override
                 public StoreTransaction openTx() throws BackendException {
                     return storeManagerLocking.beginTransaction(StandardBaseTransactionConfig.of(configuration.get(TIMESTAMP_PROVIDER)));
@@ -344,7 +347,7 @@ public class Backend implements LockerProvider, AutoCloseable {
 
     private StandardScanner.Builder buildStoreIndexScanJob(String storeName) {
         TimestampProvider provider = configuration.get(TIMESTAMP_PROVIDER);
-        ModifiableConfiguration jobConfig = GraphDatabaseConfiguration.buildJobConfiguration();
+        ModifiableConfiguration jobConfig = buildJobConfiguration();
         jobConfig.set(JOB_START_TIME,provider.getTime().toEpochMilli());
         return scanner.build()
                 .setStoreName(storeName)
@@ -414,45 +417,6 @@ public class Backend implements LockerProvider, AutoCloseable {
         }
         Preconditions.checkArgument(manager instanceof KeyColumnValueStoreManager,"Invalid storage manager: %s",manager.getClass());
         return (KeyColumnValueStoreManager) manager;
-    }
-
-    private static KCVSConfiguration getGlobalConfiguration(final BackendOperation.TransactionalProvider txProvider,
-                                                                     final KeyColumnValueStore store,
-                                                                     final Configuration config) {
-        return getConfiguration(txProvider, store, SYSTEM_CONFIGURATION_IDENTIFIER, config);
-    }
-
-    private static KCVSConfiguration getConfiguration(final BackendOperation.TransactionalProvider txProvider,
-                                                            final KeyColumnValueStore store, final String identifier,
-                                                            final Configuration config) {
-        try {
-            KCVSConfiguration keyColumnValueStoreConfiguration =
-                    new KCVSConfiguration(txProvider,config,store,identifier);
-            keyColumnValueStoreConfiguration.setMaxOperationWaitTime(config.get(SETUP_WAITTIME));
-            return keyColumnValueStoreConfiguration;
-        } catch (BackendException e) {
-            throw new JanusGraphException("Could not open global configuration",e);
-        }
-    }
-
-    public static KCVSConfiguration getStandaloneGlobalConfiguration(final KeyColumnValueStoreManager manager,
-                                                                     final Configuration config) {
-        try {
-            final StoreFeatures features = manager.getFeatures();
-            return getGlobalConfiguration(new BackendOperation.TransactionalProvider() {
-                @Override
-                public StoreTransaction openTx() throws BackendException {
-                    return manager.beginTransaction(StandardBaseTransactionConfig.of(config.get(TIMESTAMP_PROVIDER),features.getKeyConsistentTxConfig()));
-                }
-
-                @Override
-                public void close() throws BackendException {
-                    manager.close();
-                }
-            },manager.openDatabase(SYSTEM_PROPERTIES_STORE_NAME),config);
-        } catch (BackendException e) {
-            throw new JanusGraphException("Could not open global configuration",e);
-        }
     }
 
     private static Map<String, IndexProvider> getIndexes(Configuration config) {
@@ -567,7 +531,7 @@ public class Backend implements LockerProvider, AutoCloseable {
 
     /**
      * Clears the storage of all registered backend data providers. This includes backend storage engines and index providers.
-     * <p/>
+     * <p>
      * IMPORTANT: Clearing storage means that ALL data will be lost and cannot be recovered.
      *
      * @throws BackendException
@@ -595,6 +559,13 @@ public class Backend implements LockerProvider, AutoCloseable {
         } else {
             log.debug("Backend {} has already been closed or cleared", this);
         }
+    }
+
+    private ModifiableConfiguration buildJobConfiguration() {
+
+        return new ModifiableConfiguration(JOB_NS,
+            new CommonsConfiguration(new BaseConfiguration()),
+            BasicConfiguration.Restriction.NONE);
     }
 
     //############ Registered Storage Managers ##############

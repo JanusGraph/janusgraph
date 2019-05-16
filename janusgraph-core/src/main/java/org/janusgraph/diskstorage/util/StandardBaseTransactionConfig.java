@@ -26,7 +26,7 @@ import java.time.Instant;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
- * @author Dan LaRocque <dalaro@hopcount.org>
+ * @author Dan LaRocque (dalaro@hopcount.org)
  */
 public class StandardBaseTransactionConfig implements BaseTransactionConfig {
 
@@ -96,7 +96,7 @@ public class StandardBaseTransactionConfig implements BaseTransactionConfig {
 
         private Instant commitTime = null;
         private TimestampProvider times;
-        private String groupName = GraphDatabaseConfiguration.getSystemMetricsPrefix();
+        private String groupName = GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
         private Configuration customOptions = Configuration.EMPTY;
 
         public Builder() { }

@@ -20,11 +20,11 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.MultiWriteKeyColumnValueStoreTest;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 
 public class CQLMultiWriteStoreTest extends MultiWriteKeyColumnValueStoreTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void startCassandra() {
         startCleanEmbedded();
     }

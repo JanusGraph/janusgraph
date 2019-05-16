@@ -14,19 +14,19 @@
 
 package org.janusgraph.diskstorage.cassandra.astyanax;
 
+import org.janusgraph.TestCategory;
 import org.janusgraph.diskstorage.BackendException;
-import org.junit.BeforeClass;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.BeforeAll;
 
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.janusgraph.diskstorage.log.KCVSLogTest;
-import org.janusgraph.testcategory.SerialTests;
+import org.junit.jupiter.api.Tag;
 
-@Category(SerialTests.class)
+@Tag(TestCategory.SERIAL_TESTS)
 public class AstyanaxLogTest extends KCVSLogTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void startCassandra() {
         CassandraStorageSetup.startCleanEmbedded();
     }

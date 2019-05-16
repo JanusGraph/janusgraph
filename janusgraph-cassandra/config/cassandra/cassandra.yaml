@@ -1,7 +1,21 @@
+# Copyright 2019 JanusGraph Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Cassandra storage config YAML 
 
 # NOTE:
-#   See http://wiki.apache.org/cassandra/StorageConfiguration for
+#   See https://wiki.apache.org/cassandra/StorageConfiguration for
 #   full explanations of configuration directives
 # /NOTE
 
@@ -20,7 +34,7 @@ cluster_name: 'Cassandra testing instance'
 # Specifying initial_token will override this setting.
 #
 # If you already have a cluster with 1 token per node, and wish to migrate to 
-# multiple tokens per node, see http://wiki.apache.org/cassandra/Operations
+# multiple tokens per node, see https://wiki.apache.org/cassandra/Operations
 #num_tokens: 256
 
 # initial_token allows you to specify tokens manually.  While you can use # it with
@@ -36,7 +50,7 @@ ${cassandra.num.tokens}
 # May either be "true" or "false" to enable globally, or contain a list
 # of data centers to enable per-datacenter.
 # hinted_handoff_enabled: DC1,DC2
-# See http://wiki.apache.org/cassandra/HintedHandoff
+# See https://wiki.apache.org/cassandra/HintedHandoff
 hinted_handoff_enabled: true
 # this defines the maximum amount of time a dead host will have hints
 # generated.  After it has been dead this long, new hints for it will not be
@@ -412,7 +426,7 @@ auto_snapshot: true
 # will use them to make sure other replicas also know about the deleted rows.
 # With workloads that generate a lot of tombstones, this can cause performance
 # problems and even exaust the server heap.
-# (http://www.datastax.com/dev/blog/cassandra-anti-patterns-queues-and-queue-like-datasets)
+# (https://www.datastax.com/dev/blog/cassandra-anti-patterns-queues-and-queue-like-datasets)
 # Adjust the thresholds here if you understand the dangers and want to
 # scan more tombstones anyway.  These thresholds may also be adjusted at runtime
 # using the StorageService mbean.
@@ -618,7 +632,7 @@ request_scheduler: org.apache.cassandra.scheduler.NoScheduler
 #
 # The passwords used in these options must match the passwords used when generating
 # the keystore and truststore.  For instructions on generating these files, see:
-# http://download.oracle.com/javase/6/docs/technotes/guides/security/jsse/JSSERefGuide.html#CreateKeystore
+# https://download.oracle.com/javase/6/docs/technotes/guides/security/jsse/JSSERefGuide.html#CreateKeystore
 #
 server_encryption_options:
     internode_encryption: none

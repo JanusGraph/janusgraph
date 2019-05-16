@@ -14,7 +14,6 @@
 
 package org.janusgraph.hadoop;
 
-import com.google.common.base.Preconditions;
 import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
@@ -22,8 +21,8 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,12 +31,12 @@ import java.nio.file.Paths;
 
 public class HBaseInputFormatIT extends AbstractInputFormatIT {
 
-    @BeforeClass
+    @BeforeAll
     public static void startHBase() throws IOException, BackendException {
         HBaseStorageSetup.startHBase();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopHBase() {
     }
 

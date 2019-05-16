@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
@@ -34,7 +35,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class HBaseStoreManagerMutationTest {
 
@@ -126,5 +127,41 @@ public class HBaseStoreManagerMutationTest {
         }
         Collections.sort(deleteColumns);
         Assert.assertArrayEquals(expectedColumnDelete.toArray(), deleteColumns.toArray());
+    }
+
+    @Test
+    public void testMutationToPutsTTL() throws Exception{
+        final Map<String, Map<StaticBuffer, KCVMutation>> storeMutationMap = new HashMap<>();
+        final Map<StaticBuffer, KCVMutation> rowkeyMutationMap = new HashMap<>();
+        final List<Long> expectedColumnsWithTTL = new ArrayList<>();
+        final List<Long> putColumnsWithTTL = new ArrayList<>();
+        List<Entry> additions = new ArrayList<>();
+        List<StaticBuffer> deletions = new ArrayList<>();
+
+        StaticBuffer rowkey = KeyColumnValueStoreUtil.longToByteBuffer(0);
+        StaticBuffer col = KeyColumnValueStoreUtil.longToByteBuffer(1);
+        StaticBuffer val = KeyColumnValueStoreUtil.longToByteBuffer(2);
+
+        StaticArrayEntry e = (StaticArrayEntry) StaticArrayEntry.of(col, val);
+        //Test TTL with int max value / 1000 + 1
+        //When convert this value from second to millisec will over Integer limit
+        e.setMetaData(EntryMetaData.TTL, Integer.MAX_VALUE/1000+1);
+
+        Integer ttl = (Integer) e.getMetaData().get(EntryMetaData.TTL);
+        expectedColumnsWithTTL.add(TimeUnit.SECONDS.toMillis((long)ttl));//convert second to millisec with long format
+
+        additions.add(e);
+        deletions.add(e);
+        rowkeyMutationMap.put(rowkey, new KCVMutation(additions, deletions));
+        storeMutationMap.put("store1", rowkeyMutationMap);
+        HBaseStoreManager manager = new HBaseStoreManager(HBaseStorageSetup.getHBaseConfiguration());
+        final Map<StaticBuffer, Pair<List<Put>, Delete>> commandsPerRowKey
+            = manager.convertToCommands(storeMutationMap, 0, 0);
+        Pair<List<Put>, Delete> commands = commandsPerRowKey.values().iterator().next();
+
+        //Verify Put TTL
+        Put put = commands.getFirst().get(0);
+        putColumnsWithTTL.add(put.getTTL());
+        Assert.assertArrayEquals(expectedColumnsWithTTL.toArray(), putColumnsWithTTL.toArray());
     }
 }

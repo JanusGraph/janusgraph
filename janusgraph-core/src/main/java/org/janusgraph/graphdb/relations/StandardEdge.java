@@ -77,6 +77,7 @@ public class StandardEdge extends AbstractEdge implements StandardRelation, Reas
                 }
             }
         }
+        tx().checkPropertyConstraintForEdgeOrCreatePropertyConstraint(this, key);
         properties.put(key, value);
     }
 

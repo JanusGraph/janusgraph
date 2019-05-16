@@ -87,7 +87,7 @@ public class RemoteGraphApp extends JanusGraphApp {
         // Use bindings to allow the Gremlin Server to cache traversals that
         // will be reused with different parameters. This minimizes the
         // number of scripts that need to be compiled and cached on the server.
-        // http://tinkerpop.apache.org/docs/3.2.6/reference/#parameterized-scripts
+        // https://tinkerpop.apache.org/docs/3.2.6/reference/#parameterized-scripts
         final Bindings b = Bindings.instance();
 
         // see GraphOfTheGodsFactory.java

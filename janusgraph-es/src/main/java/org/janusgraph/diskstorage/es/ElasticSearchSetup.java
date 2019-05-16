@@ -16,7 +16,6 @@ package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.es.rest.RestClientSetup;
 import org.slf4j.Logger;
@@ -52,11 +51,10 @@ public enum ElasticSearchSetup {
         }
     };
 
-    static void applySettingsFromJanusGraphConf(Map<String,Object> settings,
-                                                     Configuration config,
-                                                     ConfigNamespace rootNS) {
+    static void applySettingsFromJanusGraphConf(Map<String, Object> settings,
+                                                Configuration config) {
         int keysLoaded = 0;
-        Map<String,Object> configSub = config.getSubset(rootNS);
+        final Map<String,Object> configSub = config.getSubset(ElasticSearchIndex.ES_CREATE_EXTRAS_NS);
         for (Map.Entry<String,Object> entry : configSub.entrySet()) {
             String key = entry.getKey();
             Object val = entry.getValue();
@@ -80,7 +78,7 @@ public enum ElasticSearchSetup {
             log.debug("[ES ext.* cfg] Set {}: {}", key, val);
             keysLoaded++;
         }
-        log.debug("Loaded {} settings from the {} JanusGraph config namespace", keysLoaded, rootNS);
+        log.debug("Loaded {} settings from the {} JanusGraph config namespace", keysLoaded, ElasticSearchIndex.ES_CREATE_EXTRAS_NS);
     }
 
     private static final Logger log = LoggerFactory.getLogger(ElasticSearchSetup.class);

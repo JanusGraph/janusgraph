@@ -20,7 +20,7 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.KeyColumnValueStoreTest;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManagerAdapter;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class BerkeleyFixedLengthKCVSTest extends KeyColumnValueStoreTest {
 

@@ -19,11 +19,11 @@ import org.janusgraph.core.util.ReflectiveConfigOptionLoader;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.stream.StreamSupport;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -131,7 +131,7 @@ public class ConfigurationTest {
         assertTrue(mixed.has(bits));
         assertEquals(5,mixed.getSubset(storage).size());
 
-        assertEquals(1.5d, mixed.get(bar),0.0);
+        assertEquals(1.5d, (double)mixed.get(bar));
         assertEquals("localhost",mixed.get(hostnames)[0]);
         assertEquals(1111,mixed.get(locktime).longValue());
 

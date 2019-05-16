@@ -17,11 +17,11 @@ package org.janusgraph.graphdb.astyanax;
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphPartitionGraphTest;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 
 public class AstyanaxPartitionGraphTest extends JanusGraphPartitionGraphTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void startCassandra() {
         CassandraStorageSetup.startCleanEmbedded();
     }

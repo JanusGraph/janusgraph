@@ -15,19 +15,15 @@
 package org.janusgraph.util.datastructures;
 
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class BitMapTest {
-
-    @Before
-    public void setUp() throws Exception {
-    }
 
     @Test
     public void testBitMap() {
@@ -40,10 +36,6 @@ public class BitMapTest {
         assertFalse(BitMap.readBitb(map, 7));
         map = BitMap.setBitb(map, 7);
         assertTrue(BitMap.readBitb(map, 7));
-    }
-
-    @After
-    public void tearDown() throws Exception {
     }
 
 }

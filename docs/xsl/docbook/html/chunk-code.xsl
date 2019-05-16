@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:d="http://docbook.org/ns/docbook"
+                xmlns:d="https://docbook.org/ns/docbook"
 xmlns:exsl="http://exslt.org/common"
                 xmlns:cf="http://docbook.sourceforge.net/xmlns/chunkfast/1.0"
-                xmlns:ng="http://docbook.org/docbook-ng"
-                xmlns:db="http://docbook.org/ns/docbook"
+                xmlns:ng="https://docbook.org/docbook-ng"
+                xmlns:db="https://docbook.org/ns/docbook"
                 exclude-result-prefixes="exsl cf ng db d"
                 version="1.0">
 
@@ -442,7 +442,7 @@ xmlns:exsl="http://exslt.org/common"
   </xsl:variable>
   <xsl:choose>
     
-    <xsl:when test="namespace-uri(*[1]) != 'http://docbook.org/ns/docbook'">
+    <xsl:when test="namespace-uri(*[1]) != 'https://docbook.org/ns/docbook'">
  <xsl:call-template name="log.message">
  <xsl:with-param name="level">Note</xsl:with-param>
  <xsl:with-param name="source"><xsl:call-template name="get.doc.title"/></xsl:with-param>
@@ -459,7 +459,7 @@ xmlns:exsl="http://exslt.org/common"
   <xsl:apply-templates select="exsl:node-set($addns)"/>
 </xsl:when>
     <!-- Can't process unless namespace removed -->
-    <xsl:when test="namespace-uri(*[1]) != 'http://docbook.org/ns/docbook'">
+    <xsl:when test="namespace-uri(*[1]) != 'https://docbook.org/ns/docbook'">
  <xsl:call-template name="log.message">
  <xsl:with-param name="level">Note</xsl:with-param>
  <xsl:with-param name="source"><xsl:call-template name="get.doc.title"/></xsl:with-param>

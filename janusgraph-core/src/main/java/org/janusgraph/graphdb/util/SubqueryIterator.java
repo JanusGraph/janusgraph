@@ -68,7 +68,7 @@ public class SubqueryIterator implements Iterator<JanusGraphElement>, AutoClosea
                 throw new JanusGraphException("Could not call index", e.getCause());
             }
         }
-        elementIterator = stream.limit(limit).filter(e -> otherResults == null || otherResults.contains(e)).map(function).map(r -> (JanusGraphElement) r).iterator();
+        elementIterator = stream.filter(e -> otherResults == null || otherResults.contains(e)).limit(limit).map(function).map(r -> (JanusGraphElement) r).iterator();
     }
 
     @Override

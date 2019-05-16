@@ -1,14 +1,29 @@
+// Copyright 2019 JanusGraph Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package org.janusgraph.graphdb
 
+import org.janusgraph.TestCategory
 import org.janusgraph.diskstorage.configuration.WriteConfiguration
 import org.janusgraph.graphdb.util.ElementHelper
+import org.junit.jupiter.api.Tag
 
 import static org.junit.Assert.*
 
 import org.junit.FixMethodOrder
 import org.junit.Rule
 import org.junit.Test
-import org.junit.experimental.categories.Category
 import org.junit.rules.TestRule
 import org.junit.runners.MethodSorters
 import org.slf4j.Logger
@@ -20,7 +35,6 @@ import com.google.common.collect.Iterables
 import org.janusgraph.core.JanusGraphEdge
 import org.janusgraph.core.JanusGraphTransaction
 import org.janusgraph.core.JanusGraphVertex
-import org.janusgraph.testcategory.PerformanceTests
 import org.janusgraph.testutil.JUnitBenchmarkProvider
 import org.janusgraph.diskstorage.BackendException
 
@@ -32,7 +46,7 @@ import org.janusgraph.diskstorage.BackendException
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @BenchmarkOptions(warmupRounds = 1, benchmarkRounds = 1)
-@Category([PerformanceTests.class])
+@Tag(TestCategory.PERFORMANCE_TESTS)
 abstract class JanusGraphSpeedTest extends GroovySpeedTestSupport {
 
     private static final Logger log = LoggerFactory.getLogger(JanusGraphSpeedTest)

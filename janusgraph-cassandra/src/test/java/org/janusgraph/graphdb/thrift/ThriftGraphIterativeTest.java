@@ -22,7 +22,7 @@ import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.janusgraph.graphdb.JanusGraphIterativeBenchmark;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 
 public class ThriftGraphIterativeTest extends JanusGraphIterativeBenchmark {
 
@@ -37,7 +37,7 @@ public class ThriftGraphIterativeTest extends JanusGraphIterativeBenchmark {
     }
 
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         CassandraStorageSetup.startCleanEmbedded();
     }
