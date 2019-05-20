@@ -73,15 +73,10 @@ before_install:
   - sleep 5
 
 install:
-  - travis_retry travis_wait \
-        mvn install --projects janusgraph-${MODULE} --also-make \
-          -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
+  - travis_retry travis_wait mvn install --projects janusgraph-${MODULE} --also-make -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
 
 script:
-  - travis_retry travis_wait 50 \
-        mvn clean verify --projects janusgraph-${MODULE} \
-          -Dstorage.hostname=`docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' jg-cassandra` \
-          ${ARGS};
+  - travis_retry travis_wait 50 mvn clean verify --projects janusgraph-${MODULE} -Dstorage.hostname=`docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' jg-cassandra` ${ARGS};
 
 # Syntax and more info: https://docs.travis-ci.com/user/notifications
 notifications:
