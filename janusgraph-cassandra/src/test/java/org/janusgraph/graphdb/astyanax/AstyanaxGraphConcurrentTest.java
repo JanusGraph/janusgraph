@@ -15,16 +15,17 @@
 package org.janusgraph.graphdb.astyanax;
 
 import org.janusgraph.CassandraStorageSetup;
-import org.janusgraph.TestCategory;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphConcurrentTest;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
+import org.janusgraph.testcategory.PerformanceTests;
 
-@Tag(TestCategory.PERFORMANCE_TESTS)
+import org.junit.BeforeClass;
+import org.junit.experimental.categories.Category;
+
+@Category({PerformanceTests.class})
 public class AstyanaxGraphConcurrentTest extends JanusGraphConcurrentTest {
 
-    @BeforeAll
+    @BeforeClass
     public static void startCassandra() {
         CassandraStorageSetup.startCleanEmbedded();
     }

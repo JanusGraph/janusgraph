@@ -5,54 +5,6 @@
 Please follow these instructions when upgrading from Titan or an older
 JanusGraph release.
 
-=== Upgrading to JanusGraph 0.3.0
-IMPORTANT: You should back-up your data prior to attempting an upgrade! Also please note that once an upgrade has been completed you will no longer be able to connect to your graph with client versions prior to 0.3.0.
-
-JanusGraph 0.3.0 implements <<schema-constraints, schema constraints>> which made it necessary to also introduce the concept of a schema version. There is a check to prevent client connections that either expect a different schema version or have no concept of a schema version. To perform an upgrade, the configuration option `graph.allow-upgrade=true` must be set on each graph you wish to upgrade. The graph must be opened with a 0.3.0 or greater version of JanusGraph since older versions have no concept of `graph.storage-version` and will not allow for it to be set.
-
-Example excerpt from `janusgraph.properties` file
-[source, text]
-----
-# JanusGraph configuration sample: Cassandra over a socket
-#
-# This file connects to a Cassandra daemon running on localhost via
-# Thrift.  Cassandra must already be started before starting JanusGraph
-# with this file.
-
-# This option should be removed as soon as the upgrade is complete. Otherwise if this file
-# is used in the future to connect to a different graph it could cause an unintended upgrade.
-graph.allow-upgrade=true
-
-gremlin.graph=org.janusgraph.core.JanusGraphFactory
-
-# The primary persistence provider used by JanusGraph.  This is required.
-# It should be set one of JanusGraph's built-in shorthand names for its
-# standard storage backends (shorthands: berkeleyje, cassandrathrift,
-# cassandra, astyanax, embeddedcassandra, cql, hbase, inmemory) or to the
-# full package and classname of a custom/third-party StoreManager
-# implementation.
-#
-# Default:    (no default value)
-# Data Type:  String
-# Mutability: LOCAL
-storage.backend=cassandrathrift
-
-# The hostname or comma-separated list of hostnames of storage backend
-# servers.  This is only applicable to some storage backends, such as
-# cassandra and hbase.
-#
-# Default:    127.0.0.1
-# Data Type:  class java.lang.String[]
-# Mutability: LOCAL
-storage.hostname=127.0.0.1
-
-----
-
-If `graph.allow-upgrade` is set to true on a graph `graph.storage-version` and `graph.janusgraph-version` will automatically be upgraded to match the version level of the server, or local client, that is opening the graph.
-You can verify the upgrade was successful by opening the management API and validating the values of `graph.storage-version` and `graph.janusgraph-version`.
-
-Once the storage version has been set you should remove `graph.allow-upgrade=true` from your properties file and reopen your graph to ensure that the upgrade was successful. 
-
 === Upgrading from Titan 1.0.0, 1.1.0-SNAPSHOT
 
 JanusGraph is based on the latest commit to the `titan11` branch of
@@ -67,8 +19,10 @@ your code and configuration accordingly:
   duplicate a word, e.g., `TitanGraph` is simply `JanusGraph` rather than
   `JanusGraphGraph`
 
-For more information on how to configure JanusGraph to read data which had
-previously been written by Titan refer to <<migrating-titan>>.
+*IMPORTANT* If you are pointing JanusGraph at an existing Titan database you will
+need to set the `graph.titan-version` property. For more information on how to
+configure JanusGraph to read data which had previously been written by Titan
+refer to <<migrating-titan>>.
 
 === Upgrading from JanusGraph 0.1.z
 
@@ -149,14 +103,3 @@ configuration properties.
 The legacy configuration track was not recommended in JanusGraph 0.1.z and is
 no longer supported in JanusGraph 0.2.0. Users should refer to the previous
 sections and migrate to the `REST_CLIENT`.
-
-=== Upgrading from JanusGraph 0.2.0
-
-==== HBase TTL
-
-In JanusGraph 0.2.0, time-to-live (TTL) support was added for HBase storage backend.
-In order to utilize the TTL capability on HBase, the graph timestamps need to be
-MILLI. If the `graph.timestamps` property is not explicitly set to MILLI, the default
-is MICRO in JanusGraph 0.2.0, which does not work for HBase TTL.  Since the `graph.timestamps`
-property is FIXED, a new graph needs to be created to make any change of the `graph.timestamps`
-property effective.

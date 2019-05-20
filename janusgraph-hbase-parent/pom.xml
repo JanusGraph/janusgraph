@@ -1,19 +1,19 @@
-<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.3.2-SNAPSHOT</version>
+        <version>0.3.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-hbase-parent</artifactId>
     <packaging>pom</packaging>
     <name>JanusGraph-HBase: Parent Module</name>
-    <url>https://janusgraph.org</url>
+    <url>http://janusgraph.org</url>
     
     <modules>
         <module>janusgraph-hbase-core</module>
-        <module>janusgraph-hbase-server</module>
+        <module>janusgraph-hbase-098</module>
         <module>janusgraph-hbase-10</module>
         <module>janusgraph-hbase</module>
     </modules>
@@ -25,6 +25,61 @@
         <mem.jvm.opts>-Xms256m -Xmx768m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
         <top.level.basedir>${project.parent.basedir}</top.level.basedir>
     </properties>
+    
+    <dependencies>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-test</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-es</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Logging.
+
+             Based on these two HBase links, it seems that HBase has
+             hard dependencies on log4j and slf4j-log4j12 (in addition
+             to commons-logging):
+
+             http://hbase.apache.org/book/config.files.html#client_dependencies
+             https://issues.apache.org/jira/browse/HBASE-2608
+
+             Our parent pom declares optional runtime-scoped dependencies
+             on slf4j-log4j12 and log4j.  But according to the links above,
+             these are required compile-scoped dependencies for HBase.
+             We override the parent's dependency declarations below.
+
+             These declarations could go away if HBase ever fully migrates
+             to slf4j and removes its hard dependency on log4j.
+
+             Note, logback-classic is added explicitly to ensure slf4j-log4j12
+             binding appears on the classpath before logback-classic. See
+             comments in janusgraph-cassandra/pom.xml for more information.
+        -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+    </dependencies>
     
     <build>
         <pluginManagement>
@@ -55,11 +110,8 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <systemPropertyVariables>
-                                <test.hbase.parentdir>${top.level.basedir}/janusgraph-hbase-parent</test.hbase.parentdir>
-                            </systemPropertyVariables>
-                        <excludedGroups>${test.excluded.groups},UNORDERED_KEY_STORE_TESTS</excludedGroups>
+                    <configuration>
+                        <excludedGroups>${test.excluded.groups},org.janusgraph.testcategory.UnorderedKeyStoreTests</excludedGroups>
                     </configuration>
                 </plugin>
                 <plugin>

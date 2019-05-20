@@ -15,15 +15,14 @@
 package org.janusgraph.diskstorage.es;
 
 import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.util.system.IOUtils;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.junit.jupiter.Container;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.File;
 
@@ -33,11 +32,20 @@ import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-@Testcontainers
 public class BerkeleyElasticsearchTest extends JanusGraphIndexTest {
 
-    @Container
-    private static JanusGraphElasticsearchContainer esr = new JanusGraphElasticsearchContainer();
+    private static ElasticsearchRunner esr;
+
+    @BeforeClass
+    public static void startElasticsearch() {
+        esr = new ElasticsearchRunner();
+        esr.start();
+    }
+
+    @AfterClass
+    public static void stopElasticsearch() {
+        esr.stop();
+    }
 
     public BerkeleyElasticsearchTest() {
         super(true, true, true);
@@ -45,7 +53,7 @@ public class BerkeleyElasticsearchTest extends JanusGraphIndexTest {
 
     @Override
     public WriteConfiguration getConfiguration() {
-        return esr.setConfiguration(getBerkeleyJEConfiguration(), INDEX)
+        return esr.setElasticsearchConfiguration(getBerkeleyJEConfiguration(), INDEX)
             .set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, INDEX)
             .getConfiguration();
     }
@@ -54,10 +62,12 @@ public class BerkeleyElasticsearchTest extends JanusGraphIndexTest {
     public boolean supportsLuceneStyleQueries() {
         return true;
     }
+
     @Override
     public boolean supportsWildcardQuery() {
         return true;
     }
+
     @Override
     protected boolean supportsCollections() {
         return true;
@@ -71,8 +81,7 @@ public class BerkeleyElasticsearchTest extends JanusGraphIndexTest {
         File bdbtmp = new File("target/gotgfactory");
         IOUtils.deleteDirectory(bdbtmp, true);
 
-        JanusGraph gotg = JanusGraphFactory.open(getConfiguration());
-        GraphOfTheGodsFactory.load(gotg);
+        JanusGraph gotg = GraphOfTheGodsFactory.create(bdbtmp.getPath());
         JanusGraphIndexTest.assertGraphOfTheGods(gotg);
         gotg.close();
     }

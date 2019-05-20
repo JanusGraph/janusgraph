@@ -4,7 +4,7 @@
 [[reindex]]
 === Reindexing
 
-<<graph-indexes>> and <<vertex-indexes>> describe how to build graph-global and vertex-centric indexes to improve query performance. These indexes are immediately available if the indexed keys or labels have been newly defined in the same management transaction. In this case, there is no need to reindex the graph and this section can be skipped. If the indexed keys and labels already existed prior to index construction it is necessary to reindex the entire graph in order to ensure that the index contains previously added elements. This section describes the reindexing process.
+<<graph-indexes>> and <<vertex-indexes>> describe how to build graph-global and vertex-centric indexes to improve query performance. These indexes are immediately available if the indexed keys or labels have been newly defined in the same management transaction. In this case, there is no need to reindex the graph and this section can be skipped. If the indexed keys or labels already existed prior to index construction it is necessary to reindex the entire graph in order to ensure that the index contains previously added elements. This section describes the reindexing process.
 
 [WARNING]
 Reindexing is a manual process comprised of multiple steps. These steps must be carefully followed in the right order to avoid index inconsistencies.
@@ -58,7 +58,7 @@ The following Gremlin snippet outlines all steps of the MapReduce reindex proces
 [source,gremlin]
 ----
 // Open a graph
-graph = JanusGraphFactory.open("conf/janusgraph-cql-es.properties")
+graph = JanusGraphFactory.open("conf/janusgraph-cassandra-es.properties")
 g = graph.traversal()
 
 // Define a property
@@ -85,7 +85,7 @@ mgmt.commit()
 graph.tx().rollback()
 
 // Block until the SchemaStatus transitions from INSTALLED to REGISTERED
-report = ManagementSystem.awaitGraphIndexStatus(graph, "mixedExample").call()
+report = mgmt.awaitGraphIndexStatus(graph, "mixedExample").call()
 
 // Run a JanusGraph-Hadoop job to reindex
 mgmt = graph.openManagement()
@@ -99,7 +99,7 @@ mgmt.commit()
 
 // Block until the SchemaStatus is ENABLED
 mgmt = graph.openManagement()
-report = ManagementSystem.awaitGraphIndexStatus(graph, "mixedExample").status(SchemaStatus.ENABLED).call()
+report = mgmt.awaitGraphIndexStatus(graph, "mixedExample").status(SchemaStatus.ENABLED).call()
 mgmt.rollback()
 
 // Run a query -- JanusGraph will use the new index, no planner warning
@@ -108,7 +108,7 @@ g.V().has("desc", containsText("baz"))
 // Concerned that JanusGraph could have read cache in that last query, instead of relying on the index?
 // Start a new instance to rule out cache hits.  Now we're definitely using the index.
 graph.close()
-graph = JanusGraphFactory.open("conf/janusgraph-cql-es.properties")
+graph = JanusGraphFactory.open("conf/janusgraph-cassandra-es.properties")
 g.V().has("desc", containsText("baz"))
 ----
 
@@ -238,7 +238,7 @@ A commented code example follows in the next subsection.
 import org.janusgraph.graphdb.database.management.ManagementSystem
 
 // Load the "Graph of the Gods" sample data
-graph = JanusGraphFactory.open('conf/janusgraph-cql-es.properties')
+graph = JanusGraphFactory.open('conf/janusgraph-cassandra-es.properties')
 g = graph.traversal()
 GraphOfTheGodsFactory.load(graph)
 
@@ -291,7 +291,7 @@ The following loads some indexed sample data into a BerkeleyDB-backed JanusGraph
 import org.janusgraph.graphdb.database.management.ManagementSystem
 
 // Load the "Graph of the Gods" sample data
-graph = JanusGraphFactory.open('conf/janusgraph-cql-es.properties')
+graph = JanusGraphFactory.open('conf/janusgraph-cassandra-es.properties')
 g = graph.traversal()
 GraphOfTheGodsFactory.load(graph)
 

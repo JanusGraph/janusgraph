@@ -20,12 +20,11 @@ import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.serialize.Serializer;
 import org.janusgraph.graphdb.database.serialize.StandardSerializer;
 import org.janusgraph.testutil.RandomGenerator;
+import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class KeyValueStoreUtil {
 
@@ -68,7 +67,7 @@ public class KeyValueStoreUtil {
 
     public static int getID(StaticBuffer b) {
         long res = b.getLong(0) - idOffset;
-        assertTrue(res >= 0 && res < Integer.MAX_VALUE);
+        Assert.assertTrue(res >= 0 && res < Integer.MAX_VALUE);
         return (int) res;
     }
 
@@ -86,7 +85,7 @@ public class KeyValueStoreUtil {
         return serial.readObjectNotNull(b.asReadBuffer(), String.class);
     }
 
-    public static int count(RecordIterator<?> iterator) {
+    public static int count(RecordIterator<?> iterator) throws BackendException {
         int count = 0;
         while (iterator.hasNext()) {
             iterator.next();

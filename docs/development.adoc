@@ -38,64 +38,34 @@ All branch names hosted in the JanusGraph repository shall be prepended with `Is
 [[pull-requests]]
 == Pull Requests
 
-Users wishing to contribute to JanusGraph should fork the https://github.com/janusgraph/janusgraph[JanusGraph] repository and then submit pull requests using the https://help.github.com/articles/creating-a-pull-request/[GitHub pull request process].
-Every pull request must be associated with an existing issue.
-Be sure to include the relevant issue number in the title of your pull request, complete the pull request template checklist, and provide a description of what test suites were run to validate the pull request.
-Pull requests commit messages should clearly describe what work was accomplished.
-Intermediate work-in-progress commits should be squashed prior to pull request submittal.
-
-[[review-then-commit]]
-=== Review-Then-Commit (RTC)
-
-Pull requests must be reviewed before being merged following a review-then-commit (RTC) process.
-The JanusGraph project uses the https://help.github.com/articles/about-pull-request-reviews/[GitHub review process] to review pull requests.
-Non-committers are welcomed and encouraged to review pull requests.
-Their review will be non-binding, but can be taken into consideration and are still very valuable community input.
-The following rules apply to the voting process.
-
-* Approval flows
-** 2 committer approvals are required to merge a pull request
-** If a committer submits the pull request, it has their implicit approval so it requires 1 additional committer approval
-** 1 committer approval followed a one week review period for objections at which point a lazy consensus is assumed
-* One or more -1 votes within a change request will veto the pull request until the noted issue(s) are addressed and the -1 vote is withdrawn
-* Change requests will not be considered valid without an explanation
-
-[[commit-then-review]]
-=== Commit-Then-Review (CTR)
-
-In instances where the committer deems the full RTC process unnecessary, a commit-then-review (CTR) process may be employed.
-The purpose of invoking CTR is to reduce the burden on the committers and minimize the turnaround time for merging trivial changes.
+Most changes to JanusGraph must be reviewed before they are committed (RTC - review-then-commit).
+This workflow is performed using GitHub's pull request process. In instances where the committer deems the full process unnecessary, commit-then-review (CTR) may be employed.
+This should be used infrequently and only for extremely trivial changes.
 Changes of this sort may include:
 
 * Documentation typo or small documentation addition
 * Addition of a new test case
-* Merging approved fixes into an upstream branch
 
 Any commit that is made following CTR shall include the fact that it is a CTR in the commit comments.
 Community members who wish to review CTRs may subscribe to the https://groups.google.com/forum/#!forum/janusgraph-commits[JanusGraph commits] list so that they will see CTRs as they come through.
 If another committer responds with a -1, the commit should be rolled back and the formal RTC process should be followed.
 
-[[merging-pull-requests]]
-=== Merging of Pull Requests
+Users wishing to contribute to JanusGraph should fork the https://github.com/janusgraph/janusgraph[JanusGraph] repository and then submit pull requests using the GitHub pull request process.
+Every pull request must be associated with an existing issue.
+Be sure to include the relevant issue number in the title of your pull request and a description of what test suites were run to validate the pull request.
 
-A pull request is ready to be merged when it has been approved
-(see <<review-then-commit>>).
-It can either be merged manually with `git` commands or through the GitHub UI
-with the _Merge pull request_ button.
-If the pull request targets a release branch that is upstream of other release
-branches (e.g., `0.2` is upstream of `master`), then it is important to make
-sure that the change also lands in the downstream release branches.
-This is the responsibility of the committer who merges the pull request.
-Therefore, merge the pull request first into its target branch and then merge
-that branch (e.g., `0.2`) into the next downstream branch (e.g., `0.3`), and
-so on until you merge the last release branch into `master`.
-Afterwards push all release branches, ideally with an atomic commit:
+Pull requests commit messages should clearly describe what work was accomplished.
+Intermediate work-in-progress commits should be squashed prior to pull request submittal.
 
-[source, bash]
-git push --atomic origin master 0.3 0.2
+Pull requests must be reviewed before being merged.
+The JanusGraph project uses the https://help.github.com/articles/about-pull-request-reviews/[GitHub review process] to review pull requests.
+Non-committers are free, and encouraged to review pull requests.
+Their review will be non-binding, but can be taken into consideration and are still very valuable community input.
+The following rules apply to the voting process.
 
-This approach keeps merge conflicts to a minimum when a release branch is
-merged into a downstream release branch.
+* Two committer approvals are required to merge a pull request
+* One or more -1 votes within a change request will veto the pull request until the noted issue(s) are addressed and the -1 vote is withdrawn
+* Change requests will not be considered valid without an explanation
 
 [[release-policy]]
 == Release Policy

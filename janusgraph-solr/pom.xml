@@ -1,14 +1,14 @@
-<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.3.2-SNAPSHOT</version>
+        <version>0.3.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-solr</artifactId>
     <name>JanusGraph-Solr: Distributed Indexing Support</name>
-    <url>https://janusgraph.org</url>
+    <url>http://janusgraph.org</url>
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
         <solr7.test.version>7.0.0</solr7.test.version>
@@ -109,23 +109,6 @@
                     <groupId>org.noggit</groupId>
                     <artifactId>noggit</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>junit</groupId>
-                    <artifactId>junit</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.kerby</groupId>
-            <artifactId>kerb-simplekdc</artifactId>
-            <version>1.1.1</version>
-            <scope>test</scope>
-            <exclusions>
-                <!-- Use asm from solr-test-framework -->
-                <exclusion>
-                    <groupId>org.ow2.asm</groupId>
-                    <artifactId>asm</artifactId>
-                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -137,7 +120,6 @@
             <groupId>org.locationtech.spatial4j</groupId>
             <artifactId>spatial4j</artifactId>
         </dependency>
-        <!-- This is here for solr testing -->
         <dependency>
             <groupId>com.vividsolutions</groupId>
             <artifactId>jts</artifactId>
@@ -198,6 +180,7 @@
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <executions>
@@ -269,9 +252,6 @@
                             <includes>
                                 <include>**/org/janusgraph/diskstorage/solr/*.java</include>
                             </includes>
-                            <excludes>
-                                <exclude>**/org/janusgraph/diskstorage/solr/SolrIndexKerberosKeytabTest.java</exclude>
-                            </excludes>
                             <systemProperties>
                                 <property>
                                     <name>index.search.solr.zookeeper-url</name>

@@ -31,14 +31,14 @@ import org.janusgraph.graphdb.database.serialize.StandardSerializer;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.types.system.*;
 import org.janusgraph.testutil.RandomGenerator;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 public class IDManagementTest {
 
@@ -46,6 +46,14 @@ public class IDManagementTest {
 
     private static final IDManager.VertexIDType[] USER_VERTEX_TYPES = {IDManager.VertexIDType.NormalVertex,
             IDManager.VertexIDType.PartitionedVertex, IDManager.VertexIDType.UnmodifiableVertex};
+
+    @Before
+    public void setUp() throws Exception {
+    }
+
+    @After
+    public void tearDown() throws Exception {
+    }
 
     @Test
     public void EntityIDTest() {

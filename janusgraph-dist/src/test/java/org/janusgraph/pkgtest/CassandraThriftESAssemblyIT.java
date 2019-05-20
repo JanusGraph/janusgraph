@@ -14,27 +14,34 @@
 
 package org.janusgraph.pkgtest;
 
-import org.janusgraph.diskstorage.es.JanusGraphElasticsearchContainer;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.junit.jupiter.Container;
+import org.janusgraph.diskstorage.es.ElasticsearchRunner;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import org.janusgraph.CassandraStorageSetup;
 
-@Testcontainers
 public class CassandraThriftESAssemblyIT extends AbstractJanusGraphAssemblyIT {
 
-    @BeforeAll
+    public static final String ES_HOME = "../../janusgraph-es";
+
+    @BeforeClass
     public static void startCassandra() {
         CassandraStorageSetup.startCleanEmbedded();
     }
 
-    @Container
-    private static JanusGraphElasticsearchContainer esr = new JanusGraphElasticsearchContainer(true);
+    @BeforeClass
+    public static void startES() {
+        new ElasticsearchRunner(ES_HOME).start();
+    }
 
     @Test
     public void testCassandraGettingStarted() throws Exception {
         testGettingStartedGremlinSession("conf/janusgraph-cassandra-es.properties", "cassandrathrift");
+    }
+
+    @AfterClass
+    public static void stopES() {
+        new ElasticsearchRunner(ES_HOME).stop();
     }
 }

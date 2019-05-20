@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * A factory compatible with Apache commons-pool for Cassandra Thrift API
  * connections.
  *
- * @author Dan LaRocque &lt;dalaro@hopcount.org&gt;
+ * @author Dan LaRocque <dalaro@hopcount.org>
  */
 public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, CTConnection> {
 

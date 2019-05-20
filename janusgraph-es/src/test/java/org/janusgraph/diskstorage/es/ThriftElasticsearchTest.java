@@ -19,19 +19,25 @@ import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.jupiter.api.BeforeAll;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
-@Testcontainers
+import static org.janusgraph.CassandraStorageSetup.getCassandraThriftConfiguration;
+
 public class ThriftElasticsearchTest extends JanusGraphIndexTest {
 
-    @Container
-    public static JanusGraphElasticsearchContainer esr = new JanusGraphElasticsearchContainer();
+    private static ElasticsearchRunner esr;
 
-    @BeforeAll
-    public static void startCassandra() {
+    @BeforeClass
+    public static void startElasticsearch() {
         CassandraStorageSetup.startCleanEmbedded();
+        esr = new ElasticsearchRunner();
+        esr.start();
+    }
+
+    @AfterClass
+    public static void stopElasticsearch() {
+        esr.stop();
     }
 
     public ThriftElasticsearchTest() {
@@ -40,8 +46,8 @@ public class ThriftElasticsearchTest extends JanusGraphIndexTest {
 
     @Override
     public WriteConfiguration getConfiguration() {
-        ModifiableConfiguration config = CassandraStorageSetup.getCassandraThriftConfiguration(ThriftElasticsearchTest.class.getName());
-        return esr.setConfiguration(config, INDEX)
+        ModifiableConfiguration config = getCassandraThriftConfiguration(ThriftElasticsearchTest.class.getName());
+        return esr.setElasticsearchConfiguration(config, INDEX)
             .set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, INDEX)
             .getConfiguration();
     }
@@ -50,6 +56,7 @@ public class ThriftElasticsearchTest extends JanusGraphIndexTest {
     public boolean supportsLuceneStyleQueries() {
         return true;
     }
+
     @Override
     public boolean supportsWildcardQuery() {
         return true;

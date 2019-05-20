@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
@@ -57,6 +56,7 @@ import org.apache.hadoop.hbase.ZooKeeperConnectionException;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Row;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -96,7 +96,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Storage Manager for HBase
  *
- * @author Dan LaRocque &lt;dalaro@hopcount.org&gt;
+ * @author Dan LaRocque <dalaro@hopcount.org>
  */
 @PreInitializeConfigOptions
 public class HBaseStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager {
@@ -135,12 +135,12 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             " If this configuration option is not provided but graph.graphname is, the table will be set" +
             " to that value.",
             ConfigOption.Type.LOCAL, "janusgraph");
-
+    
     public static final ConfigOption<String> HBASE_SNAPSHOT =
             new ConfigOption<>(HBASE_NS, "snapshot-name",
             "The name of an exising HBase snapshot to be used by HBaseSnapshotInputFormat",
             ConfigOption.Type.LOCAL, "janusgraph-snapshot");
-
+    
     public static final ConfigOption<String> HBASE_SNAPSHOT_RESTORE_DIR =
             new ConfigOption<>(HBASE_NS, "snapshot-restore-dir",
             "The tempoary directory to be used by HBaseSnapshotInputFormat to restore a snapshot." +
@@ -166,11 +166,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     /**
      * This setting is used only when {@link #REGION_COUNT} is unset.
-     * <p>
+     * <p/>
      * If JanusGraph's HBase table does not exist, then it will be created with total
      * region count = (number of servers reported by ClusterStatus) * (this
      * value).
-     * <p>
+     * <p/>
      * The Apache HBase manual suggests an order-of-magnitude range of potential
      * values for this setting:
      *
@@ -238,7 +238,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             "at runtime.  Setting this option forces JanusGraph to instead reflectively load and instantiate the specified class.",
             ConfigOption.Type.MASKABLE, String.class);
 
-    public static final int PORT_DEFAULT = 2181;  // Not used. Just for the parent constructor.
+    public static final int PORT_DEFAULT = 9160;
 
     public static final TimestampProviders PREFERRED_TIMESTAMPS = TimestampProviders.MILLI;
 
@@ -260,8 +260,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     // Cached return value of getDeployment() as requesting it can be expensive.
     private Deployment deployment = null;
 
-    private final org.apache.hadoop.conf.Configuration hconf;
-
     private static final ConcurrentHashMap<HBaseStoreManager, Throwable> openManagers = new ConcurrentHashMap<>();
 
     // Mutable instance state
@@ -275,6 +273,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         Preconditions.checkArgument(null != shortCfNameMap);
         Collection<String> shorts = shortCfNameMap.values();
         Preconditions.checkArgument(Sets.newHashSet(shorts).size() == shorts.size());
+
+        checkConfigDeprecation(config);
 
         this.tableName = determineTableName(config);
         this.compression = config.get(COMPRESSION);
@@ -298,7 +298,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
          * which in turn applies the contents of hbase-default.xml and then
          * applies the contents of hbase-site.xml.
          */
-        hconf = HBaseConfiguration.create();
+        final org.apache.hadoop.conf.Configuration hconf = HBaseConfiguration.create();
 
         // Copy a subset of our commons config into a Hadoop config
         int keysLoaded=0;
@@ -310,8 +310,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             keysLoaded++;
         }
 
-        logger.debug("HBase configuration: set a total of {} configuration values", keysLoaded);
-
         // Special case for STORAGE_HOSTS
         if (config.has(GraphDatabaseConfiguration.STORAGE_HOSTS)) {
             String zkQuorumKey = "hbase.zookeeper.quorum";
@@ -320,13 +318,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             logger.info("Copied host list from {} to {}: {}", GraphDatabaseConfiguration.STORAGE_HOSTS, zkQuorumKey, csHostList);
         }
 
-        // Special case for STORAGE_PORT
-        if (config.has(GraphDatabaseConfiguration.STORAGE_PORT)) {
-            String zkPortKey = "hbase.zookeeper.property.clientPort";
-            Integer zkPort = config.get(GraphDatabaseConfiguration.STORAGE_PORT);
-            hconf.set(zkPortKey, zkPort.toString());
-            logger.info("Copied Zookeeper Port from {} to {}: {}", GraphDatabaseConfiguration.STORAGE_PORT, zkPortKey, zkPort);
-        }
+        logger.debug("HBase configuration: set a total of {} configuration values", keysLoaded);
 
         this.shortCfNames = config.get(SHORT_CF_NAMES);
 
@@ -428,7 +420,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
         // In case of an addition and deletion with identical timestamps, the
         // deletion tombstone wins.
-        // https://hbase.apache.org/book/versions.html#d244e4250
+        // http://hbase.apache.org/book/versions.html#d244e4250
         final Map<StaticBuffer, Pair<List<Put>, Delete>> commandsPerKey =
                 convertToCommands(
                         mutations,
@@ -643,6 +635,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 // Replace null end key with zeroes
                 b.put(new KeyRange(StaticArrayBuffer.of(zeroExtend(startKey)), FOUR_ZERO_BYTES), serverName);
             } else {
+                Preconditions.checkState(null != startKey);
+                Preconditions.checkState(null != endKey);
+
                 // Convert HBase's inclusive end keys into exclusive JanusGraph end keys
                 StaticBuffer startBuf = StaticArrayBuffer.of(zeroExtend(startKey));
                 StaticBuffer endBuf = StaticArrayBuffer.of(zeroExtend(endKey));
@@ -918,7 +913,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
                     for (StaticBuffer b : mutation.getDeletions()) {
                         // commands.getSecond() is a Delete for this rowkey.
-                        commands.getSecond().addColumns(cfName, b.as(StaticBuffer.ARRAY_FACTORY), delTimestamp);
+                        commands.getSecond().deleteColumns(cfName, b.as(StaticBuffer.ARRAY_FACTORY), delTimestamp);
                     }
                 }
 
@@ -944,8 +939,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                             addColumnToPut(putColumnWithTtl, cfName, putTimestamp, e);
                             // Convert ttl from second (JanusGraph TTL) to milliseconds (HBase TTL)
                             // @see JanusGraphManagement#setTTL(JanusGraphSchemaType, Duration)
+                            // Cast Put to Mutation for backward compatibility with HBase 0.98.x
                             // HBase supports cell-level TTL for versions 0.98.6 and above.
-                            (putColumnWithTtl).setTTL(TimeUnit.SECONDS.toMillis((long)ttl));
+                            ((Mutation) putColumnWithTtl).setTTL(ttl * 1000);
                             // commands.getFirst() is the list of Puts for this rowkey. Add this
                             // Put column with TTL to the list.
                             commands.getFirst().add(putColumnWithTtl);
@@ -965,12 +961,19 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     private void addColumnToPut(Put p, byte[] cfName, long putTimestamp, Entry e) {
-      p.addColumn(cfName, e.getColumnAs(StaticBuffer.ARRAY_FACTORY), putTimestamp,
+      p.add(cfName, e.getColumnAs(StaticBuffer.ARRAY_FACTORY), putTimestamp,
           e.getValueAs(StaticBuffer.ARRAY_FACTORY));
     }
 
     private String getCfNameForStoreName(String storeName) throws PermanentBackendException {
         return shortCfNames ? shortenCfName(shortCfNameMap, storeName) : storeName;
+    }
+
+    private void checkConfigDeprecation(org.janusgraph.diskstorage.configuration.Configuration config) {
+        if (config.has(GraphDatabaseConfiguration.STORAGE_PORT)) {
+            logger.warn("The configuration property {} is ignored for HBase. Set hbase.zookeeper.property.clientPort in hbase-site.xml or {}.hbase.zookeeper.property.clientPort in JanusGraph's configuration file.",
+                    ConfigElement.getPath(GraphDatabaseConfiguration.STORAGE_PORT), ConfigElement.getPath(HBASE_CONFIGURATION_NAMESPACE));
+        }
     }
 
     private AdminMask getAdminInterface() {
@@ -986,10 +989,5 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             return config.get(GRAPH_NAME);
         }
         return config.get(HBASE_TABLE);
-    }
-
-    @VisibleForTesting
-    protected org.apache.hadoop.conf.Configuration getHBaseConf() {
-        return hconf;
     }
 }

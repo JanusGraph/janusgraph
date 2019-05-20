@@ -1,0 +1,381 @@
+#! /usr/bin/env bash
+#
+#/**
+# * Copyright 2007 The Apache Software Foundation
+# *
+# * Licensed to the Apache Software Foundation (ASF) under one
+# * or more contributor license agreements.  See the NOTICE file
+# * distributed with this work for additional information
+# * regarding copyright ownership.  The ASF licenses this file
+# * to you under the Apache License, Version 2.0 (the
+# * "License"); you may not use this file except in compliance
+# * with the License.  You may obtain a copy of the License at
+# *
+# *     http://www.apache.org/licenses/LICENSE-2.0
+# *
+# * Unless required by applicable law or agreed to in writing, software
+# * distributed under the License is distributed on an "AS IS" BASIS,
+# * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# * See the License for the specific language governing permissions and
+# * limitations under the License.
+# */
+# 
+# The hbase command script.  Based on the hadoop command script putting
+# in hbase classes, libs and configurations ahead of hadoop's.
+#
+# TODO: Narrow the amount of duplicated code.
+#
+# Environment Variables:
+#
+#   JAVA_HOME        The java implementation to use.  Overrides JAVA_HOME.
+#
+#   HBASE_CLASSPATH  Extra Java CLASSPATH entries.
+#
+#   HBASE_CLASSPATH_PREFIX Extra Java CLASSPATH entries that should be
+#                    prefixed to the system classpath.
+#
+#   HBASE_HEAPSIZE   The maximum amount of heap to use, in MB. 
+#                    Default is 1000.
+#
+#   HBASE_LIBRARY_PATH  HBase additions to JAVA_LIBRARY_PATH for adding
+#                    native libraries.
+#
+#   HBASE_OPTS       Extra Java runtime options.
+#
+#   HBASE_CONF_DIR   Alternate conf dir. Default is ${HBASE_HOME}/conf.
+#
+#   HBASE_ROOT_LOGGER The root appender. Default is INFO,console
+#
+#   JRUBY_HOME       JRuby path: $JRUBY_HOME/lib/jruby.jar should exist.
+#                    Defaults to the jar packaged with HBase.
+#
+#   JRUBY_OPTS       Extra options (eg '--1.9') passed to the hbase shell.
+#                    Empty by default.
+#
+bin=`dirname "$0"`
+bin=`cd "$bin">/dev/null; pwd`
+
+# This will set HBASE_HOME, etc.
+. "$bin"/hbase-config.sh
+
+cygwin=false
+case "`uname`" in
+CYGWIN*) cygwin=true;;
+esac
+
+MVN="mvn"
+if [ "$M2_HOME" != "" ]; then
+  MVN="${M2_HOME}"/bin/mvn
+fi
+
+# Detect if we are in hbase sources dir
+in_dev_env=false
+if [ -d "${HBASE_HOME}/target" ]; then
+  in_dev_env=true
+fi
+
+# if no args specified, show usage
+if [ $# = 0 ]; then
+  echo "Usage: hbase [<options>] <command> [<args>]"
+  echo "Options:"
+  echo "  --config DIR    Configuration direction to use. Default: ./conf"
+  echo "  --hosts HOSTS   Override the list in 'regionservers' file"
+  echo ""
+  echo "Commands:"
+  echo "Some commands take arguments. Pass no args or -h for usage."
+  echo "  shell           Run the HBase shell"
+  echo "  hbck            Run the hbase 'fsck' tool"
+  echo "  hlog            Write-ahead-log analyzer"
+  echo "  hfile           Store file analyzer"
+  echo "  zkcli           Run the ZooKeeper shell"
+  echo "  upgrade         Upgrade hbase"
+  echo "  master          Run an HBase HMaster node" 
+  echo "  regionserver    Run an HBase HRegionServer node" 
+  echo "  zookeeper       Run a Zookeeper server"
+  echo "  rest            Run an HBase REST server" 
+  echo "  thrift          Run the HBase Thrift server" 
+  echo "  thrift2         Run the HBase Thrift2 server"
+  echo "  clean           Run the HBase clean up script"
+  echo "  classpath       Dump hbase CLASSPATH"
+  echo "  mapredcp        Dump CLASSPATH entries required by mapreduce"
+  echo "  version         Print the version"
+  echo "  CLASSNAME       Run the class named CLASSNAME"
+  exit 1
+fi
+
+# get arguments
+COMMAND=$1
+shift
+
+JAVA=$JAVA_HOME/bin/java
+JAVA_HEAP_MAX=-Xmx1000m 
+
+# override default settings for this command, if applicable
+if [ -f "$HBASE_HOME/conf/hbase-env-$COMMAND.sh" ]; then
+  . "$HBASE_HOME/conf/hbase-env-$COMMAND.sh"
+fi
+
+# check envvars which might override default args
+if [ "$HBASE_HEAPSIZE" != "" ]; then
+  #echo "run with heapsize $HBASE_HEAPSIZE"
+  JAVA_HEAP_MAX="-Xmx""$HBASE_HEAPSIZE""m"
+  #echo $JAVA_HEAP_MAX
+fi
+
+# so that filenames w/ spaces are handled correctly in loops below
+ORIG_IFS=$IFS
+IFS=
+
+# CLASSPATH initially contains $HBASE_CONF_DIR
+CLASSPATH="${HBASE_CONF_DIR}"
+CLASSPATH=${CLASSPATH}:$JAVA_HOME/lib/tools.jar
+
+add_to_cp_if_exists() {
+  if [ -d "$@" ]; then
+    CLASSPATH=${CLASSPATH}:"$@"
+  fi
+}
+
+# For releases, add hbase & webapps to CLASSPATH
+# Webapps must come first else it messes up Jetty
+if [ -d "$HBASE_HOME/hbase-webapps" ]; then
+  add_to_cp_if_exists "${HBASE_HOME}"
+fi
+#add if we are in a dev environment
+if [ -d "$HBASE_HOME/hbase-server/target/hbase-webapps" ]; then
+  add_to_cp_if_exists "${HBASE_HOME}/hbase-server/target"
+fi
+
+add_maven_deps_to_classpath() {
+  f="${HBASE_HOME}/target/cached_classpath.txt"
+  if [ ! -f "${f}" ]; then
+    # -------------------
+    # JanusGraph build support
+    # -------------------
+    # Check for Maven command line options file.
+    # If janusgraph-hbase has already been built, then this file will contain options
+    # to target the version of Hadoop used during compilation.  This is
+    # necessary when the user compiles janusgraph-hbase with a non-default Hadoop
+    # version (e.g. 2.2.0).  If we omitted this check, then we'd try to start
+    # HBase with the default Hadoop version (currentl 1.0.4), and it would break.
+    MVN_OPTS=
+    optf="${HBASE_HOME}/target/test-classes/mvn_opts.txt"
+    unset IFS
+    if [ -f "${optf}" ]; then
+      MVN_OPTS=`cat "${optf}"`
+    fi
+    "$MVN" -f "${HBASE_HOME}/pom.xml" $MVN_OPTS dependency:build-classpath -Dmdep.outputFile="${f}" &> /dev/null
+    IFS=
+  fi
+  CLASSPATH=${CLASSPATH}:`cat "${f}"`
+}
+
+
+#Add the development env class path stuff
+if $in_dev_env; then
+  add_maven_deps_to_classpath
+fi
+
+#add the hbase jars for each module
+for f in $HBASE_HOME/hbase-jars/hbase*.jar; do
+	if [[ $f = *sources.jar ]]
+  then
+    : # Skip sources.jar
+  elif [ -f $f ]
+  then
+    CLASSPATH=${CLASSPATH}:$f;
+  fi
+done
+
+# Add libs to CLASSPATH
+for f in $HBASE_HOME/lib/*.jar; do
+  CLASSPATH=${CLASSPATH}:$f;
+done
+
+# default log directory & file
+if [ "$HBASE_LOG_DIR" = "" ]; then
+  HBASE_LOG_DIR="$HBASE_HOME/logs"
+fi
+if [ "$HBASE_LOGFILE" = "" ]; then
+  HBASE_LOGFILE='hbase.log'
+fi
+
+# cygwin path translation
+if $cygwin; then
+  CLASSPATH=`cygpath -p -w "$CLASSPATH"`
+  HBASE_HOME=`cygpath -d "$HBASE_HOME"`
+  HBASE_LOG_DIR=`cygpath -d "$HBASE_LOG_DIR"`
+fi
+
+function append_path() {
+  if [ -z "$1" ]; then
+    echo $2
+  else
+    echo $1:$2
+  fi
+}
+
+JAVA_PLATFORM=""
+
+#If avail, add Hadoop to the CLASSPATH and to the JAVA_LIBRARY_PATH
+HADOOP_IN_PATH=$(PATH="${HADOOP_HOME:-${HADOOP_PREFIX}}/bin:$PATH" which hadoop 2>/dev/null)
+if [ -f ${HADOOP_IN_PATH} ]; then
+  HADOOP_JAVA_LIBRARY_PATH=$(HADOOP_CLASSPATH="$CLASSPATH" ${HADOOP_IN_PATH} \
+                             org.apache.hadoop.hbase.util.GetJavaProperty java.library.path 2>/dev/null)
+  if [ -n "$HADOOP_JAVA_LIBRARY_PATH" ]; then
+    JAVA_LIBRARY_PATH=$(append_path "${JAVA_LIBRARY_PATH}" "$HADOOP_JAVA_LIBRARY_PATH")
+  fi
+  CLASSPATH=$(append_path "${CLASSPATH}" `${HADOOP_IN_PATH} classpath 2>/dev/null`)
+fi
+
+if [ -d "${HBASE_HOME}/build/native" -o -d "${HBASE_HOME}/lib/native" ]; then
+  if [ -z $JAVA_PLATFORM ]; then
+    JAVA_PLATFORM=`CLASSPATH=${CLASSPATH} ${JAVA} org.apache.hadoop.util.PlatformName | sed -e "s/ /_/g"`
+  fi
+  if [ -d "$HBASE_HOME/build/native" ]; then
+    JAVA_LIBRARY_PATH=$(append_path "$JAVA_LIBRARY_PATH" ${HBASE_HOME}/build/native/${JAVA_PLATFORM}/lib)
+  fi
+
+  if [ -d "${HBASE_HOME}/lib/native" ]; then
+    JAVA_LIBRARY_PATH=$(append_path "$JAVA_LIBRARY_PATH" ${HBASE_HOME}/lib/native/${JAVA_PLATFORM})
+  fi
+fi
+
+# Add user-specified CLASSPATH last
+if [ "$HBASE_CLASSPATH" != "" ]; then
+  CLASSPATH=${CLASSPATH}:${HBASE_CLASSPATH}
+fi
+
+# Add user-specified CLASSPATH prefix first
+if [ "$HBASE_CLASSPATH_PREFIX" != "" ]; then
+  CLASSPATH=${HBASE_CLASSPATH_PREFIX}:${CLASSPATH}
+fi
+
+# cygwin path translation
+if $cygwin; then
+  JAVA_LIBRARY_PATH=`cygpath -p "$JAVA_LIBRARY_PATH"`
+fi
+ 
+# restore ordinary behaviour
+unset IFS
+
+#Set the right GC options based on the what we are running
+declare -a server_cmds=("master" "regionserver" "thrift" "thrift2" "rest" "avro" "zookeeper")
+for cmd in ${server_cmds[@]}; do
+	if [[ $cmd == $COMMAND ]]; then
+		server=true
+		break
+	fi
+done
+
+if [[ $server ]]; then
+	HBASE_OPTS="$HBASE_OPTS $SERVER_GC_OPTS"
+else
+	HBASE_OPTS="$HBASE_OPTS $CLIENT_GC_OPTS"
+fi
+
+# figure out which class to run
+if [ "$COMMAND" = "shell" ] ; then
+  # eg export JRUBY_HOME=/usr/local/share/jruby
+  if [ "$JRUBY_HOME" != "" ] ; then
+    CLASSPATH="$JRUBY_HOME/lib/jruby.jar:$CLASSPATH"
+    HBASE_OPTS="$HBASE_OPTS -Djruby.home=$JRUBY_HOME -Djruby.lib=$JRUBY_HOME/lib"
+  fi
+  # find the hbase ruby sources
+  HBASE_OPTS="$HBASE_OPTS -Dhbase.ruby.sources=$HBASE_HOME/bin/ruby"
+  CLASS="org.jruby.Main -X+O ${JRUBY_OPTS} ${HBASE_HOME}/bin/hirb.rb"
+elif [ "$COMMAND" = "hbck" ] ; then
+  CLASS='org.apache.hadoop.hbase.util.HBaseFsck'
+elif [ "$COMMAND" = "hlog" ] ; then
+  CLASS='org.apache.hadoop.hbase.regionserver.wal.HLogPrettyPrinter'
+elif [ "$COMMAND" = "hfile" ] ; then
+  CLASS='org.apache.hadoop.hbase.io.hfile.HFile'
+elif [ "$COMMAND" = "zkcli" ] ; then
+  CLASS="org.apache.hadoop.hbase.zookeeper.ZooKeeperMainServer"
+elif [ "$COMMAND" = "upgrade" ] ; then
+  CLASS="org.apache.hadoop.hbase.migration.UpgradeTo96"
+elif [ "$COMMAND" = "master" ] ; then
+  CLASS='org.apache.hadoop.hbase.master.HMaster'
+  if [ "$1" != "stop" ] && [ "$1" != "clear" ] ; then
+    HBASE_OPTS="$HBASE_OPTS $HBASE_MASTER_OPTS"
+  fi
+elif [ "$COMMAND" = "regionserver" ] ; then
+  CLASS='org.apache.hadoop.hbase.regionserver.HRegionServer'
+  if [ "$1" != "stop" ] ; then
+    HBASE_OPTS="$HBASE_OPTS $HBASE_REGIONSERVER_OPTS"
+  fi
+elif [ "$COMMAND" = "thrift" ] ; then
+  CLASS='org.apache.hadoop.hbase.thrift.ThriftServer'
+  if [ "$1" != "stop" ] ; then
+    HBASE_OPTS="$HBASE_OPTS $HBASE_THRIFT_OPTS"
+  fi
+elif [ "$COMMAND" = "thrift2" ] ; then
+  CLASS='org.apache.hadoop.hbase.thrift2.ThriftServer'
+  if [ "$1" != "stop" ] ; then
+    HBASE_OPTS="$HBASE_OPTS $HBASE_THRIFT_OPTS"
+  fi
+elif [ "$COMMAND" = "rest" ] ; then
+  CLASS='org.apache.hadoop.hbase.rest.RESTServer'
+  if [ "$1" != "stop" ] ; then
+    HBASE_OPTS="$HBASE_OPTS $HBASE_REST_OPTS"
+  fi
+elif [ "$COMMAND" = "zookeeper" ] ; then
+  CLASS='org.apache.hadoop.hbase.zookeeper.HQuorumPeer'
+  if [ "$1" != "stop" ] ; then
+    HBASE_OPTS="$HBASE_OPTS $HBASE_ZOOKEEPER_OPTS"
+  fi
+elif [ "$COMMAND" = "clean" ] ; then
+  case $1 in
+    --cleanZk|--cleanHdfs|--cleanAll) 
+      matches="yes" ;;
+    *) ;;
+  esac
+  if [ $# -ne 1 -o "$matches" = "" ]; then
+    echo "Usage: hbase clean (--cleanZk|--cleanHdfs|--cleanAll)"
+    echo "Options: "
+    echo "        --cleanZk   cleans hbase related data from zookeeper."
+    echo "        --cleanHdfs cleans hbase related data from hdfs."
+    echo "        --cleanAll  cleans hbase related data from both zookeeper and hdfs."
+    exit 1;
+  fi
+  "$bin"/hbase-cleanup.sh --config ${HBASE_CONF_DIR} $@
+  exit $?
+elif [ "$COMMAND" = "mapredcp" ] ; then
+  CLASS='org.apache.hadoop.hbase.util.MapreduceDependencyClasspathTool'
+elif [ "$COMMAND" = "classpath" ] ; then
+  echo $CLASSPATH
+  exit 0
+elif [ "$COMMAND" = "version" ] ; then
+  CLASS='org.apache.hadoop.hbase.util.VersionInfo'
+else
+  CLASS=$COMMAND
+fi
+
+# Have JVM dump heap if we run out of memory.  Files will be 'launch directory'
+# and are named like the following: java_pid21612.hprof. Apparently it doesn't
+# 'cost' to have this flag enabled. Its a 1.6 flag only. See:
+# http://blogs.sun.com/alanb/entry/outofmemoryerror_looks_a_bit_better
+HBASE_OPTS="$HBASE_OPTS -Dhbase.log.dir=$HBASE_LOG_DIR"
+HBASE_OPTS="$HBASE_OPTS -Dhbase.log.file=$HBASE_LOGFILE"
+HBASE_OPTS="$HBASE_OPTS -Dhbase.home.dir=$HBASE_HOME"
+HBASE_OPTS="$HBASE_OPTS -Dhbase.id.str=$HBASE_IDENT_STRING"
+HBASE_OPTS="$HBASE_OPTS -Dhbase.root.logger=${HBASE_ROOT_LOGGER:-INFO,console}"
+if [ "x$JAVA_LIBRARY_PATH" != "x" ]; then
+  HBASE_OPTS="$HBASE_OPTS -Djava.library.path=$JAVA_LIBRARY_PATH"
+  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JAVA_LIBRARY_PATH"
+fi
+
+# Enable security logging on the master and regionserver only
+if [ "$COMMAND" = "master" ] || [ "$COMMAND" = "regionserver" ]; then
+  HBASE_OPTS="$HBASE_OPTS -Dhbase.security.logger=${HBASE_SECURITY_LOGGER:-INFO,RFAS}"
+else
+  HBASE_OPTS="$HBASE_OPTS -Dhbase.security.logger=${HBASE_SECURITY_LOGGER:-INFO,NullAppender}"
+fi
+
+# Exec unless HBASE_NOEXEC is set.
+export CLASSPATH
+if [ "${HBASE_NOEXEC}" != "" ]; then
+  "$JAVA" -Dproc_$COMMAND -XX:OnOutOfMemoryError="kill -9 %p" $JAVA_HEAP_MAX $HBASE_OPTS $CLASS "$@"
+else
+  exec "$JAVA" -Dproc_$COMMAND -XX:OnOutOfMemoryError="kill -9 %p" $JAVA_HEAP_MAX $HBASE_OPTS $CLASS "$@"
+fi

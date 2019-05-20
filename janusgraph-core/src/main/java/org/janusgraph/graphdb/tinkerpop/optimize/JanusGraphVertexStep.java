@@ -41,8 +41,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.base.Preconditions;
-
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -68,10 +66,10 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     public <Q extends BaseVertexQuery> Q makeQuery(Q query) {
         query.labels(getEdgeLabels());
         query.direction(getDirection());
-        for (final HasContainer condition : hasContainers) {
+        for (HasContainer condition : hasContainers) {
             query.has(condition.getKey(), JanusGraphPredicate.Converter.convert(condition.getBiPredicate()), condition.getValue());
         }
-        for (final OrderEntry order : orders) query.orderBy(order.key, order.order);
+        for (OrderEntry order : orders) query.orderBy(order.key, order.order);
         if (limit != BaseQuery.NO_LIMIT) query.limit(limit);
         ((BasicVertexCentricQueryBuilder) query).profiler(queryProfiler);
         return query;
@@ -82,11 +80,9 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
         assert !initialized;
         initialized = true;
         if (useMultiQuery) {
-            if (!starts.hasNext()) {
-                throw FastNoSuchElementException.instance();
-            }
-            final JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
-            final List<Traverser.Admin<Vertex>> vertices = new ArrayList<>();
+            if (!starts.hasNext()) throw FastNoSuchElementException.instance();
+            JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
+            List<Traverser.Admin<Vertex>> vertices = new ArrayList<>();
             starts.forEachRemaining(v -> {
                 vertices.add(v);
                 multiQuery.addVertex(v.get());
@@ -111,7 +107,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
             assert multiQueryResults != null;
             return (Iterator<E>) multiQueryResults.get(traverser.get()).iterator();
         } else {
-            final JanusGraphVertexQuery query = makeQuery((JanusGraphTraversalUtil.getJanusGraphVertex(traverser)).query());
+            JanusGraphVertexQuery query = makeQuery((JanusGraphTraversalUtil.getJanusGraphVertex(traverser)).query());
             return (Vertex.class.isAssignableFrom(getReturnClass())) ? query.vertices().iterator() : query.edges().iterator();
         }
     }
@@ -137,14 +133,10 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     private int limit;
     private final List<OrderEntry> orders = new ArrayList<>();
 
+
     @Override
     public void addAll(Iterable<HasContainer> has) {
         HasStepFolder.splitAndP(hasContainers, has);
-    }
-
-    @Override
-    public List<HasContainer> addLocalAll(Iterable<HasContainer> has) {
-        throw new UnsupportedOperationException("addLocalAll is not supported for graph vertex step.");
     }
 
     @Override
@@ -153,39 +145,13 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     }
 
     @Override
-    public void localOrderBy(List<HasContainer> hasContainers, String key, Order order) {
-       throw new UnsupportedOperationException("localOrderBy is not supported for graph vertex step.");
+    public void setLimit(int limit) {
+        this.limit = limit;
     }
 
     @Override
-    public void setLimit(int low, int high) {
-        Preconditions.checkArgument(low == 0, "Offset is not supported for properties step.");
-        this.limit = high;
-    }
-
-    @Override
-    public void setLocalLimit(List<HasContainer> hasContainers, int low, int high) {
-        throw new UnsupportedOperationException("setLocalLimit is not supported for graph vertex step.");
-    }
-
-    @Override
-    public int getLowLimit() {
-        throw new UnsupportedOperationException("getLowLimit is not supported for properties step.");
-    }
-
-    @Override
-    public int getLocalLowLimit(List<HasContainer> hasContainers) {
-        throw new UnsupportedOperationException("getLocalLowLimit is not supported for properties step.");
-    }
-
-    @Override
-    public int getHighLimit() {
+    public int getLimit() {
         return this.limit;
-    }
-
-    @Override
-    public int getLocalHighLimit(List<HasContainer> hasContainers) {
-        throw new UnsupportedOperationException("getLocalHighLimit is not supported for graph vertex step.");
     }
 
     @Override

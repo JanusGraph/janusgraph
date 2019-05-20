@@ -17,7 +17,7 @@ package org.janusgraph.graphdb.thrift;
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphEventualGraphTest;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.BeforeClass;
 
 public class ThriftEventualGraphTest extends JanusGraphEventualGraphTest {
 
@@ -26,7 +26,7 @@ public class ThriftEventualGraphTest extends JanusGraphEventualGraphTest {
         return CassandraStorageSetup.getCassandraThriftGraphConfiguration(getClass().getSimpleName());
     }
 
-    @BeforeAll
+    @BeforeClass
     public static void beforeClass() {
         CassandraStorageSetup.startCleanEmbedded();
     }

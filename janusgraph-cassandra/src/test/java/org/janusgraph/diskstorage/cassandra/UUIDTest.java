@@ -15,16 +15,17 @@
 package org.janusgraph.diskstorage.cassandra;
 
 import org.apache.cassandra.db.marshal.TimeUUIDType;
-import org.janusgraph.CassandraTestCategory;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import org.janusgraph.testcategory.StandaloneTests;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertEquals;
 
-@Tag(CassandraTestCategory.STANDALONE_TESTS)
+@Category({StandaloneTests.class})
 public class UUIDTest {
     public static final String z = "00000000-0000-1000-0000-000000000000";
     public static final String v = "9451e273-7753-11e0-92df-e700f669bcfc";

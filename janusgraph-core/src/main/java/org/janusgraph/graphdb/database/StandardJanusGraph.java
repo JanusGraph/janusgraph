@@ -24,7 +24,6 @@ import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.*;
-import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
@@ -70,9 +69,6 @@ import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.graphdb.util.ExceptionFactory;
 import org.janusgraph.util.system.IOUtils;
 import org.janusgraph.util.system.TXUtils;
-
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
-
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -159,13 +155,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
         //Register instance and ensure uniqueness
         String uniqueInstanceId = configuration.getUniqueGraphId();
-        ModifiableConfiguration globalConfig = getGlobalSystemConfig(backend);
-        final boolean instanceExists = globalConfig.has(REGISTRATION_TIME, uniqueInstanceId);
-        final boolean replaceExistingInstance = configuration.getConfiguration().get(REPLACE_INSTANCE_IF_EXISTS);
-        if (instanceExists && !replaceExistingInstance) {
+        ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
+        if (globalConfig.has(REGISTRATION_TIME, uniqueInstanceId)) {
             throw new JanusGraphException(String.format("A JanusGraph graph with the same instance id [%s] is already open. Might required forced shutdown.", uniqueInstanceId));
-        } else if (instanceExists && replaceExistingInstance) {
-            log.debug(String.format("Instance [%s] already exists. Opening the graph per " + REPLACE_INSTANCE_IF_EXISTS.getName() + " configuration.", uniqueInstanceId));
         }
         globalConfig.set(REGISTRATION_TIME, times.getTime(), uniqueInstanceId);
 
@@ -212,7 +204,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             String uniqueId = null;
             try {
                 uniqueId = config.getUniqueGraphId();
-                ModifiableConfiguration globalConfig = getGlobalSystemConfig(backend);
+                ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
                 globalConfig.remove(REGISTRATION_TIME, uniqueId);
             } catch (Exception e) {
                 log.warn("Unable to remove graph instance uniqueid {}", uniqueId, e);
@@ -450,11 +442,6 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         return resultList;
     }
 
-    private ModifiableConfiguration getGlobalSystemConfig(Backend backend) {
-
-        return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
-            backend.getGlobalSystemConfig(), BasicConfiguration.Restriction.GLOBAL);
-    }
 
     // ################### WRITE #########################
 

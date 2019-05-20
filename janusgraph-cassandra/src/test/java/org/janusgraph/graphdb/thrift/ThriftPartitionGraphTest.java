@@ -17,11 +17,11 @@ package org.janusgraph.graphdb.thrift;
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphPartitionGraphTest;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.BeforeClass;
 
 public class ThriftPartitionGraphTest extends JanusGraphPartitionGraphTest {
 
-    @BeforeAll
+    @BeforeClass
     public static void beforeClass() {
         CassandraStorageSetup.startCleanEmbedded();
     }

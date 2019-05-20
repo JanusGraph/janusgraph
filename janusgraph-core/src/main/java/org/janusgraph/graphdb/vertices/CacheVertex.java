@@ -63,7 +63,7 @@ public class CacheVertex extends StandardVertex {
         if (result == null) {
             //First check for super
             Map.Entry<SliceQuery, EntryList> superset = getSuperResultSet(query);
-            if (superset == null || superset.getValue() == null) {
+            if (superset == null) {
                 result = lookup.get(query);
             } else {
                 result = query.getSubset(superset.getKey(), superset.getValue());

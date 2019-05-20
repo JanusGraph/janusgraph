@@ -24,7 +24,6 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.StandardStoreManager;
 import org.janusgraph.diskstorage.configuration.*;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
-import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.janusgraph.graphdb.management.JanusGraphManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -63,17 +62,17 @@ public class JanusGraphFactory {
             LoggerFactory.getLogger(JanusGraphFactory.class);
     /**
      * Opens a {@link JanusGraph} database.
-     * <p>
+     * <p/>
      * If the argument points to a configuration file, the configuration file is loaded to configure the JanusGraph graph
      * If the string argument is a configuration short-cut, then the short-cut is parsed and used to configure the returned JanusGraph graph.
-     * <p>
+     * <p />
      * A configuration short-cut is of the form:
      * [STORAGE_BACKEND_NAME]:[DIRECTORY_OR_HOST]
      *
      * @param shortcutOrFile Configuration file name or configuration short-cut
      * @return JanusGraph graph database configured according to the provided configuration
-     * @see <a href="https://docs.janusgraph.org/latest/configuration.html">"Configuration" manual chapter</a>
-     * @see <a href="https://docs.janusgraph.org/latest/config-ref.html">Configuration Reference</a>
+     * @see <a href="http://docs.janusgraph.org/latest/configuration.html">"Configuration" manual chapter</a>
+     * @see <a href="http://docs.janusgraph.org/latest/config-ref.html">Configuration Reference</a>
      */
     public static JanusGraph open(String shortcutOrFile) {
         return open(getLocalConfiguration(shortcutOrFile));
@@ -81,20 +80,20 @@ public class JanusGraphFactory {
 
     /**
      * Opens a {@link JanusGraph} database.
-     * <p>
+     * <p/>
      * If the argument points to a configuration file, the configuration file is loaded to configure the JanusGraph graph
      * If the string argument is a configuration short-cut, then the short-cut is parsed and used to configure the returned JanusGraph graph.
      * This method shouldn't be called by end users; it is used by internal server processes to
      * open graphs defined at server start that do not include the graphname property.
-     * <p>
+     * <p />
      * A configuration short-cut is of the form:
      * [STORAGE_BACKEND_NAME]:[DIRECTORY_OR_HOST]
      *
      * @param shortcutOrFile Configuration file name or configuration short-cut
      * @param backupName Backup name for graph
      * @return JanusGraph graph database configured according to the provided configuration
-     * @see <a href="https://docs.janusgraph.org/latest/configuration.html">"Configuration" manual chapter</a>
-     * @see <a href="https://docs.janusgraph.org/latest/config-ref.html">Configuration Reference</a>
+     * @see <a href="http://docs.janusgraph.org/latest/configuration.html">"Configuration" manual chapter</a>
+     * @see <a href="http://docs.janusgraph.org/latest/config-ref.html">Configuration Reference</a>
      */
     public static JanusGraph open(String shortcutOrFile, String backupName) {
         return open(getLocalConfiguration(shortcutOrFile), backupName);
@@ -105,8 +104,8 @@ public class JanusGraphFactory {
      *
      * @param configuration Configuration for the graph database
      * @return JanusGraph graph database
-     * @see <a href="https://docs.janusgraph.org/latest/configuration.html">"Configuration" manual chapter</a>
-     * @see <a href="https://docs.janusgraph.org/latest/config-ref.html">Configuration Reference</a>
+     * @see <a href="http://docs.janusgraph.org/latest/configuration.html">"Configuration" manual chapter</a>
+     * @see <a href="http://docs.janusgraph.org/latest/config-ref.html">Configuration Reference</a>
      */
     public static JanusGraph open(Configuration configuration) {
         return open(new CommonsConfiguration(configuration));
@@ -147,7 +146,7 @@ public class JanusGraphFactory {
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         if (null != graphName) {
             Preconditions.checkState(jgm != null, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
-            return (JanusGraph) jgm.openGraph(graphName, gName -> new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(configuration)));
+            return (JanusGraph) jgm.openGraph(graphName, gName -> new StandardJanusGraph(new GraphDatabaseConfiguration(configuration)));
         } else {
             if (jgm != null) {
                 log.warn("You should supply \"graph.graphname\" in your .properties file configuration if you are opening " +
@@ -158,14 +157,14 @@ public class JanusGraphFactory {
                          "\"graph.graphname\" so these graphs should be accessed dynamically by supplying a .properties file here " +
                          "or by using the ConfiguredGraphFactory.");
             }
-            return new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(configuration));
+            return new StandardJanusGraph(new GraphDatabaseConfiguration(configuration));
         }
     }
 
     /**
      *  Return a Set of graph names stored in the {@link JanusGraphManager}
      *
-     *  @return Set&lt;String&gt;
+     *  @return Set<String>
      */
     public static Set<String> getGraphNames() {
        final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
@@ -218,7 +217,7 @@ public class JanusGraphFactory {
 
     /**
      * Returns a {@link Builder} that allows to set the configuration options for opening a JanusGraph graph database.
-     * <p>
+     * <p />
      * In the builder, the configuration options for the graph can be set individually. Once all options are configured,
      * the graph can be opened with {@link org.janusgraph.core.JanusGraphFactory.Builder#open()}.
      *
@@ -320,7 +319,7 @@ public class JanusGraphFactory {
 
     /**
      * Load a properties file containing a JanusGraph graph configuration.
-     * <p>
+     * <p/>
      * <ol>
      * <li>Load the file contents into a {@link org.apache.commons.configuration.PropertiesConfiguration}</li>
      * <li>For each key that points to a configuration object that is either a directory
@@ -332,7 +331,7 @@ public class JanusGraphFactory {
      * working directory.
      * <li>Return the {@link ReadConfiguration} for the prepared configuration file</li>
      * </ol>
-     * <p>
+     * <p/>
      *
      * @param file A properties file to load
      * @return A configuration derived from {@code file}

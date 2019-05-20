@@ -22,26 +22,23 @@ import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.tinkerpop.gremlin.process.computer.Computer;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.spark.process.computer.SparkGraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -63,16 +60,16 @@ public class HBaseSnapshotInputFormatIT extends AbstractInputFormatIT {
     private final String table = "janusgraph";
     private final String snapshotName = "janusgraph-snapshot";
 
-    @BeforeAll
+    @BeforeClass
     public static void startHBase() throws IOException, BackendException {
         HBaseStorageSetup.startHBase();
     }
 
-    @AfterAll
+    @AfterClass
     public static void stopHBase() {
     }
 
-    @AfterEach
+    @After
     @Override
     public void tearDown() throws Exception {
         super.tearDown();
@@ -127,7 +124,7 @@ public class HBaseSnapshotInputFormatIT extends AbstractInputFormatIT {
         final Set<?> observedValuesOnP = ImmutableSet.copyOf((List) propertiesOnVertex.values().iterator().next());
         assertEquals(numProps, observedValuesOnP.size());
         // order may not be preserved in multi-value properties
-        assertEquals(ImmutableSet.copyOf(valuesOnP), observedValuesOnP, "Unexpected values");
+        assertEquals("Unexpected values", ImmutableSet.copyOf(valuesOnP), observedValuesOnP);
     }
 
     @Test
@@ -178,22 +175,6 @@ public class HBaseSnapshotInputFormatIT extends AbstractInputFormatIT {
         assertTrue(geoIter.hasNext());
         Set<Object> geos = Sets.newHashSet(geoIter);
         assertEquals(3, geos.size());
-    }
-
-    @Test
-    @Override
-    public void testReadGraphOfTheGodsWithEdgeFiltering() throws Exception {
-        GraphOfTheGodsFactory.load(graph, null, true);
-        assertEquals(17L, (long) graph.traversal().E().count().next());
-        // Take a snapshot of the graph table
-        HBaseStorageSetup.createSnapshot(snapshotName, table);
-
-        // Read graph filtering out "battled" edges.
-        Graph g = getGraph();
-        Computer computer = Computer.compute(SparkGraphComputer.class)
-            .edges(__.bothE().hasLabel(P.neq("battled")));
-        GraphTraversalSource t = g.traversal().withComputer(computer);
-        assertEquals(14L, (long) t.E().count().next());
     }
 
     protected Graph getGraph() throws IOException, ConfigurationException {

@@ -21,12 +21,12 @@ import org.janusgraph.diskstorage.locking.consistentkey.ExpectedValueCheckingTra
 import org.janusgraph.diskstorage.util.KeyColumn;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import java.time.Instant;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 public class LocalLockMediatorTest {
@@ -41,7 +41,7 @@ public class LocalLockMediatorTest {
     private static final ExpectedValueCheckingTransaction mockTx2 = mock(ExpectedValueCheckingTransaction.class);
 
     @Test
-    public void testLockExpiration() {
+    public void testLockExpiration() throws InterruptedException {
         TimestampProvider times = TimestampProviders.MICRO;
         LocalLockMediator<ExpectedValueCheckingTransaction> llm = new LocalLockMediator<>(LOCK_NAMESPACE, times);
 

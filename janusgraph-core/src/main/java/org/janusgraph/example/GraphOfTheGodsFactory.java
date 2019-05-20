@@ -36,7 +36,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * Example Graph factory that creates a {@link JanusGraph} based on roman mythology.
  * Used in the documentation examples and tutorials.
  *
- * @author Marko A. Rodriguez (https://markorodriguez.com)
+ * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class GraphOfTheGodsFactory {
 
@@ -160,7 +160,7 @@ public class GraphOfTheGodsFactory {
      * {@link #load(org.janusgraph.core.JanusGraph)} on the opened graph,
      * then calls {@link org.janusgraph.core.JanusGraph#close()}
      * and returns.
-     * <p>
+     * <p/>
      * This method may call {@link System#exit(int)} if it encounters an error, such as
      * failure to parse its arguments.  Only use this method when executing main from
      * a command line.  Use one of the other methods on this class ({@link #create(String)}

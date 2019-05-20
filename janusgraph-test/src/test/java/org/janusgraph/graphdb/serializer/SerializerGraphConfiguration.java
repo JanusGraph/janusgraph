@@ -23,10 +23,8 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.serializer.attributes.*;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -35,7 +33,7 @@ public class SerializerGraphConfiguration {
 
     StandardJanusGraph graph;
 
-    @BeforeEach
+    @Before
     public void initialize() {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND,"inmemory");
@@ -46,7 +44,7 @@ public class SerializerGraphConfiguration {
         graph = (StandardJanusGraph) JanusGraphFactory.open(config);
     }
 
-    @AfterEach
+    @After
     public void shutdown() {
         graph.close();
     }

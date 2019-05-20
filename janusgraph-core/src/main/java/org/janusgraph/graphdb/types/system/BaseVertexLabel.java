@@ -14,13 +14,8 @@
 
 package org.janusgraph.graphdb.types.system;
 
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.Connection;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
-
-import java.util.ArrayList;
-import java.util.Collection;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -63,15 +58,5 @@ public class BaseVertexLabel extends EmptyVertex implements InternalVertexLabel 
     @Override
     public String toString() {
         return name();
-    }
-
-    @Override
-    public Collection<PropertyKey> mappedProperties() {
-        return new ArrayList<>();
-    }
-
-    @Override
-    public Collection<Connection> mappedConnections() {
-        return new ArrayList<>();
     }
 }

@@ -1,14 +1,19 @@
-<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>7</version>
+    </parent>
     <groupId>org.janusgraph</groupId>
     <artifactId>janusgraph</artifactId>
-    <version>0.3.2-SNAPSHOT</version>
+    <version>0.3.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <prerequisites>
         <maven>2.2.1</maven>
     </prerequisites>
     <name>JanusGraph: Distributed Graph Database</name>
-    <url>https://janusgraph.org</url>
+    <url>http://janusgraph.org</url>
 
     <description>
         JanusGraph is a distributed graph database optimized for processing massive-scale graphs represented over a machine
@@ -29,19 +34,19 @@
         <developer>
             <name>Pavel Yaskevich</name>
             <email>povel.y@gmail.com</email>
-            <url>https://github.com/xedin</url>
+            <url>http://github.com/xedin</url>
         </developer>
     </developers>
     <contributors>
         <contributor>
             <name>Marko A. Rodriguez</name>
             <email>marko@markorodriguez.com</email>
-            <url>https://markorodriguez.com</url>
+            <url>http://markorodriguez.com</url>
         </contributor>
         <contributor>
             <name>Stephen Mallette</name>
             <email>spmva@genoprime.com</email>
-            <url>https://stephen.genoprime.com</url>
+            <url>http://stephen.genoprime.com</url>
         </contributor>
     </contributors>
     <inceptionYear>2012</inceptionYear>
@@ -57,24 +62,14 @@
         <url>git@github.com:JanusGraph/janusgraph.git</url>
         <tag>HEAD</tag>
     </scm>
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
     <properties>
+        <janusgraph.compatible.versions>0.1.0,0.1.1,0.2.0</janusgraph.compatible.versions>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
-        <tinkerpop.version>3.3.3</tinkerpop.version>
-        <junit-platform.version>1.4.0</junit-platform.version>
-        <junit.version>5.4.0</junit.version>
+        <tinkerpop.version>3.3.0</tinkerpop.version>
+        <junit.version>4.12</junit.version>
         <mrunit.version>1.1.0</mrunit.version>
-        <mockito.version>2.23.0</mockito.version>
-        <cassandra.version>2.1.20</cassandra.version>
+        <mockito.version>1.10.19</mockito.version>
+        <cassandra.version>2.1.18</cassandra.version>
         <jamm.version>0.3.0</jamm.version>
         <metrics2.version>2.1.2</metrics2.version>
         <metrics3.version>3.0.1</metrics3.version>
@@ -82,17 +77,17 @@
         <slf4j.version>1.7.12</slf4j.version>
         <httpcomponents.version>4.4.1</httpcomponents.version>
         <hadoop2.version>2.7.2</hadoop2.version>
-        <hbase1.version>1.2.6</hbase1.version>
-        <hbase2.version>2.1.0</hbase2.version>
-        <hbase.server.version>1.2.6</hbase.server.version>
-        <bigtable.version>1.4.0</bigtable.version>
+        <hbase098.core.version>0.98.24</hbase098.core.version>
+        <hbase098.version>${hbase098.core.version}-hadoop2</hbase098.version>
+        <hbase100.core.version>1.2.6</hbase100.core.version>
+        <hbase100.version>${hbase100.core.version}</hbase100.version>
+        <bigtable.version>1.0.0</bigtable.version>
         <scylladb.version>1.7.1</scylladb.version>
         <!-- align with org.apache.hbase:hbase -->
         <jackson1.version>1.9.13</jackson1.version>
         <jackson2.version>2.6.6</jackson2.version>
         <lucene-solr.version>7.0.0</lucene-solr.version>
-        <elasticsearch-driver.version>6.6.0</elasticsearch-driver.version>
-        <elasticsearch-server.version>6.0.1</elasticsearch-server.version>
+        <elasticsearch.version>6.0.1</elasticsearch.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <joda.version>2.8.2</joda.version>
@@ -104,7 +99,7 @@
         <zookeeper.version>3.4.6</zookeeper.version>
         <jersey.version>1.9</jersey.version>
         <!-- align with org.apache.tinkerpop:tinkerpop -->
-        <netty4.version>4.0.56.Final</netty4.version>
+        <netty4.version>4.0.53.Final</netty4.version>
         <jna.version>4.0.0</jna.version>
         <kuali.s3.wagon.version>1.1.20</kuali.s3.wagon.version>
         <jasper.version>5.5.23</jasper.version>
@@ -124,10 +119,9 @@
         <maven.javadoc.version>2.10.4</maven.javadoc.version>
         <compiler.source>1.8</compiler.source>
         <compiler.target>1.8</compiler.target>
-        <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
+        <test.excluded.groups>org.janusgraph.testcategory.MemoryTests,org.janusgraph.testcategory.PerformanceTests,org.janusgraph.testcategory.BrittleTests</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
-        <cassandra-driver.version>3.3.2</cassandra-driver.version>
-        <testcontainers.version>1.10.6</testcontainers.version>
+        <cassandra-driver.version>3.1.4</cassandra-driver.version>
     </properties>
     <modules>
         <module>janusgraph-codepipelines-ci</module>
@@ -175,7 +169,7 @@
             <!-- for org.restlet.jee:org.restlet:jar -->
             <id>spring-releases</id>
             <name>Spring Release Repository</name>
-            <url>https://repo.spring.io/libs-release-remote/</url>
+            <url>http://repo.spring.io/libs-release-remote/</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
@@ -184,10 +178,9 @@
     <build>
         <directory>${basedir}/target</directory>
         <plugins>
-            <plugin>        
-                <groupId>org.apache.maven.plugins</groupId>
+            <plugin>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.0.0-M2</version>
+                <version>1.3.1</version>
                 <executions>
                     <execution>
                         <id>enforce-dependency-convergence</id>
@@ -196,7 +189,7 @@
                         </goals>
                         <configuration>
                             <rules>
-                                <DependencyConvergence/>
+                                <DependencyConvergence />
                             </rules>
                         </configuration>
                     </execution>
@@ -240,7 +233,6 @@
                       profile id listed below.
                     -->
                     <releaseProfiles>janusgraph-release</releaseProfiles>
-                    <useReleaseProfile>false</useReleaseProfile>
 
                     <!-- Keep all submodules at same version as parent -->
                     <autoVersionSubmodules>true</autoVersionSubmodules>
@@ -249,55 +241,6 @@
                     <arguments>-DskipTests=true</arguments>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.rat</groupId>
-                <artifactId>apache-rat-plugin</artifactId>
-                <version>0.13</version>
-                <executions>
-                    <execution>
-                        <id>rat-checks</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <excludeSubProjects>false</excludeSubProjects>
-                    <excludes>
-                        <exclude>**/target/**</exclude>
-                        <exclude>**/.classpath</exclude>
-                        <exclude>**/.project</exclude>
-                        <exclude>**/.settings/**</exclude>
-                        <exclude>**/src/main/resources/META-INF/services/**</exclude>
-                        <exclude>**/src/test/resources/META-INF/services/**</exclude>
-                        <exclude>**/*.iml</exclude>
-                        <exclude>**/*.json</exclude>
-                        <exclude>**/*.xml</exclude>
-                        <exclude>docs/**</exclude>
-                        <exclude>**/*.md</exclude>
-                        <exclude>**/*.txt</exclude>
-                        <exclude>**/*.log</exclude>
-                        <exclude>**/*.patch</exclude>
-                        <exclude>**/*.crt</exclude>
-                        <exclude>**/*.sysconfig</exclude>
-                        <exclude>**/*.csv</exclude>
-                        <exclude>**/*.id</exclude>
-                        <exclude>**/*.gz</exclude>
-                        <exclude>.editorconfig</exclude>
-                        <exclude>CC-BY-4.0.txt</exclude>
-                        <exclude>**/cqlshrc</exclude>
-                        <exclude>**/regionservers</exclude>
-                        <exclude>**/jaas_keytab.conf</exclude>
-                        <exclude>**/src/test/resources/excludes</exclude>
-                        <exclude>**/src/test/resources/longTests1</exclude>
-                        <exclude>**/src/test/resources/longTests2</exclude>
-                        <exclude>**/src/pkg/static/debian/**</exclude>
-                        <exclude>**/src/test/resources/mockito-extensions/**</exclude>
-                        <exclude>**/src/test/resources/org/janusgraph/hadoop/formats/edgelist/rdf/**</exclude>
-                    </excludes>
-                </configuration>
-            </plugin>        
 
         </plugins>
         <pluginManagement>
@@ -318,7 +261,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.22.1</version>
+                    <version>2.15</version>
                     <configuration>
                         <argLine>${default.test.jvm.opts}</argLine>
                         <runOrder>alphabetical</runOrder>
@@ -378,7 +321,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>2.22.1</version>
+                    <version>2.15</version>
                     <configuration>
                         <!-- Use log4j.properties from module test resources -->
                         <systemProperties>
@@ -421,7 +364,14 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>2.5.3</version>
+                    <version>2.5</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.maven.scm</groupId>
+                            <artifactId>maven-scm-provider-gitexe</artifactId>
+                            <version>1.9</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <artifactId>maven-javadoc-plugin</artifactId>
@@ -532,59 +482,6 @@
     </build>
     <dependencyManagement>
         <dependencies>
-            <!-- Tinkerpop 3.x -->
-            <dependency>
-                <groupId>org.apache.tinkerpop</groupId>
-                <artifactId>gremlin-core</artifactId>
-                <version>${tinkerpop.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tinkerpop</groupId>
-                <artifactId>gremlin-server</artifactId>
-                <version>${tinkerpop.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tinkerpop</groupId>
-                <artifactId>gremlin-console</artifactId>
-                <version>${tinkerpop.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tinkerpop</groupId>
-                <artifactId>gremlin-groovy</artifactId>
-                <version>${tinkerpop.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tinkerpop</groupId>
-                <artifactId>gremlin-driver</artifactId>
-                <version>${tinkerpop.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tinkerpop</groupId>
-                <artifactId>gremlin-test</artifactId>
-                <version>${tinkerpop.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tinkerpop</groupId>
-                <artifactId>tinkergraph-gremlin</artifactId>
-                <version>${tinkerpop.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tinkerpop</groupId>
-                <artifactId>hadoop-gremlin</artifactId>
-                <version>${tinkerpop.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tinkerpop</groupId>
-                <artifactId>spark-gremlin</artifactId>
-                <version>${tinkerpop.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.eclipse.jetty.orbit</groupId>
-                        <artifactId>javax.servlet</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
             <!-- Jackson 2.x -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -920,48 +817,18 @@
                 <version>2.1</version>
             </dependency>
             <dependency>
-                <groupId>org.junit.platform</groupId>
-                <artifactId>junit-platform-launcher</artifactId>
-                <version>${junit-platform.version}</version>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.12</version>
             </dependency>
             <dependency>
-                <groupId>org.junit.platform</groupId>
-                <artifactId>junit-platform-runner</artifactId>
-                <version>${junit-platform.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-api</artifactId>
-                <version>${junit.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-params</artifactId>
-                <version>${junit.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-engine</artifactId>
-                <version>${junit.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.vintage</groupId>
-                <artifactId>junit-vintage-engine</artifactId>
-                <version>${junit.version}</version>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-all</artifactId>
+                <version>${mockito.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>${mockito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-inline</artifactId>
-                <version>${mockito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-junit-jupiter</artifactId>
                 <version>${mockito.version}</version>
             </dependency>
             <dependency>
@@ -1023,14 +890,14 @@
             <dependency>
                 <groupId>org.locationtech.spatial4j</groupId>
                 <artifactId>spatial4j</artifactId>
-                <version>0.7</version>
+                <version>0.6</version>
             </dependency>
 
             <!-- Java Topology Suite (JTS) -->
             <dependency>
-                <groupId>org.locationtech.jts</groupId>
-                <artifactId>jts-core</artifactId>
-                <version>1.15.0</version>
+                <groupId>com.vividsolutions</groupId>
+                <artifactId>jts</artifactId>
+                <version>1.13</version>
             </dependency>
 
             <!-- Package prefix is org.apache.commons.httpclient -->
@@ -1150,7 +1017,7 @@
                 <version>${cassandra.version}</version>
                 <!-- Using avro-ipc 1.5.3 caused the following when opening the graphdb:
                      java.lang.NoSuchMethodError: org.apache.avro.io.DecoderFactory.configureDirectDecoder(Z)Lorg/apache/avro/io/DecoderFactory
-
+    
                      Stock avro 1.4.0 or 1.4.1 might work, but I'd like to see
                      what customizations were made in the cassandra copy of avro
                      before trying to drop it for the stock artifact...
@@ -1185,7 +1052,7 @@
             <dependency>
                 <groupId>com.carrotsearch.randomizedtesting</groupId>
                 <artifactId>randomizedtesting-runner</artifactId>
-                <version>2.7.2</version>
+                <version>2.0.8</version>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
@@ -1213,32 +1080,6 @@
                 <artifactId>jdk.tools</artifactId>
                 <version>1.8</version>
             </dependency>
-            <dependency>
-                <groupId>org.elasticsearch.client</groupId>
-                <artifactId>elasticsearch-rest-client</artifactId>
-                <version>${elasticsearch-driver.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>testcontainers</artifactId>
-                <version>${testcontainers.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>net.java.dev.jna</groupId>
-                        <artifactId>jna</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>elasticsearch</artifactId>
-                <version>${testcontainers.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>junit-jupiter</artifactId>
-                <version>${testcontainers.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -1263,6 +1104,45 @@
     </dependencies>
 
     <profiles>
+        <profile>
+            <id>sonatype-oss-release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>2.1.2</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${maven.javadoc.version}</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven.gpg.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
 
         <profile>
             <id>janusgraph-release</id>
@@ -1271,7 +1151,7 @@
               when this profile is automatically activated or whenever
               else it is manually activated.
     
-              Stolen from: https://blog.sonatype.com/people/2010/01/how-to-generate-pgp-signatures-with-maven/
+              Stolen from: http://blog.sonatype.com/people/2010/01/how-to-generate-pgp-signatures-with-maven/
             -->
             <build>
                 <plugins>
@@ -1429,7 +1309,7 @@
                 </dependencies>
             </dependencyManagement>
         </profile>
-
+	
         <profile>
             <id>coverage</id>
             <properties>
@@ -1600,7 +1480,7 @@
                                     <threadCount>1</threadCount>
                                     <perCoreThreadCount>false</perCoreThreadCount>
                                     <runOrder>alphabetical</runOrder>
-                                    <groups>MEMORY_TESTS</groups>
+                                    <groups>org.janusgraph.testcategory.MemoryTests</groups>
                                     <excludedGroups />
                                 </configuration>
                             </execution>
@@ -1637,7 +1517,7 @@
                                     <threadCount>1</threadCount>
                                     <perCoreThreadCount>false</perCoreThreadCount>
                                     <runOrder>alphabetical</runOrder>
-                                    <groups>PERFORMANCE_TESTS</groups>
+                                    <groups>org.janusgraph.testcategory.PerformanceTests</groups>
                                     <excludedGroups />
                                 </configuration>
                             </execution>
@@ -1825,5 +1705,66 @@
             </build>
         </profile>
 
+        <profile>
+            <id>disable-javadoclint</id>
+
+            <activation>
+                <jdk>1.8</jdk>
+            </activation>
+
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <artifactId>maven-javadoc-plugin</artifactId>
+                            <configuration>
+                                <additionalparam>-Xdoclint:none</additionalparam>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+
+
+        <!--
+        <profile>
+            <id>docbkx</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.agilejava.docbkx</groupId>
+                        <artifactId>docbkx-maven-plugin</artifactId>
+                        <version>2.0.15</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>net.sf.xslthl</groupId>
+                                <artifactId>xslthl</artifactId>
+                                <version>2.1.0</version>
+                                <scope>runtime</scope>
+                            </dependency>
+                            <dependency>
+                                <groupId>net.sf.offo</groupId>
+                                <artifactId>fop-hyph</artifactId>
+                                <version>1.2</version>
+                                <scope>runtime</scope>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <highlightSource>1</highlightSource>
+                            <htmlCustomization>htcust.xsl</htmlCustomization>
+                            <hyphenate>false</hyphenate>
+                            <sourceDirectory>${project.basedir}/target/generated-docs/</sourceDirectory>
+                            <includes>index.xml</includes>
+                            <hyphenateVerbatim>false</hyphenateVerbatim>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        -->
     </profiles>
 </project>

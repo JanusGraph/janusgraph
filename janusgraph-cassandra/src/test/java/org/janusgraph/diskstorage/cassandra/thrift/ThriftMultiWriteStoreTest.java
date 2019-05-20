@@ -19,11 +19,11 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.MultiWriteKeyColumnValueStoreTest;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.BeforeClass;
 
 public class ThriftMultiWriteStoreTest extends MultiWriteKeyColumnValueStoreTest {
 
-    @BeforeAll
+    @BeforeClass
     public static void startCassandra() {
         CassandraStorageSetup.startCleanEmbedded();
     }

@@ -99,7 +99,11 @@ public abstract class ConfigElement {
         return StringUtils.split(path,SEPARATOR);
     }
 
-    public static String toString(ConfigElement element) {
+    public static String toStringSingle(ConfigElement element) {
+        return toStringSingle(element,"");
+    }
+
+    private static String toStringSingle(ConfigElement element, String indent) {
         String result = element.getName();
         if (element.isNamespace()) {
             result = "+ " + result;
@@ -120,11 +124,28 @@ public abstract class ConfigElement {
             result+=","+option.getDefaultValue();
             result+="]";
         }
-        result = result + "\n";
+        result = indent + result + "\n" + indent;
         String desc = element.getDescription();
         result+="\t"+'"'+desc.substring(0, Math.min(desc.length(), 50))+'"';
         return result;
     }
+
+    public static String toString(ConfigElement element) {
+        //return toStringRecursive(element,"");
+        return toStringSingle(element, "");
+    }
+
+//    private static String toStringRecursive(ConfigElement element, String indent) {
+//        String result = toStringSingle(element, indent) + "\n";
+//        if (element.isNamespace()) {
+//            ConfigNamespace ns = (ConfigNamespace)element;
+//            indent += "\t";
+//            for (ConfigElement child : ns.getChildren()) {
+//                result += toStringRecursive(child,indent);
+//            }
+//        }
+//        return result;
+//    }
 
     public static String getPath(ConfigElement element, String... umbrellaElements) {
         return getPath(element, false, umbrellaElements);

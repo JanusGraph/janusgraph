@@ -20,7 +20,6 @@ import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.util.time.*;
 
-import org.janusgraph.graphdb.database.management.ManagementLogger;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.*;
@@ -64,10 +63,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * Each message is uniquely identified by its timestamp, sender id (which uniquely identifies a particular instance of {@link KCVSLogManager}), and the
  * message id (which is auto-incrementing). These three data points comprise the column of a log message. The actual content of the message
  * is written into the value.
- * <p>
+ * </p>
  * When {@link MessageReader} are registered, one reader thread per partition id and bucket is created which periodically (as configured) checks for
- * new messages in the storage backend and invokes the reader. <br>
- * Read-markers are maintained (for each partition-id &amp; bucket id combination) under a dedicated key in the same {@link KeyColumnValueStoreManager} as the
+ * new messages in the storage backend and invokes the reader. </br>
+ * Read-markers are maintained (for each partition-id & bucket id combination) under a dedicated key in the same {@link KeyColumnValueStoreManager} as the
  * log messages. The read markers are updated to the current position before each new iteration of reading messages from the log. If the system fails
  * while reading a batch of messages, a subsequently restarted log reader may therefore read messages twice. Hence, {@link MessageReader} implementations
  * should exhibit correct behavior for the (rare) circumstance that messages are read twice.
@@ -631,11 +630,6 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                     pos++;
                 }
             }
-            readExecutor.scheduleWithFixedDelay(
-                    new MessageReaderStateUpdater(),
-                    INITIAL_READER_DELAY.toNanos(),
-                    readPollingInterval.toNanos(),
-                    TimeUnit.NANOSECONDS);
         }
     }
 
@@ -643,15 +637,6 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     public synchronized boolean unregisterReader(MessageReader reader) {
         ResourceUnavailableException.verifyOpen(isOpen,"Log",name);
         return this.readers.remove(reader);
-    }
-
-    private class MessageReaderStateUpdater implements Runnable {
-        @Override
-        public void run() {
-            for (MessageReader reader : readers) {
-                reader.updateState();
-            }
-        }
     }
 
     /**

@@ -14,11 +14,11 @@
 
 package org.janusgraph.graphdb.thrift;
 
-import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.JanusGraphPerformanceMemoryTest;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.BeforeClass;
 
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.graphdb.JanusGraphPerformanceMemoryTest;
 
 public class ThriftGraphPerformanceMemoryTest extends JanusGraphPerformanceMemoryTest {
 
@@ -28,7 +28,7 @@ public class ThriftGraphPerformanceMemoryTest extends JanusGraphPerformanceMemor
     }
 
 
-    @BeforeAll
+    @BeforeClass
     public static void beforeClass() {
         CassandraStorageSetup.startCleanEmbedded();
     }

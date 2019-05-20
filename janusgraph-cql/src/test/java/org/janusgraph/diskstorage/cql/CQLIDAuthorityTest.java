@@ -20,11 +20,16 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.IDAuthorityTest;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.junit.jupiter.api.BeforeAll;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.junit.BeforeClass;
 
 public class CQLIDAuthorityTest extends IDAuthorityTest {
 
-    @BeforeAll
+    public CQLIDAuthorityTest(final WriteConfiguration baseConfig) {
+        super(baseConfig);
+    }
+
+    @BeforeClass
     public static void startCassandra() {
         startCleanEmbedded();
     }

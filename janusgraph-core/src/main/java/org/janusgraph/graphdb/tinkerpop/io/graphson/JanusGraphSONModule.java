@@ -20,14 +20,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONUtil;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerationException;
 import org.apache.tinkerpop.shaded.jackson.core.JsonParser;
 import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
-import org.apache.tinkerpop.shaded.jackson.core.JsonToken;
-import org.apache.tinkerpop.shaded.jackson.core.type.WritableTypeId;
 import org.apache.tinkerpop.shaded.jackson.databind.DeserializationContext;
 import org.apache.tinkerpop.shaded.jackson.databind.deser.std.StdDeserializer;
 import org.janusgraph.core.attribute.Geoshape;
@@ -38,10 +35,9 @@ import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
 import org.apache.tinkerpop.shaded.jackson.databind.SerializerProvider;
 import org.apache.tinkerpop.shaded.jackson.databind.jsontype.TypeSerializer;
 import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
-import org.janusgraph.graphdb.tinkerpop.JanusGraphPSerializer;
 
 /**
- * @author Stephen Mallette (https://stephen.genoprime.com)
+ * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 public abstract class JanusGraphSONModule extends TinkerPopJacksonModule {
 
@@ -85,13 +81,12 @@ public abstract class JanusGraphSONModule extends TinkerPopJacksonModule {
         public void serializeWithType(final RelationIdentifier relationIdentifier, final JsonGenerator jsonGenerator,
                 final SerializerProvider serializerProvider, final TypeSerializer typeSerializer)
                 throws IOException, JsonProcessingException {
-            // since jackson 2.9, must keep track of `typeIdDef` in order to close it properly
-            final WritableTypeId typeIdDef = typeSerializer.writeTypePrefix(jsonGenerator, typeSerializer.typeId(relationIdentifier, JsonToken.VALUE_STRING));
+            typeSerializer.writeTypePrefixForScalar(relationIdentifier, jsonGenerator);
             jsonGenerator.writeStartObject();
             jsonGenerator.writeStringField(GraphSONTokens.VALUE, relationIdentifier.toString());
             jsonGenerator.writeStringField(GraphSONTokens.CLASS, HashMap.class.getName());
             jsonGenerator.writeEndObject();
-            typeSerializer.writeTypeSuffix(jsonGenerator, typeIdDef);
+            typeSerializer.writeTypeSuffixForScalar(relationIdentifier, jsonGenerator);
         }
     }
 
@@ -143,40 +138,6 @@ public abstract class JanusGraphSONModule extends TinkerPopJacksonModule {
         @Override
         public RelationIdentifier createObject(Map data) {
             return RelationIdentifier.parse((String) data.get("relationId"));
-        }
-    }
-
-    public static class JanusGraphPDeserializerV2d0 extends StdDeserializer<P> {
-
-        public JanusGraphPDeserializerV2d0() {
-            super(P.class);
-        }
-
-        @Override
-        public P deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException {
-            String predicate = null;
-            Object value = null;
-
-            while (jsonParser.nextToken() != JsonToken.END_OBJECT) {
-                if (jsonParser.getCurrentName().equals(GraphSONTokens.PREDICATE)) {
-                    jsonParser.nextToken();
-                    predicate = jsonParser.getText();
-                } else if (jsonParser.getCurrentName().equals(GraphSONTokens.VALUE)) {
-                    jsonParser.nextToken();
-                    value = deserializationContext.readValue(jsonParser, Object.class);
-                }
-            }
-
-            try {
-                return JanusGraphPSerializer.createPredicateWithValue(predicate, value);
-            } catch (final Exception e) {
-                throw new IllegalStateException(e.getMessage(), e);
-            }
-        }
-
-        @Override
-        public boolean isCachable() {
-            return true;
         }
     }
 }

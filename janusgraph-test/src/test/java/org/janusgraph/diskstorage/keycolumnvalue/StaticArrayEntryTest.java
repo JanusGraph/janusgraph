@@ -21,7 +21,7 @@ import org.janusgraph.diskstorage.util.StaticArrayEntryList;
 import org.janusgraph.diskstorage.util.WriteByteBuffer;
 import org.janusgraph.graphdb.relations.RelationCache;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -30,7 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -124,9 +124,27 @@ public class StaticArrayEntryTest {
 
     @Test
     public void testEntryList() {
+        final Map<Integer,Long> entries = new HashMap<>();
+        for (int i=0;i<50;i++) entries.put(i*2+7,Math.round(Math.random()/2*Long.MAX_VALUE));
 
-        final Map<Integer,Long> entries = generateRandomEntries();
-        EntryList[] el = generateEntryListArray(entries, "INSTANCE");
+        EntryList[] el = new EntryList[7];
+        el[0] = StaticArrayEntryList.ofBytes(entries.entrySet(), ByteEntryGetter.INSTANCE);
+
+        el[1] = StaticArrayEntryList.ofByteBuffer(entries.entrySet(), BBEntryGetter.INSTANCE);
+
+        el[2] = StaticArrayEntryList.ofStaticBuffer(entries.entrySet(), StaticEntryGetter.INSTANCE);
+
+        el[3] = StaticArrayEntryList.ofByteBuffer(entries.entrySet().iterator(), BBEntryGetter.INSTANCE);
+
+        el[4] = StaticArrayEntryList.ofStaticBuffer(entries.entrySet().iterator(), StaticEntryGetter.INSTANCE);
+
+        el[5] = StaticArrayEntryList.of(entries.entrySet().stream()
+            .map(entry -> StaticArrayEntry.ofByteBuffer(entry, BBEntryGetter.INSTANCE))
+            .collect(Collectors.toList()));
+
+        el[6] = StaticArrayEntryList.of(entries.entrySet().stream()
+            .map(entry -> StaticArrayEntry.ofBytes(entry, ByteEntryGetter.INSTANCE))
+            .collect(Collectors.toList()));
 
         for (final EntryList anEl : el) {
             assertEquals(entries.size(), anEl.size());
@@ -159,9 +177,27 @@ public class StaticArrayEntryTest {
      */
     @Test
     public void testEntryListWithMetaSchema() {
+        final Map<Integer,Long> entries = new HashMap<>();
+        for (int i=0;i<50;i++) entries.put(i*2+7,Math.round(Math.random()/2*Long.MAX_VALUE));
 
-        final Map<Integer,Long> entries = generateRandomEntries();
-        EntryList[] el = generateEntryListArray(entries, "SCHEMA_INSTANCE");
+        EntryList[] el = new EntryList[7];
+        el[0] = StaticArrayEntryList.ofBytes(entries.entrySet(), ByteEntryGetter.SCHEMA_INSTANCE);
+
+        el[1] = StaticArrayEntryList.ofByteBuffer(entries.entrySet(), BBEntryGetter.SCHEMA_INSTANCE);
+
+        el[2] = StaticArrayEntryList.ofStaticBuffer(entries.entrySet(), StaticEntryGetter.SCHEMA_INSTANCE);
+
+        el[3] = StaticArrayEntryList.ofByteBuffer(entries.entrySet().iterator(), BBEntryGetter.SCHEMA_INSTANCE);
+
+        el[4] = StaticArrayEntryList.ofStaticBuffer(entries.entrySet().iterator(), StaticEntryGetter.SCHEMA_INSTANCE);
+
+        el[5] = StaticArrayEntryList.of(entries.entrySet().stream()
+            .map(entry -> StaticArrayEntry.ofByteBuffer(entry, BBEntryGetter.SCHEMA_INSTANCE))
+            .collect(Collectors.toList()));
+
+        el[6] = StaticArrayEntryList.of(entries.entrySet().stream()
+            .map(entry -> StaticArrayEntry.ofBytes(entry, ByteEntryGetter.SCHEMA_INSTANCE))
+            .collect(Collectors.toList()));
 
         for (final EntryList anEl : el) {
             //System.out.println("Iteration: " + i);
@@ -193,7 +229,7 @@ public class StaticArrayEntryTest {
     }
 
     @Test
-    public void testTTLMetadata() {
+    public void testTTLMetadata() throws Exception {
         WriteBuffer wb = new WriteByteBuffer(128);
         wb.putInt(1).putInt(2).putInt(3).putInt(4);
         int valuePos = wb.getPosition();
@@ -220,45 +256,6 @@ public class StaticArrayEntryTest {
         assertEquals(value,rb.getLong());
         assertFalse(rb.hasRemaining());
 
-    }
-
-    private Map<Integer, Long> generateRandomEntries(){
-
-        final Map<Integer,Long> entries = new HashMap<>();
-
-        for (int i=0;i<50;i++) {
-            entries.put(i*2+7,Math.round(Math.random()/2*Long.MAX_VALUE));
-        }
-
-        return entries;
-    }
-
-    private EntryList[] generateEntryListArray(Map<Integer,Long> entries, String getterName){
-
-        EntryList[] el = new EntryList[7];
-        ByteEntryGetter byteEntryGetter = ByteEntryGetter.valueOf(getterName);
-        BBEntryGetter bbEntryGetter = BBEntryGetter.valueOf(getterName);
-        StaticEntryGetter staticEntryGetter = StaticEntryGetter.valueOf(getterName);
-
-        el[0] = StaticArrayEntryList.ofBytes(entries.entrySet(), byteEntryGetter);
-
-        el[1] = StaticArrayEntryList.ofByteBuffer(entries.entrySet(), bbEntryGetter);
-
-        el[2] = StaticArrayEntryList.ofStaticBuffer(entries.entrySet(), staticEntryGetter);
-
-        el[3] = StaticArrayEntryList.ofByteBuffer(entries.entrySet().iterator(), bbEntryGetter);
-
-        el[4] = StaticArrayEntryList.ofStaticBuffer(entries.entrySet().iterator(), staticEntryGetter);
-
-        el[5] = StaticArrayEntryList.of(entries.entrySet().stream()
-            .map(entry -> StaticArrayEntry.ofByteBuffer(entry, bbEntryGetter))
-            .collect(Collectors.toList()));
-
-        el[6] = StaticArrayEntryList.of(entries.entrySet().stream()
-            .map(entry -> StaticArrayEntry.ofBytes(entry, byteEntryGetter))
-            .collect(Collectors.toList()));
-
-        return el;
     }
 
     private enum BBEntryGetter implements StaticArrayEntry.GetColVal<Map.Entry<Integer, Long>, ByteBuffer> {

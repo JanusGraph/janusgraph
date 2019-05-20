@@ -14,14 +14,17 @@
 
 package org.janusgraph.example;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class GraphAppTest {
     protected static final String CONF_FILE = "conf/jgex-inmemory.properties";
@@ -29,18 +32,18 @@ public class GraphAppTest {
     protected static GraphApp app;
     protected static GraphTraversalSource g;
 
-    @BeforeAll
+    @BeforeClass
     public static void setUpClass() throws ConfigurationException {
         app = new GraphApp(CONF_FILE);
         g = app.openGraph();
     }
 
-    @BeforeEach
+    @Before
     public void setUp() {
         g.V().drop().iterate();
     }
 
-    @AfterAll
+    @AfterClass
     public static void tearDownClass() throws Exception {
         if (app != null) {
             app.closeGraph();
@@ -53,14 +56,14 @@ public class GraphAppTest {
         assertNotNull(g);
     }
 
-    @Test
+    @Test(expected = ConfigurationException.class)
     public void openGraphNullConfig() throws ConfigurationException {
-        assertThrows(ConfigurationException.class, () -> new GraphApp(null).openGraph());
+        new GraphApp(null).openGraph();
     }
 
-    @Test
+    @Test(expected = ConfigurationException.class)
     public void openGraphConfigNotFound() throws ConfigurationException {
-        assertThrows(ConfigurationException.class, () -> new GraphApp("conf/foobar").openGraph());
+        new GraphApp("conf/foobar").openGraph();
     }
 
     @Test

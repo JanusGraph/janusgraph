@@ -17,22 +17,17 @@ package org.janusgraph.diskstorage.es.rest;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-
-import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
-import org.apache.tinkerpop.shaded.jackson.core.JsonParseException;
 import org.apache.tinkerpop.shaded.jackson.core.type.TypeReference;
-import org.apache.tinkerpop.shaded.jackson.databind.JsonMappingException;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectReader;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectWriter;
 import org.apache.tinkerpop.shaded.jackson.databind.SerializationFeature;
 import org.apache.tinkerpop.shaded.jackson.databind.module.SimpleModule;
 import org.elasticsearch.client.Response;
-import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.diskstorage.es.ElasticMajorVersion;
@@ -186,13 +181,13 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     @Override
     public void addAlias(String alias, String index) throws IOException {
-        final Map actionAlias = ImmutableMap.of("actions", ImmutableList.of(ImmutableMap.of("add", ImmutableMap.of("index", index, "alias", alias))));
+        Map actionAlias = ImmutableMap.of("actions", ImmutableList.of(ImmutableMap.of("add", ImmutableMap.of("index", index, "alias", alias))));
         performRequest(REQUEST_TYPE_POST, REQUEST_SEPARATOR + "_aliases", mapWriter.writeValueAsBytes(actionAlias));
     }
 
     @Override
     public Map getIndexSettings(String indexName) throws IOException {
-        final Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_settings", null);
+        Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_settings", null);
         try (final InputStream inputStream = response.getEntity().getContent()) {
             final Map<String,RestIndexSettings> settings = mapper.readValue(inputStream, new TypeReference<Map<String, RestIndexSettings>>() {});
             return settings == null ? null : settings.get(indexName).getSettings().getMap();
@@ -205,35 +200,33 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     }
 
     @Override
-    public IndexMapping getMapping(String indexName, String typeName) throws IOException {
-        try (final InputStream inputStream = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_mapping" + REQUEST_SEPARATOR + typeName, null).getEntity().getContent()) {
+    public IndexMapping getMapping(String indexName, String typeName) throws IOException{
+        Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_mapping" + REQUEST_SEPARATOR + typeName, null);
+        try (final InputStream inputStream = response.getEntity().getContent()) {
             final Map<String, IndexMappings> settings = mapper.readValue(inputStream, new TypeReference<Map<String, IndexMappings>>() {});
-            return settings != null ? settings.get(indexName).getMappings().get(typeName) : null;
-        } catch (final JsonParseException | JsonMappingException | ResponseException e) {
-            log.info("Error when we try to get ES mapping", e);
-            return null;
+            if (settings == null) {
+                return null;
+            }
+            return settings.get(indexName).getMappings().get(typeName);
         }
     }
 
     @Override
     public void deleteIndex(String indexName) throws IOException {
-        if (isAlias(indexName)) {
-            // aliased multi-index case
-            final String path = new StringBuilder(REQUEST_SEPARATOR)
-                .append("_alias").append(REQUEST_SEPARATOR).append(indexName).toString();
-            final Response response = performRequest(REQUEST_TYPE_GET, path, null);
+        if (majorVersion.getValue() < 6 && indexExists(indexName)) {
+            performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + indexName, null);
+        } else {
+            final Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + "_cat" + REQUEST_SEPARATOR + "aliases" + REQUEST_PARAM_BEGINNING + "format=json", null);
             try (final InputStream inputStream = response.getEntity().getContent()) {
-                final Map<String,Object> records = mapper.readValue(inputStream, new TypeReference<Map<String, Object>>() {});
+                final List<Map<String,Object>> records = mapper.readValue(inputStream, new TypeReference<List<Map<String, Object>>>() {});
                 if (records == null) return;
-                for (final String index : records.keySet()) {
+                for (final Map<String,Object> record : records) {
+                    final String index = (String) record.get("index");
                     if (indexExists(index)) {
                         performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + index, null);
                     }
                 }
             }
-        } else if (indexExists(indexName)) {
-            // legacy non-aliased multi-type index (see ElasticSearchIndex#USE_DEPRECATED_MULTITYPE_INDEX)
-            performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + indexName, null);
         }
     }
 

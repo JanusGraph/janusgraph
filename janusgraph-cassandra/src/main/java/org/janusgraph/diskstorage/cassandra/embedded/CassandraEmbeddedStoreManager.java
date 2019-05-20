@@ -294,13 +294,18 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         }
     }
 
-    private void ensureColumnFamilyExists(String keyspaceName, String columnFamilyName) throws BackendException {
+    private void ensureColumnFamilyExists(String ksName, String cfName) throws BackendException {
+        ensureColumnFamilyExists(ksName, cfName, BytesType.instance);
+    }
+
+    private void ensureColumnFamilyExists(String keyspaceName, String columnFamilyName, AbstractType<?> comparator)
+        throws BackendException {
         if (null != Schema.instance.getCFMetaData(keyspaceName, columnFamilyName))
             return;
 
         // Column Family not found; create it
         final CFMetaData cfm = new CFMetaData(keyspaceName, columnFamilyName, ColumnFamilyType.Standard,
-            CellNames.fromAbstractType(BytesType.instance, true));
+            CellNames.fromAbstractType(comparator, true));
         try {
             if (storageConfig.has(COMPACTION_STRATEGY)) {
                 cfm.compactionStrategyClass(CFMetaData.createCompactionStrategy(storageConfig.get(COMPACTION_STRATEGY)));

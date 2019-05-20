@@ -34,9 +34,8 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +43,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -57,9 +56,9 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
             LoggerFactory.getLogger(OLAPTest.class);
 
     @Override
-    @BeforeEach
-    public void setUp(TestInfo testInfo) throws Exception {
-        super.setUp(testInfo);
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
     }
 
     private ScanMetrics executeScanJob(VertexScanJob job) throws Exception {
@@ -201,7 +200,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
     }
 
     @Test
-    public void testBasicComputeJob() {
+    public void testBasicComputeJob() throws Exception {
         GraphTraversalSource g = graph.traversal().withComputer(FulgoraGraphComputer.class);
         System.out.println(g.V().count().next());
     }
@@ -615,7 +614,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         while (distances.hasNext()) {
             final KeyValue<Long, Long> kv = distances.next();
             final long dist = kv.getValue();
-            assertTrue(dist >= 0 && dist < Integer.MAX_VALUE, "Invalid distance: " + dist);
+            assertTrue("Invalid distance: " + dist,dist >= 0 && dist < Integer.MAX_VALUE);
             JanusGraphVertex v = getV(tx, kv.getKey());
             assertEquals(v.<Integer>value("distance").intValue(), dist);
             vertexCount++;

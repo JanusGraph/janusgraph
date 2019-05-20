@@ -14,18 +14,17 @@
 
 package org.janusgraph.graphdb.database.serialize.attribute;
 
-import java.util.UUID;
-
+import com.google.common.base.Preconditions;
+import org.janusgraph.core.attribute.AttributeSerializer;
 import org.janusgraph.diskstorage.ScanBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
-import org.janusgraph.graphdb.database.serialize.OrderPreservingSerializer;
 
-import com.google.common.base.Preconditions;
+import java.util.UUID;
 
 /**
  *  @author Bryn Cooke (bryn.cooke@datastax.com)
  */
-public class UUIDSerializer implements OrderPreservingSerializer<UUID>  {
+public class UUIDSerializer implements AttributeSerializer<UUID>  {
 
     @Override
     public UUID read(ScanBuffer buffer) {
@@ -48,15 +47,4 @@ public class UUIDSerializer implements OrderPreservingSerializer<UUID>  {
         }
         return null;
     }
-
-    @Override
-    public UUID readByteOrder(ScanBuffer buffer) {
-        return read(buffer);
-    }
-
-    @Override
-    public void writeByteOrder(WriteBuffer buffer, UUID attribute) {
-        write(buffer, attribute);
-    }
-
 }

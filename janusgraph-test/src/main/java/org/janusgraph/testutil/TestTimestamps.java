@@ -16,11 +16,10 @@ package org.janusgraph.testutil;
 
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.time.Instant;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Created by bryn on 01/05/15.
@@ -30,7 +29,7 @@ public class TestTimestamps {
     @Test
     public void testMicro() {
         testRoundTrip(TimestampProviders.MICRO);
-        assertEquals(Instant.ofEpochSecond(1000), TimestampProviders.MICRO.getTime(1000000000));
+        Assert.assertEquals(Instant.ofEpochSecond(1000), TimestampProviders.MICRO.getTime(1000000000));
 
     }
 
@@ -48,7 +47,7 @@ public class TestTimestamps {
         Instant now = p.getTime();
         long time = p.getTime(now);
         Instant now2 = p.getTime(time);
-        assertEquals(now, now2);
+        Assert.assertEquals(now, now2);
     }
 
 

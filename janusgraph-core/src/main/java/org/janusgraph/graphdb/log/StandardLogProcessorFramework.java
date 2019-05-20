@@ -261,9 +261,6 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
                 }
             }
         }
-
-        @Override
-        public void updateState() {}
     }
 
 }

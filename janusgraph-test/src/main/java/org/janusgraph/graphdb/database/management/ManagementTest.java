@@ -17,13 +17,12 @@ package org.janusgraph.graphdb.database.management;
 import com.google.common.collect.ImmutableSet;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.JanusGraphBaseTest;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class ManagementTest extends JanusGraphBaseTest {
 
@@ -49,7 +48,7 @@ public abstract class ManagementTest extends JanusGraphBaseTest {
             JanusGraphManagement tm = graph.openManagement();
             try {
                 tm.makePropertyKey(s);
-                fail("Property key  \"" + s + "\" must be rejected");
+                Assert.fail("Property key  \"" + s + "\" must be rejected");
             } catch (IllegalArgumentException e) {
                 log.debug("Caught expected exception", e);
             } finally {
@@ -64,7 +63,7 @@ public abstract class ManagementTest extends JanusGraphBaseTest {
             JanusGraphManagement tm = graph.openManagement();
             try {
                 tm.makeEdgeLabel(s);
-                fail("Edge label \"" + s + "\" must be rejected");
+                Assert.fail("Edge label \"" + s + "\" must be rejected");
             } catch (IllegalArgumentException e) {
                 log.debug("Caught expected exception", e);
             } finally {
@@ -79,7 +78,7 @@ public abstract class ManagementTest extends JanusGraphBaseTest {
             JanusGraphManagement tm = graph.openManagement();
             try {
                 tm.makeVertexLabel(s);
-                fail("Vertex label \"" + s + "\" must be rejected");
+                Assert.fail("Vertex label \"" + s + "\" must be rejected");
             } catch (IllegalArgumentException e) {
                 log.debug("Caught expected exception", e);
             } finally {

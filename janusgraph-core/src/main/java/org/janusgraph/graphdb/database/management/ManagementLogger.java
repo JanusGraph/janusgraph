@@ -16,9 +16,7 @@ package org.janusgraph.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import org.janusgraph.core.JanusGraphManagerUtility;
 import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.ResourceUnavailableException;
 
 import org.janusgraph.diskstorage.util.time.Timer;
@@ -32,10 +30,7 @@ import org.janusgraph.graphdb.database.cache.SchemaCache;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.serialize.Serializer;
-import org.janusgraph.graphdb.management.JanusGraphManager;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
-import static org.janusgraph.graphdb.database.management.GraphCacheEvictionAction.EVICT;
-import static org.janusgraph.graphdb.database.management.GraphCacheEvictionAction.DO_NOT_EVICT;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,9 +88,7 @@ public class ManagementLogger implements MessageReader {
                     long typeId = VariableLong.readPositive(in);
                     schemaCache.expireSchemaElement(typeId);
                 }
-                final GraphCacheEvictionAction action = serializer.readObjectNotNull(in, GraphCacheEvictionAction.class);
-                Preconditions.checkNotNull(action);
-                final Thread ack = new Thread(new SendAckOnTxClose(evictionId, senderId, graph.getOpenTransactions(), action, graph.getGraphName()));
+                Thread ack = new Thread(new SendAckOnTxClose(evictionId, senderId, graph.getOpenTransactions()));
                 ack.setDaemon(true);
                 ack.start();
                 break;
@@ -121,12 +114,11 @@ public class ManagementLogger implements MessageReader {
     }
 
     public void sendCacheEviction(Set<JanusGraphSchemaVertex> updatedTypes,
-                                             final boolean evictGraphFromCache,
                                              List<Callable<Boolean>> updatedTypeTriggers,
                                              Set<String> openInstances) {
         Preconditions.checkArgument(!openInstances.isEmpty());
         long evictionId = evictionTriggerCounter.incrementAndGet();
-        evictionTriggerMap.put(evictionId,new EvictionTrigger(evictionId,updatedTypeTriggers,graph));
+        evictionTriggerMap.put(evictionId,new EvictionTrigger(evictionId,updatedTypeTriggers,openInstances));
         DataOutput out = graph.getDataSerializer().getDataOutput(128);
         out.writeObjectNotNull(MgmtLogType.CACHED_TYPE_EVICTION);
         VariableLong.writePositive(out,evictionId);
@@ -135,72 +127,41 @@ public class ManagementLogger implements MessageReader {
             assert type.hasId();
             VariableLong.writePositive(out,type.longId());
         }
-        if (evictGraphFromCache) {
-            out.writeObjectNotNull(EVICT);
-        } else {
-            out.writeObjectNotNull(DO_NOT_EVICT);
-        }
         sysLog.add(out.getStaticBuffer());
-    }
-
-    @Override
-    public void updateState() {
-        evictionTriggerMap.forEach((k, v) -> {
-            final int ackCounter = v.removeDroppedInstances();
-            if (ackCounter == 0) {
-                v.runTriggers();
-            }
-        });
     }
 
     private class EvictionTrigger {
 
         final long evictionId;
         final List<Callable<Boolean>> updatedTypeTriggers;
-        final StandardJanusGraph graph;
-        final Set<String> instancesToBeAcknowledged;
+        final ImmutableSet<String> openInstances;
+        final AtomicInteger ackCounter;
 
-        private EvictionTrigger(long evictionId, List<Callable<Boolean>> updatedTypeTriggers, StandardJanusGraph graph) {
-            this.graph = graph;
+        private EvictionTrigger(long evictionId, List<Callable<Boolean>> updatedTypeTriggers, Set<String> openInstances) {
             this.evictionId = evictionId;
             this.updatedTypeTriggers = updatedTypeTriggers;
-            final JanusGraphManagement mgmt = graph.openManagement();
-            this.instancesToBeAcknowledged = ConcurrentHashMap.newKeySet();
-            ((ManagementSystem) mgmt).getOpenInstancesInternal().forEach(instancesToBeAcknowledged::add);
-            mgmt.rollback();
+            this.openInstances = ImmutableSet.copyOf(openInstances);
+            this.ackCounter = new AtomicInteger(openInstances.size());
         }
 
         void receivedAcknowledgement(String senderId) {
-            if (instancesToBeAcknowledged.remove(senderId)) {
-                final int ackCounter = instancesToBeAcknowledged.size();
+            if (openInstances.contains(senderId)) {
+                int countdown = ackCounter.decrementAndGet();
                 log.debug("Received acknowledgement for eviction [{}] from senderID={} ({} more acks still outstanding)",
-                        evictionId, senderId, ackCounter);
-                if (ackCounter == 0) {
-                    runTriggers();
+                        evictionId, senderId, countdown);
+                if (countdown==0) { //Trigger actions
+                    for (Callable<Boolean> trigger : updatedTypeTriggers) {
+                        try {
+                            boolean success = trigger.call();
+                            assert success;
+                        } catch (Throwable e) {
+                            log.error("Could not execute trigger ["+trigger.toString()+"] for eviction ["+evictionId+"]",e);
+                        }
+                    }
+                    log.info("Received all acknowledgements for eviction [{}]",evictionId);
+                    evictionTriggerMap.remove(evictionId,this);
                 }
             }
-        }
-
-        void runTriggers() {
-            for (Callable<Boolean> trigger : updatedTypeTriggers) {
-                try {
-                    final boolean success = trigger.call();
-                    assert success;
-                } catch (Throwable e) {
-                    log.error("Could not execute trigger ["+trigger.toString()+"] for eviction ["+evictionId+"]",e);
-                }
-            }
-            log.info("Received all acknowledgements for eviction [{}]",evictionId);
-            evictionTriggerMap.remove(evictionId,this);
-        }
-
-        int removeDroppedInstances() {
-            final JanusGraphManagement mgmt = graph.openManagement();
-            final Set<String> updatedInstances = ((ManagementSystem) mgmt).getOpenInstancesInternal();
-            final String instanceRemovedMsg = "Instance [{}] was removed list of open instances and therefore dropped from list of instances to be acknowledged.";
-            instancesToBeAcknowledged.stream().filter(it -> !updatedInstances.contains(it)).filter(instancesToBeAcknowledged::remove).forEach(it -> log.debug(instanceRemovedMsg, it));
-            mgmt.rollback();
-            return instancesToBeAcknowledged.size();
         }
     }
 
@@ -209,19 +170,11 @@ public class ManagementLogger implements MessageReader {
         private final long evictionId;
         private final Set<? extends JanusGraphTransaction> openTx;
         private final String originId;
-        private final GraphCacheEvictionAction action;
-        private final String graphName;
 
-        private SendAckOnTxClose(long evictionId,
-                                 String originId,
-                                 Set<? extends JanusGraphTransaction> openTx,
-                                 GraphCacheEvictionAction action,
-                                 String graphName) {
+        private SendAckOnTxClose(long evictionId, String originId, Set<? extends JanusGraphTransaction> openTx) {
             this.evictionId = evictionId;
             this.openTx = openTx;
             this.originId = originId;
-            this.action = action;
-            this.graphName = graphName;
         }
 
         @Override
@@ -238,24 +191,12 @@ public class ManagementLogger implements MessageReader {
                         txStillOpen = true;
                     }
                 }
-                final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
-                final boolean janusGraphManagerIsInBadState = null == jgm && action.equals(EVICT);
-                if (!txStillOpen && janusGraphManagerIsInBadState) {
-                    log.error("JanusGraphManager should be instantiated on this server, but it is not. " +
-                              "Please restart with proper server settings. " +
-                              "As a result, we could not evict graph {} from the cache.", graphName);
-                    break;
-                }
-                else if (!txStillOpen) {
+                if (!txStillOpen) {
                     //Send ack and finish up
                     DataOutput out = graph.getDataSerializer().getDataOutput(64);
                     out.writeObjectNotNull(MgmtLogType.CACHED_TYPE_EVICTION_ACK);
                     out.writeObjectNotNull(originId);
                     VariableLong.writePositive(out,evictionId);
-                    if (null != jgm && action.equals(EVICT)) {
-                        jgm.removeGraph(graphName);
-                        log.debug("Graph {} has been removed from the JanusGraphManager graph cache.", graphName);
-                    }
                     try {
                         sysLog.add(out.getStaticBuffer());
                         log.debug("Sent {}: evictionID={} originID={}", MgmtLogType.CACHED_TYPE_EVICTION_ACK, evictionId, originId);

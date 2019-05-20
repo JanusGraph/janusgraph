@@ -2,10 +2,10 @@
 == Apache HBase
 
 [.tss-center.tss-width-250]
-image:https://hbase.apache.org/images/hbase_logo.png[link="https://hbase.apache.org"]
+image:http://hbase.apache.org/images/hbase_logo.png[link="http://hbase.apache.org"]
 
-[quote, 'https://hbase.apache.org/[Apache HBase Homepage]']
-Apache HBase is an open-source, distributed, versioned, non-relational database modeled after https://static.googleusercontent.com/media/research.google.com/en/us/archive/bigtable-osdi06.pdf[Google's Bigtable: A Distributed Storage System for Structured Data by Chang et al.] Just as Bigtable leverages the distributed data storage provided by the Google File System, Apache HBase provides Bigtable-like capabilities on top of Hadoop and HDFS.
+[quote, 'http://hbase.apache.org/[Apache HBase Homepage]']
+Apache HBase is an open-source, distributed, versioned, non-relational database modeled after http://static.googleusercontent.com/media/research.google.com/en/us/archive/bigtable-osdi06.pdf[Google's Bigtable: A Distributed Storage System for Structured Data by Chang et al.] Just as Bigtable leverages the distributed data storage provided by the Google File System, Apache HBase provides Bigtable-like capabilities on top of Hadoop and HDFS.
 
 === HBase Setup
 
@@ -17,7 +17,7 @@ image:modes-local.png[]
 
 HBase can be run as a standalone database on the same local host as JanusGraph and the end-user application. In this model, JanusGraph and HBase communicate with one another via a `localhost` socket. Running JanusGraph over HBase requires the following setup steps:
 
-* Download and extract a stable HBase from https://www.apache.org/dyn/closer.cgi/hbase/stable/.
+* Download and extract a stable HBase from http://www.apache.org/dyn/closer.cgi/hbase/stable/.
 * Start HBase by invoking the `start-hbase.sh` script in the _bin_ directory inside the extracted HBase directory. To stop HBase, use `stop-hbase.sh`.
 
 [source, bourne]
@@ -66,15 +66,9 @@ In this case, each Gremlin Server would be configured to connect to the HBase cl
 ----
 ...
 graphs: {
-  g: conf/janusgraph-hbase.properties
-}
-scriptEngines: {
-  gremlin-groovy: {
-    plugins: { org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.server.jsr223.GremlinServerGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.tinkergraph.jsr223.TinkerGraphGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.jsr223.ImportGremlinPlugin: {classImports: [java.lang.Math], methodImports: [java.lang.Math#*]},
-               org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: {files: [scripts/empty-sample.groovy]}}}}
+  g: conf/janusgraph-hbase.properties}
+plugins:
+  - janusgraph.imports
 ...
 ----
 
@@ -84,21 +78,96 @@ Refer to <<config-ref>> for a complete listing of all HBase specific configurati
 
 When configuring HBase it is recommended to consider the following HBase specific configuration options:
 
-* *storage.hbase.table*: Name of the HBase table in which to store the JanusGraph graph. Allows multiple JanusGraph graphs to co-exist in the same HBase cluster.
+* *tablename*: Name of the HBase table in which to store the JanusGraph graph. Allows multiple JanusGraph graphs to co-exist in the same HBase cluster.
 
-Please refer to the https://hbase.apache.org/book/config.files.html[HBase configuration documentation] for more HBase configuration options and their description. By prefixing the respective HBase configuration option with `storage.hbase.ext` in the JanusGraph configuration it will be passed on to HBase at initialization time. For example, to use the znode /hbase-secure for HBase, set the property: `storage.hbase.ext.zookeeper.znode.parent=/hbase-secure`. The prefix allows arbitrary HBase configuration options to be configured through JanusGraph.
-
-[IMPORTANT]
-HBase backend uses millisecond for timestamps. In JanusGraph 0.2.0 and earlier, if the `graph.timestamps` property is not explicitly set, the default is `MICRO`.
-In this case, the `graph.timestamps` property must be explicitly set to `MILLI`. Do not set the `graph.timestamps` property to another value in any cases.
+Please refer to the http://hbase.apache.org/book/config.files.html[HBase configuration documentation] for more HBase configuration options and their description. By prefixing the respective HBase configuration option with `storage.hbase.ext` in the JanusGraph configuration it will be passed on to HBase at initialization time. For example, to use the znode /hbase-secure for HBase, set the property: `storage.hbase.ext.zookeeper.znode.parent=/hbase-secure`. The prefix allows arbitrary HBase configuration options to be configured through JanusGraph.
 
 === Global Graph Operations
 
 JanusGraph over HBase supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use <<hadoop-tp3>> to iterate over all vertices or edges in large graphs effectively.
 
+=== Deploying on Amazon EC2
+
+[quote, 'http://aws.amazon.com/ec2/[Amazon EC2]']
+Amazon EC2 is a web service that provides resizable compute capacity in the cloud. It is designed to make web-scale computing easier for developers.
+
+Follow these steps to setup an HBase cluster on EC2 and deploy JanusGraph over HBase. To follow these instructions, you need an Amazon AWS account with established authentication credentials and some basic knowledge of AWS and EC2.
+
+The following commands first launch a four-node HBase cluster on EC2 via http://whirr.apache.org/[Whirr], then run a basic JanusGraph test case using the cluster.
+
+The configuration described below puts one HBase master server in charge of three HBase regionservers.  The master will be the sole member of the Zookeeper quorum by which JanusGraph connects to HBase.
+
+Whirr 0.7.1 sometimes fails when run on a machine behind a NAT https://issues.apache.org/jira/browse/WHIRR-459[WHIRR-459].  For this reason, it's recommended to use at least Whirr 0.7.2.  Whirr 0.8.0 was used to test the following commands on a t1.micro instance running Amazon Linux 2012.03.  These commands might need tweaking to produce the intended results on environments besides a t1.micro instance running Amazon Linux 2012.03.
+
+[source, bourne]
+----
+# These commands were executed on a t1.micro instance running Amazon Linux 2012.03 x86_64.
+# The AMI identifier for Amazon Linux 2012.03 x86_64 is ami-aecd60c7.
+# https://console.aws.amazon.com/ec2/home?region=us-east-1#launchAmi=ami-aecd60c7
+export AWS_ACCESS_KEY_ID=... # Set your Access Key here
+export AWS_SECRET_ACCESS_KEY=... # Set your Secret Key here
+curl -O http://www.apache.org/dist/whirr/whirr-0.8.0/whirr-0.8.0.tar.gz
+tar -xzf whirr-0.8.0.tar.gz && cd whirr-0.8.0
+# Generate an SSH keypair with which Whirr will deploy and manage instances
+ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa_whirr
+# Download a Whirr recipe for deploying HBase 0.94.1 with hadoop-core 1.0.3
+pushd recipes && wget 'https://raw.github.com/JanusGraph/janusgraph/master/config/whirr-hbase.properties' ; popd
+bin/whirr launch-cluster --config recipes/whirr-hbase.properties --private-key-file ~/.ssh/id_rsa_whirr
+# Run a superficial health check on the hbase-master node (this should print "imok")
+echo "ruok" | nc $(awk '{print $3}' ~/.whirr/hbase-testing/instances | head -1) 2181; echo
+# Login to the HBase master node to run the remaining commands
+ssh -i ~/.ssh/id_rsa_whirr -o "UserKnownHostsFile /dev/null" \
+      -o StrictHostKeyChecking=no \
+      `grep hbase-master ~/.whirr/hbase-testing/instances \
+      | awk '{print $3}'`
+# Maven 2 is available through the package manager, but an incompatibility
+# with surefire 2.12 makes it a pain to use; here we download Maven 3 without
+# the OS package manager
+wget 'http://archive.apache.org/dist/maven/maven-3/3.0.4/binaries/apache-maven-3.0.4-bin.tar.gz'
+tar -xzf apache-maven-3.0.4-bin.tar.gz
+# Install git
+sudo apt-get install -y git-core
+# Clone JanusGraph
+git clone 'git://github.com/JanusGraph/janusgraph.git' && cd janusgraph
+# Run a HBase-backed test of JanusGraph
+#
+# This test should produce pages of output ending in something like this:
+#
+# -------------------------------------------------------
+#  T E S T S
+# -------------------------------------------------------
+# Running org.janusgraph.graphdb.hbase.ExternalHBaseGraphPerformanceTest
+# Starting trial 1/1
+# 10000
+# 20000
+# 30000
+# 40000
+# 50000
+# Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 303.659 sec
+#
+# Results :
+#
+# Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+#
+# [INFO] ------------------------------------------------------------------------
+# [INFO] BUILD SUCCESS
+# [INFO] ------------------------------------------------------------------------
+~/apache-maven-3.0.4/bin/mvn test -Dtest=ExternalHBaseGraphPerformanceTest#unlabeledEdgeInsertion
+# Check on hadoop
+hadoop version # Should print 1.0.3
+# List the hadoop root; should print something like:
+#
+# Found 4 items
+# drwxr-xr-x   - hadoop supergroup          0 2012-09-20 00:20 /hadoop
+# drwxr-xr-x   - hadoop supergroup          0 2012-09-20 00:42 /hbase
+# drwxrwxrwx   - hadoop supergroup          0 2012-09-20 00:20 /tmp
+# drwxrwxrwx   - hadoop supergroup          0 2012-09-20 00:20 /user
+hadoop fs -ls /
+----
+
 === Tips and Tricks for Managing an HBase Cluster
 
-The https://wiki.apache.org/hadoop/Hbase/Shell[HBase shell] on the master server can be used to get an overall status check of the cluster.
+The http://wiki.apache.org/hadoop/Hbase/Shell[HBase shell] on the master server can be used to get an overall status check of the cluster.
 
 [source, bourne]
 $HBASE_HOME/bin/hbase shell
@@ -116,7 +185,7 @@ The above commands can identify if a region server has gone down. If so, it is p
 sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh stop regionserver
 sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh start regionserver
 
-The use of https://code.google.com/p/parallel-ssh/[pssh] can make this process easy as there is no need to log into each machine individually to run the commands. Put the IP addresses of the regionservers into a `hosts.txt` file and then execute the following.
+The use of http://code.google.com/p/parallel-ssh/[pssh] can make this process easy as there is no need to log into each machine individually to run the commands. Put the IP addresses of the regionservers into a `hosts.txt` file and then execute the following.
 
 [source, bourne]
 pssh -h host.txt sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh stop regionserver

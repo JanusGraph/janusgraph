@@ -14,27 +14,27 @@
 
 package org.janusgraph.diskstorage.cassandra;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.util.Collections;
 import java.util.Map;
 
-import org.janusgraph.TestCategory;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 import org.janusgraph.diskstorage.KeyColumnValueStoreTest;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.janusgraph.testcategory.OrderedKeyStoreTests;
+import org.janusgraph.testcategory.UnorderedKeyStoreTests;
 
 public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest {
 
@@ -49,14 +49,14 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
     public abstract AbstractCassandraStoreManager openStorageManager(Configuration c) throws BackendException;
 
     @Test
-    @Tag(TestCategory.UNORDERED_KEY_STORE_TESTS)
-    public void testUnorderedConfiguration(TestInfo testInfo) {
+    @Category({ UnorderedKeyStoreTests.class })
+    public void testUnorderedConfiguration() {
         if (!manager.getFeatures().hasUnorderedScan()) {
             log.warn(
                 "Can't test key-unordered features on incompatible store.  "
                 + "This warning could indicate reduced test coverage and "
                 + "a broken JUnit configuration.  Skipping test {}.",
-                testInfo.getTestMethod().toString());
+                name.getMethodName());
             return;
         }
 
@@ -66,14 +66,14 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
     }
 
     @Test
-    @Tag(TestCategory.ORDERED_KEY_STORE_TESTS)
-    public void testOrderedConfiguration(TestInfo testInfo) {
+    @Category({ OrderedKeyStoreTests.class })
+    public void testOrderedConfiguration() {
         if (!manager.getFeatures().hasOrderedScan()) {
             log.warn(
                 "Can't test key-ordered features on incompatible store.  "
                 + "This warning could indicate reduced test coverage and "
                 + "a broken JUnit configuration.  Skipping test {}.",
-                testInfo.getTestMethod().toString());
+                name.getMethodName());
             return;
         }
 

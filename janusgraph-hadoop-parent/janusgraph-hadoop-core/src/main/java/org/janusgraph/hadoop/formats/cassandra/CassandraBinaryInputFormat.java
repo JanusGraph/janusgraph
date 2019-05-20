@@ -17,6 +17,7 @@ package org.janusgraph.hadoop.formats.cassandra;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
 import org.janusgraph.hadoop.formats.util.AbstractBinaryInputFormat;
@@ -91,15 +92,15 @@ public class CassandraBinaryInputFormat extends AbstractBinaryInputFormat {
         // Set the column slice bounds via Faunus' vertex query filter
         final SlicePredicate predicate = new SlicePredicate();
         final int rangeBatchSize = config.getInt(RANGE_BATCH_SIZE_CONFIG, Integer.MAX_VALUE);
-        predicate.setSlice_range(getSliceRange(rangeBatchSize)); // TODO stop slicing the whole row
+        predicate.setSlice_range(getSliceRange(JanusGraphHadoopSetupCommon.DEFAULT_SLICE_QUERY, rangeBatchSize)); // TODO stop slicing the whole row
         ConfigHelper.setInputSlicePredicate(config, predicate);
     }
 
-    private SliceRange getSliceRange(final int limit) {
+    private SliceRange getSliceRange(final SliceQuery slice, final int limit) {
         final SliceRange sliceRange = new SliceRange();
-        sliceRange.setStart(JanusGraphHadoopSetupCommon.DEFAULT_SLICE_QUERY.getSliceStart().asByteBuffer());
-        sliceRange.setFinish(JanusGraphHadoopSetupCommon.DEFAULT_SLICE_QUERY.getSliceEnd().asByteBuffer());
-        sliceRange.setCount(Math.min(limit, JanusGraphHadoopSetupCommon.DEFAULT_SLICE_QUERY.getLimit()));
+        sliceRange.setStart(slice.getSliceStart().asByteBuffer());
+        sliceRange.setFinish(slice.getSliceEnd().asByteBuffer());
+        sliceRange.setCount(Math.min(limit, slice.getLimit()));
         return sliceRange;
     }
 }

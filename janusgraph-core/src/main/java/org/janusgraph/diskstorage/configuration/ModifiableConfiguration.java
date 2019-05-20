@@ -14,8 +14,6 @@
 
 package org.janusgraph.diskstorage.configuration;
 
-import static org.janusgraph.graphdb.configuration.JanusGraphConstants.UPGRADEABLE_FIXED;
-
 import com.google.common.base.Preconditions;
 
 import java.util.Map;
@@ -36,8 +34,7 @@ public class ModifiableConfiguration extends BasicConfiguration {
 
     public<O> ModifiableConfiguration set(ConfigOption<O> option, O value, String... umbrellaElements) {
         verifyOption(option);
-        Preconditions.checkArgument(hasUpgradeableFixed(option.getName()) ||
-                                    !option.isFixed() || !isFrozen(), "Cannot change configuration option: %s", option);
+        Preconditions.checkArgument(!option.isFixed() || !isFrozen(), "Cannot change configuration option: %s", option);
         String key = super.getPath(option,umbrellaElements);
         value = option.verify(value);
         config.set(key,value);
@@ -61,10 +58,6 @@ public class ModifiableConfiguration extends BasicConfiguration {
     public void freezeConfiguration() {
         config.set(FROZEN_KEY, Boolean.TRUE);
         if (!isFrozen()) setFrozen();
-    }
-
-    private boolean hasUpgradeableFixed(String name) {
-        return UPGRADEABLE_FIXED.contains(name);
     }
 
     @Override

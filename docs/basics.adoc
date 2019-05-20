@@ -21,7 +21,7 @@ Sets up JanusGraph to use the Cassandra persistence engine running locally and a
 
 [source, properties]
 ----
-storage.backend=cql
+storage.backend=cassandra
 storage.hostname=localhost
 
 index.search.backend=elasticsearch
@@ -70,7 +70,7 @@ There are several example configuration files in the `conf/` directory that can 
 [source, java]
 ----
 // Connect to Cassandra on localhost using a default configuration
-graph = JanusGraphFactory.open("conf/janusgraph-cql.properties")
+graph = JanusGraphFactory.open("conf/gremlin-server/http-janusgraph-hbase-server.properties")
 // Connect to HBase on localhost using a default configuration
 graph = JanusGraphFactory.open("conf/janusgraph-hbase.properties")
 ----
@@ -102,7 +102,7 @@ If the JanusGraph graph cluster has been previously configured and/or only the s
 
 [source, gremlin]
 ----
-graph = JanusGraphFactory.open('cql:localhost')
+graph = JanusGraphFactory.open('cassandra:localhost')
 ----
 
 [source, gremlin]
@@ -119,7 +119,7 @@ JanusGraph, by itself, is simply a set of jar files with no thread of execution.
 . JanusGraph can be used by embedding JanusGraph calls in a client program where the program provides the thread of execution.
 . JanusGraph packages a long running server process that, when started, allows a remote client or logic running in a separate program to make JanusGraph calls.  This long running server process is called *JanusGraph Server*.
 
-For the JanusGraph Server, JanusGraph uses https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-server[Gremlin Server] of the https://tinkerpop.apache.org/[Apache TinkerPop] stack to service client requests.  JanusGraph provides an out-of-the-box configuration for a quick start with JanusGraph Server, but the configuration can be changed to provide a wide range of server capabilities.
+For the JanusGraph Server, JanusGraph uses http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-server[Gremlin Server] of the http://tinkerpop.apache.org/[Apache TinkerPop] stack to service client requests.  JanusGraph provides an out-of-the-box configuration for a quick start with JanusGraph Server, but the configuration can be changed to provide a wide range of server capabilities.
 
 Configuring JanusGraph Server is accomplished through a JanusGraph Server yaml configuration file located in the ./conf/gremlin-server directory in the JanusGraph distribution. To configure JanusGraph Server with a graph instance (`JanusGraph`), the JanusGraph Server configuration file requires the following settings:
 
@@ -129,13 +129,8 @@ Configuring JanusGraph Server is accomplished through a JanusGraph Server yaml c
 graphs: {
   graph: conf/janusgraph-berkeleyje.properties
 }
-scriptEngines: {
-  gremlin-groovy: {
-    plugins: { org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.server.jsr223.GremlinServerGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.tinkergraph.jsr223.TinkerGraphGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.jsr223.ImportGremlinPlugin: {classImports: [java.lang.Math], methodImports: [java.lang.Math#*]},
-               org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: {files: [scripts/empty-sample.groovy]}}}}
+plugins:
+  - janusgraph.imports
 ...
 ----
 
@@ -202,15 +197,6 @@ The schema type - i.e. edge label, property key, or vertex label - is assigned t
 
 Beyond the schema definition options explained in this section, schema types provide performance tuning options that are discussed in <<advanced-schema>>.
 
-=== Displaying Schema Information
-There are methods to view specific elements of the graph schema within the management API.
-These methods are `mgmt.printIndexes()`, `mgmt.printPropertyKeys()`, `mgmt.printVertexLabels()`, and `mgmt.printEdgeLabels()`.
-There is also a method that displays all the combined output named `printSchema()`.
-
-[source, gremlin]
-mgmt = graph.openManagement()
-mgmt.printSchema()
-
 === Defining Edge Labels
 
 Each edge connecting two vertices has a label which defines the semantics of the relationship. For instance, an edge labeled `friend` between vertices A and B encodes a friendship between the two individuals.
@@ -238,7 +224,7 @@ mgmt.commit()
 
 Properties on vertices and edges are key-value pairs. For instance, the property `name='Daniel'` has the key `name` and the value `'Daniel'`. Property keys are part of the JanusGraph schema and can constrain the allowed data types and cardinality of values.
 
-To define a property key, call `makePropertyKey(String)` on an open graph or management transaction and provide the name of the property key as the argument. Property key names must be unique in the graph, and it is recommended to avoid spaces or special characters in property names. This method returns a builder for the property keys.
+To define a property key, call `makePropertyKey(String)` on an open graph or management transaction and provide the name of the property key as the argument. Property key names must be unique in the graph. This method returns a builder for the property keys.
 
 ==== Property Key Data Type
 
@@ -252,19 +238,19 @@ JanusGraph natively supports the following data types.
 .Native JanusGraph Data Types
 [options="header"]
 |=====
-|Name                   |Description
-|String                 |Character sequence
-|Character              |Individual character
-|Boolean                |true or false
-|Byte                   |byte value
-|Short                  |short value
-|Integer                |integer value
-|Long                   |long value
-|Float                  |4 byte floating point number
-|Double                 |8 byte floating point number
+|Name			|Description
+|String			|Character sequence
+|Character		|Individual character
+|Boolean		|true or false
+|Byte			|byte value
+|Short			|short value
+|Integer		|integer value
+|Long			|long value
+|Float			|4 byte floating point number
+|Double			|8 byte floating point number
 |Date                   |Specific instant in time (`java.util.Date`)
-|Geoshape               |Geographic shape like point, circle or box
-|UUID                   |Universally unique identifier (`java.util.UUID`)
+|Geoshape		|Geographic shape like point, circle or box
+|UUID   		|Universally unique identifier (`java.util.UUID`)
 |=====
 
 
@@ -343,62 +329,25 @@ Note, that schema name changes may not be immediately visible in currently runni
 Should the need arise to re-define an existing schema type, it is recommended to change the name of this type to a name that is not currently (and will never be) in use. After that, a new label or key can be defined with the original name, thereby effectively replacing the old one.
 However, note that this would not affect vertices, edges, or properties previously written with the existing type. Redefining existing graph elements is not supported online and must be accomplished through a batch graph transformation.
 
-[[schema-constraints]]
-=== Schema Constraints
-
-The definition of the schema allows users to configure explicit property and connection constraints. Properties can be bound to specific vertex label and/or edge labels. Moreover, connection constraints allow users to explicitly define which two vertex labels can be connected by an edge label. These constraints can be used to ensure that a graph matches a given domain model. For example for the graph of the gods, a `god` can be a brother of another `god`, but not of a `monster` and a `god` can have a property `age`, but `location` can not have a property `age`. These constraints are disabled by default.
-
-Enable these schema constraints by setting `schema.constraints=true`. This setting depends on the setting `schema.default`. If config `schema.default` is set to `none`, then an `IllegalArgumentException` is thrown for schema constraint violations. If `schema.default` is not set `none`, schema constraints are automatically created, but no exception is thrown.
-Activating schema constraints has no impact on the existing data, because these schema constraints are only applied during the insertion process. So reading of data is not affected at all by those constraints.
-
-Multiple properties can be bound to a vertex using `JanusGraphManagement.addProperties(VertexLabel, PropertyKey...)`, for example:
-
-[source, gremlin]
-mgmt = graph.openManagement()
-person = mgmt.makeVertexLabel('person').make()
-name = mgmt.makePropertyKey('name').dataType(String.class).cardinality(Cardinality.SET).make()
-birthDate = mgmt.makePropertyKey('birthDate').dataType(Long.class).cardinality(Cardinality.SINGLE).make()
-mgmt.addProperties(person, name, birthDate)
-mgmt.commit()
-
-Multiple properties can be bound to an edge using `JanusGraphManagement.addProperties(EdgeLabel, PropertyKey...)`, for example:
-
-[source, gremlin]
-mgmt = graph.openManagement()
-follow = mgmt.makeEdgeLabel('follow').multiplicity(MULTI).make()
-name = mgmt.makePropertyKey('name').dataType(String.class).cardinality(Cardinality.SET).make()
-mgmt.addProperties(follow, name)
-mgmt.commit()
-
-Connections can be defined using `JanusGraphManagement.addConnection(EdgeLabel, VertexLabel out, VertexLabel in)` between an outgoing, an incoming and an edge, for example:
-
-[source, gremlin]
-mgmt = graph.openManagement()
-person = mgmt.makeVertexLabel('person').make()
-company = mgmt.makeVertexLabel('company').make()
-works = mgmt.makeEdgeLabel('works').multiplicity(MULTI).make()
-mgmt.addConnection(works, person, company)
-mgmt.commit()
 
 [[gremlin]]
 == Gremlin Query Language
 
-image:https://tinkerpop.apache.org/docs/{tinkerpop_version}/images/gremlin-logo.png[width=370,height=143]
+image:http://tinkerpop.apache.org/docs/{tinkerpop_version}/images/gremlin-logo.png[width=370,height=143]
 
-https://tinkerpop.apache.org/gremlin.html[Gremlin] is JanusGraph's query language used to retrieve data from and modify data in the graph. Gremlin is a path-oriented language which succinctly expresses complex graph traversals and mutation operations. Gremlin is a https://en.wikipedia.org/wiki/Functional_programming[functional language] whereby traversal operators are chained together to form path-like expressions. For example, "from Hercules, traverse to his father and then his father's father and return the grandfather's name."
+http://tinkerpop.apache.org/gremlin.html[Gremlin] is JanusGraph's query language used to retrieve data from and modify data in the graph. Gremlin is a path-oriented language which succinctly expresses complex graph traversals and mutation operations. Gremlin is a http://en.wikipedia.org/wiki/Functional_programming[functional language] whereby traversal operators are chained together to form path-like expressions. For example, "from Hercules, traverse to his father and then his father's father and return the grandfather's name."
 
-Gremlin is a component of https://tinkerpop.apache.org[Apache TinkerPop]. It is developed independently from JanusGraph and is supported by most graph databases. By building applications on top of JanusGraph through the Gremlin query language, users avoid vendor-lock in because their application can be migrated to other graph databases supporting Gremlin.
+Gremlin is a component of http://tinkerpop.apache.org[Apache TinkerPop]. It is developed independently from JanusGraph and is supported by most graph databases. By building applications on top of JanusGraph through the Gremlin query language, users avoid vendor-lock in because their application can be migrated to other graph databases supporting Gremlin.
 
 This section is a brief overview of the Gremlin query language. For more information on Gremlin, refer to the following resources:
 
-* https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference[Complete Gremlin Manual]: Reference manual for all of the Gremlin steps.
-* https://tinkerpop.apache.org/docs/{tinkerpop_version}/tutorials/the-gremlin-console/[Gremlin Console Tutorial]: Learn how to use the Gremlin Console effectively to traverse and analyze a graph interactively.
-* https://github.com/krlawrence/graph#practical-gremlin-an-apache-tinkerpop-tutorial[Practical Gremlin Book]: A getting started guide for users of graph databases and the Gremlin query language.
-* https://tinkerpop.apache.org/docs/{tinkerpop_version}/recipes/[Gremlin Recipes]: A collection of best practices and common traversal patterns for Gremlin.
-* https://tinkerpop.apache.org/index.html#language-drivers[Gremlin Language Drivers]: Connect to a Gremlin Server with different programming languages, including Go, JavaScript, .NET/C#, PHP, Python, Ruby, Scala, and TypeScript.
+* http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference[Complete Gremlin Manual]: Reference manual for all of the Gremlin steps.
+* http://tinkerpop.apache.org/docs/{tinkerpop_version}/tutorials/the-gremlin-console/[Gremlin Console Tutorial]: Learn how to use the Gremlin Console effectively to traverse and analyze a graph interactively.
+* http://tinkerpop.apache.org/docs/{tinkerpop_version}/recipes/[Gremlin Recipes]: A collection of best practices and common traversal patterns for Gremlin.
+* http://tinkerpop.apache.org/index.html#language-drivers[Gremlin Language Drivers]: Connect to a Gremlin Server with different programming languages, including Go, JavaScript, .NET/C#, PHP, Python, Ruby, Scala, and TypeScript.
+* http://tinkerpop.apache.org/docs/{tinkerpop_version}/tutorials/gremlin-language-variants/[Gremlin Language Variants]: Learn how to embed Gremlin in a host programming language.
 * http://sql2gremlin.com[Gremlin for SQL developers]: Learn Gremlin using typical patterns found when querying data with SQL.
 
-In addition to these resources, <<connecting>> explains how Gremlin can be used in different programming languages to query a JanusGraph Server.
 
 === Introductory Traversals
 
@@ -421,7 +370,7 @@ Taken together, these steps form a path-like traversal query. Each step can be d
 
 [source, gremlin]
 gremlin> g
-==>graphtraversalsource[janusgraph[cql:127.0.0.1], standard]
+==>graphtraversalsource[janusgraph[cassandrathrift:127.0.0.1], standard]
 gremlin> g.V().has('name', 'hercules')
 ==>v[24]
 gremlin> g.V().has('name', 'hercules').out('father')
@@ -465,7 +414,7 @@ gremlin> g.V(hercules).out('battled').valueMap()
 ==>{name=hydra}
 ==>{name=cerberus}
 
-Each _step_ (denoted by a separating `.`) is a function that operates on the objects emitted from the previous step. There are numerous steps in the Gremlin language (see https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#graph-traversal-steps[Gremlin Steps]). By simply changing a step or order of the steps, different traversal semantics are enacted. The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. "co-battlers" or perhaps, "allies").
+Each _step_ (denoted by a separating `.`) is a function that operates on the objects emitted from the previous step. There are numerous steps in the Gremlin language (see http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#graph-traversal-steps[Gremlin Steps]). By simply changing a step or order of the steps, different traversal semantics are enacted. The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. "co-battlers" or perhaps, "allies").
 
 Given that _The Graph of the Gods_ only has one battler (Hercules), another battler (for the sake of example) is added to the graph with Gremlin showcasing how vertices and edges are added to the graph.
 
@@ -497,11 +446,11 @@ The example above has 4 chained functions: `out`, `in`, `except`, and `values` (
 When chaining together functions, the incoming type must match the outgoing type, where `U` matches anything. Thus, the "co-battled/ally" traversal above is correct.
 
 [NOTE]
-The Gremlin overview presented in this section focused on the Gremlin-Groovy language implementation used in the Gremlin Console. Refer to <<connecting>> for information about connecting to JanusGraph with other languages than Groovy and independent of the Gremlin Console.
+The Gremlin overview presented in this section focused on the Gremlin-Groovy language implementation used in the Gremlin Console. Additional http://tinkerpop.apache.org/index.html#language-drivers[language drivers] and http://tinkerpop.apache.org/docs/{tinkerpop_version}/tutorials/gremlin-language-variants/[language variants] of Gremlin are available.
 
 === Iterating the Traversal
 
-One convenient feature of the Gremlin Console is that it automatically iterates all results from a query executed from the `gremlin>` prompt. This works well within the https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] environment as it shows you the results as a String. As you transition towards writing a Gremlin application, it is important to understand how to iterate a traversal explicitly because your application's traversals will not iterate automatically. These are some of the common ways to iterate the https://tinkerpop.apache.org/javadocs/{tinkerpop_version}/full/org/apache/tinkerpop/gremlin/process/traversal/Traversal.html[`Traversal`]:
+One convenient feature of the Gremlin Console is that it automatically iterates all results from a query executed from the `gremlin>` prompt. This works well within the http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] environment as it shows you the results as a String. As you transition towards writing a Gremlin application, it is important to understand how to iterate a traversal explicitly because your application's traversals will not iterate automatically. These are some of the common ways to iterate the http://tinkerpop.apache.org/javadocs/{tinkerpop_version}/full/org/apache/tinkerpop/gremlin/process/traversal/Traversal.html[`Traversal`]:
 
 * `iterate()` - Zero results are expected or can be ignored.
 * `next()` - Get one result. Make sure to check `hasNext()` first.
@@ -528,9 +477,9 @@ List<Vertex> gods = g.V().hasLabel("god").toList(); // Find all the gods
 [[server]]
 == JanusGraph Server
 
-JanusGraph uses the https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-server[Gremlin Server] engine as the server component to process and answer client queries.  When packaged in JanusGraph, Gremlin Server is called JanusGraph Server.
+JanusGraph uses the http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-server[Gremlin Server] engine as the server component to process and answer client queries.  When packaged in JanusGraph, Gremlin Server is called JanusGraph Server.
 
-JanusGraph Server must be started manually in order to use it.  JanusGraph Server provides a way to remotely execute Gremlin traversals against one or more JanusGraph instances hosted within it. This section will describe how to use the WebSocket configuration, as well as describe how to configure JanusGraph Server to handle HTTP endpoint interactions. For information about how to connect to a JanusGraph Server from different languages refer to <<connecting>>.
+JanusGraph Server must be started manually in order to use it.  JanusGraph Server provides a way to remotely execute Gremlin scripts against one or more JanusGraph instances hosted within it. This section will describe how to use the WebSocket configuration, as well as describe how to configure JanusGraph Server to handle HTTP endpoint interactions.
 
 [[server-getting-started]]
 === Getting Started
@@ -558,9 +507,9 @@ Run gremlin.sh to connect.
 [[first-example-connecting-gremlin-server]]
 ===== Connecting to Gremlin Server
 
-After running `janusgraph.sh`, Gremlin Server will be ready to listen for WebSocket connections.  The easiest way to test the connection is with Gremlin Console.
+After running janusgraph.sh, Gremlin Server will be ready to listen for WebSocket connections.  The easiest way to test the connection is with Gremlin Console.
 
-Start https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-console[Gremlin Console] with `bin/gremlin.sh` and use the `:remote` and `:>` commands to issue Gremlin to Gremlin Server:
+Start http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-console[Gremlin Console] with `bin/gremlin.sh` and use the `:remote` and `:>` commands to issue Gremlin to Gremlin Server:
 
 [source, text]
 ----
@@ -581,75 +530,32 @@ gremlin> :> g.V().values('name')
 ==>stephen
 ----
 
-The `:remote` command tells the console to configure a remote connection to Gremlin Server using the `conf/remote.yaml` file to connect.  That file points to a Gremlin Server instance running on `localhost`.  The `:>` is the "submit" command which sends the Gremlin on that line to the currently active remote. By default remote conenctions are sessionless, meaning that each line sent in the console is interpreted as a single request. Multiple statements can be sent on a single line using a semicolon as the delimiter. Alternately, you can establish a console with a session by specifying https://tinkerpop.apache.org/docs/current/reference/#sessions[session] when creating the connection. A https://tinkerpop.apache.org/docs/current/reference/#console-sessions[console session] allows you to reuse variables across several lines of input.
-
-----
-gremlin> :remote connect tinkerpop.server conf/remote.yaml
-==>Configured localhost/127.0.0.1:8182
-gremlin> graph
-==>standardjanusgraph[cql:[127.0.0.1]]
-gremlin> g
-==>graphtraversalsource[standardjanusgraph[cql:[127.0.0.1]], standard]
-gremlin> g.V()
-gremlin> user = "Chris"
-==>Chris
-gremlin> graph.addVertex("name", user)
-No such property: user for class: Script21
-Type ':help' or ':h' for help.
-Display stack trace? [yN]
-gremlin> :remote connect tinkerpop.server conf/remote.yaml session
-==>Configured localhost/127.0.0.1:8182-[9acf239e-a3ed-4301-b33f-55c911e04052]
-gremlin> g.V()
-gremlin> user = "Chris"
-==>Chris
-gremlin> user
-==>Chris
-gremlin> graph.addVertex("name", user)
-==>v[4344]
-gremlin> g.V().values('name')
-==>Chris
-----
-
-=== Cleaning up after the Pre-Packaged Distribution
-
-If you want to start fresh and remove the database and logs you can use the clean command with `janusgraph.sh`. The server should be stopped before running the clean operation.
-[source, text]
-----
-$ cd /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/
-$ ./bin/janusgraph.sh stop
-Killing Gremlin-Server (pid 91505)...
-Killing Elasticsearch (pid 91402)...
-Killing Cassandra (pid 91219)...
-$ ./bin/janusgraph.sh clean
-Are you sure you want to delete all stored data and logs? [y/N] y
-Deleted data in /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/db
-Deleted logs in /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/log
-----
+The `:remote` command tells the console to configure a remote connection to Gremlin Server using the `conf/remote.yaml` file to connect.  That file points to a Gremlin Server instance running on `localhost`.  The `:>` is the "submit" command which sends the Gremlin on that line to the currently active remote.
 
 === JanusGraph Server as a WebSocket Endpoint
 
 The default configuration described in <<server-getting-started>> is already a WebSocket configuration.  If you want to alter the default configuration to work with your own Cassandra or HBase environment rather than use the quick start environment, follow these steps:
 
 .To Configure JanusGraph Server For WebSocket
-. Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the `./conf` directory for your environment.  For example, edit `./conf/janusgraph-hbase.properties` and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line:
+. Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/janusgraph-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line:
 +
 ```
 gremlin.graph=org.janusgraph.core.JanusGraphFactory
 ```
 
-. Once a local configuration is tested and you have a working properties file, copy the properties file from the `./conf` directory to the `./conf/gremlin-server` directory.
+. Once a local configuration is tested and you have a working properties file, copy the properties file from the ./conf directory to the ./conf/gremlin-server directory.
 +
 ```
 cp conf/janusgraph-hbase.properties conf/gremlin-server/socket-janusgraph-hbase-server.properties
 ```
 +
-. Copy `./conf/gremlin-server/gremlin-server.yaml` to a new file called `socket-gremlin-server.yaml`.  Do this in case you need to refer to the original version of the file
+. Copy ./conf/gremlin-server/gremlin-server.yaml to a new file called socket-gremlin-server.yaml.  Do this in case you need to refer to the original version of the file
 +
 ```
 cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/socket-gremlin-server.yaml
 ```
 +
-. Edit the `socket-gremlin-server.yaml` file and make the following updates:
+. Edit the socket-gremlin-server.yaml file and make the following updates:
 .. If you are planning to connect to JanusGraph Server from something other than localhost, update the IP address for host:
 +
 ```
@@ -668,7 +574,7 @@ graphs: {
 ```
 bin/gremlin-server.sh ./conf/gremlin-server/socket-gremlin-server.yaml
 ```
-IMPORTANT: Do not use `bin/janusgraph.sh`.  That starts the default configuration, which starts a separate Cassandra/Elasticsearch environment.
+IMPORTANT: Do not use bin/janusgraph.sh.  That starts the default configuration, which starts a separate Cassandra/Elasticsearch environment.
 +
 . The JanusGraph Server should now be running in WebSocket mode and can be tested by following the instructions in <<first-example-connecting-gremlin-server>>
 
@@ -679,25 +585,25 @@ IMPORTANT: Do not use `bin/janusgraph.sh`.  That starts the default configuratio
 The default configuration described in <<server-getting-started>> is a WebSocket configuration.  If you want to alter the default configuration in order to use JanusGraph Server as an HTTP endpoint for your JanusGraph database, follow these steps:
 
 .To Configure JanusGraph Server for HTTP
-. Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the `./conf` directory for your environment.  For example, edit `./conf/janusgraph-hbase.properties` and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line:
+. Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/janusgraph-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line:
 +
 ```
 gremlin.graph=org.janusgraph.core.JanusGraphFactory
 ```
 
-. Once a local configuration is tested and you have a working properties file, copy the properties file from the `./conf` directory to the `./conf/gremlin-server` directory.
+. Once a local configuration is tested and you have a working properties file, copy the properties file from the ./conf directory to the ./conf/gremlin-server directory.
 +
 ```
 cp conf/janusgraph-hbase.properties conf/gremlin-server/http-janusgraph-hbase-server.properties
 ```
 +
-. Copy `./conf/gremlin-server/gremlin-server.yaml` to a new file called `http-gremlin-server.yaml`.  Do this in case you need to refer to the original version of the file
+. Copy ./conf/gremlin-server/gremlin-server.yaml to a new file called http-gremlin-server.yaml.  Do this in case you need to refer to the original version of the file
 +
 ```
 cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/http-gremlin-server.yaml
 ```
 +
-. Edit the `http-gremlin-server.yaml` file and make the following updates:
+. Edit the http-gremlin-server.yaml file and make the following updates:
 .. If you are planning to connect to JanusGraph Server from something other than localhost, update the IP address for host:
 +
 ```
@@ -731,7 +637,7 @@ curl -XPOST -Hcontent-type:application/json -d '{"gremlin":"g.V().count()"}' htt
 
 === JanusGraph Server as Both a WebSocket and HTTP Endpoint
 
-As of JanusGraph 0.2.0, you can configure your `gremlin-server.yaml` to accept both WebSocket and HTTP connections over the same port. This can be achieved by changing the channelizer in any of the previous examples as follows.
+As of JanusGraph 0.2.0, you can configure your gremlin-server.yaml to accept both WebSocket and HTTP connections over the same port. This can be achieved by changing the channelizer in any of the previous examples as follows.
 
 ```
 channelizer: org.apache.tinkerpop.gremlin.server.channel.WsAndHttpChannelizer
@@ -744,7 +650,7 @@ channelizer: org.apache.tinkerpop.gremlin.server.channel.WsAndHttpChannelizer
 IMPORTANT: In the following example, credentialsDb should be different from the graph(s) you are using. It should be configured with the correct backend and a different keyspace, table, or storage directory as appropriate for the configured backend. This graph will be used for storing usernames and passwords.
 
 ===== HTTP Basic authentication
-To enable Basic authentication in JanusGraph Server include the following configuration in your `gremlin-server.yaml`.
+To enable Basic authentication in JanusGraph Server include the following configuration in your gremlin-server.yaml.
 
 ```
  authentication: {
@@ -775,7 +681,7 @@ should return a 200 and the result of 4 if authentication is configured correctl
 Authentication over WebSocket occurs through a Simple Authentication and Security Layer (https://en.wikipedia.org/wiki/Simple_Authentication_and_Security_Layer[SASL]) mechanism.
 
 
-To enable SASL authentication include the following configuration in the `gremlin-server.yaml`
+To enable SASL authentication include the following configuration in the gremlin-server.yaml
 
 ```
 authentication: {
@@ -801,7 +707,7 @@ password: password
 ==== Authentication over HTTP and WebSocket
 If you are using the combined channelizer for both HTTP and WebSocket you can use the SaslAndHMACAuthenticator to authorize through either WebSocket through SASL, HTTP through basic auth, and HTTP through hash-based messsage authentication code (https://en.wikipedia.org/wiki/Hash-based_message_authentication_code[HMAC]) Auth. HMAC is a token based authentication designed to be used over HTTP. You first acquire a token via the `/session` endpoint and then use that to authenticate. It is used to amortize the time spent encrypting the password using basic auth.
 
-The `gremlin-server.yaml` should include the following configurations
+The gremlin-server.yaml should include the following configurations
 
 ```
 authentication: {
@@ -841,11 +747,11 @@ curl -v http://localhost:8182/session -XPOST -d '{"gremlin": "g.V().count()"}' -
 ==== Using TinkerPop Gremlin Server with JanusGraph
 
 Since JanusGraph Server is a TinkerPop Gremlin Server packaged with configuration files for JanusGraph, a version compatible
-TinkerPop Gremlin Server can be downloaded separately and used with JanusGraph.  Get started by link:https://tinkerpop.apache.org/downloads.html[downloading] the appropriate version of Gremlin Server, which needs to <<versions.txt#version-compat,match a version>> supported by the JanusGraph version in use ({tinkerpop_version}).
+TinkerPop Gremlin Server can be downloaded separately and used with JanusGraph.  Get started by link:http://tinkerpop.apache.org/downloads.html[downloading] the appropriate version of Gremlin Server, which needs to <<versions.txt#version-compat,match a version>> supported by the JanusGraph version in use ({tinkerpop_version}).
 
 IMPORTANT: Any references to file paths in this section refer to paths under a TinkerPop distribution for Gremlin Server and not a JanusGraph distribution with the JanusGraph Server, unless specifically noted.
 
-Configuring a standalone Gremlin Server to work with JanusGraph is similar to configuring the packaged JanusGraph Server. You should be familiar with link:https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#_configuring_2[graph configuration].  Basically, the Gremlin Server yaml file points to graph-specific configuration files that are used to instantiate `JanusGraph` instances that it will then host.  In order to instantiate these `Graph` instances, Gremlin Server requires that the appropriate libraries and dependencies for the `JanusGraph` be available on its classpath.
+Configuring a standalone Gremlin Server to work with JanusGraph is similar to configuring the packaged JanusGraph Server. You should be familiar with link:http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#_configuring_2[graph configuration].  Basically, the Gremlin Server yaml file points to graph-specific configuration files that are used to instantiate `JanusGraph` instances that it will then host.  In order to instantiate these `Graph` instances, Gremlin Server requires that the appropriate libraries and dependencies for the `JanusGraph` be available on its classpath.
 
 For purposes of demonstration, these instructions will outline how to configure the BerkeleyDB backend for JanusGraph in Gremlin Server. As stated earlier, Gremlin Server needs JanusGraph dependencies on its classpath.  Invoke the following command replacing `$VERSION` with the version of JanusGraph to use:
 
@@ -856,7 +762,7 @@ bin/gremlin-server.sh -i org.janusgraph janusgraph-all $VERSION
 
 When this process completes, Gremlin Server should now have all the JanusGraph dependencies available to it and will thus be able to instantiate `JanusGraph` objects.
 
-IMPORTANT: The above command uses Groovy Grape and if it is not configured properly download errors may ensue.  Please refer to link:https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-applications[this section] of the TinkerPop documentation for more information around setting up `~/.groovy/grapeConfig.xml`.
+IMPORTANT: The above command uses Groovy Grape and if it is not configured properly download errors may ensue.  Please refer to link:http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-applications[this section] of the TinkerPop documentation for more information around setting up `~/.groovy/grapeConfig.xml`.
 
 Create a file called `GREMLIN_SERVER_HOME/conf/janusgraph.properties` with the following contents:
 
@@ -877,24 +783,21 @@ host: localhost
 port: 8182
 graphs: {
   graph: conf/janusgraph.properties}
+plugins:
+  - janusgraph.imports
 scriptEngines: {
   gremlin-groovy: {
-    plugins: { org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.server.jsr223.GremlinServerGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.tinkergraph.jsr223.TinkerGraphGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.jsr223.ImportGremlinPlugin: {classImports: [java.lang.Math], methodImports: [java.lang.Math#*]},
-               org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: {files: [scripts/empty-sample.groovy]}}}}
+    scripts: [scripts/janusgraph.groovy]}}
 serializers:
-  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0, config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
-  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0, config: { serializeResultToString: true }}
-  - { className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0, config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { serializeResultToString: true }}
 metrics: {
   slf4jReporter: {enabled: true, interval: 180000}}
 ----
 
 .There are several important parts to this configuration file as they relate to JanusGraph.
 . In the `graphs` map, there is a key called `graph` and its value is `conf/janusgraph.properties`.  This tells Gremlin Server to instantiate a `Graph` instance called "graph" and use the `conf/janusgraph.properties` file to configure it.  The "graph" key becomes the unique name for the `Graph` instance in Gremlin Server and it can be referenced as such in the scripts submitted to it.
-. In the `plugins` list, there is a reference to `JanusGraphGremlinPlugin`, which tells Gremlin Server to initialize the "JanusGraph Plugin".  The "JanusGraph Plugin" will auto-import JanusGraph specific classes for usage in scripts.
+. In the `plugins` list, there is a reference to `janusgraph.imports`, which tells Gremlin Server to initialize the "JanusGraph Plugin".  The "JanusGraph Plugin" will auto-import JanusGraph specific classes for usage in scripts.
 . Note the `scripts` key and the reference to `scripts/janusgraph.groovy`.  This Groovy file is an initialization script for Gremlin Server and that particular ScriptEngine.  Create `scripts/janusgraph.groovy` with the following contents:
 
 
@@ -928,8 +831,8 @@ $ bin/gremlin-server.sh conf/gremlin-server-janusgraph.yaml
 [INFO] GremlinExecutor - Initialized gremlin-groovy ScriptEngine with scripts/janusgraph.groovy
 [INFO] ServerGremlinExecutor - Initialized GremlinExecutor and configured ScriptEngines.
 [INFO] ServerGremlinExecutor - A GraphTraversalSource is now bound to [g] with graphtraversalsource[standardjanusgraph[berkeleyje:db/berkeley], standard]
-[INFO] AbstractChannelizer - Configured application/vnd.gremlin-v3.0+gryo with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0
-[INFO] AbstractChannelizer - Configured application/vnd.gremlin-v3.0+gryo-stringd with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0
+[INFO] AbstractChannelizer - Configured application/vnd.gremlin-v1.0+gryo with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0
+[INFO] AbstractChannelizer - Configured application/vnd.gremlin-v1.0+gryo-stringd with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0
 [INFO] GremlinServer$1 - Gremlin Server configured with worker thread pool of 1, gremlin pool of 8 and boss thread pool of 1.
 [INFO] GremlinServer$1 - Channel started at port 8182.
 ----
@@ -948,22 +851,18 @@ IMPORTANT: A difference you should understand is that when working with JanusGra
 [source,java]
 ----
 GryoMapper mapper = GryoMapper.build().addRegistry(JanusGraphIoRegistry.INSTANCE).create();
-Cluster cluster = Cluster.build().serializer(new GryoMessageSerializerV3d0(mapper)).create();
+Cluster cluster = Cluster.build().serializer(new GryoMessageSerializerV1d0(mapper)).create();
 Client client = cluster.connect();
 client.submit("g.V()").all().get();
 ----
 
-By adding the `JanusGraphIoRegistry` to the `org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0`, the driver will know how to properly deserialize custom data types returned by JanusGraph.
+By adding the `JanusGraphIoRegistry` to the `org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0`, the driver will know how to properly deserialize custom data types returned by JanusGraph.
 
 === Extending JanusGraph Server
 
 It is possible to extend Gremlin Server with other means of communication by implementing the interfaces that it provides and leverage this with JanusGraph.  See more details in the appropriate TinkerPop documentation.
 
-include::deploymentscenarios.adoc[]
-
 include::configuredgraphfactory.adoc[]
-
-include::multinodejanusgraphcluster.adoc[]
 
 [[indexes]]
 == Indexing for Better Performance
@@ -985,7 +884,7 @@ The first query asks for all vertices with the name `hercules`. The second asks 
 JanusGraph distinguishes between two types of graph indexes: *composite* and *mixed* indexes. Composite indexes are very fast and efficient but limited to equality lookups for a particular, previously-defined combination of property keys. Mixed indexes can be used for lookups on any combination of indexed keys and support multiple condition predicates in addition to equality depending on the backing index store.
 
 Both types of indexes are created through the JanusGraph management system and the index builder returned by `JanusGraphManagement.buildIndex(String, Class)` where the first argument defines the name of the index and the second argument specifies the type of element to be indexed (e.g. `Vertex.class`). The name of a graph index must be unique.
-Graph indexes built against newly defined property keys, i.e. property keys that are defined in the same management transaction as the index, are immediately available. The same applies to graph indexes that are constrained to a label that is created in the same management transaction as the index. Graph indexes built against property keys that are already in use without being constrained to a newly created label require the execution of a <<reindex, reindex procedure>> to ensure that the index contains all previously added elements. Until the reindex procedure has completed, the index will not be available. It is encouraged to define graph indexes in the same transaction as the initial schema.
+Graph indexes built against newly defined property keys, i.e. property keys that are defined in the same management transaction as the index, are immediately available. Graph indexes built against property keys that are already in use require the execution of a <<reindex, reindex procedure>> to ensure that the index contains all previously added elements. Until the reindex procedure has completed, the index will not be available. It is encouraged to define graph indexes in the same transaction as the initial schema.
 
 [NOTE]
 In the absence of an index, JanusGraph will default to a full graph scan in order to retrieve the desired list of vertices. While this produces the correct result set, the graph scan can be very inefficient and lead to poor overall system performance in a production environment. Enable the `force-index` configuration option in production deployments of JanusGraph to prohibit graph scans.
@@ -1004,8 +903,8 @@ mgmt.buildIndex('byNameComposite', Vertex.class).addKey(name).buildCompositeInde
 mgmt.buildIndex('byNameAndAgeComposite', Vertex.class).addKey(name).addKey(age).buildCompositeIndex()
 mgmt.commit()
 //Wait for the index to become available
-ManagementSystem.awaitGraphIndexStatus(graph, 'byNameComposite').call()
-ManagementSystem.awaitGraphIndexStatus(graph, 'byNameAndAgeComposite').call()
+mgmt.awaitGraphIndexStatus(graph, 'byNameComposite').call()
+mgmt.awaitGraphIndexStatus(graph, 'byNameAndAgeComposite').call()
 //Reindex the existing data
 mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("byNameComposite"), SchemaAction.REINDEX).get()
@@ -1050,7 +949,7 @@ name = mgmt.getPropertyKey('name')
 mgmt.buildIndex('byNameUnique', Vertex.class).addKey(name).unique().buildCompositeIndex()
 mgmt.commit()
 //Wait for the index to become available
-ManagementSystem.awaitGraphIndexStatus(graph, 'byNameUnique').call()
+mgmt.awaitGraphIndexStatus(graph, 'byNameUnique').call()
 //Reindex the existing data
 mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("byNameUnique"), SchemaAction.REINDEX).get()
@@ -1075,7 +974,7 @@ age = mgmt.getPropertyKey('age')
 mgmt.buildIndex('nameAndAge', Vertex.class).addKey(name).addKey(age).buildMixedIndex("search")
 mgmt.commit()
 //Wait for the index to become available
-ManagementSystem.awaitGraphIndexStatus(graph, 'nameAndAge').call()
+mgmt.awaitGraphIndexStatus(graph, 'nameAndAge').call()
 //Reindex the existing data
 mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("nameAndAge"), SchemaAction.REINDEX).get()
@@ -1096,9 +995,6 @@ While the index definition example looks similar to the composite index above, i
 g.V().has('name', textContains('hercules')).has('age', inside(20, 50))
 g.V().has('name', textContains('hercules'))
 g.V().has('age', lt(50))
-g.V().has('age', outside(20, 50))
-g.V().has('age', lt(50).or(gte(60)))
-g.V().or(__.has('name', textContains('hercules')), __.has('age', inside(20, 50)))
 
 Mixed indexes support full-text search, range search, geo search and others. Refer to <<search-predicates>> for a list of predicates supported by a particular indexing backend.
 
@@ -1118,7 +1014,7 @@ mgmt.addIndexKey(nameAndAge, location)
 mgmt.commit()
 //Previously created property keys already have the status ENABLED, but
 //our newly created property key "location" needs to REGISTER so we wait for both statuses
-ManagementSystem.awaitGraphIndexStatus(graph, 'nameAndAge').status(SchemaStatus.REGISTERED, SchemaStatus.ENABLED).call()
+mgmt.awaitGraphIndexStatus(graph, 'nameAndAge').status(REGISTERED, ENABLED).call()
 //Reindex the existing data
 mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("nameAndAge"), SchemaAction.REINDEX).get()
@@ -1160,7 +1056,7 @@ god = mgmt.getVertexLabel('god')
 mgmt.buildIndex('byNameAndLabel', Vertex.class).addKey(name).indexOnly(god).buildCompositeIndex()
 mgmt.commit()
 //Wait for the index to become available
-ManagementSystem.awaitGraphIndexStatus(graph, 'byNameAndLabel').call()
+mgmt.awaitGraphIndexStatus(graph, 'byNameAndLabel').call()
 //Reindex the existing data
 mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("byNameAndLabel"), SchemaAction.REINDEX).get()
@@ -1187,7 +1083,7 @@ Suppose that Hercules battled hundreds of monsters in addition to the three capt
 h = g.V().has('name', 'hercules').next()
 g.V(h).outE('battled').has('time', inside(10, 20)).inV()
 
-Building a vertex-centric index by time speeds up such traversal queries. Note, this initial index example already exists in the _Graph of the Gods_ as an index named `edges`. As a result, running the steps below will result in a uniqueness constraint error.
+Building a vertex-centric index by time speeds up such traversal queries.
 
 [source, gremlin]
 graph.tx().rollback()  //Never create new indexes while a transaction is active
@@ -1197,7 +1093,7 @@ battled = mgmt.getEdgeLabel('battled')
 mgmt.buildEdgeIndex(battled, 'battlesByTime', Direction.BOTH, Order.decr, time)
 mgmt.commit()
 //Wait for the index to become available
-ManagementSystem.awaitRelationIndexStatus(graph, 'battlesByTime').call()
+mgmt.awaitGraphIndexStatus(graph, 'battlesByTime').call()
 //Reindex the existing data
 mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("battlesByTime"), SchemaAction.REINDEX).get()
@@ -1216,7 +1112,7 @@ battled = mgmt.getEdgeLabel('battled')
 mgmt.buildEdgeIndex(battled, 'battlesByRatingAndTime', Direction.OUT, Order.decr, rating, time)
 mgmt.commit()
 //Wait for the index to become available
-ManagementSystem.awaitRelationIndexStatus(graph, 'battlesByRatingAndTime', 'battled').call()
+mgmt.awaitRelationIndexStatus(graph, 'battlesByRatingAndTime', 'battled').call()
 //Reindex the existing data
 mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getRelationIndex(battled, 'battlesByRatingAndTime'), SchemaAction.REINDEX).get()
@@ -1237,7 +1133,7 @@ Hence, the `battlesByRatingAndTime` index can speed up the first two but not the
 Multiple vertex-centric indexes can be built for the same edge label in order to support different constraint traversals. JanusGraph's query optimizer attempts to pick the most efficient index for any given traversal. Vertex-centric indexes only support equality and range/interval constraints.
 
 [NOTE]
-The property keys used in a vertex-centric index must have an explicitly defined data type (i.e. _not_ `Object.class`) which supports a native sort order. This means not only that they must implement `Comparable` but that their serializer must impement `OrderPreservingSerializer`. The types that are currently supported are `Boolean`, `UUID`, `Byte`, `Float`, `Long`, `String`, `Integer`, `Date`, `Double`, `Character`, and `Short`
+The property keys used in a vertex-centric index must have an explicitly defined data type (i.e. _not_ `Object.class`) which supports a native sort order.
 
 If the vertex-centric index is built against an edge label that is defined in the same management transaction, the index will be immediately available for querying. If the edge label has already been in use, building a vertex-centric index against it requires the execution of a <<reindex, reindex procedure>> to ensure that the index contains all previously added edges. Until the reindex procedure has completed, the index will not be available.
 
@@ -1316,7 +1212,7 @@ try {
     user.property("name", name)
     graph.tx().commit()
 } catch (Exception e) {
-    //Recover, retry, or return error message
+    //Recover, retry, 	or return error message
     println(e.getMessage())
 }
 
@@ -1336,7 +1232,7 @@ Permanent exceptions that can fail a transaction include:
 [[multi-thread-tx]]
 === Multi-Threaded Transactions
 
-JanusGraph supports multi-threaded transactions through TinkerPop's https://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#_threaded_transactions[threaded transactions]. Hence, to speed up transaction processing and utilize multi-core architectures multiple threads can run concurrently in a single transaction.
+JanusGraph supports multi-threaded transactions through TinkerPop's http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#_threaded_transactions[threaded transactions]. Hence, to speed up transaction processing and utilize multi-core architectures multiple threads can run concurrently in a single transaction.
 
 With TinkerPop's default transaction handling, each thread automatically opens its own transaction against the graph database. To open a thread-independent transaction, use the `createThreadedTx()` method.
 
@@ -1358,7 +1254,7 @@ JanusGraph relies on optimized concurrent data structures to support hundreds of
 
 === Concurrent Algorithms
 
-Thread independent transactions started through `createThreadedTx()` are particularly useful when implementing concurrent graph algorithms. Most traversal or message-passing (ego-centric) like graph algorithms are https://en.wikipedia.org/wiki/Embarrassingly_parallel[embarrassingly parallel] which means they can be parallelized and executed through multiple threads with little effort. Each of these threads can operate on a single `Graph` object returned by `createThreadedTx()` without blocking each other.
+Thread independent transactions started through `createThreadedTx()` are particularly useful when implementing concurrent graph algorithms. Most traversal or message-passing (ego-centric) like graph algorithms are http://en.wikipedia.org/wiki/Embarrassingly_parallel[embarrassingly parallel] which means they can be parallelized and executed through multiple threads with little effort. Each of these threads can operate on a single `Graph` object returned by `createThreadedTx()` without blocking each other.
 
 === Nested Transactions
 
@@ -1543,7 +1439,7 @@ totalHumansAdded = new AtomicInteger(0);
 totalGodsAdded = new AtomicInteger(0);
 logProcessor.addLogProcessor("addedPerson").
         setProcessorIdentifier("addedPersonCounter").
-        setStartTimeNow().
+        setStartTime(System.currentTimeMillis(), TimeUnit.MILLISECONDS).
         addProcessor(new ChangeProcessor() {
             @Override
             public void process(JanusGraphTransaction tx, TransactionId txId, ChangeState changeState) {
@@ -1577,7 +1473,7 @@ One cannot add or remove change processor from a running log processor. In other
 [source, gremlin]
 logProcessor.addLogProcessor("battle").
         setProcessorIdentifier("battleTimer").
-        setStartTimeNow().
+        setStartTime(System.currentTimeMillis(), TimeUnit.MILLISECONDS).
         addProcessor(new ChangeProcessor() {
             @Override
             public void process(JanusGraphTransaction tx, TransactionId txId, ChangeState changeState) {
@@ -1658,7 +1554,7 @@ When launching JanusGraph with embedded Cassandra, the following warnings may be
 
 `958 [MutationStage:25] WARN  org.apache.cassandra.db.Memtable  - MemoryMeter uninitialized (jamm not specified as java agent); assuming liveRatio of 10.0.  Usually this means cassandra-env.sh disabled jamm because you are using a buggy JRE; upgrade to the Sun JRE instead`
 
-Cassandra uses a Java agent called `MemoryMeter` which allows it to measure the actual memory use of an object, including JVM overhead.  To use https://github.com/jbellis/jamm[JAMM] (Java Agent for Memory Measurements), the path to the JAMM jar must be specific in the Java javaagent parameter when launching the JVM (e.g. `-javaagent:path/to/jamm.jar`) through either `janusgraph.sh`, `gremlin.sh`, or Gremlin Server:
+Cassandra uses a Java agent called `MemoryMeter` which allows it to measure the actual memory use of an object, including JVM overhead.  To use https://github.com/jbellis/jamm[JAMM] (Java Agent for Memory Measurements), the path to the JAMM jar must be specific in the Java javaagent parameter when launching the JVM (e.g. `-javaagent:path/to/jamm.jar`) through either janusgraph.sh, gremlin.sh, or Gremlin Server:
 
 [source, bash]
 export JANUSGRAPH_JAVA_OPTS=-javaagent:$JANUSGRAPH_HOME/lib/jamm-$MAVEN{jamm.version}.jar
@@ -1670,26 +1566,6 @@ By default, JanusGraph uses the Astyanax library to connect to Cassandra cluster
 === Elasticsearch OutOfMemoryException
 
 When numerous clients are connecting to Elasticsearch, it is likely that an `OutOfMemoryException` occurs. This is not due to a memory issue, but to the OS not allowing more threads to be spawned by the user (the user running Elasticsearch). To circumvent this issue, increase the number of allowed processes to the user running Elasticsearch. For example, increase the `ulimit -u` from the default 1024 to 10024.
-
-=== Dropping a Database
-
-To drop a database using the Gremlin Console you can call `JanusGraphFactory.drop(graph)`. The graph you want to drop needs to be defined prior to running the drop method.
-
-With ConfiguredGraphFactory
-[source, gremlin]
-----
-graph = ConfiguredGraphFactory.open('example')
-ConfiguredGraphFactory.drop('example');
-----
-
-With JanusGraphFactory
-[source, gremlin]
-----
-graph = JanusGraphFactory.open('path/to/configuration.properties')
-JanusGraphFactory.drop(graph);
-----
-
-Note that on JanusGraph versions prior to 0.3.0 if multiple Gremlin Server instances are connecting to the graph that has been dropped it is reccomended to close the graph on all active nodes by running either `JanusGraphFactory.close(graph)` or `ConfiguredGraphFactory.close("example")` depending on which graph manager is in use. Closing and reopening the graph on all active nodes will prevent cached(stale) references to the graph that has been dropped. ConfiguredGraphFactory graphs that are dropped may need to have their configurations recreated using the <<configuredgraphfactory.adoc#graph-configurations, graph configuration singleton>> or <<configuredgraphfactory.adoc#template-configuration, template configuration>>.
 
 [[limitations]]
 == Technical Limitations

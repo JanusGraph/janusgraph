@@ -18,33 +18,24 @@ JanusGraph runs continuous integration via Travis; see the [dashboard](https://t
 Travis sends emails on test failures and status transitions (to/from failure) to
 [janusgraph-ci@googlegroups.com](https://groups.google.com/forum/#!forum/janusgraph-ci) mailing list.
 
-### JUnit Test Tags
+### JUnit Test Categories
 
-All of JanusGraph's tests are written for JUnit.  JanusGraph's JUnit tests are annotated with the following [JUnit Tags](https://junit.org/junit5/docs/current/user-guide/#writing-tests-tagging-and-filtering):
+All of JanusGraph's tests are written for JUnit.  JanusGraph's JUnit tests are annotated with the following [JUnit Categories](https://github.com/junit-team/junit/wiki/Categories):
 
 
 | Category Name | Maven Property | Default | Comment |
 | ------------- | ------------------- |:------------:| ------- |
-| MEMORY_TESTS | test.skip.mem | true (disabled) | Tests intended to exert memory pressure |
-| PERFORMANCE_TESTS | test.skip.perf | true (disabled) | Tests written as simple speed tests using JUnitBenchmarks|
-| ORDERED_KEY_STORE_TESTS | test.skip.ordered | false (enabled) | Tests written for a storage backend that stores data in key order |
-| UNORDERED_KEY_STORE_TESTS | test.skip.unordered | false (enabled) | Tests written for a storage backend that doesn't store data in key order |
-| (No&nbsp;tag) | test.skip.default | false (enabled) | Tests without any Tag annotations |
+| MemoryTests | test.skip.mem | true (disabled) | Tests intended to exert memory pressure |
+| PerformanceTests | test.skip.perf | true (disabled) | Tests written as simple speed tests using JUnitBenchmarks|
+| OrderedKeyStoreTests | test.skip.ordered | false (enabled) | Tests written for a storage backend that stores data in key order |
+| UnorderedKeyStoreTests | test.skip.unordered | false (enabled) | Tests written for a storage backend that doesn't store data in key order |
+| (No&nbsp;category) | test.skip.default | false (enabled) | Tests without any Category annotations |
 
-**Tag Name** above is a Java interface defined in the package [org.janusgraph.testcategory](janusgraph-test/src/main/org/janusgraph/testcategory).  These interfaces appear as arguments to the JUnit `@Tag(...)` annotation, e.g. `@Tag(TestCategory.MEMORY_TESTS)`.
+**Category Name** above is a Java interface defined in the package [org.janusgraph.testcategory](janusgraph-test/src/main/org/janusgraph/testcategory).  These interfaces appear as arguments to the JUnit `@Category(...)` annotation, e.g. `@Category({MemoryTests.class})`.
 
-**Maven Property** above is a boolean-valued pom.xml property that skips the associated test tag when true and executes the associated test tag when false.  The default values defined in pom.xml can be overridden on the command-line in the ordinary Maven way, e.g. `mvn -Dtest.skip.mem=false test`.
+**Maven Property** above is a boolean-valued pom.xml property that skips the associated test category when true and executes the associated test category when false.  The default values defined in pom.xml can be overridden on the command-line in the ordinary Maven way, e.g. `mvn -Dtest.skip.mem=false test`.
 
 *Implementation Note.*  The Maven property naming pattern "test.skip.x=boolean" is needlessly verbose, a cardinal sin for command line options.  A more concise alternative would be "test.x" with the boolean sense negated.  However, this complicates the pom.xml configuration for the Surefire plugin since it precludes direct use of the Surefire plugin's `<skip>` configuration tag, as in `<skip>${test.skip.perf}</skip>`.  There doesn't seem to be a straightforward way to negate a boolean or otherwise make this easy, at least without resorting to profiles or a custom plugin, though I might be missing something.  Also, the mold is arguably already set by Surefire's "maven.test.skip" property, though that has slightly different interpretation semantics than the properties above.
-
-### Marking tests as flaky
-
-If a test should be marked as flaky add following annotation to the test and open an issue.
-
-```java
-@FlakyTest
-public void testFlakyFailsSometimes(){}
-```
 
 ### Running a Single Test via Maven
 
@@ -54,12 +45,12 @@ The standard maven-surefire-plugin option applies for most tests:
 mvn test -Dtest=full.or.partial.classname#methodname
 ```
 
-However, MEMORY_TESTS and PERFORMANCE_TESTS are disabled by default regardless of whatever `-Dtest=...` option might be specified.  When running a single MemoryTest or PerformanceTest, specify `-Dtest.mem=true` or `-Dtest.perf=true` as appropriate for the test in question.
+However, MemoryTests and PerformanceTests are disabled by default regardless of whatever `-Dtest=...` option might be specified.  When running a single MemoryTest or PerformanceTest, specify `-Dtest.mem=true` or `-Dtest.perf=true` as appropriate for the test in question.
 
 Here's a concrete example.
 
 ```bash
-# Executes no tests because the MEMORY_TESTS category is disabled by default
+# Executes no tests because the MemoryTests category is disabled by default
 mvn test -Dtest=BerkeleyJEGraphPerformanceMemoryTest
 # Executes the specified test
 mvn test -Dtest=BerkeleyJEGraphPerformanceMemoryTest -Dtest.skip.mem=false
@@ -85,28 +76,26 @@ Finally the `solr.test.version` property can be used to test against arbitrary S
 mvn clean install -pl janusgraph-solr -Pdocker -Dsolr.test.version=5.5.4
 ```
 
-### Running Tests an Elasticsearch
+### Running Tests with an External Elasticsearch
 
-**Note** Running Elasticsearch tests requires docker.
-
-Elasticsearch tests run against an external Elasticsearch instance. The default test version will be the same as the Elasticsearch client version.
+Elasticsearch tests can be run against an external Elasticsearch instance. For convenience the `es-docker` Maven profile is provided to manage an Elasticsearch Docker container through the Maven Failsafe Plugin. The default test version will be the same as the Elasticsearch client version.
 
 ```bash
-mvn clean install -pl janusgraph-es
+mvn clean install -pl janusgraph-es -Pes-docker
 ```
 
 Additional Maven profiles are defined for testing against default versions of other supported major Elasticsearch releases.
 
 ```bash
-mvn clean install -pl janusgraph-es -Pelasticsearch5
+mvn clean install -pl janusgraph-es -Pes-docker,elasticsearch5
 ```
 
-Finally the `elasticsearch.docker.version` property can be used to test against arbitrary Elasticsearch versions. This is more complicated however because of differences across major versions in required server settings and Docker image names. The examples below illustrate the differences based on the Elasticsearch major version.
+Finally the `elasticsearch.docker.test.version` property can be used to test against arbitrary Elasticsearch versions. This is more complicated however because of differences across major versions in required server settings, Docker image names and zipfile artifact availability. The examples below illustrate the differences based on the Elasticsearch major version.
 
 ```bash
-mvn clean install -pl janusgraph-es -Delasticsearch.docker.version=5.3.2
-mvn clean install -pl janusgraph-es -Delasticsearch.docker.image=elasticsearch
-mvn clean install -pl janusgraph-es -Delasticsearch.docker.version=1.5.1 -Delasticsearch.docker.image=elasticsearch
+mvn clean install -pl janusgraph-es -Pes-docker -Delasticsearch.docker.test.version=5.3.2
+mvn clean install -pl janusgraph-es -Pes-docker -Delasticsearch.test.version=2.3.3 -Delasticsearch.test.groovy.inline="script.engine.groovy.inline.update: true" -Des.docker.image=elasticsearch
+mvn clean install -pl janusgraph-es -Pes-docker -Delasticsearch.docker.test.version=1.5.1 -Delasticsearch.test.version=2.4.4 -Delasticsearch.test.groovy.inline="script.disable_dynamic: false" -Des.docker.image=elasticsearch
 ```
 
 ### Running Tests with an External Cassandra
@@ -217,7 +206,7 @@ mvn clean install -pl :janusgraph-hadoop-2 -DskipHBase -DskipCassandra -DskipCas
 
 ### Running Tests with ScyllaDB
 
-Thrift and CQL tests can be run against an externally-managed [ScyllaDB](https://www.scylladb.com/) instance. For convenience the `scylladb-test` Maven profile is provided to manage a ScyllaDB Docker container through the Maven Failsafe Plugin. Note this only runs tests with the `Murmur3Partitioner` partitioner and also skips SSL tests.
+Thrift and CQL tests can be run against an externally-managed [ScyllaDB](http://www.scylladb.com/) instance. For convenience the `scylladb-test` Maven profile is provided to manage a ScyllaDB Docker container through the Maven Failsafe Plugin. Note this only runs tests with the `Murmur3Partitioner` partitioner and also skips SSL tests.
 
 ```bash
 mvn clean install -pl janusgraph-cql -Pscylladb-test

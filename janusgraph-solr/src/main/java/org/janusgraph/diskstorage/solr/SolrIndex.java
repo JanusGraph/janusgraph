@@ -26,7 +26,6 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -46,15 +45,7 @@ import java.util.stream.StreamSupport;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpEntityEnclosingRequest;
-import org.apache.http.HttpException;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.client.HttpClient;
-import org.apache.http.entity.BufferedHttpEntity;
-import org.apache.http.impl.auth.KerberosScheme;
-import org.apache.http.protocol.HttpContext;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -64,10 +55,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
-import org.apache.solr.client.solrj.impl.PreemptiveAuth;
-import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -169,13 +157,10 @@ public class SolrIndex implements IndexProvider {
             ConfigOption.Type.GLOBAL_OFFLINE, "ttl");
 
     /** SolrCloud Configuration */
-    /*
-     * TODO Rename ZOOKEEPER_URL and "zookeeper-url" to ZOOKEEPER_URLS and
-     * "zookeeper-urls" in future major releases.
-     */
-    public static final ConfigOption<String[]> ZOOKEEPER_URL = new ConfigOption<String[]>(SOLR_NS,"zookeeper-url",
+
+    public static final ConfigOption<String> ZOOKEEPER_URL = new ConfigOption<>(SOLR_NS,"zookeeper-url",
             "URL of the Zookeeper instance coordinating the SolrCloud cluster",
-            ConfigOption.Type.MASKABLE, new String[] { "localhost:2181" });
+            ConfigOption.Type.MASKABLE, "localhost:2181");
 
     public static final ConfigOption<Integer> NUM_SHARDS = new ConfigOption<>(SOLR_NS,"num-shards",
             "Number of shards for a collection. This applies when creating a new collection which is only supported under the SolrCloud operation mode.",
@@ -221,12 +206,6 @@ public class SolrIndex implements IndexProvider {
             ConfigOption.Type.LOCAL, false);
 
 
-    /** Security Configuration */
-
-    public static final ConfigOption<Boolean> KERBEROS_ENABLED = new ConfigOption<Boolean>(SOLR_NS,"kerberos-enabled",
-            "Whether SOLR instance is Kerberized or not.",
-            ConfigOption.Type.MASKABLE, false);
-
     private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder()
         .supportsDocumentTTL()
         .setDefaultStringMapping(Mapping.TEXT)
@@ -248,102 +227,46 @@ public class SolrIndex implements IndexProvider {
     private final String ttlField;
     private final int batchSize;
     private final boolean waitSearcher;
-    private final boolean kerberosEnabled;
 
     public SolrIndex(final Configuration config) throws BackendException {
         Preconditions.checkArgument(config!=null);
         configuration = config;
+
         mode = Mode.parse(config.get(SOLR_MODE));
-        kerberosEnabled = config.get(KERBEROS_ENABLED);
         dynFields = config.get(DYNAMIC_FIELDS);
         keyFieldIds = parseKeyFieldsForCollections(config);
         batchSize = config.get(INDEX_MAX_RESULT_SET_SIZE);
         ttlField = config.get(TTL_FIELD);
         waitSearcher = config.get(WAIT_SEARCHER);
 
-        if (kerberosEnabled) {
-            logger.debug("Kerberos is enabled. Configuring SOLR for Kerberos.");
-            configureSolrClientsForKerberos();
-        } else {
-            logger.debug("Kerberos is NOT enabled.");
-            logger.debug("KERBEROS_ENABLED name is " + KERBEROS_ENABLED.getName() + " and it is" + (KERBEROS_ENABLED.isOption() ? " " : " not") + " an option.");
-            logger.debug("KERBEROS_ENABLED type is " + KERBEROS_ENABLED.getType().name());
-        }
-        final ModifiableSolrParams clientParams = new ModifiableSolrParams();
         switch (mode) {
             case CLOUD:
-                final String[] zookeeperUrl = config.get(SolrIndex.ZOOKEEPER_URL);
-                // Process possible zookeeper chroot. e.g. localhost:2181/solr
-                // chroot has to be the same assuming one Zookeeper ensemble.
-                // Parse from the last string. If found, take it as the chroot.
-                String chroot = null;
-                for (int i = zookeeperUrl.length - 1; i >= 0; i--) {
-                    int chrootIndex = zookeeperUrl[i].indexOf("/");
-                    if (chrootIndex != -1) {
-                        String hostAndPort = zookeeperUrl[i].substring(0, chrootIndex);
-                        if (chroot == null) {
-                            chroot = zookeeperUrl[i].substring(chrootIndex);
-                        }
-                        zookeeperUrl[i] = hostAndPort;
-                    }
-                }
-                final CloudSolrClient.Builder builder = new CloudSolrClient.Builder()
-                    .withLBHttpSolrClientBuilder(
-                        new LBHttpSolrClient.Builder()
-                            .withHttpSolrClientBuilder(new HttpSolrClient.Builder().withInvariantParams(clientParams))
-                            .withBaseSolrUrls(config.get(HTTP_URLS))
-                         )
-                    .withZkHost(Arrays.asList(zookeeperUrl))
-                    .sendUpdatesOnlyToShardLeaders();
-                if (chroot != null) {
-                    builder.withZkChroot(chroot);
-                }
-                final CloudSolrClient cloudServer = builder.build();
+                final String zookeeperUrl = config.get(SolrIndex.ZOOKEEPER_URL);
+                final CloudSolrClient cloudServer = new CloudSolrClient.Builder()
+                    .withZkHost(zookeeperUrl)
+                    .sendUpdatesOnlyToShardLeaders()
+                    .build();
                 cloudServer.connect();
                 solrClient = cloudServer;
-
                 break;
             case HTTP:
-                clientParams.add(HttpClientUtil.PROP_ALLOW_COMPRESSION, config.get(HTTP_ALLOW_COMPRESSION).toString());
-                clientParams.add(HttpClientUtil.PROP_CONNECTION_TIMEOUT, config.get(HTTP_CONNECTION_TIMEOUT).toString());
-                clientParams.add(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, config.get(HTTP_MAX_CONNECTIONS_PER_HOST).toString());
-                clientParams.add(HttpClientUtil.PROP_MAX_CONNECTIONS, config.get(HTTP_GLOBAL_MAX_CONNECTIONS).toString());
-                final HttpClient client = HttpClientUtil.createClient(clientParams);
+                final HttpClient clientParams = HttpClientUtil.createClient(new ModifiableSolrParams() {{
+                    add(HttpClientUtil.PROP_ALLOW_COMPRESSION, config.get(HTTP_ALLOW_COMPRESSION).toString());
+                    add(HttpClientUtil.PROP_CONNECTION_TIMEOUT, config.get(HTTP_CONNECTION_TIMEOUT).toString());
+                    add(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST,
+                            config.get(HTTP_MAX_CONNECTIONS_PER_HOST).toString());
+                    add(HttpClientUtil.PROP_MAX_CONNECTIONS, config.get(HTTP_GLOBAL_MAX_CONNECTIONS).toString());
+                }});
+
                 solrClient = new LBHttpSolrClient.Builder()
-                    .withHttpClient(client)
+                    .withHttpClient(clientParams)
                     .withBaseSolrUrls(config.get(HTTP_URLS))
                     .build();
+
 
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported Solr operation mode: " + mode);
-        }
-    }
-
-    private void configureSolrClientsForKerberos() throws PermanentBackendException {
-        String kerberosConfig = System.getProperty("java.security.auth.login.config");
-        if(kerberosConfig == null) {
-            throw new PermanentBackendException("Unable to configure kerberos for solr client. System property 'java.security.auth.login.config' is not set.");
-        }
-        logger.debug("Using kerberos configuration file located at '{}'.", kerberosConfig);
-        try(Krb5HttpClientBuilder krbBuild = new Krb5HttpClientBuilder()) {
-
-            SolrHttpClientBuilder kb = krbBuild.getBuilder();
-            HttpClientUtil.setHttpClientBuilder(kb);
-            HttpRequestInterceptor bufferedEntityInterceptor = new HttpRequestInterceptor() {
-                @Override
-                public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
-                    if(request instanceof HttpEntityEnclosingRequest) {
-                        HttpEntityEnclosingRequest enclosingRequest = ((HttpEntityEnclosingRequest) request);
-                        HttpEntity requestEntity = enclosingRequest.getEntity();
-                        enclosingRequest.setEntity(new BufferedHttpEntity(requestEntity));
-                    }
-                }
-            };
-            HttpClientUtil.addRequestInterceptor(bufferedEntityInterceptor);
-
-            HttpRequestInterceptor preemptiveAuth = new PreemptiveAuth(new KerberosScheme());
-            HttpClientUtil.addRequestInterceptor(preemptiveAuth);
         }
     }
 
@@ -761,11 +684,12 @@ public class SolrIndex implements IndexProvider {
             } else if (value instanceof String) {
                 final Mapping map = getStringMapping(information.get(key));
                 assert map==Mapping.TEXT || map==Mapping.STRING;
-
-                if (map==Mapping.TEXT && !(Text.HAS_CONTAINS.contains(predicate) || predicate instanceof Cmp))
-                    throw new IllegalArgumentException("Text mapped string values only support CONTAINS and Compare queries and not: " + predicate);
+                if (map==Mapping.TEXT && !Text.HAS_CONTAINS.contains(predicate))
+                    throw new IllegalArgumentException("Text mapped string values only support CONTAINS queries and not: "
+                            + predicate);
                 if (map==Mapping.STRING && Text.HAS_CONTAINS.contains(predicate))
-                    throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + predicate);
+                    throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: "
+                            + predicate);
 
                 //Special case
                 if (predicate == Text.CONTAINS) {
@@ -787,14 +711,6 @@ public class SolrIndex implements IndexProvider {
                     return ("-" + key + ":\"" + escapeValue(value) + "\"");
                 } else if (predicate == Text.FUZZY || predicate == Text.CONTAINS_FUZZY) {
                     return (key + ":"+escapeValue(value)+"~");
-                } else if (predicate == Cmp.LESS_THAN) {
-                    return (key + ":[* TO \"" + escapeValue(value) + "\"}");
-                } else if (predicate == Cmp.LESS_THAN_EQUAL) {
-                     return (key + ":[* TO \"" + escapeValue(value) + "\"]");
-                } else if (predicate == Cmp.GREATER_THAN) {
-                    return (key + ":{\"" + escapeValue(value) + "\" TO *]");
-                } else if (predicate == Cmp.GREATER_THAN_EQUAL) {
-                     return (key + ":[\"" + escapeValue(value) + "\" TO *]");
                 } else {
                     throw new IllegalArgumentException("Relation is not supported for string value: " + predicate);
                 }
@@ -1032,7 +948,8 @@ public class SolrIndex implements IndexProvider {
                     return predicate == Text.CONTAINS || predicate == Text.CONTAINS_PREFIX
                             || predicate == Text.CONTAINS_REGEX || predicate == Text.CONTAINS_FUZZY;
                 case STRING:
-                    return predicate instanceof Cmp || predicate==Text.REGEX || predicate==Text.PREFIX  || predicate == Text.FUZZY;
+                    return predicate == Cmp.EQUAL || predicate==Cmp.NOT_EQUAL || predicate==Text.REGEX
+                            || predicate==Text.PREFIX  || predicate == Text.FUZZY;
 //                case TEXTSTRING:
 //                    return (janusgraphPredicate instanceof Text) || janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL;
             }
@@ -1063,9 +980,7 @@ public class SolrIndex implements IndexProvider {
 
     @Override
     public String mapKey2Field(String key, KeyInformation keyInfo) {
-        IndexProvider.checkKeyValidity(key);
-        key = key.replace(' ', REPLACEMENT_CHAR);
-
+        Preconditions.checkArgument(!StringUtils.containsAny(key, new char[]{' '}),"Invalid key name provided: %s",key);
         if (!dynFields) return key;
         if (ParameterType.MAPPED_NAME.hasParameter(keyInfo.getParameters())) return key;
         String postfix;
@@ -1204,7 +1119,7 @@ public class SolrIndex implements IndexProvider {
                 Preconditions.checkNotNull(slices, "Could not find collection:" + collection);
 
                // change paths for Replica.State per Solr refactoring
-               // remove SYNC state per: https://tinyurl.com/pag6rwt
+               // remove SYNC state per: http://tinyurl.com/pag6rwt
                for (final Map.Entry<String, Slice> entry : slices.entrySet()) {
                     final Map<String, Replica> shards = entry.getValue().getReplicasMap();
                     for (final Map.Entry<String, Replica> shard : shards.entrySet()) {

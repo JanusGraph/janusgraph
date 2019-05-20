@@ -1,30 +1,66 @@
-<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph-hbase-parent</artifactId>
-        <version>0.3.2-SNAPSHOT</version>
+        <version>0.3.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-hbase-core</artifactId>
     <name>JanusGraph-HBase: Version-independent Core</name>
-    <url>https://janusgraph.org</url>
+    <url>http://janusgraph.org</url>
     
     <properties>
         <hadoop.profile>2.0</hadoop.profile>
+        <jruby.version>1.6.8</jruby.version>
         <top.level.basedir>${basedir}/../..</top.level.basedir>
     </properties>
     
     <dependencies>
         <dependency>
-            <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-core</artifactId>
-            <version>${project.version}</version>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-shaded-client</artifactId>
+            <version>${hbase.version}</version>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <artifactId>avro</artifactId>
+                    <groupId>org.apache.avro</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jruby-complete</artifactId>
+                    <groupId>org.jruby</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>asm</artifactId>
+                    <groupId>asm</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-test</artifactId>
-            <version>${project.version}</version>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-shaded-server</artifactId>
+            <version>${hbase.version}</version>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <artifactId>avro</artifactId>
+                    <groupId>org.apache.avro</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jruby-complete</artifactId>
+                    <groupId>org.jruby</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>asm</artifactId>
+                    <groupId>asm</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <artifactId>jruby-complete</artifactId>
+            <groupId>org.jruby</groupId>
+            <version>${jruby.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -32,15 +68,6 @@
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
         <plugins>
-            <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>filter-hbase-conf</id>
-                        <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <artifactId>maven-deploy-plugin</artifactId>
                 <executions>
@@ -81,43 +108,17 @@
     
     <profiles>
         <profile>
-            <id>hbase1</id>
+            <id>hadoop2</id>
+
             <activation>
                 <property>
-                    <name>!hbase.profile</name>
+                    <name>!hadoop.profile</name>
                 </property>
             </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.hbase</groupId>
-                    <artifactId>hbase-shaded-client</artifactId>
-                    <version>${hbase1.version}</version>
-                    <optional>true</optional>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.hbase</groupId>
-                    <artifactId>hbase-shaded-server</artifactId>
-                    <version>${hbase1.version}</version>
-                    <optional>true</optional>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>hbase2</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.hbase</groupId>
-                    <artifactId>hbase-shaded-client</artifactId>
-                    <version>${hbase2.version}</version>
-                    <optional>true</optional>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.hbase</groupId>
-                    <artifactId>hbase-shaded-mapreduce</artifactId>
-                    <version>${hbase2.version}</version>
-                    <optional>true</optional>
-                </dependency>
-            </dependencies>
+
+            <properties>
+                <hbase.version>${hbase100.version}</hbase.version>
+            </properties>
         </profile>
     </profiles>
 </project>

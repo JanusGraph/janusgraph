@@ -17,7 +17,7 @@ package org.janusgraph.graphdb.thrift;
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.olap.OLAPTest;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.BeforeClass;
 
 public class ThriftOLAPTest extends OLAPTest {
 
@@ -27,7 +27,7 @@ public class ThriftOLAPTest extends OLAPTest {
     }
 
 
-    @BeforeAll
+    @BeforeClass
     public static void beforeClass() {
         CassandraStorageSetup.startCleanEmbedded();
     }

@@ -14,22 +14,19 @@
 
 package org.janusgraph.diskstorage.cassandra.thrift;
 
+import static org.junit.Assert.assertEquals;
+
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.Test;
 
 public class CassandraThriftStoreManagerTest {
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void configOptionFrameSizeMbShouldErrorOnLowValue() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            ModifiableConfiguration config = CassandraStorageSetup.getCassandraThriftConfiguration("janusgraph");
-            config.set(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB, 0);
-            config.get(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB);
-        });
+        ModifiableConfiguration config = CassandraStorageSetup.getCassandraThriftConfiguration("janusgraph");
+        config.set(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB, 0);
+        config.get(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB);
     }
 
     @Test
@@ -40,13 +37,11 @@ public class CassandraThriftStoreManagerTest {
         assertEquals(1, result.intValue());
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void configOptionFrameSizeMbShouldErrorOnHighValue() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            ModifiableConfiguration config = CassandraStorageSetup.getCassandraThriftConfiguration("janusgraph");
-            config.set(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB, 2048);
-            config.get(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB);
-        });
+        ModifiableConfiguration config = CassandraStorageSetup.getCassandraThriftConfiguration("janusgraph");
+        config.set(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB, 2048);
+        config.get(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB);
     }
 
 }

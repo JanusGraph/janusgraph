@@ -14,9 +14,6 @@
 
 package org.janusgraph.diskstorage.solr;
 
-import java.util.Date;
-import java.util.UUID;
-
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.janusgraph.core.Cardinality;
@@ -31,27 +28,30 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexProviderTest;
-import org.janusgraph.diskstorage.indexing.KeyInformation;
-import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.Date;
+
+import java.util.UUID;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Jared Holmberg (jholmberg@bericotechnologies.com)
  */
 public class SolrIndexTest extends IndexProviderTest {
 
-    @BeforeAll
+    @BeforeClass
     public static void setUpMiniCluster() throws Exception {
         SolrRunner.start();
     }
 
-    @AfterAll
+    @AfterClass
     public static void tearDownMiniCluster() throws Exception {
         SolrRunner.stop();
     }
@@ -76,7 +76,7 @@ public class SolrIndexTest extends IndexProviderTest {
         return KeywordTokenizer.class.getName();
     }
 
-    protected Configuration getLocalSolrTestConfig() {
+    private Configuration getLocalSolrTestConfig() {
         final String index = "solr";
         final ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
 
@@ -156,23 +156,8 @@ public class SolrIndexTest extends IndexProviderTest {
      * Dropping collection is not implemented with Solr Cloud to accommodate use case where collection is created
      * outside of JanusGraph and associated with a config set with a different name.
      */
-    @Override @Test @Disabled
+    @Override @Test @Ignore
     public void clearStorageTest() throws Exception {
         super.clearStorageTest();
-    }
-
-    @Test
-    public void testMapKey2Field_IllegalCharacter() {
-        assertThrows(IllegalArgumentException.class, () -> {
-
-            KeyInformation keyInfo = new StandardKeyInformation(Boolean.class, Cardinality.SINGLE);
-            index.mapKey2Field("here is an illegal character: •", keyInfo);
-        });
-    }
-
-    @Test
-    public void testMapKey2Field_MappingSpaces() {
-        KeyInformation keyInfo = new StandardKeyInformation(Boolean.class, Cardinality.SINGLE);
-        assertEquals("field•name•with•spaces_b", index.mapKey2Field("field name with spaces", keyInfo));
     }
 }

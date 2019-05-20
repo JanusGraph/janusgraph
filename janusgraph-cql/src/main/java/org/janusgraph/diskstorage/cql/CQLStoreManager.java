@@ -15,9 +15,8 @@
 package org.janusgraph.diskstorage.cql;
 
 import static com.datastax.driver.core.schemabuilder.SchemaBuilder.createKeyspace;
-import static com.datastax.driver.core.schemabuilder.SchemaBuilder.dropKeyspace;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.select;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.truncate;
+import static com.datastax.driver.core.schemabuilder.SchemaBuilder.dropKeyspace;
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
@@ -62,15 +61,12 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
-import javax.annotation.Resource;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -103,10 +99,6 @@ import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.TableMetadata;
-import com.datastax.driver.core.exceptions.NoHostAvailableException;
-import com.datastax.driver.core.exceptions.QueryExecutionException;
-import com.datastax.driver.core.exceptions.QueryValidationException;
 import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -118,15 +110,12 @@ import io.vavr.collection.Iterator;
 import io.vavr.collection.Seq;
 import io.vavr.concurrent.Future;
 import io.vavr.control.Option;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * This class creates see {@link CQLKeyColumnValueStore CQLKeyColumnValueStores} and handles Cassandra-backed allocation of vertex IDs for JanusGraph (when so
+ * This class creates {@see CQLKeyColumnValueStore}s and handles Cassandra-backed allocation of vertex IDs for JanusGraph (when so
  * configured).
  */
 public class CQLStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CQLStoreManager.class);
 
     static final String CONSISTENCY_LOCAL_QUORUM = "LOCAL_QUORUM";
     static final String CONSISTENCY_QUORUM = "QUORUM";
@@ -136,22 +125,17 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     private final String keyspace;
     private final int batchSize;
     private final boolean atomicBatch;
-    private final boolean allowCompactStorage;
 
     final ExecutorService executorService;
 
-    @Resource
-    private Cluster cluster;
-    @Resource
-    private Session session;
+    private final Cluster cluster;
+    private final Session session;
     private final StoreFeatures storeFeatures;
     private final Map<String, CQLKeyColumnValueStore> openStores;
     private final Deployment deployment;
 
     /**
      * Constructor for the {@link CQLStoreManager} given a JanusGraph {@link Configuration}.
-     * @param configuration
-     * @throws BackendException
      */
     public CQLStoreManager(final Configuration configuration) throws BackendException {
         super(configuration, DEFAULT_PORT);
@@ -171,7 +155,6 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
         this.cluster = initializeCluster();
         this.session = initializeSession(this.keyspace);
-        this.allowCompactStorage = initializeCompactStorage();
 
         final Configuration global = buildGraphConfiguration()
                 .set(READ_CONSISTENCY, CONSISTENCY_QUORUM)
@@ -295,46 +278,22 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     }
 
     Session initializeSession(final String keyspaceName) {
-        final Session s = this.cluster.connect();
-
-        // if the keyspace already exists, just return the session
-        if (this.cluster.getMetadata().getKeyspace(keyspaceName) != null) {
-            return s;
-        }
-
         final Configuration configuration = getStorageConfig();
-        // Setting replication strategy based on value reading from the configuration: either "SimpleStrategy" or "NetworkTopologyStrategy"
         final Map<String, Object> replication = Match(configuration.get(REPLICATION_STRATEGY)).of(
-            Case($("SimpleStrategy"), strategy -> HashMap.<String, Object> of("class", strategy, "replication_factor", configuration.get(REPLICATION_FACTOR))),
-            Case($("NetworkTopologyStrategy"),
-                strategy -> HashMap.<String, Object> of("class", strategy)
-                    .merge(Array.of(configuration.get(REPLICATION_OPTIONS))
-                        .grouped(2)
-                        .toMap(array -> Tuple.of(array.get(0), Integer.parseInt(array.get(1)))))))
-            .toJavaMap();
+                Case($("SimpleStrategy"), strategy -> HashMap.<String, Object> of("class", strategy, "replication_factor", configuration.get(REPLICATION_FACTOR))),
+                Case($("NetworkTopologyStrategy"),
+                        strategy -> HashMap.<String, Object> of("class", strategy)
+                                .merge(Array.of(configuration.get(REPLICATION_OPTIONS))
+                                        .grouped(2)
+                                        .toMap(array -> Tuple.of(array.get(0), Integer.parseInt(array.get(1)))))))
+                .toJavaMap();
 
+        final Session s = this.cluster.connect();
         s.execute(createKeyspace(keyspaceName)
                 .ifNotExists()
                 .with()
                 .replication(replication));
         return s;
-    }
-
-    boolean initializeCompactStorage() throws PermanentBackendException {
-        try {
-            final ResultSet versionResultSet = this.session.execute(
-                select().column("release_version").from("system", "local") );
-            final String version = versionResultSet.one().getString(0);
-            final int major = Integer.parseInt(version.substring(0, version.indexOf(".")));
-            // starting with Cassandra 3 COMPACT STORAGE is deprecated and has no impact
-            return (major < 3);
-        } catch (NumberFormatException | NoHostAvailableException | QueryExecutionException | QueryValidationException e) {
-            throw new PermanentBackendException("Error determining Cassandra version", e);
-        }
-    }
-
-    boolean isCompactStorageAllowed() {
-        return this.allowCompactStorage;
     }
 
     ExecutorService getExecutorService() {
@@ -354,13 +313,6 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                 .getOrElseThrow(() -> new PermanentBackendException(String.format("Unknown keyspace '%s'", this.keyspace)));
         return Option.of(keyspaceMetadata.getTable(name))
                 .map(tableMetadata -> tableMetadata.getOptions().getCompression())
-                .getOrElseThrow(() -> new PermanentBackendException(String.format("Unknown table '%s'", name)));
-    }
-
-    TableMetadata getTableMetadata(final String name) throws BackendException {
-        final KeyspaceMetadata keyspaceMetadata = Option.of(this.cluster.getMetadata().getKeyspace(this.keyspace))
-                .getOrElseThrow(() -> new PermanentBackendException(String.format("Unknown keyspace '%s'", this.keyspace)));
-        return Option.of(keyspaceMetadata.getTable(name))
                 .getOrElseThrow(() -> new PermanentBackendException(String.format("Unknown table '%s'", name)));
     }
 
@@ -394,8 +346,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     @Override
     public KeyColumnValueStore openDatabase(final String name, final Container metaData) throws BackendException {
-        Supplier<Boolean> initializeTable = () -> Optional.ofNullable(this.cluster.getMetadata().getKeyspace(this.keyspace)).map(k -> k.getTable(name) == null).orElse(true);
-        return this.openStores.computeIfAbsent(name, n -> new CQLKeyColumnValueStore(this, n, getStorageConfig(), () -> this.openStores.remove(n), allowCompactStorage, initializeTable));
+        return this.openStores.computeIfAbsent(name, n -> new CQLKeyColumnValueStore(this, n, getStorageConfig(), () -> this.openStores.remove(n)));
     }
 
     @Override
@@ -407,13 +358,11 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     public void clearStorage() throws BackendException {
         if (this.storageConfig.get(DROP_ON_CLEAR)) {
             this.session.execute(dropKeyspace(this.keyspace));
-        } else if (this.exists()) {
+        } else {
             final Future<Seq<ResultSet>> result = Future.sequence(
                 Iterator.ofAll(this.cluster.getMetadata().getKeyspace(this.keyspace).getTables())
                     .map(table -> Future.fromJavaFuture(this.session.executeAsync(truncate(this.keyspace, table.getName())))));
             result.await();
-        } else {
-            LOGGER.info("Keyspace {} does not exist in the cluster", this.keyspace);
         }
     }
 

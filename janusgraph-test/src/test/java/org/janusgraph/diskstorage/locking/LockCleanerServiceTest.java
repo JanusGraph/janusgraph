@@ -24,9 +24,9 @@ import java.util.concurrent.ExecutorService;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
@@ -39,6 +39,7 @@ import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 
 public class LockCleanerServiceTest {
     private IMocksControl ctrl;
+    private IMocksControl relaxedCtrl;
     private KeyColumnValueStore store;
     private StoreTransaction tx;
     private ExecutorService exec;
@@ -49,9 +50,9 @@ public class LockCleanerServiceTest {
             new StaticArrayBuffer(new byte[]{(byte) 1}),
             new StaticArrayBuffer(new byte[]{(byte) 2}));
 
-    @BeforeEach
+    @Before
     public void setupMocks() {
-        IMocksControl relaxedCtrl = EasyMock.createControl();
+        relaxedCtrl = EasyMock.createControl();
         tx = relaxedCtrl.createMock(StoreTransaction.class);
 
         ctrl = EasyMock.createStrictControl();
@@ -59,7 +60,7 @@ public class LockCleanerServiceTest {
         exec = ctrl.createMock(ExecutorService.class);
     }
 
-    @AfterEach
+    @After
     public void verifyMocks() {
         ctrl.verify();
     }

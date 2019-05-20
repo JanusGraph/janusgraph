@@ -21,12 +21,12 @@ import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.graphdb.query.vertex.VertexArrayList;
 import org.janusgraph.graphdb.query.vertex.VertexLongList;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

@@ -20,7 +20,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Cmp;
-import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.core.schema.JanusGraphSchemaType;
 import org.janusgraph.graphdb.database.IndexSerializer;
@@ -28,7 +27,6 @@ import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.OrderList;
-import org.janusgraph.graphdb.predicate.OrJanusPredicate;
 import org.janusgraph.graphdb.query.*;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
@@ -62,12 +60,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     /**
      * The constraints added to this query. None by default.
      */
-    private final List<PredicateCondition<String, JanusGraphElement>> constraints = new ArrayList<>(5);
-
-    /**
-     * List of constraints added to an Or query. None by defautl
-     */
-    private final List<List<PredicateCondition<String, JanusGraphElement>>> globalConstraints = new ArrayList<>();
+    private final List<PredicateCondition<String, JanusGraphElement>> constraints;
     /**
      * The order in which the elements should be returned. None by default.
      */
@@ -86,16 +79,13 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         Preconditions.checkNotNull(serializer);
         this.tx = tx;
         this.serializer = serializer;
+        this.constraints = new ArrayList<>(5);
     }
 
     /* ---------------------------------------------------------------
      * Query Construction
 	 * ---------------------------------------------------------------
 	 */
-
-    public List<PredicateCondition<String, JanusGraphElement>> getConstraints() {
-        return constraints;
-    }
 
     public GraphCentricQueryBuilder profiler(QueryProfiler profiler) {
         Preconditions.checkNotNull(profiler);
@@ -109,10 +99,6 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         Preconditions.checkNotNull(predicate);
         Preconditions.checkArgument(predicate.isValidCondition(condition),
                 "Invalid condition: %s", condition);
-        if (predicate.equals(Contain.NOT_IN)) {
-            // when querying `has(key, without(value))`, the query must also satisfy `has(key)`
-            has(key);
-        }
         constraints.add(new PredicateCondition<>(key, predicate, condition));
         return this;
     }
@@ -158,7 +144,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     @Override
     public GraphCentricQueryBuilder orderBy(String keyName,  org.apache.tinkerpop.gremlin.process.traversal.Order order) {
         Preconditions.checkArgument(tx.containsPropertyKey(keyName),"Provided key does not exist: %s",keyName);
-        final PropertyKey key = tx.getPropertyKey(keyName);
+        PropertyKey key = tx.getPropertyKey(keyName);
         Preconditions.checkArgument(key!=null && order!=null,"Need to specify and key and an order");
         Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.dataType()),
                 "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.name(), key.dataType());
@@ -169,12 +155,6 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         return this;
     }
 
-    @Override
-    public GraphCentricQueryBuilder or(GraphCentricQueryBuilder subQuery) {
-        this.globalConstraints.add(subQuery.getConstraints());
-        return this;
-    }
-
     /* ---------------------------------------------------------------
      * Query Execution
 	 * ---------------------------------------------------------------
@@ -182,21 +162,20 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
 
     @Override
     public Iterable<JanusGraphVertex> vertices() {
-        return iterables(constructQuery(ElementCategory.VERTEX), JanusGraphVertex.class);
+        GraphCentricQuery query = constructQuery(ElementCategory.VERTEX);
+        return Iterables.filter(new QueryProcessor<>(query, tx.elementProcessor), JanusGraphVertex.class);
     }
 
     @Override
     public Iterable<JanusGraphEdge> edges() {
-        return iterables(constructQuery(ElementCategory.EDGE), JanusGraphEdge.class);
+        GraphCentricQuery query = constructQuery(ElementCategory.EDGE);
+        return Iterables.filter(new QueryProcessor<>(query, tx.elementProcessor), JanusGraphEdge.class);
     }
 
     @Override
     public Iterable<JanusGraphVertexProperty> properties() {
-        return iterables(constructQuery(ElementCategory.PROPERTY), JanusGraphVertexProperty.class);
-    }
-
-    public <E extends JanusGraphElement> Iterable<E> iterables(final GraphCentricQuery query, final Class<E> aClass) {
-        return Iterables.filter(new QueryProcessor<>(query, tx.elementProcessor), aClass);
+        GraphCentricQuery query = constructQuery(ElementCategory.PROPERTY);
+        return Iterables.filter(new QueryProcessor<>(query, tx.elementProcessor), JanusGraphVertexProperty.class);
     }
 
 
@@ -218,12 +197,9 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
 
 
     public GraphCentricQuery constructQuery(final ElementCategory resultType) {
-        final QueryProfiler optProfiler = profiler.addNested(QueryProfiler.OPTIMIZATION);
+        QueryProfiler optProfiler = profiler.addNested(QueryProfiler.OPTIMIZATION);
         optProfiler.startTimer();
-        if (this.globalConstraints.isEmpty()) {
-            this.globalConstraints.add(this.constraints);
-        }
-        final GraphCentricQuery query = constructQueryWithoutProfile(resultType);
+        GraphCentricQuery query = constructQueryWithoutProfile(resultType);
         optProfiler.stopTimer();
         query.observeWith(profiler);
         return query;
@@ -234,19 +210,8 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         if (limit == 0) return GraphCentricQuery.emptyQuery(resultType);
 
         //Prepare constraints
-        final MultiCondition<JanusGraphElement> conditions;
-        if (this.globalConstraints.size() == 1) {
-            conditions = QueryUtil.constraints2QNF(tx, constraints);
-            if (conditions == null) return GraphCentricQuery.emptyQuery(resultType);
-        } else {
-            conditions = new Or<>();
-            for (final List<PredicateCondition<String, JanusGraphElement>> child : this.globalConstraints){
-                final And<JanusGraphElement> localconditions = QueryUtil.constraints2QNF(tx, child);
-                if (localconditions == null) return GraphCentricQuery.emptyQuery(resultType);
-                conditions.add(localconditions);
-            }
-        }
-
+        And<JanusGraphElement> conditions = QueryUtil.constraints2QNF(tx, constraints);
+        if (conditions == null) return GraphCentricQuery.emptyQuery(resultType);
 
         //Prepare orders
         orders.makeImmutable();
@@ -259,7 +224,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
                 final RelationType type = ((PredicateCondition<RelationType,JanusGraphElement>) condition).getKey();
                 Preconditions.checkArgument(type != null && type.isPropertyKey());
                 Iterables.addAll(indexCandidates, Iterables.filter(((InternalRelationType) type).getKeyIndexes(),
-                    indexType -> indexType.getElement() == resultType && !(conditions instanceof Or && (indexType.isCompositeIndex() || !serializer.features((MixedIndexType) indexType).supportNotQueryNormalForm()))));
+                    indexType -> indexType.getElement() == resultType));
             }
             return true;
         });
@@ -270,9 +235,9 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         this index covers. The index with the highest score (as long as it covers at least one additional clause)
         is picked and added to the joint query for as long as such exist.
          */
-        final JointIndexQuery jointQuery = new JointIndexQuery();
+        JointIndexQuery jointQuery = new JointIndexQuery();
         boolean isSorted = orders.isEmpty();
-        final Set<Condition> coveredClauses = Sets.newHashSet();
+        Set<Condition> coveredClauses = Sets.newHashSet();
         while (true) {
             IndexType bestCandidate = null;
             double candidateScore = 0.0;
@@ -280,17 +245,17 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             boolean candidateSupportsSort = false;
             Object candidateSubCondition = null;
 
-            for (final IndexType index : indexCandidates) {
-                final Set<Condition> subcover = Sets.newHashSet();
+            for (IndexType index : indexCandidates) {
+                Set<Condition> subcover = Sets.newHashSet();
                 Object subCondition;
                 boolean supportsSort = orders.isEmpty();
                 //Check that this index actually applies in case of a schema constraint
                 if (index.hasSchemaTypeConstraint()) {
-                    final JanusGraphSchemaType type = index.getSchemaTypeConstraint();
-                    final Map.Entry<Condition,Collection<Object>> equalCon
+                    JanusGraphSchemaType type = index.getSchemaTypeConstraint();
+                    Map.Entry<Condition,Collection<Object>> equalCon
                             = getEqualityConditionValues(conditions,ImplicitKey.LABEL);
                     if (equalCon==null) continue;
-                    final Collection<Object> labels = equalCon.getValue();
+                    Collection<Object> labels = equalCon.getValue();
                     assert labels.size() >= 1;
                     if (labels.size()>1) {
                         log.warn("The query optimizer currently does not support multiple label constraints in query: {}",this);
@@ -309,10 +274,11 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
                     if (coveredClauses.isEmpty() && !supportsSort
                             && indexCoversOrder((MixedIndexType)index,orders)) supportsSort=true;
                 }
-                if (subCondition==null || subcover.isEmpty()) continue;
+                if (subCondition==null) continue;
+                assert !subcover.isEmpty();
                 double score = 0.0;
                 boolean coversAdditionalClause = false;
-                for (final Condition c : subcover) {
+                for (Condition c : subcover) {
                     double s = (c instanceof PredicateCondition && ((PredicateCondition)c).getPredicate()==Cmp.EQUAL)?
                             EQUAL_CONDITION_SCORE:OTHER_CONDITION_SCORE;
                     if (coveredClauses.contains(c)) s=s*ALREADY_MATCHED_ADJUSTOR;
@@ -377,13 +343,11 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
 
     public static List<Object[]> indexCover(final CompositeIndexType index, Condition<JanusGraphElement> condition,
                                             Set<Condition> covered) {
-        if (!QueryUtil.isQueryNormalForm(condition)) {
-            return null;
-        }
+        assert QueryUtil.isQueryNormalForm(condition);
         assert condition instanceof And;
         if (index.getStatus()!= SchemaStatus.ENABLED) return null;
-        final IndexField[] fields = index.getFieldKeys();
-        final Object[] indexValues = new Object[fields.length];
+        IndexField[] fields = index.getFieldKeys();
+        Object[] indexValues = new Object[fields.length];
         final Set<Condition> coveredClauses = new HashSet<>(fields.length);
         final List<Object[]> indexCovers = new ArrayList<>(4);
 
@@ -400,13 +364,13 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         if (position>=fields.length) {
             indexCovers.add(indexValues);
         } else {
-            final IndexField field = fields[position];
-            final Map.Entry<Condition,Collection<Object>> equalCon = getEqualityConditionValues(condition,field.getFieldKey());
+            IndexField field = fields[position];
+            Map.Entry<Condition,Collection<Object>> equalCon = getEqualityConditionValues(condition,field.getFieldKey());
             if (equalCon!=null) {
                 coveredClauses.add(equalCon.getKey());
                 assert equalCon.getValue().size()>0;
-                for (final Object value : equalCon.getValue()) {
-                    final Object[] newValues = Arrays.copyOf(indexValues,fields.length);
+                for (Object value : equalCon.getValue()) {
+                    Object[] newValues = Arrays.copyOf(indexValues,fields.length);
                     newValues[position]=value;
                     constructIndexCover(newValues,position+1,fields,condition,indexCovers,coveredClauses);
                 }
@@ -416,14 +380,14 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
 
     private static Map.Entry<Condition,Collection<Object>> getEqualityConditionValues(
             Condition<JanusGraphElement> condition, RelationType type) {
-        for (final Condition c : condition.getChildren()) {
+        for (Condition c : condition.getChildren()) {
             if (c instanceof Or) {
-                final Map.Entry<RelationType,Collection> orEqual = QueryUtil.extractOrCondition((Or)c);
+                Map.Entry<RelationType,Collection> orEqual = QueryUtil.extractOrCondition((Or)c);
                 if (orEqual!=null && orEqual.getKey().equals(type) && !orEqual.getValue().isEmpty()) {
                     return new AbstractMap.SimpleImmutableEntry(c,orEqual.getValue());
                 }
             } else if (c instanceof PredicateCondition) {
-                final PredicateCondition<RelationType, JanusGraphRelation> atom = (PredicateCondition)c;
+                PredicateCondition<RelationType, JanusGraphRelation> atom = (PredicateCondition)c;
                 if (atom.getKey().equals(type) && atom.getPredicate()==Cmp.EQUAL && atom.getValue()!=null) {
                     return new AbstractMap.SimpleImmutableEntry(c,ImmutableList.of(atom.getValue()));
                 }
@@ -437,29 +401,10 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
                                                           Condition<JanusGraphElement> condition,
                                                           final IndexSerializer indexInfo,
                                                           final Set<Condition> covered) {
-        if (!indexInfo.features(index).supportNotQueryNormalForm() && !QueryUtil.isQueryNormalForm(condition)) {
-            return null;
-        }
-        if (condition instanceof Or) {
-            for (final Condition<JanusGraphElement> subClause : condition.getChildren()) {
-                if (subClause instanceof And) {
-                    for (final Condition<JanusGraphElement> subsubClause : condition.getChildren()) {
-                        if (!coversAll(index, subsubClause,indexInfo)) {
-                            return null;
-                        }
-                    }
-                } else {
-                    if (!coversAll(index, subClause, indexInfo)) {
-                        return null;
-                    }
-                }
-            }
-            covered.add(condition);
-            return condition;
-        }
+        assert QueryUtil.isQueryNormalForm(condition);
         assert condition instanceof And;
         final And<JanusGraphElement> subCondition = new And<>(condition.numChildren());
-        for (final Condition<JanusGraphElement> subClause : condition.getChildren()) {
+        for (Condition<JanusGraphElement> subClause : condition.getChildren()) {
             if (coversAll(index,subClause,indexInfo)) {
                 subCondition.add(subClause);
                 covered.add(subClause);
@@ -477,7 +422,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         if (!(condition instanceof PredicateCondition)) {
             return false;
         }
-        final PredicateCondition<RelationType, JanusGraphElement> atom = (PredicateCondition) condition;
+        PredicateCondition<RelationType, JanusGraphElement> atom = (PredicateCondition) condition;
         if (atom.getValue() == null) {
             return false;
         }

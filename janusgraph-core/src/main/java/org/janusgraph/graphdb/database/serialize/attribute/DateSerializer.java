@@ -18,15 +18,11 @@ import org.janusgraph.diskstorage.ScanBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
 import org.janusgraph.graphdb.database.serialize.OrderPreservingSerializer;
 
-import org.apache.tinkerpop.shaded.jackson.databind.util.StdDateFormat;
-
-import java.text.ParseException;
 import java.util.Date;
 
 public class DateSerializer implements OrderPreservingSerializer<Date> {
 
     private final LongSerializer ls = LongSerializer.INSTANCE;
-    private final StdDateFormat dateFormat = StdDateFormat.instance;
 
     @Override
     public Date read(ScanBuffer buffer) {
@@ -54,12 +50,6 @@ public class DateSerializer implements OrderPreservingSerializer<Date> {
     public Date convert(Object value) {
         if (value instanceof Number && !(value instanceof Float) && !(value instanceof Double)) {
             return new Date(((Number)value).longValue());
-        } else if (value instanceof String) {
-            try {
-                return dateFormat.parse((String) value);
-            } catch (ParseException ignored) {
-            }
-        }
-        return null;
+        } else return null;
     }
 }

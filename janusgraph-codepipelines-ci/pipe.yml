@@ -59,6 +59,8 @@ pipelines:
     env:
     - name: MODULE
       value: janusgraph-es
+    - name: ARGS
+      value: -Pes-docker
   - name: cql
     timeout: 118
     env:

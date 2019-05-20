@@ -19,14 +19,14 @@ import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import java.util.Map;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+
 public class InMemoryGraphTest extends JanusGraphTest {
 
     public WriteConfiguration getConfiguration() {
@@ -54,69 +54,52 @@ public class InMemoryGraphTest extends JanusGraphTest {
         newTx();
     }
 
-    @Override @Test @Disabled
+    @Test
     public void testLocalGraphConfiguration() {}
 
-    @Override @Test @Disabled
+    @Test
     public void testMaskableGraphConfig() {}
 
-    @Override @Test @Disabled
+    @Test
     public void testGlobalGraphConfig() {}
 
-    @Override @Test @Disabled
+    @Test
     public void testGlobalOfflineGraphConfig() {}
 
-    @Override @Test @Disabled
+    @Test
     public void testFixedGraphConfig() {}
 
-    @Override @Test @Disabled
+    @Override
     public void testManagedOptionMasking() {}
 
-    @Override @Test @Disabled
+    @Override
     public void testTransactionConfiguration() {}
 
-    @Override @Test @Disabled
+    @Override
     public void testTinkerPopOptimizationStrategies() {}
 
-    @Override @Test @Disabled
+    @Override
     public void testDataTypes() {}
 
-    @Override @Test @Disabled
+    @Override
     public void testForceIndexUsage() {}
 
-    @Override @Test @Disabled
+    @Override
     public void testAutomaticTypeCreation() {}
 
-    @Override @Test @Disabled
+    @Override
     public void simpleLogTest() {}
 
-    @Override @Test @Disabled
+    @Override
     public void simpleLogTestWithFailure() {}
 
-    @Override @Test @Disabled
+    @Override
     public void testIndexUpdatesWithReindexAndRemove() {}
 
-    @Override @Test @Disabled
+    @Override
     public void testIndexUpdateSyncWithMultipleInstances() {}
 
-    @Override @Test @Disabled
+    @Override
     public void testClearStorage() {}
 
-    @Override @Test @Disabled
-    public void testAutoSchemaMakerForEdgePropertyConstraints() {}
-
-    @Override @Test @Disabled
-    public void testAutoSchemaMakerForVertexPropertyConstraints() {}
-
-    @Override @Test @Disabled
-    public void testAutoSchemaMakerForConnectionConstraints() {}
-
-    @Override @Test @Disabled
-    public void testSupportDirectCommitOfSchemaChangesForVertexProperties() {}
-
-    @Override @Test @Disabled
-    public void testSupportDirectCommitOfSchemaChangesForConnection() {}
-
-    @Override @Test @Disabled
-    public void testSupportDirectCommitOfSchemaChangesForEdgeProperties() {}
 }

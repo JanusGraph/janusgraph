@@ -14,7 +14,7 @@
 
 package org.janusgraph.diskstorage.es.rest;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
@@ -48,19 +48,22 @@ import org.janusgraph.diskstorage.es.rest.util.HttpAuthTypes;
 import org.janusgraph.diskstorage.es.rest.util.RestClientAuthenticator;
 import org.janusgraph.diskstorage.es.rest.util.SSLConfigurationCallback;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
-@ExtendWith(MockitoExtension.class)
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({RestClientBuilder.class, HttpAsyncClientBuilder.class})
 public class RestClientSetupTest {
 
     private static final String INDEX_NAME = "junit";
@@ -96,11 +99,13 @@ public class RestClientSetupTest {
     @Mock
     private SSLContext sslContextMock;
 
-    @Mock
     private RestClientBuilder restClientBuilderMock;
 
-    @BeforeEach
+    @Before
     public void setUp() {
+
+        restClientBuilderMock = PowerMockito.mock(RestClientBuilder.class);
+
         doReturn(restClientMock).when(restClientBuilderMock).build();
     }
 
@@ -263,7 +268,7 @@ public class RestClientSetupTest {
                     build()
                 );
 
-        final HttpAsyncClientBuilder hacb = mock(HttpAsyncClientBuilder.class);
+        final HttpAsyncClientBuilder hacb = PowerMockito.mock(HttpAsyncClientBuilder.class);
         doReturn(hacb).when(hacb).setDefaultCredentialsProvider(anyObject());
         hccc.customizeHttpClient(hacb);
 
@@ -324,7 +329,8 @@ public class RestClientSetupTest {
         assertEquals(1, customAuth.numInitCalls);
 
         // verifying that the custom callback is in the chain
-        final HttpAsyncClientBuilder hacb = mock(HttpAsyncClientBuilder.class);
+        final HttpAsyncClientBuilder hacb = PowerMockito.mock(HttpAsyncClientBuilder.class);
+        doReturn(hacb).when(hacb).setDefaultCredentialsProvider(anyObject());
         hccc.customizeHttpClient(hacb);
 
         assertEquals(1, customAuth.customizeHttpClientHistory.size());

@@ -28,7 +28,6 @@ import org.janusgraph.diskstorage.util.WriteByteBuffer;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.log.LogTxStatus;
-import org.janusgraph.graphdb.database.management.GraphCacheEvictionAction;
 import org.janusgraph.graphdb.database.management.MgmtLogType;
 import org.janusgraph.graphdb.database.serialize.attribute.*;
 import org.janusgraph.graphdb.internal.ElementCategory;
@@ -42,8 +41,6 @@ import org.janusgraph.graphdb.types.TypeDefinitionDescription;
 
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.shaded.jackson.databind.node.ArrayNode;
-import org.apache.tinkerpop.shaded.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -133,9 +130,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(66,StandardTransactionId.class, new StandardTransactionIdSerializer());
         registerClassInternal(67,TraverserSet.class, new SerializableSerializer());
         registerClassInternal(68,HashMap.class, new SerializableSerializer());
-        registerClassInternal(69,GraphCacheEvictionAction.class, new EnumSerializer<>(GraphCacheEvictionAction.class));
-        registerClassInternal(70, ObjectNode.class, new JsonSerializer<>(ObjectNode.class));
-        registerClassInternal(71, ArrayNode.class, new JsonSerializer<>(ArrayNode.class));
+
     }
 
     @Override

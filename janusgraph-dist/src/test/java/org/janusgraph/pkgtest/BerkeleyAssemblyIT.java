@@ -14,7 +14,7 @@
 
 package org.janusgraph.pkgtest;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 public class BerkeleyAssemblyIT extends AbstractJanusGraphAssemblyIT {
     

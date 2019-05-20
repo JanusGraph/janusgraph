@@ -16,15 +16,15 @@ package org.janusgraph.diskstorage.cassandra.thrift;
 
 
 import org.janusgraph.CassandraStorageSetup;
-import org.janusgraph.CassandraTestCategory;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
+import org.janusgraph.testcategory.CassandraSSLTests;
+import org.junit.BeforeClass;
+import org.junit.experimental.categories.Category;
 
-@Tag(CassandraTestCategory.CASSANDRA_SSL_TESTS)
+@Category({ CassandraSSLTests.class })
 public class ThriftSSLStoreTest extends ThriftStoreTest {
 
-    @BeforeAll
+    @BeforeClass
     public static void startCassandra() {
         CassandraStorageSetup.startCleanEmbedded();
     }

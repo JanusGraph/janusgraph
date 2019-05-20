@@ -20,7 +20,9 @@ import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,9 +37,12 @@ import org.janusgraph.graphdb.JanusGraphTest;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 public class BerkeleyGraphTest extends JanusGraphTest {
+
+    @Rule
+    public TestName methodNameRule = new TestName();
 
     private static final Logger log =
             LoggerFactory.getLogger(BerkeleyGraphTest.class);
@@ -45,7 +50,7 @@ public class BerkeleyGraphTest extends JanusGraphTest {
     @Override
     public WriteConfiguration getConfiguration() {
         ModifiableConfiguration modifiableConfiguration = BerkeleyStorageSetup.getBerkeleyJEConfiguration();
-        String methodName = testInfo.getTestMethod().toString();
+        String methodName = methodNameRule.getMethodName();
         if (methodName.equals("testConsistencyEnforcement")) {
             IsolationLevel iso = IsolationLevel.SERIALIZABLE;
             log.debug("Forcing isolation level {} for test method {}", iso, methodName);
@@ -65,11 +70,11 @@ public class BerkeleyGraphTest extends JanusGraphTest {
         tearDown();
         config.set(ConfigElement.getPath(GraphDatabaseConfiguration.DROP_ON_CLEAR), true);
         Backend backend = getBackend(config, false);
-        assertTrue(backend.getStoreManager().exists(), "graph should exist before clearing storage");
+        assertTrue("graph should exist before clearing storage", backend.getStoreManager().exists());
         clearGraph(config);
         backend.close();
         backend = getBackend(config, false);
-        assertFalse(backend.getStoreManager().exists(), "graph should not exist after clearing storage");
+        assertFalse("graph should not exist after clearing storage", backend.getStoreManager().exists());
         backend.close();
     }
 

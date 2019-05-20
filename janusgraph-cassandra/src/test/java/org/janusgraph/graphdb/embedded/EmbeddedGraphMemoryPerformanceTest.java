@@ -14,10 +14,11 @@
 
 package org.janusgraph.graphdb.embedded;
 
+import org.junit.BeforeClass;
+
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphPerformanceMemoryTest;
-import org.junit.jupiter.api.BeforeAll;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -25,7 +26,7 @@ import org.junit.jupiter.api.BeforeAll;
 
 public class EmbeddedGraphMemoryPerformanceTest extends JanusGraphPerformanceMemoryTest {
 
-    @BeforeAll
+    @BeforeClass
     public static void startCassandra() {
         CassandraStorageSetup.startCleanEmbedded();
     }

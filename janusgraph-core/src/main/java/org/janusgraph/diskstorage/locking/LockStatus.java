@@ -22,7 +22,7 @@ import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
  * A single held lock's expiration time. This is used by {@link AbstractLocker}.
  *
  * @see AbstractLocker
- * @see org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockStatus
+ * @see ConsistentKeyLockStatus
  */
 public interface LockStatus {
 

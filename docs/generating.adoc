@@ -4,7 +4,7 @@
 [.tss-floatleft.tss-width-125]
 image:splash-graph.png[]
 
-Real-world graphs are not https://en.wikipedia.org/wiki/Random_graph[random]. Example real-world graphs include social graphs, word graphs, neural graphs, airline graphs, water flow graphs, etc. Interestingly enough, there is a simple statistical understanding of most natural graphs. In short, many vertices have few connections and very few vertices have many connections. A popular algorithm to generate a graph that has this connectivity pattern is known as the https://en.wikipedia.org/wiki/Preferential_attachment[preferential attachment] algorithm which can be simply described with the colloquial phrase: "the rich get richer." This section provides some simple code to artificially generate a natural looking graph in JanusGraph using https://tinkerpop.apache.org/[Gremlin].
+Real-world graphs are not http://en.wikipedia.org/wiki/Random_graph[random]. Example real-world graphs include social graphs, word graphs, neural graphs, airline graphs, water flow graphs, etc. Interestingly enough, there is a simple statistical understanding of most natural graphs. In short, many vertices have few connections and very few vertices have many connections. A popular algorithm to generate a graph that has this connectivity pattern is known as the http://en.wikipedia.org/wiki/Preferential_attachment[preferential attachment] algorithm which can be simply described with the colloquial phrase: "the rich get richer." This section provides some simple code to artificially generate a natural looking graph in JanusGraph using http://tinkerpop.apache.org/[Gremlin].
 
 === Generating a Graph with Natural Statistics
 

@@ -14,14 +14,15 @@
 
 package org.janusgraph.graphdb.astyanax;
 
-import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.junit.BeforeClass;
+
+import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.graphdb.JanusGraphPerformanceMemoryTest;
-import org.junit.jupiter.api.BeforeAll;
 
 public class AstyanaxGraphPerformanceMemoryTest extends JanusGraphPerformanceMemoryTest {
 
-    @BeforeAll
+    @BeforeClass
     public static void startCassandra() {
         CassandraStorageSetup.startCleanEmbedded();
     }

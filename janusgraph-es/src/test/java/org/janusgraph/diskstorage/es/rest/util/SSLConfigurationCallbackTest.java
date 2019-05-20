@@ -15,7 +15,7 @@
 package org.janusgraph.diskstorage.es.rest.util;
 
 import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 import java.io.File;
 
@@ -27,14 +27,18 @@ import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.ssl.SSLContextBuilder;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
-@ExtendWith(MockitoExtension.class)
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({HttpAsyncClientBuilder.class})
 public class SSLConfigurationCallbackTest {
 
     @Mock
@@ -43,14 +47,17 @@ public class SSLConfigurationCallbackTest {
     @Mock
     private SSLContext sslContextMock;
 
-    @Mock
-    private HttpAsyncClientBuilder httpAsyncClientBuilderMock;
+    private final HttpAsyncClientBuilder httpAsyncClientBuilderMock = PowerMockito.mock(HttpAsyncClientBuilder.class);
 
-    @BeforeEach
+    @Before
     public void setUp() throws Exception {
-        when(httpAsyncClientBuilderMock.setSSLContext(any(SSLContext.class))).thenReturn(httpAsyncClientBuilderMock);
+        MockitoAnnotations.initMocks(this);
+
+        when(httpAsyncClientBuilderMock.setSSLContext(anyObject())).thenReturn(httpAsyncClientBuilderMock);
 
         doReturn(sslContextMock).when(sslContextBuilderMock).build();
+        doReturn(sslContextBuilderMock).when(sslContextBuilderMock).loadTrustMaterial(
+                any(File.class), any(char[].class), any(TrustStrategy.class));
     }
 
     @Test

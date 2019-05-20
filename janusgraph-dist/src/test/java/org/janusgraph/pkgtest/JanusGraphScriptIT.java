@@ -14,7 +14,7 @@
 
 package org.janusgraph.pkgtest;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 /**
  * Test the janusgraph.sh script that starts and stops Cassandra, ES, and Gremlin Server.

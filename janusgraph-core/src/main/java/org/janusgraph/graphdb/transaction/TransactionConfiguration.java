@@ -68,11 +68,11 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      * in the database or not on every retrieval.
      * In other words, it is always verified that a vertex for a given id exists, even if that id is retrieved internally
      * (through private APIs).
-     * <p>
+     * <p/>
      * Hence, this is a defensive setting against data degradation, where edges and/or index entries might point to no
      * longer existing vertices. Use this setting with caution as it introduces additional overhead entailed by checking
      * the existence.
-     * <p>
+     * <p/>
      * Unlike {@link #hasVerifyExternalVertexExistence()} this is about internally verifying ids.
      *
      * @return True, if vertex existence is verified, else false
@@ -90,13 +90,6 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      * @return The default edge type maker used to automatically create not yet existing edge types.
      */
     DefaultSchemaMaker getAutoSchemaMaker();
-
-    /**
-     * Allows to disable schema constraints.
-     *
-     * @return True, if schema constraints should not be applied, else false.
-     */
-    boolean hasDisabledSchemaConstraints();
 
     /**
      * Whether the graph transaction is configured to verify that an added key does not yet exist in the database.

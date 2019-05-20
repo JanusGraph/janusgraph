@@ -39,7 +39,7 @@ public class StandardVertexLabelMaker implements VertexLabelMaker {
 
     public StandardVertexLabelMaker name(String name) {
         //Verify name
-        SystemTypeManager.throwIfSystemName(JanusGraphSchemaCategory.VERTEXLABEL, name);
+        SystemTypeManager.isNotSystemName(JanusGraphSchemaCategory.VERTEXLABEL, name);
         this.name=name;
         return this;
     }

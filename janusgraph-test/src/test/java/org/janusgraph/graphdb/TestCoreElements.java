@@ -18,9 +18,9 @@ import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.graphdb.internal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 /**
  * Tests classes, enums and other non-interfaces in the core package

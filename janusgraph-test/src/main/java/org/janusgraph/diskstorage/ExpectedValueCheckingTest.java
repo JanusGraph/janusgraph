@@ -16,8 +16,8 @@ package org.janusgraph.diskstorage;
 
 import static org.easymock.EasyMock.capture;
 import static org.easymock.EasyMock.expect;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.util.List;
@@ -27,6 +27,9 @@ import org.easymock.Capture;
 import org.easymock.CaptureType;
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -50,9 +53,6 @@ import org.janusgraph.diskstorage.util.StaticArrayEntryList;
 
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 /**
  * Test transaction handling in {@link ExpectedValueCheckingStore} and related
@@ -64,6 +64,11 @@ public class ExpectedValueCheckingTest {
     private IMocksControl ctrl;
     private ExpectedValueCheckingStoreManager expectManager;
     private KeyColumnValueStoreManager backingManager;
+    private LockerProvider lockerProvider;
+    private StoreFeatures backingFeatures;
+    private ModifiableConfiguration globalConfig;
+    private ModifiableConfiguration localConfig;
+    private ModifiableConfiguration defaultConfig;
     private StoreTransaction consistentTx;
     private StoreTransaction inconsistentTx;
     private StoreTransaction expectTx;
@@ -71,6 +76,7 @@ public class ExpectedValueCheckingTest {
     private KeyColumnValueStore backingStore;
     private KeyColumnValueStore expectStore;
     private Capture<BaseTransactionConfig> txConfigCapture;
+    private BaseTransactionConfig defaultTxConfig;
 
     private static final String STORE_NAME = "ExpectTestStore";
     private static final String LOCK_SUFFIX = "_expecttest";
@@ -84,7 +90,7 @@ public class ExpectedValueCheckingTest {
     private static final StaticBuffer LOCK_COL = BufferUtil.getIntBuffer(64);
     private static final StaticBuffer LOCK_VAL = BufferUtil.getIntBuffer(128);
 
-    @BeforeEach
+    @Before
     public void setupMocks() throws BackendException {
 
         // Initialize mock controller
@@ -93,16 +99,16 @@ public class ExpectedValueCheckingTest {
 
         // Setup some config mocks and objects
         backingManager = ctrl.createMock(KeyColumnValueStoreManager.class);
-        LockerProvider lockerProvider = ctrl.createMock(LockerProvider.class);
-        ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.buildGraphConfiguration();
-        ModifiableConfiguration localConfig = GraphDatabaseConfiguration.buildGraphConfiguration();
-        ModifiableConfiguration defaultConfig = GraphDatabaseConfiguration.buildGraphConfiguration();
+        lockerProvider = ctrl.createMock(LockerProvider.class);
+        globalConfig = GraphDatabaseConfiguration.buildGraphConfiguration();
+        localConfig = GraphDatabaseConfiguration.buildGraphConfiguration();
+        defaultConfig = GraphDatabaseConfiguration.buildGraphConfiguration();
         // Set some properties on the configs, just so that global/local/default can be easily distinguished
         globalConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "global");
         localConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "local");
         defaultConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "default");
-        BaseTransactionConfig defaultTxConfig = new StandardBaseTransactionConfig.Builder().customOptions(defaultConfig).timestampProvider(TimestampProviders.MICRO).build();
-        StoreFeatures backingFeatures = new StandardStoreFeatures.Builder().keyConsistent(globalConfig, localConfig).build();
+        defaultTxConfig = new StandardBaseTransactionConfig.Builder().customOptions(defaultConfig).timestampProvider(TimestampProviders.MICRO).build();
+        backingFeatures = new StandardStoreFeatures.Builder().keyConsistent(globalConfig, localConfig).build();
 
 
         // Setup behavior specification starts below this line
@@ -142,7 +148,7 @@ public class ExpectedValueCheckingTest {
         ctrl.reset();
     }
 
-    @AfterEach
+    @After
     public void verifyMocks() {
         ctrl.verify();
         ctrl.reset();

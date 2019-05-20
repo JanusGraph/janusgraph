@@ -15,7 +15,7 @@
 package org.janusgraph.diskstorage.cassandra.astyanax;
 
 import org.janusgraph.diskstorage.BackendException;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.BeforeClass;
 
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.MultiWriteKeyColumnValueStoreTest;
@@ -23,7 +23,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 
 public class AstyanaxMultiWriteStoreTest extends MultiWriteKeyColumnValueStoreTest {
 
-    @BeforeAll
+    @BeforeClass
     public static void startCassandra() {
         CassandraStorageSetup.startCleanEmbedded();
     }

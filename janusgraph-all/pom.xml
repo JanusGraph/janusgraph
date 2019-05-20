@@ -1,14 +1,14 @@
-<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.3.2-SNAPSHOT</version>
+        <version>0.3.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-all</artifactId>
     <name>JanusGraph-All: Complete JanusGraph Distribution</name>
-    <url>https://janusgraph.org</url>
+    <url>http://janusgraph.org</url>
 
     <!--
       This project depends on the rest of JanusGraph, so Maven users and
@@ -38,17 +38,11 @@
             <artifactId>janusgraph-cassandra</artifactId>
             <version>${project.version}</version>
         </dependency>
-      <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-cql</artifactId>
-        <version>${project.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>io.dropwizard.metrics</groupId>
-            <artifactId>metrics-core</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-cql</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-berkeleyje</artifactId>
@@ -58,6 +52,11 @@
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-hbase</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-shaded-client</artifactId>
+            <version>${hbase100.version}</version>
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
@@ -73,12 +72,6 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <version>${hadoop2.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.commons</groupId>
-                    <artifactId>commons-compress</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
@@ -100,7 +93,7 @@
              Without these dependencies, janusgraph-all users can end up with
              1.9 + 1.8 jars together, and this leads to linkage errors.
              It might be a better idea to dependencyManagement imports if your Maven version supports it:
-             https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Importing_Dependencies -->
+             http://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Importing_Dependencies -->
         <!-- Jackson 1.x -->
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
@@ -178,42 +171,4 @@
             <!-- Done disabling unnecessary plugins -->
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>hbase1</id>
-            <activation>
-                <property>
-                    <name>!hbase.profile</name>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.hbase</groupId>
-                    <artifactId>hbase-shaded-client</artifactId>
-                    <version>${hbase1.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.hbase</groupId>
-                    <artifactId>hbase-shaded-server</artifactId>
-                    <version>${hbase1.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>hbase2</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.hbase</groupId>
-                    <artifactId>hbase-shaded-client</artifactId>
-                    <version>${hbase2.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.hbase</groupId>
-                    <artifactId>hbase-shaded-mapreduce</artifactId>
-                    <version>${hbase2.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
 </project>

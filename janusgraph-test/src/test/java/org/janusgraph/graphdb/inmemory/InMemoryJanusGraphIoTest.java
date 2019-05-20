@@ -24,7 +24,7 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import java.util.Map;
 
 /**
- * @author Stephen Mallette (https://stephen.genoprime.com)
+ * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 public class InMemoryJanusGraphIoTest extends JanusGraphIoTest {
     public WriteConfiguration getConfiguration() {

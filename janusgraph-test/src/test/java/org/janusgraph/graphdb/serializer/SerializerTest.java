@@ -15,10 +15,8 @@
 package org.janusgraph.graphdb.serializer;
 
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.janusgraph.core.attribute.*;
 import org.janusgraph.diskstorage.ReadBuffer;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -27,30 +25,14 @@ import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.serialize.attribute.*;
 import org.janusgraph.graphdb.serializer.attributes.*;
 import org.janusgraph.testutil.RandomGenerator;
-import org.junit.jupiter.api.Test;
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.context.SpatialContextFactory;
-import org.locationtech.spatial4j.distance.DistanceUtils;
-import org.locationtech.spatial4j.io.BinaryCodec;
-import org.locationtech.spatial4j.io.jts.JtsBinaryCodec;
-import org.locationtech.spatial4j.shape.Circle;
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Rectangle;
-import org.locationtech.spatial4j.shape.Shape;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
-import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
-import org.apache.tinkerpop.shaded.jackson.databind.node.ArrayNode;
-import org.apache.tinkerpop.shaded.jackson.databind.node.ObjectNode;
-
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 public class SerializerTest extends SerializerTestCommon {
 
@@ -90,7 +72,7 @@ public class SerializerTest extends SerializerTestCommon {
             StaticBuffer b2 = out2.getStaticBuffer();
             assertEquals(s1, serialize.readObjectByteOrder(b1.asReadBuffer(), String.class));
             assertEquals(s2, serialize.readObjectByteOrder(b2.asReadBuffer(), String.class));
-            assertEquals(Integer.signum(s1.compareTo(s2)), Integer.signum(b1.compareTo(b2)), s1 + " vs " + s2);
+            assertEquals(s1 + " vs " + s2, Integer.signum(s1.compareTo(s2)), Integer.signum(b1.compareTo(b2)));
         }
     }
 
@@ -381,7 +363,7 @@ public class SerializerTest extends SerializerTestCommon {
             o2.writeObjectByteOrder(c2,type.getKey());
             StaticBuffer s1 = o1.getStaticBuffer();
             StaticBuffer s2 = o2.getStaticBuffer();
-            assertEquals(Math.signum(c1.compareTo(c2)),Math.signum(s1.compareTo(s2)));
+            assertEquals(Math.signum(c1.compareTo(c2)),Math.signum(s1.compareTo(s2)),0.0);
             Object c1o = serialize.readObjectByteOrder(s1.asReadBuffer(),type.getKey());
             Object c2o = serialize.readObjectByteOrder(s2.asReadBuffer(),type.getKey());
             assertEquals(c1,c1o);
@@ -421,53 +403,6 @@ public class SerializerTest extends SerializerTestCommon {
         
         assertEquals(geo, serialize.readObjectNotNull(b, Geoshape.class));
         assertEquals(geo2, serialize.readObjectNotNull(b, Geoshape.class));
-    }
-
-    @Test
-    public void testLegacyNonJtsSerialization() throws Exception {
-        final SpatialContextFactory factory = new SpatialContextFactory();
-        factory.geo = true;
-        final SpatialContext context = new SpatialContext(factory);
-        BinaryCodec binaryCodec = new BinaryCodec(context, factory);
-
-        Shape[] shapes = new Shape[] {
-            context.getShapeFactory().pointXY(2.5, 0.5),
-            context.getShapeFactory().rect(2.5, 3.5, 0.5, 1.5),
-            context.getShapeFactory().circle(2.5, 0.5, DistanceUtils.dist2Degrees(5, DistanceUtils.EARTH_MEAN_RADIUS_KM))
-        };
-
-        DataOutput out = serialize.getDataOutput(128);
-        for (final Shape shape : shapes) {
-            // manually serialize with non-JTS codec
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            outputStream.write(1);
-            try (DataOutputStream dataOutput = new DataOutputStream(outputStream)) {
-                binaryCodec.writeShape(dataOutput, shape);
-                dataOutput.flush();
-            }
-            outputStream.flush();
-            byte[] bytes = outputStream.toByteArray();
-            VariableLong.writePositive(out,bytes.length);
-            out.putBytes(bytes);
-        }
-
-        // deserialize with standard serializer
-        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
-        assertEquals(Geoshape.geoshape(shapes[0]), serialize.readObjectNotNull(b, Geoshape.class));
-        assertEquals(Geoshape.geoshape(shapes[1]), serialize.readObjectNotNull(b, Geoshape.class));
-        assertEquals(Geoshape.geoshape(shapes[2]), serialize.readObjectNotNull(b, Geoshape.class));
-    }
-
-    @Test
-    public void jsonObjectSerialization() throws IOException {
-
-        jsonSerialization(ObjectNode.class, "{\"key1\":\"test\",\"key2\":123}");
-    }
-
-    @Test
-    public void jsonArraySerialization() throws IOException {
-
-        jsonSerialization(ArrayNode.class, "[\"val1\",\"val2\",\"val3\"]");
     }
 
     private static class SerialEntry {
@@ -587,23 +522,11 @@ public class SerializerTest extends SerializerTestCommon {
         };
     }
 
-    private <T extends JsonNode> void jsonSerialization(Class<T> type, String jsonContent) throws IOException {
 
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        T jsonNode = type.cast(objectMapper.readTree(jsonContent));
-
-        DataOutput out = serialize.getDataOutput(128);
-
-        out.writeObjectNotNull(jsonNode);
-
-        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
-
-        assertEquals(jsonNode, serialize.readObjectNotNull(b, type));
-    }
 
 
     //Arrays (support null serialization)
+
 
 
 }

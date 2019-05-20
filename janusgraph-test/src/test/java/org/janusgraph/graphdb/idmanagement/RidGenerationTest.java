@@ -18,7 +18,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import org.janusgraph.diskstorage.configuration.Configuration;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 public class RidGenerationTest {
 

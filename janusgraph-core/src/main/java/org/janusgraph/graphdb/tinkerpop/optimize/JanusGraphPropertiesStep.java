@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.structure.Property;
@@ -63,12 +62,12 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     }
 
     private <Q extends BaseVertexQuery> Q makeQuery(Q query) {
-        final String[] keys = getPropertyKeys();
+        String[] keys = getPropertyKeys();
         query.keys(keys);
-        for (final HasContainer condition : hasContainers) {
+        for (HasContainer condition : hasContainers) {
             query.has(condition.getKey(), JanusGraphPredicate.Converter.convert(condition.getBiPredicate()), condition.getValue());
         }
-        for (final OrderEntry order : orders) query.orderBy(order.key, order.order);
+        for (OrderEntry order : orders) query.orderBy(order.key, order.order);
         if (limit != BaseQuery.NO_LIMIT) query.limit(limit);
         ((BasicVertexCentricQueryBuilder) query).profiler(queryProfiler);
         return query;
@@ -89,7 +88,7 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
         assert getReturnType().forProperties() || (orders.isEmpty() && hasContainers.isEmpty());
 
         if (!starts.hasNext()) throw FastNoSuchElementException.instance();
-        final List<Traverser.Admin<Element>> elements = new ArrayList<>();
+        List<Traverser.Admin<Element>> elements = new ArrayList<>();
         starts.forEachRemaining(elements::add);
         starts.add(elements.iterator());
         assert elements.size() > 0;
@@ -97,7 +96,7 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
         useMultiQuery = useMultiQuery && elements.stream().allMatch(e -> e.get() instanceof Vertex);
 
         if (useMultiQuery) {
-            final JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
+            JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
             elements.forEach(e -> multiQuery.addVertex((Vertex) e.get()));
             makeQuery(multiQuery);
 
@@ -117,7 +116,7 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
             assert multiQueryResults != null;
             return convertIterator(multiQueryResults.get(traverser.get()));
         } else if (traverser.get() instanceof JanusGraphVertex || traverser.get() instanceof WrappedVertex) {
-            final JanusGraphVertexQuery query = makeQuery((JanusGraphTraversalUtil.getJanusGraphVertex(traverser)).query());
+            JanusGraphVertexQuery query = makeQuery((JanusGraphTraversalUtil.getJanusGraphVertex(traverser)).query());
             return convertIterator(query.properties());
         } else {
             //It is some other element (edge or vertex property)
@@ -165,49 +164,18 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     }
 
     @Override
-    public List<HasContainer> addLocalAll(Iterable<HasContainer> has) {
-        throw new UnsupportedOperationException("addLocalAll is not supported for properties step.");
-    }
-
-    @Override
     public void orderBy(String key, Order order) {
         orders.add(new HasStepFolder.OrderEntry(key, order));
     }
 
     @Override
-    public void localOrderBy(List<HasContainer> hasContainers, String key, Order order) {
-       throw new UnsupportedOperationException("LocalOrderBy is not supported for properties step.");
+    public void setLimit(int limit) {
+        this.limit = limit;
     }
 
     @Override
-    public void setLimit(int low, int high) {
-        Preconditions.checkArgument(low == 0, "Offset is not supported for properties step.");
-        this.limit = high;
-    }
-
-    @Override
-    public void setLocalLimit(List<HasContainer> hasContainers, int low, int high) {
-        throw new UnsupportedOperationException("LocalLimit is not supported for properties step.");
-    }
-
-    @Override
-    public int getLowLimit() {
-        throw new UnsupportedOperationException("getLowLimit is not supported for properties step.");
-    }
-
-    @Override
-    public int getLocalLowLimit(List<HasContainer> hasContainers) {
-        throw new UnsupportedOperationException("getLocalLowLimit is not supported for properties step.");
-    }
-
-    @Override
-    public int getHighLimit() {
+    public int getLimit() {
         return this.limit;
-    }
-
-    @Override
-    public int getLocalHighLimit(List<HasContainer> hasContainers) {
-        throw new UnsupportedOperationException("getLocalHighLimit is not supported for properties step.");
     }
 
     @Override
@@ -219,5 +187,4 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     public void setMetrics(MutableMetrics metrics) {
         queryProfiler = new TP3ProfileWrapper(metrics);
     }
-
 }

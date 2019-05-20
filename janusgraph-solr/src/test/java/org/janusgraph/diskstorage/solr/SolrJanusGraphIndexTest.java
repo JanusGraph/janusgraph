@@ -15,23 +15,22 @@
 package org.janusgraph.diskstorage.solr;
 
 import org.janusgraph.graphdb.JanusGraphIndexTest;
-import org.janusgraph.testutil.FlakyTest;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public abstract class SolrJanusGraphIndexTest extends JanusGraphIndexTest {
 
-    @BeforeAll
+    @BeforeClass
     public static void setUpMiniCluster() throws Exception {
         SolrRunner.start();
     }
 
-    @AfterAll
+    @AfterClass
     public static void tearDownMiniCluster() throws Exception {
         SolrRunner.stop();
     }
@@ -61,15 +60,9 @@ public abstract class SolrJanusGraphIndexTest extends JanusGraphIndexTest {
      * Dropping collection is not implemented with Solr Cloud to accommodate use case where collection is created
      * outside of JanusGraph and associated with a config set with a different name.
      */
-    @Override @Test @Disabled
+    @Override @Test @Ignore
     public void testClearStorage() throws Exception {
         super.testClearStorage();
-    }
-
-    @Override
-    @FlakyTest(minSuccess = 1, invocationCount = 6)
-    public void testIndexReplay() throws Exception {
-        super.testIndexReplay();
     }
 
 }

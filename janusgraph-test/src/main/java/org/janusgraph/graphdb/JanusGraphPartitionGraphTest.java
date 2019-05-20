@@ -35,14 +35,13 @@ import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.*;
 
 import static org.janusgraph.testutil.JanusGraphAssert.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 /**
  * Tests graph and vertex partitioning
@@ -71,20 +70,20 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
     private IDManager idManager;
 
     @Override
-    @BeforeEach
-    public void setUp(TestInfo testInfo) throws Exception {
-        super.setUp(testInfo);
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
         idManager = graph.getIDManager();
     }
 
 //    @Test
-//    @Tag(TestCategory.ORDERED_KEY_STORE_TESTS)
+//    @Category({ OrderedKeyStoreTests.class })
 //    public void testOrderedConfig() {
 //        assertTrue(graph.getConfiguration().getStoreFeatures().isKeyOrdered());
 //    }
 //
 //    @Test
-//    @Tag(TestCategory.UNORDERED_KEY_STORE_TESTS)
+//    @Category({ UnorderedKeyStoreTests.class })
 //    public void testUnorderedConfig() {
 //        assertFalse(graph.getConfiguration().getStoreFeatures().isKeyOrdered());
 //    }
@@ -99,7 +98,7 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
-    public void testVertexPartitioning() {
+    public void testVertexPartitioning() throws Exception {
         Object[] options = {option(GraphDatabaseConfiguration.IDS_FLUSH), false};
         clopen(options);
 

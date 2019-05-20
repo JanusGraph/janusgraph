@@ -87,7 +87,7 @@ metrics.console.interval = 60000
 |==========================
 |Config Key |Required? |Value |Default
 |metrics.csv.interval |yes |Milliseconds to wait between writing CSV lines |null
-|metrics.csv.directory |yes |Directory in which CSV files are written (will be created if it does not exist) |null
+|metrics.csv.dir |yes |Directory in which CSV files are written (will be created if it does not exist) |null
 |==========================
 
 Example janusgraph.properties snippet that writes CSV files once a minute to the directory `./foo/bar/` (relative to the process's working directory):
@@ -96,12 +96,12 @@ Example janusgraph.properties snippet that writes CSV files once a minute to the
 metrics.enabled = true
 # Required; specify logging interval in milliseconds
 metrics.csv.interval = 60000
-metrics.csv.directory = foo/bar
+metrics.csv.dir = foo/bar
 
 [[metrics-ganglia]]
 ==== Ganglia Reporter
 
-NOTE: Configuration of link:http://ganglia.sourceforge.net/[Ganglia] requires an additional library that is not packaged with JanusGraph due to its LGPL licensing that conflicts with the JanusGraph's Apache 2.0 License.  To run with Ganglia monitoring, download the `org.acplt:oncrpc` jar from link:https://repo1.maven.org/maven2/org/acplt/oncrpc/1.0.7/[here] and copy it to the JanusGraph `/lib` directory before starting the server.
+NOTE: Configuration of link:http://ganglia.sourceforge.net/[Ganglia] requires an additional library that is not packaged with JanusGraph due to its LGPL licensing that conflicts with the JanusGraph's Apache 2.0 License.  To run with Ganglia monitoring, download the `org.acplt:oncrpc` jar from link:http://repo1.maven.org/maven2/org/acplt/oncrpc/1.0.7/[here] and copy it to the JanusGraph `/lib` directory before starting the server.
 
 .Metrics Ganglia Reporter Configuration Options
 [cols="2,1,5,1", options="header"]

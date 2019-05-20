@@ -1,7 +1,7 @@
 [[cassandra]]
 == Apache Cassandra
 
-[quote, 'https://cassandra.apache.org/[Apache Cassandra Homepage]']
+[quote, 'http://cassandra.apache.org/[Apache Cassandra Homepage]']
 The Apache Cassandra database is the right choice when you need
 scalability and high availability without compromising
 performance. Linear scalability and proven fault-tolerance on
@@ -14,27 +14,9 @@ over 300 TB of data in over 400 machines.
 
 The following sections outline the various ways in which JanusGraph can be used in concert with Apache Cassandra.
 
-[[cassandra-storage-backend]]
-=== Cassandra Storage Backend
-
-JanusGraph provides the following backends for use with Cassandra:
-
-* `cql` - CQL based driver. This is the recommended driver.
-* `cassandrathrift` - JanusGraph's Thrift connection pool driver
-* `cassandra` - https://github.com/Netflix/astyanax[Astyanax] driver. The Astyanax project is https://medium.com/netflix-techblog/astyanax-retiring-an-old-friend-6cca1de9ac4[retired].
-* `embeddedcassandra` - Embedded driver for running Cassandra and JanusGraph within the same JVM
-
-Cassandra has two protocols for clients to use: CQL and Thrift. Thrift was the original interface, however it was deprecated starting with Cassandra 2.1. The core of JanusGraph was originally written before the deprecation of Thrift, and it has several classes that support Thrift. With Cassandra 4.0, Thrift support will be removed in Cassandra. JanusGraph users are recommended to use the `cql` storage backend.
-
 [NOTE]
-If you plan to use a Thrift-based driver and you are using Cassandra 2.2 or higher, you need to explicitly enable Thrift so that JanusGraph can connect to the cluster.
-Do so by running `./bin/nodetool enablethrift` on every Cassandra node.
-
-[NOTE]
-If security is enabled on Cassandra, the user must have `CREATE permission on <all keyspaces>`,
-otherwise the keyspace must be created ahead of time by an administrator including the required tables or the user must have `CREATE permission on <the configured keyspace>`.
-The create table file containing the required tables is located in `conf/cassandra/cassandraTables.cql`. Please define your keyspace before executing it.
-
+If you are using Cassandra 2.2 or higher you need to explicitly enable thrift so that JanusGraph can connect to the cluster.
+Do so by running `./bin/nodetool enablethrift`.
 
 [[cassandra-local-server-mode]]
 === Local Server Mode
@@ -43,27 +25,18 @@ image:modes-local.png[]
 
 Cassandra can be run as a standalone database on the same local host as JanusGraph and the end-user application. In this model, JanusGraph and Cassandra communicate with one another via a `localhost` socket. Running JanusGraph over Cassandra requires the following setup steps:
 
-. https://cassandra.apache.org/download/[Download Cassandra], unpack it, and set filesystem paths in `conf/cassandra.yaml` and `conf/log4j-server.properties`
-. Connecting Gremlin Server to Cassandra using the default configuration files provided in the pre-packaged distribution requires that Cassandra Thrift is enabled. To enable Cassandra Thrift open `conf/cassandra.yaml` and update `start_rpc: false` to `start_rpc: true`. If Cassandra is already running Thrift can be started manually with `bin/nodetool enablethrift`. the Thrift status can be verified with `bin/nodetool` statusthrift.
+. http://cassandra.apache.org/download/[Download Cassandra], unpack it, and set filesystem paths in `conf/cassandra.yaml` and `conf/log4j-server.properties`
 . Start Cassandra by invoking `bin/cassandra -f` on the command line in the directory where Cassandra was unpacked.  Read output to check that Cassandra started successfully.
 
 Now, you can create a Cassandra JanusGraph as follows::
 
 [source, java]
 JanusGraph g = JanusGraphFactory.build().
-set("storage.backend", "cql").
+set("storage.backend", "cassandra").
 set("storage.hostname", "127.0.0.1").
 open();
 
 In the Gremlin Console, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
-
-=== Local Container Mode
-
-Cassandra does not have a native install for Windows or OSX. One of the easiest ways to run Cassandra on OSX, Windows, or Linux is to use a Docker Container. You can download and run Cassandra with a single https://www.docker.com/[Docker] command. It is important to install a version that is supported by the version of JanusGraph you intend to use. The compatible versions can be found under the Tested Compatibility section of the specific release on the https://github.com/JanusGraph/janusgraph/releases[Releases page]. The https://hub.docker.com/_/cassandra/[Cassandra Docker Hub page] can be referenced for the available versions and useful commands. In the command below an environment variable is being set to enable Cassandra Thrift with `-e CASSANDRA_START_RPC=true`. A description of the ports can be found https://docs.datastax.com/en/cassandra/latest/cassandra/configuration/secureFireWall.html[here]. Port 9160 is used for the Thrift client API. Port 9042 is for CQL native clients. Ports 7000, 7001 and 7099 are for inter-node communication. Version 3.11 of Cassandra was the latest compatible version for JanusGraph 0.2.0 and is specified in the reference command below.
-
-[source, bash]
-docker run --name jg-cassandra -d -e CASSANDRA_START_RPC=true -p 9160:9160 \
--p 9042:9042 -p 7199:7199 -p 7001:7001 -p 7000:7000 cassandra:3.11
 
 === Remote Server Mode
 
@@ -75,7 +48,7 @@ For example, suppose we have a running Cassandra cluster where one of the machin
 
 [source, java]
 JanusGraph graph = JanusGraphFactory.build().
-set("storage.backend", "cql").
+set("storage.backend", "cassandra").
 set("storage.hostname", "77.77.77.77").
 open();
 
@@ -101,18 +74,12 @@ In this case, each Gremlin Server would be configured to connect to the Cassandr
 ----
 ...
 graphs: {
-  g: conf/janusgraph-cql.properties
-}
-scriptEngines: {
-  gremlin-groovy: {
-    plugins: { org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.server.jsr223.GremlinServerGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.tinkergraph.jsr223.TinkerGraphGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.jsr223.ImportGremlinPlugin: {classImports: [java.lang.Math], methodImports: [java.lang.Math#*]},
-               org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: {files: [scripts/empty-sample.groovy]}}}}
+  g: conf/janusgraph-cassandra.properties}
+plugins:
+  - janusgraph.imports
 ...
 ----
-For more information about Gremlin Server see the https://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#gremlin-server[Apache TinkerPop documentation]
+For more information about Gremlin Server see the http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#gremlin-server[Apache TinkerPop documentation]
 
 === JanusGraph Embedded Mode
 
@@ -138,7 +105,7 @@ When configuring Cassandra it is recommended to consider the following Cassandra
 * *thrift.frame_size_mb*: The maximum frame size to be used by thrift for transport. Increase this value when retrieving very large result sets. **Only applicable when storage.backend=cassandrathrift**
 * *keyspace*: The name of the keyspace to store the JanusGraph graph in. Allows multiple JanusGraph graphs to co-exist in the same Cassandra cluster.
 
-For more information on Cassandra consistency levels and acceptable values, please refer to the https://wiki.apache.org/cassandra/API10[Cassandra Thrift API]. In general, higher levels are more consistent and robust but have higher latency.
+For more information on Cassandra consistency levels and acceptable values, please refer to the http://wiki.apache.org/cassandra/API10[Cassandra Thrift API]. In general, higher levels are more consistent and robust but have higher latency.
 
 === Global Graph Operations
 
@@ -146,7 +113,7 @@ JanusGraph over Cassandra supports global vertex and edge iteration. However, no
 
 === Deploying on Amazon EC2
 
-[quote, 'https://aws.amazon.com/ec2/[Amazon EC2]']
+[quote, 'http://aws.amazon.com/ec2/[Amazon EC2]']
 Amazon Elastic Compute Cloud (Amazon EC2) is a web service that provides resizable compute capacity in the cloud. It is designed to make web-scale computing easier for developers.
 
 Follow these steps to setup a Cassandra cluster on EC2 and deploy JanusGraph over Cassandra. To follow these instructions, you need an Amazon AWS account with established authentication credentials and some basic knowledge of AWS and EC2.
@@ -207,7 +174,7 @@ Launch additional EC2 instances to run JanusGraph which are either configured in
 
 ==== Example JanusGraph Instance on Amazon Linux AMI
 
-* Launch the https://aws.amazon.com/amazon-linux-ami[Amazon Linux AMI] in the same zone of the Cassandra cluster. Choose your desired EC2 instance type depending on the amount of resources you need. Use the default configuration options and select the same Key Pair and Security Group as for the Cassandra cluster configured in the previous step.
+* Launch the http://aws.amazon.com/amazon-linux-ami[Amazon Linux AMI] in the same zone of the Cassandra cluster. Choose your desired EC2 instance type depending on the amount of resources you need. Use the default configuration options and select the same Key Pair and Security Group as for the Cassandra cluster configured in the previous step.
 
 * SSH into the newly created instance via `ssh -i [your-private-key].pem ec2-user@[public-dns-name-of-the-instance]`. You may have to wait a little for the instance to launch.
 
@@ -215,7 +182,7 @@ Launch additional EC2 instances to run JanusGraph which are either configured in
 
 * Create a configuration file with `vi janusgraph.properties` and add the following lines::
 
-      storage.backend = cql
+      storage.backend = cassandra
       storage.hostname = [IP-address-of-one-Cassandra-EC2-instance]
 
 You may add additional configuration options found on this page or in <<config-ref>>.
@@ -223,7 +190,7 @@ You may add additional configuration options found on this page or in <<config-r
 * Start the Gremlin Console again and type the following::
 
       gremlin> graph = JanusGraphFactory.open('janusgraph.properties')
-      ==>janusgraph[cql:[IP-address-of-one-Cassandra-EC2-instance]]
+      ==>janusgraph[cassandra:[IP-address-of-one-Cassandra-EC2-instance]]
 
 You have successfully connected this JanusGraph instance to the Cassandra cluster and can start to operate on the graph.
 

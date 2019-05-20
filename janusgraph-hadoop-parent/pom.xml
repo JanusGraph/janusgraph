@@ -1,15 +1,15 @@
-<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.3.2-SNAPSHOT</version>
+        <version>0.3.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-hadoop-parent</artifactId>
     <name>JanusGraph-Hadoop: Parent Module</name>
     <packaging>pom</packaging>
-    <url>https://janusgraph.org</url>
+    <url>http://janusgraph.org</url>
 
     <properties>
         <top.level.basedir>${project.parent.basedir}</top.level.basedir>
@@ -31,7 +31,7 @@
         <developer>
             <name>Marko A. Rodriguez</name>
             <email>marko@markorodriguez.com</email>
-            <url>https://markorodriguez.com</url>
+            <url>http://markorodriguez.com</url>
         </developer>
     </developers>
 
@@ -39,7 +39,7 @@
         <contributor>
             <name>Stephen Mallette</name>
             <email>spmva@genoprime.com</email>
-            <url>https://stephen.genoprime.com</url>
+            <url>http://stephen.genoprime.com</url>
         </contributor>
         <contributor>
             <name>Matthias Broecheler</name>
@@ -52,10 +52,13 @@
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>tinkergraph-gremlin</artifactId>
+            <version>${tinkerpop.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>hadoop-gremlin</artifactId>
+            <version>${tinkerpop.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>javax.servlet</groupId>
@@ -70,7 +73,12 @@
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>spark-gremlin</artifactId>
+            <version>${tinkerpop.version}</version>
             <exclusions>
+                <exclusion>
+                    <groupId>org.eclipse.jetty.orbit</groupId>
+                    <artifactId>javax.servlet</artifactId>
+                </exclusion>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.module</groupId>
                     <artifactId>jackson-module-scala_2.11</artifactId>
@@ -119,12 +127,6 @@
 
         <dependency>
             <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-hbase-server</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-hbase-core</artifactId>
             <version>${project.version}</version>
             <classifier>tests</classifier>
@@ -162,12 +164,6 @@
             <groupId>com.datastax.cassandra</groupId>
             <artifactId>cassandra-driver-core</artifactId>
             <version>${cassandra-driver.version}</version>
-            <exclusions>
-              <exclusion>
-                <groupId>io.dropwizard.metrics</groupId>
-                <artifactId>metrics-core</artifactId>
-              </exclusion>
-            </exclusions>
         </dependency>
         <!-- Logging backends.
              Enforce a classpath ordering constraint to ensure slf4j-log4j12
@@ -183,6 +179,13 @@
             <artifactId>logback-classic</artifactId>
         </dependency>
         <!-- End logging backends. -->
+
+        <!-- TESTING -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

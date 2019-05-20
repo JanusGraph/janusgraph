@@ -38,9 +38,8 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.After;
+import org.junit.Before;
 
 import java.time.Duration;
 import java.util.*;
@@ -48,7 +47,9 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -64,7 +65,6 @@ public abstract class JanusGraphBaseTest {
     public StoreFeatures features;
     public JanusGraphTransaction tx;
     public JanusGraphManagement mgmt;
-    public TestInfo testInfo;
 
     public Map<String,LogManager> logManagers;
 
@@ -82,19 +82,18 @@ public abstract class JanusGraphBaseTest {
     }
 
     public static Backend getBackend(WriteConfiguration config, boolean initialize) throws BackendException {
-        final ModifiableConfiguration adjustedConfig = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config.copy(), BasicConfiguration.Restriction.NONE);
+        ModifiableConfiguration adjustedConfig = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config.copy(), BasicConfiguration.Restriction.NONE);
         adjustedConfig.set(GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP, "tmp");
         adjustedConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "inst");
-        final Backend backend = new Backend(adjustedConfig);
+        Backend backend = new Backend(adjustedConfig);
         if (initialize) {
             backend.initialize(adjustedConfig);
         }
         return backend;
     }
 
-    @BeforeEach
-    public void setUp(TestInfo testInfo) throws Exception {
-        this.testInfo = testInfo;
+    @Before
+    public void setUp() throws Exception {
         this.config = getConfiguration();
         TestGraphConfigs.applyOverrides(config);
         Preconditions.checkNotNull(config);
@@ -111,7 +110,7 @@ public abstract class JanusGraphBaseTest {
         mgmt = graph.openManagement();
     }
 
-    @AfterEach
+    @After
     public void tearDown() throws Exception {
         close();
         closeLogs();
@@ -145,7 +144,7 @@ public abstract class JanusGraphBaseTest {
     public static Map<TestConfigOption,Object> validateConfigOptions(Object... settings) {
         //Parse settings
         Preconditions.checkArgument(settings.length%2==0,"Expected even number of settings: %s",settings);
-        final Map<TestConfigOption,Object> options = Maps.newHashMap();
+        Map<TestConfigOption,Object> options = Maps.newHashMap();
         for (int i=0;i<settings.length;i=i+2) {
             Preconditions.checkArgument(settings[i] instanceof TestConfigOption,"Expected configuration option but got: %s",settings[i]);
             Preconditions.checkNotNull(settings[i+1],"Null setting at position [%s]",i+1);
@@ -159,10 +158,10 @@ public abstract class JanusGraphBaseTest {
         if (mgmt!=null && mgmt.isOpen()) mgmt.rollback();
         if (null != tx && tx.isOpen()) tx.commit();
         if (settings!=null && settings.length>0) {
-            final Map<TestConfigOption,Object> options = validateConfigOptions(settings);
+            Map<TestConfigOption,Object> options = validateConfigOptions(settings);
             JanusGraphManagement janusGraphManagement = null;
-            final ModifiableConfiguration modifiableConfiguration = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.LOCAL);
-            for (final Map.Entry<TestConfigOption,Object> option : options.entrySet()) {
+            ModifiableConfiguration modifiableConfiguration = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.LOCAL);
+            for (Map.Entry<TestConfigOption,Object> option : options.entrySet()) {
                 if (option.getKey().option.isLocal()) {
                     modifiableConfiguration.set(option.getKey().option,option.getValue(),option.getKey().umbrella);
                 } else {
@@ -207,13 +206,13 @@ public abstract class JanusGraphBaseTest {
 
     private void closeLogs() {
         try {
-            for (final LogManager lm : logManagers.values()) lm.close();
+            for (LogManager lm : logManagers.values()) lm.close();
             logManagers.clear();
             if (logStoreManager!=null) {
                 logStoreManager.close();
                 logStoreManager=null;
             }
-        } catch (final BackendException e) {
+        } catch (BackendException e) {
             throw new JanusGraphException(e);
         }
     }
@@ -222,7 +221,7 @@ public abstract class JanusGraphBaseTest {
         if (logManagers.containsKey(logManagerName)) {
             try {
                 logManagers.remove(logManagerName).close();
-            } catch (final BackendException e) {
+            } catch (BackendException e) {
                 throw new JanusGraphException("Could not close log manager " + logManagerName,e);
             }
         }
@@ -238,28 +237,28 @@ public abstract class JanusGraphBaseTest {
 
     private Log openLog(String logManagerName, String logName) {
         try {
-            final ModifiableConfiguration configuration = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config.copy(), BasicConfiguration.Restriction.NONE);
+            ModifiableConfiguration configuration = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config.copy(), BasicConfiguration.Restriction.NONE);
             configuration.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "reader");
             configuration.set(GraphDatabaseConfiguration.LOG_READ_INTERVAL, Duration.ofMillis(500L), logManagerName);
             if (logStoreManager==null) {
                 logStoreManager = Backend.getStorageManager(configuration);
             }
-            final StoreFeatures f = logStoreManager.getFeatures();
-            final boolean part = f.isDistributed() && f.isKeyOrdered();
+            StoreFeatures f = logStoreManager.getFeatures();
+            boolean part = f.isDistributed() && f.isKeyOrdered();
             if (part) {
-                for (final String partitionedLogName : new String[]{USER_LOG,TRANSACTION_LOG,MANAGEMENT_LOG})
+                for (String partitionedLogName : new String[]{USER_LOG,TRANSACTION_LOG,MANAGEMENT_LOG})
                 configuration.set(KCVSLogManager.LOG_MAX_PARTITIONS,8,partitionedLogName);
             }
             assert logStoreManager!=null;
             if (!logManagers.containsKey(logManagerName)) {
                 //Open log manager - only supports KCVSLog
-                final Configuration logConfig = configuration.restrictTo(logManagerName);
+                Configuration logConfig = configuration.restrictTo(logManagerName);
                 Preconditions.checkArgument(logConfig.get(LOG_BACKEND).equals(LOG_BACKEND.getDefaultValue()));
                 logManagers.put(logManagerName,new KCVSLogManager(logStoreManager,logConfig));
             }
             assert logManagers.containsKey(logManagerName);
             return logManagers.get(logManagerName).openLog(logName);
-        } catch (final BackendException e) {
+        } catch (BackendException e) {
             throw new JanusGraphException("Could not open log: "+ logName,e);
         }
     }
@@ -269,13 +268,13 @@ public abstract class JanusGraphBaseTest {
      */
 
     public PropertyKey makeVertexIndexedKey(String name, Class dataType) {
-        final PropertyKey key = mgmt.makePropertyKey(name).dataType(dataType).cardinality(Cardinality.SINGLE).make();
+        PropertyKey key = mgmt.makePropertyKey(name).dataType(dataType).cardinality(Cardinality.SINGLE).make();
         mgmt.buildIndex(name,Vertex.class).addKey(key).buildCompositeIndex();
         return key;
     }
 
     public PropertyKey makeVertexIndexedUniqueKey(String name, Class dataType) {
-        final PropertyKey key = mgmt.makePropertyKey(name).dataType(dataType).cardinality(Cardinality.SINGLE).make();
+        PropertyKey key = mgmt.makePropertyKey(name).dataType(dataType).cardinality(Cardinality.SINGLE).make();
         mgmt.buildIndex(name,Vertex.class).addKey(key).unique().buildCompositeIndex();
         return key;
     }
@@ -295,7 +294,7 @@ public abstract class JanusGraphBaseTest {
         else if (JanusGraphVertexProperty.class.isAssignableFrom(clazz)) prefix = "p";
         else throw new AssertionError(clazz.toString());
 
-        final String indexName = prefix+backingIndex;
+        String indexName = prefix+backingIndex;
         JanusGraphIndex index = mgmt.getGraphIndex(indexName);
         if (index==null) {
             index = mgmt.buildIndex(indexName,clazz).buildMixedIndex(backingIndex);
@@ -326,7 +325,7 @@ public abstract class JanusGraphBaseTest {
     public static final int DEFAULT_THREAD_COUNT = 4;
 
     public static int getThreadCount() {
-        final String s = System.getProperty("janusgraph.test.threads");
+        String s = System.getProperty("janusgraph.test.threads");
         if (null != s)
             return Integer.valueOf(s);
         else
@@ -382,7 +381,7 @@ public abstract class JanusGraphBaseTest {
 
     public static<E> E getOnlyElement(Iterator<E> traversal, E defaultElement) {
         if (!traversal.hasNext()) return defaultElement;
-        final E result = traversal.next();
+        E result = traversal.next();
         if (traversal.hasNext()) throw new IllegalArgumentException("Traversal contains more than 1 element: " + result + ", " + traversal.next());
         return result;
     }
@@ -430,12 +429,12 @@ public abstract class JanusGraphBaseTest {
         Comparable previous = null;
         int count = 0;
         while (elements.hasNext()) {
-            final Element element = elements.next();
-            final Comparable current = element.value(key);
+            Element element = elements.next();
+            Comparable current = element.value(key);
             if (previous != null) {
-                final int cmp = previous.compareTo(current);
-                assertTrue(order == Order.ASC ? cmp <= 0 : cmp >= 0,
-                    previous + " <> " + current + " @ " + count);
+                int cmp = previous.compareTo(current);
+                assertTrue(previous + " <> " + current + " @ " + count,
+                        order == Order.ASC ? cmp <= 0 : cmp >= 0);
             }
             previous = current;
             count++;
@@ -446,15 +445,6 @@ public abstract class JanusGraphBaseTest {
     public static <T> Stream<T> asStream(final Iterator<T> source) {
         final Iterable<T> iterable = () -> source;
         return StreamSupport.stream(iterable.spliterator(),false);
-    }
-
-    public JanusGraph getForceIndexGraph() throws BackendException {
-        final ModifiableConfiguration adjustedConfig = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,getConfiguration(), BasicConfiguration.Restriction.NONE);
-        adjustedConfig.set(GraphDatabaseConfiguration.FORCE_INDEX_USAGE, true);
-        final WriteConfiguration writeConfig = adjustedConfig.getConfiguration();
-        TestGraphConfigs.applyOverrides(writeConfig);
-        Preconditions.checkNotNull(writeConfig);
-        return JanusGraphFactory.open(writeConfig);
     }
 
 }
