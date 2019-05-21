@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.2.3-SNAPSHOT</version>
+        <version>0.2.3</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-codepipelines-ci</artifactId>
