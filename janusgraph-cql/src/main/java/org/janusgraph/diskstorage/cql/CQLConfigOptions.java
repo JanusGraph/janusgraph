@@ -125,7 +125,8 @@ public interface CQLConfigOptions {
             "compact-storage",
             "Whether the storage backend should use compact storage on tables. This option is only available for Cassandra 2 and earlier and defaults to true.",
             ConfigOption.Type.FIXED,
-            Boolean.class);
+            Boolean.class,
+            true);
 
     // Compression
     public static final ConfigOption<Boolean> CF_COMPRESSION = new ConfigOption<>(
