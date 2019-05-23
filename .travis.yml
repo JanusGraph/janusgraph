@@ -72,13 +72,17 @@ env:
 install:
   - if [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] && [ -n "${COVERITY_ONLY:-}" ]; then
       echo "Building all modules for Coverity analysis";
-      travis_retry travis_wait mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
+      travis_retry travis_wait mvn clean install -DskipTests=true
+        -Dmaven.javadoc.skip=true --batch-mode --show-version;
     elif [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] || ! [ -z "${COVERITY_ONLY:-}" ]; then
       echo "Building all modules for test-compile coverage, but skipping Coverity upload";
-      travis_retry travis_wait mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
+      travis_retry travis_wait mvn clean install -DskipTests=true
+        -Dmaven.javadoc.skip=true --batch-mode --show-version;
     else
       echo "Building janusgraph-${MODULE} and dependencies";
-      travis_retry travis_wait mvn clean install --projects janusgraph-${MODULE} --also-make -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version ${INSTALL_ARGS};
+      travis_retry travis_wait mvn clean install --projects janusgraph-${MODULE}
+        --also-make -DskipTests=true -Dmaven.javadoc.skip=true
+        --batch-mode --show-version ${INSTALL_ARGS};
     fi
 
 script:
@@ -86,12 +90,11 @@ script:
       echo "Building Docker image for Coverity analysis";
       docker build -t janusgraph/analysis analysis;
       echo "Running Coverity scan";
-      travis_wait 50 \
-        docker run --rm \
-            -v ${HOME}/.m2:/root/.m2 -v ${PWD}:/opt/janusgraph \
-            -e COVERITY_SCAN_TOKEN="${COVERITY_SCAN_TOKEN}" \
-            -e COVERITY_EMAIL="${COVERITY_EMAIL}" \
-            -i janusgraph/analysis;
+      travis_wait 50 docker run --rm
+        -v ${HOME}/.m2:/root/.m2 -v ${PWD}:/opt/janusgraph
+        -e COVERITY_SCAN_TOKEN="${COVERITY_SCAN_TOKEN}"
+        -e COVERITY_EMAIL="${COVERITY_EMAIL}"
+        -i janusgraph/analysis;
     elif [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] || [ -n "${COVERITY_ONLY:-}" ]; then
       echo "Skipping module tests on Coverity branch/job";
     elif [ "${TINKERPOP_TESTS_ONLY}" == true ]; then
