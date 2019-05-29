@@ -309,6 +309,38 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         }
     }
 
+    @Test
+    public void testListDeleteAddInOneTransaction() {
+        if (!indexFeatures.supportsCardinality(Cardinality.LIST)) {
+            return;
+        }
+        PropertyKey name = makeKey("name", String.class);
+        PropertyKey aliasKey = mgmt.makePropertyKey("alias")
+                .dataType(String.class)
+                .cardinality(Cardinality.LIST)
+                .make();
+        mgmt.buildIndex("namev", Vertex.class).addKey(name).addKey(aliasKey,
+                indexFeatures.supportsStringMapping(Mapping.TEXTSTRING) ? Mapping.TEXTSTRING.asParameter()
+                        : Mapping.DEFAULT.asParameter()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        JanusGraphVertex v = tx.addVertex("name", "Marko Rodriguez");
+        clopen();
+
+        v = getOnlyVertex(tx.query().has("name", Text.CONTAINS, "Marko Rodriguez"));
+        v.property("alias", "Marko");
+        clopen();
+        assertCount(1, tx.query().has("alias", Text.CONTAINS, "Marko").vertices());
+
+        v = getOnlyVertex(tx.query().has("name", Text.CONTAINS, "Marko Rodriguez"));
+        v.property("alias").remove();
+        v.property("alias", "Marko1");
+        assertCount(1, tx.query().has("alias", Text.CONTAINS, "Marko1").vertices());
+        assertCount(0, tx.query().has("alias", Text.CONTAINS, "Marko").vertices());
+        clopen();
+        assertCount(1, tx.query().has("alias", Text.CONTAINS, "Marko1").vertices());
+        assertCount(0, tx.query().has("alias", Text.CONTAINS, "Marko").vertices());
+    }
 
     @Test
     public void testIndexing() throws InterruptedException {
