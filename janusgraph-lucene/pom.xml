@@ -1,20 +1,20 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion xmlns="https://maven.apache.org/POM/4.0.0">4.0.0</modelVersion>
-    <parent xmlns="https://maven.apache.org/POM/4.0.0">
+<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.3.2</version>
+        <version>0.3.2-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId xmlns="https://maven.apache.org/POM/4.0.0">janusgraph-lucene</artifactId>
-    <name xmlns="https://maven.apache.org/POM/4.0.0">JanusGraph-Lucene: Indexing Support</name>
-    <url xmlns="https://maven.apache.org/POM/4.0.0">https://janusgraph.org</url>
+    <artifactId>janusgraph-lucene</artifactId>
+    <name>JanusGraph-Lucene: Indexing Support</name>
+    <url>https://janusgraph.org</url>
 
-    <properties xmlns="https://maven.apache.org/POM/4.0.0">
+    <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
     </properties>
 
-    <dependencies xmlns="https://maven.apache.org/POM/4.0.0">
+    <dependencies>
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-core</artifactId>
@@ -67,7 +67,7 @@
 
     </dependencies>
 
-    <build xmlns="https://maven.apache.org/POM/4.0.0">
+    <build>
         <resources>
             <resource>
                 <directory>${basedir}/src/main/resources</directory>
