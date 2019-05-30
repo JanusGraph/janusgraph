@@ -1,17 +1,17 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion xmlns="https://maven.apache.org/POM/4.0.0">4.0.0</modelVersion>
-    <parent xmlns="https://maven.apache.org/POM/4.0.0">
+<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.3.2</version>
+        <version>0.3.2-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId xmlns="https://maven.apache.org/POM/4.0.0">janusgraph-hadoop-parent</artifactId>
-    <name xmlns="https://maven.apache.org/POM/4.0.0">JanusGraph-Hadoop: Parent Module</name>
-    <packaging xmlns="https://maven.apache.org/POM/4.0.0">pom</packaging>
-    <url xmlns="https://maven.apache.org/POM/4.0.0">https://janusgraph.org</url>
+    <artifactId>janusgraph-hadoop-parent</artifactId>
+    <name>JanusGraph-Hadoop: Parent Module</name>
+    <packaging>pom</packaging>
+    <url>https://janusgraph.org</url>
 
-    <properties xmlns="https://maven.apache.org/POM/4.0.0">
+    <properties>
         <top.level.basedir>${project.parent.basedir}</top.level.basedir>
         <skipCassandra>${skipTests}</skipCassandra>
         <!-- Cassandra-3 testing requires an external Cassandra instance. 
@@ -21,13 +21,13 @@
         <skipPipeline>${skipTests}</skipPipeline>
     </properties>
 
-    <modules xmlns="https://maven.apache.org/POM/4.0.0">
+    <modules>
         <module>janusgraph-hadoop-core</module>
         <module>janusgraph-hadoop-2</module>
         <module>janusgraph-hadoop</module>
     </modules>
 
-    <developers xmlns="https://maven.apache.org/POM/4.0.0">
+    <developers>
         <developer>
             <name>Marko A. Rodriguez</name>
             <email>marko@markorodriguez.com</email>
@@ -35,7 +35,7 @@
         </developer>
     </developers>
 
-    <contributors xmlns="https://maven.apache.org/POM/4.0.0">
+    <contributors>
         <contributor>
             <name>Stephen Mallette</name>
             <email>spmva@genoprime.com</email>
@@ -48,7 +48,7 @@
         </contributor>
     </contributors>
 
-    <dependencies xmlns="https://maven.apache.org/POM/4.0.0">
+    <dependencies>
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>tinkergraph-gremlin</artifactId>
@@ -185,7 +185,7 @@
         <!-- End logging backends. -->
     </dependencies>
 
-    <build xmlns="https://maven.apache.org/POM/4.0.0">
+    <build>
         <pluginManagement>
             <plugins>
                 <plugin>

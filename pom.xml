@@ -1,22 +1,22 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion xmlns="https://maven.apache.org/POM/4.0.0">4.0.0</modelVersion>
-    <groupId xmlns="https://maven.apache.org/POM/4.0.0">org.janusgraph</groupId>
-    <artifactId xmlns="https://maven.apache.org/POM/4.0.0">janusgraph</artifactId>
-    <version xmlns="https://maven.apache.org/POM/4.0.0">0.3.2</version>
-    <packaging xmlns="https://maven.apache.org/POM/4.0.0">pom</packaging>
-    <prerequisites xmlns="https://maven.apache.org/POM/4.0.0">
+<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph</artifactId>
+    <version>0.3.2-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <prerequisites>
         <maven>2.2.1</maven>
     </prerequisites>
-    <name xmlns="https://maven.apache.org/POM/4.0.0">JanusGraph: Distributed Graph Database</name>
-    <url xmlns="https://maven.apache.org/POM/4.0.0">https://janusgraph.org</url>
+    <name>JanusGraph: Distributed Graph Database</name>
+    <url>https://janusgraph.org</url>
 
-    <description xmlns="https://maven.apache.org/POM/4.0.0">
+    <description>
         JanusGraph is a distributed graph database optimized for processing massive-scale graphs represented over a machine
         cluster.
         JanusGraph separates the concerns of graph processing and manipulation from storing the graph on disk,
         delegating that concern to an extensible set of persistence solutions.
     </description>
-    <developers xmlns="https://maven.apache.org/POM/4.0.0">
+    <developers>
         <developer>
             <name>Matthias Broecheler</name>
             <email>me@matthiasb.com</email>
@@ -32,7 +32,7 @@
             <url>https://github.com/xedin</url>
         </developer>
     </developers>
-    <contributors xmlns="https://maven.apache.org/POM/4.0.0">
+    <contributors>
         <contributor>
             <name>Marko A. Rodriguez</name>
             <email>marko@markorodriguez.com</email>
@@ -44,20 +44,20 @@
             <url>https://stephen.genoprime.com</url>
         </contributor>
     </contributors>
-    <inceptionYear xmlns="https://maven.apache.org/POM/4.0.0">2012</inceptionYear>
-    <licenses xmlns="https://maven.apache.org/POM/4.0.0">
+    <inceptionYear>2012</inceptionYear>
+    <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
             <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
         </license>
     </licenses>
-    <scm xmlns="https://maven.apache.org/POM/4.0.0">
+    <scm>
         <connection>scm:git:git@github.com:JanusGraph/janusgraph.git</connection>
         <developerConnection>scm:git:git@github.com:JanusGraph/janusgraph.git</developerConnection>
         <url>git@github.com:JanusGraph/janusgraph.git</url>
-        <tag>0.3.2</tag>
+        <tag>HEAD</tag>
     </scm>
-    <distributionManagement xmlns="https://maven.apache.org/POM/4.0.0">
+    <distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
@@ -67,7 +67,7 @@
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
-    <properties xmlns="https://maven.apache.org/POM/4.0.0">
+    <properties>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
         <tinkerpop.version>3.3.3</tinkerpop.version>
         <junit-platform.version>1.4.0</junit-platform.version>
@@ -129,7 +129,7 @@
         <cassandra-driver.version>3.3.2</cassandra-driver.version>
         <testcontainers.version>1.10.6</testcontainers.version>
     </properties>
-    <modules xmlns="https://maven.apache.org/POM/4.0.0">
+    <modules>
         <module>janusgraph-codepipelines-ci</module>
         <module>janusgraph-core</module>
         <module>janusgraph-server</module>
@@ -148,7 +148,7 @@
         <module>janusgraph-solr</module>
         <module>janusgraph-examples</module>
     </modules>
-    <repositories xmlns="https://maven.apache.org/POM/4.0.0">
+    <repositories>
         <repository>
             <id>apache-snapshots</id>
             <name>repository.apache.org snapshots</name>
@@ -181,7 +181,7 @@
             </snapshots>
         </repository>
     </repositories>
-    <build xmlns="https://maven.apache.org/POM/4.0.0">
+    <build>
         <directory>${basedir}/target</directory>
         <plugins>
             <plugin>        
@@ -196,7 +196,7 @@
                         </goals>
                         <configuration>
                             <rules>
-                                <DependencyConvergence />
+                                <DependencyConvergence/>
                             </rules>
                         </configuration>
                     </execution>
@@ -530,7 +530,7 @@
             </plugins>
         </pluginManagement>
     </build>
-    <dependencyManagement xmlns="https://maven.apache.org/POM/4.0.0">
+    <dependencyManagement>
         <dependencies>
             <!-- Tinkerpop 3.x -->
             <dependency>
@@ -1242,7 +1242,7 @@
         </dependencies>
     </dependencyManagement>
 
-    <dependencies xmlns="https://maven.apache.org/POM/4.0.0">
+    <dependencies>
         <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -1262,7 +1262,7 @@
         </dependency>
     </dependencies>
 
-    <profiles xmlns="https://maven.apache.org/POM/4.0.0">
+    <profiles>
 
         <profile>
             <id>janusgraph-release</id>
