@@ -77,7 +77,7 @@ For more information on features and bug fixes in 0.3.0, see the GitHub mileston
 
 * https://github.com/JanusGraph/janusgraph/milestone/4?closed=1
 
-=== Version 0.2.3 (Release Date: December ??, 2018)
+=== Version 0.2.3 (Release Date: May 21, 2019)
 
 [source, xml]
 <dependency>
