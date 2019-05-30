@@ -1,24 +1,24 @@
-<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion xmlns="https://maven.apache.org/POM/4.0.0">4.0.0</modelVersion>
+    <parent xmlns="https://maven.apache.org/POM/4.0.0">
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.3.2-SNAPSHOT</version>
+        <version>0.3.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId>janusgraph-hbase-parent</artifactId>
-    <packaging>pom</packaging>
-    <name>JanusGraph-HBase: Parent Module</name>
-    <url>https://janusgraph.org</url>
+    <artifactId xmlns="https://maven.apache.org/POM/4.0.0">janusgraph-hbase-parent</artifactId>
+    <packaging xmlns="https://maven.apache.org/POM/4.0.0">pom</packaging>
+    <name xmlns="https://maven.apache.org/POM/4.0.0">JanusGraph-HBase: Parent Module</name>
+    <url xmlns="https://maven.apache.org/POM/4.0.0">https://janusgraph.org</url>
     
-    <modules>
+    <modules xmlns="https://maven.apache.org/POM/4.0.0">
         <module>janusgraph-hbase-core</module>
         <module>janusgraph-hbase-server</module>
         <module>janusgraph-hbase-10</module>
         <module>janusgraph-hbase</module>
     </modules>
     
-    <properties>
+    <properties xmlns="https://maven.apache.org/POM/4.0.0">
         <janusgraph.hbase.mvn.opts>-Dhadoop.version=${hadoop.version} -Dhadoop.profile=${hadoop.profile} ${janusgraph.hbase.mvn.opts.extra}</janusgraph.hbase.mvn.opts>
         <janusgraph.hbase.mvn.opts.extra />
         <default.test.jvm.opts>-Xms256m -Xmx1280m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
@@ -26,7 +26,7 @@
         <top.level.basedir>${project.parent.basedir}</top.level.basedir>
     </properties>
     
-    <build>
+    <build xmlns="https://maven.apache.org/POM/4.0.0">
         <pluginManagement>
             <plugins>
                 <plugin>

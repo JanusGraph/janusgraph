@@ -1,17 +1,17 @@
-<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion xmlns="https://maven.apache.org/POM/4.0.0">4.0.0</modelVersion>
+    <parent xmlns="https://maven.apache.org/POM/4.0.0">
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.3.2-SNAPSHOT</version>
+        <version>0.3.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <packaging>pom</packaging>
-    <artifactId>janusgraph-dist</artifactId>
-    <name>JanusGraph-Dist: Tar and Zip Archives</name>
-    <url>https://janusgraph.org</url>
+    <packaging xmlns="https://maven.apache.org/POM/4.0.0">pom</packaging>
+    <artifactId xmlns="https://maven.apache.org/POM/4.0.0">janusgraph-dist</artifactId>
+    <name xmlns="https://maven.apache.org/POM/4.0.0">JanusGraph-Dist: Tar and Zip Archives</name>
+    <url xmlns="https://maven.apache.org/POM/4.0.0">https://janusgraph.org</url>
 
-    <properties>
+    <properties xmlns="https://maven.apache.org/POM/4.0.0">
         <top.level.basedir>${project.basedir}/..</top.level.basedir>
 
         <!-- Zipfile/Tarfile assembly source paths -->
@@ -42,11 +42,11 @@
         <docker.maven.version>0.4.13</docker.maven.version>
     </properties>
 
-    <modules>
+    <modules xmlns="https://maven.apache.org/POM/4.0.0">
         <module>janusgraph-dist-hadoop-2</module>
     </modules>
 
-    <dependencies>
+    <dependencies xmlns="https://maven.apache.org/POM/4.0.0">
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>janusgraph-all</artifactId>
@@ -166,7 +166,7 @@
         </dependency>
     </dependencies>
 
-    <build>
+    <build xmlns="https://maven.apache.org/POM/4.0.0">
         <plugins>
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -467,7 +467,7 @@
 
     </build>
 
-    <profiles>
+    <profiles xmlns="https://maven.apache.org/POM/4.0.0">
         <profile>
             <id>pkg-tools</id>
 

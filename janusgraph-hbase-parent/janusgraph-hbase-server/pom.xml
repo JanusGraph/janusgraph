@@ -1,20 +1,20 @@
-<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion xmlns="https://maven.apache.org/POM/4.0.0">4.0.0</modelVersion>
+    <parent xmlns="https://maven.apache.org/POM/4.0.0">
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph-hbase-parent</artifactId>
-        <version>0.3.2-SNAPSHOT</version>
+        <version>0.3.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId>janusgraph-hbase-server</artifactId>
-    <name>JanusGraph-HBase: HBase Server Used by Maven Testing</name>
-    <url>https://janusgraph.org</url>
+    <artifactId xmlns="https://maven.apache.org/POM/4.0.0">janusgraph-hbase-server</artifactId>
+    <name xmlns="https://maven.apache.org/POM/4.0.0">JanusGraph-HBase: HBase Server Used by Maven Testing</name>
+    <url xmlns="https://maven.apache.org/POM/4.0.0">https://janusgraph.org</url>
     
-    <properties>
+    <properties xmlns="https://maven.apache.org/POM/4.0.0">
         <top.level.basedir>${basedir}/../..</top.level.basedir>
     </properties>
     
-    <dependencies>
+    <dependencies xmlns="https://maven.apache.org/POM/4.0.0">
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-server</artifactId>
@@ -23,7 +23,7 @@
         </dependency>
     </dependencies>
     
-    <dependencyManagement>
+    <dependencyManagement xmlns="https://maven.apache.org/POM/4.0.0">
         <dependencies>
             <dependency>
             <!-- Avoid being overwritten by the top level pom. Used here only by the HBase server.
@@ -40,7 +40,7 @@
         </dependencies>
     </dependencyManagement>
 
-    <build>
+    <build xmlns="https://maven.apache.org/POM/4.0.0">
         <sourceDirectory>src/main/java</sourceDirectory>
         <testSourceDirectory>../common/test/java</testSourceDirectory>
         <testResources>
@@ -111,7 +111,7 @@
         </plugins>
     </build>
     
-    <profiles>
+    <profiles xmlns="https://maven.apache.org/POM/4.0.0">
         <profile>
             <id>hbase2</id>
             <properties>

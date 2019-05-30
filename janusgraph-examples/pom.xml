@@ -1,17 +1,17 @@
-<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion xmlns="https://maven.apache.org/POM/4.0.0">4.0.0</modelVersion>
+    <parent xmlns="https://maven.apache.org/POM/4.0.0">
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.3.2-SNAPSHOT</version>
+        <version>0.3.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId>janusgraph-examples</artifactId>
-    <packaging>pom</packaging>
-    <name>JanusGraph-Examples: Examples for JanusGraph</name>
-    <url>https://janusgraph.org</url>
+    <artifactId xmlns="https://maven.apache.org/POM/4.0.0">janusgraph-examples</artifactId>
+    <packaging xmlns="https://maven.apache.org/POM/4.0.0">pom</packaging>
+    <name xmlns="https://maven.apache.org/POM/4.0.0">JanusGraph-Examples: Examples for JanusGraph</name>
+    <url xmlns="https://maven.apache.org/POM/4.0.0">https://janusgraph.org</url>
 
-    <modules>
+    <modules xmlns="https://maven.apache.org/POM/4.0.0">
         <module>example-common</module>
         <module>example-berkeleyje</module>
         <module>example-cassandra</module>
@@ -21,7 +21,7 @@
         <module>example-tinkergraph</module>
     </modules>
 
-    <dependencies>
+    <dependencies xmlns="https://maven.apache.org/POM/4.0.0">
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-test</artifactId>
@@ -30,7 +30,7 @@
         </dependency>
     </dependencies>
 
-    <build>
+    <build xmlns="https://maven.apache.org/POM/4.0.0">
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

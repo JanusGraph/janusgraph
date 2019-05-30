@@ -1,15 +1,15 @@
-<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion xmlns="https://maven.apache.org/POM/4.0.0">4.0.0</modelVersion>
+    <parent xmlns="https://maven.apache.org/POM/4.0.0">
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.3.2-SNAPSHOT</version>
+        <version>0.3.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId>janusgraph-solr</artifactId>
-    <name>JanusGraph-Solr: Distributed Indexing Support</name>
-    <url>https://janusgraph.org</url>
-    <properties>
+    <artifactId xmlns="https://maven.apache.org/POM/4.0.0">janusgraph-solr</artifactId>
+    <name xmlns="https://maven.apache.org/POM/4.0.0">JanusGraph-Solr: Distributed Indexing Support</name>
+    <url xmlns="https://maven.apache.org/POM/4.0.0">https://janusgraph.org</url>
+    <properties xmlns="https://maven.apache.org/POM/4.0.0">
         <top.level.basedir>${basedir}/..</top.level.basedir>
         <solr7.test.version>7.0.0</solr7.test.version>
         <solr6.test.version>6.6.1</solr6.test.version>
@@ -17,7 +17,7 @@
         <solr.test.version>${solr7.test.version}</solr.test.version>
         <skip.solr.test>${skipTests}</skip.solr.test>
     </properties>
-    <dependencies>
+    <dependencies xmlns="https://maven.apache.org/POM/4.0.0">
         <!-- MiniSolrCloudCluster used in tests requires the more recent
              metrics-core than the com.codahale.metrics version provided
              by janusgraph-core. This can be removed when janusgraph-core is
@@ -159,7 +159,7 @@
         </dependency>
         <!-- End logging backends. -->
     </dependencies>
-    <build>
+    <build xmlns="https://maven.apache.org/POM/4.0.0">
         <directory>${basedir}/target</directory>
         <finalName>${project.artifactId}-${project.version}</finalName>
         <resources>
@@ -212,7 +212,7 @@
             </plugin>
         </plugins>
     </build>
-    <profiles>
+    <profiles xmlns="https://maven.apache.org/POM/4.0.0">
         <profile>
             <id>solr7</id>
             <properties>

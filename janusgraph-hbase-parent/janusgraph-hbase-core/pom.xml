@@ -1,21 +1,21 @@
-<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion xmlns="https://maven.apache.org/POM/4.0.0">4.0.0</modelVersion>
+    <parent xmlns="https://maven.apache.org/POM/4.0.0">
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph-hbase-parent</artifactId>
-        <version>0.3.2-SNAPSHOT</version>
+        <version>0.3.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId>janusgraph-hbase-core</artifactId>
-    <name>JanusGraph-HBase: Version-independent Core</name>
-    <url>https://janusgraph.org</url>
+    <artifactId xmlns="https://maven.apache.org/POM/4.0.0">janusgraph-hbase-core</artifactId>
+    <name xmlns="https://maven.apache.org/POM/4.0.0">JanusGraph-HBase: Version-independent Core</name>
+    <url xmlns="https://maven.apache.org/POM/4.0.0">https://janusgraph.org</url>
     
-    <properties>
+    <properties xmlns="https://maven.apache.org/POM/4.0.0">
         <hadoop.profile>2.0</hadoop.profile>
         <top.level.basedir>${basedir}/../..</top.level.basedir>
     </properties>
     
-    <dependencies>
+    <dependencies xmlns="https://maven.apache.org/POM/4.0.0">
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-core</artifactId>
@@ -29,7 +29,7 @@
         </dependency>
     </dependencies>
     
-    <build>
+    <build xmlns="https://maven.apache.org/POM/4.0.0">
         <sourceDirectory>src/main/java</sourceDirectory>
         <plugins>
             <plugin>
@@ -79,7 +79,7 @@
         </plugins>
     </build>
     
-    <profiles>
+    <profiles xmlns="https://maven.apache.org/POM/4.0.0">
         <profile>
             <id>hbase1</id>
             <activation>
