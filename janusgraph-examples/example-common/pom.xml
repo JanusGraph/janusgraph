@@ -1,16 +1,16 @@
-<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion xmlns="https://maven.apache.org/POM/4.0.0">4.0.0</modelVersion>
+    <parent xmlns="https://maven.apache.org/POM/4.0.0">
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph-examples</artifactId>
-        <version>0.3.2-SNAPSHOT</version>
+        <version>0.3.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId>example-common</artifactId>
-    <name>Example-Common: Common Graph Code for Examples</name>
-    <url>https://janusgraph.org</url>
+    <artifactId xmlns="https://maven.apache.org/POM/4.0.0">example-common</artifactId>
+    <name xmlns="https://maven.apache.org/POM/4.0.0">Example-Common: Common Graph Code for Examples</name>
+    <url xmlns="https://maven.apache.org/POM/4.0.0">https://janusgraph.org</url>
 
-    <dependencies>
+    <dependencies xmlns="https://maven.apache.org/POM/4.0.0">
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-core</artifactId>
@@ -18,7 +18,7 @@
         </dependency>
     </dependencies>
 
-    <properties>
+    <properties xmlns="https://maven.apache.org/POM/4.0.0">
         <example.main.class>org.janusgraph.example.JanusGraphApp</example.main.class>
         <example.config>${project.basedir}/conf/jgex-inmemory.properties</example.config>
     </properties>

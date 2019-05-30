@@ -1,15 +1,15 @@
-<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion xmlns="https://maven.apache.org/POM/4.0.0">4.0.0</modelVersion>
+    <parent xmlns="https://maven.apache.org/POM/4.0.0">
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.3.2-SNAPSHOT</version>
+        <version>0.3.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId>janusgraph-es</artifactId>
-    <name>JanusGraph-ElasticSearch: Distributed Indexing Support</name>
-    <url>https://janusgraph.org</url>
-    <properties>
+    <artifactId xmlns="https://maven.apache.org/POM/4.0.0">janusgraph-es</artifactId>
+    <name xmlns="https://maven.apache.org/POM/4.0.0">JanusGraph-ElasticSearch: Distributed Indexing Support</name>
+    <url xmlns="https://maven.apache.org/POM/4.0.0">https://janusgraph.org</url>
+    <properties xmlns="https://maven.apache.org/POM/4.0.0">
         <top.level.basedir>${basedir}/..</top.level.basedir>
         <elasticsearch1.docker.version>1.7.6</elasticsearch1.docker.version>
         <elasticsearch2.docker.version>2.4.6</elasticsearch2.docker.version>
@@ -20,7 +20,7 @@
         <skip.es.test>${skipTests}</skip.es.test>
         <elasticsearch.docker.image>docker.elastic.co/elasticsearch/elasticsearch</elasticsearch.docker.image>
     </properties>
-    <dependencies>
+    <dependencies xmlns="https://maven.apache.org/POM/4.0.0">
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-core</artifactId>
@@ -103,7 +103,7 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-    <build>
+    <build xmlns="https://maven.apache.org/POM/4.0.0">
         <resources>
             <resource>
                 <directory>${basedir}/src/main/resources</directory>
@@ -175,7 +175,7 @@
         </plugins>
     </build>
 
-    <profiles>
+    <profiles xmlns="https://maven.apache.org/POM/4.0.0">
         <profile>
             <id>elasticsearch1</id>
             <properties>

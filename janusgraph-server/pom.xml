@@ -1,20 +1,18 @@
 <?xml version="1.0"?>
-<project
-    xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
-    xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion xmlns="https://maven.apache.org/POM/4.0.0">4.0.0</modelVersion>
+    <parent xmlns="https://maven.apache.org/POM/4.0.0">
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.3.2-SNAPSHOT</version>
+        <version>0.3.2</version>
     </parent>
-    <artifactId>janusgraph-server</artifactId>
-    <name>janusgraph-server</name>
-    <url>https://janusgraph.org</url>
-    <properties>
+    <artifactId xmlns="https://maven.apache.org/POM/4.0.0">janusgraph-server</artifactId>
+    <name xmlns="https://maven.apache.org/POM/4.0.0">janusgraph-server</name>
+    <url xmlns="https://maven.apache.org/POM/4.0.0">https://janusgraph.org</url>
+    <properties xmlns="https://maven.apache.org/POM/4.0.0">
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-    <dependencies>
+    <dependencies xmlns="https://maven.apache.org/POM/4.0.0">
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-core</artifactId>

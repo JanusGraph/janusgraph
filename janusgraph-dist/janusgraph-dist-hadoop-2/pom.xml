@@ -1,17 +1,17 @@
-<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion xmlns="https://maven.apache.org/POM/4.0.0">4.0.0</modelVersion>
+    <parent xmlns="https://maven.apache.org/POM/4.0.0">
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph-dist</artifactId>
-        <version>0.3.2-SNAPSHOT</version>
+        <version>0.3.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <packaging>pom</packaging>
-    <artifactId>janusgraph-dist-hadoop-2</artifactId>
-    <name>JanusGraph-Dist: Archive with Hadoop 2</name>
-    <url>https://janusgraph.org</url>
+    <packaging xmlns="https://maven.apache.org/POM/4.0.0">pom</packaging>
+    <artifactId xmlns="https://maven.apache.org/POM/4.0.0">janusgraph-dist-hadoop-2</artifactId>
+    <name xmlns="https://maven.apache.org/POM/4.0.0">JanusGraph-Dist: Archive with Hadoop 2</name>
+    <url xmlns="https://maven.apache.org/POM/4.0.0">https://janusgraph.org</url>
 
-    <properties>
+    <properties xmlns="https://maven.apache.org/POM/4.0.0">
         <hadoop.version.tag>hadoop2</hadoop.version.tag>
         <assembly.descriptor.dir>${project.parent.basedir}/src/assembly/descriptor</assembly.descriptor.dir>
         <assembly.static.dir>${project.parent.basedir}/src/assembly/static</assembly.static.dir>
@@ -20,7 +20,7 @@
         <top.level.basedir>${basedir}/../..</top.level.basedir>
     </properties>
 
-    <build>
+    <build xmlns="https://maven.apache.org/POM/4.0.0">
         <plugins>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -48,7 +48,7 @@
         </plugins>
     </build>
 
-    <profiles>
+    <profiles xmlns="https://maven.apache.org/POM/4.0.0">
         <profile>
             <id>hbase1</id>
             <activation>
