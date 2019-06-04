@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -74,7 +73,7 @@ public class AdjacentVertexFilterOptimizerStrategy extends AbstractTraversalStra
                 P predicate = ((IsStep) steps.get(1)).getPredicate();
                 //Check that we have a valid direction and a valid vertex filter predicate
                 if (direction != null && predicate.getBiPredicate() == Compare.eq && predicate.getValue() instanceof Vertex) {
-                    JanusGraphVertex vertex = JanusGraphTraversalUtil.getJanusGraphVertex((Vertex) predicate.getValue());
+                    Vertex vertex = (Vertex) predicate.getValue();
 
                     //Now, check that this step is preceded by VertexStep that returns edges
                     Step<?, ?> currentStep = originalStep.getPreviousStep();
