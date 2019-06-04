@@ -484,10 +484,14 @@ public abstract class IndexProviderTest {
                 assertEquals(2, tx.queryStream(new RawQuery(store,"time:[1000 TO *]",NO_PARAS)).count());
                 assertEquals(3, tx.queryStream(new RawQuery(store,"time:[* TO *]",NO_PARAS)).count());
                 assertEquals(1, tx.queryStream(new RawQuery(store,"weight:[5.1 TO 8.3]",NO_PARAS)).count());
+                assertEquals(1, tx.queryStream(new RawQuery(store,"weight:5.2",NO_PARAS)).count());
                 assertEquals(1, tx.queryStream(new RawQuery(store,"text:world AND time:1001",NO_PARAS)).count());
                 assertEquals(1, tx.queryStream(new RawQuery(store,"name:\"Hello world\"",NO_PARAS)).count());
                 assertEquals(1, tx.queryStream(new RawQuery(store, "boolean:true", NO_PARAS)).count());
                 assertEquals(2, tx.queryStream(new RawQuery(store, "boolean:false", NO_PARAS)).count());
+                assertEquals(2, tx.queryStream(new RawQuery(store, "date:{1970-01-01T00:00:01Z TO 1970-01-01T00:00:03Z]", NO_PARAS)).count());
+                assertEquals(3, tx.queryStream(new RawQuery(store, "date:[1970-01-01T00:00:01Z TO *]", NO_PARAS)).count());
+                assertEquals(1, tx.queryStream(new RawQuery(store, "date:\"1970-01-01T00:00:02Z\"", NO_PARAS)).count());
             }
 
             if (index.supports(new StandardKeyInformation(String.class, Cardinality.LIST, Mapping.STRING.asParameter()), Cmp.EQUAL)) {
