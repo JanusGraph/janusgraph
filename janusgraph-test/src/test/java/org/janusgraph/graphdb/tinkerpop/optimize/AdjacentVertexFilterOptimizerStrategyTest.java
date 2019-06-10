@@ -17,9 +17,13 @@ package org.janusgraph.graphdb.tinkerpop.optimize;
 import static java.time.Duration.ofSeconds;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.inV;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedFactory;
 import org.janusgraph.StorageSetup;
 import org.junit.jupiter.api.Test;
 
@@ -34,5 +38,24 @@ class AdjacentVertexFilterOptimizerStrategyTest {
             graph.traversal().withStrategies(AdjacentVertexFilterOptimizerStrategy.instance())
                  .V().outE().has("p", "v").filter(inV().is(vertex)).tryNext();
         });
+    }
+
+    @Test
+    void shouldNotFailedWithDetachedVertex() {
+        final Graph graph = StorageSetup.getInMemoryGraph();
+        GraphTraversalSource g = graph.traversal();
+        g.addV("A").property("p", "1").as("a")
+         .addV("A").property("p", "2").as("b")
+         .addE("E").from("a").to("b")
+         .iterate();
+        g.tx().commit();
+        g.withStrategies(AdjacentVertexFilterOptimizerStrategy.instance());
+
+        Vertex v1 = g.V().has("p", "1").next();
+        Vertex v2 = g.V().has("p", "2").next();
+        v1 = DetachedFactory.detach(v1, false);
+        v2 = DetachedFactory.detach(v2, false);
+
+        assertTrue(g.V(v1).bothE("E").filter(__.otherV().is(v2)).hasNext());
     }
 }
