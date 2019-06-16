@@ -274,6 +274,7 @@
                         <exclude>**/*.iml</exclude>
                         <exclude>**/*.json</exclude>
                         <exclude>**/*.xml</exclude>
+                        <exclude>**/*.xml.releaseBackup</exclude>
                         <exclude>docs/**</exclude>
                         <exclude>**/*.md</exclude>
                         <exclude>**/*.txt</exclude>
