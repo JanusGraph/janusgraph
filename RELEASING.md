@@ -7,7 +7,6 @@ Prerequisites
 The release process has only been tested on Linux and macOS.
 The following tools must be installed.
 
-*   [expect](http://expect.sourceforge.net/)
 *   [gpg](https://www.gnupg.org/) - Requires a running agent.
 
 ### Sonatype account
@@ -15,6 +14,38 @@ The following tools must be installed.
 The release artifacts will be deployed into Sonatype OSS with the Maven deploy plugin.
 You must have an account with Sonatype, and it must be associated with the JanusGraph org.
 See the relevant issue [here.](https://issues.sonatype.org/browse/OSSRH-28274)
+
+#### GPG Signing Key
+
+The JanusGraph artifacts are signed with a GPG signature.  
+If you don't already have a GPG signing key included with the `KEYS` file, you will need to create one and update the `KEYS` file.  
+If you already have your key included into `KEYS` file then skip this step.  
+Go to [releases](https://github.com/JanusGraph/janusgraph/releases) and download the `KEYS` file (which is located in Assets) from the latest release.  
+Generate your key:
+```Shell
+gpg --full-generate-key
+```
+Select:
+*   RSA and RSA
+*   4096 bits
+*   no expiration
+*   comment: `CODE SIGNING KEY`
+
+Add your key to the KEYS file:
+```Shell
+(gpg --list-sigs <key id> && gpg --armor --export <key id>) >> KEYS.
+```
+
+Once your key has been created and added to the KEYS file it needs to be published to a [public key server](https://sks-keyservers.net/status/).  
+You can upload to multiple key servers within the pool or use an alternate if `pgp.mit.edu` is down.  
+Sonatype typically uses the following key servers: `pool.sks-keyservers.net`, `keyserver.ubuntu.com`, `keys.gnupg.net`.
+```Shell
+gpg --keyserver <key server> --send-keys <key id>
+```
+Example: 
+```Shell
+gpg --keyserver pgp.mit.edu --send-keys 7F87F9BD4D9F71A6
+```
 
 ### Configure Maven for server passwords
 
@@ -30,6 +61,8 @@ Steps below were taken from [this guide.](https://maven.apache.org/guides/mini/g
   <master>{master passsword}</master>
 </settingsSecurity>
 ```
+
+**Notice:** The password and the encapsulating braces `{}` should be placed into the `<master>` tag. Example: `<master>{1234567ABCDEFG}</master>`
 
 *   Once the master password has been added to `$HOME/.m2/settings-security.xml` ,encrypt a server password: `mvn --encrypt-password`
 *   Create `$HOME/.m2/settings.xml` using your Sonatype username and encrypted server password
@@ -122,12 +155,42 @@ Before any artifacts can be generated and vote can be made the version number wi
 
 #### Update release version
 
-This command will prompt you for the release info and create a commit that updates the version from `x.y.z-SNAPSHOT` to `x.y.z`.
-This will also update the SCM tag.
-The current `pom.xml` files will be backed up with the name `pom.xml.releaseBackup` and left in staging.
+This command will remove `SNAPSHOT` from all versions in `pom` files.
 
 ```Shell
-mvn clean release:prepare
+mvn versions:set -DremoveSnapshot=true -DgenerateBackupPoms=false
+```
+
+After the version has been set, update the scm tag by opening the main `pom.xml` and changing `<tag>HEAD</tag>` to match the release tag.  
+Example: `<tag>v0.3.2</tag>`
+
+#### Update version-sensitive files
+
+Update version-sensitive files in the root and documentation sources in the `docs` subdirectory:
+
+*   `docs/changelog.adoc`
+*   `docs/versions.adoc`
+*   `docs/upgrade.adoc`
+*   `docs/xsl/common.xsl`
+
+You may also need to update the following files in the main repo for any new or updated dependencies:
+
+*   `NOTICE.txt`
+
+#### Create a release commit and a release tag
+
+Create a release commit:
+```Shell
+git commit -m "JanusGraph release <version> [full build]" -s
+```
+
+After that create a release tag with the next command:
+```Shell
+git tag -a <release tag> -m ""
+```
+Example:
+```Shell
+git tag -a v0.3.2 -m ""
 ```
 
 #### Create the Pull Request
@@ -138,19 +201,14 @@ After the updates are approved and merged, continue on with the release process.
 
 ### Preparing Documentation
 
-Update version-sensitive files in the root and documentation sources in the `docs` subdirectory:
-
-*   `docs/changelog.adoc`
-*   `docs/versions.adoc`
-*   `docs/upgrade.adoc`
-
+Prapare documentation from the release commit.
 Use the [`docs/build-and-copy-docs.sh`](docs/build-and-copy-docs.sh) script to build a set of docs for this release and copy them to the cloned `docs.janusgraph.org` repo which you will update later.
 **NOTE:** the `docs/build-and-copy-docs.sh` script by default expects the janusgraph and docs.janusgraph.org repositories to be located at `~/github/janusgraph/janusgraph` and `~/github/janusgraph/docs.janusgraph.org` respectively.
 It is important that the the `latest` symbolic link at the root of docs.janusgraph.org is pointing to the correct version as well.
-
-You may also need to update the following files in the main repo for any new or updated dependencies:
-
-*   `NOTICE.txt`
+To update symbolic link on linux open `docs.janusgraph.org` repository and perform the next command:
+```Shell
+ln -sfn <the highest version> latest
+```
 
 Once the documentation for the new version has been generated, open a pull request in [docs.janusgraph.org](https://github.com/JanusGraph/docs.janusgraph.org).
 
@@ -160,24 +218,29 @@ Build Release Artifacts
 *   Pull down the latest, merged code from GitHub.
 *   Stash any uncommitted changes.
 *   Delete untracked files and directories.
-*   Deploy it.
 
 ```Shell
-export JG_VER="janusgraph-0.2.3"
 git fetch
 git pull
 git stash save
-git clean -fd
-cd janusgraph-dist
+git clean -fdx
+```
+
+*   Deploy all jars (including javadoc and sources) and all signatures for jars to a staging repository on Sonatype.
+```Shell
 mvn clean javadoc:jar deploy -Pjanusgraph-release -DskipTests=true
+```
+
+*   Prepare files for GitHub release
+```Shell
+export JG_VER="janusgraph-0.2.3"
+mkdir -p ~/jg-staging
 cp janusgraph-dist/janusgraph-dist-hadoop-2/target/${JG_VER}-hadoop2.zip* ~/jg-staging/
 cd janusgraph-doc/target/docs/
-cd target/docs; mv chunk ${JG_VER}-hadoop2-doc
+mv chunk ${JG_VER}-hadoop2-doc
 zip -r ${JG_VER}-hadoop2-doc.zip ${JG_VER}-hadoop2-doc
 gpg --armor --detach-sign ${JG_VER}-hadoop2-doc.zip
 cp ${JG_VER}-hadoop2-doc.zip* ~/jg-staging/
-cd ~/jg-staging
-gpg --verify ${JG_VER}-hadoop2.zip.asc ${JG_VER}-hadoop2.zip
 ```
 
 If it fails due to Inappropriate ioctl for device error, run:
@@ -185,7 +248,12 @@ If it fails due to Inappropriate ioctl for device error, run:
 export GPG_TTY=$(tty)
 ```
 
-The `mvn clean deploy` uploads the release jars to a staging repository on Sonatype.
+*   Verify signature validity (both commands should show good signature)
+```Shell
+cd ~/jg-staging
+gpg --verify ${JG_VER}-hadoop2.zip.asc ${JG_VER}-hadoop2.zip
+gpg --verify ${JG_VER}-hadoop2-doc.zip.asc ${JG_VER}-hadoop2-doc.zip
+```
 
 ### Create a Draft Release on GitHub
 
@@ -196,11 +264,6 @@ All of the artifacts that were created and moved to `~/jg-staging/` in the previ
 Be sure to mark it as `pre-release`.
 It is recommended and keep the release in draft until you're ready to start a vote.
 In addition to the artifacts in `~/jg-staging/` a `KEYS` file must also be added to the release.
-
-#### GPG Signing Key
-
-The JanusGraph artifacts are signed with a GPG signature.
-If you don't already have a GPG signing key included with the `KEYS` file, you will need to create one and update the `KEYS` file.
 
 ### Close the staging repository
 
