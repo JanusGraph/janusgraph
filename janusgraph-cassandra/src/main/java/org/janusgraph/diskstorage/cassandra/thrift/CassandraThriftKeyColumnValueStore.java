@@ -256,17 +256,10 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     static BackendException convertException(Throwable e) {
-        if (e instanceof TException) {
-            return new PermanentBackendException(e);
-        } else if (e instanceof TimedOutException) {
+        if(e instanceof TimedOutException || e instanceof UnavailableException) {
             return new TemporaryBackendException(e);
-        } else if (e instanceof UnavailableException) {
-            return new TemporaryBackendException(e);
-        } else if (e instanceof InvalidRequestException) {
-            return new PermanentBackendException(e);
-        } else {
-            return new PermanentBackendException(e);
         }
+        return new PermanentBackendException(e);
     }
 
     @Override
