@@ -34,40 +34,112 @@ env:
     # Default Elasticsearch heap size can be too large for Travis
     - ES_JAVA_OPTS="-Xms256m -Xmx512m"
 
-  matrix:
+matrix:
+  include:
     # sort modules by test time with quickest modules first
-    - MODULE='server'
-    - MODULE='hadoop-parent/janusgraph-hadoop-2'
-    - MODULE='lucene'
-    - MODULE='solr' ARGS='-Pdocker,solr7'
-    - MODULE='es' ARGS='-Pelasticsearch6'
-    - MODULE='es' ARGS='-Pelasticsearch60'
-    - MODULE='es' ARGS='-Pelasticsearch5'
-    - MODULE='berkeleyje'
-    - MODULE='test'
-    - MODULE='test' TINKERPOP_TESTS_ONLY=true
-    - MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true'
-    - MODULE='cassandra' ARGS='-Dtest=**/graphdb/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - MODULE='cassandra' ARGS='-Dtest=**/graphdb/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - MODULE='cassandra' ARGS='-Dtest=**/graphdb/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true'
-    - MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/astyanax/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true'
-    - MODULE='cassandra' ARGS='-Dtest=**/graphdb/astyanax/*'
-    - MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/embedded/*'
-    - MODULE='cassandra' ARGS='-Dtest=***/cassandra/*,*/graphdb/embedded/*'
-    - MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/diskstorage/hbase/*'
-    - MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/graphdb/hbase/*'
-    - MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dtest=**/diskstorage/hbase/* -Dhbase.profile -Phbase2'
-    - MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dtest=**/graphdb/hbase/* -Dhbase.profile -Phbase2'
-    - MODULE='hadoop-parent/janusgraph-hadoop-2' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dhbase.profile -Phbase2'
-    - MODULE='cql' ARGS='-Dtest=**/diskstorage/cql/* -Dtest.skip.murmur=true'
-    - MODULE='cql' ARGS='-Dtest=**/diskstorage/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
-    - MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.murmur=true'
-    - MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
-    - COVERITY_ONLY=true
+    - env: MODULE='server'
+    - env: MODULE='hadoop-parent/janusgraph-hadoop-2'
+    - env: MODULE='lucene'
+    - env: MODULE='solr' ARGS='-Pdocker,solr7'
+    - env: MODULE='es' ARGS='-Pelasticsearch6'
+    - env: MODULE='es' ARGS='-Pelasticsearch60'
+    - env: MODULE='es' ARGS='-Pelasticsearch5'
+    - env: MODULE='berkeleyje'
+    - env: MODULE='test'
+    - env: MODULE='test' TINKERPOP_TESTS_ONLY=true
+    - env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true'
+    - env: MODULE='cassandra' ARGS='-Dtest=**/graphdb/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - env: MODULE='cassandra' ARGS='-Dtest=**/graphdb/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - env: MODULE='cassandra' ARGS='-Dtest=**/graphdb/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true'
+    - env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/astyanax/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true'
+    - env: MODULE='cassandra' ARGS='-Dtest=**/graphdb/astyanax/*'
+    - env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/embedded/*'
+    - env: MODULE='cassandra' ARGS='-Dtest=***/cassandra/*,*/graphdb/embedded/*'
+    - env: MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/diskstorage/hbase/*'
+    - env: MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/graphdb/hbase/*'
+    - env: MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dtest=**/diskstorage/hbase/* -Dhbase.profile -Phbase2'
+    - env: MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dtest=**/graphdb/hbase/* -Dhbase.profile -Phbase2'
+    - env: MODULE='hadoop-parent/janusgraph-hadoop-2' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dhbase.profile -Phbase2'
+    - env: MODULE='cql' ARGS='-Dtest=**/diskstorage/cql/* -Dtest.skip.murmur=true'
+    - env: MODULE='cql' ARGS='-Dtest=**/diskstorage/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
+    - env: MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.murmur=true'
+    - env: MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
+    - env: COVERITY_ONLY=true
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='3.11.0' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='3.11.0' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='3.11.0' ARGS='-Dtest=**/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='3.11.0' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='3.11.0' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest=**/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='3.11.0' ARGS='-Dtest=**/astyanax/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='3.11.0' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest=**/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='3.11.0' ARGS='-Dtest=**/cassandra/*,**/utils/*'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cql' CASSANDRA_VERSION='3.11.0' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.murmur-ssl=true -Dtest.skip.murmur-serial=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cql' CASSANDRA_VERSION='3.11.0' ARGS='-Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-ssl=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cql' CASSANDRA_VERSION='3.11.0' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='3.0.14' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='3.0.14' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='3.0.14' ARGS='-Dtest=**/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='3.0.14' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='3.0.14' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest=**/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='3.0.14' ARGS='-Dtest=**/astyanax/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='3.0.14' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest=**/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='3.0.14' ARGS='-Dtest=**/cassandra/*,**/utils/*'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cql' CASSANDRA_VERSION='3.0.14' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.murmur-ssl=true -Dtest.skip.murmur-serial=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cql' CASSANDRA_VERSION='3.0.14' ARGS='-Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-ssl=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cql' CASSANDRA_VERSION='3.0.14' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='2.2.10' ARGS='-DskipHBase'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='2.2.10' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='2.2.10' ARGS='-Dtest=**/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='2.2.10' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='2.2.10' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest=**/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='2.2.10' ARGS='-Dtest=**/astyanax/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='2.2.10' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest=**/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cassandra' CASSANDRA_VERSION='2.2.10' ARGS='-Dtest=**/cassandra/*,**/utils/*'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cql' CASSANDRA_VERSION='2.2.10' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.murmur-ssl=true -Dtest.skip.murmur-serial=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cql' CASSANDRA_VERSION='2.2.10' ARGS='-Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-ssl=true'
+    - if: type = cron OR commit_message =~ /\[full build\]/
+      env: MODULE='cql' CASSANDRA_VERSION='2.2.10' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true'
+  fast_finish: true
+  # https://docs.travis-ci.com/user/customizing-the-build#Rows-that-are-Allowed-to-Fail
+  allow_failures:
+    - env: MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='3.11.0' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false'
+    - env: MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='3.0.14' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false'
 
 install:
   - if [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] && [ -n "${COVERITY_ONLY:-}" ]; then
@@ -102,7 +174,8 @@ script:
         travis_wait 50 mvn clean verify --projects janusgraph-${MODULE} -Dtest.skip.tp=false -DskipTests=true ${ARGS};
     else
       echo "Testing janusgraph-${MODULE}";
-      travis_wait 50 mvn clean verify --projects janusgraph-${MODULE} -Pcoverage ${ARGS};
+      travis_wait 50 mvn clean verify --projects janusgraph-${MODULE}
+        -Pcoverage ${ARGS};
     fi
 
 after_success:
