@@ -113,7 +113,18 @@
     
     <profiles>
         <profile>
+            <id>hbase1</id>
+            <properties>
+                <hbase.server.version>${hbase1.version}</hbase.server.version>
+            </properties>
+        </profile>
+        <profile>
             <id>hbase2</id>
+            <activation>
+                <property>
+                    <name>!hbase.profile</name>
+                </property>
+            </activation>
             <properties>
                 <hbase.server.version>${hbase2.version}</hbase.server.version>
             </properties>

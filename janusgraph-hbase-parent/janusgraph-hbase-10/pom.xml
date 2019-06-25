@@ -129,11 +129,6 @@
     <profiles>
         <profile>
             <id>hbase1</id>
-            <activation>
-                <property>
-                    <name>!hbase.profile</name>
-                </property>
-            </activation>
             <dependencies>
                 <dependency>
                     <groupId>org.apache.hbase</groupId>
@@ -151,6 +146,11 @@
         </profile>
         <profile>
             <id>hbase2</id>
+            <activation>
+                <property>
+                    <name>!hbase.profile</name>
+                </property>
+            </activation>
             <dependencies>
                 <dependency>
                     <groupId>org.apache.hbase</groupId>
