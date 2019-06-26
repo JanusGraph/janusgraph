@@ -7,6 +7,11 @@ JanusGraph release.
 
 === Upgrading to JanusGraph 0.4.0
 
+==== HBase: Upgrade from 1.2 to 2.1
+The version of HBase that is included in the distribution of JanusGraph was upgraded from 1.2.6 to 2.1.5.
+HBase 2.x client is not fully backward compatible with HBase 1.x server. Users who operate their own HBase version 1.x cluster may need to upgrade their cluster to version 2.x.
+Optionally users may build their own distribution of JanusGraph which includes HBase 1.x from source with the maven flags -Dhbase.profile -Phbase1.
+
 ==== Cassandra: Upgrade from 2.1 to 2.2
 The version of Cassandra that is included in the distribution of JanusGraph was upgraded from 2.1.20 to 2.2.13.
 Refer to https://github.com/apache/cassandra/blob/174cf761f7897443080b8a840b649b7eab17ae25/NEWS.txt#L787[the upgrade documentation of Cassandra]
