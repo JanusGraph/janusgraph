@@ -80,10 +80,10 @@
         <sesame.version>2.7.10</sesame.version>
         <slf4j.version>1.7.12</slf4j.version>
         <httpcomponents.version>4.4.1</httpcomponents.version>
-        <hadoop2.version>2.7.2</hadoop2.version>
-        <hbase1.version>1.2.6</hbase1.version>
-        <hbase2.version>2.1.0</hbase2.version>
-        <hbase.server.version>1.2.6</hbase.server.version>
+        <hadoop2.version>2.7.7</hadoop2.version>
+        <hbase1.version>1.4.10</hbase1.version>
+        <hbase2.version>2.1.5</hbase2.version>
+        <hbase.server.version>1.4.10</hbase.server.version>
         <bigtable.version>1.11.0</bigtable.version>
         <scylladb.version>1.7.1</scylladb.version>
         <!-- align with org.apache.hbase:hbase -->
