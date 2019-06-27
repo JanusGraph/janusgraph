@@ -28,6 +28,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import org.janusgraph.diskstorage.es.compat.ES6Compat;
+import org.janusgraph.diskstorage.es.compat.ES7Compat;
 import org.janusgraph.diskstorage.es.rest.util.HttpAuthTypes;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
@@ -121,11 +122,6 @@ public class ElasticSearchIndex implements IndexProvider {
             "ES cluster health to reach at least yellow status.  " +
             "This string should be formatted as a natural number followed by the lowercase letter " +
             "\"s\", e.g. 3s or 60s.", ConfigOption.Type.MASKABLE, "30s");
-
-    public static final ConfigOption<Integer> MAX_RETRY_TIMEOUT =
-            new ConfigOption<>(ELASTICSEARCH_NS, "max-retry-timeout",
-            "Sets the maximum timeout (in milliseconds) to honour in case of multiple retries of the same request " +
-            "sent using the ElasticSearch Rest Client by JanusGraph.", ConfigOption.Type.MASKABLE, Integer.class);
 
     public static final ConfigOption<String> BULK_REFRESH =
             new ConfigOption<>(ELASTICSEARCH_NS, "bulk-refresh",
@@ -252,6 +248,11 @@ public class ElasticSearchIndex implements IndexProvider {
             ES_HTTP_AUTH_CUSTOM_NS, "authenticator-args", "Comma-separated custom authenticator constructor arguments.",
             ConfigOption.Type.LOCAL, new String[0]);
 
+    public static final ConfigOption<Boolean> SETUP_MAX_OPEN_SCROLL_CONTEXTS =
+        new ConfigOption<>(ELASTICSEARCH_NS, "setup-max-open-scroll-contexts",
+            "Whether JanusGraph should setup max_open_scroll_context to maximum value for the cluster or not.",
+            ConfigOption.Type.MASKABLE, true);
+
     public static final int HOST_PORT_DEFAULT = 9200;
 
     /**
@@ -263,6 +264,9 @@ public class ElasticSearchIndex implements IndexProvider {
      * Default distance_error_pct used when creating geo_shape mappings.
      */
     public static final double DEFAULT_GEO_DIST_ERROR_PCT = 0.025;
+
+    private static final String MAX_OPEN_SCROLL_CONTEXT_PARAMETER = "search.max_open_scroll_context";
+    private static final Map<String, Object> MAX_RESULT_WINDOW = ImmutableMap.of("index.max_result_window", Integer.MAX_VALUE);
 
     private static final ObjectWriter mapWriter;
     static {
@@ -305,6 +309,9 @@ public class ElasticSearchIndex implements IndexProvider {
             case SIX:
                 compat = new ES6Compat();
                 break;
+            case SEVEN:
+                compat = new ES7Compat();
+                break;
             default:
                 throw new PermanentBackendException("Unsupported Elasticsearch version: " + client.getMajorVersion());
         }
@@ -329,7 +336,34 @@ public class ElasticSearchIndex implements IndexProvider {
         indexSetting = new HashMap<>();
 
         ElasticSearchSetup.applySettingsFromJanusGraphConf(indexSetting, config);
-        indexSetting.put("index.max_result_window", Integer.MAX_VALUE);
+
+        setupMaxOpenScrollContextsIfNeeded(config);
+    }
+
+    private void setupMaxOpenScrollContextsIfNeeded(Configuration config) throws PermanentBackendException {
+
+        if(client.getMajorVersion().getValue() > 6){
+
+            boolean setupMaxOpenScrollContexts;
+
+            if(config.has(SETUP_MAX_OPEN_SCROLL_CONTEXTS)){
+                setupMaxOpenScrollContexts = config.get(SETUP_MAX_OPEN_SCROLL_CONTEXTS);
+            } else {
+                setupMaxOpenScrollContexts = SETUP_MAX_OPEN_SCROLL_CONTEXTS.getDefaultValue();
+            }
+
+            if(setupMaxOpenScrollContexts){
+
+                Map<String, Object> settings = ImmutableMap.of("persistent",
+                    ImmutableMap.of(MAX_OPEN_SCROLL_CONTEXT_PARAMETER, Integer.MAX_VALUE));
+
+                try {
+                    client.updateClusterSettings(settings);
+                } catch (final IOException e) {
+                    throw new PermanentBackendException(e.getMessage(), e);
+                }
+            }
+        }
     }
 
     /**
@@ -350,7 +384,7 @@ public class ElasticSearchIndex implements IndexProvider {
         // Create index if it does not useExternalMappings and if it does not already exist
         if (!useExternalMappings && !client.indexExists(index)) {
             client.createIndex(index, indexSetting);
-
+            client.updateIndexSettings(index, MAX_RESULT_WINDOW);
             try {
                 log.debug("Sleeping {} ms after {} index creation returned from actionGet()", createSleep, index);
                 Thread.sleep(createSleep);
@@ -1298,4 +1332,9 @@ public class ElasticSearchIndex implements IndexProvider {
             throw new PermanentBackendException("Could not check if index " + indexName + " exists", e);
         }
     }
+
+    protected ElasticMajorVersion getVersion() {
+        return client.getMajorVersion();
+    }
+
 }

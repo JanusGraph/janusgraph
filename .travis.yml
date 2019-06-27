@@ -41,6 +41,7 @@ matrix:
     - env: MODULE='hadoop-parent/janusgraph-hadoop-2'
     - env: MODULE='lucene'
     - env: MODULE='solr' ARGS='-Pdocker,solr7'
+    - env: MODULE='es' ARGS='-Pelasticsearch7'
     - env: MODULE='es' ARGS='-Pelasticsearch6'
     - env: MODULE='es' ARGS='-Pelasticsearch60'
     - env: MODULE='es' ARGS='-Pelasticsearch5'
