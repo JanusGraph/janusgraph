@@ -18,7 +18,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
@@ -31,6 +30,7 @@ import org.apache.tinkerpop.shaded.jackson.databind.ObjectReader;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectWriter;
 import org.apache.tinkerpop.shaded.jackson.databind.SerializationFeature;
 import org.apache.tinkerpop.shaded.jackson.databind.module.SimpleModule;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
@@ -47,7 +47,6 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,16 +58,23 @@ import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
 
 public class RestElasticSearchClient implements ElasticSearchClient {
 
-
     private static final Logger log = LoggerFactory.getLogger(RestElasticSearchClient.class);
 
     private static final String REQUEST_TYPE_DELETE = "DELETE";
     private static final String REQUEST_TYPE_GET = "GET";
     private static final String REQUEST_TYPE_POST = "POST";
     private static final String REQUEST_TYPE_PUT = "PUT";
+    private static final String REQUEST_TYPE_HEAD = "HEAD";
     private static final String REQUEST_SEPARATOR = "/";
     private static final String REQUEST_PARAM_BEGINNING = "?";
     private static final String REQUEST_PARAM_SEPARATOR = "&";
+
+    public static final String INCLUDE_TYPE_NAME_PARAMETER = "include_type_name";
+    private static final String REST_TOTAL_HITS_AS_INT_PARAMETER = "rest_total_hits_as_int";
+    private static final String TRACK_TOTAL_HITS_PARAMETER = "track_total_hits";
+
+    private static final Request INFO_REQUEST = new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR);
+    private static final Map<String, Object> TRACK_TOTAL_HITS_ONLY = ImmutableMap.of(TRACK_TOTAL_HITS_PARAMETER, true);
 
     private static final ObjectMapper mapper;
     private static final ObjectReader mapReader;
@@ -115,7 +121,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
         majorVersion = DEFAULT_VERSION;
         try {
-            final Response response = delegate.performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR);
+            final Response response = delegate.performRequest(INFO_REQUEST);
             try (final InputStream inputStream = response.getEntity().getContent()) {
                 final ClusterInfo info = mapper.readValue(inputStream, ClusterInfo.class);
                 majorVersion = ElasticMajorVersion.parse(info.getVersion() != null ? (String) info.getVersion().get("number") : null);
@@ -129,8 +135,12 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     @Override
     public void clusterHealthRequest(String timeout) throws IOException {
-        final Map<String,String> params = ImmutableMap.of("wait_for_status","yellow","timeout", timeout);
-        final Response response = delegate.performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + "_cluster" + REQUEST_SEPARATOR + "health", params);
+        Request clusterHealthRequest = new Request(REQUEST_TYPE_GET,
+            REQUEST_SEPARATOR + "_cluster" + REQUEST_SEPARATOR + "health");
+        clusterHealthRequest.addParameter("wait_for_status", "yellow");
+        clusterHealthRequest.addParameter("timeout", timeout);
+
+        final Response response = delegate.performRequest(clusterHealthRequest);
         try (final InputStream inputStream = response.getEntity().getContent()) {
             final Map<String,Object> values = mapReader.readValue(inputStream);
             if (!values.containsKey("timed_out")) {
@@ -143,45 +153,63 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     @Override
     public boolean indexExists(String indexName) throws IOException {
-        boolean exists = false;
-        try {
-            delegate.performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName);
-            exists = true;
-        } catch (final IOException e) {
-            if (!e.getMessage().contains("404 Not Found")) {
-                throw e;
-            }
-        }
-        return exists;
+        final Response response = delegate.performRequest(new Request(REQUEST_TYPE_HEAD, REQUEST_SEPARATOR + indexName));
+        return response.getStatusLine().getStatusCode() == 200;
     }
 
     @Override
     public boolean isIndex(String indexName) {
-        boolean exists = false;
         try {
-            final Response response = delegate.performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName);
+            final Response response = delegate.performRequest(new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName));
             try (final InputStream inputStream = response.getEntity().getContent()) {
-                exists = mapper.readValue(inputStream, Map.class).containsKey(indexName);
+                return mapper.readValue(inputStream, Map.class).containsKey(indexName);
             }
         } catch (final IOException ignored) {
         }
-        return exists;
+        return false;
     }
 
     @Override
     public boolean isAlias(String aliasName)  {
-        boolean exists = false;
         try {
-            delegate.performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + "_alias" + REQUEST_SEPARATOR + aliasName);
-            exists = true;
+            delegate.performRequest(new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR + "_alias" + REQUEST_SEPARATOR + aliasName));
+            return true;
         } catch (final IOException ignored) {
         }
-        return exists;
+        return false;
     }
 
     @Override
     public void createIndex(String indexName, Map<String,Object> settings) throws IOException {
-        performRequest(REQUEST_TYPE_PUT, REQUEST_SEPARATOR + indexName, mapWriter.writeValueAsBytes(settings));
+
+        Request request = new Request(REQUEST_TYPE_PUT, REQUEST_SEPARATOR + indexName);
+
+        if(ElasticMajorVersion.SEVEN.equals(majorVersion)){
+            // TODO: Temporary solution to support mapping types in ES7
+            request.addParameter(INCLUDE_TYPE_NAME_PARAMETER, "true");
+
+            if(settings != null && settings.size() > 0){
+                Map<String,Object> updatedSettings = new HashMap<>();
+                updatedSettings.put("settings", settings);
+                settings = updatedSettings;
+            }
+        }
+
+        performRequest(request, mapWriter.writeValueAsBytes(settings));
+    }
+
+    @Override
+    public void updateIndexSettings(String indexName, Map<String,Object> settings) throws IOException {
+
+        performRequest(REQUEST_TYPE_PUT, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR +"_settings",
+            mapWriter.writeValueAsBytes(settings));
+    }
+
+    @Override
+    public void updateClusterSettings(Map<String, Object> settings) throws IOException {
+
+        performRequest(REQUEST_TYPE_PUT, REQUEST_SEPARATOR + "_cluster" + REQUEST_SEPARATOR + "settings",
+            mapWriter.writeValueAsBytes(settings));
     }
 
     @Override
@@ -201,12 +229,30 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     @Override
     public void createMapping(String indexName, String typeName, Map<String,Object> mapping) throws IOException {
-        performRequest(REQUEST_TYPE_PUT, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_mapping" + REQUEST_SEPARATOR + typeName, mapWriter.writeValueAsBytes(mapping));
+
+        Request request = new Request(REQUEST_TYPE_PUT, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_mapping" + REQUEST_SEPARATOR + typeName);
+
+        if(ElasticMajorVersion.SEVEN.equals(majorVersion)) {
+            // TODO: Temporary solution to support mapping types in ES7
+            // Mapping types should be removed before ES8
+            request.addParameter(INCLUDE_TYPE_NAME_PARAMETER, "true");
+        }
+
+        performRequest(request, mapWriter.writeValueAsBytes(mapping));
     }
 
     @Override
     public IndexMapping getMapping(String indexName, String typeName) throws IOException {
-        try (final InputStream inputStream = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_mapping" + REQUEST_SEPARATOR + typeName, null).getEntity().getContent()) {
+
+        Request request = new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_mapping" + REQUEST_SEPARATOR + typeName);
+
+        if(ElasticMajorVersion.SEVEN.equals(majorVersion)) {
+            // TODO: Temporary solution to support mapping types in ES7
+            // Mapping types should be removed before ES8
+            request.addParameter(INCLUDE_TYPE_NAME_PARAMETER, "true");
+        }
+
+        try (final InputStream inputStream = performRequest(request, null).getEntity().getContent()) {
             final Map<String, IndexMappings> settings = mapper.readValue(inputStream, new TypeReference<Map<String, IndexMappings>>() {});
             return settings != null ? settings.get(indexName).getMappings().get(typeName) : null;
         } catch (final JsonParseException | JsonMappingException | ResponseException e) {
@@ -275,58 +321,77 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     }
 
     @Override
-    public RestSearchResponse search(String indexName, String type, Map<String,Object> request, boolean useScroll) throws IOException {
+    public RestSearchResponse search(String indexName, String type, Map<String,Object> requestData, boolean useScroll) throws IOException {
         final StringBuilder path = new StringBuilder(REQUEST_SEPARATOR).append(indexName);
         if (!Strings.isNullOrEmpty(type)) {
             path.append(REQUEST_SEPARATOR).append(type);
         }
         path.append(REQUEST_SEPARATOR).append("_search");
-        if (useScroll) path.append(REQUEST_PARAM_BEGINNING).append("scroll=").append(scrollKeepAlive);
-        final byte[] requestData = mapper.writeValueAsBytes(request);
-        if (log.isDebugEnabled()) {
-            log.debug("Elasticsearch request: " + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(request));
+        if (useScroll) {
+            path.append(REQUEST_PARAM_BEGINNING).append("scroll=").append(scrollKeepAlive);
         }
-
-        final Response response = performRequest(REQUEST_TYPE_POST, path.toString(), requestData);
-        try (final InputStream inputStream = response.getEntity().getContent()) {
-            return mapper.readValue(inputStream, RestSearchResponse.class);
-        }
+        return search(requestData, path.toString(), true);
     }
 
     @Override
     public RestSearchResponse search(String scrollId) throws IOException {
-        final String path;
-        final byte[] requestData;
-        path = REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll";
-        final Map<String, Object> request = new HashMap<>();
-        request.put("scroll", scrollKeepAlive);
-        request.put("scroll_id", scrollId);
-        requestData = mapper.writeValueAsBytes(request);
-        if (log.isDebugEnabled()) {
-            log.debug("Elasticsearch request: " + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(request));
-        }
-        final Response response = performRequest(REQUEST_TYPE_POST, path, requestData);
-        try (final InputStream inputStream = response.getEntity().getContent()) {
-            return mapper.readValue(inputStream, RestSearchResponse.class);
-        }
+        final Map<String, Object> requestData = new HashMap<>();
+        requestData.put("scroll", scrollKeepAlive);
+        requestData.put("scroll_id", scrollId);
+        return search(requestData, REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll", false);
     }
 
     @Override
     public void deleteScroll(String scrollId) throws IOException {
-        delegate.performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll" + REQUEST_SEPARATOR + scrollId);
+        delegate.performRequest(new Request(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll" + REQUEST_SEPARATOR + scrollId));
     }
 
     public void setBulkRefresh(String bulkRefresh) {
         this.bulkRefresh = bulkRefresh;
     }
 
+    private RestSearchResponse search(Map<String, Object> requestData, String path, boolean searchInitialized) throws IOException {
+
+        final Request request = new Request(REQUEST_TYPE_POST, path);
+        if(ElasticMajorVersion.SEVEN.equals(majorVersion)) {
+
+            // TODO: Temporary solution to return total hits as int parameter in ES7
+            // Total hits should be represented as an object before ES8
+            request.addParameter(REST_TOTAL_HITS_AS_INT_PARAMETER, "true");
+
+            // TODO: This parameter forces ES to always count correctly total hits but it is bad for performance
+            // We should not rely on total hits or optimize working with total hits `relation` parameter
+            if(searchInitialized){
+                if(requestData == null){
+                    requestData = TRACK_TOTAL_HITS_ONLY;
+                } else {
+                    requestData.put(TRACK_TOTAL_HITS_PARAMETER, true);
+                }
+            }
+        }
+
+        final byte[] requestDataBytes = mapper.writeValueAsBytes(requestData);
+        if (log.isDebugEnabled()) {
+            log.debug("Elasticsearch request: " + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(requestData));
+        }
+
+        final Response response = performRequest(request, requestDataBytes);
+        try (final InputStream inputStream = response.getEntity().getContent()) {
+            return mapper.readValue(inputStream, RestSearchResponse.class);
+        }
+    }
+
     private Response performRequest(String method, String path, byte[] requestData) throws IOException {
+        return performRequest(new Request(method, path), requestData);
+    }
+
+    private Response performRequest(Request request, byte[] requestData) throws IOException {
+
         final HttpEntity entity = requestData != null ? new ByteArrayEntity(requestData, ContentType.APPLICATION_JSON) : null;
-        final Response response = delegate.performRequest(
-            method,
-            path,
-            Collections.emptyMap(),
-            entity);
+
+        request.setEntity(entity);
+
+        final Response response = delegate.performRequest(request);
 
         if (response.getStatusLine().getStatusCode() >= 400) {
             throw new IOException("Error executing request: " + response.getStatusLine().getReasonPhrase());
