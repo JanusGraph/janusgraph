@@ -1854,6 +1854,10 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     protected abstract boolean supportsCollections();
 
+    protected boolean supportsGeoCollections() {
+        return true;
+    }
+
     /**
      * Tests indexing sets
      */
@@ -1869,14 +1873,21 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             final PropertyKey intProperty = mgmt.makePropertyKey("age").dataType(Integer.class).cardinality(cardinality).make();
             final PropertyKey longProperty = mgmt.makePropertyKey("long").dataType(Long.class).cardinality(cardinality).make();
             final PropertyKey uuidProperty = mgmt.makePropertyKey("uuid").dataType(UUID.class).cardinality(cardinality).make();
-            final PropertyKey geopointProperty = mgmt.makePropertyKey("geopoint").dataType(Geoshape.class).cardinality(cardinality).make();
-            mgmt.buildIndex("collectionIndex", Vertex.class).addKey(stringProperty, getStringMapping()).addKey(intProperty).addKey(longProperty).addKey(uuidProperty).addKey(geopointProperty).buildMixedIndex(INDEX);
+            JanusGraphManagement.IndexBuilder indexBuilder =
+                mgmt.buildIndex("collectionIndex", Vertex.class).addKey(stringProperty, getStringMapping()).addKey(intProperty).addKey(longProperty).addKey(uuidProperty);
+            if (supportsGeoCollections()) {
+                final PropertyKey geopointProperty = mgmt.makePropertyKey("geopoint").dataType(Geoshape.class).cardinality(cardinality).make();
+                indexBuilder.addKey(geopointProperty);
+            }
+            indexBuilder.buildMixedIndex(INDEX);
 
             finishSchema();
             testCollection(cardinality, "name", "Totoro", "Hiro");
             testCollection(cardinality, "age", 1, 2);
             testCollection(cardinality, "long", 1L, 2L);
-            testCollection(cardinality, "geopoint", Geoshape.point(1.0, 1.0), Geoshape.point(2.0, 2.0));
+            if (supportsGeoCollections()) {
+                testCollection(cardinality, "geopoint", Geoshape.point(1.0, 1.0), Geoshape.point(2.0, 2.0));
+            }
             final String backend = readConfig.get(INDEX_BACKEND, INDEX);
             // Solr 6 has issues processing UUIDs with Multivalues
             // https://issues.apache.org/jira/browse/SOLR-11264
@@ -1960,7 +1971,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertEquals(v1, getOnlyElement(graph.query().has(property, value2).vertices()));
 
         //If this is a geo test then try a within query
-        if (value1 instanceof Geoshape) {
+        if (value1 instanceof Geoshape && supportsGeoCollections()) {
             assertEquals(v1, getOnlyElement(graph.query().has(property, Geo.WITHIN, Geoshape.circle(1.0, 1.0, 0.1)).vertices()));
             assertEquals(v1, getOnlyElement(graph.query().has(property, Geo.WITHIN, Geoshape.circle(2.0, 2.0, 0.1)).vertices()));
         }
