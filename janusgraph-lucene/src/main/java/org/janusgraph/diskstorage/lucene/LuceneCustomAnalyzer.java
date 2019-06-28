@@ -14,17 +14,19 @@
 
 package org.janusgraph.diskstorage.lucene;
 
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
 import org.janusgraph.graphdb.types.ParameterType;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * An Analyzer that allows delegating analysis to custom analyzers. The class names for the custom analyzers are
@@ -58,6 +60,9 @@ public class LuceneCustomAnalyzer extends DelegatingAnalyzerWrapper {
     @Override
     final protected Analyzer getWrappedAnalyzer(String fieldName) {
         final KeyInformation keyInformation = informations.get(store, fieldName);
+        if (keyInformation != null && keyInformation.getDataType().equals(UUID.class)) {
+            return analyzerFor(KEYWORD_ANALYZER);
+        }
         if (keyInformation == null || !String.class.isAssignableFrom(keyInformation.getDataType())) {
             return analyzerFor(STANDARD_ANALYZER);
         }

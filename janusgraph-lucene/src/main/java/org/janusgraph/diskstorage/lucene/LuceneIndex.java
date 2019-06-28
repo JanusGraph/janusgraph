@@ -14,25 +14,26 @@
 
 package org.janusgraph.diskstorage.lucene;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
-import org.apache.lucene.util.BytesRef;
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.shape.Shape;
-
 import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.attribute.Cmp;
+import org.janusgraph.core.attribute.Geo;
+import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.core.attribute.Text;
 import org.janusgraph.core.schema.Mapping;
-import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.core.attribute.*;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.indexing.*;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.serialize.AttributeUtil;
+import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.util.system.IOUtils;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Sets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
@@ -53,6 +54,9 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.BytesRef;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,8 +67,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -84,6 +88,8 @@ public class LuceneIndex implements IndexProvider {
     private static final IndexFeatures LUCENE_FEATURES = new IndexFeatures.Builder()
         .supportedStringMappings(Mapping.TEXT, Mapping.STRING)
         .supportsCardinality(Cardinality.SINGLE)
+        .supportsCardinality(Cardinality.LIST)
+        .supportsCardinality(Cardinality.SET)
         .supportsCustomAnalyzer()
         .supportsNanoseconds()
         .supportsGeoContains()
@@ -242,16 +248,30 @@ public class LuceneIndex implements IndexProvider {
                 Preconditions.checkNotNull(doc);
                 for (final IndexEntry del : mutation.getDeletions()) {
                     Preconditions.checkArgument(!del.hasMetaData(), "Lucene index does not support indexing meta data: %s", del);
-                    final String key = del.field;
-                    if (doc.getField(key) != null) {
-                        if (log.isTraceEnabled())
-                            log.trace("Removing field [{}] on document [{}]", key, documentId);
-
-                        doc.removeFields(key);
+                    String fieldName = del.field;
+                    if (log.isTraceEnabled()) {
+                        log.trace("Removing field [{}] on document [{}]", fieldName, documentId);
+                    }
+                    Iterator<IndexableField> it = doc.iterator();
+                    KeyInformation ki = storeRetriever.get(fieldName);
+                    while (it.hasNext()) {
+                        IndexableField field = it.next();
+                        if (field.name().equals(del.field)) {
+                            if (ki.getCardinality() == Cardinality.SINGLE) {
+                                it.remove();
+                                break;
+                            } else {
+                                boolean multipleCardinalityFieldShouldBeRemoved = convertToStringValue(ki, del.value).equals(field.stringValue());
+                                if (multipleCardinalityFieldShouldBeRemoved) {
+                                    it.remove();
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
 
-                addToDocument(doc, mutation.getAdditions(), storeRetriever);
+                addToDocument(doc, mutation.getAdditions(), storeRetriever, false);
 
                 //write the old document to the index with the modifications
                 writer.updateDocument(new Term(DOCID, documentId), doc);
@@ -288,7 +308,8 @@ public class LuceneIndex implements IndexProvider {
                         }
 
                         final Document doc = retrieveOrCreate(docID, searcher);
-                        addToDocument(doc, content, storeRetriever);
+                        Iterators.removeIf(doc.iterator(), field -> !field.name().equals(DOCID));
+                        addToDocument(doc, content, storeRetriever, true);
 
                         //write the old document to the index with the modifications
                         writer.updateDocument(new Term(DOCID, docID), doc);
@@ -330,23 +351,66 @@ public class LuceneIndex implements IndexProvider {
         return doc;
     }
 
-    private void addToDocument(Document doc, List<IndexEntry> content, final KeyInformation.StoreRetriever information) {
+    private void addToDocument(Document doc, List<IndexEntry> content, final KeyInformation.StoreRetriever information, boolean isNew) {
         Preconditions.checkNotNull(doc);
 
         for (final IndexEntry e : content) {
             Preconditions.checkArgument(!e.hasMetaData(), "Lucene index does not support indexing meta data: %s", e);
-            if (log.isTraceEnabled())
+            if (log.isTraceEnabled()) {
                 log.trace("Adding field [{}] on document [{}]", e.field, doc.get(DOCID));
-
-            if (doc.getField(e.field) != null) {
-                doc.removeFields(e.field);
             }
-            doc.add(buildStoredField(e.field, e.value, information.get(e.field)));
+            KeyInformation ki = information.get(e.field);
+            if (!(isNew || ki.getCardinality() == Cardinality.LIST)) {
+                removeFieldIfNeeded(doc, e, ki);
+            }
+            doc.add(buildStoreField(e.field, e.value, ki));
         }
         buildIndexFields(doc, information).forEach(doc::add);
     }
 
-    private Field buildStoredField(final String fieldName, final Object value, final KeyInformation keyInformation) {
+    private void removeFieldIfNeeded(final Document doc, final IndexEntry e, final KeyInformation ki) {
+        boolean isSingle = ki.getCardinality() == Cardinality.SINGLE;
+        boolean isSet = ki.getCardinality() == Cardinality.SET;
+        Iterator<IndexableField> it = doc.iterator();
+        while (it.hasNext()) {
+            IndexableField field = it.next();
+            if (!field.name().equals(e.field)) {
+                continue;
+            }
+            if (isSingle || (isSet && convertToStringValue(ki, e.value).equals(field.stringValue()))) {
+                it.remove();
+                break;
+            }
+        }
+    }
+
+    private String convertToStringValue(final KeyInformation ki, Object value) {
+        String converted;
+        if (value instanceof Number) {
+            converted = value.toString();
+        } else if (AttributeUtil.isString(value)) {
+            Mapping mapping = Mapping.getMapping(ki);
+            if (mapping == Mapping.DEFAULT || mapping == Mapping.TEXT) {
+                converted = ((String) value).toLowerCase();
+            } else {
+                converted = (String) value;
+            }
+        } else if (value instanceof Date) {
+            converted = String.valueOf(((Date) value).getTime());
+        } else if (value instanceof Instant) {
+            converted = String.valueOf(((Instant) value).toEpochMilli());
+        } else if (value instanceof Boolean) {
+            converted = String.valueOf(((Boolean) value) ? 1 : 0);
+        } else if (value instanceof UUID) {
+            converted = value.toString();
+        } else {
+            throw new IllegalArgumentException("Unsupported type: " + value);
+        }
+        return converted;
+    }
+
+    // NOTE: new SET/LIST store fields must be sync with convertToStringValue
+    private Field buildStoreField(final String fieldName, final Object value, final KeyInformation keyInformation) {
         final Field field;
         if (value instanceof Number) {
             if (AttributeUtil.isWholeNumber((Number) value)) {
@@ -380,8 +444,7 @@ public class LuceneIndex implements IndexProvider {
         } else if (value instanceof Boolean) {
             field = new StoredField(fieldName, ((Boolean) value) ? 1 : 0);
         } else if (value instanceof UUID) {
-            //Solr stores UUIDs as strings, we we do the sam
-            field = new StringField(fieldName, value.toString(), Field.Store.YES);
+            field = new TextField(fieldName, value.toString(), Field.Store.YES);
         } else {
             throw new IllegalArgumentException("Unsupported type: " + value);
         }
@@ -396,19 +459,23 @@ public class LuceneIndex implements IndexProvider {
                 continue;
             }
             KeyInformation ki = information.get(fieldName);
+            boolean isPossibleSortIndex = ki.getCardinality() == Cardinality.SINGLE;
             Class<?> dataType = ki.getDataType();
-
             if (AttributeUtil.isWholeNumber(dataType)) {
                 long value = field.numericValue().longValue();
                 fields.add(new LongPoint(fieldName, value));
-                fields.add(new NumericDocValuesField(fieldName, value));
+                if (isPossibleSortIndex) {
+                    fields.add(new NumericDocValuesField(fieldName, value));
+                }
             } else if (AttributeUtil.isDecimal(dataType)) {
                 double value = field.numericValue().doubleValue();
                 fields.add(new DoublePoint(fieldName, value));
-                fields.add(new DoubleDocValuesField(fieldName, value));
+                if (isPossibleSortIndex) {
+                    fields.add(new DoubleDocValuesField(fieldName, value));
+                }
             } else if (AttributeUtil.isString(dataType)) {
                 final Mapping mapping = Mapping.getMapping(information.get(fieldName));
-                if (mapping.equals(Mapping.STRING)) {
+                if (mapping.equals(Mapping.STRING) && isPossibleSortIndex) {
                     fields.add(new SortedDocValuesField(fieldName, new BytesRef(field.stringValue())));
                 }
             } else if (AttributeUtil.isGeo(dataType)) {
@@ -425,17 +492,17 @@ public class LuceneIndex implements IndexProvider {
             } else if (dataType.equals(Date.class) || dataType.equals(Instant.class)) {
                 long value = field.numericValue().longValue();
                 fields.add(new LongPoint(fieldName, value));
-                fields.add(new NumericDocValuesField(fieldName, value));
+                if (isPossibleSortIndex) {
+                    fields.add(new NumericDocValuesField(fieldName, value));
+                }
             } else if (dataType.equals(Boolean.class)) {
                 fields.add(new IntPoint(fieldName, field.numericValue().intValue() == 1 ? 1 : 0));
-                fields.add(new NumericDocValuesField(fieldName, field.numericValue().intValue()));
+                if (isPossibleSortIndex) {
+                    fields.add(new NumericDocValuesField(fieldName, field.numericValue().intValue()));
+                }
             }
         }
         return fields;
-    }
-
-    private static Sort getSortOrder(IndexQuery query) {
-        return getSortOrder(query.getOrder());
     }
 
     private static Sort getSortOrder(List<IndexQuery.OrderEntry> orders) {
@@ -477,7 +544,13 @@ public class LuceneIndex implements IndexProvider {
                 q = new MatchAllDocsQuery();
 
             final long time = System.currentTimeMillis();
-            final TopDocs docs = searcher.search(q, query.hasLimit() ? query.getLimit() : Integer.MAX_VALUE - 1, getSortOrder(query));
+            final TopDocs docs;
+            int limit = query.hasLimit() ? query.getLimit() : Integer.MAX_VALUE - 1;
+            if (query.getOrder().isEmpty()) {
+                docs = searcher.search(q, limit);
+            } else {
+                docs = searcher.search(q, limit, getSortOrder(query.getOrder()));
+            }
             log.debug("Executed query [{}] in {} ms", q, System.currentTimeMillis() - time);
             final List<String> result = new ArrayList<>(docs.scoreDocs.length);
             for (int i = 0; i < docs.scoreDocs.length; i++) {
@@ -733,10 +806,10 @@ public class LuceneIndex implements IndexProvider {
             if (adjustedLimit < Integer.MAX_VALUE - 1 - offset) adjustedLimit += offset;
             else adjustedLimit = Integer.MAX_VALUE - 1;
             final TopDocs docs;
-            if (!query.getOrders().isEmpty()) {
-                docs = searcher.search(q, adjustedLimit, getSortOrder(query.getOrders()));
-            } else {
+            if (query.getOrders().isEmpty()) {
                 docs = searcher.search(q, adjustedLimit);
+            } else {
+                docs = searcher.search(q, adjustedLimit, getSortOrder(query.getOrders()));
             }
             log.debug("Executed query [{}] in {} ms", q, System.currentTimeMillis() - time);
             final List<RawQuery.Result<String>> result = new ArrayList<>(docs.scoreDocs.length);
@@ -757,7 +830,7 @@ public class LuceneIndex implements IndexProvider {
             final Analyzer analyzer = delegatingAnalyzerFor(query.getStore(), information);
             q = new NumericTranslationQueryParser(information.get(query.getStore()), "_all", analyzer).parse(query.getQuery());
         } catch (final ParseException e) {
-            throw new PermanentBackendException("Could not parse raw query: "+query.getQuery(),e);
+            throw new PermanentBackendException("Could not parse raw query: " + query.getQuery(), e);
         }
 
         try {
@@ -783,7 +856,6 @@ public class LuceneIndex implements IndexProvider {
 
     @Override
     public boolean supports(KeyInformation information, JanusGraphPredicate janusgraphPredicate) {
-        if (information.getCardinality() != Cardinality.SINGLE) return false;
         final Class<?> dataType = information.getDataType();
         final Mapping mapping = Mapping.getMapping(information);
         if (mapping != Mapping.DEFAULT && !AttributeUtil.isString(dataType) &&
@@ -792,6 +864,7 @@ public class LuceneIndex implements IndexProvider {
         if (Number.class.isAssignableFrom(dataType)) {
             return janusgraphPredicate instanceof Cmp;
         } else if (dataType == Geoshape.class) {
+            if (information.getCardinality() != Cardinality.SINGLE) return false;
             return janusgraphPredicate == Geo.INTERSECT || janusgraphPredicate == Geo.WITHIN || janusgraphPredicate == Geo.CONTAINS;
         } else if (AttributeUtil.isString(dataType)) {
             switch (mapping) {
@@ -813,7 +886,6 @@ public class LuceneIndex implements IndexProvider {
 
     @Override
     public boolean supports(KeyInformation information) {
-        if (information.getCardinality() != Cardinality.SINGLE) return false;
         final Class<?> dataType = information.getDataType();
         final Mapping mapping = Mapping.getMapping(information);
         if (Number.class.isAssignableFrom(dataType) || dataType == Date.class || dataType == Instant.class || dataType == Boolean.class || dataType == UUID.class) {
@@ -821,7 +893,7 @@ public class LuceneIndex implements IndexProvider {
         } else if (AttributeUtil.isString(dataType)) {
             return mapping == Mapping.DEFAULT || mapping == Mapping.STRING || mapping == Mapping.TEXT;
         } else if (AttributeUtil.isGeo(dataType)) {
-            return mapping == Mapping.DEFAULT || mapping == Mapping.PREFIX_TREE;
+            return information.getCardinality() == Cardinality.SINGLE && (mapping == Mapping.DEFAULT || mapping == Mapping.PREFIX_TREE);
         }
         return false;
     }

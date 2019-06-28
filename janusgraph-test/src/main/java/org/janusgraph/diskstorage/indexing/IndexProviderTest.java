@@ -24,7 +24,6 @@ import org.janusgraph.core.attribute.*;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.EntryMetaData;
-import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
@@ -64,7 +63,7 @@ public abstract class IndexProviderTest {
     protected KeyInformation.IndexRetriever indexRetriever;
 
     public static final String TEXT = "text", TIME = "time", WEIGHT = "weight", LOCATION = "location",
-            BOUNDARY = "boundary", NAME = "name", PHONE_LIST = "phone_list", PHONE_SET = "phone_set", DATE = "date",
+            BOUNDARY = "boundary", NAME = "name", PHONE_LIST = "phone_list", PHONE_SET = "phone_set", DATE = "date", TIME_TICK = "time_tick",
             STRING="string", ANALYZED="analyzed", FULL_TEXT="full_text", KEYWORD="keyword", TEXT_STRING="text_string";
 
     public static StandardKeyInformation of(Class<?> clazz, Cardinality cardinality,  Parameter<?>... paras) {
@@ -93,15 +92,16 @@ public abstract class IndexProviderTest {
                 "Index must support string and text mapping");
         final Parameter<?> textParameter = indexFeatures.supportsStringMapping(Mapping.TEXT) ? Mapping.TEXT.asParameter() : Mapping.TEXTSTRING.asParameter();
         final Parameter<?> stringParameter = indexFeatures.supportsStringMapping(Mapping.STRING) ? Mapping.STRING.asParameter() : Mapping.TEXTSTRING.asParameter();
-        return new HashMap<String,KeyInformation>() {{
-            put(TEXT,new StandardKeyInformation(String.class, Cardinality.SINGLE,textParameter));
-            put(TIME,new StandardKeyInformation(Long.class, Cardinality.SINGLE));
-            put(WEIGHT,new StandardKeyInformation(Double.class, Cardinality.SINGLE, Mapping.DEFAULT.asParameter()));
-            put(LOCATION,new StandardKeyInformation(Geoshape.class, Cardinality.SINGLE));
-            put(BOUNDARY,new StandardKeyInformation(Geoshape.class, Cardinality.SINGLE, Mapping.PREFIX_TREE.asParameter()));
-            put(NAME,new StandardKeyInformation(String.class, Cardinality.SINGLE,stringParameter));
-            if(indexFeatures.supportsCardinality(Cardinality.LIST)) {
+        return new HashMap<String, KeyInformation>() {{
+            put(TEXT, new StandardKeyInformation(String.class, Cardinality.SINGLE, textParameter));
+            put(TIME, new StandardKeyInformation(Long.class, Cardinality.SINGLE));
+            put(WEIGHT, new StandardKeyInformation(Double.class, Cardinality.SINGLE, Mapping.DEFAULT.asParameter()));
+            put(LOCATION, new StandardKeyInformation(Geoshape.class, Cardinality.SINGLE));
+            put(BOUNDARY, new StandardKeyInformation(Geoshape.class, Cardinality.SINGLE, Mapping.PREFIX_TREE.asParameter()));
+            put(NAME, new StandardKeyInformation(String.class, Cardinality.SINGLE, stringParameter));
+            if (indexFeatures.supportsCardinality(Cardinality.LIST)) {
                 put(PHONE_LIST, new StandardKeyInformation(String.class, Cardinality.LIST, stringParameter));
+                put(TIME_TICK, new StandardKeyInformation(Date.class, Cardinality.LIST));
             }
             if(indexFeatures.supportsCardinality(Cardinality.SET)) {
                 put(PHONE_SET, new StandardKeyInformation(String.class, Cardinality.SET, stringParameter));
@@ -490,6 +490,15 @@ public abstract class IndexProviderTest {
                 assertEquals("doc3", tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "7"))).findFirst().get());
                 assertEquals("doc3", tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "8"))).findFirst().get());
 
+                remove(store, "doc1", ImmutableMultimap.of(PHONE_LIST, "1"), false);
+                clopen();
+                assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "1"))).count());
+                assertEquals("doc1", tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "2"))).findFirst().get());
+
+                remove(store, "doc2", ImmutableMultimap.of(PHONE_SET, "4"), false);
+                clopen();
+                assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "4"))).count());
+                assertEquals("doc2", tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "5"))).findFirst().get());
             }
 
             assertEquals("doc1", tx.queryStream(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.EQUAL, Instant.ofEpochSecond(1)))).findFirst().get());
@@ -1080,10 +1089,10 @@ public abstract class IndexProviderTest {
     public void testPersistantIndexData() throws BackendException {
         final String store = "vertex";
 
-        final Multimap<String, Object> initialDoc = HashMultimap.create();
+        final Multimap<String, Object> initialDoc = ArrayListMultimap.create();
         initialDoc.put(DATE, Instant.ofEpochSecond(1));
-        double latitude = random.nextDouble() * 180 - 90;
-        double longitude = random.nextDouble() * 360 - 180;
+        double latitude = 30;
+        double longitude = 60;
         initialDoc.put(LOCATION, Geoshape.point(latitude, longitude));
 
         initialDoc.put(STRING, "network");
@@ -1100,6 +1109,11 @@ public abstract class IndexProviderTest {
         if (indexFeatures.supportsCardinality(Cardinality.SET)) {
             initialDoc.put(PHONE_SET, "three");
             initialDoc.put(PHONE_SET, "four");
+
+            initialDoc.put(TIME_TICK, new Date(1));
+            initialDoc.put(TIME_TICK, new Date(2));
+            initialDoc.put(TIME_TICK, new Date(2));
+            initialDoc.put(TIME_TICK, new Date(3));
         }
 
         initialize(store);
@@ -1109,6 +1123,10 @@ public abstract class IndexProviderTest {
 
         // update the document
         tx.add(store, "doc1", TEXT, "update", false);
+        if (indexFeatures.supportsCardinality(Cardinality.LIST)) {
+            tx.delete(store, "doc1", TIME_TICK, new Date(2), false);
+            tx.delete(store, "doc1", TIME_TICK, new Date(3), false);
+        }
         tx.commit();
 
         // check every indexed type is still in the index
@@ -1124,6 +1142,9 @@ public abstract class IndexProviderTest {
         if (indexFeatures.supportsCardinality(Cardinality.LIST)) {
             assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "one"))).count());
             assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "two"))).count());
+            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TIME_TICK, Cmp.EQUAL, new Date(1)))).count());
+            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TIME_TICK, Cmp.EQUAL, new Date(2)))).count());
+            assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TIME_TICK, Cmp.EQUAL, new Date(3)))).count());
         }
         if (indexFeatures.supportsCardinality(Cardinality.SET)) {
             assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "three"))).count());

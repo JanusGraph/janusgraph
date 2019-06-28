@@ -59,6 +59,11 @@ public class BerkeleyLuceneTest extends JanusGraphIndexTest {
 
     @Override
     protected boolean supportsCollections() {
+        return true;
+    }
+
+    @Override
+    protected boolean supportsGeoCollections() {
         return false;
     }
 
