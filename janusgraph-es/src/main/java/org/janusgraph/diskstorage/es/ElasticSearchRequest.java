@@ -33,6 +33,8 @@ public class ElasticSearchRequest {
 
     private List<String> fields;
 
+    private boolean disableSourceRetrieval;
+
     public ElasticSearchRequest() {
         this.sorts = new ArrayList<>();
         this.fields = new ArrayList<>();
@@ -76,6 +78,14 @@ public class ElasticSearchRequest {
 
     public void addSort(String key, String order, String unmappedType) {
         this.sorts.add(ImmutableMap.of(key, new RestSortInfo(order, unmappedType)));
+    }
+
+    public boolean isDisableSourceRetrieval() {
+        return disableSourceRetrieval;
+    }
+
+    public void setDisableSourceRetrieval(boolean disableSourceRetrieval) {
+        this.disableSourceRetrieval = disableSourceRetrieval;
     }
 
     public static class RestSortInfo {
