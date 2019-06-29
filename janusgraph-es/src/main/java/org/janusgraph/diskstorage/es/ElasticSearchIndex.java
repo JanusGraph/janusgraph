@@ -1097,6 +1097,8 @@ public class ElasticSearchIndex implements IndexProvider {
             sr.setSize(batchSize);
         }
 
+        sr.setDisableSourceRetrieval(true);
+
         ElasticSearchResponse response;
         try {
             final String indexStoreName = getIndexStoreName(query.getStore());
@@ -1154,6 +1156,7 @@ public class ElasticSearchIndex implements IndexProvider {
         }
         sr.setFrom(0);
         sr.setSize(size);
+        sr.setDisableSourceRetrieval(true);
         try {
             return client.search(getIndexStoreName(query.getStore()), useMultitypeIndex ? query.getStore() : null,
                    compat.createRequestBody(sr, query.getParameters()), useScroll);
