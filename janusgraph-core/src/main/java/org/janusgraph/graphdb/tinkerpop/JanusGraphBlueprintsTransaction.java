@@ -201,10 +201,10 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
             }
 
             @Override
-            public void doClose() {
-                getGraph().tinkerpopTxContainer.close(this);
-
-                // calling super will clear listeners
+            protected void doClose() {
+                if (isOpen()) {
+                    throw Exceptions.openTransactionsOnClose();
+                }
                 super.doClose();
             }
         };
