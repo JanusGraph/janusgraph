@@ -572,6 +572,7 @@
     <field name="string" type="text_en" indexed="true" stored="true" multiValued="false" />
     <field name="full_text" type="text_en" indexed="true" stored="true" multiValued="false" />
     <field name="keyword" type="text_en" indexed="true" stored="true" multiValued="false" />
+    <field name="boolean"  type="boolean" indexed="true" stored="true"/>
     <field name="time_tick" type="date" indexed="true" stored="true" multiValued="true" />
     <!-- JanusGraphIndexTest -->
     <field name="xtext" type="text_general" indexed="true" stored="true" multiValued="false" />
