@@ -64,7 +64,7 @@ public abstract class IndexProviderTest {
 
     public static final String TEXT = "text", TIME = "time", WEIGHT = "weight", LOCATION = "location",
             BOUNDARY = "boundary", NAME = "name", PHONE_LIST = "phone_list", PHONE_SET = "phone_set", DATE = "date", TIME_TICK = "time_tick",
-            STRING="string", ANALYZED="analyzed", FULL_TEXT="full_text", KEYWORD="keyword", TEXT_STRING="text_string";
+            STRING="string", ANALYZED="analyzed", FULL_TEXT="full_text", KEYWORD="keyword", TEXT_STRING="text_string", BOOLEAN="boolean";
 
     public static StandardKeyInformation of(Class<?> clazz, Cardinality cardinality,  Parameter<?>... paras) {
         return new StandardKeyInformation(clazz, cardinality, paras);
@@ -93,6 +93,7 @@ public abstract class IndexProviderTest {
         final Parameter<?> textParameter = indexFeatures.supportsStringMapping(Mapping.TEXT) ? Mapping.TEXT.asParameter() : Mapping.TEXTSTRING.asParameter();
         final Parameter<?> stringParameter = indexFeatures.supportsStringMapping(Mapping.STRING) ? Mapping.STRING.asParameter() : Mapping.TEXTSTRING.asParameter();
         return new HashMap<String, KeyInformation>() {{
+            put(BOOLEAN, new StandardKeyInformation(Boolean.class, Cardinality.SINGLE));
             put(TEXT, new StandardKeyInformation(String.class, Cardinality.SINGLE, textParameter));
             put(TIME, new StandardKeyInformation(Long.class, Cardinality.SINGLE));
             put(WEIGHT, new StandardKeyInformation(Double.class, Cardinality.SINGLE, Mapping.DEFAULT.asParameter()));
@@ -187,9 +188,12 @@ public abstract class IndexProviderTest {
 
     private void storeTest(String... stores) throws Exception {
 
-        final Multimap<String, Object> doc1 = getDocument("Hello world", 1001, 5.2, Geoshape.point(48.0, 0.0), Geoshape.polygon(Arrays.asList(new double[][] {{-0.1,47.9},{0.1,47.9},{0.1,48.1},{-0.1,48.1},{-0.1,47.9}})),Arrays.asList("1", "2", "3"), Sets.newHashSet("1", "2"), Instant.ofEpochSecond(1));
-        final Multimap<String, Object> doc2 = getDocument("Tomorrow is the world", 1010, 8.5, Geoshape.point(49.0, 1.0), Geoshape.line(Arrays.asList(new double[][] {{0.9,48.9},{0.9,49.1},{1.1,49.1},{1.1,48.9}})), Arrays.asList("4", "5", "6"), Sets.newHashSet("4", "5"), Instant.ofEpochSecond(2));
-        final Multimap<String, Object> doc3 = getDocument("Hello Bob, are you there?", -500, 10.1, Geoshape.point(47.0, 10.0), Geoshape.box(46.9, 9.9, 47.1, 10.1), Arrays.asList("7", "8", "9"), Sets.newHashSet("7", "8"), Instant.ofEpochSecond(3));
+        final Multimap<String, Object> doc1 = getDocument("Hello world", 1001, 5.2, Geoshape.point(48.0, 0.0), Geoshape.polygon(Arrays.asList(new double[][]{{-0.1, 47.9}, {0.1, 47.9}, {0.1, 48.1}, {-0.1, 48.1}, {-0.1, 47.9}})), Arrays.asList("1", "2", "3"), Sets.newHashSet("1", "2"), Instant.ofEpochSecond(1),
+            false);
+        final Multimap<String, Object> doc2 = getDocument("Tomorrow is the world", 1010, 8.5, Geoshape.point(49.0, 1.0), Geoshape.line(Arrays.asList(new double[][]{{0.9, 48.9}, {0.9, 49.1}, {1.1, 49.1}, {1.1, 48.9}})), Arrays.asList("4", "5", "6"), Sets.newHashSet("4", "5"), Instant.ofEpochSecond(2),
+            true);
+        final Multimap<String, Object> doc3 = getDocument("Hello Bob, are you there?", -500, 10.1, Geoshape.point(47.0, 10.0), Geoshape.box(46.9, 9.9, 47.1, 10.1), Arrays.asList("7", "8", "9"), Sets.newHashSet("7", "8"), Instant.ofEpochSecond(3),
+            false);
 
         for (final String store : stores) {
             initialize(store);
@@ -209,6 +213,8 @@ public abstract class IndexProviderTest {
         final ImmutableList<IndexQuery.OrderEntry> orderNameDesc = ImmutableList.of(new IndexQuery.OrderEntry(NAME, Order.DESC, String.class));
         final ImmutableList<IndexQuery.OrderEntry> orderDateAsc = ImmutableList.of(new IndexQuery.OrderEntry(DATE, Order.ASC, Instant.class));
         final ImmutableList<IndexQuery.OrderEntry> orderDateDesc = ImmutableList.of(new IndexQuery.OrderEntry(DATE, Order.DESC, Instant.class));
+        final ImmutableList<IndexQuery.OrderEntry> orderBooleanDesc = ImmutableList.of(new IndexQuery.OrderEntry(BOOLEAN, Order.DESC, Boolean.class));
+        final ImmutableList<IndexQuery.OrderEntry> orderBooleanAsc = ImmutableList.of(new IndexQuery.OrderEntry(BOOLEAN, Order.ASC, Boolean.class));
 
         clopen();
 
@@ -284,6 +290,12 @@ public abstract class IndexProviderTest {
             result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderDateDesc))
                        .collect(Collectors.toList());
             assertEquals(ImmutableList.of("doc2", "doc1"), result);
+            result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderBooleanDesc))
+                       .collect(Collectors.toList());
+            assertEquals(ImmutableList.of("doc2", "doc1"), result);
+            result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderBooleanAsc))
+                       .collect(Collectors.toList());
+            assertEquals(ImmutableList.of("doc1", "doc2"), result);
 
             result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_PREFIX, "w")))
                     .collect(Collectors.toList());
@@ -474,6 +486,8 @@ public abstract class IndexProviderTest {
                 assertEquals(1, tx.queryStream(new RawQuery(store,"weight:[5.1 TO 8.3]",NO_PARAS)).count());
                 assertEquals(1, tx.queryStream(new RawQuery(store,"text:world AND time:1001",NO_PARAS)).count());
                 assertEquals(1, tx.queryStream(new RawQuery(store,"name:\"Hello world\"",NO_PARAS)).count());
+                assertEquals(1, tx.queryStream(new RawQuery(store, "boolean:true", NO_PARAS)).count());
+                assertEquals(2, tx.queryStream(new RawQuery(store, "boolean:false", NO_PARAS)).count());
             }
 
             if (index.supports(new StandardKeyInformation(String.class, Cardinality.LIST, Mapping.STRING.asParameter()), Cmp.EQUAL)) {
@@ -512,24 +526,29 @@ public abstract class IndexProviderTest {
 
 
             //Update some data
-            add(store, "doc4", getDocument("I'ts all a big Bob", -100, 11.2, Geoshape.point(-48.0, 8.0), Geoshape.point(-48.0, 8.0), Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11"), Instant.ofEpochSecond(4)), true);
+            add(store, "doc4", getDocument("I'ts all a big Bob", -100, 11.2, Geoshape.point(-48.0, 8.0), Geoshape.point(-48.0, 8.0), Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11"), Instant.ofEpochSecond(4),
+                false), true);
             remove(store, "doc2", doc2, true);
             remove(store, "doc3", ImmutableMultimap.of(WEIGHT, 10.1), false);
             add(store, "doc3", ImmutableMultimap.of(TIME, 2000, TEXT, "Bob owns the world"), false);
             remove(store, "doc1", ImmutableMultimap.of(TIME, 1001), false);
             add(store, "doc1", ImmutableMultimap.of(TIME, 1005, WEIGHT, 11.1, LOCATION, Geoshape.point(-48.0, 0.0), BOUNDARY, Geoshape.circle(-48.0, 0.0, 1.0)), false);
             final Geoshape multiPoint = Geoshape.geoshape(Geoshape.getShapeFactory().multiPoint().pointXY(60.0, 60.0).pointXY(120.0, 60.0).build());
-            add(store, "doc5", getDocument("A Full Yes", -100, -11.2, Geoshape.point(48.0, 8.0), multiPoint, Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11"), Instant.ofEpochSecond(400)), true);
+            add(store, "doc5", getDocument("A Full Yes", -100, -11.2, Geoshape.point(48.0, 8.0), multiPoint, Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11"), Instant.ofEpochSecond(400),
+                false), true);
             final Geoshape multiLine = Geoshape.geoshape(Geoshape.getShapeFactory().multiLineString().add(Geoshape.getShapeFactory().lineString().pointXY(59.0, 60.0).pointXY(61.0, 60.0))
-                    .add(Geoshape.getShapeFactory().lineString().pointXY(119.0, 60.0).pointXY(121.0, 60.0)).build());
-            add(store, "doc6", getDocument("A Full Yes", -100, -11.2, Geoshape.point(48.0, 8.0), multiLine, Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11"), Instant.ofEpochSecond(400)), true);
-            final Geoshape multiPolygon =  Geoshape.geoshape(Geoshape.getShapeFactory().multiPolygon()
-                    .add(Geoshape.getShapeFactory().polygon().pointXY(59.0, 59.0).pointXY(61.0, 59.0).pointXY(61.0, 61.0).pointXY(59.0, 61.0).pointXY(59.0, 59.0))
-                    .add(Geoshape.getShapeFactory().polygon().pointXY(119.0, 59.0).pointXY(121.0, 59.0).pointXY(121.0, 61.0).pointXY(119.0, 61.0).pointXY(119.0, 59.0)).build());
-            add(store, "doc7", getDocument("A Full Yes", -100, -11.2, Geoshape.point(48.0, 8.0), multiPolygon, Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11"), Instant.ofEpochSecond(400)), true);
-            final Geoshape geometryCollection =  Geoshape.geoshape(Geoshape.getGeometryCollectionBuilder().add(Geoshape.getShapeFactory().pointXY(60.0, 60.0))
-                    .add(Geoshape.getShapeFactory().lineString().pointXY(119.0, 60.0).pointXY(121.0, 60.0).build()).build());
-            add(store, "doc8", getDocument("A Full Yes", -100, -11.2, Geoshape.point(48.0, 8.0), geometryCollection, Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11"), Instant.ofEpochSecond(400)), true);
+                .add(Geoshape.getShapeFactory().lineString().pointXY(119.0, 60.0).pointXY(121.0, 60.0)).build());
+            add(store, "doc6", getDocument("A Full Yes", -100, -11.2, Geoshape.point(48.0, 8.0), multiLine, Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11"), Instant.ofEpochSecond(400),
+                false), true);
+            final Geoshape multiPolygon = Geoshape.geoshape(Geoshape.getShapeFactory().multiPolygon()
+                .add(Geoshape.getShapeFactory().polygon().pointXY(59.0, 59.0).pointXY(61.0, 59.0).pointXY(61.0, 61.0).pointXY(59.0, 61.0).pointXY(59.0, 59.0))
+                .add(Geoshape.getShapeFactory().polygon().pointXY(119.0, 59.0).pointXY(121.0, 59.0).pointXY(121.0, 61.0).pointXY(119.0, 61.0).pointXY(119.0, 59.0)).build());
+            add(store, "doc7", getDocument("A Full Yes", -100, -11.2, Geoshape.point(48.0, 8.0), multiPolygon, Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11"), Instant.ofEpochSecond(400),
+                false), true);
+            final Geoshape geometryCollection = Geoshape.geoshape(Geoshape.getGeometryCollectionBuilder().add(Geoshape.getShapeFactory().pointXY(60.0, 60.0))
+                .add(Geoshape.getShapeFactory().lineString().pointXY(119.0, 60.0).pointXY(121.0, 60.0).build()).build());
+            add(store, "doc8", getDocument("A Full Yes", -100, -11.2, Geoshape.point(48.0, 8.0), geometryCollection, Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11"), Instant.ofEpochSecond(400),
+                false), true);
         }
 
         clopen();
@@ -1156,7 +1175,8 @@ public abstract class IndexProviderTest {
     public void clearStorageTest() throws Exception {
         final String store = "vertex";
         initialize(store);
-        final Multimap<String, Object> doc1 = getDocument("Hello world", 1001, 5.2, Geoshape.point(48.0, 0.0), Geoshape.polygon(Arrays.asList(new double[][] {{-0.1,47.9},{0.1,47.9},{0.1,48.1},{-0.1,48.1},{-0.1,47.9}})),Arrays.asList("1", "2", "3"), Sets.newHashSet("1", "2"), Instant.ofEpochSecond(1));
+        final Multimap<String, Object> doc1 = getDocument("Hello world", 1001, 5.2, Geoshape.point(48.0, 0.0), Geoshape.polygon(Arrays.asList(new double[][]{{-0.1, 47.9}, {0.1, 47.9}, {0.1, 48.1}, {-0.1, 48.1}, {-0.1, 47.9}})), Arrays.asList("1", "2", "3"), Sets.newHashSet("1", "2"), Instant.ofEpochSecond(1),
+            false);
         add(store, "doc1", doc1, true);
         clopen();
         assertTrue(index.exists());
@@ -1203,7 +1223,9 @@ public abstract class IndexProviderTest {
     }
 
 
-    public Multimap<String, Object> getDocument(final String txt, final long time, final double weight, final Geoshape location, final Geoshape boundary, List<String> phoneList, Set<String> phoneSet, Instant date) {
+    public Multimap<String, Object> getDocument(final String txt, final long time, final double weight, final Geoshape location,
+                                                final Geoshape boundary, List<String> phoneList, Set<String> phoneSet, Instant date,
+                                                final Boolean bool) {
         final HashMultimap<String, Object> values = HashMultimap.create();
         values.put(TEXT, txt);
         values.put(NAME, txt);
@@ -1212,7 +1234,8 @@ public abstract class IndexProviderTest {
         values.put(LOCATION, location);
         values.put(BOUNDARY, boundary);
         values.put(DATE, date);
-        if(indexFeatures.supportsCardinality(Cardinality.LIST)) {
+        values.put(BOOLEAN, bool);
+        if (indexFeatures.supportsCardinality(Cardinality.LIST)) {
             for (final String phone : phoneList) {
                 values.put(PHONE_LIST, phone);
             }

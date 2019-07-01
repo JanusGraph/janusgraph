@@ -517,6 +517,7 @@ public class LuceneIndex implements IndexProvider {
                 else if (AttributeUtil.isWholeNumber(dataType)) sortType = SortField.Type.LONG;
                 else if (AttributeUtil.isDecimal(dataType)) sortType = SortField.Type.DOUBLE;
                 else if (dataType.equals(Instant.class) || dataType.equals(Date.class)) sortType = SortField.Type.LONG;
+                else if (dataType.equals(Boolean.class)) sortType = SortField.Type.LONG;
                 else
                     Preconditions.checkArgument(false, "Unsupported order specified on field [%s] with datatype [%s]", order.getKey(), dataType);
 

@@ -14,15 +14,17 @@
 
 package org.janusgraph.diskstorage.lucene;
 
+import org.janusgraph.diskstorage.indexing.KeyInformation;
+import org.janusgraph.graphdb.database.serialize.AttributeUtil;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.Query;
-import org.janusgraph.diskstorage.indexing.KeyInformation;
-import org.janusgraph.graphdb.database.serialize.AttributeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +75,7 @@ public class NumericTranslationQueryParser extends QueryParser {
         }
 
         Class<?> dataType = storeRetriever.get(t.field()).getDataType();
-        if (Number.class.isAssignableFrom(dataType)) {
+        if (Number.class.isAssignableFrom(dataType) || Boolean.class.isAssignableFrom(dataType)) {
             try {
                 return buildNumericQuery(t.field(), t.text(), dataType);
             } catch (NumberFormatException e) {
@@ -91,7 +93,7 @@ public class NumericTranslationQueryParser extends QueryParser {
         }
 
         Class<?> dataType = storeRetriever.get(t.field()).getDataType();
-        if (Number.class.isAssignableFrom(dataType)) {
+        if (Number.class.isAssignableFrom(dataType) || Boolean.class.isAssignableFrom(dataType)) {
             try {
                 return buildNumericQuery(t.field(), t.text(), dataType);
             } catch (NumberFormatException e) {
@@ -133,6 +135,12 @@ public class NumericTranslationQueryParser extends QueryParser {
                 return LongPoint.newRangeQuery(field, Long.MIN_VALUE, Long.MAX_VALUE);
             } else {
                 return LongPoint.newExactQuery(field, Long.parseLong(value));
+            }
+        } else if (Boolean.class.isAssignableFrom(type)) {
+            if (isMatchAll(value)) {
+                return IntPoint.newRangeQuery(field, Integer.MIN_VALUE, Integer.MAX_VALUE);
+            } else {
+                return IntPoint.newExactQuery(field, Boolean.parseBoolean(value) ? 1 : 0);
             }
         } else {
             if (isMatchAll(value)) {
