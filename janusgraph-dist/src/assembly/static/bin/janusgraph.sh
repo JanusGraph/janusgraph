@@ -142,6 +142,8 @@ wait_for_shutdown() {
 }
 
 start() {
+    mkdir -p "$BIN"/../db
+
     status_class $CASSANDRA_FRIENDLY_NAME $CASSANDRA_CLASS_NAME >/dev/null && status && echo "Stop services before starting" && exit 1
     echo "Forking Cassandra..."
     if [ -n "$VERBOSE" ]; then
