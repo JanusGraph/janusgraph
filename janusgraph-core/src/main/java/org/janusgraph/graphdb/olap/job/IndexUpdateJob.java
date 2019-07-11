@@ -40,8 +40,8 @@ import java.util.Objects;
  */
 public abstract class IndexUpdateJob {
 
-    protected static final Logger log =
-            LoggerFactory.getLogger(IndexRepairJob.class);
+    protected final Logger log =
+            LoggerFactory.getLogger(getClass());
 
     protected static final String SUCCESS_TX = "success-tx";
     protected static final String FAILED_TX = "failed-tx";
