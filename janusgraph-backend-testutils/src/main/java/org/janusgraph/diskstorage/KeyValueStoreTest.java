@@ -100,7 +100,7 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest implements Janu
 
     public void loadValues(String[] values) throws BackendException {
         for (int i = 0; i < numKeys; i++) {
-            store.insert(KeyValueStoreUtil.getBuffer(i), KeyValueStoreUtil.getBuffer(values[i]), tx);
+            store.insert(KeyValueStoreUtil.getBuffer(i), KeyValueStoreUtil.getBuffer(values[i]), tx, null);
         }
     }
 
