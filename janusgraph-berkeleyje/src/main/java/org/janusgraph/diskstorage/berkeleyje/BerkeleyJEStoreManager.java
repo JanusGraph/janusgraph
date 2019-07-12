@@ -95,6 +95,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
                     .scanTxConfig(GraphDatabaseConfiguration.buildGraphConfiguration()
                             .set(ISOLATION_LEVEL, IsolationLevel.READ_UNCOMMITTED.toString()))
                     .supportsInterruption(false)
+                    .cellTTL(true)
                     .optimisticLocking(false)
                     .build();
     }
@@ -207,7 +208,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
             if (mutationValue.hasAdditions()) {
                 for (KeyValueEntry entry : mutationValue.getAdditions()) {
-                    store.insert(entry.getKey(),entry.getValue(),txh);
+                    store.insert(entry.getKey(),entry.getValue(),txh, entry.getTtl());
                     log.trace("Insertion on {}: {}", mutation.getKey(), entry);
                 }
             }

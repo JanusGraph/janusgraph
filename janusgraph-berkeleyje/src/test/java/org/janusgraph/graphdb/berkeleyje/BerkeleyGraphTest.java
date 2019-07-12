@@ -89,6 +89,24 @@ public class BerkeleyGraphTest extends JanusGraphTest {
         super.testConsistencyEnforcement();
     }
 
+    // BerkeleyJE support only hour discrete TTL, we try speed up internal
+    // clock but tests so flaky. See BerkeleyStorageSetup
+    @Override
+    public void testEdgeTTLTiming() throws Exception {
+    }
+
+    @Override
+    public void testEdgeTTLWithTransactions() throws Exception {
+    }
+
+    @Override
+    public void testUnsettingTTL() throws InterruptedException {
+    }
+
+    @Override
+    public void testVertexTTLWithCompositeIndex() throws Exception {
+    }
+
     @Override
     public void testConcurrentConsistencyEnforcement() {
         //Do nothing TODO: Figure out why this is failing in BerkeleyDB!!
