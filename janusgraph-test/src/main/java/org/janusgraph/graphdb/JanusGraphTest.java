@@ -3837,6 +3837,31 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertCount(numEdges - 1, parentVertex.query().direction(Direction.OUT).edges());
     }
 
+    @Test
+    public void testRemoveCachedVertexVisibility() {
+        // add vertices to hit limit of tx-cache-size
+        int cacheSize = graph.getConfiguration().getTxVertexCacheSize();
+        List<Long> vertexIds = new ArrayList<>();
+        for (int i = 0 ; i < cacheSize; i++) {
+            JanusGraphVertex vertex = graph.addVertex();
+            vertexIds.add(vertex.longId());
+        }
+
+        // add one more vertex that will be evicted from tx cache on read
+        long vertexIdToBeDeleted = graph.addVertex().longId();
+        graph.tx().commit();
+
+        // retrieve the vertex and delete it
+        Vertex retrievedVertex = graph.traversal().V(vertexIdToBeDeleted).next();
+        retrievedVertex.remove();
+
+        // force evict from tx cache by reading all the other vertices
+        graph.traversal().V(vertexIds).toStream().collect(Collectors.toList());
+
+        // re-read the deleted vertex and check it no longer exists
+        assertFalse(graph.traversal().V(vertexIdToBeDeleted).hasNext());
+    }
+
 
     @Test
     public void testTinkerPopCardinality() {
