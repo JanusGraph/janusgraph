@@ -97,6 +97,7 @@ public abstract class JanusGraphBlueprintsGraph implements JanusGraph {
 
     @Override
     public synchronized void close() {
+        txs.remove();
         txs = null;
     }
 
@@ -317,13 +318,10 @@ public abstract class JanusGraphBlueprintsGraph implements JanusGraph {
         }
 
         @Override
-        public void close() {
-            close(this);
-        }
-
-        void close(Transaction tx) {
-            closeConsumerInternal.get().accept(tx);
-            Preconditions.checkState(!tx.isOpen(),"Invalid close behavior configured: Should close transaction. [%s]", closeConsumerInternal);
+        protected void doClose() {
+            super.doClose();
+            transactionListeners.remove();
+            txs.remove();
         }
 
         @Override
