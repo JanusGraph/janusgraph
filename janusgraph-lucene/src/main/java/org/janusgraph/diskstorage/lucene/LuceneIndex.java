@@ -271,30 +271,35 @@ public class LuceneIndex implements IndexProvider {
         writerLock.lock();
         try {
             for (final Map.Entry<String, Map<String, List<IndexEntry>>> stores : documents.entrySet()) {
-                final String store = stores.getKey();
-                final IndexWriter writer = getWriter(store, information);
-                final IndexReader reader = DirectoryReader.open(writer, true, true);
-                final IndexSearcher searcher = new IndexSearcher(reader);
+                IndexReader reader = null;
+                try {
+                    final String store = stores.getKey();
+                    final IndexWriter writer = getWriter(store, information);
+                    reader = DirectoryReader.open(writer, true, true);
+                    final IndexSearcher searcher = new IndexSearcher(reader);
 
-                for (final Map.Entry<String, List<IndexEntry>> entry : stores.getValue().entrySet()) {
-                    final String docID = entry.getKey();
-                    final List<IndexEntry> content = entry.getValue();
+                    for (final Map.Entry<String, List<IndexEntry>> entry : stores.getValue().entrySet()) {
+                        final String docID = entry.getKey();
+                        final List<IndexEntry> content = entry.getValue();
 
-                    if (content == null || content.isEmpty()) {
-                        if (log.isTraceEnabled())
-                            log.trace("Deleting document [{}]", docID);
+                        if (content == null || content.isEmpty()) {
+                            if (log.isTraceEnabled())
+                                log.trace("Deleting document [{}]", docID);
 
-                        writer.deleteDocuments(new Term(DOCID, docID));
-                        continue;
+                            writer.deleteDocuments(new Term(DOCID, docID));
+                            continue;
+                        }
+
+                        final Pair<Document, Map<String, Shape>> docAndGeo = retrieveOrCreate(docID, searcher);
+                        addToDocument(store, docID, docAndGeo.getKey(), content, docAndGeo.getValue(), information);
+
+                        //write the old document to the index with the modifications
+                        writer.updateDocument(new Term(DOCID, docID), docAndGeo.getKey());
                     }
-
-                    final Pair<Document, Map<String, Shape>> docAndGeo = retrieveOrCreate(docID, searcher);
-                    addToDocument(store, docID, docAndGeo.getKey(), content, docAndGeo.getValue(), information);
-
-                    //write the old document to the index with the modifications
-                    writer.updateDocument(new Term(DOCID, docID), docAndGeo.getKey());
+                    writer.commit();
+                } finally {
+                    IOUtils.closeQuietly(reader);
                 }
-                writer.commit();
             }
             tx.commit();
         } catch (final IOException e) {

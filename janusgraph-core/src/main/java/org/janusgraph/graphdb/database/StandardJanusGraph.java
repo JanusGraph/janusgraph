@@ -227,6 +227,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
              */
             for (StandardJanusGraphTx otx : openTransactions) {
                 try {
+                    otx.rollback();
                     otx.close();
                 } catch (RuntimeException e) {
                     // Catch and store these exceptions, but proceed wit the loop
