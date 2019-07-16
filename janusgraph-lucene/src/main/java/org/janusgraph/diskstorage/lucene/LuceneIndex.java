@@ -82,6 +82,7 @@ public class LuceneIndex implements IndexProvider {
 
     private static final String DOCID = "_____elementid";
     private static final String GEOID = "_____geo";
+    private static final Set<String> FIELDS_TO_LOAD = Sets.newHashSet(DOCID);
 
     private static final IndexFeatures LUCENE_FEATURES = new IndexFeatures.Builder()
         .supportedStringMappings(Mapping.TEXT, Mapping.STRING)
@@ -482,7 +483,7 @@ public class LuceneIndex implements IndexProvider {
             log.debug("Executed query [{}] in {} ms", q, System.currentTimeMillis() - time);
             final List<String> result = new ArrayList<>(docs.scoreDocs.length);
             for (int i = 0; i < docs.scoreDocs.length; i++) {
-                final IndexableField field = searcher.doc(docs.scoreDocs[i].doc).getField(DOCID);
+                final IndexableField field = searcher.doc(docs.scoreDocs[i].doc, FIELDS_TO_LOAD).getField(DOCID);
                 result.add(field == null ? null : field.stringValue());
             }
             return result.stream();
@@ -742,7 +743,7 @@ public class LuceneIndex implements IndexProvider {
             log.debug("Executed query [{}] in {} ms", q, System.currentTimeMillis() - time);
             final List<RawQuery.Result<String>> result = new ArrayList<>(docs.scoreDocs.length);
             for (int i = offset; i < docs.scoreDocs.length; i++) {
-                final IndexableField field = searcher.doc(docs.scoreDocs[i].doc).getField(DOCID);
+                final IndexableField field = searcher.doc(docs.scoreDocs[i].doc, FIELDS_TO_LOAD).getField(DOCID);
                 result.add(new RawQuery.Result<>(field == null ? null : field.stringValue(), docs.scoreDocs[i].score));
             }
             return result.stream();
