@@ -356,6 +356,7 @@ BerkeleyDB JE configuration options
 | storage.berkeleyje.cache-percentage | Percentage of JVM heap reserved for BerkeleyJE's cache | Integer | 65 | MASKABLE |
 | storage.berkeleyje.isolation-level | The isolation level used by transactions | String | REPEATABLE_READ | MASKABLE |
 | storage.berkeleyje.lock-mode | The BDB record lock mode used for read operations | String | LockMode.DEFAULT | MASKABLE |
+| storage.berkeleyje.shared-cache | If true, the shared cache is used for all graph instances | Boolean | true | MASKABLE |
 
 ### storage.cassandra
 Cassandra storage backend options

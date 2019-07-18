@@ -42,7 +42,10 @@ BerkeleyDB Specific Configuration
 
 Refer to [Configuration Reference](../basics/configuration-reference.md) for a complete listing of all BerkeleyDB
 specific configuration options in addition to the general JanusGraph
-configuration options.
+configuration options. BerkeleyDB configured with
+[SHARED_CACHE](https://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/EnvironmentConfig.html#SHARED_CACHE)
+those multiple graphs will make better use of memory because the cache LRU algorithm is applied across all
+information in all graphs sharing the cache.
 
 When configuring BerkeleyDB it is recommended to consider the following
 BerkeleyDB specific configuration options:
