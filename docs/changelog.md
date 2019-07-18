@@ -78,6 +78,10 @@ which will tell JanusGraph to use mapping types for ElasticSearch version 7.
 Due to the drop of support for 5.x version, deprecated multi-type indices are no more supported. 
 Parameter `use-deprecated-multitype-index` is no more supported by JanusGraph.
 
+##### BerkeleyDB
+
+BerkeleyDB storage configured with [SHARED_CACHE](https://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/EnvironmentConfig.html#SHARED_CACHE) for better memory usage.
+
 ### Version 0.4.0 (Release Date: July 1, 2019)
 Legacy documentation: <https://old-docs.janusgraph.org/0.4.0/index.html>
 
