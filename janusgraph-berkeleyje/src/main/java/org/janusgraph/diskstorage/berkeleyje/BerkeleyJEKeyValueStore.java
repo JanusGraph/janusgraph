@@ -71,6 +71,16 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         return ((BerkeleyJETx) txh).getTransaction();
     }
 
+    private Cursor openCursor(StoreTransaction txh) throws BackendException {
+        Preconditions.checkArgument(txh!=null);
+        return ((BerkeleyJETx) txh).openCursor(db);
+    }
+
+    private static void closeCursor(StoreTransaction txh, Cursor cursor) {
+        Preconditions.checkArgument(txh!=null);
+        ((BerkeleyJETx) txh).closeCursor(cursor);
+    }
+
     @Override
     public synchronized void close() throws BackendException {
         try {
@@ -118,7 +128,6 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
     @Override
     public RecordIterator<KeyValueEntry> getSlice(KVQuery query, StoreTransaction txh) throws BackendException {
         log.trace("beginning db={}, op=getSlice, tx={}", name, txh);
-        final Transaction tx = getTransaction(txh);
         final StaticBuffer keyStart = query.getStart();
         final StaticBuffer keyEnd = query.getEnd();
         final KeySelector selector = query.getKeySelector();
@@ -126,7 +135,8 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         final DatabaseEntry foundKey = keyStart.as(ENTRY_FACTORY);
         final DatabaseEntry foundData = new DatabaseEntry();
 
-        try (final Cursor cursor = db.openCursor(tx, null)) {
+        final Cursor cursor = openCursor(txh);
+        try {
             OperationStatus status = cursor.getSearchKeyRange(foundKey, foundData, getLockMode(txh));
             //Iterate until given condition is satisfied or end of records
             while (status == OperationStatus.SUCCESS) {
@@ -146,8 +156,9 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
             }
         } catch (Exception e) {
             throw new PermanentBackendException(e);
+        } finally {
+            closeCursor(txh, cursor);
         }
-
         log.trace("db={}, op=getSlice, tx={}, resultcount={}", name, txh, result.size());
 
         return new RecordIterator<KeyValueEntry>() {
