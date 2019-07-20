@@ -14,7 +14,6 @@
 
 package org.janusgraph.diskstorage.es.rest;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -90,7 +89,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         mapWriter = mapper.writerWithView(Map.class);
     }
 
-    private static final ElasticMajorVersion DEFAULT_VERSION = ElasticMajorVersion.FIVE;
+    private static final ElasticMajorVersion DEFAULT_VERSION = ElasticMajorVersion.SEVEN;
 
     private static final Function<StringBuilder, StringBuilder> APPEND_OP = sb -> sb.append(sb.length() == 0 ? REQUEST_PARAM_BEGINNING : REQUEST_PARAM_SEPARATOR);
 
@@ -321,11 +320,8 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     }
 
     @Override
-    public RestSearchResponse search(String indexName, String type, Map<String,Object> requestData, boolean useScroll) throws IOException {
+    public RestSearchResponse search(String indexName, Map<String,Object> requestData, boolean useScroll) throws IOException {
         final StringBuilder path = new StringBuilder(REQUEST_SEPARATOR).append(indexName);
-        if (!Strings.isNullOrEmpty(type)) {
-            path.append(REQUEST_SEPARATOR).append(type);
-        }
         path.append(REQUEST_SEPARATOR).append("_search");
         if (useScroll) {
             path.append(REQUEST_PARAM_BEGINNING).append("scroll=").append(scrollKeepAlive);

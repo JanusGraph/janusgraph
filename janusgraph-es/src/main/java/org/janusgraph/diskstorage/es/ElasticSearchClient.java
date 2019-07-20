@@ -49,7 +49,7 @@ public interface ElasticSearchClient extends Closeable {
 
     void bulkRequest(List<ElasticSearchMutation> requests, String ingestPipeline) throws IOException;
 
-    ElasticSearchResponse search(String indexName, String type, Map<String,Object> request, boolean useScroll) throws IOException;
+    ElasticSearchResponse search(String indexName, Map<String,Object> request, boolean useScroll) throws IOException;
 
     ElasticSearchResponse search(String scrollId) throws IOException;
 
