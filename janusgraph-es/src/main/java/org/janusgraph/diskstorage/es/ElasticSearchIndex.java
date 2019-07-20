@@ -54,7 +54,6 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 
 import org.janusgraph.diskstorage.es.IndexMappings.IndexMapping;
 import org.janusgraph.diskstorage.es.compat.AbstractESCompat;
-import org.janusgraph.diskstorage.es.compat.ES5Compat;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
 import org.janusgraph.diskstorage.indexing.IndexMutation;
@@ -155,11 +154,6 @@ public class ElasticSearchIndex implements IndexProvider {
             "Whether JanusGraph should add an \"all\" field mapping. When enabled field mappings will " +
             "include a \"copy_to\" parameter referencing the \"all\" field. This is supported since Elasticsearch 6.x " +
             " and is required when using wildcard fields starting in Elasticsearch 6.x.", ConfigOption.Type.GLOBAL_OFFLINE, true);
-
-    public static final ConfigOption<Boolean> USE_DEPRECATED_MULTITYPE_INDEX =
-            new ConfigOption<>(ELASTICSEARCH_NS, "use-deprecated-multitype-index",
-            "Whether JanusGraph should group these indices into a single Elasticsearch index " +
-            "(requires Elasticsearch 5.x or earlier).", ConfigOption.Type.GLOBAL_OFFLINE, false);
 
     public static final ConfigOption<Integer> ES_SCROLL_KEEP_ALIVE =
             new ConfigOption<>(ELASTICSEARCH_NS, "scroll-keep-alive",
@@ -286,7 +280,6 @@ public class ElasticSearchIndex implements IndexProvider {
     private final Map<String, Object> indexSetting;
     private final long createSleep;
     private final boolean useAllField;
-    private final boolean useMultitypeIndex;
     private final Map<String, Object> ingestPipelines;
 
     public ElasticSearchIndex(Configuration config) throws BackendException {
@@ -303,9 +296,6 @@ public class ElasticSearchIndex implements IndexProvider {
         log.debug("Configured ES query nb result by query to {}", batchSize);
 
         switch (client.getMajorVersion()) {
-            case FIVE:
-                compat = new ES5Compat();
-                break;
             case SIX:
                 compat = new ES6Compat();
                 break;
@@ -321,18 +311,7 @@ public class ElasticSearchIndex implements IndexProvider {
         } catch (final IOException e) {
             throw new PermanentBackendException(e.getMessage(), e);
         }
-        if (!config.has(USE_DEPRECATED_MULTITYPE_INDEX) && client.isIndex(indexName)) {
-            // upgrade scenario where multitype index was the default behavior
-            useMultitypeIndex = true;
-        } else {
-            useMultitypeIndex = config.get(USE_DEPRECATED_MULTITYPE_INDEX);
-            Preconditions.checkArgument(!useMultitypeIndex || !client.isAlias(indexName),
-                    "The key '" + USE_DEPRECATED_MULTITYPE_INDEX
-                    + "' cannot be true when existing index is split.");
-            Preconditions.checkArgument(useMultitypeIndex || !client.isIndex(indexName),
-                    "The key '" + USE_DEPRECATED_MULTITYPE_INDEX
-                    + "' cannot be false when existing index contains multiple types.");
-        }
+
         indexSetting = new HashMap<>();
 
         ElasticSearchSetup.applySettingsFromJanusGraphConf(indexSetting, config);
@@ -393,9 +372,7 @@ public class ElasticSearchIndex implements IndexProvider {
             }
         }
         Preconditions.checkState(client.indexExists(index), "Could not create index: %s",index);
-        if (!useMultitypeIndex) {
-            client.addAlias(indexName, index);
-        }
+        client.addAlias(indexName, index);
     }
 
 
@@ -429,7 +406,7 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     private String getIndexStoreName(String store) {
-        return useMultitypeIndex ? indexName : indexName + "_" + store.toLowerCase();
+        return indexName + "_" + store.toLowerCase();
     }
 
     @Override
@@ -546,7 +523,7 @@ public class ElasticSearchIndex implements IndexProvider {
             properties.put(key, compat.createKeywordMapping());
         }
 
-        if (useAllField && client.getMajorVersion().getValue() >= 6) {
+        if (useAllField) {
             // add custom all field mapping if it doesn't exist
             properties.put(ElasticSearchConstants.CUSTOM_ALL_FIELD, compat.createTextMapping(null));
 
@@ -1136,8 +1113,7 @@ public class ElasticSearchIndex implements IndexProvider {
         ElasticSearchResponse response;
         try {
             final String indexStoreName = getIndexStoreName(query.getStore());
-            final String indexType = useMultitypeIndex ? query.getStore() : null;
-            response = client.search(indexStoreName, indexType, compat.createRequestBody(sr, NULL_PARAMETERS),
+            response = client.search(indexStoreName, compat.createRequestBody(sr, NULL_PARAMETERS),
                     sr.getSize() >= batchSize);
             log.debug("First Executed query [{}] in {} ms", query.getCondition(), response.getTook());
             final ElasticSearchScroll resultIterator = new ElasticSearchScroll(client, response, sr.getSize());
@@ -1192,8 +1168,10 @@ public class ElasticSearchIndex implements IndexProvider {
         sr.setSize(size);
         sr.setDisableSourceRetrieval(true);
         try {
-            return client.search(getIndexStoreName(query.getStore()), useMultitypeIndex ? query.getStore() : null,
-                   compat.createRequestBody(sr, query.getParameters()), useScroll);
+            return client.search(
+                getIndexStoreName(query.getStore()),
+                compat.createRequestBody(sr, query.getParameters()),
+                useScroll);
         } catch (final IOException | UncheckedIOException e) {
             throw new PermanentBackendException(e);
         }

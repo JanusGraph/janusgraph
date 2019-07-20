@@ -19,7 +19,7 @@ Please see <<version-compat>> for details on what versions of Elasticsearch will
 
 [IMPORTANT]
 ===============================
-Beginning with Elasticsearch 5.0 JanusGraph uses sandboxed https://www.elastic.co/guide/en/elasticsearch/reference/master/modules-scripting-painless.html[Painless scripts] for inline updates, which are enabled by default in Elasticsearch 5.x.
+JanusGraph uses sandboxed https://www.elastic.co/guide/en/elasticsearch/reference/master/modules-scripting-painless.html[Painless scripts] for inline updates, which are enabled by default in Elasticsearch.
 ===============================
 
 === Running Elasticsearch
