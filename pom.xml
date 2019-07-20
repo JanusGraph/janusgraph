@@ -90,7 +90,7 @@
         <jackson1.version>1.9.13</jackson1.version>
         <jackson2.version>2.6.6</jackson2.version>
         <lucene-solr.version>7.0.0</lucene-solr.version>
-        <elasticsearch-driver.version>6.6.0</elasticsearch-driver.version>
+        <elasticsearch-driver.version>7.2.0</elasticsearch-driver.version>
         <elasticsearch-server.version>6.0.1</elasticsearch-server.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>

@@ -14,7 +14,8 @@
         <elasticsearch5.docker.version>5.6.14</elasticsearch5.docker.version>
         <elasticsearch60.docker.version>6.0.1</elasticsearch60.docker.version>
         <elasticsearch6.docker.version>6.6.0</elasticsearch6.docker.version>
-        <elasticsearch.docker.version>${elasticsearch6.docker.version}</elasticsearch.docker.version>
+        <elasticsearch7.docker.version>7.2.0</elasticsearch7.docker.version>
+        <elasticsearch.docker.version>${elasticsearch7.docker.version}</elasticsearch.docker.version>
         <skip.es.test>${skipTests}</skip.es.test>
         <elasticsearch.docker.image>docker.elastic.co/elasticsearch/elasticsearch</elasticsearch.docker.image>
     </properties>
@@ -195,11 +196,17 @@
         </profile>
         <profile>
             <id>elasticsearch6</id>
+            <properties>
+                <elasticsearch.docker.version>${elasticsearch6.docker.version}</elasticsearch.docker.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>elasticsearch7</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <elasticsearch.docker.version>${elasticsearch6.docker.version}</elasticsearch.docker.version>
+                <elasticsearch.docker.version>${elasticsearch7.docker.version}</elasticsearch.docker.version>
             </properties>
         </profile>
 

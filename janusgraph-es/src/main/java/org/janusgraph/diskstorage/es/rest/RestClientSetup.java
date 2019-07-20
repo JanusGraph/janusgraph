@@ -92,10 +92,6 @@ public class RestClientSetup {
             restClientBuilder.setRequestConfigCallback(requestConfigCallback);
         }
 
-        if (config.has(ElasticSearchIndex.MAX_RETRY_TIMEOUT)) {
-            restClientBuilder.setMaxRetryTimeoutMillis(config.get(ElasticSearchIndex.MAX_RETRY_TIMEOUT));
-        }
-
         return restClientBuilder.build();
     }
 
