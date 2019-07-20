@@ -15,6 +15,7 @@
 package org.janusgraph.diskstorage.es;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.http.client.utils.URIBuilder;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.attribute.Text;
@@ -25,6 +26,7 @@ import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.es.rest.RestElasticSearchClient;
 import org.janusgraph.diskstorage.indexing.*;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 
@@ -55,6 +57,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.Map;
@@ -169,9 +172,7 @@ public class ElasticsearchConfigTest {
             log.debug(e.getMessage(), e);
         }
 
-        final HttpPut newMapping = new HttpPut("janusgraph_"+storeName);
-        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(readMapping("/strict_mapping.json")), Charset.forName("UTF-8")));
-        executeRequest(newMapping);
+        executeRequestWithStringEntity(idx, "janusgraph_"+storeName, readMapping("/strict_mapping.json"));
 
         // Test that the "date" property works well.
         idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
@@ -212,10 +213,11 @@ public class ElasticsearchConfigTest {
             .set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME).restrictTo(INDEX_NAME);
         final IndexProvider idx = open(indexConfig);
 
-        final HttpPut newTemplate = new HttpPut("_template/template_1");
-        final Map<String, Object> content = ImmutableMap.of("template", "janusgraph_test_mapping*", "mappings", readMapping("/strict_mapping.json").getMappings());
-        newTemplate.setEntity(new StringEntity(objectMapper.writeValueAsString(content), Charset.forName("UTF-8")));
-        executeRequest(newTemplate);
+        final Map<String, Object> content = ImmutableMap.of("template", "janusgraph_test_mapping*",
+            "mappings", readMapping("/strict_mapping.json").getMappings());
+
+        executeRequestWithStringEntity(idx, "_template/template_1", content);
+
         final HttpPut newMapping = new HttpPut("janusgraph_" + storeName);
         executeRequest(newMapping);
 
@@ -349,9 +351,7 @@ public class ElasticsearchConfigTest {
             log.debug(e.getMessage(), e);
         }
 
-        final HttpPut newMapping = new HttpPut("janusgraph_"+storeName);
-        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(readMapping("/dynamic_mapping.json")), Charset.forName("UTF-8")));
-        executeRequest(newMapping);
+        executeRequestWithStringEntity(idx, "janusgraph_"+storeName, readMapping("/dynamic_mapping.json"));
 
         // Test that the "date" property works well.
         idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
@@ -375,4 +375,17 @@ public class ElasticsearchConfigTest {
         return indexConfig.restrictTo(INDEX_NAME);
     }
 
+    private void executeRequestWithStringEntity(IndexProvider idx, String endpoint, Object content) throws URISyntaxException, IOException {
+
+        final ElasticMajorVersion version = ((ElasticSearchIndex) idx).getVersion();
+
+        URIBuilder uriBuilder = new URIBuilder(endpoint);
+        if(ElasticMajorVersion.SEVEN.equals(version)){
+            uriBuilder.setParameter(RestElasticSearchClient.INCLUDE_TYPE_NAME_PARAMETER, "true");
+        }
+
+        final HttpPut newMapping = new HttpPut(uriBuilder.build());
+        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(content), Charset.forName("UTF-8")));
+        executeRequest(newMapping);
+    }
 }

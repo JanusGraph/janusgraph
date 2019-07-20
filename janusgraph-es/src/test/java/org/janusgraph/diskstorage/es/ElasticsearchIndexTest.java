@@ -25,6 +25,7 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.client.methods.*;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -39,6 +40,7 @@ import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.es.rest.RestElasticSearchClient;
 import org.janusgraph.diskstorage.indexing.*;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
@@ -57,6 +59,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.UUID;
@@ -179,6 +182,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         String message = Throwables.getRootCause(janusGraphException).getMessage();
 
         switch (JanusGraphElasticsearchContainer.getEsMajorVersion().value){
+            case 7:
             case 6:
                 assertTrue(message.contains("mapper_parsing_exception"));
                 break;
@@ -288,7 +292,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
     }
 
     @Test
-    public void testCustomMappingProperty() throws BackendException, IOException, ParseException {
+    public void testCustomMappingProperty() throws BackendException, IOException, ParseException, URISyntaxException {
 
         String mappingTypeName = "vertex";
         String indexPrefix = "janusgraph";
@@ -388,8 +392,15 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
     }
 
 
-    private CloseableHttpResponse getESMapping(String indexName, String mappingTypeName) throws IOException {
-        final HttpGet httpGet = new HttpGet(indexName+"/_mapping/"+mappingTypeName);
+    private CloseableHttpResponse getESMapping(String indexName, String mappingTypeName) throws IOException, URISyntaxException {
+
+        URIBuilder uriBuilder = new URIBuilder(indexName+"/_mapping/"+mappingTypeName);
+
+        if(JanusGraphElasticsearchContainer.getEsMajorVersion().value == 7){
+            uriBuilder.setParameter(RestElasticSearchClient.INCLUDE_TYPE_NAME_PARAMETER, "true");
+        }
+
+        final HttpGet httpGet = new HttpGet(uriBuilder.build());
         return httpClient.execute(host, httpGet);
     }
 

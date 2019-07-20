@@ -35,6 +35,10 @@ public interface ElasticSearchClient extends Closeable {
 
     void createIndex(String indexName, Map<String,Object> settings) throws IOException;
 
+    void updateIndexSettings(String indexName, Map<String,Object> settings) throws IOException;
+
+    void updateClusterSettings(Map<String,Object> settings) throws IOException;
+
     Map getIndexSettings(String indexName) throws IOException;
 
     void createMapping(String indexName, String typeName, Map<String,Object> mapping) throws IOException;
