@@ -1077,6 +1077,61 @@ public abstract class IndexProviderTest {
     }
 
     @Test
+    public void testPersistantIndexData() throws BackendException {
+        final String store = "vertex";
+
+        final Multimap<String, Object> initialDoc = HashMultimap.create();
+        initialDoc.put(DATE, Instant.ofEpochSecond(1));
+        double latitude = random.nextDouble() * 180 - 90;
+        double longitude = random.nextDouble() * 360 - 180;
+        initialDoc.put(LOCATION, Geoshape.point(latitude, longitude));
+
+        initialDoc.put(STRING, "network");
+        initialDoc.put(ANALYZED, "network");
+        initialDoc.put(KEYWORD, "network");
+        initialDoc.put(NAME, "network");
+        initialDoc.put(TIME, 1L);
+        initialDoc.put(WEIGHT, 1.5d);
+
+        if (indexFeatures.supportsCardinality(Cardinality.LIST)) {
+            initialDoc.put(PHONE_LIST, "one");
+            initialDoc.put(PHONE_LIST, "two");
+        }
+        if (indexFeatures.supportsCardinality(Cardinality.SET)) {
+            initialDoc.put(PHONE_SET, "three");
+            initialDoc.put(PHONE_SET, "four");
+        }
+
+        initialize(store);
+        add(store, "doc1", initialDoc, true);
+
+        clopen();
+
+        // update the document
+        tx.add(store, "doc1", TEXT, "update", false);
+        tx.commit();
+
+        // check every indexed type is still in the index
+        assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.EQUAL, Instant.ofEpochSecond(1)))).count());
+        assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(LOCATION, Geo.WITHIN, Geoshape.box(latitude-1L, longitude-1, latitude+1, longitude+1)))).count());
+        assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(WEIGHT, Cmp.EQUAL, 1.5d))).count());
+        assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TIME, Cmp.EQUAL, 1L))).count());
+        assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(STRING, Cmp.EQUAL, "network"))).count());
+        assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(KEYWORD, Text.CONTAINS, "network"))).count());
+        assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(ANALYZED, Text.CONTAINS, "network"))).count());
+        assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, "network"))).count());
+
+        if (indexFeatures.supportsCardinality(Cardinality.LIST)) {
+            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "one"))).count());
+            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "two"))).count());
+        }
+        if (indexFeatures.supportsCardinality(Cardinality.SET)) {
+            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "three"))).count());
+            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "four"))).count());
+        }
+    }
+
+    @Test
     public void clearStorageTest() throws Exception {
         final String store = "vertex";
         initialize(store);

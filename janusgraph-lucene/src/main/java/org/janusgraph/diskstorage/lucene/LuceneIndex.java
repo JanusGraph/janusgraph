@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.lucene;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.lucene.util.BytesRef;
 import org.locationtech.spatial4j.context.SpatialContext;
@@ -36,8 +35,6 @@ import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -227,6 +224,7 @@ public class LuceneIndex implements IndexProvider {
             final IndexWriter writer = getWriter(storeName, information);
             reader = DirectoryReader.open(writer, true, true);
             final IndexSearcher searcher = new IndexSearcher(reader);
+            final KeyInformation.StoreRetriever storeRetriever = information.get(storeName);
             for (final Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
                 final String documentId = entry.getKey();
                 final IndexMutation mutation = entry.getValue();
@@ -239,9 +237,7 @@ public class LuceneIndex implements IndexProvider {
                     continue;
                 }
 
-                final Pair<Document, Map<String, Shape>> docAndGeo = retrieveOrCreate(documentId, searcher);
-                final Document doc = docAndGeo.getKey();
-                final Map<String, Shape> geoFields = docAndGeo.getValue();
+                final Document doc = retrieveOrCreate(documentId, searcher);
 
                 Preconditions.checkNotNull(doc);
                 for (final IndexEntry del : mutation.getDeletions()) {
@@ -252,11 +248,10 @@ public class LuceneIndex implements IndexProvider {
                             log.trace("Removing field [{}] on document [{}]", key, documentId);
 
                         doc.removeFields(key);
-                        geoFields.remove(key);
                     }
                 }
 
-                addToDocument(storeName, documentId, doc, mutation.getAdditions(), geoFields, information);
+                addToDocument(doc, mutation.getAdditions(), storeRetriever);
 
                 //write the old document to the index with the modifications
                 writer.updateDocument(new Term(DOCID, documentId), doc);
@@ -276,6 +271,7 @@ public class LuceneIndex implements IndexProvider {
                 try {
                     final String store = stores.getKey();
                     final IndexWriter writer = getWriter(store, information);
+                    final KeyInformation.StoreRetriever storeRetriever = information.get(store);
                     reader = DirectoryReader.open(writer, true, true);
                     final IndexSearcher searcher = new IndexSearcher(reader);
 
@@ -291,11 +287,11 @@ public class LuceneIndex implements IndexProvider {
                             continue;
                         }
 
-                        final Pair<Document, Map<String, Shape>> docAndGeo = retrieveOrCreate(docID, searcher);
-                        addToDocument(store, docID, docAndGeo.getKey(), content, docAndGeo.getValue(), information);
+                        final Document doc = retrieveOrCreate(docID, searcher);
+                        addToDocument(doc, content, storeRetriever);
 
                         //write the old document to the index with the modifications
-                        writer.updateDocument(new Term(DOCID, docID), docAndGeo.getKey());
+                        writer.updateDocument(new Term(DOCID, docID), doc);
                     }
                     writer.commit();
                 } finally {
@@ -310,10 +306,9 @@ public class LuceneIndex implements IndexProvider {
         }
     }
 
-    private Pair<Document, Map<String, Shape>> retrieveOrCreate(String docID, IndexSearcher searcher) throws IOException {
+    private Document retrieveOrCreate(String docID, IndexSearcher searcher) throws IOException {
         final Document doc;
         final TopDocs hits = searcher.search(new TermQuery(new Term(DOCID, docID)), 10);
-        final Map<String, Shape> geoFields = Maps.newHashMap();
 
         if (hits.scoreDocs.length > 1)
             throw new IllegalArgumentException("More than one document found for document id: " + docID);
@@ -329,111 +324,114 @@ public class LuceneIndex implements IndexProvider {
                 log.trace("Updating existing document for [{}]", docID);
 
             final int docId = hits.scoreDocs[0].doc;
-            //retrieve the old document
             doc = searcher.doc(docId);
-            for (final IndexableField field : doc.getFields()) {
-                if (field.stringValue().startsWith(GEOID)) {
-                    try {
-                        geoFields.put(field.name(), Geoshape.fromWkt(field.stringValue().substring(GEOID.length())).getShape());
-                    } catch (final java.text.ParseException e) {
-                        throw new IllegalArgumentException("Geoshape was not parsable");
-                    }
-                }
-            }
         }
 
-        return new ImmutablePair<>(doc, geoFields);
+        return doc;
     }
 
-    private void addToDocument(String store,
-                               String docID,
-                               Document doc,
-                               List<IndexEntry> content,
-                               Map<String, Shape> geoFields,
-                               KeyInformation.IndexRetriever information) {
+    private void addToDocument(Document doc, List<IndexEntry> content, final KeyInformation.StoreRetriever information) {
         Preconditions.checkNotNull(doc);
+
         for (final IndexEntry e : content) {
             Preconditions.checkArgument(!e.hasMetaData(), "Lucene index does not support indexing meta data: %s", e);
             if (log.isTraceEnabled())
-                log.trace("Adding field [{}] on document [{}]", e.field, docID);
+                log.trace("Adding field [{}] on document [{}]", e.field, doc.get(DOCID));
 
-            if (doc.getField(e.field) != null)
+            if (doc.getField(e.field) != null) {
                 doc.removeFields(e.field);
+            }
+            doc.add(buildStoredField(e.field, e.value, information.get(e.field)));
+        }
+        buildIndexFields(doc, information).forEach(doc::add);
+    }
 
-            if (e.value instanceof Number) {
-                final Field field;
-                final Field sortField;
-                if (AttributeUtil.isWholeNumber((Number) e.value)) {
-                    field = new LongPoint(e.field, ((Number) e.value).longValue());
-                    sortField = new NumericDocValuesField(e.field, ((Number) e.value).longValue());
-                } else { //double or float
-                    field = new DoublePoint(e.field, ((Number) e.value).doubleValue());
-                    sortField = new DoubleDocValuesField(e.field, ((Number) e.value).doubleValue());
+    private Field buildStoredField(final String fieldName, final Object value, final KeyInformation keyInformation) {
+        final Field field;
+        if (value instanceof Number) {
+            if (AttributeUtil.isWholeNumber((Number) value)) {
+                field = new StoredField(fieldName, ((Number) value).longValue());
+            } else { //double or float
+                field = new StoredField(fieldName, ((Number) value).doubleValue());
+            }
+        } else if (AttributeUtil.isString(value)) {
+            final String str = (String) value;
+            final Mapping mapping = Mapping.getMapping(keyInformation);
+            switch (mapping) {
+                case DEFAULT:
+                case TEXT:
+                    // lowering the case for case insensitive text search
+                    field = new TextField(fieldName, str.toLowerCase(), Field.Store.YES);
+                    break;
+                case STRING:
+                    // if this field uses a custom analyzer, it must be stored as a TextField
+                    // (or the analyzer, even if it is a KeywordAnalyzer won't be used)
+                    field = new TextField(fieldName, str, Field.Store.YES);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Illegal mapping specified: " + mapping);
+            }
+        } else if (value instanceof Geoshape) {
+            field = new StoredField(fieldName, GEOID + value.toString());
+        } else if (value instanceof Date) {
+            field = new StoredField(fieldName, (((Date) value).getTime()));
+        } else if (value instanceof Instant) {
+            field = new StoredField(fieldName, (((Instant) value).toEpochMilli()));
+        } else if (value instanceof Boolean) {
+            field = new StoredField(fieldName, ((Boolean) value) ? 1 : 0);
+        } else if (value instanceof UUID) {
+            //Solr stores UUIDs as strings, we we do the sam
+            field = new StringField(fieldName, value.toString(), Field.Store.YES);
+        } else {
+            throw new IllegalArgumentException("Unsupported type: " + value);
+        }
+        return field;
+    }
+
+    private List<IndexableField> buildIndexFields(final Document doc, final KeyInformation.StoreRetriever information) {
+        List<IndexableField> fields = new ArrayList<>();
+        for (IndexableField field : doc.getFields()) {
+            String fieldName = field.name();
+            if (fieldName.equals(DOCID)) {
+                continue;
+            }
+            KeyInformation ki = information.get(fieldName);
+            Class<?> dataType = ki.getDataType();
+
+            if (AttributeUtil.isWholeNumber(dataType)) {
+                long value = field.numericValue().longValue();
+                fields.add(new LongPoint(fieldName, value));
+                fields.add(new NumericDocValuesField(fieldName, value));
+            } else if (AttributeUtil.isDecimal(dataType)) {
+                double value = field.numericValue().doubleValue();
+                fields.add(new DoublePoint(fieldName, value));
+                fields.add(new DoubleDocValuesField(fieldName, value));
+            } else if (AttributeUtil.isString(dataType)) {
+                final Mapping mapping = Mapping.getMapping(information.get(fieldName));
+                if (mapping.equals(Mapping.STRING)) {
+                    fields.add(new SortedDocValuesField(fieldName, new BytesRef(field.stringValue())));
                 }
-                doc.add(field);
-                doc.add(sortField);
-            } else if (AttributeUtil.isString(e.value)) {
-                final String str = (String) e.value;
-                final Mapping mapping = Mapping.getMapping(store, e.field, information);
-                final Field field;
-                final Field sortField;
-                switch (mapping) {
-                    case DEFAULT:
-                    case TEXT:
-                        // lowering the case for case insensitive text search
-                        field = new TextField(e.field, str.toLowerCase(), Field.Store.YES);
-                        sortField = null;
-                        break;
-                    case STRING:
-                        // if this field uses a custom analyzer, it must be stored as a TextField
-                        // (or the analyzer, even if it is a KeywordAnalyzer won't be used)
-                        field = new TextField(e.field, str, Field.Store.YES);
-                        sortField = new SortedDocValuesField(e.field, new BytesRef(str));
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Illegal mapping specified: " + mapping);
+            } else if (AttributeUtil.isGeo(dataType)) {
+                if (log.isTraceEnabled())
+                    log.trace("Updating geo-indexes for key {}", fieldName);
+                Shape shape;
+                try {
+                    shape = Geoshape.fromWkt(field.stringValue().substring(GEOID.length())).getShape();
+                } catch (java.text.ParseException e) {
+                    throw new IllegalArgumentException("Geoshape was not parsable", e);
                 }
-                doc.add(field);
-                if (sortField != null) {
-                    doc.add(sortField);
-                }
-            } else if (e.value instanceof Geoshape) {
-                final Shape shape = ((Geoshape) e.value).getShape();
-                geoFields.put(e.field, shape);
-                doc.add(new StoredField(e.field, GEOID + e.value.toString()));
-            } else if (e.value instanceof Date) {
-                doc.add(new LongPoint(e.field, (((Date) e.value).getTime())));
-                doc.add(new NumericDocValuesField(e.field, (((Date) e.value).getTime())));
-            } else if (e.value instanceof Instant) {
-                doc.add(new LongPoint(e.field, (((Instant) e.value).toEpochMilli())));
-                doc.add(new NumericDocValuesField(e.field, (((Instant) e.value).toEpochMilli())));
-            } else if (e.value instanceof Boolean) {
-                doc.add(new IntPoint(e.field, ((Boolean) e.value) ? 1 : 0));
-            } else if (e.value instanceof UUID) {
-                //Solr stores UUIDs as strings, we we do the same.
-                final Field field = new StringField(e.field, e.value.toString(), Field.Store.YES);
-                doc.add(field);
-            } else {
-                throw new IllegalArgumentException("Unsupported type: " + e.value);
+                final SpatialStrategy spatialStrategy = getSpatialStrategy(fieldName, ki);
+                Collections.addAll(fields, spatialStrategy.createIndexableFields(shape));
+            } else if (dataType.equals(Date.class) || dataType.equals(Instant.class)) {
+                long value = field.numericValue().longValue();
+                fields.add(new LongPoint(fieldName, value));
+                fields.add(new NumericDocValuesField(fieldName, value));
+            } else if (dataType.equals(Boolean.class)) {
+                fields.add(new IntPoint(fieldName, field.numericValue().intValue() == 1 ? 1 : 0));
+                fields.add(new NumericDocValuesField(fieldName, field.numericValue().intValue()));
             }
         }
-
-        for (final Map.Entry<String, Shape> geo : geoFields.entrySet()) {
-            if (log.isTraceEnabled())
-                log.trace("Updating geo-indexes for key {}", geo.getKey());
-
-            final KeyInformation ki = information.get(store, geo.getKey());
-            final SpatialStrategy spatialStrategy = getSpatialStrategy(geo.getKey(), ki);
-            for (final IndexableField f : spatialStrategy.createIndexableFields(geo.getValue())) {
-                if (doc.getField(f.name()) != null) {
-                    doc.removeFields(f.name());
-                }
-                doc.add(f);
-                if (spatialStrategy instanceof PointVectorStrategy) {
-                    doc.add(new DoubleDocValuesField(f.name(), f.numericValue() == null ? null : f.numericValue().doubleValue()));
-                }
-            }
-        }
+        return fields;
     }
 
     private static Sort getSortOrder(IndexQuery query) {
