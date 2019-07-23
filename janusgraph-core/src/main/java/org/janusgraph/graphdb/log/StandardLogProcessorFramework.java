@@ -186,6 +186,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
                             return new MsgReaderConverter(userLogName, changeProcessor, retryAttempts);
                         }
                     }));
+                    processorLogs.put(userLogName, log);
                 } catch (BackendException e) {
                     throw new JanusGraphException("Could not open user transaction log for name: "+ userLogName,e);
                 }
