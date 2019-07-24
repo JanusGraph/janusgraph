@@ -1044,7 +1044,7 @@ public class ManagementSystem implements JanusGraphManagement {
 
         @Override
         public int hashCode() {
-            return Long.valueOf(schemaVertexId).hashCode();
+            return Long.hashCode(schemaVertexId);
         }
 
         @Override
