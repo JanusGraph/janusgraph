@@ -48,7 +48,7 @@ public abstract class AbstractElement implements InternalElement, Comparable<Jan
 
     @Override
     public int hashCode() {
-        return Long.valueOf(getCompareId()).hashCode();
+        return Long.hashCode(getCompareId());
     }
 
     @Override
