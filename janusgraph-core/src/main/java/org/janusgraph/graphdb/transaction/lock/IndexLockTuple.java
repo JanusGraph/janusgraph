@@ -34,7 +34,7 @@ public class IndexLockTuple extends LockTuple {
 
     @Override
     public int hashCode() {
-        return super.hashCode()*10043 + Long.valueOf(index.getID()).hashCode();
+        return super.hashCode()*10043 + Long.hashCode(index.getID());
     }
 
     @Override
