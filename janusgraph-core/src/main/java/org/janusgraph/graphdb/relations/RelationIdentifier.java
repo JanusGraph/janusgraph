@@ -115,7 +115,7 @@ public final class RelationIdentifier implements Serializable {
 
     @Override
     public int hashCode() {
-        return Long.valueOf(relationId).hashCode();
+        return Long.hashCode(relationId);
     }
 
     @Override
