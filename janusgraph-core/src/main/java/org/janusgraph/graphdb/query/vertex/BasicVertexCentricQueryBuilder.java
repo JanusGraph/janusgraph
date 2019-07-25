@@ -29,6 +29,7 @@ import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.relations.StandardVertexProperty;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.core.schema.SchemaStatus;
+import org.janusgraph.graphdb.types.system.BaseLabel;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.janusgraph.graphdb.types.system.SystemRelationType;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -83,7 +84,6 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      * Whether to restrict this query to the specified "local" partitions in this transaction
      */
     private boolean restrict2Partitions = true;
-
 
     public BasicVertexCentricQueryBuilder(final StandardJanusGraphTx tx) {
         super(tx);
@@ -414,10 +414,22 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         return query;
     }
 
+    protected BaseVertexCentricQuery queryForLabel() {
+        EdgeSerializer serializer = tx.getEdgeSerializer();
+        SliceQuery q = serializer.getQuery(BaseLabel.VertexLabelEdge, Direction.OUT, new EdgeSerializer.TypedInterval[0]);
+        List<BackendQueryHolder<SliceQuery>> queries = Collections.singletonList(new BackendQueryHolder<>(q, true, true));
+        RelationTypeCondition<JanusGraphRelation> condition = new RelationTypeCondition<>(BaseLabel.VertexLabelEdge);
+        return new BaseVertexCentricQuery(condition, Direction.OUT, queries, OrderList.NO_ORDER, Query.NO_LIMIT);
+    }
+
     protected BaseVertexCentricQuery constructQueryWithoutProfile(RelationCategory returnType) {
         assert returnType != null;
         Preconditions.checkArgument(adjacentVertex==null || returnType == RelationCategory.EDGE,
                 "Vertex constraints only apply to edges");
+        if (isVertexLabelType()) {
+            return queryForLabel();
+        }
+
         if (limit <= 0)
             return BaseVertexCentricQuery.emptyQuery();
 

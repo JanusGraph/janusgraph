@@ -516,6 +516,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         addProperty(vertex, BaseKey.VertexExists, Boolean.TRUE);
         if (label!=BaseVertexLabel.DEFAULT_VERTEXLABEL) { //Add label
             Preconditions.checkArgument(label instanceof VertexLabelVertex);
+            vertex.setVertexLabel(label);
             addEdge(vertex, label, BaseLabel.VertexLabelEdge);
         }
         vertexCache.add(vertex, vertex.longId());
