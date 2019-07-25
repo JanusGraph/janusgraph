@@ -25,7 +25,6 @@ import org.janusgraph.graphdb.transaction.addedrelations.AddedRelationsContainer
 import org.janusgraph.graphdb.transaction.addedrelations.ConcurrentAddedRelations;
 import org.janusgraph.graphdb.transaction.addedrelations.SimpleAddedRelations;
 import org.janusgraph.util.datastructures.Retriever;
-import java.util.List;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -75,7 +74,7 @@ public class StandardVertex extends AbstractVertex {
     }
 
     @Override
-    public List<InternalRelation> getAddedRelations(Predicate<InternalRelation> query) {
+    public Iterable<InternalRelation> getAddedRelations(Predicate<InternalRelation> query) {
         return addedRelations.getView(query);
     }
 
