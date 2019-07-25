@@ -88,6 +88,7 @@ import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -271,6 +272,10 @@ public class ElasticSearchIndex implements IndexProvider {
 
     private static final Parameter[] NULL_PARAMETERS = null;
 
+    private static final Map<String, String> INDEX_STORE_NAMES_CACHE = new ConcurrentHashMap<>();
+    private static final int CACHE_LIMIT_TO_DISABLE = 50000;
+    private static volatile boolean indexStoreNameCacheEnabled = true;
+
     private final AbstractESCompat compat;
     private final ElasticSearchClient client;
     private final String indexName;
@@ -405,8 +410,33 @@ public class ElasticSearchIndex implements IndexProvider {
         return key + STRING_MAPPING_SUFFIX;
     }
 
-    private String getIndexStoreName(String store) {
+    private String generateIndexStoreName(String store){
         return indexName + "_" + store.toLowerCase();
+    }
+
+    private String getIndexStoreName(String store) {
+
+        if(indexStoreNameCacheEnabled){
+
+            String cachedName = INDEX_STORE_NAMES_CACHE.get(store);
+
+            if(cachedName != null){
+                return cachedName;
+            }
+
+            cachedName = generateIndexStoreName(store);
+
+            if(INDEX_STORE_NAMES_CACHE.size() < CACHE_LIMIT_TO_DISABLE){
+                INDEX_STORE_NAMES_CACHE.put(store, cachedName);
+            } else {
+                indexStoreNameCacheEnabled = false;
+                INDEX_STORE_NAMES_CACHE.clear();
+            }
+
+            return cachedName;
+        }
+
+        return generateIndexStoreName(store);
     }
 
     @Override
