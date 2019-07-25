@@ -101,7 +101,7 @@
             <artifactId>hppc</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.github.stephenc.high-scale-lib</groupId>
+            <groupId>com.boundary</groupId>
             <artifactId>high-scale-lib</artifactId>
         </dependency>
        <dependency>
