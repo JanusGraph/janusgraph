@@ -30,6 +30,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import org.janusgraph.diskstorage.es.compat.ES6Compat;
 import org.janusgraph.diskstorage.es.compat.ES7Compat;
+import org.janusgraph.diskstorage.es.mapping.IndexMapping;
 import org.janusgraph.diskstorage.es.rest.util.HttpAuthTypes;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.janusgraph.core.Cardinality;
@@ -50,7 +51,6 @@ import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
 
-import org.janusgraph.diskstorage.es.IndexMappings.IndexMapping;
 import org.janusgraph.diskstorage.es.compat.AbstractESCompat;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
@@ -247,6 +247,14 @@ public class ElasticSearchIndex implements IndexProvider {
             "Whether JanusGraph should setup max_open_scroll_context to maximum value for the cluster or not.",
             ConfigOption.Type.MASKABLE, true);
 
+    public static final ConfigOption<Boolean> USE_MAPPING_FOR_ES7 =
+        new ConfigOption<>(ELASTICSEARCH_NS, "use-mapping-for-es7",
+            "Mapping types are deprecated in ElasticSearch 7 and JanusGraph will not use mapping types by default " +
+                "for ElasticSearch 7 but if you want to preserve mapping types, you can setup this parameter to true. " +
+                "If you are updating ElasticSearch from 6 to 7 and you don't want to reindex your indexes, you may setup " +
+                "this parameter to true but we do recommend to reindex your indexes and don't use this parameter.",
+            ConfigOption.Type.MASKABLE, false);
+
     public static final int HOST_PORT_DEFAULT = 9200;
 
     /**
@@ -300,6 +308,7 @@ public class ElasticSearchIndex implements IndexProvider {
     private final long createSleep;
     private final boolean useAllField;
     private final Map<String, Object> ingestPipelines;
+    private final boolean useMappingForES7;
 
     public ElasticSearchIndex(Configuration config) throws BackendException {
         indexName = config.get(INDEX_NAME);
@@ -336,6 +345,12 @@ public class ElasticSearchIndex implements IndexProvider {
         ElasticSearchSetup.applySettingsFromJanusGraphConf(indexSetting, config);
 
         setupMaxOpenScrollContextsIfNeeded(config);
+
+        if(config.has(USE_MAPPING_FOR_ES7)){
+            useMappingForES7 = config.get(USE_MAPPING_FOR_ES7);
+        } else {
+            useMappingForES7 = false;
+        }
     }
 
     private void setupMaxOpenScrollContextsIfNeeded(Configuration config) throws PermanentBackendException {
@@ -1287,8 +1302,11 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
-    protected ElasticMajorVersion getVersion() {
+    ElasticMajorVersion getVersion() {
         return client.getMajorVersion();
     }
 
+    boolean isUseMappingForES7(){
+        return useMappingForES7;
+    }
 }

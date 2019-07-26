@@ -40,7 +40,6 @@ import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
-import org.janusgraph.diskstorage.es.rest.RestElasticSearchClient;
 import org.janusgraph.diskstorage.indexing.*;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
@@ -323,8 +322,15 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
 
         JSONObject json = (JSONObject) new JSONParser().parse(EntityUtils.toString(entity));
 
-        String returnedProperty = retrieveValueFromJSON(json,
-            indexName, "mappings", mappingTypeName, "properties", field, parameterName);
+        String returnedProperty;
+
+        if(JanusGraphElasticsearchContainer.getEsMajorVersion().value < 7){
+            returnedProperty = retrieveValueFromJSON(json,
+                indexName, "mappings", mappingTypeName, "properties", field, parameterName);
+        } else {
+            returnedProperty = retrieveValueFromJSON(json,
+                indexName, "mappings", "properties", field, parameterName);
+        }
 
         assertEquals(parameterValue.toString(), returnedProperty);
 
@@ -391,13 +397,14 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertEquals(2, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Text.CONTAINS, "John"))).count());
     }
 
-
     private CloseableHttpResponse getESMapping(String indexName, String mappingTypeName) throws IOException, URISyntaxException {
 
-        URIBuilder uriBuilder = new URIBuilder(indexName+"/_mapping/"+mappingTypeName);
+        URIBuilder uriBuilder;
 
-        if(JanusGraphElasticsearchContainer.getEsMajorVersion().value == 7){
-            uriBuilder.setParameter(RestElasticSearchClient.INCLUDE_TYPE_NAME_PARAMETER, "true");
+        if(JanusGraphElasticsearchContainer.getEsMajorVersion().value < 7){
+            uriBuilder = new URIBuilder(indexName+"/_mapping/"+mappingTypeName);
+        } else {
+            uriBuilder = new URIBuilder(indexName+"/_mapping");
         }
 
         final HttpGet httpGet = new HttpGet(uriBuilder.build());

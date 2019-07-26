@@ -10,6 +10,7 @@ JanusGraph release.
 ==== ElasticSearch: Upgrade from 6.6.0 to 7.2.0 and drop support for 5.x version
 The ElasticSearch version has been changed to 7.2.0 which removes support for `max-retry-timeout` option. That is why this option no longer available in JanusGraph.
 Users should be aware that by default JanusGraph setups maximum open scroll contexts to maximum value of `2147483647` with the parameter `setup-max-open-scroll-contexts` for ElasticSearch 7.y. This option can be disabled and updated manually in ElasticSearch but you should be aware that ElasticSearch starting from version 7 has a default limit of 500 opened contexts which most likely be reached by the normal usage of JanusGraph with ElasticSearch.
+By default deprecated mappings are disabled in ElasticSearch version 7. If you are upgrading your ElasticSearch index backend to version 7 from lower versions, it is recommended to reindex your JanusGraph indices to not use mappings. If you are unable to reindex your indices you may setup parameter `use-mapping-for-es7` to `true` which will tell JanusGraph to use mapping types for ElasticSearch version 7.
 Due to the drop of support for 5.x version, deprecated multi-type indices are no more supported. Parameter `use-deprecated-multitype-index` is no more supported by JanusGraph.
 
 === Upgrading to JanusGraph 0.4.0
