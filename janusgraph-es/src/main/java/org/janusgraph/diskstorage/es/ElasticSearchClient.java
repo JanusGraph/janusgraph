@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.janusgraph.diskstorage.es.IndexMappings.IndexMapping;
+import org.janusgraph.diskstorage.es.mapping.IndexMapping;
 
 public interface ElasticSearchClient extends Closeable {
 
