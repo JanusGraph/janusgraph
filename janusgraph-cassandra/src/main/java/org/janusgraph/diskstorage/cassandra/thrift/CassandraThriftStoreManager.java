@@ -60,9 +60,12 @@ import static org.janusgraph.diskstorage.configuration.ConfigOption.disallowEmpt
  * This class creates @see CassandraThriftKeyColumnValueStore and
  * handles Cassandra-backed allocation of vertex IDs for JanusGraph (when so
  * configured).
+
+ * @deprecated use CQL backend instead, see https://docs.janusgraph.org/latest/cassandra.html.
  *
  * @author Dan LaRocque &lt;dalaro@hopcount.org&gt;
  */
+@Deprecated
 @PreInitializeConfigOptions
 public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
@@ -157,6 +160,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
     public CassandraThriftStoreManager(Configuration config) throws BackendException {
         super(config);
+        log.warn("Cassandra Thrift protocol is deprecated and will be removed with JanusGraph 0.5.0. Please switch to the CQL backend.");
 
         /*
          * This is eventually passed to Thrift's TSocket constructor. The
