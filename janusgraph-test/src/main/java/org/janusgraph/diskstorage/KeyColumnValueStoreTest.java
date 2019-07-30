@@ -385,6 +385,14 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest implement
         checkKeys(deleted);
     }
 
+    @Test
+    public void deleteNonExistingKeys() {
+        assertDoesNotThrow(() -> {
+            List<StaticBuffer> deletions = Collections.singletonList(KeyValueStoreUtil.getBuffer(1));
+            store.mutate(KeyValueStoreUtil.getBuffer(0xdeadbeef), KeyColumnValueStore.NO_ADDITIONS, deletions, tx);
+        });
+    }
+
     /**
      * Loads a block of data where keys are longs on [idOffset, idOffset +
      * numKeys) and the columns are longs on [idOffset, idOffset + numColumns).
