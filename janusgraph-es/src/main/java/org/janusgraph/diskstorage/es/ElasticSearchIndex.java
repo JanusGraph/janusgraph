@@ -27,13 +27,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import org.janusgraph.diskstorage.es.compat.ES6Compat;
 import org.janusgraph.diskstorage.es.compat.ES7Compat;
 import org.janusgraph.diskstorage.es.rest.util.HttpAuthTypes;
 import org.locationtech.spatial4j.shape.Rectangle;
-import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
-import org.apache.tinkerpop.shaded.jackson.databind.ObjectWriter;
-import org.apache.tinkerpop.shaded.jackson.databind.SerializationFeature;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.attribute.Cmp;
@@ -85,6 +83,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
@@ -259,15 +258,30 @@ public class ElasticSearchIndex implements IndexProvider {
      */
     public static final double DEFAULT_GEO_DIST_ERROR_PCT = 0.025;
 
+    private static final String PARAMETERIZED_DELETION_SCRIPT = String.join(" ", "",
+            "for (field in params.fields) {",
+            "    if (field.cardinality == 'SINGLE') {",
+            "        ctx._source.remove(field.name);",
+            "    } else if (ctx._source.containsKey(field.name)) {",
+            "        def fieldIndex = ctx._source[field.name].indexOf(field.value);",
+            "        if (fieldIndex >= 0 && fieldIndex < ctx._source[field.name].size()) {",
+            "            ctx._source[field.name].remove(fieldIndex);",
+            "        }",
+            "    }",
+            "}");
+
+    private static final String PARAMETERIZED_ADDITION_SCRIPT = String.join(" ", "",
+            "for (field in params.fields) {",
+            "    if (ctx._source[field.name] == null) {",
+            "        ctx._source[field.name] = [];",
+            "    }",
+            "    if (field.cardinality != 'SET' || ctx._source[field.name].indexOf(field.value) == -1) {",
+            "        ctx._source[field.name].add(field.value);",
+            "    }",
+            "}");
+
     private static final String MAX_OPEN_SCROLL_CONTEXT_PARAMETER = "search.max_open_scroll_context";
     private static final Map<String, Object> MAX_RESULT_WINDOW = ImmutableMap.of("index.max_result_window", Integer.MAX_VALUE);
-
-    private static final ObjectWriter mapWriter;
-    static {
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        mapWriter = mapper.writerWithView(Map.class);
-    }
 
     private static final Parameter[] NULL_PARAMETERS = null;
 
@@ -682,11 +696,12 @@ public class ElasticSearchIndex implements IndexProvider {
                             requestByStore.add(ElasticSearchMutation.createDeleteRequest(indexStoreName, storeName,
                                     documentId));
                         } else {
-                            final String script = getDeletionScript(information, storeName, mutation);
-                            final Map<String,Object> doc = compat.prepareScript(script).build();
+                            List<Map<String, Object>> params = getParameters(information.get(storeName),
+                                mutation.getDeletions(), true);
+                            Map doc = compat.prepareScript(PARAMETERIZED_DELETION_SCRIPT, params).build();
+                            log.trace("Deletion script {} with params {}", PARAMETERIZED_DELETION_SCRIPT, params);
                             requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storeName,
-                                    documentId, doc));
-                            log.trace("Adding script {}", script);
+                                documentId, doc));
                         }
                     }
                     if (mutation.hasAdditions()) {
@@ -704,12 +719,13 @@ public class ElasticSearchIndex implements IndexProvider {
                                 upsert = null;
                             }
 
-                            final String inline = getAdditionScript(information, storeName, mutation);
-                            if (!inline.isEmpty()) {
-                                final ImmutableMap.Builder builder = compat.prepareScript(inline);
+                            List<Map<String, Object>> params = getParameters(information.get(storeName),
+                                    mutation.getAdditions(), false, Cardinality.SINGLE);
+                            if (!params.isEmpty()) {
+                                ImmutableMap.Builder builder = compat.prepareScript(PARAMETERIZED_ADDITION_SCRIPT, params);
                                 requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storeName,
                                         documentId, builder, upsert));
-                                log.trace("Adding script {}", inline);
+                                log.trace("Adding script {} with params {}", PARAMETERIZED_ADDITION_SCRIPT, params);
                             }
 
                             final Map<String, Object> doc = getAdditionDoc(information, storeName, mutation);
@@ -737,87 +753,29 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
-    private String getDeletionScript(KeyInformation.IndexRetriever information, String storeName,
-                                     IndexMutation mutation) throws PermanentBackendException {
-        final StringBuilder script = new StringBuilder();
-        final String INDEX_NAME = "index";
-        int i = 0;
-        for (final IndexEntry deletion : mutation.getDeletions()) {
-            final KeyInformation keyInformation = information.get(storeName).get(deletion.field);
-
-            switch (keyInformation.getCardinality()) {
-                case SINGLE:
-                    script.append("ctx._source.remove(\"").append(deletion.field).append("\");");
-                    if (hasDualStringMapping(information.get(storeName, deletion.field))) {
-                        script.append("ctx._source.remove(\"").append(getDualMappingName(deletion.field)).append("\");");
-                    }
-                    break;
-                case SET:
-                case LIST:
-                    final String jsValue = convertToJsType(deletion.value, compat.scriptLang(), Mapping.getMapping(keyInformation));
-                    String index = INDEX_NAME + i++;
-                    script.append("def ")
-                        .append(index)
-                        .append(" = ctx._source[\"")
-                        .append(deletion.field)
-                        .append("\"].indexOf(")
-                        .append(jsValue)
-                        .append("); ctx._source[\"")
-                        .append(deletion.field)
-                        .append("\"].remove(")
-                        .append(index)
-                        .append(");");
-                    if (hasDualStringMapping(information.get(storeName, deletion.field))) {
-                        index = INDEX_NAME + i++;
-                        script.append("def ")
-                            .append(index).append(" = ctx._source[\"")
-                            .append(getDualMappingName(deletion.field))
-                            .append("\"].indexOf(")
-                            .append(jsValue)
-                            .append("); ctx._source[\"")
-                            .append(getDualMappingName(deletion.field))
-                            .append("\"].remove(")
-                            .append(index)
-                            .append(");");
-                    }
-                    break;
-            }
-        }
-        return script.toString();
-    }
-
-    private String getAdditionScript(KeyInformation.IndexRetriever information, String storeName,
-                                     IndexMutation mutation) throws PermanentBackendException {
-        final StringBuilder script = new StringBuilder();
-
-        for (final IndexEntry e : mutation.getAdditions()) {
-            final KeyInformation keyInformation = information.get(storeName).get(e.field);
-            final Cardinality cardinality = keyInformation.getCardinality();
-
-            if (cardinality != Cardinality.SET && cardinality != Cardinality.LIST) {
+    private List<Map<String, Object>> getParameters(KeyInformation.StoreRetriever storeRetriever,
+                                                    List<IndexEntry> entries,
+                                                    boolean deletion,
+                                                    Cardinality... cardinalitiesToSkip) {
+        Set<Cardinality> cardinalityToSkipSet = Sets.newHashSet(cardinalitiesToSkip);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (IndexEntry entry : entries) {
+            KeyInformation info = storeRetriever.get(entry.field);
+            if (cardinalityToSkipSet.contains(info.getCardinality())) {
                 continue;
             }
-
-            String value = convertToJsType(e.value, compat.scriptLang(), Mapping.getMapping(keyInformation));
-
-            appendAdditionScript(script, value, e.field, cardinality == Cardinality.SET);
-
-            if (hasDualStringMapping(keyInformation)) {
-                appendAdditionScript(script, value, getDualMappingName(e.field), cardinality == Cardinality.SET);
+            Object jsValue = deletion && info.getCardinality() == Cardinality.SINGLE ?
+                "" : convertToEsType(entry.value, Mapping.getMapping(info));
+            result.add(ImmutableMap.of("name", entry.field,
+                    "value", jsValue,
+                    "cardinality", info.getCardinality().name()));
+            if (hasDualStringMapping(info)) {
+                result.add(ImmutableMap.of("name", getDualMappingName(entry.field),
+                        "value", jsValue,
+                        "cardinality", info.getCardinality().name()));
             }
         }
-
-        return script.toString();
-    }
-
-    private void appendAdditionScript(StringBuilder script, String value, String fieldName, Boolean distinct) {
-        script.append("if (ctx._source[\"").append(fieldName).append("\"] == null) ctx._source[\"").append(fieldName).append("\"] = [];");
-
-        if (distinct) {
-            script.append("if (ctx._source[\"").append(fieldName).append("\"].indexOf(").append(value).append(") == -1) ");
-        }
-
-        script.append("ctx._source[\"").append(fieldName).append("\"].add(").append(value).append(");");
+        return result;
     }
 
     private Map<String,Object> getAdditionDoc(KeyInformation.IndexRetriever information,
@@ -835,18 +793,6 @@ public class ElasticSearchIndex implements IndexProvider {
 
         return doc;
     }
-
-    private static String convertToJsType(Object value, String scriptLang,
-                                          Mapping mapping) throws PermanentBackendException {
-        final String esValue;
-        try {
-            esValue = mapWriter.writeValueAsString(convertToEsType(value, mapping));
-        } catch (final IOException e) {
-            throw new PermanentBackendException("Could not write json");
-        }
-        return scriptLang.equals("groovy") ? esValue.replace("$", "\\$") : esValue;
-    }
-
 
     @Override
     public void restore(Map<String,Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever information,
