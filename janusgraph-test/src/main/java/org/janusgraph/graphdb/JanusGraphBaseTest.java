@@ -87,7 +87,7 @@ public abstract class JanusGraphBaseTest {
         adjustedConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "inst");
         final Backend backend = new Backend(adjustedConfig);
         if (initialize) {
-            backend.initialize(adjustedConfig);
+            backend.initialize();
         }
         return backend;
     }

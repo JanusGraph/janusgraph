@@ -42,8 +42,8 @@ public class KCVSConfigurationBuilder {
                 }
 
                 @Override
-                public void close() throws BackendException {
-                    manager.close();
+                public void close() {
+                    //Do nothing, storeManager is shared with Backend which will close it explicitly
                 }
             },manager.openDatabase(SYSTEM_PROPERTIES_STORE_NAME),config);
         } catch (BackendException e) {

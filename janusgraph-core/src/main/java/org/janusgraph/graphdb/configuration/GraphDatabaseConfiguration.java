@@ -1229,11 +1229,12 @@ public class GraphDatabaseConfiguration {
     private StoreFeatures storeFeatures = null;
 
     public GraphDatabaseConfiguration(ReadConfiguration configurationAtOpen, ModifiableConfiguration localConfiguration,
-                                      String uniqueGraphId, Configuration configuration) {
+                                      String uniqueGraphId, Configuration configuration, StoreFeatures storeFeatures) {
         this.configurationAtOpen = configurationAtOpen;
         this.localConfiguration = localConfiguration;
         this.uniqueGraphId = uniqueGraphId;
         this.configuration = configuration;
+        this.storeFeatures = storeFeatures;
         preLoadConfiguration();
     }
 
@@ -1348,19 +1349,11 @@ public class GraphDatabaseConfiguration {
         return configuration;
     }
 
-    public Backend getBackend() {
-        Backend backend = new Backend(configuration);
-        backend.initialize(configuration);
-        storeFeatures = backend.getStoreFeatures();
-        return backend;
-    }
-
     public String getGraphName() {
         return getConfigurationAtOpen().getString(GRAPH_NAME.toStringWithoutRoot());
     }
 
     public StoreFeatures getStoreFeatures() {
-        Preconditions.checkArgument(storeFeatures != null, "Cannot retrieve store features before the storage backend has been initialized");
         return storeFeatures;
     }
 

@@ -24,6 +24,7 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.StandardStoreManager;
 import org.janusgraph.diskstorage.configuration.*;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.janusgraph.graphdb.management.JanusGraphManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
@@ -141,13 +142,20 @@ public class JanusGraphFactory {
      * @param backupName Backup name for graph
      * @return JanusGraph graph database
      */
-    public static JanusGraph open(ReadConfiguration configuration, String backupName) {
+    private static JanusGraph open(ReadConfiguration configuration, String backupName) {
         final ModifiableConfiguration config = new ModifiableConfiguration(ROOT_NS, (WriteConfiguration) configuration, BasicConfiguration.Restriction.NONE);
         final String graphName = config.has(GRAPH_NAME) ? config.get(GRAPH_NAME) : backupName;
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
+
+        BasicConfiguration localBasicConfiguration = new BasicConfiguration(ROOT_NS, configuration, BasicConfiguration.Restriction.NONE);
+        KeyColumnValueStoreManager storeManager = Backend.getStorageManager(localBasicConfiguration);
+        GraphDatabaseConfiguration databaseConfiguration = GraphDatabaseConfigurationBuilder.build(configuration, localBasicConfiguration, storeManager);
+        Backend backend = new Backend(databaseConfiguration.getConfiguration(), storeManager);
+        backend.initialize();
+
         if (null != graphName) {
             Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
-            return (JanusGraph) jgm.openGraph(graphName, gName -> new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(configuration)));
+            return (JanusGraph) jgm.openGraph(graphName, gName -> new StandardJanusGraph(databaseConfiguration, backend));
         } else {
             if (jgm != null) {
                 log.warn("You should supply \"graph.graphname\" in your .properties file configuration if you are opening " +
@@ -158,7 +166,7 @@ public class JanusGraphFactory {
                          "\"graph.graphname\" so these graphs should be accessed dynamically by supplying a .properties file here " +
                          "or by using the ConfiguredGraphFactory.");
             }
-            return new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(configuration));
+            return new StandardJanusGraph(databaseConfiguration, backend);
         }
     }
 
@@ -208,7 +216,8 @@ public class JanusGraphFactory {
             graph.close();
         }
         final GraphDatabaseConfiguration config = g.getConfiguration();
-        final Backend backend = config.getBackend();
+        Backend backend = new Backend(config.getConfiguration());
+        backend.initialize();
         try {
             backend.clearStorage();
         } finally {

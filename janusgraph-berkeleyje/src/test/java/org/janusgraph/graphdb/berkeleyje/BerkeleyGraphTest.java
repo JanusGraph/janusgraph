@@ -66,7 +66,7 @@ public class BerkeleyGraphTest extends JanusGraphTest {
         config.set(ConfigElement.getPath(GraphDatabaseConfiguration.DROP_ON_CLEAR), true);
         Backend backend = getBackend(config, false);
         assertTrue(backend.getStoreManager().exists(), "graph should exist before clearing storage");
-        clearGraph(config);
+        backend.clearStorage();
         backend.close();
         backend = getBackend(config, false);
         assertFalse(backend.getStoreManager().exists(), "graph should not exist after clearing storage");

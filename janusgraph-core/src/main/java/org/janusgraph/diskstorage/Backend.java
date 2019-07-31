@@ -138,10 +138,13 @@ public class Backend implements LockerProvider, AutoCloseable {
 
     private final Configuration configuration;
 
-    public Backend(Configuration configuration) {
+    public Backend(Configuration configuration){
+        this(configuration, getStorageManager(configuration));
+    }
+
+    public Backend(Configuration configuration, KeyColumnValueStoreManager manager) {
         this.configuration = configuration;
 
-        KeyColumnValueStoreManager manager = getStorageManager(configuration);
         if (configuration.get(BASIC_METRICS)) {
             storeManager = new MetricInstrumentedStoreManager(manager,METRICS_STOREMANAGER_NAME,configuration.get(METRICS_MERGE_STORES),METRICS_MERGED_STORE);
         } else {
@@ -220,16 +223,15 @@ public class Backend implements LockerProvider, AutoCloseable {
     /**
      * Initializes this backend with the given configuration. Must be called before this Backend can be used
      *
-     * @param config
      */
-    public void initialize(Configuration config) {
+    public void initialize() {
         try {
             //EdgeStore & VertexIndexStore
-            KeyColumnValueStore idStore = storeManager.openDatabase(config.get(IDS_STORE_NAME));
+            KeyColumnValueStore idStore = storeManager.openDatabase(configuration.get(IDS_STORE_NAME));
 
             idAuthority = null;
             if (storeFeatures.isKeyConsistent()) {
-                idAuthority = new ConsistentKeyIDAuthority(idStore, storeManager, config);
+                idAuthority = new ConsistentKeyIDAuthority(idStore, storeManager, configuration);
             } else {
                 throw new IllegalStateException("Store needs to support consistent key or transactional operations for ID manager to guarantee proper id allocations");
             }

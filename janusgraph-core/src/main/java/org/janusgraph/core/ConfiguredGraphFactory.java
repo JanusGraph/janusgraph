@@ -14,6 +14,10 @@
 
 package org.janusgraph.core;
 
+import org.janusgraph.diskstorage.Backend;
+import org.janusgraph.diskstorage.configuration.BasicConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
 import org.janusgraph.graphdb.management.JanusGraphManager;
@@ -22,6 +26,8 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
+
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 import static org.janusgraph.graphdb.management.JanusGraphManager.JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG;
 
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -34,6 +40,7 @@ import java.util.Map;
 import java.util.List;
 import java.util.Set;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +94,7 @@ public class ConfiguredGraphFactory {
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
         final CommonsConfiguration config = new CommonsConfiguration(new MapConfiguration(templateConfigMap));
-        final JanusGraph g = (JanusGraph) jgm.openGraph(graphName, (String gName) -> new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(config)));
+        final JanusGraph g = (JanusGraph) jgm.openGraph(graphName, getGraphSupplier(config));
         configManagementGraph.createConfiguration(new MapConfiguration(templateConfigMap));
         return g;
     }
@@ -112,8 +119,18 @@ public class ConfiguredGraphFactory {
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
         final CommonsConfiguration config = new CommonsConfiguration(new MapConfiguration(graphConfigMap));
-        return (JanusGraph) jgm.openGraph(graphName, (String gName) -> new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(config)));
+        return (JanusGraph) jgm.openGraph(graphName, getGraphSupplier(config));
     }
+
+    private static Function<String, Graph> getGraphSupplier(CommonsConfiguration configuration){
+        BasicConfiguration localBasicConfiguration = new BasicConfiguration(ROOT_NS, configuration, BasicConfiguration.Restriction.NONE);
+        KeyColumnValueStoreManager storeManager = Backend.getStorageManager(localBasicConfiguration);
+        GraphDatabaseConfiguration databaseConfiguration = GraphDatabaseConfigurationBuilder.build(configuration, localBasicConfiguration, storeManager);
+        Backend backend = new Backend(databaseConfiguration.getConfiguration(), storeManager);
+        backend.initialize();
+        return (String gName) -> new StandardJanusGraph(databaseConfiguration, backend);
+    }
+
 
     /**
      * Get a Set of the graphNames that exist in your configuration management graph

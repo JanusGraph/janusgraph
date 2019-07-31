@@ -136,10 +136,10 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     private final String name;
 
-    public StandardJanusGraph(GraphDatabaseConfiguration configuration) {
+    public StandardJanusGraph(GraphDatabaseConfiguration configuration, Backend backend) {
 
         this.config = configuration;
-        this.backend = configuration.getBackend();
+        this.backend = backend;
 
         this.name = configuration.getGraphName();
 

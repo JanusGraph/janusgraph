@@ -40,14 +40,18 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
  */
 public class GraphDatabaseConfigurationBuilder {
 
-    public GraphDatabaseConfiguration build(ReadConfiguration localConfig){
+    public static GraphDatabaseConfiguration build(ReadConfiguration localConfig) {
+        BasicConfiguration localBasicConfiguration = new BasicConfiguration(ROOT_NS,localConfig, BasicConfiguration.Restriction.NONE);
+        KeyColumnValueStoreManager storeManager = Backend.getStorageManager(localBasicConfiguration);
+        return build(localConfig, localBasicConfiguration, storeManager);
+    }
+
+    public static GraphDatabaseConfiguration build(ReadConfiguration localConfig, BasicConfiguration localBasicConfiguration, KeyColumnValueStoreManager storeManager){
 
         Preconditions.checkNotNull(localConfig);
 
-        BasicConfiguration localBasicConfiguration = new BasicConfiguration(ROOT_NS,localConfig, BasicConfiguration.Restriction.NONE);
         ModifiableConfiguration overwrite = new ModifiableConfiguration(ROOT_NS,new CommonsConfiguration(), BasicConfiguration.Restriction.NONE);
 
-        final KeyColumnValueStoreManager storeManager = Backend.getStorageManager(localBasicConfiguration);
         final StoreFeatures storeFeatures = storeManager.getFeatures();
 
         final ReadConfiguration globalConfig = new ReadConfigurationBuilder().buildGlobalConfiguration(
@@ -69,17 +73,17 @@ public class GraphDatabaseConfigurationBuilder {
 
         MergedConfiguration configuration = new MergedConfiguration(overwrite,combinedConfig);
 
-        return new GraphDatabaseConfiguration(localConfig, localConfiguration, uniqueGraphId, configuration);
+        return new GraphDatabaseConfiguration(localConfig, localConfiguration, uniqueGraphId, configuration, storeFeatures);
     }
 
-    private Map<ConfigElement.PathIdentifier, Object> getLocalSubset(Map<ConfigElement.PathIdentifier, Object> m) {
+    private static Map<ConfigElement.PathIdentifier, Object> getLocalSubset(Map<ConfigElement.PathIdentifier, Object> m) {
         return Maps.filterEntries(m, entry -> {
             assert entry.getKey().element.isOption();
             return ((ConfigOption)entry.getKey().element).isLocal();
         });
     }
 
-    private void checkAndOverwriteTransactionLogConfiguration(Configuration combinedConfig, ModifiableConfiguration overwrite, StoreFeatures storeFeatures){
+    private static void checkAndOverwriteTransactionLogConfiguration(Configuration combinedConfig, ModifiableConfiguration overwrite, StoreFeatures storeFeatures){
 
         //Default log configuration for system and tx log
         //TRANSACTION LOG: send_delay=0, ttl=2days and backend=default
@@ -93,7 +97,7 @@ public class GraphDatabaseConfigurationBuilder {
         }
     }
 
-    private void checkAndOverwriteSystemManagementLogConfiguration(Configuration combinedConfig, ModifiableConfiguration overwrite){
+    private static void checkAndOverwriteSystemManagementLogConfiguration(Configuration combinedConfig, ModifiableConfiguration overwrite){
 
         //SYSTEM MANAGEMENT LOG: backend=default and send_delay=0 and key_consistent=true and fixed-partitions=true
         Preconditions.checkArgument(combinedConfig.get(LOG_BACKEND,MANAGEMENT_LOG).equals(LOG_BACKEND.getDefaultValue()),

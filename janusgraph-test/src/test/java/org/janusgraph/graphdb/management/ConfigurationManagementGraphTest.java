@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.management;
 
-import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import static org.janusgraph.core.schema.SchemaStatus.ENABLED;
 import org.janusgraph.core.schema.JanusGraphIndex;
@@ -48,7 +47,7 @@ public class ConfigurationManagementGraphTest {
         final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         final MapConfiguration config = new MapConfiguration(map);
-        final StandardJanusGraph graph = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
+        final StandardJanusGraph graph = (StandardJanusGraph) JanusGraphFactory.open(new CommonsConfiguration(config));
 
         final String propertyKeyName = "Created_Using_Template";
         final Class dataType = Boolean.class;

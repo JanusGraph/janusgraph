@@ -51,7 +51,7 @@ public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
 
     @Test
     public void verifyEligibility() {
-        Preconditions.checkArgument(!graph.getConfiguration().getBackend().getStoreFeatures().hasTxIsolation(),
+        Preconditions.checkArgument(!graph.getBackend().getStoreFeatures().hasTxIsolation(),
                 "This test suite only applies to eventually consistent data stores");
     }
 

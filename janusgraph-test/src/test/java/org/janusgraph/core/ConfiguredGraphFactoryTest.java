@@ -14,7 +14,6 @@
 
 package org.janusgraph.core;
 
-import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.janusgraph.graphdb.management.JanusGraphManager;
 import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
 import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
@@ -40,7 +39,7 @@ public class ConfiguredGraphFactoryTest {
         final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         final MapConfiguration config = new MapConfiguration(map);
-        final StandardJanusGraph graph = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
+        final StandardJanusGraph graph = (StandardJanusGraph) JanusGraphFactory.open(new CommonsConfiguration(config));
         // Instantiate the ConfigurationManagementGraph Singleton
         new ConfigurationManagementGraph(graph);
     }

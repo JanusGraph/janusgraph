@@ -94,7 +94,7 @@ public class HBaseStoreManagerConfigTest {
         // Set backend to hbase
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, "hbase");
         // Instantiate a GraphDatabaseConfiguration based on the above
-        GraphDatabaseConfiguration graphConfig = new GraphDatabaseConfigurationBuilder().build(config.getConfiguration());
+        GraphDatabaseConfiguration graphConfig = GraphDatabaseConfigurationBuilder.build(config.getConfiguration());
         // Check the TIMESTAMP_PROVIDER has been set to the hbase preferred MILLI
         TimestampProviders provider = graphConfig.getConfiguration().get(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER);
         assertEquals(HBaseStoreManager.PREFERRED_TIMESTAMPS, provider);
