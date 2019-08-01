@@ -15,7 +15,8 @@
 package org.janusgraph.graphdb.query.condition;
 
 import org.janusgraph.core.JanusGraphElement;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import java.util.Objects;
 
 /**
  * A fixed valued literal, which always returns either true or false irrespective of the element which is evaluated.
@@ -37,7 +38,7 @@ public class FixedCondition<E extends JanusGraphElement> extends Literal<E> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(getType()).append(value).toHashCode();
+        return Objects.hash(getType(), value);
     }
 
     @Override

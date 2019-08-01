@@ -17,9 +17,9 @@ package org.janusgraph.diskstorage.configuration;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -84,7 +84,7 @@ public abstract class ConfigElement {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(name).append(namespace).toHashCode();
+        return Objects.hash(name, namespace);
     }
 
     @Override

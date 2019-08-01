@@ -15,9 +15,9 @@
 package org.janusgraph.graphdb.query.condition;
 
 import org.janusgraph.core.JanusGraphElement;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 /**
  * Abstract condition element that combines multiple conditions (for instance, AND, OR).
@@ -73,7 +73,7 @@ public abstract class MultiCondition<E extends JanusGraphElement> extends ArrayL
     public int hashCode() {
         int sum = 0;
         for (Condition kp : this) sum += kp.hashCode();
-        return new HashCodeBuilder().append(getType()).append(sum).toHashCode();
+        return Objects.hash(getType(), sum);
     }
 
     @Override
