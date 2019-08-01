@@ -1082,8 +1082,8 @@ public abstract class IndexProviderTest {
 
         final Multimap<String, Object> initialDoc = HashMultimap.create();
         initialDoc.put(DATE, Instant.ofEpochSecond(1));
-        double latitude = random.nextDouble() * 180 - 90;
-        double longitude = random.nextDouble() * 360 - 180;
+        double latitude = 30;
+        double longitude = 60;
         initialDoc.put(LOCATION, Geoshape.point(latitude, longitude));
 
         initialDoc.put(STRING, "network");
