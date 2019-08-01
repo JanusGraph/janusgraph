@@ -16,11 +16,12 @@ package org.janusgraph.graphdb.query.condition;
 
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.schema.JanusGraphSchemaElement;
 import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.schema.JanusGraphSchemaElement;
 import org.janusgraph.graphdb.internal.InternalElement;
 import org.janusgraph.graphdb.types.system.SystemRelationType;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import java.util.Objects;
 
 /**
  * Evaluates elements based on their visibility
@@ -50,7 +51,7 @@ public class VisibilityFilterCondition<E extends JanusGraphElement> extends Lite
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(getType()).append(visibility).toHashCode();
+        return Objects.hash(getType(), visibility);
     }
 
     @Override

@@ -16,7 +16,8 @@ package org.janusgraph.core.schema;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import java.util.Objects;
 
 /**
  * Simple class to represent arbitrary parameters as key-value pairs.
@@ -49,7 +50,7 @@ public class Parameter<V> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(key).append(value).toHashCode();
+        return Objects.hash(key, value);
     }
 
     @Override
