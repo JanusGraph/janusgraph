@@ -26,6 +26,9 @@ JanusGraph provides the following backends for use with Cassandra:
 
 Cassandra has two protocols for clients to use: CQL and Thrift. Thrift was the original interface, however it was deprecated starting with Cassandra 2.1. The core of JanusGraph was originally written before the deprecation of Thrift, and it has several classes that support Thrift. With Cassandra 4.0, Thrift support will be removed in Cassandra. JanusGraph users are recommended to use the `cql` storage backend.
 
+[IMPORTANT]
+Starting with JanusGraph 0.4.1, all non CQL-backends are deprecated, including `cassandrathrift`, `cassandra` and `embeddedcassandra`.
+
 [NOTE]
 If you plan to use a Thrift-based driver and you are using Cassandra 2.2 or higher, you need to explicitly enable Thrift so that JanusGraph can connect to the cluster.
 Do so by running `./bin/nodetool enablethrift` on every Cassandra node.
