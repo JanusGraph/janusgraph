@@ -68,7 +68,11 @@ import java.util.List;
 import java.util.Map;
 import static org.janusgraph.diskstorage.cassandra.CassandraTransaction.getTx;
 
+/**
+ * @deprecated use CQL backend instead, see https://docs.janusgraph.org/latest/cassandra.html.
+ */
 @PreInitializeConfigOptions
+@Deprecated
 public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     private static final Logger log = LoggerFactory.getLogger(AstyanaxStoreManager.class);
@@ -285,6 +289,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     public AstyanaxStoreManager(Configuration config) throws BackendException {
         super(config);
+        log.warn("Astyanax is deprecated and will be removed with JanusGraph 0.5.0. Please switch to the CQL backend.");
 
         this.clusterName = config.get(CLUSTER_NAME);
 

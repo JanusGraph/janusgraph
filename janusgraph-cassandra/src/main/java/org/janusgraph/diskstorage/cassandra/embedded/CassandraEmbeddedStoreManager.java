@@ -59,6 +59,10 @@ import com.google.common.collect.ImmutableMap;
 import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
 import org.janusgraph.diskstorage.cassandra.utils.CassandraDaemonWrapper;
 
+/**
+ * @deprecated use CQL backend instead, see https://docs.janusgraph.org/latest/cassandra.html.
+ */
+@Deprecated
 public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager {
 
     private static final Logger log = LoggerFactory.getLogger(CassandraEmbeddedStoreManager.class);
@@ -75,6 +79,9 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
     public CassandraEmbeddedStoreManager(Configuration config) {
         super(config);
+        log.warn("Cassandra embedded solution is deprecated and will be removed with JanusGraph 0.5.0. " +
+            "For testing, please use JanusGraph Docker images: https://github.com/JanusGraph/janusgraph-docker. " +
+            "For production, please use a side-by-side deployment of Cassandra or a pre-packaged version of Cassandra with a CQL backend in JanusGraph 0.5.0. For more details, see https://docs.janusgraph.org/latest/server.html.");
 
         String cassandraConfig = CASSANDRA_YAML_DEFAULT;
         if (config.has(GraphDatabaseConfiguration.STORAGE_CONF_FILE)) {
