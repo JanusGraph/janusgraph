@@ -37,8 +37,9 @@ import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.diskstorage.es.ElasticMajorVersion;
 import org.janusgraph.diskstorage.es.ElasticSearchClient;
 import org.janusgraph.diskstorage.es.ElasticSearchMutation;
-import org.janusgraph.diskstorage.es.IndexMappings;
-import org.janusgraph.diskstorage.es.IndexMappings.IndexMapping;
+import org.janusgraph.diskstorage.es.mapping.IndexMapping;
+import org.janusgraph.diskstorage.es.mapping.TypedIndexMappings;
+import org.janusgraph.diskstorage.es.mapping.TypelessIndexMappings;
 import org.janusgraph.diskstorage.es.rest.RestBulkResponse.RestBulkItemResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,6 +73,8 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     private static final String REST_TOTAL_HITS_AS_INT_PARAMETER = "rest_total_hits_as_int";
     private static final String TRACK_TOTAL_HITS_PARAMETER = "track_total_hits";
 
+    private static final byte[] NEW_LINE_BYTES = "\n".getBytes(UTF8_CHARSET);
+
     private static final Request INFO_REQUEST = new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR);
     private static final Map<String, Object> TRACK_TOTAL_HITS_ONLY = ImmutableMap.of(TRACK_TOTAL_HITS_PARAMETER, true);
 
@@ -99,12 +102,20 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     private String bulkRefresh;
 
+    private boolean bulkRefreshEnabled = false;
+
     private final String scrollKeepAlive;
 
-    public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive) {
+    private final boolean useMappingTypes;
+
+    private final boolean esVersion7;
+
+    public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean useMappingTypesForES7) {
         this.delegate = delegate;
         majorVersion = getMajorVersion();
         this.scrollKeepAlive = scrollKeepAlive+"s";
+        esVersion7 = ElasticMajorVersion.SEVEN.equals(majorVersion);
+        useMappingTypes = majorVersion.getValue() < 7 || (useMappingTypesForES7 && esVersion7);
     }
 
     @Override
@@ -183,9 +194,11 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
         Request request = new Request(REQUEST_TYPE_PUT, REQUEST_SEPARATOR + indexName);
 
-        if(ElasticMajorVersion.SEVEN.equals(majorVersion)){
-            // TODO: Temporary solution to support mapping types in ES7
-            request.addParameter(INCLUDE_TYPE_NAME_PARAMETER, "true");
+        if(majorVersion.getValue() > 6){
+
+            if(useMappingTypes) {
+                request.addParameter(INCLUDE_TYPE_NAME_PARAMETER, "true");
+            }
 
             if(settings != null && settings.size() > 0){
                 Map<String,Object> updatedSettings = new HashMap<>();
@@ -229,12 +242,17 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     @Override
     public void createMapping(String indexName, String typeName, Map<String,Object> mapping) throws IOException {
 
-        Request request = new Request(REQUEST_TYPE_PUT, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_mapping" + REQUEST_SEPARATOR + typeName);
+        Request request;
 
-        if(ElasticMajorVersion.SEVEN.equals(majorVersion)) {
-            // TODO: Temporary solution to support mapping types in ES7
-            // Mapping types should be removed before ES8
-            request.addParameter(INCLUDE_TYPE_NAME_PARAMETER, "true");
+        if(useMappingTypes){
+            request = new Request(REQUEST_TYPE_PUT,
+                REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_mapping" + REQUEST_SEPARATOR + typeName);
+            if(esVersion7){
+                request.addParameter(INCLUDE_TYPE_NAME_PARAMETER, "true");
+            }
+        } else {
+            request = new Request(REQUEST_TYPE_PUT,
+                REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_mapping");
         }
 
         performRequest(request, mapWriter.writeValueAsBytes(mapping));
@@ -243,17 +261,31 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     @Override
     public IndexMapping getMapping(String indexName, String typeName) throws IOException {
 
-        Request request = new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_mapping" + REQUEST_SEPARATOR + typeName);
+        Request request;
 
-        if(ElasticMajorVersion.SEVEN.equals(majorVersion)) {
-            // TODO: Temporary solution to support mapping types in ES7
-            // Mapping types should be removed before ES8
-            request.addParameter(INCLUDE_TYPE_NAME_PARAMETER, "true");
+        if(useMappingTypes){
+            request = new Request(REQUEST_TYPE_GET,
+                REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_mapping" + REQUEST_SEPARATOR + typeName);
+            if(esVersion7){
+                request.addParameter(INCLUDE_TYPE_NAME_PARAMETER, "true");
+            }
+        } else {
+            request = new Request(REQUEST_TYPE_GET,
+                REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_mapping");
         }
 
         try (final InputStream inputStream = performRequest(request, null).getEntity().getContent()) {
-            final Map<String, IndexMappings> settings = mapper.readValue(inputStream, new TypeReference<Map<String, IndexMappings>>() {});
-            return settings != null ? settings.get(indexName).getMappings().get(typeName) : null;
+
+            if(useMappingTypes){
+                final Map<String, TypedIndexMappings> settings = mapper.readValue(inputStream,
+                    new TypeReference<Map<String, TypedIndexMappings>>() {});
+                return settings != null ? settings.get(indexName).getMappings().get(typeName) : null;
+            }
+
+            final Map<String, TypelessIndexMappings> settings = mapper.readValue(inputStream,
+                new TypeReference<Map<String, TypelessIndexMappings>>() {});
+            return settings != null ? settings.get(indexName).getMappings() : null;
+
         } catch (final JsonParseException | JsonMappingException | ResponseException e) {
             log.info("Error when we try to get ES mapping", e);
             return null;
@@ -264,8 +296,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     public void deleteIndex(String indexName) throws IOException {
         if (isAlias(indexName)) {
             // aliased multi-index case
-            final String path = new StringBuilder(REQUEST_SEPARATOR)
-                .append("_alias").append(REQUEST_SEPARATOR).append(indexName).toString();
+            final String path = REQUEST_SEPARATOR + "_alias" + REQUEST_SEPARATOR + indexName;
             final Response response = performRequest(REQUEST_TYPE_GET, path, null);
             try (final InputStream inputStream = response.getEntity().getContent()) {
                 final Map<String,Object> records = mapper.readValue(inputStream, new TypeReference<Map<String, Object>>() {});
@@ -276,9 +307,6 @@ public class RestElasticSearchClient implements ElasticSearchClient {
                     }
                 }
             }
-        } else if (indexExists(indexName)) {
-            // legacy non-aliased multi-type index (see ElasticSearchIndex#USE_DEPRECATED_MULTITYPE_INDEX)
-            performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + indexName, null);
         }
     }
 
@@ -286,13 +314,24 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     public void bulkRequest(List<ElasticSearchMutation> requests, String ingestPipeline) throws IOException {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         for (final ElasticSearchMutation request : requests) {
-            final Map actionData = ImmutableMap.of(request.getRequestType().name().toLowerCase(),
-                    ImmutableMap.of("_index", request.getIndex(), "_type", request.getType(), "_id", request.getId()));
-                outputStream.write(mapWriter.writeValueAsBytes(actionData));
-            outputStream.write("\n".getBytes(UTF8_CHARSET));
+            final Map<String, String> requestData;
+            if(useMappingTypes){
+                requestData = ImmutableMap.of(
+                    "_index", request.getIndex(),
+                    "_type", request.getType(),
+                    "_id", request.getId());
+            } else {
+                requestData = ImmutableMap.of(
+                    "_index", request.getIndex(),
+                    "_id", request.getId());
+            }
+            outputStream.write(mapWriter.writeValueAsBytes(
+                ImmutableMap.of(request.getRequestType().name().toLowerCase(), requestData))
+            );
+            outputStream.write(NEW_LINE_BYTES);
             if (request.getSource() != null) {
                 outputStream.write(mapWriter.writeValueAsBytes(request.getSource()));
-                outputStream.write("\n".getBytes(UTF8_CHARSET));
+                outputStream.write(NEW_LINE_BYTES);
             }
         }
 
@@ -300,7 +339,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         if (ingestPipeline != null) {
             APPEND_OP.apply(builder).append("pipeline=").append(ingestPipeline);
         }
-        if (bulkRefresh != null && !bulkRefresh.toLowerCase().equals("false")) {
+        if (bulkRefreshEnabled) {
             APPEND_OP.apply(builder).append("refresh=").append(bulkRefresh);
         }
         builder.insert(0, REQUEST_SEPARATOR + "_bulk");
@@ -344,12 +383,13 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     public void setBulkRefresh(String bulkRefresh) {
         this.bulkRefresh = bulkRefresh;
+        bulkRefreshEnabled = bulkRefresh != null && !bulkRefresh.equalsIgnoreCase("false");
     }
 
     private RestSearchResponse search(Map<String, Object> requestData, String path, boolean searchInitialized) throws IOException {
 
         final Request request = new Request(REQUEST_TYPE_POST, path);
-        if(ElasticMajorVersion.SEVEN.equals(majorVersion)) {
+        if(majorVersion.getValue() > 6) {
 
             // TODO: Temporary solution to return total hits as int parameter in ES7
             // Total hits should be represented as an object before ES8
