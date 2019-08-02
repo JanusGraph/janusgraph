@@ -14,9 +14,11 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue;
 
-import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.StaticBuffer;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import com.google.common.base.Preconditions;
+
+import java.util.Objects;
 
 /**
  * Extends a {@link SliceQuery} to express a range for columns and a range for
@@ -73,7 +75,7 @@ public class KeyRangeQuery extends SliceQuery {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(keyStart).append(keyEnd).appendSuper(super.hashCode()).toHashCode();
+        return Objects.hash(keyStart, keyEnd, super.hashCode());
     }
 
     @Override

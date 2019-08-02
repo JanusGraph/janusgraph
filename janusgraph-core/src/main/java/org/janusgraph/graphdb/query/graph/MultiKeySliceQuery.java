@@ -14,16 +14,17 @@
 
 package org.janusgraph.graphdb.query.graph;
 
-import com.google.common.base.Preconditions;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.graphdb.query.BackendQuery;
 import org.janusgraph.graphdb.query.BaseQuery;
 
+import com.google.common.base.Preconditions;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -58,7 +59,7 @@ public class MultiKeySliceQuery extends BaseQuery implements BackendQuery<MultiK
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(queries).append(getLimit()).toHashCode();
+        return Objects.hash(queries, getLimit());
     }
 
     @Override

@@ -15,12 +15,14 @@
 package org.janusgraph.graphdb.query.condition;
 
 import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.graphdb.relations.CacheEdge;
+
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import java.util.Objects;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -56,7 +58,7 @@ public class DirectionCondition<E extends JanusGraphRelation> extends Literal<E>
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(getType()).append(direction).append(baseVertex).toHashCode();
+        return Objects.hash(getType(), direction, baseVertex);
     }
 
     @Override

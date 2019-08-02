@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.query.graph;
 
-import com.google.common.base.Preconditions;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.OrderList;
@@ -25,10 +24,12 @@ import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.FixedCondition;
 import org.janusgraph.graphdb.query.profile.ProfileObservable;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
+
+import com.google.common.base.Preconditions;
 import org.apache.commons.collections.comparators.ComparableComparator;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.Comparator;
+import java.util.Objects;
 
 /**
  * An executable {@link ElementQuery} for {@link org.janusgraph.core.JanusGraphQuery}. This query contains
@@ -102,7 +103,7 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGr
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(condition).append(resultType).append(orders).append(getLimit()).toHashCode();
+        return Objects.hash(condition, resultType, orders, getLimit());
     }
 
     @Override

@@ -14,20 +14,21 @@
 
 package org.janusgraph.graphdb.query.graph;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.graphdb.query.BackendQuery;
 import org.janusgraph.graphdb.query.BaseQuery;
 import org.janusgraph.graphdb.query.profile.ProfileObservable;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.types.CompositeIndexType;
-import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.IndexType;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.janusgraph.graphdb.types.MixedIndexType;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A component/sub-query of a {@link GraphCentricQuery} that gets executed against an indexing backend or the index store
@@ -80,7 +81,7 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(queries).toHashCode();
+        return Objects.hash(queries);
     }
 
     @Override
@@ -143,7 +144,7 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
 
         @Override
         public int hashCode() {
-            return new HashCodeBuilder().append(index).append(query).toHashCode();
+            return Objects.hash(index, query);
         }
 
         @Override

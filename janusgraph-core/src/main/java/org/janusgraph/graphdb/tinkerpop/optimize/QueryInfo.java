@@ -14,12 +14,10 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import java.util.List;
-import java.util.Objects;
-
 import org.janusgraph.graphdb.tinkerpop.optimize.HasStepFolder.OrderEntry;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import java.util.List;
+import java.util.Objects;
 
 /**
  *
@@ -64,7 +62,7 @@ public class QueryInfo {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(orders).append(lowLimit).append(highLimit).toHashCode();
+        return Objects.hash(orders, lowLimit, highLimit);
     }
 
     @Override
