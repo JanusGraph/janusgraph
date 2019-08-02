@@ -13,13 +13,4 @@
             </includes>
         </dependencySet>
     </dependencySets>
-
-    <!-- Manual HTML generated from AsciiDoc -->
-    <fileSets>
-        <fileSet>
-            <directory>target/docs/chunk</directory>
-            <outputDirectory>/docs</outputDirectory>
-            <filtered>false</filtered>
-        </fileSet>
-    </fileSets>
 </component>
