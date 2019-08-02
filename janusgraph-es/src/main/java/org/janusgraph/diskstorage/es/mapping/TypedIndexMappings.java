@@ -1,4 +1,4 @@
-// Copyright 2017 JanusGraph Authors
+// Copyright 2019 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,19 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.diskstorage.es;
+package org.janusgraph.diskstorage.es.mapping;
 
 import java.util.Map;
 
 import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * Serialization of Elasticsearch index mapping.
- *
- * @author David Clement (davidclement90@laposte.net)
+ * Serialization of Elasticsearch index mappings with types.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class IndexMappings {
+public class TypedIndexMappings {
 
     private Map<String, IndexMapping> mappings;
 
@@ -36,27 +34,4 @@ public class IndexMappings {
         this.mappings = mappings;
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class IndexMapping {
-
-        private Map<String, Object> properties;
-
-        private String dynamic;
-
-        public Map<String, Object> getProperties() {
-            return properties;
-        }
-
-        public void setProperties(Map<String, Object> properties) {
-            this.properties = properties;
-        }
-
-        public boolean isDynamic() {
-            return dynamic == null || "true".equalsIgnoreCase(dynamic);
-        }
-
-        public void setDynamic(String dynamic) {
-            this.dynamic = dynamic;
-        }
-    }
 }
