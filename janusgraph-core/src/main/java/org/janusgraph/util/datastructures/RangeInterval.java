@@ -15,7 +15,6 @@
 package org.janusgraph.util.datastructures;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.*;
 
@@ -154,7 +153,7 @@ public class RangeInterval<T> implements Interval<T> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(start).append(end).append(startInclusive).append(endInclusive).toHashCode();
+        return Objects.hash(start, end, startInclusive, endInclusive);
     }
 
     @Override

@@ -14,11 +14,13 @@
 
 package org.janusgraph.graphdb.query.condition;
 
-import com.google.common.base.Preconditions;
-import org.janusgraph.core.RelationType;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphRelation;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.janusgraph.core.RelationType;
+
+import com.google.common.base.Preconditions;
+
+import java.util.Objects;
 
 /**
  *
@@ -42,7 +44,7 @@ public class RelationTypeCondition<E extends JanusGraphElement> extends Literal<
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(getType()).append(relationType).toHashCode();
+        return Objects.hash(getType(), relationType);
     }
 
     @Override

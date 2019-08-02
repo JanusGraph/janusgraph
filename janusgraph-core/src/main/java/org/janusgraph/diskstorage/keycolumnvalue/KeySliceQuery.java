@@ -14,9 +14,10 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue;
 
-import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.StaticBuffer;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 
 /**
  * Extends {@link SliceQuery} by a key that identifies the location of the slice in the key-ring.
@@ -59,7 +60,7 @@ public class KeySliceQuery extends SliceQuery {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(key).appendSuper(super.hashCode()).toHashCode();
+        return Objects.hashCode(key, super.hashCode());
     }
 
     @Override
