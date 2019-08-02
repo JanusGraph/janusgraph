@@ -51,7 +51,6 @@ import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.*;
 import org.janusgraph.util.encoding.LongEncoding;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -242,7 +241,7 @@ public class IndexSerializer {
 
         @Override
         public int hashCode() {
-            return new HashCodeBuilder().append(index).append(mutationType).append(key).append(entry).toHashCode();
+            return Objects.hash(index, mutationType, key, entry);
         }
 
         @Override

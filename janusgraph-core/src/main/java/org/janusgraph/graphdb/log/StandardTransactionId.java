@@ -14,11 +14,12 @@
 
 package org.janusgraph.graphdb.log;
 
-import com.google.common.base.Preconditions;
 import org.janusgraph.core.log.TransactionId;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import com.google.common.base.Preconditions;
 
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -53,7 +54,7 @@ public class StandardTransactionId implements TransactionId {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(instanceId).append(transactionId).append(transactionTime).toHashCode();
+        return Objects.hash(instanceId, transactionId, transactionTime);
     }
 
     @Override

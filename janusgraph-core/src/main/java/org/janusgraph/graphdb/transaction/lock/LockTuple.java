@@ -15,7 +15,8 @@
 package org.janusgraph.graphdb.transaction.lock;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import java.util.Objects;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -44,9 +45,7 @@ public class LockTuple {
 
     @Override
     public int hashCode() {
-        HashCodeBuilder b = new HashCodeBuilder();
-        for (Object o : elements) b.append(o);
-        return b.toHashCode();
+        return Objects.hash(elements);
     }
 
     @Override
