@@ -41,6 +41,7 @@ import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanQuery.Builder;
@@ -784,12 +785,18 @@ public class LuceneIndex implements IndexProvider {
         return params;
     }
 
+    private QueryParser getQueryParser(String store, KeyInformation.IndexRetriever information) {
+        final Analyzer analyzer = delegatingAnalyzerFor(store, information);
+        final NumericTranslationQueryParser parser = new NumericTranslationQueryParser(information.get(store), "_all", analyzer);
+        parser.setAllowLeadingWildcard(true);
+        return parser;
+    }
+
     @Override
     public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
         final Query q;
         try {
-            final Analyzer analyzer = delegatingAnalyzerFor(query.getStore(), information);
-            q = new NumericTranslationQueryParser(information.get(query.getStore()), "_all", analyzer).parse(query.getQuery());
+            q = getQueryParser(query.getStore(), information).parse(query.getQuery());
             // Lucene query parser does not take additional parameters so any parameters on the RawQuery are ignored.
         } catch (final ParseException e) {
             throw new PermanentBackendException("Could not parse raw query: " + query.getQuery(), e);
@@ -828,8 +835,7 @@ public class LuceneIndex implements IndexProvider {
     public Long totals(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
         final Query q;
         try {
-            final Analyzer analyzer = delegatingAnalyzerFor(query.getStore(), information);
-            q = new NumericTranslationQueryParser(information.get(query.getStore()), "_all", analyzer).parse(query.getQuery());
+            q = getQueryParser(query.getStore(), information).parse(query.getQuery());
         } catch (final ParseException e) {
             throw new PermanentBackendException("Could not parse raw query: " + query.getQuery(), e);
         }
