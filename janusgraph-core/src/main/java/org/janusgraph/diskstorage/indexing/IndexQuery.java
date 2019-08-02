@@ -14,18 +14,18 @@
 
 package org.janusgraph.diskstorage.indexing;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.core.JanusGraphElement;
+import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.BackendQuery;
 import org.janusgraph.graphdb.query.BaseQuery;
 import org.janusgraph.graphdb.query.Query;
-import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.condition.Condition;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * An external index query executed on an {@link IndexProvider}.
@@ -55,7 +55,7 @@ public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
         this.orders = orders;
         this.store = store;
 
-        this.hashcode = new HashCodeBuilder().append(condition).append(store).append(orders).append(limit).toHashCode();
+        this.hashcode = Objects.hash(condition, store, orders, limit);
     }
 
     public IndexQuery(String store, Condition condition, ImmutableList<OrderEntry> orders) {

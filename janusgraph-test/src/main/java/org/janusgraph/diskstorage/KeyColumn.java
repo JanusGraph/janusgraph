@@ -14,7 +14,7 @@
 
 package org.janusgraph.diskstorage;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import java.util.Objects;
 
 public class KeyColumn {
 
@@ -28,7 +28,7 @@ public class KeyColumn {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(key).append(column).toHashCode();
+        return Objects.hash(key, column);
     }
 
     public boolean equals(Object other) {
