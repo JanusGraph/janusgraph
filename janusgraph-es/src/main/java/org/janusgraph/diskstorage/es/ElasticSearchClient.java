@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.janusgraph.diskstorage.es.mapping.IndexMapping;
+import org.janusgraph.diskstorage.es.script.ESScriptResponse;
 
 public interface ElasticSearchClient extends Closeable {
 
@@ -32,6 +33,10 @@ public interface ElasticSearchClient extends Closeable {
     boolean isIndex(String indexName);
 
     boolean isAlias(String aliasName);
+
+    void createStoredScript(String scriptName, Map<String,Object> script) throws IOException;
+
+    ESScriptResponse getStoredScript(String scriptName) throws IOException;
 
     void createIndex(String indexName, Map<String,Object> settings) throws IOException;
 
