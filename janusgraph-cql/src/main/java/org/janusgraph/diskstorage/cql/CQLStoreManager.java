@@ -374,7 +374,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             this.session.close();
         } finally {
             try {
-                this.cluster.close();
+                this.cluster.closeAsync();
             } finally {
                 this.executorService.shutdownNow();
             }
