@@ -14,9 +14,7 @@
 
 package org.janusgraph.diskstorage.es;
 
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_DOC_KEY;
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_GEO_COORDS_KEY;
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_TYPE_KEY;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.*;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NS;
@@ -32,6 +30,7 @@ import org.janusgraph.diskstorage.es.compat.ES6Compat;
 import org.janusgraph.diskstorage.es.compat.ES7Compat;
 import org.janusgraph.diskstorage.es.mapping.IndexMapping;
 import org.janusgraph.diskstorage.es.rest.util.HttpAuthTypes;
+import org.janusgraph.diskstorage.es.script.ESScriptResponse;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphException;
@@ -76,17 +75,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -267,7 +256,7 @@ public class ElasticSearchIndex implements IndexProvider {
      */
     public static final double DEFAULT_GEO_DIST_ERROR_PCT = 0.025;
 
-    private static final String PARAMETERIZED_DELETION_SCRIPT = String.join(" ", "",
+    private static final String PARAMETERIZED_DELETION_SCRIPT = parametrizedScriptPrepare("",
             "for (field in params.fields) {",
             "    if (field.cardinality == 'SINGLE') {",
             "        ctx._source.remove(field.name);",
@@ -279,7 +268,7 @@ public class ElasticSearchIndex implements IndexProvider {
             "    }",
             "}");
 
-    private static final String PARAMETERIZED_ADDITION_SCRIPT = String.join(" ", "",
+    private static final String PARAMETERIZED_ADDITION_SCRIPT = parametrizedScriptPrepare("",
             "for (field in params.fields) {",
             "    if (ctx._source[field.name] == null) {",
             "        ctx._source[field.name] = [];",
@@ -288,6 +277,9 @@ public class ElasticSearchIndex implements IndexProvider {
             "        ctx._source[field.name].add(field.value);",
             "    }",
             "}");
+
+    private static final String INDEX_NAME_SEPARATOR = "_";
+    private static final String SCRIPT_ID_SEPARATOR = "-";
 
     private static final String MAX_OPEN_SCROLL_CONTEXT_PARAMETER = "search.max_open_scroll_context";
     private static final Map<String, Object> MAX_RESULT_WINDOW = ImmutableMap.of("index.max_result_window", Integer.MAX_VALUE);
@@ -309,9 +301,13 @@ public class ElasticSearchIndex implements IndexProvider {
     private final boolean useAllField;
     private final Map<String, Object> ingestPipelines;
     private final boolean useMappingForES7;
+    private final String parametrizedAdditionScriptId;
+    private final String parametrizedDeletionScriptId;
 
     public ElasticSearchIndex(Configuration config) throws BackendException {
         indexName = config.get(INDEX_NAME);
+        parametrizedAdditionScriptId = generateScriptId("add");
+        parametrizedDeletionScriptId = generateScriptId("del");
         useAllField = config.get(USE_ALL_FIELD);
         useExternalMappings = config.get(USE_EXTERNAL_MAPPINGS);
         allowMappingUpdate = config.get(ALLOW_MAPPING_UPDATE);
@@ -350,6 +346,32 @@ public class ElasticSearchIndex implements IndexProvider {
             useMappingForES7 = config.get(USE_MAPPING_FOR_ES7);
         } else {
             useMappingForES7 = false;
+        }
+
+        setupStoredScripts();
+    }
+
+    private void setupStoredScripts() throws PermanentBackendException {
+        setupStoredScriptIfNeeded(parametrizedAdditionScriptId, PARAMETERIZED_ADDITION_SCRIPT);
+        setupStoredScriptIfNeeded(parametrizedDeletionScriptId, PARAMETERIZED_DELETION_SCRIPT);
+    }
+
+    private void setupStoredScriptIfNeeded(String storedScriptId, String source) throws PermanentBackendException {
+
+        ImmutableMap<String, Object> preparedScript = compat.prepareScript(source).build();
+
+        String lang = (String) ((ImmutableMap<String, Object>) preparedScript.get(ES_SCRIPT_KEY)).get(ES_LANG_KEY);
+
+        try {
+            ESScriptResponse esScriptResponse = client.getStoredScript(storedScriptId);
+
+            if(Boolean.FALSE.equals(esScriptResponse.getFound()) || !Objects.equals(lang, esScriptResponse.getScript().getLang()) ||
+                !Objects.equals(source, esScriptResponse.getScript().getSource())){
+                client.createStoredScript(storedScriptId, preparedScript);
+            }
+
+        } catch (final IOException e) {
+            throw new PermanentBackendException(e.getMessage(), e);
         }
     }
 
@@ -439,8 +461,12 @@ public class ElasticSearchIndex implements IndexProvider {
         return key + STRING_MAPPING_SUFFIX;
     }
 
+    private String generateScriptId(String uniqueScriptSuffix){
+        return indexName + SCRIPT_ID_SEPARATOR + uniqueScriptSuffix;
+    }
+
     private String generateIndexStoreName(String store){
-        return indexName + "_" + store.toLowerCase();
+        return indexName + INDEX_NAME_SEPARATOR + store.toLowerCase();
     }
 
     private String getIndexStoreName(String store) {
@@ -743,7 +769,7 @@ public class ElasticSearchIndex implements IndexProvider {
                         } else {
                             List<Map<String, Object>> params = getParameters(information.get(storeName),
                                 mutation.getDeletions(), true);
-                            Map doc = compat.prepareScript(PARAMETERIZED_DELETION_SCRIPT, params).build();
+                            Map doc = compat.prepareStoredScript(parametrizedDeletionScriptId, params).build();
                             log.trace("Deletion script {} with params {}", PARAMETERIZED_DELETION_SCRIPT, params);
                             requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storeName,
                                 documentId, doc));
@@ -767,7 +793,7 @@ public class ElasticSearchIndex implements IndexProvider {
                             List<Map<String, Object>> params = getParameters(information.get(storeName),
                                     mutation.getAdditions(), false, Cardinality.SINGLE);
                             if (!params.isEmpty()) {
-                                ImmutableMap.Builder builder = compat.prepareScript(PARAMETERIZED_ADDITION_SCRIPT, params);
+                                ImmutableMap.Builder builder = compat.prepareStoredScript(parametrizedAdditionScriptId, params);
                                 requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storeName,
                                         documentId, builder, upsert));
                                 log.trace("Adding script {} with params {}", PARAMETERIZED_ADDITION_SCRIPT, params);
@@ -1308,5 +1334,9 @@ public class ElasticSearchIndex implements IndexProvider {
 
     boolean isUseMappingForES7(){
         return useMappingForES7;
+    }
+
+    private static String parametrizedScriptPrepare(String ... lines){
+        return Arrays.stream(lines).map(String::trim).collect(Collectors.joining(""));
     }
 }

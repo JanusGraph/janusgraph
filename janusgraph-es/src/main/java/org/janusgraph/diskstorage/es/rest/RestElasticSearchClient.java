@@ -41,6 +41,7 @@ import org.janusgraph.diskstorage.es.mapping.IndexMapping;
 import org.janusgraph.diskstorage.es.mapping.TypedIndexMappings;
 import org.janusgraph.diskstorage.es.mapping.TypelessIndexMappings;
 import org.janusgraph.diskstorage.es.rest.RestBulkResponse.RestBulkItemResponse;
+import org.janusgraph.diskstorage.es.script.ESScriptResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -187,6 +188,50 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         } catch (final IOException ignored) {
         }
         return false;
+    }
+
+    @Override
+    public void createStoredScript(String scriptName, Map<String, Object> script) throws IOException {
+
+        Request request = new Request(REQUEST_TYPE_POST, REQUEST_SEPARATOR + "_scripts" + REQUEST_SEPARATOR + scriptName);
+
+        performRequest(request, mapWriter.writeValueAsBytes(script));
+    }
+
+    @Override
+    public ESScriptResponse getStoredScript(String scriptName) throws IOException {
+
+        Request request = new Request(REQUEST_TYPE_GET,
+            REQUEST_SEPARATOR + "_scripts" + REQUEST_SEPARATOR + scriptName);
+
+        try{
+
+            final Response response = delegate.performRequest(request);
+
+            if(response.getStatusLine().getStatusCode() != 200){
+                throw new IOException("Error executing request: " + response.getStatusLine().getReasonPhrase());
+            }
+
+            try (final InputStream inputStream = response.getEntity().getContent()) {
+
+                return mapper.readValue(inputStream, new TypeReference<ESScriptResponse>() {});
+
+            } catch (final JsonParseException | JsonMappingException | ResponseException e) {
+                throw new IOException("Error when we try to parse ES script: "+response.getEntity().getContent());
+            }
+
+        } catch (ResponseException e){
+
+            final Response response = e.getResponse();
+
+            if(e.getResponse().getStatusLine().getStatusCode() == 404){
+                ESScriptResponse esScriptResponse = new ESScriptResponse();
+                esScriptResponse.setFound(false);
+                return esScriptResponse;
+            }
+
+            throw new IOException("Error executing request: " + response.getStatusLine().getReasonPhrase());
+        }
     }
 
     @Override
