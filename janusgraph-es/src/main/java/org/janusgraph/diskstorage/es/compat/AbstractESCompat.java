@@ -14,14 +14,6 @@
 
 package org.janusgraph.diskstorage.es.compat;
 
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_ANALYZER;
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_LANG_KEY;
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_PARAMS_FIELDS_KEY;
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_PARAMS_KEY;
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_SCRIPT_KEY;
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_SOURCE_KEY;
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_TYPE_KEY;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +29,8 @@ import org.janusgraph.diskstorage.indexing.IndexFeatures;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.*;
 
 /**
  * Base class for building Elasticsearch mapping and query objects.
@@ -74,7 +68,19 @@ public abstract class AbstractESCompat {
         return "painless";
     }
 
-    public ImmutableMap.Builder prepareScript(String source, List<Map<String, Object>> fields) {
+    public ImmutableMap.Builder<String, Object> prepareScript(String source) {
+        Map<String, Object> script = ImmutableMap.of(ES_SOURCE_KEY, source,
+            ES_LANG_KEY, scriptLang());
+        return ImmutableMap.<String, Object>builder().put(ES_SCRIPT_KEY, script);
+    }
+
+    public ImmutableMap.Builder<String, Object> prepareStoredScript(String scriptId, List<Map<String, Object>> fields) {
+        Map<String, Object> script = ImmutableMap.of(ES_ID_KEY, scriptId,
+            ES_PARAMS_KEY, ImmutableMap.of(ES_PARAMS_FIELDS_KEY, fields));
+        return ImmutableMap.<String, Object>builder().put(ES_SCRIPT_KEY, script);
+    }
+
+    public ImmutableMap.Builder<String, Object> prepareInlineScript(String source, List<Map<String, Object>> fields) {
         Map<String, Object> script = ImmutableMap.of(ES_SOURCE_KEY, source,
             ES_PARAMS_KEY, ImmutableMap.of(ES_PARAMS_FIELDS_KEY, fields),
             ES_LANG_KEY, scriptLang());
