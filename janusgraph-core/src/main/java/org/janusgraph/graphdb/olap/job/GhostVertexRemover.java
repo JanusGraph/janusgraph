@@ -110,9 +110,16 @@ public class GhostVertexRemover extends VertexJobConverter {
             iterator.remove();
             removedRelations++;
         }
+        v.remove();
         //There should be no more system relations to remove
         metrics.incrementCustom(REMOVED_VERTEX_COUNT);
         metrics.incrementCustom(REMOVED_RELATION_COUNT,removedRelations);
+    }
+
+    @Override
+    public void workerIterationEnd(final ScanMetrics metrics) {
+        tx.commit();
+        super.workerIterationEnd(metrics);
     }
 
     @Override
