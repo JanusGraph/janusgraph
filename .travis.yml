@@ -64,10 +64,11 @@ matrix:
     - env: MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase1' ARGS='-Dtest=**/diskstorage/hbase/* -Dhbase.profile -Phbase1'
     - env: MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase1' ARGS='-Dtest=**/graphdb/hbase/* -Dhbase.profile -Phbase1'
     - env: MODULE='hadoop-parent/janusgraph-hadoop-2' INSTALL_ARGS='-Dhbase.profile -Phbase1' ARGS='-Dhbase.profile -Phbase1'
-    - env: MODULE='cql' ARGS='-Dtest=**/diskstorage/cql/* -Dtest.skip.murmur=true'
-    - env: MODULE='cql' ARGS='-Dtest=**/diskstorage/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
-    - env: MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.murmur=true'
-    - env: MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
+    - env: MODULE='cql' ARGS='-Pcassandra2-byteordered -Dtest=**/diskstorage/cql/*'
+    - env: MODULE='cql' ARGS='-Pcassandra2-murmur -Dtest=**/diskstorage/cql/*'
+    - env: MODULE='cql' ARGS='-Pcassandra2-murmur-ssl -Dtest=**/diskstorage/cql/CQLStoreTest.java'
+    - env: MODULE='cql' ARGS='-Pcassandra2-byteordered -Dtest=**/graphdb/cql/*'
+    - env: MODULE='cql' ARGS='-Pcassandra2-murmur -Dtest=**/graphdb/cql/*'
     - env: COVERITY_ONLY=true
     - if: type = cron OR commit_message =~ /\[full build\]/
       env: MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='3.11.0' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false'
@@ -86,11 +87,11 @@ matrix:
     - if: type = cron OR commit_message =~ /\[full build\]/
       env: MODULE='cassandra' CASSANDRA_VERSION='3.11.0' ARGS='-Dtest=**/cassandra/*,**/utils/*'
     - if: type = cron OR commit_message =~ /\[full build\]/
-      env: MODULE='cql' CASSANDRA_VERSION='3.11.0' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.murmur-ssl=true -Dtest.skip.murmur-serial=true'
+      env: MODULE='cql' ARGS=' -Dcassandra.docker.partitioner=byteordered -Dcassandra.docker.version=3.11.0'
     - if: type = cron OR commit_message =~ /\[full build\]/
-      env: MODULE='cql' CASSANDRA_VERSION='3.11.0' ARGS='-Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-ssl=true'
+      env: MODULE='cql' ARGS=' -Dcassandra.docker.partitioner=murmur -Dcassandra.docker.version=3.11.0'
     - if: type = cron OR commit_message =~ /\[full build\]/
-      env: MODULE='cql' CASSANDRA_VERSION='3.11.0' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true'
+      env: MODULE='cql' ARGS=' -Dcassandra.docker.partitioner=murmur -Dcassandra.docker.useSSL=true -Dcassandra.docker.version=3.11.0'
     - if: type = cron OR commit_message =~ /\[full build\]/
       env: MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='3.0.14' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false'
     - if: type = cron OR commit_message =~ /\[full build\]/
@@ -108,11 +109,11 @@ matrix:
     - if: type = cron OR commit_message =~ /\[full build\]/
       env: MODULE='cassandra' CASSANDRA_VERSION='3.0.14' ARGS='-Dtest=**/cassandra/*,**/utils/*'
     - if: type = cron OR commit_message =~ /\[full build\]/
-      env: MODULE='cql' CASSANDRA_VERSION='3.0.14' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.murmur-ssl=true -Dtest.skip.murmur-serial=true'
+      env: MODULE='cql' ARGS=' -Dcassandra.docker.partitioner=byteordered -Dcassandra.docker.version=3.0.14'
     - if: type = cron OR commit_message =~ /\[full build\]/
-      env: MODULE='cql' CASSANDRA_VERSION='3.0.14' ARGS='-Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-ssl=true'
+      env: MODULE='cql' ARGS=' -Dcassandra.docker.partitioner=murmur -Dcassandra.docker.version=3.0.14'
     - if: type = cron OR commit_message =~ /\[full build\]/
-      env: MODULE='cql' CASSANDRA_VERSION='3.0.14' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true'
+      env: MODULE='cql' ARGS=' -Dcassandra.docker.partitioner=murmur -Dcassandra.docker.useSSL=true -Dcassandra.docker.version=3.0.14'
     - if: type = cron OR commit_message =~ /\[full build\]/
       env: MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='2.2.10' ARGS='-DskipHBase'
     - if: type = cron OR commit_message =~ /\[full build\]/
@@ -130,11 +131,11 @@ matrix:
     - if: type = cron OR commit_message =~ /\[full build\]/
       env: MODULE='cassandra' CASSANDRA_VERSION='2.2.10' ARGS='-Dtest=**/cassandra/*,**/utils/*'
     - if: type = cron OR commit_message =~ /\[full build\]/
-      env: MODULE='cql' CASSANDRA_VERSION='2.2.10' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.murmur-ssl=true -Dtest.skip.murmur-serial=true'
+      env: MODULE='cql' ARGS=' -Dcassandra.docker.partitioner=byteordered -Dcassandra.docker.version=2.2.10'
     - if: type = cron OR commit_message =~ /\[full build\]/
-      env: MODULE='cql' CASSANDRA_VERSION='2.2.10' ARGS='-Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-ssl=true'
+      env: MODULE='cql' ARGS=' -Dcassandra.docker.partitioner=murmur -Dcassandra.docker.version=2.2.10'
     - if: type = cron OR commit_message =~ /\[full build\]/
-      env: MODULE='cql' CASSANDRA_VERSION='2.2.10' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true'
+      env: MODULE='cql' ARGS=' -Dcassandra.docker.partitioner=murmur -Dcassandra.docker.useSSL=true -Dcassandra.docker.version=2.2.10'
   fast_finish: true
   # https://docs.travis-ci.com/user/customizing-the-build#Rows-that-are-Allowed-to-Fail
   allow_failures:
