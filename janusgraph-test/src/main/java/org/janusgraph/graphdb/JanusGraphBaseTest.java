@@ -449,7 +449,7 @@ public abstract class JanusGraphBaseTest {
     }
 
     public JanusGraph getForceIndexGraph() throws BackendException {
-        final ModifiableConfiguration adjustedConfig = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,getConfiguration(), BasicConfiguration.Restriction.NONE);
+        final ModifiableConfiguration adjustedConfig = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, getConfiguration(), BasicConfiguration.Restriction.NONE);
         adjustedConfig.set(GraphDatabaseConfiguration.FORCE_INDEX_USAGE, true);
         final WriteConfiguration writeConfig = adjustedConfig.getConfiguration();
         TestGraphConfigs.applyOverrides(writeConfig);

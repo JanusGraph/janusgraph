@@ -14,16 +14,17 @@
 
 package org.janusgraph.blueprints.cql;
 
+import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.blueprints.AbstractJanusGraphProvider;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.janusgraph.diskstorage.cql.CassandraStorageSetup;
 
 public class CQLGraphProvider extends AbstractJanusGraphProvider {
+    public static final JanusGraphCassandraContainer cqlContainer = new JanusGraphCassandraContainer();
 
     @Override
     public ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test, String testMethodName) {
-        CassandraStorageSetup.startCleanEmbedded();
-        return CassandraStorageSetup.getCQLConfiguration(graphName);
+        cqlContainer.start();
+        return cqlContainer.getConfiguration(graphName);
     }
 
 }
