@@ -1,4 +1,4 @@
-// Copyright 2017 JanusGraph Authors
+// Copyright 2019 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,32 +15,17 @@
 package org.janusgraph.diskstorage.es.rest;
 
 import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
-import org.apache.tinkerpop.shaded.jackson.annotation.JsonProperty;
-
-import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown=true)
-public class RestSearchResults {
+public class RestCountResponse {
 
-    @JsonProperty("max_score")
-    private Float maxScore;
+    private long count;
 
-    private List<RestSearchHit> hits;
-
-    public Float getMaxScore() {
-        return maxScore;
+    public long getCount() {
+        return count;
     }
 
-    public void setMaxScore(Float maxScore) {
-        this.maxScore = maxScore;
+    public void setCount(long count) {
+        this.count = count;
     }
-
-    public List<RestSearchHit> getHits() {
-        return hits;
-    }
-
-    public void setHits(List<RestSearchHit> hits) {
-        this.hits = hits;
-    }
-
 }
