@@ -55,6 +55,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.UUID;
 
@@ -83,7 +84,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
             IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("_ingest/pipeline/pipeline_1")));
             final HttpPut newPipeline = new HttpPut("_ingest/pipeline/pipeline_1");
             newPipeline.setHeader("Content-Type", "application/json");
-            newPipeline.setEntity(new StringEntity("{\"description\":\"Test pipeline\",\"processors\":[{\"set\":{\"field\":\"" +STRING+ "\",\"value\":\"hello\"}}]}", Charset.forName("UTF-8")));
+            newPipeline.setEntity(new StringEntity("{\"description\":\"Test pipeline\",\"processors\":[{\"set\":{\"field\":\"" +STRING+ "\",\"value\":\"hello\"}}]}", StandardCharsets.UTF_8));
             IOUtils.closeQuietly(httpClient.execute(host, newPipeline));
         }
     }
@@ -117,7 +118,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
     public Configuration getESTestConfig() {
         final String index = "es";
         final CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
-        if (esr.getEsMajorVersion().value > 2) {
+        if (JanusGraphElasticsearchContainer.getEsMajorVersion().value > 2) {
             cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
         }
         return esr.setConfiguration(new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,cc, BasicConfiguration.Restriction.NONE), index)
@@ -250,7 +251,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
      */
     @Test
     public void testIngestPipeline() throws Exception {
-        if (esr.getEsMajorVersion().value > 2) {
+        if (JanusGraphElasticsearchContainer.getEsMajorVersion().value > 2) {
             initialize("ingestvertex");
             final Multimap<String, Object> docs = HashMultimap.create();
             docs.put(TEXT, "bob");
@@ -280,7 +281,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         IOUtils.closeQuietly(httpClient.execute(host, new HttpPut("test2")));
         final HttpPost addAlias = new HttpPost("_aliases");
         addAlias.setHeader("Content-Type", "application/json");
-        addAlias.setEntity(new StringEntity("{\"actions\": [{\"add\": {\"indices\": [\"test1\", \"test2\"], \"alias\": \"alias1\"}}]}", Charset.forName("UTF-8")));
+        addAlias.setEntity(new StringEntity("{\"actions\": [{\"add\": {\"indices\": [\"test1\", \"test2\"], \"alias\": \"alias1\"}}]}", StandardCharsets.UTF_8));
         IOUtils.closeQuietly(httpClient.execute(host, addAlias));
 
         initialize("vertex");

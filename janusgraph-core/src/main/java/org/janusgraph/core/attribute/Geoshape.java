@@ -635,7 +635,7 @@ public class Geoshape {
         }
 
         @Override
-        public void serialize(Geoshape value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
+        public void serialize(Geoshape value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
             switch(value.getType()) {
                 case POINT:
                     jgen.writeStartObject();
@@ -656,7 +656,7 @@ public class Geoshape {
 
         @Override
         public void serializeWithType(Geoshape geoshape, JsonGenerator jgen, SerializerProvider serializerProvider,
-                                      TypeSerializer typeSerializer) throws IOException, JsonProcessingException {
+                                      TypeSerializer typeSerializer) throws IOException {
 
             jgen.writeStartObject();
             if (typeSerializer != null) jgen.writeStringField(GraphSONTokens.CLASS, Geoshape.class.getName());
@@ -687,7 +687,7 @@ public class Geoshape {
         }
 
         @Override
-        public Geoshape deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+        public Geoshape deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
             jsonParser.nextToken();
             if (jsonParser.getCurrentName().equals(FIELD_COORDINATES)) {
                 double[] f = jsonParser.readValueAs(double[].class);

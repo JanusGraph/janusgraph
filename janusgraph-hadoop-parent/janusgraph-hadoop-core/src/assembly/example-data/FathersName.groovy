@@ -28,7 +28,9 @@ def setup(args) {
 def map(v, args) {
     u = g.v(v.id) // the Hadoop vertex id is the same as the original JanusGraph vertex id
     pipe = u.out('father').name
-    if (pipe.hasNext()) u.fathersName = pipe.next();
+    if (pipe.hasNext()) {
+        u.fathersName = pipe.next()
+    }
     u.name + "'s father's name is " + u.fathersName
 }
 

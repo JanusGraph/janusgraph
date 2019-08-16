@@ -144,7 +144,7 @@ public abstract class LogTest {
     @Tag(LogTest.requiresOrderPreserving)
     public void testMultipleLogsWithSingleReaderSerial() throws Exception {
         final int nl = 3;
-        Log logs[] = new Log[nl];
+        Log[] logs = new Log[nl];
         CountingReader count = new CountingReader(3, false);
 
         // Open all logs up front. This gets any ColumnFamily creation overhead
@@ -171,8 +171,8 @@ public abstract class LogTest {
     @Test
     public void testSeparateReadersAndLogsInSharedManager() throws Exception {
         final int n = 5;
-        Log logs[] = new Log[n];
-        CountingReader counts[] = new CountingReader[n];
+        Log[] logs = new Log[n];
+        CountingReader[] counts = new CountingReader[n];
         for (int i = 0; i < n; i++) {
             counts[i] = new CountingReader(1, true);
             logs[i] = manager.openLog("loner" + i);
@@ -266,7 +266,7 @@ public abstract class LogTest {
         Preconditions.checkState(0 < readers);
         Log log1 = manager.openLog("test1");
         assertEquals("test1",log1.getName());
-        CountingReader counts[] = new CountingReader[readers];
+        CountingReader[] counts = new CountingReader[readers];
         for (int i = 0; i < counts.length; i++) {
             counts[i] = new CountingReader(numMessages, expectMessageOrder);
             log1.registerReader(ReadMarker.fromNow(),counts[i]);
