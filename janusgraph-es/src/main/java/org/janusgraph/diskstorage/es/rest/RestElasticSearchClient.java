@@ -71,13 +71,10 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     private static final String REQUEST_PARAM_SEPARATOR = "&";
 
     public static final String INCLUDE_TYPE_NAME_PARAMETER = "include_type_name";
-    private static final String REST_TOTAL_HITS_AS_INT_PARAMETER = "rest_total_hits_as_int";
-    private static final String TRACK_TOTAL_HITS_PARAMETER = "track_total_hits";
 
     private static final byte[] NEW_LINE_BYTES = "\n".getBytes(UTF8_CHARSET);
 
     private static final Request INFO_REQUEST = new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR);
-    private static final Map<String, Object> TRACK_TOTAL_HITS_ONLY = ImmutableMap.of(TRACK_TOTAL_HITS_PARAMETER, true);
 
     private static final ObjectMapper mapper;
     private static final ObjectReader mapReader;
@@ -404,13 +401,29 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     }
 
     @Override
+    public long countTotal(String indexName, Map<String, Object> requestData) throws IOException {
+
+        final Request request = new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_count");
+
+        final byte[] requestDataBytes = mapper.writeValueAsBytes(requestData);
+        if (log.isDebugEnabled()) {
+            log.debug("Elasticsearch request: " + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(requestData));
+        }
+
+        final Response response = performRequest(request, requestDataBytes);
+        try (final InputStream inputStream = response.getEntity().getContent()) {
+            return mapper.readValue(inputStream, RestCountResponse.class).getCount();
+        }
+    }
+
+    @Override
     public RestSearchResponse search(String indexName, Map<String,Object> requestData, boolean useScroll) throws IOException {
         final StringBuilder path = new StringBuilder(REQUEST_SEPARATOR).append(indexName);
         path.append(REQUEST_SEPARATOR).append("_search");
         if (useScroll) {
             path.append(REQUEST_PARAM_BEGINNING).append("scroll=").append(scrollKeepAlive);
         }
-        return search(requestData, path.toString(), true);
+        return search(requestData, path.toString());
     }
 
     @Override
@@ -418,7 +431,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         final Map<String, Object> requestData = new HashMap<>();
         requestData.put("scroll", scrollKeepAlive);
         requestData.put("scroll_id", scrollId);
-        return search(requestData, REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll", false);
+        return search(requestData, REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll");
     }
 
     @Override
@@ -431,25 +444,9 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         bulkRefreshEnabled = bulkRefresh != null && !bulkRefresh.equalsIgnoreCase("false");
     }
 
-    private RestSearchResponse search(Map<String, Object> requestData, String path, boolean searchInitialized) throws IOException {
+    private RestSearchResponse search(Map<String, Object> requestData, String path) throws IOException {
 
         final Request request = new Request(REQUEST_TYPE_POST, path);
-        if(majorVersion.getValue() > 6) {
-
-            // TODO: Temporary solution to return total hits as int parameter in ES7
-            // Total hits should be represented as an object before ES8
-            request.addParameter(REST_TOTAL_HITS_AS_INT_PARAMETER, "true");
-
-            // TODO: This parameter forces ES to always count correctly total hits but it is bad for performance
-            // We should not rely on total hits or optimize working with total hits `relation` parameter
-            if(searchInitialized){
-                if(requestData == null){
-                    requestData = TRACK_TOTAL_HITS_ONLY;
-                } else {
-                    requestData.put(TRACK_TOTAL_HITS_PARAMETER, true);
-                }
-            }
-        }
 
         final byte[] requestDataBytes = mapper.writeValueAsBytes(requestData);
         if (log.isDebugEnabled()) {
