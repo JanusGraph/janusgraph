@@ -244,7 +244,7 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
 
     static ConfigNamespace getJobRoot(String confRootName) {
 
-        String tokens[] = confRootName.split("#");
+        String[] tokens = confRootName.split("#");
         String className = tokens[0];
         String fieldName = tokens[1];
 

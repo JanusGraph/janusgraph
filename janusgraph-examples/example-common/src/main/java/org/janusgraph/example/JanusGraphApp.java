@@ -232,7 +232,7 @@ public class JanusGraphApp extends GraphApp {
 
     public static void main(String[] args) throws Exception {
         final String fileName = (args != null && args.length > 0) ? args[0] : null;
-        final boolean drop = (args != null && args.length > 1) ? "drop".equalsIgnoreCase(args[1]) : false;
+        final boolean drop = (args != null && args.length > 1) && "drop".equalsIgnoreCase(args[1]);
         final JanusGraphApp app = new JanusGraphApp(fileName);
         if (drop) {
             app.openGraph();

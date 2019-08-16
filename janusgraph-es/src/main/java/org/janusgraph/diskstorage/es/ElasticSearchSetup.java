@@ -66,7 +66,7 @@ public enum ElasticSearchSetup {
             } else if (val.getClass().isArray()) {
                 // As with Lists, but now for arrays
                 // The Object copy[] business lets us avoid repetitive primitive array type checking and casting
-                Object copy[] = new Object[Array.getLength(val)];
+                Object[] copy = new Object[Array.getLength(val)];
                 for (int i= 0; i < copy.length; i++) {
                     copy[i] = Array.get(val, i);
                 }

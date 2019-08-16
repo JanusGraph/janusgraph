@@ -189,7 +189,7 @@ public class RestClientSetupTest {
                 put("index." + INDEX_NAME + ".hostname", ES_HOST_01).
                 put("index." + INDEX_NAME + ".port", String.valueOf(ES_PORT)).
                 put("index." + INDEX_NAME + ".elasticsearch.scroll-keep-alive", String.valueOf(ES_SCROLL_KA)).
-                put("index." + INDEX_NAME + ".elasticsearch.bulk-refresh", String.valueOf(ES_BULK_REFRESH)).
+                put("index." + INDEX_NAME + ".elasticsearch.bulk-refresh", ES_BULK_REFRESH).
                 build());
 
         assertNotNull(hostsConfigured);

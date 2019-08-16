@@ -56,6 +56,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -171,7 +172,7 @@ public class ElasticsearchConfigTest {
         }
 
         final HttpPut newMapping = new HttpPut("janusgraph_"+storeName);
-        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(readMapping(version, "/strict_mapping.json")), Charset.forName("UTF-8")));
+        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(readMapping(version, "/strict_mapping.json")), StandardCharsets.UTF_8));
         executeRequest(newMapping);
 
         // Test that the "date" property works well.
@@ -231,7 +232,7 @@ public class ElasticsearchConfigTest {
 
         final HttpPut newTemplate = new HttpPut("_template/template_1");
         final Map<String, Object> content = ImmutableMap.of("template", "janusgraph_test_mapping*", "mappings", readMapping(version, "/strict_mapping.json").getMappings());
-        newTemplate.setEntity(new StringEntity(objectMapper.writeValueAsString(content), Charset.forName("UTF-8")));
+        newTemplate.setEntity(new StringEntity(objectMapper.writeValueAsString(content), StandardCharsets.UTF_8));
         executeRequest(newTemplate);
         final HttpPut newMapping = new HttpPut("janusgraph_" + storeName);
         executeRequest(newMapping);
@@ -368,7 +369,7 @@ public class ElasticsearchConfigTest {
         }
 
         final HttpPut newMapping = new HttpPut("janusgraph_"+storeName);
-        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(readMapping(version, "/dynamic_mapping.json")), Charset.forName("UTF-8")));
+        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(readMapping(version, "/dynamic_mapping.json")), StandardCharsets.UTF_8));
         executeRequest(newMapping);
 
         // Test that the "date" property works well.
