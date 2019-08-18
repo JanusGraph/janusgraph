@@ -534,7 +534,7 @@ public class ElasticSearchIndex implements IndexProvider {
      * @param information information of the key
      */
     private void pushMapping(String store, String key,
-                             KeyInformation information) throws AssertionError, PermanentBackendException, BackendException {
+                             KeyInformation information) throws AssertionError, BackendException {
         final Class<?> dataType = information.getDataType();
         Mapping map = Mapping.getMapping(information);
         final Map<String,Object> properties = new HashMap<>();

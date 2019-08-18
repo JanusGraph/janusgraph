@@ -85,10 +85,10 @@ public class SimpleScanJob implements ScanJob {
         metrics.incrementCustom(SETUP_COUNT);
 
         if (config.has(HEX_QUERIES)) {
-            String queryStrings[] = config.get(HEX_QUERIES).split(":");
+            String[] queryStrings = config.get(HEX_QUERIES).split(":");
             List<SliceQuery> queries = new LinkedList<>();
             for (String qString : queryStrings) {
-                String queryTokens[] = qString.split("/");
+                String[] queryTokens = qString.split("/");
                 StaticBuffer start = StaticArrayBuffer.of(Hex.hexToBytes(queryTokens[0]));
                 StaticBuffer end = StaticArrayBuffer.of(Hex.hexToBytes(queryTokens[1]));
                 SliceQuery query = new SliceQuery(start, end);

@@ -111,7 +111,7 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
 
     @Override
     public String toString() {
-        return key.toString() + " " + predicate.toString() + " " + String.valueOf(value);
+        return key.toString() + " " + predicate.toString() + " " + value;
     }
 
     public static <K, E extends JanusGraphElement> PredicateCondition<K, E> of(K key, JanusGraphPredicate janusgraphPredicate, Object condition) {

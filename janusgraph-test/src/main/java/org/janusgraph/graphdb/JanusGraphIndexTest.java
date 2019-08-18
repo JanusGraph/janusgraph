@@ -1276,7 +1276,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         final PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
         mgmt.buildIndex("mi", Vertex.class).addKey(name, getTextMapping()).addKey(age).buildMixedIndex(INDEX);
         finishSchema();
-        final Vertex vs[] = new JanusGraphVertex[4];
+        final Vertex[] vs = new JanusGraphVertex[4];
 
         vs[0] = tx.addVertex("name", "Big Boy Bobson", "age", 55);
         newTx();

@@ -1019,7 +1019,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
         StaticBuffer key = KeyColumnValueStoreUtil.longToByteBuffer(0);
 
-        int ttls[] = new int[]{0, 1, 2};
+        int[] ttls = new int[]{0, 1, 2};
         final List<Entry> additions = new LinkedList<>();
         for (int i = 0; i < ttls.length; i++) {
             StaticBuffer col = KeyColumnValueStoreUtil.longToByteBuffer(i);

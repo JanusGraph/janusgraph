@@ -175,7 +175,7 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
             containers.addAll(hasLocalContainers.keySet().iterator().next());
             return StringFactory.stepString(this, Arrays.toString(this.ids), containers);
         }
-        final StringBuilder sb = new StringBuilder("");
+        final StringBuilder sb = new StringBuilder();
         if (!hasContainers.isEmpty()) {
             sb.append(StringFactory.stepString(this, Arrays.toString(ids), hasContainers)).append(".");
         }
