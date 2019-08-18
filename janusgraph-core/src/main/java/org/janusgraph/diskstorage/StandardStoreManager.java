@@ -56,7 +56,7 @@ public enum StandardStoreManager {
     private static final ImmutableMap<String, String> ALL_MANAGER_CLASSES;
 
     static {
-        StandardStoreManager backends[] = values();
+        StandardStoreManager[] backends = values();
         final List<String> tempShorthands = new ArrayList<>();
         final Map<String, String> tempClassMap = new HashMap<>();
         for (final StandardStoreManager backend : backends) {

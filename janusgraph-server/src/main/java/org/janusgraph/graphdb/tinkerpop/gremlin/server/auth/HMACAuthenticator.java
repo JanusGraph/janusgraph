@@ -23,6 +23,7 @@ import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
@@ -181,12 +182,12 @@ public class HMACAuthenticator extends JanusGraphAbstractAuthenticator {
             secretAndSalt.put(secret);
             secretAndSalt.put(":");
             secretAndSalt.put(salt);
-            final String tokenPrefix = username + ":" + time.toString() + ":";
+            final String tokenPrefix = username + ":" + time + ":";
             final SecretKeySpec keySpec = new SecretKeySpec(toBytes(secretAndSalt.array()), hmacAlgo);
             final Mac hmac = Mac.getInstance(hmacAlgo);
             hmac.init(keySpec);
             hmac.update(username.getBytes());
-            hmac.update(time.toString().getBytes());
+            hmac.update(time.getBytes());
             final Base64.Encoder encoder = Base64.getUrlEncoder();
             final byte[] hmacbytes = encoder.encode(hmac.doFinal());
             final byte[] tokenbytes = tokenPrefix.getBytes();
@@ -214,7 +215,7 @@ public class HMACAuthenticator extends JanusGraphAbstractAuthenticator {
 
     private byte[] toBytes(char[] chars) {
       CharBuffer charBuffer = CharBuffer.wrap(chars);
-      ByteBuffer byteBuffer = Charset.forName("UTF-8").encode(charBuffer);
+      ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(charBuffer);
       byte[] bytes = Arrays.copyOfRange(byteBuffer.array(),
               byteBuffer.position(), byteBuffer.limit());
       Arrays.fill(charBuffer.array(), '\u0000'); //Clear sensitive data from memory

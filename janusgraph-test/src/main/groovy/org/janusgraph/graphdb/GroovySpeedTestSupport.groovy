@@ -187,8 +187,9 @@ abstract class GroovySpeedTestSupport {
         int value = -1
         for (int p = 0; p < schema.getVertexPropKeys(); p++) {
             for (int i = 0; i < 5; i++) {
-                if (++value >= schema.getMaxVertexPropVal())
+                if (++value >= schema.getMaxVertexPropVal()) {
                     value = 0
+                }
                 closure(tx, schema.getVertexPropertyName(p), value)
             }
 

@@ -55,7 +55,7 @@ public enum StandardIndexProvider {
     }
 
     static {
-        StandardIndexProvider backends[] = values();
+        StandardIndexProvider[] backends = values();
         final List<String> tempShorthands = new ArrayList<>();
         final Map<String, String> tempClassMap = new HashMap<>();
         for (final StandardIndexProvider backend : backends) {
