@@ -30,7 +30,7 @@ public interface MessageReader {
     /**
      * Updates the state of the MessageReader.
      */
-    public void updateState();
+    void updateState();
 
     /**
      * Need to override this method because the {@link Log} uses this comparison

@@ -78,7 +78,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
         finishSchema();
 
         // Generate synthetic graph
-        Vertex vertices[] = new Vertex[VERTEX_COUNT];
+        Vertex[] vertices = new Vertex[VERTEX_COUNT];
         for (int i = 0; i < VERTEX_COUNT; i++) {
             vertices[i] = tx.addVertex("uid", i);
         }

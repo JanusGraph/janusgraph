@@ -114,7 +114,7 @@ public abstract class LuceneExample {
 
         SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,Geoshape.circle(51.666167,6.58905,450).getShape());
 
-        filter.add(LongPoint.newRangeQuery("time",(long)1000342034,(long)1000342034), BooleanClause.Occur.MUST);
+        filter.add(LongPoint.newRangeQuery("time", 1000342034, 1000342034), BooleanClause.Occur.MUST);
 
 
         filter.add(new PrefixQuery(new Term("city_str","B")), BooleanClause.Occur.MUST);

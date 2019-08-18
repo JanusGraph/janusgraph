@@ -339,11 +339,11 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
         for (int i = 0; i < additionCount; i++) {
 
             while (true) {
-                byte keyBuf[] = new byte[keyLength];
+                byte[] keyBuf = new byte[keyLength];
                 rand.nextBytes(keyBuf);
                 key = new StaticArrayBuffer(keyBuf);
 
-                byte colBuf[] = new byte[colLength];
+                byte[] colBuf = new byte[colLength];
                 rand.nextBytes(colBuf);
                 col = new StaticArrayBuffer(colBuf);
 

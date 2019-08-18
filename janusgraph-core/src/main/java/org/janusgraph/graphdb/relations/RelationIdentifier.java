@@ -169,9 +169,9 @@ public final class RelationIdentifier implements Serializable {
                 v = tmp;
                 dir = Direction.IN;
             }
-            relations = ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types((EdgeLabel) type).direction(dir).adjacent(other).edges();
+            relations = ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types(type).direction(dir).adjacent(other).edges();
         } else {
-            relations = ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types((PropertyKey) type).properties();
+            relations = ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types(type).properties();
         }
 
         for (JanusGraphRelation r : relations) {

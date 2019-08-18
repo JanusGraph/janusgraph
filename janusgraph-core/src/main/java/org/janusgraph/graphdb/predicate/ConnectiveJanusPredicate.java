@@ -72,6 +72,6 @@ public abstract class ConnectiveJanusPredicate extends ArrayList<JanusGraphPredi
             return false;
         }
         final Iterator<Object> itConditions = ((List<Object>) condition).iterator();
-        return this.stream().anyMatch(internalCondition -> isOr() == internalCondition.test(value, itConditions.next())) ? isOr() : !isOr();
+        return this.stream().anyMatch(internalCondition -> isOr() == internalCondition.test(value, itConditions.next())) == isOr();
     }
 }

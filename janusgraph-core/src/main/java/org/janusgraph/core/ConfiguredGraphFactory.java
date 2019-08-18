@@ -155,7 +155,7 @@ public class ConfiguredGraphFactory {
      * @throws BackendException If an error occurs during deletion
      * @throws ConfigurationManagementGraphNotEnabledException If ConfigurationManagementGraph not
      */
-    public static void drop(String graphName) throws BackendException, ConfigurationManagementGraphNotEnabledException, Exception {
+    public static void drop(String graphName) throws Exception {
         final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.close(graphName);
         JanusGraphFactory.drop(graph);
         removeConfiguration(graphName);
