@@ -154,7 +154,7 @@ public class CassandraStorageSetup {
         Preconditions.checkArgument(0 < raw.length());
 
         if (48 < raw.length() || raw.matches("^.*[^a-zA-Z0-9_].*$")) {
-            return "strhash" + String.valueOf(Math.abs(raw.hashCode()));
+            return "strhash" + Math.abs(raw.hashCode());
         } else {
             return raw;
         }

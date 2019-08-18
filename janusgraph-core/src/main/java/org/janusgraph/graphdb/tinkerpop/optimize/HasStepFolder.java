@@ -205,7 +205,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                 final Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers();
                 toReturn = toReturn == null ? validJanusGraphHas(containers) : toReturn && validJanusGraphHas(containers);
             } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep) && !(currentStep instanceof RangeGlobalStep) && !(currentStep instanceof OrderGlobalStep)) {
-                toReturn = toReturn == null ? false : (toReturn && defaultValue);
+                toReturn = toReturn != null && (toReturn && defaultValue);
                 break;
             }
             currentStep = currentStep.getNextStep();

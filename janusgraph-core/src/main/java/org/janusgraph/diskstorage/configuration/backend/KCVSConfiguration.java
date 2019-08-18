@@ -41,6 +41,7 @@ import org.apache.commons.lang.StringUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -230,12 +231,12 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
     }
 
     private StaticBuffer string2StaticBuffer(final String s) {
-        ByteBuffer out = ByteBuffer.wrap(s.getBytes(Charset.forName("UTF-8")));
+        ByteBuffer out = ByteBuffer.wrap(s.getBytes(StandardCharsets.UTF_8));
         return StaticArrayBuffer.of(out);
     }
 
     private String staticBuffer2String(final StaticBuffer s) {
-        return new String(s.as(StaticBuffer.ARRAY_FACTORY),Charset.forName("UTF-8"));
+        return new String(s.as(StaticBuffer.ARRAY_FACTORY), StandardCharsets.UTF_8);
     }
 
     private<O> StaticBuffer object2StaticBuffer(final O value) {

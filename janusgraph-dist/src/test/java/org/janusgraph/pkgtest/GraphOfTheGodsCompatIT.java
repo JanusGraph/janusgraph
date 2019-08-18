@@ -50,7 +50,7 @@ public class GraphOfTheGodsCompatIT extends AbstractJanusGraphAssemblyIT {
             String l;
             while (null != (l = compatReader.readLine())) {
                 lineNumber++;
-                String tokens[] = l.split(",");
+                String[] tokens = l.split(",");
                 if (3 != tokens.length) {
                     log.warn("Ignoring line {} (splitting on commas yielded {} tokens instead of the expected {}): {}", lineNumber, tokens.length, 3, l);
                     continue;
