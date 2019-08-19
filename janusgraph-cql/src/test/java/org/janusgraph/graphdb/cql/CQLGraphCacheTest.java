@@ -14,22 +14,21 @@
 
 package org.janusgraph.graphdb.cql;
 
+import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.StorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.diskstorage.cql.CassandraStorageSetup;
 import org.janusgraph.graphdb.JanusGraphTest;
-import org.junit.jupiter.api.BeforeAll;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 public class CQLGraphCacheTest extends JanusGraphTest {
+
+    @Container
+    public static final JanusGraphCassandraContainer cqlContainer = new JanusGraphCassandraContainer();
 
     @Override
     public WriteConfiguration getConfiguration() {
-        return StorageSetup.addPermanentCache(CassandraStorageSetup.getCQLConfiguration(getClass().getSimpleName()));
-    }
-
-
-    @BeforeAll
-    public static void beforeClass() {
-        CassandraStorageSetup.startCleanEmbedded();
+        return StorageSetup.addPermanentCache(cqlContainer.getConfiguration(getClass().getSimpleName()));
     }
 }
