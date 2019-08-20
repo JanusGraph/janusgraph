@@ -95,9 +95,15 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
         }
         return "cassandra2";
     }
+    public JanusGraphCassandraContainer(){
+        this(false);
+    }
 
-    public JanusGraphCassandraContainer() {
+    public JanusGraphCassandraContainer(boolean fixedExposedPortOfCQL) {
         super(getCassandraImage() + ":" + getVersion());
+        if (fixedExposedPortOfCQL) {
+            addFixedExposedPort(CQL_PORT, CQL_PORT);
+        }
         withEnv("MAX_HEAP_SIZE", "2G");
         withEnv("HEAP_NEWSIZE", "1G");
         if (useDynamicConfig()) {
