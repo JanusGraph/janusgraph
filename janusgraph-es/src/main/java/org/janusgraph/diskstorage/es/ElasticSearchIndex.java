@@ -61,6 +61,7 @@ import org.janusgraph.diskstorage.indexing.RawQuery;
 import org.janusgraph.diskstorage.util.DefaultTransaction;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import static org.janusgraph.diskstorage.configuration.ConfigOption.disallowEmpty;
+
 import org.janusgraph.graphdb.database.serialize.AttributeUtil;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.And;
@@ -285,6 +286,10 @@ public class ElasticSearchIndex implements IndexProvider {
     private static final Map<String, Object> MAX_RESULT_WINDOW = ImmutableMap.of("index.max_result_window", Integer.MAX_VALUE);
 
     private static final Parameter[] NULL_PARAMETERS = null;
+
+    private static final String TRACK_TOTAL_HITS_PARAMETER = "track_total_hits";
+    private static final Parameter[] TRACK_TOTAL_HITS_DISABLED_PARAMETERS = new Parameter[]{new Parameter<>(TRACK_TOTAL_HITS_PARAMETER, false)};
+    private static final Map<String, Object> TRACK_TOTAL_HITS_DISABLED_REQUEST_BODY = ImmutableMap.of(TRACK_TOTAL_HITS_PARAMETER, false);
 
     private static final Map<String, String> INDEX_STORE_NAMES_CACHE = new ConcurrentHashMap<>();
     private static final int CACHE_LIMIT_TO_DISABLE = 50000;
@@ -1130,8 +1135,10 @@ public class ElasticSearchIndex implements IndexProvider {
         ElasticSearchResponse response;
         try {
             final String indexStoreName = getIndexStoreName(query.getStore());
-            response = client.search(indexStoreName, compat.createRequestBody(sr, NULL_PARAMETERS),
-                    sr.getSize() >= batchSize);
+            final boolean useScroll = sr.getSize() >= batchSize;
+            response = client.search(indexStoreName,
+                compat.createRequestBody(sr, useScroll? NULL_PARAMETERS : TRACK_TOTAL_HITS_DISABLED_PARAMETERS),
+                useScroll);
             log.debug("First Executed query [{}] in {} ms", query.getCondition(), response.getTook());
             final ElasticSearchScroll resultIterator = new ElasticSearchScroll(client, response, sr.getSize());
             final Stream<RawQuery.Result<String>> toReturn
@@ -1185,10 +1192,28 @@ public class ElasticSearchIndex implements IndexProvider {
         sr.setSize(size);
         sr.setDisableSourceRetrieval(true);
         try {
+            Map<String, Object> requestBody = compat.createRequestBody(sr, query.getParameters());
+            if(!useScroll) {
+                if (requestBody == null) {
+                    requestBody = TRACK_TOTAL_HITS_DISABLED_REQUEST_BODY;
+                } else {
+                    requestBody.put(TRACK_TOTAL_HITS_PARAMETER, false);
+                }
+            }
             return client.search(
                 getIndexStoreName(query.getStore()),
-                compat.createRequestBody(sr, query.getParameters()),
+                requestBody,
                 useScroll);
+        } catch (final IOException | UncheckedIOException e) {
+            throw new PermanentBackendException(e);
+        }
+    }
+
+    private long runCountQuery(RawQuery query) throws BackendException{
+        try {
+            return client.countTotal(
+                getIndexStoreName(query.getStore()),
+                compat.createRequestBody(compat.queryString(query.getQuery()), query.getParameters()));
         } catch (final IOException | UncheckedIOException e) {
             throw new PermanentBackendException(e);
         }
@@ -1221,10 +1246,12 @@ public class ElasticSearchIndex implements IndexProvider {
     @Override
     public Long totals(RawQuery query, KeyInformation.IndexRetriever information,
                        BaseTransaction tx) throws BackendException {
-        final int size = query.hasLimit() ? Math.min(query.getLimit() + query.getOffset(), batchSize) : batchSize;
-        final ElasticSearchResponse response = runCommonQuery(query, information, tx, size, false);
-        log.debug("Executed query [{}] in {} ms", query.getQuery(), response.getTook());
-        return response.getTotal();
+        long startTime = System.currentTimeMillis();
+        long count = runCountQuery(query);
+        if(log.isDebugEnabled()){
+            log.debug("Executed count query [{}] in {} ms", query.getQuery(), System.currentTimeMillis() - startTime);
+        }
+        return count;
     }
 
     @Override

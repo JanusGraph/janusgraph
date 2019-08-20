@@ -181,7 +181,7 @@ public abstract class AbstractESCompat {
     }
 
     public Map<String,Object> createRequestBody(ElasticSearchRequest request, Parameter[] parameters) {
-        final Map<String,Object> requestBody = new HashMap<>();
+        final Map<String,Object> requestBody = createRequestBody(request.getQuery(), parameters);
 
         if(request.getSize() != null){
             requestBody.put("size", request.getSize());
@@ -195,18 +195,24 @@ public abstract class AbstractESCompat {
             requestBody.put("sort", request.getSorts());
         }
 
-        if(request.getQuery() != null){
-            requestBody.put("query", request.getQuery());
+        if(request.isDisableSourceRetrieval()){
+            requestBody.put("_source", false);
+        }
+
+        return requestBody;
+    }
+
+    public Map<String,Object> createRequestBody(Map<String,Object> query, Parameter[] parameters) {
+        final Map<String,Object> requestBody = new HashMap<>();
+
+        if(query != null){
+            requestBody.put("query", query);
         }
 
         if(parameters != null){
             for(Parameter parameter : parameters){
                 requestBody.put(parameter.key(), parameter.value());
             }
-        }
-
-        if(request.isDisableSourceRetrieval()){
-            requestBody.put("_source", false);
         }
 
         return requestBody;

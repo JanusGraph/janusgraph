@@ -54,11 +54,6 @@ public class RestSearchResponse extends ElasticSearchResponse {
         return hits.getHits().size();
     }
 
-    @Override
-    public long getTotal() {
-        return hits.getTotal();
-    }
-
     public Float getMaxScore() {
         return hits.getMaxScore();
     }
