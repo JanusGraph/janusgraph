@@ -23,8 +23,6 @@ public class ElasticSearchResponse {
 
     private long took;
 
-    private long total;
-
     private String scrollId;
 
     private List<RawQuery.Result<String>> results;
@@ -35,14 +33,6 @@ public class ElasticSearchResponse {
 
     public void setTook(long took) {
         this.took = took;
-    }
-
-    public long getTotal() {
-        return total;
-    }
-
-    public void setTotal(long total) {
-        this.total = total;
     }
 
     public Stream<RawQuery.Result<String>> getResults() {
