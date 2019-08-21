@@ -610,8 +610,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         for (HRegionLocation location : locations) {
             HRegionInfo regionInfo = location.getRegionInfo();
             ServerName serverName = location.getServerName();
-            byte startKey[] = regionInfo.getStartKey();
-            byte endKey[]   = regionInfo.getEndKey();
+            byte[] startKey = regionInfo.getStartKey();
+            byte[] endKey = regionInfo.getEndKey();
 
             if (0 == startKey.length) {
                 startKey = null;
@@ -682,7 +682,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         if (targetLength <= dataToPad.length)
             return dataToPad;
 
-        byte padded[] = new byte[targetLength];
+        byte[] padded = new byte[targetLength];
 
         System.arraycopy(dataToPad, 0, padded, 0, dataToPad.length);
 

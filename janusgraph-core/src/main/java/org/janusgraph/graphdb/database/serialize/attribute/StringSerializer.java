@@ -24,6 +24,7 @@ import org.janusgraph.graphdb.database.serialize.SupportsNullSerializer;
 import org.janusgraph.util.encoding.StringEncoding;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -226,7 +227,7 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
                 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
                 try {
                     OutputStream out = new GZIPOutputStream(byteArrayOutputStream);
-                    out.write(text.getBytes("UTF-8"));
+                    out.write(text.getBytes(StandardCharsets.UTF_8));
                     out.close();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -252,7 +253,7 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
                     int len;
                     while ((len = in.read(bytes)) > 0)
                         baos.write(bytes, 0, len);
-                    return new String(baos.toByteArray(), "UTF-8");
+                    return new String(baos.toByteArray(), StandardCharsets.UTF_8);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

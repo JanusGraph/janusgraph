@@ -366,7 +366,7 @@ public abstract class IDAuthorityTest {
 
     @ParameterizedTest
     @MethodSource("configs")
-    public void testMultiIDAcquisition(WriteConfiguration baseConfig) throws Exception, Throwable {
+    public void testMultiIDAcquisition(WriteConfiguration baseConfig) throws Throwable {
         setUp(baseConfig);
         final int numPartitions = MAX_NUM_PARTITIONS;
         final int numAcquisitionsPerThreadPartition = 100;
@@ -444,7 +444,7 @@ public abstract class IDAuthorityTest {
 
         private void runInterruptible() throws InterruptedException {
             int iterations = 0;
-            long lastStart[] = new long[numPartitions];
+            long[] lastStart = new long[numPartitions];
             for (int i = 0; i < numPartitions; i++)
                 lastStart[i] = Long.MIN_VALUE;
             for (int j = 0; j < numRounds; j++) {

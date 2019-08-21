@@ -45,7 +45,9 @@ def parse(line) {
             }
             def v2 = graph.addVertex(T.id, otherV.toInteger())
             def e = out ? v1.addOutEdge(eLabel, v2) : v1.addInEdge(eLabel, v2)
-            if (weight != null) e.property("weight", weight.toInteger())
+            if (weight != null) {
+                e.property("weight", weight.toInteger())
+            }
         }
     }
     return v1
