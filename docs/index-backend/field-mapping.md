@@ -105,6 +105,9 @@ With these settings, JanusGraph will use a SimpleAnalyzer analyzer for property 
 
 ### Custom parameters
 
+!!! Info
+    Custom parameters are added in JanusGraph version `0.3.1`
+
 Sometimes it is required to set additional parameters on mappings (other than mapping type, mapping name and analyzer). For example, when we would like to use a different similarity algorithm (to modify the scoring algorithm of full text search) or if we want to use a custom boosting on some fields in Elasticsearch we can set custom parameters (right now only Elasticsearch supports custom parameters).
 The name of the custom parameter must be set through `ParameterType.customParameterName("yourProperty")`.
 
