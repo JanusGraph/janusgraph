@@ -1,4 +1,6 @@
-# Copyright 2019 JanusGraph Authors
+#!/bin/bash
+#
+# Copyright 2017 JanusGraph Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,13 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cassandra.ip = 127.0.0.1
-cassandra.seed = 127.0.0.1
-# This must be set to prevent Cassandra from self-killing with BOP:
-# https://issues.apache.org/jira/browse/CASSANDRA-5414
-cassandra.token = 0000000000000000000000000000000000
-cassandra.num.tokens =
-cassandra.partitioner = org.apache.cassandra.dht.ByteOrderedPartitioner
-cassandra.dir = ${project.build.directory}/cassandra/${test.byteorderedpartitioner}
-cassandra.clientenc.enabled = false
-cassandra.clientenc.ccert = false
+chmod +x /update_config.py
+/update_config.py
+/docker-entrypoint.sh cassandra -f

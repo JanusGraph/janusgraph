@@ -107,6 +107,37 @@
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-cql</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-compress</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.annotation</groupId>
+                    <artifactId>javax.annotation-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>cassandra</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-hbase</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -336,6 +367,10 @@
                                 </excludes>
                                 <skipTests>${skipCassandra}</skipTests>
                                 <reuseForks>false</reuseForks>
+                                <systemPropertyVariables>
+                                    <cassandra.docker.version>2.2.14</cassandra.docker.version>
+                                    <cassandra.docker.partitioner>murmur</cassandra.docker.partitioner>
+                                </systemPropertyVariables>
                                 <summaryFile>target/failsafe-reports/failsafe-janusgraph-cassandra.xml</summaryFile>
                                 <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
                             </configuration>
@@ -354,6 +389,10 @@
                                 </includes>
                                 <skipTests>${skipCassandra3}</skipTests>
                                 <reuseForks>false</reuseForks>
+                                <systemPropertyVariables>
+                                    <cassandra.docker.version>3.11.4</cassandra.docker.version>
+                                    <cassandra.docker.partitioner>murmur</cassandra.docker.partitioner>
+                                </systemPropertyVariables>
                                 <summaryFile>target/failsafe-reports/failsafe-janusgraph-cassandra3.xml</summaryFile>
                             </configuration>
                         </execution>
