@@ -1891,8 +1891,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     public void testArrayEqualityUsingImplicitKey() {
         JanusGraphVertex v = graph.addVertex();
 
-        byte singleDimension[] = new byte[]{127, 0, 0, 1};
-        byte singleDimensionCopy[] = new byte[]{127, 0, 0, 1};
+        byte[] singleDimension = new byte[]{127, 0, 0, 1};
+        byte[] singleDimensionCopy = new byte[]{127, 0, 0, 1};
         final String singlePropName = "single";
 
         v.property(singlePropName, singleDimension);
@@ -2506,7 +2506,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
          === check cross transaction
          */
         final Random random = new Random();
-        final long vertexIds[] = {getId(v1), getId(v2), getId(v3)};
+        final long[] vertexIds = {getId(v1), getId(v2), getId(v3)};
         //1) Index uniqueness
         executeLockConflictingTransactionJobs(graph, new TransactionJob() {
             private int pos = 0;
@@ -3133,7 +3133,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         final int numV = 100;
         JanusGraphVertex v = tx.addVertex();
-        JanusGraphVertex ns[] = new JanusGraphVertex[numV];
+        JanusGraphVertex[] ns = new JanusGraphVertex[numV];
 
         for (int i = 0; i < numV; i++) {
             double w = (i * 0.5) % 5;
@@ -4110,7 +4110,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         tx.addProperties(knows, weight);
         newTx();
 
-        final Instant txTimes[] = new Instant[4];
+        final Instant[] txTimes = new Instant[4];
         //Transaction with custom user log name
         txTimes[0] = times.getTime();
         JanusGraphTransaction tx2 = graph.buildTransaction().logIdentifier(userLogName).start();
@@ -4538,7 +4538,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         final int numV = 100;
         final boolean sorted = true;
-        JanusGraphVertex ns[] = new JanusGraphVertex[numV];
+        JanusGraphVertex[] ns = new JanusGraphVertex[numV];
         String[] strings = {"aaa", "bbb", "ccc", "ddd"};
 
         for (int i = 0; i < numV; i++) {

@@ -14,12 +14,15 @@
 
 package org.janusgraph.graphdb.query.condition;
 
-import com.google.common.base.Preconditions;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertex;
+
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import com.google.common.base.Preconditions;
+
+import java.util.Objects;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -44,7 +47,7 @@ public class IncidenceDirectionCondition<E extends JanusGraphRelation> extends L
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(getType()).append(direction).append(otherVertex).toHashCode();
+        return Objects.hash(getType(), direction, otherVertex);
     }
 
     @Override

@@ -148,11 +148,11 @@ jobs:
     - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='3.11.0' ARGS='-Dtest=**/cassandra/*,**/utils/*'
     - <<: *FULL_BUILD_JOB
-      env: MODULE='cql' CASSANDRA_VERSION='3.11.0' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.murmur-ssl=true -Dtest.skip.murmur-serial=true'
+      env: MODULE='cql' ARGS=' -Pcassandra3-byteordered -Dcassandra.docker.version=3.11.4'
     - <<: *FULL_BUILD_JOB
-      env: MODULE='cql' CASSANDRA_VERSION='3.11.0' ARGS='-Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-ssl=true'
+      env: MODULE='cql' ARGS=' -Pcassandra3-murmur -Dcassandra.docker.version=3.11.4'
     - <<: *FULL_BUILD_JOB
-      env: MODULE='cql' CASSANDRA_VERSION='3.11.0' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true'
+      env: MODULE='cql' ARGS=' -Pcassandra3-murmur-ssl -Dcassandra.docker.version=3.11.4 -Dtest=**/diskstorage/cql/CQLStoreTest.java'
     - <<: *FULL_BUILD_JOB
       env: MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='3.0.14' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false'
     - <<: *FULL_BUILD_JOB
@@ -170,11 +170,11 @@ jobs:
     - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='3.0.14' ARGS='-Dtest=**/cassandra/*,**/utils/*'
     - <<: *FULL_BUILD_JOB
-      env: MODULE='cql' CASSANDRA_VERSION='3.0.14' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.murmur-ssl=true -Dtest.skip.murmur-serial=true'
+      env: MODULE='cql' ARGS=' -Pcassandra3-byteordered -Dcassandra.docker.version=3.0.18'
     - <<: *FULL_BUILD_JOB
-      env: MODULE='cql' CASSANDRA_VERSION='3.0.14' ARGS='-Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-ssl=true'
+      env: MODULE='cql' ARGS=' -Pcassandra3-murmur -Dcassandra.docker.version=3.0.18'
     - <<: *FULL_BUILD_JOB
-      env: MODULE='cql' CASSANDRA_VERSION='3.0.14' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true'
+      env: MODULE='cql' ARGS=' -Pcassandra3-murmur-ssl -Dcassandra.docker.version=3.0.18 -Dtest=**/diskstorage/cql/CQLStoreTest.java'
     - <<: *FULL_BUILD_JOB
       env: MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='2.2.10' ARGS='-DskipHBase'
     - <<: *FULL_BUILD_JOB
@@ -192,11 +192,11 @@ jobs:
     - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='2.2.10' ARGS='-Dtest=**/cassandra/*,**/utils/*'
     - <<: *FULL_BUILD_JOB
-      env: MODULE='cql' CASSANDRA_VERSION='2.2.10' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.murmur-ssl=true -Dtest.skip.murmur-serial=true'
+      env: MODULE='cql' ARGS=' -Pcassandra2-byteordered -Dcassandra.docker.version=2.2.14'
     - <<: *FULL_BUILD_JOB
-      env: MODULE='cql' CASSANDRA_VERSION='2.2.10' ARGS='-Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-ssl=true'
+      env: MODULE='cql' ARGS=' -Pcassandra2-murmur -Dcassandra.docker.version=2.2.14'
     - <<: *FULL_BUILD_JOB
-      env: MODULE='cql' CASSANDRA_VERSION='2.2.10' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest.skip.murmur=true -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true'
+      env: MODULE='cql' ARGS=' -Pcassandra2-murmur-ssl -Dcassandra.docker.version=2.2.14 -Dtest=**/diskstorage/cql/CQLStoreTest.java'
 
     - stage: test
       env: COVERITY_ONLY=true

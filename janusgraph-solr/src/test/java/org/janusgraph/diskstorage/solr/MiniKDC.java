@@ -163,7 +163,7 @@ public class MiniKDC {
         systemProperties = new Properties();
         systemProperties.setProperty("java.security.auth.login.config", authConfigName);
         systemProperties.setProperty("solr.kerberos.principal", SPNEGO_PRINCIPAL);
-        systemProperties.setProperty("solr.kerberos.keytab", spnegoKeytabFile.getAbsolutePath().toString());
+        systemProperties.setProperty("solr.kerberos.keytab", spnegoKeytabFile.getAbsolutePath());
         systemProperties.setProperty("solr.authentication.httpclient.configurer", "org.apache.solr.client.solrj.impl.Krb5HttpClientConfigurer");
         systemProperties.setProperty("solr.kerberos.cookie.domain", LOCALHOST);
 

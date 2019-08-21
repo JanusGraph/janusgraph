@@ -14,7 +14,6 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue;
 
-import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -22,12 +21,13 @@ import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.StaticArrayEntryList;
 import org.janusgraph.graphdb.query.BackendQuery;
 import org.janusgraph.graphdb.query.BaseQuery;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
+import java.util.Objects;
 
 /**
  * Queries for a slice of data identified by a start point (inclusive) and end point (exclusive).
@@ -75,7 +75,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(sliceStart).append(sliceEnd).append(getLimit()).toHashCode();
+        return Objects.hash(sliceStart, sliceEnd, getLimit());
     }
 
     @Override

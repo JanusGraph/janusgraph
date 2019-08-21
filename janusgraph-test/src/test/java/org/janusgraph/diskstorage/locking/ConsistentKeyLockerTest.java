@@ -1054,7 +1054,7 @@ public class ConsistentKeyLockerTest {
         if (null != del) {
             deletions = eq(Collections.singletonList(del));
         } else {
-            deletions = eq(ImmutableList.<StaticBuffer>of());
+            deletions = eq(ImmutableList.of());
         }
 
         store.mutate(k, adds, deletions, eq(tx));
@@ -1082,11 +1082,11 @@ public class ConsistentKeyLockerTest {
         StaticBuffer k = eq(defaultLockKey);
         final List<Entry> adds = eq(Collections.singletonList(add));
         final List<StaticBuffer> deletions;
-        deletions = eq(ImmutableList.<StaticBuffer>of());
+        deletions = eq(ImmutableList.of());
         store.mutate(k, adds, deletions, eq(defaultTx));
         expectLastCall().andThrow(t);
 
-        currentTimeNS = currentTimeNS.plus((long) 1, ChronoUnit.NANOS);
+        currentTimeNS = currentTimeNS.plus(1, ChronoUnit.NANOS);
         expect(times.getTime()).andReturn(currentTimeNS);
 
         return lockCol;
@@ -1097,7 +1097,7 @@ public class ConsistentKeyLockerTest {
         expect(times.getTime()).andReturn(currentTimeNS);
         store.mutate(eq(defaultLockKey), eq(ImmutableList.of()), eq(Collections.singletonList(del)), eq(defaultTx));
 
-        currentTimeNS = currentTimeNS.plus((long) 1, ChronoUnit.NANOS);
+        currentTimeNS = currentTimeNS.plus(1, ChronoUnit.NANOS);
         expect(times.getTime()).andReturn(currentTimeNS);
     }
 

@@ -62,7 +62,7 @@ public class HttpHMACAuthenticationHandlerTest extends EasyMockSupport {
         expect(msg.release()).andReturn(false);
         HttpHMACAuthenticationHandler handler = new HttpHMACAuthenticationHandler(authenticator);
         replayAll();
-        handler.channelRead(ctx,(Object) msg);
+        handler.channelRead(ctx, msg);
         verifyAll();
     }
 
@@ -83,7 +83,7 @@ public class HttpHMACAuthenticationHandlerTest extends EasyMockSupport {
 
         final HttpHMACAuthenticationHandler handler = new HttpHMACAuthenticationHandler(authenticator);
         replayAll();
-        handler.channelRead(ctx,(Object) msg);
+        handler.channelRead(ctx, msg);
         verifyAll();
     }
 
@@ -102,7 +102,7 @@ public class HttpHMACAuthenticationHandlerTest extends EasyMockSupport {
         expect(authenticator.authenticate(isA(Map.class))).andReturn(new AuthenticatedUser("foo"));
         final HttpHMACAuthenticationHandler handler = new HttpHMACAuthenticationHandler(authenticator);
         replayAll();
-        handler.channelRead(ctx,(Object) msg);
+        handler.channelRead(ctx, msg);
         verifyAll();
     }
 
@@ -125,7 +125,7 @@ public class HttpHMACAuthenticationHandlerTest extends EasyMockSupport {
         expect(msg.release()).andReturn(false);
         final HttpHMACAuthenticationHandler handler = new HttpHMACAuthenticationHandler(authenticator);
         replayAll();
-        handler.channelRead(ctx,(Object) msg);
+        handler.channelRead(ctx, msg);
         verifyAll();
         assertNotNull(credMap.getValue().get(HttpHMACAuthenticationHandler.PROPERTY_GENERATE_TOKEN));
     }
@@ -145,7 +145,7 @@ public class HttpHMACAuthenticationHandlerTest extends EasyMockSupport {
         expect(authenticator.authenticate(isA(Map.class))).andReturn(new AuthenticatedUser("foo"));
         final HttpHMACAuthenticationHandler handler = new HttpHMACAuthenticationHandler(authenticator);
         replayAll();
-        handler.channelRead(ctx,(Object) msg);
+        handler.channelRead(ctx, msg);
         verifyAll();
     }
 
