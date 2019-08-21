@@ -13,14 +13,15 @@
 
     <properties>
         <vavr.version>0.9.0</vavr.version>
-        <test.byteorderedpartitioner>byteorderedpartitioner</test.byteorderedpartitioner>
+        <test.byteordered>byteordered</test.byteordered>
         <test.murmur>murmur</test.murmur>
-        <test.murmur-ssl>murmur-ssl</test.murmur-ssl>
         <test.javaagent.opts>-javaagent:${com.github.jbellis:jamm:jar}</test.javaagent.opts>
         <test.extra.jvm.opts>${test.javaagent.opts}</test.extra.jvm.opts>
         <test.jvm.opts>-Xms256m -Xmx1280m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</test.jvm.opts>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <top.level.basedir>${basedir}/..</top.level.basedir>
+        <test.docker.version.cassandra2>2.2.14</test.docker.version.cassandra2>
+        <test.docker.version.cassandra3>3.11.4</test.docker.version.cassandra3>
     </properties>
 
     <dependencies>
@@ -58,15 +59,14 @@
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-cassandra</artifactId>
+            <artifactId>janusgraph-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-cassandra</artifactId>
-            <version>${project.version}</version>
-            <classifier>tests</classifier>
+            <groupId>com.github.jbellis</groupId>
+            <artifactId>jamm</artifactId>
+            <version>${jamm.version}</version>
             <scope>test</scope>
         </dependency>
         <!-- JNA is needed by Cassandra, but janusgraph-cassandra only defines it as an optional dependency. -->
@@ -77,25 +77,23 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-test</artifactId>
-            <version>${project.version}</version>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>cassandra</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
-        <testResources>
-            <testResource>
-                <directory>src/test/resources</directory>
-                <excludes>
-                    <exclude>cassandra/</exclude>
-                    <exclude>keystores/</exclude>
-                    <exclude>properties/</exclude>
-                </excludes>
-                <filtering>true</filtering>
-            </testResource>
-        </testResources>
         <plugins>
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -110,86 +108,10 @@
                 </executions>
             </plugin>
             <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>filter-${test.byteorderedpartitioner}</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/cassandra/${test.byteorderedpartitioner}/conf</outputDirectory>
-                            <filters>
-                                <filter>${project.build.testResources[0].directory}/properties/${test.byteorderedpartitioner}.properties</filter>
-                            </filters>
-                            <resources>
-                                <resource>
-                                    <directory>${project.build.testResources[0].directory}/cassandra</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>filter-${test.murmur}</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/cassandra/${test.murmur}/conf</outputDirectory>
-                            <filters>
-                                <filter>${project.build.testResources[0].directory}/properties/${test.murmur}.properties</filter>
-                            </filters>
-                            <resources>
-                                <resource>
-                                    <directory>${project.build.testResources[0].directory}/cassandra</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>filter-${test.murmur-ssl}</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/cassandra/${test.murmur-ssl}/conf</outputDirectory>
-                            <filters>
-                                <filter>${project.build.testResources[0].directory}/properties/${test.murmur-ssl}.properties</filter>
-                            </filters>
-                            <resources>
-                                <resource>
-                                    <directory>${project.build.testResources[0].directory}/cassandra</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>filter-${test.murmur-ssl}-static</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/cassandra/${test.murmur-ssl}/conf</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${project.build.testResources[0].directory}/keystores</directory>
-                                    <filtering>false</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <excludedGroups>${test.cql.excludes}</excludedGroups>
+                    <groups />
                     <argLine>${test.jvm.opts}</argLine>
                     <forkCount>1</forkCount>
                     <reuseForks>false</reuseForks>
@@ -198,6 +120,11 @@
                     <threadCount>1</threadCount>
                     <systemPropertyVariables>
                         <log4j.configuration>file:${project.build.testOutputDirectory}/log4j.properties</log4j.configuration>
+                        <cassandra.docker.image>${cassandra.docker.image}</cassandra.docker.image>
+                        <cassandra.docker.version>${cassandra.docker.version}</cassandra.docker.version>
+                        <cassandra.docker.partitioner>${cassandra.docker.partitioner}</cassandra.docker.partitioner>
+                        <cassandra.docker.useSSL>${cassandra.docker.useSSL}</cassandra.docker.useSSL>
+                        <cassandra.docker.useDefaultConfigFromImage>${cassandra.docker.useDefaultConfigFromImage}</cassandra.docker.useDefaultConfigFromImage>
                     </systemPropertyVariables>
                 </configuration>
                 <executions>
@@ -206,50 +133,11 @@
                         <phase>none</phase>
                     </execution>
                     <execution>
-                        <id>${test.byteorderedpartitioner}-test</id>
+                        <id>cql-test</id>
                         <goals>
                             <goal>test</goal>
                         </goals>
                         <phase>test</phase>
-                        <configuration>
-                            <excludedGroups>${test.excluded.groups},UNORDERED_KEY_STORE_TESTS,SERIAL_TESTS,CASSANDRA_SSL_TESTS</excludedGroups>
-                            <groups />
-                            <reportNameSuffix>${test.byteorderedpartitioner}</reportNameSuffix>
-                            <systemProperties>
-                                <property>
-                                    <name>test.cassandra.confdir</name>
-                                    <value>${project.build.directory}/cassandra/${test.byteorderedpartitioner}/conf</value>
-                                </property>
-                                <property>
-                                    <name>test.cassandra.datadir</name>
-                                    <value>${project.build.directory}/cassandra/${test.byteorderedpartitioner}/data</value>
-                                </property>
-                            </systemProperties>
-                            <skip>${test.skip.byteorderedpartitioner}</skip>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>${test.murmur}-test</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                        <phase>test</phase>
-                        <configuration>
-                            <excludedGroups>${test.excluded.groups},ORDERED_KEY_STORE_TESTS,SERIAL_TESTS,CASSANDRA_SSL_TESTS</excludedGroups>
-                            <groups />
-                            <reportNameSuffix>${test.murmur}</reportNameSuffix>
-                            <systemProperties>
-                                <property>
-                                    <name>test.cassandra.confdir</name>
-                                    <value>${project.build.directory}/cassandra/${test.murmur}/conf</value>
-                                </property>
-                                <property>
-                                    <name>test.cassandra.datadir</name>
-                                    <value>${project.build.directory}/cassandra/${test.murmur}/data</value>
-                                </property>
-                            </systemProperties>
-                            <skip>${test.skip.murmur}</skip>
-                        </configuration>
                     </execution>
                     <execution>
                         <id>${test.murmur}-serial-test</id>
@@ -264,47 +152,7 @@
                             <perCoreThreadCount>false</perCoreThreadCount>
                             <threadCount>1</threadCount>
                             <runOrder>alphabetical</runOrder>
-                            <reportNameSuffix>${test.murmur}-serial</reportNameSuffix>
-                            <systemProperties>
-                                <property>
-                                    <name>test.cassandra.confdir</name>
-                                    <value>${project.build.directory}/cassandra/${test.murmur}/conf</value>
-                                </property>
-                                <property>
-                                    <name>test.cassandra.datadir</name>
-                                    <value>${project.build.directory}/cassandra/${test.murmur}/data</value>
-                                </property>
-                            </systemProperties>
                             <skip>${test.skip.murmur-serial}</skip>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>${test.murmur-ssl}-test</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                        <phase>test</phase>
-                        <configuration>
-                            <excludedGroups />
-                            <groups>CASSANDRA_SSL_TESTS</groups>
-                            <excludes>
-                                <exclude>**/*ComputerTest.java</exclude>
-                                <exclude>**/*StructureTest.java</exclude>
-                                <exclude>**/*ProcessTest.java</exclude>
-                            </excludes>
-                            <threadCount>1</threadCount>
-                            <reportNameSuffix>${test.murmur-ssl}</reportNameSuffix>
-                            <systemProperties>
-                                <property>
-                                    <name>test.cassandra.confdir</name>
-                                    <value>${project.build.directory}/cassandra/${test.murmur-ssl}/conf</value>
-                                </property>
-                                <property>
-                                    <name>test.cassandra.datadir</name>
-                                    <value>${project.build.directory}/cassandra/${test.murmur-ssl}/data</value>
-                                </property>
-                            </systemProperties>
-                            <skip>${test.skip.murmur-ssl}</skip>
                         </configuration>
                     </execution>
                 </executions>
@@ -326,104 +174,102 @@
     </build>
     <profiles>
         <profile>
-	          <id>coverage</id>
-	          <activation>
-	              <activeByDefault>false</activeByDefault>
-	          </activation>
-	          <properties>
-	              <test.extra.jvm.opts>${jacoco.opts} ${test.javaagent.opts}</test.extra.jvm.opts>
-	          </properties>
+	        <id>coverage</id>
+	        <activation>
+	            <activeByDefault>false</activeByDefault>
+	        </activation>
+	        <properties>
+	            <test.extra.jvm.opts>${jacoco.opts} ${test.javaagent.opts}</test.extra.jvm.opts>
+	        </properties>
         </profile>
 
         <profile>
-            <!-- Run Thrift tests with ScyllaDB (requires Docker) -->
-            <id>scylladb-test</id>
+            <id>cassandra2-byteordered</id>
+	        <activation>
+	            <activeByDefault>false</activeByDefault>
+	        </activation>
             <properties>
-                <!-- Tests are run under failsafe so skip them under surefire -->
-                <test.skip.byteorderedpartitioner>true</test.skip.byteorderedpartitioner>
+                <cassandra.docker.version>${test.docker.version.cassandra2}</cassandra.docker.version>
+                <cassandra.docker.partitioner>${test.byteordered}</cassandra.docker.partitioner>
+                <test.skip.murmur-serial>true</test.skip.murmur-serial>
+                <test.cql.excludes>${test.excluded.groups},UNORDERED_KEY_STORE_TESTS,SERIAL_TESTS</test.cql.excludes>
+            </properties>
+        </profile>
+        <profile>
+            <id>cassandra2-murmur</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <cassandra.docker.version>${test.docker.version.cassandra2}</cassandra.docker.version>
+                <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
+                <test.skip.murmur-serial>false</test.skip.murmur-serial>
+                <test.cql.excludes>${test.excluded.groups},ORDERED_KEY_STORE_TESTS,SERIAL_TESTS</test.cql.excludes>
+            </properties>
+        </profile>
+        <profile>
+            <id>cassandra2-murmur-ssl</id>
+	        <activation>
+	            <activeByDefault>false</activeByDefault>
+	        </activation>
+            <properties>
+                <cassandra.docker.version>${test.docker.version.cassandra2}</cassandra.docker.version>
+                <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
+                <cassandra.docker.useSSL>true</cassandra.docker.useSSL>
+                <test.skip.murmur-serial>false</test.skip.murmur-serial>
+                <test.cql.excludes>${test.excluded.groups},ORDERED_KEY_STORE_TESTS,SERIAL_TESTS</test.cql.excludes>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>cassandra3-byteordered</id>
+	        <activation>
+	            <activeByDefault>false</activeByDefault>
+	        </activation>
+            <properties>
+                <cassandra.docker.version>${test.docker.version.cassandra2}</cassandra.docker.version>
+                <cassandra.docker.partitioner>${test.byteordered}</cassandra.docker.partitioner>
+                <test.skip.murmur-serial>true</test.skip.murmur-serial>
+                <test.cql.excludes>${test.excluded.groups},UNORDERED_KEY_STORE_TESTS,SERIAL_TESTS</test.cql.excludes>
+            </properties>
+        </profile>
+        <profile>
+            <id>cassandra3-murmur</id>
+	        <activation>
+	            <activeByDefault>false</activeByDefault>
+	        </activation>
+            <properties>
+                <cassandra.docker.version>${test.docker.version.cassandra3}</cassandra.docker.version>
+                <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
+                <test.skip.murmur-serial>false</test.skip.murmur-serial>
+                <test.cql.excludes>${test.excluded.groups},ORDERED_KEY_STORE_TESTS,SERIAL_TESTS</test.cql.excludes>
+            </properties>
+        </profile>
+        <profile>
+            <id>cassandra3-murmur-ssl</id>
+	        <activation>
+	            <activeByDefault>false</activeByDefault>
+	        </activation>
+            <properties>
+                <cassandra.docker.version>${test.docker.version.cassandra3}</cassandra.docker.version>
+                <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
+                <cassandra.docker.useSSL>true</cassandra.docker.useSSL>
+                <test.skip.murmur-serial>false</test.skip.murmur-serial>
+                <test.cql.excludes>${test.excluded.groups},ORDERED_KEY_STORE_TESTS,SERIAL_TESTS</test.cql.excludes>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>scylladb</id>
+            <properties>
+                <cassandra.docker.version>3.0.9</cassandra.docker.version>
+                <cassandra.docker.image>scylladb/scylla</cassandra.docker.image>
+                <cassandra.docker.useDefaultConfigFromImage>true</cassandra.docker.useDefaultConfigFromImage>
+                <test.skip.byteordered>true</test.skip.byteordered>
                 <test.skip.murmur>true</test.skip.murmur>
                 <test.skip.murmur-serial>true</test.skip.murmur-serial>
                 <test.skip.murmur-ssl>true</test.skip.murmur-ssl>
             </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <configuration>
-                            <skipITs>false</skipITs>
-                            <includes>
-                                <include>**/org/janusgraph/diskstorage/cql/*.java</include>
-                                <include>**/org/janusgraph/graphdb/cql/*.java</include>
-                            </includes>
-                            <!-- Exclude default (performance/memory) tests. Also exclude SSL tests (fail under Scylla) -->
-                            <excludedGroups>${test.excluded.groups},CASSANDRA_SSL_TESTS</excludedGroups>
-                            <systemProperties>
-                                <!-- Run tests against the containerized Scylla test server -->
-                                <property>
-                                    <name>storage.hostname</name>
-                                    <value>0.0.0.0</value>
-                                </property>
-                            </systemProperties>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                        <version>0.18.1</version>
-                        <configuration>
-                            <images>
-                                <image>
-                                    <alias>scylladb</alias>
-                                    <name>scylladb/scylla:${scylladb.version}</name>
-                                    <run>
-                                        <!-- Limit to two CPUs -->
-                                        <cmd>--smp 2</cmd>
-                                        <!-- Expose Thrift and CQL ports -->
-                                        <ports>
-                                            <port>9160:9160</port>
-                                            <port>9042:9042</port>
-                                        </ports>
-                                        <wait>
-                                            <tcp>
-                                                <ports>
-                                                    <port>9160</port>
-                                                    <port>9042</port>
-                                                </ports>
-                                            </tcp>
-                                            <time>60000</time>
-                                        </wait>
-                                    </run>
-                                </image>
-                            </images>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>docker-start</id>
-                                <phase>pre-integration-test</phase>
-                                <goals>
-                                    <goal>start</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>docker-stop</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                    <goal>remove</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
     </profiles>
 </project>
