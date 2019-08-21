@@ -14,22 +14,25 @@
 
 package org.janusgraph.diskstorage.solr;
 
-import com.google.common.base.Joiner;
-import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.jupiter.api.BeforeAll;
-import java.io.File;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 
-public class ThriftSolrTest extends SolrJanusGraphIndexTest {
+@Testcontainers
+public class CQLSolrTest extends SolrJanusGraphIndexTest {
+
+    @Container
+    private static JanusGraphCassandraContainer cql = new JanusGraphCassandraContainer();
 
     @Override
     public WriteConfiguration getConfiguration() {
-        ModifiableConfiguration config =
-                CassandraStorageSetup.getCassandraThriftConfiguration(ThriftSolrTest.class.getName());
+        ModifiableConfiguration config = cql.getConfiguration(CQLSolrTest.class.getName());
+
         //Add index
         config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getZookeeperUrls(), INDEX);
         config.set(SolrIndex.WAIT_SEARCHER, true, INDEX);
@@ -37,18 +40,6 @@ public class ThriftSolrTest extends SolrJanusGraphIndexTest {
         config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, INDEX);
         //TODO: set SOLR specific config options
         return config.getConfiguration();
-    }
-
-    @BeforeAll
-    public static void beforeClass() {
-        String userDir = System.getProperty("user.dir");
-        String cassandraDirFormat = Joiner.on(File.separator).join(userDir, userDir.contains("janusgraph-solr")
-                                        ? "target" : "janusgraph-solr/target", "cassandra", "%s", "localhost-murmur");
-
-        System.setProperty("test.cassandra.confdir", String.format(cassandraDirFormat, "conf"));
-        System.setProperty("test.cassandra.datadir", String.format(cassandraDirFormat, "data"));
-
-        CassandraStorageSetup.startCleanEmbedded();
     }
 
     @Override
