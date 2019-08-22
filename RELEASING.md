@@ -1,8 +1,6 @@
-Releasing JanusGraph
-====================
+# Releasing JanusGraph
 
-Prerequisites
--------------
+## Prerequisites
 
 The release process has only been tested on Linux and macOS.
 The following tools must be installed.
@@ -199,18 +197,15 @@ Open up pull requests for the version updates.
 It is recommended to add `[full build]` to the commit message so the full suite of compatibility tests will run.
 After the updates are approved and merged, continue on with the release process.
 
-### Preparing Documentation
+### Release Documentation update
 
-Prapare documentation from the release commit.
-Use the [`docs/build-and-copy-docs.sh`](docs/build-and-copy-docs.sh) script to build a set of docs for this release and copy them to the cloned `docs.janusgraph.org` repo which you will update later.
-**NOTE:** the `docs/build-and-copy-docs.sh` script by default expects the janusgraph and docs.janusgraph.org repositories to be located at `~/github/janusgraph/janusgraph` and `~/github/janusgraph/docs.janusgraph.org` respectively.
-It is important that the the `latest` symbolic link at the root of docs.janusgraph.org is pointing to the correct version as well.
-To update symbolic link on linux open `docs.janusgraph.org` repository and perform the next command:
-```Shell
-ln -sfn <the highest version> latest
-```
-
-Once the documentation for the new version has been generated, open a pull request in [docs.janusgraph.org](https://github.com/JanusGraph/docs.janusgraph.org).
+1. Update version-sensitive files in the root and documentation sources in the `docs` subdirectory: 
+    * `docs/changelog.md`
+    * `mkdocs.yml`
+2. Update the configuration reference: `mvn install -DskipTests=true -pl janusgraph-doc -am`
+3. For building documentation: see `building.md`
+4. Zip documentation: `$ zip janusgraph-${JANUSGRAPH_VERSION}-hadoop2-doc.zip site`
+5. You may also need to update the following file in the main repo for any new or updated dependencies: `NOTICE.txt`
 
 Build Release Artifacts
 -----------------------
