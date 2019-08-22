@@ -23,8 +23,56 @@ use the latest versions of the software.
 | 0.2.z | 1 | 1.2.z, 2.0.z, 2.1.z, 2.2.z, 3.0.z, 3.11.z | 0.98.z, 1.0.z, 1.1.z, 1.2.z, 1.3.z | 0.9.z, 1.0.0-preZ, 1.0.0 | 1.5-1.7.z, 2.3-2.4.z, 5.y, 6.y | 5.2-5.5.z, 6.2-6.6.z, 7.y | 3.2.z | 1.6.z | 2.10.z | 
 | 0.3.z | 2 | 1.2.z, 2.0.z, 2.1.z, 2.2.z, 3.0.z, 3.11.z | 1.0.z, 1.1.z, 1.2.z, 1.3.z, 1.4.z | 1.0.0, 1.1.0, 1.1.2, 1.2.0, 1.3.0, 1.4.0 | 1.5-1.7.z, 2.3-2.4.z, 5.y, 6.y |  5.2-5.5.z, 6.2-6.6.z, 7.y | 3.3.z | 2.2.z | 2.11.z |
 | 0.4.z | 2 | 2.1.z, 2.2.z, 3.0.z, 3.11.z | 1.2.z, 1.3.z, 1.4.z, 2.1.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z | 5.y, 6.y | 7.y | 3.4.z | 2.2.z | 2.11.z |
+| 0.5.z | 2 | 2.1.z, 2.2.z, 3.0.z, 3.11.z | 1.2.z, 1.3.z, 1.4.z, 2.1.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z | 6.y, 7.y | 7.y | 3.4.z | 2.2.z | 2.11.z | 
 
 ## Release Notes
+
+### Version 0.5.0 (Release Date: July ?, 2019)
+
+```xml tab='Maven'
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.5.0</version>
+</dependency>
+```
+
+```groovy tab='Gradle'
+compile "org.janusgraph:janusgraph-core:0.5.0"
+```
+
+**Tested Compatibility:**
+
+* Apache Cassandra 2.2.10, 3.0.14, 3.11.0
+* Apache HBase 1.2.6, 1.3.1, 1.4.10, 2.1.5
+* Google Bigtable 1.3.0, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.10.0, 1.11.0
+* Oracle BerkeleyJE 7.5.11
+* Elasticsearch 5.6.14, 6.0.1, 6.6.0, 7.2.0
+* Apache Lucene 7.0.0
+* Apache Solr 7.0.0
+* Apache TinkerPop 3.4.1
+* Java 1.8
+
+For more information on features and bug fixes in 0.5.0, see the GitHub milestone:
+
+* https://github.com/JanusGraph/janusgraph/milestone/13?closed=1
+
+#### Upgrade Instructions
+
+##### ElasticSearch: Upgrade from 6.6.0 to 7.2.0 and drop support for 5.x version
+The ElasticSearch version has been changed to 7.2.0 which removes support for `max-retry-timeout` option. 
+That is why this option no longer available in JanusGraph.
+Users should be aware that by default JanusGraph setups maximum open scroll contexts to maximum value of `2147483647` with the parameter `setup-max-open-scroll-contexts` for ElasticSearch 7.y. 
+This option can be disabled and updated manually in ElasticSearch
+but you should be aware that ElasticSearch starting from version 7 has a default limit of 500 opened contexts 
+which most likely be reached by the normal usage of JanusGraph with ElasticSearch.
+By default deprecated mappings are disabled in ElasticSearch version 7. 
+If you are upgrading your ElasticSearch index backend to version 7 from lower versions, 
+it is recommended to reindex your JanusGraph indices to not use mappings. 
+If you are unable to reindex your indices you may setup parameter `use-mapping-for-es7` to `true` 
+which will tell JanusGraph to use mapping types for ElasticSearch version 7.
+Due to the drop of support for 5.x version, deprecated multi-type indices are no more supported. 
+Parameter `use-deprecated-multitype-index` is no more supported by JanusGraph.
 
 ### Version 0.4.0 (Release Date: July 1, 2019)
 
