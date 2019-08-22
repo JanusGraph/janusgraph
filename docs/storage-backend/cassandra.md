@@ -35,6 +35,10 @@ deprecation of Thrift, and it has several classes that support Thrift.
 With Cassandra 4.0, Thrift support will be removed in Cassandra.
 JanusGraph users are recommended to use the `cql` storage backend.
 
+!!! warning
+    Starting with JanusGraph 0.4.1, all non CQL-backends are deprecated, 
+    including `cassandrathrift`, `cassandra` and `embeddedcassandra`.
+
 !!! note
     If you plan to use a Thrift-based driver and you are using Cassandra
     2.2 or higher, you need to explicitly enable Thrift so that JanusGraph

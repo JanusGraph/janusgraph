@@ -22,8 +22,66 @@ use the latest versions of the software.
 | 0.1.z| 1| 1.2.z, 2.0.z, 2.1.z| 0.98.z, 1.0.z, 1.1.z, 1.2.z| 0.9.z, 1.0.0-preZ, 1.0.0| 1.5.z| 5.2.z| 3.2.z| 1.6.z| 2.10.z| 
 | 0.2.z | 1 | 1.2.z, 2.0.z, 2.1.z, 2.2.z, 3.0.z, 3.11.z | 0.98.z, 1.0.z, 1.1.z, 1.2.z, 1.3.z | 0.9.z, 1.0.0-preZ, 1.0.0 | 1.5-1.7.z, 2.3-2.4.z, 5.y, 6.y | 5.2-5.5.z, 6.2-6.6.z, 7.y | 3.2.z | 1.6.z | 2.10.z | 
 | 0.3.z | 2 | 1.2.z, 2.0.z, 2.1.z, 2.2.z, 3.0.z, 3.11.z | 1.0.z, 1.1.z, 1.2.z, 1.3.z, 1.4.z | 1.0.0, 1.1.0, 1.1.2, 1.2.0, 1.3.0, 1.4.0 | 1.5-1.7.z, 2.3-2.4.z, 5.y, 6.y |  5.2-5.5.z, 6.2-6.6.z, 7.y | 3.3.z | 2.2.z | 2.11.z |
+| 0.4.z | 2 | 2.1.z, 2.2.z, 3.0.z, 3.11.z | 1.2.z, 1.3.z, 1.4.z, 2.1.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z | 5.y, 6.y | 7.y | 3.4.z | 2.2.z | 2.11.z |
 
 ## Release Notes
+
+### Version 0.4.0 (Release Date: July 1, 2019)
+
+```xml tab='Maven'
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.4.0</version>
+</dependency>
+```
+
+```groovy tab='Gradle'
+compile "org.janusgraph:janusgraph-core:0.4.0"
+```
+
+**Tested Compatibility:**
+
+-   Apache Cassandra 2.2.10, 3.0.14, 3.11.0
+-   Apache HBase 1.2.6, 1.3.1, 1.4.10, 2.1.5
+-   Google Bigtable 1.3.0, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.10.0, 1.11.0
+-   Oracle BerkeleyJE 7.5.11
+-   Elasticsearch 5.6.14, 6.0.1, 6.6.0
+-   Apache Lucene 7.0.0
+-   Apache Solr 7.0.0
+-   Apache TinkerPop 3.4.1
+-   Java 1.8
+
+For more information on features and bug fixes in 0.4.0, see the GitHub milestone:
+
+* https://github.com/JanusGraph/janusgraph/milestone/8?closed=1
+
+#### Upgrade Instructions
+
+##### HBase: Upgrade from 1.2 to 2.1
+The version of HBase that is included in the distribution of JanusGraph was upgraded from 1.2.6 to 2.1.5.
+HBase 2.x client is not fully backward compatible with HBase 1.x server. Users who operate their own HBase version 1.x cluster may need to upgrade their cluster to version 2.x.
+Optionally users may build their own distribution of JanusGraph which includes HBase 1.x from source with the maven flags -Dhbase.profile -Phbase1.
+
+##### Cassandra: Upgrade from 2.1 to 2.2
+The version of Cassandra that is included in the distribution of JanusGraph was upgraded from 2.1.20 to 2.2.13.
+Refer to [the upgrade documentation of Cassandra](https://github.com/apache/cassandra/blob/174cf761f7897443080b8a840b649b7eab17ae25/NEWS.txt#L787)
+for detailed instructions to perform this upgrade.
+Users who operate their own Cassandra cluster instead of using Cassandra distributed together with JanusGraph are not affected by this upgrade.
+This also does not change the different versions of Cassandra that are supported by JanusGraph (see <<version-compat>> for a detailed list of the supported versions).
+
+##### BerkeleyDB : Upgrade from 7.4 to 7.5
+The BerkeleyDB version has been updated, and it contains changes to the file format stored on disk 
+(see [the BerkeleyDB changelog for reference](https://docs.oracle.com/cd/E17277_02/html/changelog.html)).
+This file format change is forward compatible with previous versions of BerkeleyDB, so existing graph data stored with JanusGraph can be read in.
+However, once the data has been read in with the newer version of BerkeleyDB, those files can no longer be read by the older version.
+Users are encouraged to backup the BerkeleyDB storage directory before attempting to use it with the JanusGraph release.
+
+##### Solr: Compatible Lucene version changed from 5.0.0 to 7.0.0 in distributed config
+The JanusGraph distribution contains a `solrconfig.xml` file that can be used to configure Solr.
+The value `luceneMatchVersion` in this config that tells Solr to behave according to that Lucene version was changed from 5.0.0 to 7.0.0 as that is the default version currently used by JanusGraph.
+Users should generally set this value to the version of their Solr installation.
+If the config distributed by JanusGraph is used for an existing Solr installation that used a lower version before (like 5.0.0 from a previous versions of this file), it is highly recommended that a re-indexing is performed.
 
 ### Version 0.3.2 (Release Date: June 16, 2019)
 
