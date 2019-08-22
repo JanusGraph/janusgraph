@@ -1,0 +1,15 @@
+table.users-table td {
+    vertical-align:middle; 
+    text-align:center;
+    padding: 10px;
+    width: 200px;
+    height: 140px;
+}
+table.users-table img {
+    margin: auto auto;
+    display: block;
+    max-width: 180px;
+    max-height: 120px;
+    width: auto;
+    height: auto;
+}
