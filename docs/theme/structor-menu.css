@@ -1,0 +1,10 @@
+@media only screen and (min-width:76.25em) {
+    .md-nav__item--version {
+        border-width: 0.09rem;
+        border-style: solid;
+        border-radius: .2rem;
+        padding-left: .625em !important;
+        padding-bottom: .425em !important;
+        margin-top: 1.875rem;
+    }
+}

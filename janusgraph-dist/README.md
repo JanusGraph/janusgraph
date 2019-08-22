@@ -27,17 +27,12 @@ course of their execution.
 Building documentation
 ----------------------
 
-To convert the AsciiDoc sources in $JANUSGRAPH_REPO_ROOT/docs/ to chunked
-and single-page HTML, run `mvn package -pl janusgraph-dist -am
--DskipTests=true -Dgpg.skip=true` from the directory containing
-janusgraph-dist.  If the JanusGraph artifacts are already installed in the local
-Maven repo from previous invocations of `mvn install` in the root of
-the clone, then `cd janusgraph-dist && mvn package` is also sufficient.
+To convert the markdown sources in $JANUSGRAPH_REPO_ROOT/docs/ to chunked, 
+run `mvn install -DskipTests=true -pl janusgraph-doc -am` and `mkdocs build`.
 
 The documentation output appears in:
 
-* janusgraph-dist/target/docs/chunk/
-* janusgraph-dist/target/docs/single/
+* site/
 
 Building deb/rpm packages
 -------------------------

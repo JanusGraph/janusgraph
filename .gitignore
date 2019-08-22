@@ -58,3 +58,5 @@ coverity_tool.tar.gz
 cov-analysis-linux64/
 cov-int.tar.gz
 cov-int/
+
+/site/

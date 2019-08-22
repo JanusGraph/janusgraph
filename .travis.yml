@@ -1,4 +1,4 @@
-# Copyright 2017 JanusGraph Authors
+# Copyright 2019 JanusGraph Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-group: travis_latest
 language: java
-sudo: true
+sudo: required
+dist: trusty
 services:
   - docker
 jdk:
   - openjdk8
+
+git:
+  depth: false
 
 cache:
   directories:
@@ -29,117 +32,221 @@ env:
     # This is the encrypted COVERITY_SCAN_TOKEN, created via the
     # `travis encrypt` command using the project repo's public key.
     - secure: "v5ixqTeb74y0vRuPcDbe3C28GDDYvqyEXA2dt+9UVU6GG7WpnmpkBf05gI1dIhp51lBhwx9WSlFBtzho+KdCBmNY/CzBRhVHe/lCQYK9Hb6uGPvuwBvC0WjJgJXsVrLFjppeRhcf+OAweVQ3uw2RPMDRvKIVMUcO1BTFjjJl6REJXNUdzGS57MtH2mmRyOEz250EwgqUELZvcOytG7fNrjMJKVK2nSsoxi0BqZIpItTWPWWeQ1wi1FplJ18A2qtD+MPfAGNSB+/a+r0Av+VCT2eGl06ZyZAzP3q/vG5IYjQ3AJsSPqcZUt4ms+2us1+kwuzXIILjzZmcfImu29+y/thndU5E5b2v+nZ4H69CUCc5OmKW2RwozLNmBIUhO0n+35va/J7FiPIqm3pwxCz5vWA3YTHDADxnIYe7+9uY/+dOK/AvP5fyu7u07vuF3liKNBdrX7ylP3kYc7FXGmYl8wCZv31iy1yTtndQ9qKef7bo8lM9Cdh39KyowrygH+Um7pr9gqf2S9jn99nQ3bib32fBWgBkLpJRwhZYHPUupZjZfgu/9woby0DuriuHZKMqZd7QUawYz6wXGlhzu78x5Tohlj1pGBwHYdcJ/Tm3PiEpyH4aYQLffkjGHJAcCW5tO8QbB0qrLYWC8xVMWuFz1TpSBRXOqVYdBfIa2UZDtOU="
-    - COVERITY_BRANCH_NAME="coverity_scan"
     - COVERITY_EMAIL="sjudeng@gmail.com"
     # Default Elasticsearch heap size can be too large for Travis
     - ES_JAVA_OPTS="-Xms256m -Xmx512m"
+    - export STRUCTOR_LATEST_TAG=v0.4.0
+    - export STRUCTOR_VERSION=v1.7.1
 
-matrix:
+stages:
+  - test
+  - documentation
+  - deploy
+
+x-template:
+  &FULL_BUILD_JOB
+  stage: test
+  install: travis_wait mvn clean install --projects janusgraph-${MODULE} --also-make -DskipTests=true
+    -Dmaven.javadoc.skip=true --batch-mode --show-version ${INSTALL_ARGS};
+  script: travis_retry travis_wait 50 mvn clean verify --projects janusgraph-${MODULE} -Pcoverage ${ARGS};
+  after_success: bash <(curl -s https://codecov.io/bash);
+  if: type = cron OR commit_message =~ /\[full build\]/
+x-template:
+  &STANDARD_TEST_JOB
+  stage: test
+  install: travis_wait mvn clean install --projects janusgraph-${MODULE} --also-make -DskipTests=true 
+    -Dmaven.javadoc.skip=true --batch-mode --show-version ${INSTALL_ARGS};
+  script: travis_retry travis_wait 50 mvn clean verify --projects janusgraph-${MODULE} -Pcoverage ${ARGS};
+  after_success: bash <(curl -s https://codecov.io/bash);
+  if: commit_message !~ /\[doc only\]/
+
+jobs:
   include:
-    # sort modules by test time with quickest modules first
-    - env: MODULE='server'
-    - env: MODULE='hadoop-parent/janusgraph-hadoop-2'
-    - env: MODULE='lucene'
-    - env: MODULE='solr' ARGS='-Pdocker,solr7'
-    - env: MODULE='solr' ARGS='-Pdocker,solr6'
-    - env: MODULE='solr' ARGS='-Pdocker,solr5'
-    - env: MODULE='es' ARGS='-Pelasticsearch6'
-    - env: MODULE='es' ARGS='-Pelasticsearch60'
-    - env: MODULE='es' ARGS='-Pelasticsearch5'
-    - env: MODULE='es' ARGS='-Pelasticsearch2'
-    - env: MODULE='es' ARGS='-Pelasticsearch1'
-    - env: MODULE='berkeleyje'
-    - env: MODULE='test' ARGS='-Dtest.skip.tp=false'
-    - env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true'
-    - env: MODULE='cassandra' ARGS='-Dtest=**/graphdb/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - env: MODULE='cassandra' ARGS='-Dtest=**/graphdb/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - env: MODULE='cassandra' ARGS='-Dtest=**/graphdb/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true'
-    - env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/astyanax/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true'
-    - env: MODULE='cassandra' ARGS='-Dtest=**/graphdb/astyanax/*'
-    - env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/embedded/*'
-    - env: MODULE='cassandra' ARGS='-Dtest=***/cassandra/*,*/graphdb/embedded/*'
-    - env: MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/diskstorage/hbase/*'
-    - env: MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/graphdb/hbase/*'
-    - env: MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dtest=**/diskstorage/hbase/* -Dhbase.profile -Phbase2'
-    - env: MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dtest=**/graphdb/hbase/* -Dhbase.profile -Phbase2'
-    - env: MODULE='hadoop-parent/janusgraph-hadoop-2' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dhbase.profile -Phbase2'
-    - env: MODULE='cql' ARGS='-Pcassandra2-byteordered -Dtest=**/diskstorage/cql/*'
-    - env: MODULE='cql' ARGS='-Pcassandra2-murmur -Dtest=**/diskstorage/cql/*'
-    - env: MODULE='cql' ARGS='-Pcassandra2-murmur-ssl -Dtest=**/diskstorage/cql/CQLStoreTest.java'
-    - env: MODULE='cql' ARGS='-Pcassandra2-byteordered -Dtest=**/graphdb/cql/*'
-    - env: MODULE='cql' ARGS='-Pcassandra2-murmur -Dtest=**/graphdb/cql/*'
-    - env: COVERITY_ONLY=true
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='hadoop-parent/janusgraph-hadoop-2'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='lucene'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='solr' ARGS='-Pdocker,solr7'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='solr' ARGS='-Pdocker,solr6'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='solr' ARGS='-Pdocker,solr5'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='es' ARGS='-Pelasticsearch6'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='es' ARGS='-Pelasticsearch60'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='es' ARGS='-Pelasticsearch5'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='es' ARGS='-Pelasticsearch2'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='es' ARGS='-Pelasticsearch1'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='berkeleyje'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='test' ARGS='-Dtest.skip.tp=false'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cassandra' ARGS='-Dtest=**/graphdb/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cassandra' ARGS='-Dtest=**/graphdb/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cassandra' ARGS='-Dtest=**/graphdb/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/astyanax/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cassandra' ARGS='-Dtest=**/graphdb/astyanax/*'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/embedded/*'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cassandra' ARGS='-Dtest=***/cassandra/*,*/graphdb/embedded/*'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/diskstorage/hbase/*'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/graphdb/hbase/*'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dtest=**/diskstorage/hbase/* -Dhbase.profile -Phbase2'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dtest=**/graphdb/hbase/* -Dhbase.profile -Phbase2'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='hadoop-parent/janusgraph-hadoop-2' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dhbase.profile -Phbase2'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cql' ARGS='-Dtest=**/diskstorage/cql/* -Dtest.skip.murmur=true'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cql' ARGS='-Dtest=**/diskstorage/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.murmur=true'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
+    
+    - <<: *FULL_BUILD_JOB
       env: MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='3.11.0' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
+      env: MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='3.11.0' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='3.11.0' ARGS='-Dtest=**/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='3.11.0' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='3.11.0' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest=**/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='3.11.0' ARGS='-Dtest=**/astyanax/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='3.11.0' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest=**/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='3.11.0' ARGS='-Dtest=**/cassandra/*,**/utils/*'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra3-byteordered -Dcassandra.docker.version=3.11.4'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra3-murmur -Dcassandra.docker.version=3.11.4'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra3-murmur-ssl -Dcassandra.docker.version=3.11.4 -Dtest=**/diskstorage/cql/CQLStoreTest.java'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='3.0.14' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='3.0.14' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='3.0.14' ARGS='-Dtest=**/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='3.0.14' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='3.0.14' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest=**/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='3.0.14' ARGS='-Dtest=**/astyanax/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='3.0.14' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest=**/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='3.0.14' ARGS='-Dtest=**/cassandra/*,**/utils/*'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra3-byteordered -Dcassandra.docker.version=3.0.18'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra3-murmur -Dcassandra.docker.version=3.0.18'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra3-murmur-ssl -Dcassandra.docker.version=3.0.18 -Dtest=**/diskstorage/cql/CQLStoreTest.java'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='2.2.10' ARGS='-DskipHBase'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='2.2.10' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='2.2.10' ARGS='-Dtest=**/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='2.2.10' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='2.2.10' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest=**/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='2.2.10' ARGS='-Dtest=**/astyanax/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='2.2.10' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest=**/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' CASSANDRA_VERSION='2.2.10' ARGS='-Dtest=**/cassandra/*,**/utils/*'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra2-byteordered -Dcassandra.docker.version=2.2.14'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra2-murmur -Dcassandra.docker.version=2.2.14'
-    - if: type = cron OR commit_message =~ /\[full build\]/
+    - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra2-murmur-ssl -Dcassandra.docker.version=2.2.14 -Dtest=**/diskstorage/cql/CQLStoreTest.java'
-  fast_finish: true
+
+    - stage: test
+      env: COVERITY_ONLY=true
+      install: travis_wait mvn --quiet install -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version;
+      script:
+        - echo "Building Docker image for Coverity analysis";
+          docker build -t janusgraph/analysis analysis;
+          echo "Running Coverity scan";
+          travis_wait 50 \
+            docker run --rm \
+                -v ${HOME}/.m2:/root/.m2 -v ${PWD}:/opt/janusgraph \
+                -e COVERITY_SCAN_TOKEN="${COVERITY_SCAN_TOKEN}" \
+                -e COVERITY_EMAIL="${COVERITY_EMAIL}" \
+                -i janusgraph/analysis;
+      if: branch = coverity_scan
+
+    - stage: documentation
+      install: docker build -t doc-site:mkdocs -f docs.Dockerfile .
+      script:
+        - echo "Updating configuration markdown";
+          mvn --quiet clean install -DskipTests=true -pl janusgraph-doc -am;
+        - echo "Check for changes in configuration";
+          git diff  --exit-code docs/basics/janusgraph-cfg.md;
+        - docker run --rm -v $PWD:/mkdocs doc-site:mkdocs mkdocs build
+    
+    - stage: deploy
+      install: skip
+      script: skip
+      before_deploy:
+        - echo "Download documentation generator";
+          curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION}
+        - echo "Build documentation";
+          sudo "$GOPATH/bin/structor" -o janusgraph -r janusgraph \
+            --force-edit-url \
+            --rqts-url="https://raw.githubusercontent.com/janusgraph/janusgraph/v0.3/requirements.txt"
+            --dockerfile-url="https://raw.githubusercontent.com/janusgraph/janusgraph/v0.3/docs.Dockerfile" \
+            --menu.js-url="https://raw.githubusercontent.com/janusgraph/janusgraph/v0.3/docs/theme/structor-menu.js.gotmpl" \
+            --exp-branch=v0.3 --debug;
+          sudo chown -R $UID site;
+      deploy:
+        provider: pages
+        repo: janusgraph/janusgraph
+        edge: false
+        github_token: ${GITHUB_TOKEN}
+        local_dir: site
+        skip_cleanup: true
+        on:
+          all_branches: true
+          condition: $TRAVIS_BRANCH =~ ^master$|^v[0-9.]+$
+
   # https://docs.travis-ci.com/user/customizing-the-build#Rows-that-are-Allowed-to-Fail
   allow_failures:
     # Elasticsearch 1.x tests can fail non-deterministically
@@ -147,47 +254,8 @@ matrix:
     - env: MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='3.11.0' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false'
     - env: MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='3.0.14' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false'
 
-install:
-  - if [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] && [ -n "${COVERITY_ONLY:-}" ]; then
-      echo "Building all modules for Coverity analysis";
-      travis_retry travis_wait mvn clean install -DskipTests=true
-        -Dmaven.javadoc.skip=true --batch-mode --show-version;
-    elif [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] || ! [ -z "${COVERITY_ONLY:-}" ]; then
-      echo "Building all modules for test-compile coverage, but skipping Coverity upload";
-      travis_retry travis_wait mvn clean install -DskipTests=true
-        -Dmaven.javadoc.skip=true --batch-mode --show-version;
-    else
-      echo "Building janusgraph-${MODULE} and dependencies";
-      travis_retry travis_wait mvn clean install --projects janusgraph-${MODULE}
-        --also-make -DskipTests=true -Dmaven.javadoc.skip=true
-        --batch-mode --show-version ${INSTALL_ARGS};
-    fi
-
-script:
-  - if [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] && [ -n "${COVERITY_ONLY:-}" ]; then
-      echo "Building Docker image for Coverity analysis";
-      docker build -t janusgraph/analysis analysis;
-      echo "Running Coverity scan";
-      travis_wait 50 docker run --rm
-        -v ${HOME}/.m2:/root/.m2 -v ${PWD}:/opt/janusgraph
-        -e COVERITY_SCAN_TOKEN="${COVERITY_SCAN_TOKEN}"
-        -e COVERITY_EMAIL="${COVERITY_EMAIL}"
-        -i janusgraph/analysis;
-    elif [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] || [ -n "${COVERITY_ONLY:-}" ]; then
-      echo "Skipping module tests on Coverity branch/job";
-    else
-      echo "Testing janusgraph-${MODULE}";
-      travis_wait 50 mvn clean verify --projects janusgraph-${MODULE}
-        -Pcoverage ${ARGS};
-    fi
-
-after_success:
-  # Upload test coverage reports to Codecov
-  - if [ "${TRAVIS_BRANCH}" == "${COVERITY_BRANCH_NAME}" ] || [ -n "${COVERITY_ONLY:-}" ]; then
-      echo "Skipping test coverage report upload in Coverity branch/job";
-    else
-      bash <(curl -s https://codecov.io/bash);
-    fi
+  fast_finish: true
+  # https://docs.travis-ci.com/user/customizing-the-build#Rows-that-are-Allowed-to-Fail
 
 # Syntax and more info: https://docs.travis-ci.com/user/notifications
 notifications:

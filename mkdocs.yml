@@ -1,0 +1,124 @@
+
+# Copyright 2019 JanusGraph Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+site_name: JanusGraph
+
+repo_name: 'JanusGraph'
+repo_url: 'https://github.com/janusgraph/janusgraph'
+
+copyright: 'Copyright &copy; 2019 JanusGraph Authors. All rights reserved.<br> The Linux Foundation has registered trademarks and uses trademarks. For a list of<br> trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage</a> page.<br> Cassandra, Groovy, HBase, Hadoop, Lucene, Solr, and TinkerPop are trademarks of the Apache Software Foundation.<br> Berkeley DB and Berkeley DB Java Edition are trademarks of Oracle.'
+
+plugins:
+    - search
+    - markdownextradata
+
+theme:
+    language: 'en'
+    name: 'material'
+    feature:
+        tabs: false
+    palette:
+        primary: 'green'
+        accent: 'teal'
+    font: false
+    logo: 'janusgraph-logomark.svg'
+    favicon: 'favicon.ico'
+
+extra_css:
+    - 'theme/structor-menu.css'
+    - 'theme/extra.css'
+
+extra:
+  social:
+    - type: github-alt
+      link: https://github.com/janusgraph
+    - type: twitter
+      link: https://twitter.com/janusgraph
+    - type: envelope
+      link: https://groups.google.com/group/janusgraph-users
+    - type: envelope
+      link: https://groups.google.com/group/janusgraph-dev
+
+markdown_extensions:
+    - pymdownx.superfences
+    - pymdownx.snippets
+    - markdown.extensions.admonition
+    - markdown_include.include:
+        base_path: docs
+    - markdown.extensions.codehilite:
+          linenums: True
+
+nav:
+    - Introduction: index.md
+    - JanusGraph Basics:
+        - Configuration: basics/configuration.md
+        - Schema and Data Modeling: basics/schema.md
+        - Gremlin Query Language: basics/gremlin.md
+        - JanusGraph Server: basics/server.md
+        - Deployment Scenarios: basics/deployment.md
+        - ConfiguredGraphFactory: basics/configured-graph-factory.md
+        - Things to Consider in a Multi-Node JanusGraph Cluster: basics/multi-node.md
+        - Indexing for Better Performance: basics/index-performance.md
+        - Transactions: basics/transactions.md
+        - JanusGraph Cache: basics/cache.md
+        - Transaction Log: basics/transaction-log.md
+        - Configuration Reference: basics/configuration-reference.md
+        - Config Example: basics/example-config.md
+        - Common Questions: basics/common-questions.md
+        - Technical Limitations: basics/technical-limitations.md
+    - Storage Backends:
+        - Introduction: storage-backend/index.md
+        - Apache Cassandra: storage-backend/cassandra.md
+        - Apache HBase: storage-backend/hbase.md
+        - Google Cloud Bigtable: storage-backend/bigtable.md
+        - Oracle Berkeley DB Java Edition: storage-backend/bdb.md
+        - InMemory Storage Backend: storage-backend/inmemorybackend.md
+    - Index Backends:
+        - Introduction: index-backend/index.md
+        - Search Predicates and Data Types: index-backend/search-predicates.md
+        - Index Parameters and Full-Text Search: index-backend/text-search.md
+        - Field Mapping: index-backend/field-mapping.md
+        - Direct Index Query: index-backend/direct-index-query.md
+        - Elasticsearch: index-backend/elasticsearch.md
+        - Apache Solr: index-backend/solr.md
+        - Apache Lucene: index-backend/lucene.md
+    - Advanced Topics:
+        - Advanced Schema: advanced-topics/advschema.md
+        - Eventually-Consistent Storage Backends: advanced-topics/eventual-consistency.md
+        - Failure & Recovery: advanced-topics/recovery.md
+        - Index Management: advanced-topics/index-admin.md
+        - Bulk Loading: advanced-topics/bulk-loading.md
+        - Graph Partitioning: advanced-topics/partitioning.md
+        - Datatype and Attribute Serializer Configuration: advanced-topics/serializer.md
+        - JanusGraph with TinkerPop’s Hadoop-Gremlin: advanced-topics/hadoop.md
+        - Monitoring JanusGraph: advanced-topics/monitoring.md
+        - Migrating from Titan: advanced-topics/migrating.md
+        - JanusGraph Data model: advanced-topics/data-model.md
+        - JanusGraph Bus: advanced-topics/janusgraph-bus.md
+    - Connecting to JanusGraph:
+        - Introduction: connecting/index.md
+        - Using Java: connecting/java.md
+        - Using Python: connecting/python.md
+        - Using .Net: connecting/dotnet.md
+    - Development: development.md
+    - Appendices: appendices.md
+    - Changelog: changelog.md
+
+extra:
+    latest_version: 0.3.2
+    snapshot_version: 0.3.3-SNAPSHOT
+    tinkerpop_version: 3.3.3
+    hadoop2_version: 2.7.2
+    jamm_version: 0.3.0
