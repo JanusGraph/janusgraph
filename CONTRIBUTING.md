@@ -75,11 +75,11 @@ $ git config user.email "my-email@example.com"
 
 ## Create a new branch
 
-First, you need to decide which release branch (e.g., `master`, `0.2`) to
+First, you need to decide which release branch (e.g., `master`, `v0.2`) to
 create the feature branch from. If you intend to add a new feature, then
 `master` is the right branch. Bug fixes however should also be applied to
 other releases, so you should create your feature branch from the release
-branch with the lowest version number that is still active (e.g., `0.2`).
+branch with the lowest version number that is still active (e.g., `v0.2`).
 When in doubt, ask on [janusgraph-dev](https://groups.google.com/forum/#!forum/janusgraph-dev).
 Changes to all release branches will also be merged into `master`.
 
@@ -96,7 +96,7 @@ $ git checkout -b my-new-feature
 ```
 
 > NOTE: This listing assumes that you create the feature branch from `master`.
-> Replace `master` by the name of the release branch (e.g., `0.2`) if you want
+> Replace `master` by the name of the release branch (e.g., `v0.2`) if you want
 > to create the branch from that release branch instead.
 
 ## Develop and test your changes
@@ -143,7 +143,7 @@ you've signed the contribution.
 > `git ci -v` will get you a diff of your commit while writing your commit
 > message.
 
-> Note: If this is a non-code change, e.g. documentation, add `[skip ci]` to the
+> Note: If this is a non-code change, e.g. documentation, add `[doc only]` to the
 > PR subject line. This is to save CPU time on Travis CI, which lets us get more
 > build time for the other changes which actually change the code.
 >
@@ -152,7 +152,7 @@ you've signed the contribution.
 > * when the PR is submitted for review
 > * when the PR is merged to the base branch
 >
-> Having [skip ci] in the commit skips the first one, but the merge commit also
+> Having [doc only] in the commit skips the first one, but the merge commit also
 > needs it, so having it in the title (first line of commit) helps it easily
 > propagate to both places.
 
