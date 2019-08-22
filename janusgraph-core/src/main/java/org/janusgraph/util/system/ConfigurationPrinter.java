@@ -36,18 +36,16 @@ import static org.janusgraph.util.encoding.StringEncoding.UTF8_ENCODING;
  * Recursively dump the root configuration namespace to either System.out or the
  * named file in a CSV-type format with configurable delimiter, header, and
  * footer. Used to generate a table of all configuration keys for inclusion in
- * the AsciiDoc documentation.
+ * the markdown documentation.
  */
 public class ConfigurationPrinter {
 
 //    private static final String TABLE_HEADER_LINES = "[role=\"tss-config-table\",cols=\"2,3,1,1,1\",options=\"header\",width=\"100%\"]\n|=====\n| Name | Description | Datatype | Default Value | Mutability";
     private static final String DELIM = "|";
     private static final String DELIM_PADDING = " ";
-    private static final String TABLE_FOOTER_LINES = "|=====\n";
     private static final boolean DELIM_AT_LINE_START = true;
-    private static final boolean DELIM_AT_LINE_END = false;
+    private static final boolean DELIM_AT_LINE_END = true;
 
-    private final boolean showMutability;
     private final PrintStream stream;
 
     public static void main(String args[]) throws IOException, ReflectiveOperationException {
@@ -55,25 +53,23 @@ public class ConfigurationPrinter {
         ReflectiveConfigOptionLoader.INSTANCE.loadStandard(ConfigurationPrinter.class);
 
         // Write to filename argument
-        if (3 != args.length) {
+        if (2 != args.length) {
             System.err.println("Usage: " + ConfigurationPrinter.class.getName() +
-                    " <package.class.fieldname of a ConfigNamespace root> <output filename> <display mutabilities>");
+                    " <package.class.fieldname of a ConfigNamespace root> <output filename>");
             System.exit(-1);
         }
 
         final ConfigNamespace root = stringToNamespace(args[0]);
         final PrintStream stream = new PrintStream(new FileOutputStream(args[1]), false, UTF8_ENCODING);
-        final boolean mutability = Boolean.valueOf(args[2]);
 
-        new ConfigurationPrinter(stream, mutability).write(root);
+        new ConfigurationPrinter(stream).write(root);
 
         stream.flush();
         stream.close();
     }
 
-    private ConfigurationPrinter(PrintStream stream, boolean showMutability) {
+    private ConfigurationPrinter(PrintStream stream) {
         this.stream = stream;
-        this.showMutability = showMutability;
     }
 
     private void write(ConfigNamespace root) {
@@ -117,7 +113,6 @@ public class ConfigurationPrinter {
             for (ConfigOption<?> o : getSortedChildOptions(n)) {
                 stream.println(getTableLineForOption(o, newPrefix));
             }
-            stream.println(TABLE_FOOTER_LINES);
         }
 
         for (ConfigNamespace cn : getSortedChildNamespaces(n)) {
@@ -128,7 +123,7 @@ public class ConfigurationPrinter {
     private String getNamespaceSectionHeader(ConfigNamespace n, String prefix) {
         String fullName = prefix + n.getName();
         if (n.isUmbrella()) fullName += " *";
-        return "==== " + fullName + " ====\n[role=\"font16\"]\n" + n.getDescription() + "\n\n";
+        return "\n### " + fullName + "\n"+ n.getDescription() + "\n";
     }
 
     private List<ConfigOption<?>> getSortedChildOptions(ConfigNamespace n) {
@@ -146,9 +141,9 @@ public class ConfigurationPrinter {
         if (o.isDeprecated()) {
             ConfigOption<?> successor = o.getDeprecationReplacement();
             if (null == successor) {
-                name = "[deprecation-warning]*Deprecated* [line-through]#" + name + "#";
+                name = "*Deprecated* [line-through]#" + name + "#";
             } else {
-                name = "[deprecation-warning]*Deprecated.  See " + getFullPath(successor) + "* [line-through]#" + name + "#";
+                name = "*Deprecated.  See " + getFullPath(successor) + "* [line-through]#" + name + "#";
             }
 
         }
@@ -157,8 +152,7 @@ public class ConfigurationPrinter {
         colData.add(o.getDatatype().getSimpleName());
         colData.add(removeDelim(getStringForDefaultValue(o)));
 
-        if (showMutability)
-            colData.add(o.getType().toString());
+        colData.add(o.getType().toString());
 
         String line = Joiner.on(DELIM_PADDING + DELIM + DELIM_PADDING).join(colData);
 
@@ -174,15 +168,8 @@ public class ConfigurationPrinter {
     }
 
     private String getTableHeader() {
-        String colWidths = "2,3,1,1"; // Name, Desc, Datatype, Default
-        String colNames = "Name | Description | Datatype | Default Value";
-        if (showMutability) {
-            colWidths += ",1"; // Mutability level
-            colNames  += " | Mutability";
-        }
-        return "[role=\"tss-config-table\",cols=\"" + colWidths + "\",options=\"header\",width=\"100%\"]\n" +
-                "|=====\n" +
-                "| " + colNames; // no terminal newline required
+        String colNames = "| Name | Description | Datatype | Default Value | Mutability |";
+        return "\n" + colNames+ "\n| ---- | ---- | ---- | ---- | ---- |"; // no terminal newline required
     }
 
     @SuppressWarnings("unchecked")
