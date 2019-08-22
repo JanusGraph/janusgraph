@@ -25,15 +25,6 @@
         <test.expect.dir>${project.build.directory}/test-classes</test.expect.dir>
         <test.zipfile.path>${project.build.directory}/janusgraph-${project.version}-${hadoop.version.tag}.zip</test.zipfile.path>
 
-        <!-- AsciiDoc -->
-        <asciidoc.input.dir>${project.parent.basedir}/docs</asciidoc.input.dir>
-        <xsl.input.dir>${project.parent.basedir}/docs/xsl</xsl.input.dir>
-        <asciidoc.output.dir>${project.basedir}/target/docs</asciidoc.output.dir>
-        <xsl.output.dir>${asciidoc.output.dir}/xsl</xsl.output.dir>
-        <docbook.output.dir>${project.basedir}/target/docs/docbook</docbook.output.dir>
-        <htmlsingle.output.dir>${project.basedir}/target/docs/single</htmlsingle.output.dir>
-        <htmlchunk.output.dir>${project.basedir}/target/docs/chunk</htmlchunk.output.dir>
-
         <!-- RPM/DEB packaging -->
         <pkg.release>1</pkg.release>
         <pkgtools.dir>${project.basedir}/..</pkgtools.dir>
@@ -208,59 +199,6 @@
                         <id>default-testResources</id>
                         <phase>none</phase>
                     </execution>
-                    <execution>
-                        <id>filter-doc-sources-and-xsl</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${asciidoc.output.dir}</outputDirectory>
-                            <delimiters>
-                                <delimiter>$MAVEN{*}</delimiter>
-                            </delimiters>
-                            <resources>
-                                <resource>
-                                    <directory>${asciidoc.input.dir}</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-static-assets-to-htmlsingle</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <inherited>false</inherited>
-                        <configuration>
-                            <outputDirectory>${htmlsingle.output.dir}</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${asciidoc.input.dir}/static</directory>
-                                    <filtering>false</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-static-assets-to-htmlchunk</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <inherited>false</inherited>
-                        <configuration>
-                            <outputDirectory>${htmlchunk.output.dir}</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${asciidoc.input.dir}/static</directory>
-                                    <filtering>false</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
                 </executions>
             </plugin>
 
@@ -279,8 +217,7 @@
                             <mainClass>org.janusgraph.util.system.ConfigurationPrinter</mainClass>
                             <arguments>
                                 <argument>org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS</argument>
-                                <argument>${asciidoc.output.dir}/listings/janusgraph_cfg.adoc</argument>
-                                <argument>true</argument>
+                                <argument>${doc.dir}/basics/janusgraph-cfg.md</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -308,34 +245,6 @@
                     <execution>
                         <id>generate-janusgraph-gremlin-imports</id>
                         <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.asciidoctor</groupId>
-                <artifactId>asciidoctor-maven-plugin</artifactId>
-                <inherited>false</inherited>
-                <executions>
-                    <execution>
-                        <id>asciidoc-to-docbook</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>process-asciidoc</goal>
-                        </goals>
-                        <configuration>
-                            <sourceDirectory>${asciidoc.output.dir}</sourceDirectory>
-                            <sourceDocumentName>index.adoc</sourceDocumentName>
-                            <outputDirectory>${docbook.output.dir}</outputDirectory>
-                            <backend>docbook5</backend>
-                            <doctype>book</doctype>
-                            <attributes>
-                                <encoding>UTF-8</encoding>
-                                <iconsdir>images/icons</iconsdir>
-                                <imagesdir>images</imagesdir>
-                                <toc>true</toc>
-                            </attributes>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -380,76 +289,6 @@
                 </executions>
             </plugin>
 
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>xml-maven-plugin</artifactId>
-                <inherited>false</inherited>
-                <executions>
-                    <execution>
-                        <id>docbook-to-htmlsingle</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>transform</goal>
-                        </goals>
-                        <inherited>false</inherited>
-                        <configuration>
-                            <forceCreation>true</forceCreation>
-                            <transformationSets>
-                                <transformationSet>
-                                    <dir>${docbook.output.dir}</dir>
-                                    <outputDir>${htmlsingle.output.dir}</outputDir>
-                                    <includes>
-                                        <include>index.xml</include>
-                                    </includes>
-                                    <stylesheet>${xsl.output.dir}/single.xsl</stylesheet>
-                                    <fileMappers>
-                                        <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
-                                            <targetExtension>.html</targetExtension>
-                                        </fileMapper>
-                                    </fileMappers>
-                                </transformationSet>
-                            </transformationSets>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>docbook-to-htmlchunk</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>transform</goal>
-                        </goals>
-                        <inherited>false</inherited>
-                        <configuration>
-                            <forceCreation>true</forceCreation>
-                            <transformationSets>
-                                <transformationSet>
-                                    <dir>${docbook.output.dir}</dir>
-                                    <includes>
-                                        <include>index.xml</include>
-                                    </includes>
-                                    <stylesheet>${xsl.output.dir}/chunk.xsl</stylesheet>
-                                    <fileMappers>
-                                        <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
-                                            <targetExtension>.html</targetExtension>
-                                        </fileMapper>
-                                    </fileMappers>
-                                </transformationSet>
-                            </transformationSets>
-                        </configuration>
-                    </execution>
-                </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>net.sf.xslthl</groupId>
-                        <artifactId>xslthl</artifactId>
-                        <version>2.1.0</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>saxon</groupId>
-                        <artifactId>saxon</artifactId>
-                        <version>6.5.3</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
 
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

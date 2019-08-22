@@ -1,3 +1,0 @@
-// This file is reserved for Asciidoc attribute definitions
-// https://www.methods.co.nz/asciidoc/chunked/ch28.html
-:tinkerpop_version: $MAVEN{tinkerpop.version}
