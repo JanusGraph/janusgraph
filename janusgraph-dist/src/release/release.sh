@@ -107,7 +107,3 @@ set -x
 # Deploy artifacts to S3 and to Sonatype Staging.  Doesn't push to Github.
 $git_cmd
 $mvn_cmd
-
-# Stage gh-pages updates locally.  This commits new gh-pages content in the
-# local clone, but it doesn't push to Github.
-janusgraph-dist/target/release/gh-pages-update.sh release.properties
