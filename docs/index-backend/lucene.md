@@ -43,6 +43,7 @@ Feature Support
     and boxes for querying point properties and all shapes for querying
     non-point properties.
 -   **Numeric Range**: Supports all numeric comparisons in `Compare`.
+-   **Collections**: Supports indexing SET and LIST cardinality properties, except `Geo`.
 -   **Temporal**: Nanosecond granularity temporal indexing.
 -   **Custom Analyzer**: Choose to use a custom analyzer
 -   **Not Query-normal-form**: Supports queries other than Query-normal-form (QNF). 

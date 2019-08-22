@@ -112,10 +112,10 @@ Elasticsearch index configuration
 | index.[X].elasticsearch.bulk-refresh | Elasticsearch bulk API refresh setting used to control when changes made by this request are made visible to search | String | false | MASKABLE |
 | index.[X].elasticsearch.health-request-timeout | When JanusGraph initializes its ES backend, JanusGraph waits up to this duration for the ES cluster health to reach at least yellow status.  This string should be formatted as a natural number followed by the lowercase letter "s", e.g. 3s or 60s. | String | 30s | MASKABLE |
 | index.[X].elasticsearch.interface | Interface for connecting to Elasticsearch. TRANSPORT_CLIENT and NODE were previously supported, but now are required to migrate to REST_CLIENT. See the JanusGraph upgrade instructions for more details. | String | REST_CLIENT | MASKABLE |
-| index.[X].elasticsearch.max-retry-timeout | Sets the maximum timeout (in milliseconds) to honour in case of multiple retries of the same request sent using the ElasticSearch Rest Client by JanusGraph. | Integer | (no default value) | MASKABLE |
 | index.[X].elasticsearch.scroll-keep-alive | How long (in seconds) elasticsearch should keep alive the scroll context. | Integer | 60 | GLOBAL_OFFLINE |
+| index.[X].elasticsearch.setup-max-open-scroll-contexts | Whether JanusGraph should setup max_open_scroll_context to maximum value for the cluster or not. | Boolean | true | MASKABLE |
 | index.[X].elasticsearch.use-all-field | Whether JanusGraph should add an "all" field mapping. When enabled field mappings will include a "copy_to" parameter referencing the "all" field. This is supported since Elasticsearch 6.x  and is required when using wildcard fields starting in Elasticsearch 6.x. | Boolean | true | GLOBAL_OFFLINE |
-| index.[X].elasticsearch.use-deprecated-multitype-index | Whether JanusGraph should group these indices into a single Elasticsearch index (requires Elasticsearch 5.x or earlier). | Boolean | false | GLOBAL_OFFLINE |
+| index.[X].elasticsearch.use-mapping-for-es7 | Mapping types are deprecated in ElasticSearch 7 and JanusGraph will not use mapping types by default for ElasticSearch 7 but if you want to preserve mapping types, you can setup this parameter to true. If you are updating ElasticSearch from 6 to 7 and you don't want to reindex your indexes, you may setup this parameter to true but we do recommend to reindex your indexes and don't use this parameter. | Boolean | false | MASKABLE |
 
 ### index.[X].elasticsearch.create
 Settings related to index creation
