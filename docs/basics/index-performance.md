@@ -269,10 +269,10 @@ expects two parameters:
     results will be ordered by the value of the vertices or edges for
     this property key.
 
--   The sort order: either increasing `incr` or decreasing `decr`
+-   The sort order: either ascending `asc` or descending `desc`
 
 For example, the query
-`g.V().has('name', textContains('hercules')).order().by('age', decr).limit(10)`
+`g.V().has('name', textContains('hercules')).order().by('age', desc).limit(10)`
 retrieves the ten oldest individuals with *hercules* in their name.
 
 When using `order().by()` it is important to note that:
@@ -362,7 +362,7 @@ graph.tx().rollback()  //Never create new indexes while a transaction is active
 mgmt = graph.openManagement()
 time = mgmt.getPropertyKey('time')
 battled = mgmt.getEdgeLabel('battled')
-mgmt.buildEdgeIndex(battled, 'battlesByTime', Direction.BOTH, Order.decr, time)
+mgmt.buildEdgeIndex(battled, 'battlesByTime', Direction.BOTH, Order.desc, time)
 mgmt.commit()
 //Wait for the index to become available
 ManagementSystem.awaitRelationIndexStatus(graph, 'battlesByTime').call()
@@ -373,7 +373,7 @@ mgmt.commit()
 ```
 
 This example builds a vertex-centric index which indexes `battled` edges
-in both direction by time in decreasing order. A vertex-centric index is
+in both direction by time in descending order. A vertex-centric index is
 built against a particular edge label which is the first argument to the
 index construction method `JanusGraphManagement.buildEdgeIndex()`. The
 index only applies to edges of this label - `battled` in the example
@@ -400,7 +400,7 @@ mgmt = graph.openManagement()
 time = mgmt.getPropertyKey('time')
 rating = mgmt.makePropertyKey('rating').dataType(Double.class).make()
 battled = mgmt.getEdgeLabel('battled')
-mgmt.buildEdgeIndex(battled, 'battlesByRatingAndTime', Direction.OUT, Order.decr, rating, time)
+mgmt.buildEdgeIndex(battled, 'battlesByRatingAndTime', Direction.OUT, Order.desc, rating, time)
 mgmt.commit()
 //Wait for the index to become available
 ManagementSystem.awaitRelationIndexStatus(graph, 'battlesByRatingAndTime', 'battled').call()
@@ -412,7 +412,7 @@ mgmt.commit()
 
 This example extends the schema by a `rating` property on `battled`
 edges and builds a vertex-centric index which indexes `battled` edges in
-the out-going direction by rating and time in decreasing order. Note,
+the out-going direction by rating and time in descending order. Note,
 that the order in which the property keys are specified is important
 because vertex-centric indexes are prefix indexes. This means, that
 `battled` edges are indexed by `rating` *first* and `time` *second*.
@@ -469,8 +469,8 @@ to be traversed. Use the `localLimit` command to retrieve a subset of
 the edges (in a given order) for EACH vertex that is traversed.
 ```groovy
 h = g..V().has('name', 'hercules').next()
-g.V(h).local(outE('battled').order().by('time', decr).limit(10)).inV().values('name')
-g.V(h).local(outE('battled').has('rating', 5.0).order().by('time', decr).limit(10)).values('place')
+g.V(h).local(outE('battled').order().by('time', desc).limit(10)).inV().values('name')
+g.V(h).local(outE('battled').has('rating', 5.0).order().by('time', desc).limit(10)).values('place')
 ```
 
 The first query asks for the names of the 10 most recently battled
@@ -481,7 +481,7 @@ the number of elements to be returned.
 
 Such queries can also be efficiently answered by vertex-centric indexes
 if the order key matches the key of the index and the requested order
-(i.e. increasing or decreasing) is the same as the one defined for the
+(i.e. ascending or descending) is the same as the one defined for the
 index. The `battlesByTime` index would be used to answer the first query
 and `battlesByRatingAndTime` applies to the second. Note, that the
 `battlesByRatingAndTime` index cannot be used to answer the first query
