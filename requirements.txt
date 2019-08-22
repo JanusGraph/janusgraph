@@ -1,0 +1,7 @@
+mkdocs==1.0.4
+mkdocs-material==4.4.0
+Pygments==2.3.1
+pymdown-extensions==6.0
+markdown==3.1.1
+mkdocs-markdownextradata-plugin==0.0.5
+markdown-include==0.5.1
