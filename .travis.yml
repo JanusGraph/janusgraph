@@ -78,9 +78,9 @@ jobs:
     - <<: *STANDARD_TEST_JOB
       env: MODULE='berkeleyje'
     - <<: *STANDARD_TEST_JOB
-      env: MODULE='test -Dtest.skip.tp=false'
-    - <<: *TINKERPOP_TEST_JOB
-    - env: MODULE='test -Dtest.skip.tp=false -DskipTests=true'
+      env: MODULE='test' ARGS='-Dtest.skip.tp=false'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='test' ARGS='-Dtest.skip.tp=false -DskipTests=true'
     - <<: *STANDARD_TEST_JOB
       env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
     - <<: *STANDARD_TEST_JOB
