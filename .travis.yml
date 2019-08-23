@@ -51,20 +51,13 @@ x-template:
   script: travis_retry travis_wait 50 mvn clean verify --projects janusgraph-${MODULE} -Pcoverage ${ARGS};
   after_success: bash <(curl -s https://codecov.io/bash);
   if: type = cron OR commit_message =~ /\[full build\]/
+
 x-template:
   &STANDARD_TEST_JOB
   stage: test
   install: travis_wait mvn clean install --projects janusgraph-${MODULE} --also-make -DskipTests=true 
     -Dmaven.javadoc.skip=true --batch-mode --show-version ${INSTALL_ARGS};
   script: travis_retry travis_wait 50 mvn clean verify --projects janusgraph-${MODULE} -Pcoverage ${ARGS};
-  after_success: bash <(curl -s https://codecov.io/bash);
-  if: commit_message !~ /\[doc only\]/
-x-template:
-  &TINKERPOP_TEST_JOB
-  stage: test
-  install: travis_wait mvn clean install --projects janusgraph-${MODULE} --also-make -DskipTests=true
-    -Dmaven.javadoc.skip=true --batch-mode --show-version ${INSTALL_ARGS};
-  script: travis_retry travis_wait 50 mvn clean verify --projects janusgraph-${MODULE} -Pcoverage -Dtest.skip.tp=false -DskipTests=true ${ARGS};
   after_success: bash <(curl -s https://codecov.io/bash);
   if: commit_message !~ /\[doc only\]/
 
@@ -85,9 +78,9 @@ jobs:
     - <<: *STANDARD_TEST_JOB
       env: MODULE='berkeleyje'
     - <<: *STANDARD_TEST_JOB
-      env: MODULE='test'
+      env: MODULE='test -Dtest.skip.tp=false'
     - <<: *TINKERPOP_TEST_JOB
-    - env: MODULE='test'
+    - env: MODULE='test -Dtest.skip.tp=false -DskipTests=true'
     - <<: *STANDARD_TEST_JOB
       env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
     - <<: *STANDARD_TEST_JOB
@@ -123,14 +116,15 @@ jobs:
     - <<: *STANDARD_TEST_JOB
       env: MODULE='hadoop-parent/janusgraph-hadoop-2' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dhbase.profile -Phbase2'
     - <<: *STANDARD_TEST_JOB
-      env: MODULE='cql' ARGS='-Dtest=**/diskstorage/cql/* -Dtest.skip.murmur=true'
+      env: MODULE='cql' ARGS='-Pcassandra2-byteordered -Dtest=**/diskstorage/cql/*'
     - <<: *STANDARD_TEST_JOB
-      env: MODULE='cql' ARGS='-Dtest=**/diskstorage/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
+      env: MODULE='cql' ARGS='-Pcassandra2-murmur -Dtest=**/diskstorage/cql/*'
     - <<: *STANDARD_TEST_JOB
-      env: MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.murmur=true'
+      env: MODULE='cql' ARGS='-Pcassandra2-murmur-ssl -Dtest=**/diskstorage/cql/CQLStoreTest.java'
     - <<: *STANDARD_TEST_JOB
-      env: MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
-    
+      env: MODULE='cql' ARGS='-Pcassandra2-byteordered -Dtest=**/graphdb/cql/*'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cql' ARGS='-Pcassandra2-murmur -Dtest=**/graphdb/cql/*'
     - <<: *FULL_BUILD_JOB
       env: MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='3.11.0' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false'
     - <<: *FULL_BUILD_JOB
@@ -211,10 +205,10 @@ jobs:
         - echo "Build documentation";
           sudo "$GOPATH/bin/structor" -o janusgraph -r janusgraph \
             --force-edit-url \
-            --rqts-url="https://raw.githubusercontent.com/janusgraph/janusgraph/v0.3/requirements.txt"
-            --dockerfile-url="https://raw.githubusercontent.com/janusgraph/janusgraph/v0.3/docs.Dockerfile" \
-            --menu.js-url="https://raw.githubusercontent.com/janusgraph/janusgraph/v0.3/docs/theme/structor-menu.js.gotmpl" \
-            --exp-branch=v0.3 --debug;
+            --rqts-url="https://raw.githubusercontent.com/janusgraph/janusgraph/master/requirements.txt"
+            --dockerfile-url="https://raw.githubusercontent.com/janusgraph/janusgraph/master/docs.Dockerfile" \
+            --menu.js-url="https://raw.githubusercontent.com/janusgraph/janusgraph/master/docs/theme/structor-menu.js.gotmpl" \
+            --exp-branch=master --debug;
           sudo chown -R $UID site;
       deploy:
         provider: pages
