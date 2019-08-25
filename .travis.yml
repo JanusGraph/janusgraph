@@ -48,8 +48,7 @@ x-template:
   stage: test
   install: travis_wait mvn clean install --projects janusgraph-${MODULE} --also-make -DskipTests=true
     -Dmaven.javadoc.skip=true --batch-mode --show-version ${INSTALL_ARGS};
-  script: travis_retry travis_wait 50 mvn clean verify --projects janusgraph-${MODULE} -Pcoverage ${ARGS};
-  after_success: bash <(curl -s https://codecov.io/bash);
+  script: travis_wait 50 mvn verify --projects janusgraph-${MODULE} ${ARGS};
   if: type = cron OR commit_message =~ /\[full build\]/
 
 x-template:
@@ -57,8 +56,16 @@ x-template:
   stage: test
   install: travis_wait mvn clean install --projects janusgraph-${MODULE} --also-make -DskipTests=true 
     -Dmaven.javadoc.skip=true --batch-mode --show-version ${INSTALL_ARGS};
-  script: travis_retry travis_wait 50 mvn clean verify --projects janusgraph-${MODULE} -Pcoverage ${ARGS};
+  script: travis_wait 50 mvn verify --projects janusgraph-${MODULE} -Pcoverage ${ARGS};
   after_success: bash <(curl -s https://codecov.io/bash);
+  if: commit_message !~ /\[doc only\]/
+
+x-template:
+  &TINKERPOP_TEST_JOB
+  stage: test
+  install: travis_wait mvn clean install --projects janusgraph-${MODULE} --also-make -DskipTests=true 
+    -Dmaven.javadoc.skip=true --batch-mode --show-version ${INSTALL_ARGS};
+  script: travis_wait 50 mvn verify --projects janusgraph-${MODULE} -Dtest.skip.tp=false -DskipTests=true ${ARGS};
   if: commit_message !~ /\[doc only\]/
 
 jobs:
@@ -78,9 +85,9 @@ jobs:
     - <<: *STANDARD_TEST_JOB
       env: MODULE='berkeleyje'
     - <<: *STANDARD_TEST_JOB
-      env: MODULE='test' ARGS='-Dtest.skip.tp=false'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='test' ARGS='-Dtest.skip.tp=false -DskipTests=true'
+      env: MODULE='test'
+    - <<: *TINKERPOP_TEST_JOB
+      env: MODULE='test' TINKERPOP_TESTS_ONLY=true
     - <<: *STANDARD_TEST_JOB
       env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
     - <<: *STANDARD_TEST_JOB
@@ -125,6 +132,7 @@ jobs:
       env: MODULE='cql' ARGS='-Pcassandra2-byteordered -Dtest=**/graphdb/cql/*'
     - <<: *STANDARD_TEST_JOB
       env: MODULE='cql' ARGS='-Pcassandra2-murmur -Dtest=**/graphdb/cql/*'
+
     - <<: *FULL_BUILD_JOB
       env: MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='3.11.0' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false'
     - <<: *FULL_BUILD_JOB
