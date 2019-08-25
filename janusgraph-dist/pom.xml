@@ -31,6 +31,7 @@
 
         <skipDefaultDistroIT>${it.skip}</skipDefaultDistroIT>
         <docker.maven.version>0.4.13</docker.maven.version>
+        <doc.dir>${project.parent.basedir}/docs</doc.dir>
     </properties>
 
     <modules>
