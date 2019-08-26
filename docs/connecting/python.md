@@ -33,9 +33,9 @@ from gremlin_python.driver.driver_remote_connection import DriverRemoteConnectio
 ```python
 graph = Graph()
 connection = DriverRemoteConnection('ws://localhost:8182/gremlin', 'g')
-// The connection should be closed on shut down to close open connections with connection.close()
+# The connection should be closed on shut down to close open connections with connection.close()
 g = graph.traversal().withRemote(connection)
-// Reuse 'g' across the application
+# Reuse 'g' across the application
 ```
 
 3.  Execute a simple traversal:
