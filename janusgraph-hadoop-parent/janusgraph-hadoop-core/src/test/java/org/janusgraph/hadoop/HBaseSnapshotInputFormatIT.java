@@ -111,7 +111,7 @@ public class HBaseSnapshotInputFormatIT extends AbstractInputFormatIT {
         graph.tx().commit();
 
         assertEquals(numV, (long) graph.traversal().V().count().next());
-        Map<String, Object> propertiesOnVertex = graph.traversal().V().valueMap().next();
+        Map<Object, Object> propertiesOnVertex = graph.traversal().V().valueMap().next();
         List<?> valuesOnP = (List) propertiesOnVertex.values().iterator().next();
         assertEquals(numProps, valuesOnP.size());
         for (int i = 0; i < numProps; i++) {
@@ -139,7 +139,7 @@ public class HBaseSnapshotInputFormatIT extends AbstractInputFormatIT {
         // Add a self-loop on sky with edge label "lives"; it's nonsense, but at least it needs no
         // schema changes
         JanusGraphVertex sky =
-                (JanusGraphVertex) graph.query().has("name", "sky").vertices().iterator().next();
+            graph.query().has("name", "sky").vertices().iterator().next();
         assertNotNull(sky);
         assertEquals("sky", sky.value("name"));
         assertEquals(1L, sky.query().direction(Direction.IN).edgeCount());

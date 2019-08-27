@@ -3,13 +3,13 @@
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph-dist</artifactId>
-        <version>0.4.0-SNAPSHOT</version>
+        <version>0.5.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
     <artifactId>janusgraph-dist-hadoop-2</artifactId>
     <name>JanusGraph-Dist: Archive with Hadoop 2</name>
-    <url>http://janusgraph.org</url>
+    <url>https://janusgraph.org</url>
 
     <properties>
         <hadoop.version.tag>hadoop2</hadoop.version.tag>
@@ -51,11 +51,6 @@
     <profiles>
         <profile>
             <id>hbase1</id>
-            <activation>
-                <property>
-                    <name>!hbase.profile</name>
-                </property>
-            </activation>
             <dependencies>
                 <dependency>
                     <groupId>org.apache.hbase</groupId>
@@ -72,6 +67,11 @@
         </profile>
         <profile>
             <id>hbase2</id>
+            <activation>
+                <property>
+                    <name>!hbase.profile</name>
+                </property>
+            </activation>
             <dependencies>
                 <dependency>
                     <groupId>org.apache.hbase</groupId>

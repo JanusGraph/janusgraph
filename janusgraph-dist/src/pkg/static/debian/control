@@ -3,7 +3,7 @@ Section: misc
 Priority: extra
 Maintainer: Dan LaRocque <dalaro@hopcount.org>
 Build-Depends: debhelper (>= 7), openjdk-8-jdk | java8-sdk, maven
-Homepage: http://janusgraph.org
+Homepage: https://janusgraph.org
 Vcs-Git: https://github.com/JanusGraph/janusgraph.git
 Vcs-Browser: https://github.com/JanusGraph/janusgraph
 Standards-Version: 3.9.4

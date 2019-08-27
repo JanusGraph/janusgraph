@@ -3,12 +3,12 @@
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.4.0-SNAPSHOT</version>
+        <version>0.5.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-all</artifactId>
     <name>JanusGraph-All: Complete JanusGraph Distribution</name>
-    <url>http://janusgraph.org</url>
+    <url>https://janusgraph.org</url>
 
     <!--
       This project depends on the rest of JanusGraph, so Maven users and
@@ -94,7 +94,7 @@
              Without these dependencies, janusgraph-all users can end up with
              1.9 + 1.8 jars together, and this leads to linkage errors.
              It might be a better idea to dependencyManagement imports if your Maven version supports it:
-             http://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Importing_Dependencies -->
+             https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Importing_Dependencies -->
         <!-- Jackson 1.x -->
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
@@ -176,11 +176,6 @@
     <profiles>
         <profile>
             <id>hbase1</id>
-            <activation>
-                <property>
-                    <name>!hbase.profile</name>
-                </property>
-            </activation>
             <dependencies>
                 <dependency>
                     <groupId>org.apache.hbase</groupId>
@@ -196,6 +191,11 @@
         </profile>
         <profile>
             <id>hbase2</id>
+            <activation>
+                <property>
+                    <name>!hbase.profile</name>
+                </property>
+            </activation>
             <dependencies>
                 <dependency>
                     <groupId>org.apache.hbase</groupId>

@@ -48,7 +48,6 @@ import org.janusgraph.graphdb.types.SchemaSource;
 import org.janusgraph.graphdb.types.indextype.IndexTypeWrapper;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.util.system.BackgroundThread;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +56,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -282,7 +282,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
         @Override
         public int hashCode() {
-            return new HashCodeBuilder().append(elementId).append(indexId).toHashCode();
+            return Objects.hash(elementId, indexId);
         }
 
         @Override

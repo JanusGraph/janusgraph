@@ -32,7 +32,7 @@ import java.util.Map;
  * <p>
  * In this generic representation keys, columns and values are represented as ByteBuffers.
  * <p>
- * See <a href="http://en.wikipedia.org/wiki/BigTable">http://en.wikipedia.org/wiki/BigTable</a>
+ * See <a href="https://en.wikipedia.org/wiki/BigTable">https://en.wikipedia.org/wiki/BigTable</a>
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */

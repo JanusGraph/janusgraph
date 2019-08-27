@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.es;
 
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 import static org.janusgraph.diskstorage.es.ElasticSearchIndex.BULK_REFRESH;
@@ -58,9 +57,6 @@ public class JanusGraphElasticsearchContainer extends ElasticsearchContainer {
         withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m");
         if (getEsMajorVersion().value == 5) {
             withEnv("script.max_compilations_per_minute", "30");
-        }
-        if (getEsMajorVersion().value < 5) {
-            withClasspathResourceMapping("elasticsearch-old.yml", "/usr/share/elasticsearch/config/elasticsearch.yml", BindMode.READ_ONLY);
         }
 
         if(bindToDefaultPort){

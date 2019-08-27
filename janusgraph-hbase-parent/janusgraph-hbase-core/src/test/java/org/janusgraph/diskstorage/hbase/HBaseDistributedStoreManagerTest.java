@@ -18,9 +18,7 @@ import java.io.IOException;
 
 import org.janusgraph.diskstorage.BackendException;
 
-import org.apache.hadoop.hbase.util.VersionInfo;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.janusgraph.HBaseStorageSetup;
@@ -32,13 +30,6 @@ public class HBaseDistributedStoreManagerTest extends DistributedStoreManagerTes
     @BeforeAll
     public static void startHBase() throws IOException {
         HBaseStorageSetup.startHBase();
-    }
-
-    @AfterAll
-    public static void stopHBase() {
-        // Workaround for https://issues.apache.org/jira/browse/HBASE-10312
-        if (VersionInfo.getVersion().startsWith("0.96"))
-            HBaseStorageSetup.killIfRunning();
     }
 
     @BeforeEach

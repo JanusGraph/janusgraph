@@ -14,24 +14,30 @@
 
 package org.janusgraph.graphdb.cql;
 
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
-import static org.junit.jupiter.api.Assertions.*;
-
+import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.diskstorage.cql.CassandraStorageSetup;
-import org.janusgraph.graphdb.CassandraGraphTest;
+import org.janusgraph.graphdb.JanusGraphTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.JanusGraphConstants;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
-public class CQLGraphTest extends CassandraGraphTest {
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+@Testcontainers
+public class CQLGraphTest extends JanusGraphTest {
+    @Container
+    public static final JanusGraphCassandraContainer cqlContainer = new JanusGraphCassandraContainer();
 
     @Override
     public WriteConfiguration getConfiguration() {
-        return CassandraStorageSetup.getCQLConfiguration(getClass().getSimpleName()).getConfiguration();
+        return cqlContainer.getConfiguration(getClass().getSimpleName()).getConfiguration();
     }
 
     @Test
@@ -54,5 +60,82 @@ public class CQLGraphTest extends CassandraGraphTest {
                         GraphDatabaseConfiguration.TITAN_COMPATIBLE_VERSIONS.getDatatype())));
 
         graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
+    }
+
+    @Test
+    public void testHasTTL() {
+        assertTrue(features.hasCellTTL());
+    }
+
+    @Test
+    public void testStorageVersionSet() {
+        close();
+        WriteConfiguration wc = getConfiguration();
+        assertNull(wc.get(ConfigElement.getPath(GraphDatabaseConfiguration.INITIAL_STORAGE_VERSION),
+            GraphDatabaseConfiguration.INITIAL_STORAGE_VERSION.getDatatype()));
+        wc.set(ConfigElement.getPath(GraphDatabaseConfiguration.INITIAL_STORAGE_VERSION), JanusGraphConstants.STORAGE_VERSION);
+        graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
+        mgmt = graph.openManagement();
+        assertEquals(JanusGraphConstants.STORAGE_VERSION, (mgmt.get("graph.storage-version")));
+        mgmt.rollback();
+    }
+
+    @Test
+    public void testGraphConfigUsedByThreadBoundTx() {
+        close();
+        WriteConfiguration wc = getConfiguration();
+        wc.set(ConfigElement.getPath(READ_CONSISTENCY), "ALL");
+        wc.set(ConfigElement.getPath(WRITE_CONSISTENCY), "LOCAL_QUORUM");
+
+        graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
+
+        StandardJanusGraphTx tx = (StandardJanusGraphTx)graph.getCurrentThreadTx();
+        assertEquals("ALL",
+            tx.getTxHandle().getBaseTransactionConfig().getCustomOptions()
+                .get(READ_CONSISTENCY));
+        assertEquals("LOCAL_QUORUM",
+            tx.getTxHandle().getBaseTransactionConfig().getCustomOptions()
+                .get(WRITE_CONSISTENCY));
+    }
+
+    @Test
+    public void testGraphConfigUsedByTx() {
+        close();
+        WriteConfiguration wc = getConfiguration();
+        wc.set(ConfigElement.getPath(READ_CONSISTENCY), "TWO");
+        wc.set(ConfigElement.getPath(WRITE_CONSISTENCY), "THREE");
+
+        graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
+
+        StandardJanusGraphTx tx = (StandardJanusGraphTx)graph.newTransaction();
+        assertEquals("TWO",
+            tx.getTxHandle().getBaseTransactionConfig().getCustomOptions()
+                .get(READ_CONSISTENCY));
+        assertEquals("THREE",
+            tx.getTxHandle().getBaseTransactionConfig().getCustomOptions()
+                .get(WRITE_CONSISTENCY));
+        tx.rollback();
+    }
+
+    @Test
+    public void testCustomConfigUsedByTx() {
+        close();
+        WriteConfiguration wc = getConfiguration();
+        wc.set(ConfigElement.getPath(READ_CONSISTENCY), "ALL");
+        wc.set(ConfigElement.getPath(WRITE_CONSISTENCY), "ALL");
+
+        graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
+
+        StandardJanusGraphTx tx = (StandardJanusGraphTx)graph.buildTransaction()
+            .customOption(ConfigElement.getPath(READ_CONSISTENCY), "ONE")
+            .customOption(ConfigElement.getPath(WRITE_CONSISTENCY), "TWO").start();
+
+        assertEquals("ONE",
+            tx.getTxHandle().getBaseTransactionConfig().getCustomOptions()
+                .get(READ_CONSISTENCY));
+        assertEquals("TWO",
+            tx.getTxHandle().getBaseTransactionConfig().getCustomOptions()
+                .get(WRITE_CONSISTENCY));
+        tx.rollback();
     }
 }

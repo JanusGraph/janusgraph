@@ -14,10 +14,12 @@
 
 package org.janusgraph.graphdb.query.condition;
 
+import org.janusgraph.core.JanusGraphElement;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.janusgraph.core.JanusGraphElement;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import java.util.Objects;
 
 /**
  * Negates the wrapped condition, i.e. semantic NOT
@@ -64,7 +66,7 @@ public class Not<E extends JanusGraphElement> implements Condition<E> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(getType()).append(condition).toHashCode();
+        return Objects.hash(getType(), condition);
     }
 
     @Override

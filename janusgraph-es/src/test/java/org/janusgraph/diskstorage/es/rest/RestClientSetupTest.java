@@ -118,7 +118,7 @@ public class RestClientSetupTest {
         doReturn(restClientBuilderMock).
             when(restClientSetup).getRestClientBuilder(any());
         doReturn(restElasticSearchClientMock).when(restClientSetup).
-            getElasticSearchClient(any(RestClient.class), anyInt());
+            getElasticSearchClient(any(RestClient.class), anyInt(), anyBoolean());
 
         return restClientSetup.connect(config.restrictTo(INDEX_NAME));
     }
@@ -149,7 +149,7 @@ public class RestClientSetupTest {
         assertEquals(SCHEME_HTTP, host0.getSchemeName());
         assertEquals(ElasticSearchIndex.HOST_PORT_DEFAULT, host0.getPort());
 
-        verify(restClientSetup).getElasticSearchClient(same(restClientMock), scrollKACaptor.capture());
+        verify(restClientSetup).getElasticSearchClient(same(restClientMock), scrollKACaptor.capture(), anyBoolean());
         assertEquals(ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE.getDefaultValue().intValue(),
                 scrollKACaptor.getValue().intValue());
 
@@ -175,7 +175,7 @@ public class RestClientSetupTest {
         assertEquals(SCHEME_HTTP, host1.getSchemeName());
         assertEquals(ElasticSearchIndex.HOST_PORT_DEFAULT, host1.getPort());
 
-        verify(restClientSetup).getElasticSearchClient(same(restClientMock), scrollKACaptor.capture());
+        verify(restClientSetup).getElasticSearchClient(same(restClientMock), scrollKACaptor.capture(), anyBoolean());
         assertEquals(ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE.getDefaultValue().intValue(),
                 scrollKACaptor.getValue().intValue());
 
@@ -189,7 +189,7 @@ public class RestClientSetupTest {
                 put("index." + INDEX_NAME + ".hostname", ES_HOST_01).
                 put("index." + INDEX_NAME + ".port", String.valueOf(ES_PORT)).
                 put("index." + INDEX_NAME + ".elasticsearch.scroll-keep-alive", String.valueOf(ES_SCROLL_KA)).
-                put("index." + INDEX_NAME + ".elasticsearch.bulk-refresh", String.valueOf(ES_BULK_REFRESH)).
+                put("index." + INDEX_NAME + ".elasticsearch.bulk-refresh", ES_BULK_REFRESH).
                 build());
 
         assertNotNull(hostsConfigured);
@@ -200,7 +200,7 @@ public class RestClientSetupTest {
         assertEquals(SCHEME_HTTP, host0.getSchemeName());
         assertEquals(ES_PORT, host0.getPort());
 
-        verify(restClientSetup).getElasticSearchClient(same(restClientMock), scrollKACaptor.capture());
+        verify(restClientSetup).getElasticSearchClient(same(restClientMock), scrollKACaptor.capture(), anyBoolean());
         assertEquals(ES_SCROLL_KA,
                 scrollKACaptor.getValue().intValue());
 
@@ -223,7 +223,7 @@ public class RestClientSetupTest {
         assertEquals(SCHEME_HTTPS, host0.getSchemeName());
         assertEquals(ElasticSearchIndex.HOST_PORT_DEFAULT, host0.getPort());
 
-        verify(restClientSetup).getElasticSearchClient(same(restClientMock), scrollKACaptor.capture());
+        verify(restClientSetup).getElasticSearchClient(same(restClientMock), scrollKACaptor.capture(), anyBoolean());
         assertEquals(ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE.getDefaultValue().intValue(),
                 scrollKACaptor.getValue().intValue());
 

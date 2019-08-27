@@ -14,16 +14,20 @@
 
 package org.janusgraph.graphdb.query.condition;
 
-import com.google.common.base.Preconditions;
-import org.janusgraph.core.*;
+import org.janusgraph.core.JanusGraphElement;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.RelationType;
 import org.janusgraph.graphdb.internal.InternalElement;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.util.ElementHelper;
+
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import com.google.common.base.Preconditions;
 
 import java.util.Iterator;
+import java.util.Objects;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -90,7 +94,7 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(getType()).append(key).append(predicate).append(value).toHashCode();
+        return Objects.hash(getType(), key, predicate, value);
     }
 
     @Override
@@ -107,7 +111,7 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
 
     @Override
     public String toString() {
-        return key.toString() + " " + predicate.toString() + " " + String.valueOf(value);
+        return key.toString() + " " + predicate.toString() + " " + value;
     }
 
     public static <K, E extends JanusGraphElement> PredicateCondition<K, E> of(K key, JanusGraphPredicate janusgraphPredicate, Object condition) {

@@ -17,8 +17,8 @@ set -e
 set -u
 
 echo "Installing public package signing keys with apt-key"
-for u in 'http://packages.elasticsearch.org/GPG-KEY-elasticsearch' \
-         'http://aureliuspkg.s3.amazonaws.com/keys/aurelius.asc' ; do
+for u in 'https://packages.elasticsearch.org/GPG-KEY-elasticsearch' \
+         'https://aureliuspkg.s3.amazonaws.com/keys/aurelius.asc' ; do
     echo "Downloading key from $u"
     rpm --import $u
 done
@@ -32,12 +32,12 @@ name=Aurelius RPMs
 baseurl=http://aureliuspkg.s3.amazonaws.com/rpm
 enabled=1
 gpgcheck=1
-gpgkey=http://aureliuspkg.s3.amazonaws.com/keys/aurelius.asc
+gpgkey=https://aureliuspkg.s3.amazonaws.com/keys/aurelius.asc
 EOF
 cat > "$SOURCES_D"/datastax.repo <<EOF
 [datastax]
 name=DataStax Repo for Apache Cassandra
-baseurl=http://rpm.datastax.com/community
+baseurl=https://rpm.datastax.com/community
 enabled=1
 gpgcheck=0
 EOF
@@ -47,7 +47,7 @@ name=Elasticsearch repository for 1.0.x packages
 baseurl=http://packages.elasticsearch.org/elasticsearch/1.0/centos
 enabled=1
 gpgcheck=1
-gpgkey=http://packages.elasticsearch.org/GPG-KEY-elasticsearch
+gpgkey=https://packages.elasticsearch.org/GPG-KEY-elasticsearch
 EOF
 
 echo "Installing Cassandra, ES, and JanusGraph with yum"

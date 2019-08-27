@@ -71,7 +71,8 @@ public class RestClientSetup {
 
         final int scrollKeepAlive = config.get(ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE);
         Preconditions.checkArgument(scrollKeepAlive >= 1, "Scroll keep-alive should be greater than or equal to 1");
-        final RestElasticSearchClient client = getElasticSearchClient(rc, scrollKeepAlive);
+        final boolean useMappingTypesForES7 = config.get(ElasticSearchIndex.USE_MAPPING_FOR_ES7);
+        final RestElasticSearchClient client = getElasticSearchClient(rc, scrollKeepAlive, useMappingTypesForES7);
         if (config.has(ElasticSearchIndex.BULK_REFRESH)) {
             client.setBulkRefresh(config.get(ElasticSearchIndex.BULK_REFRESH));
         }
@@ -92,10 +93,6 @@ public class RestClientSetup {
             restClientBuilder.setRequestConfigCallback(requestConfigCallback);
         }
 
-        if (config.has(ElasticSearchIndex.MAX_RETRY_TIMEOUT)) {
-            restClientBuilder.setMaxRetryTimeoutMillis(config.get(ElasticSearchIndex.MAX_RETRY_TIMEOUT));
-        }
-
         return restClientBuilder.build();
     }
 
@@ -103,8 +100,8 @@ public class RestClientSetup {
         return RestClient.builder(hosts);
     }
 
-    protected RestElasticSearchClient getElasticSearchClient(RestClient rc, int scrollKeepAlive) {
-        return new RestElasticSearchClient(rc, scrollKeepAlive);
+    protected RestElasticSearchClient getElasticSearchClient(RestClient rc, int scrollKeepAlive, boolean useMappingTypesForES7) {
+        return new RestElasticSearchClient(rc, scrollKeepAlive, useMappingTypesForES7);
     }
 
     /**

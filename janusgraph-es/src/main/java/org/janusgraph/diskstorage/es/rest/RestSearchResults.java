@@ -22,20 +22,10 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class RestSearchResults {
 
-    private Long total;
-
     @JsonProperty("max_score")
     private Float maxScore;
 
     private List<RestSearchHit> hits;
-
-    public Long getTotal() {
-        return total;
-    }
-
-    public void setTotal(Long total) {
-        this.total = total;
-    }
 
     public Float getMaxScore() {
         return maxScore;

@@ -15,7 +15,7 @@
 
 # Returns the absolute path of this script regardless of symlinks
 abs_path() {
-    # From: http://stackoverflow.com/a/246128
+    # From: https://stackoverflow.com/a/246128
     #   - To resolve finding the directory after symlinks
     SOURCE="${BASH_SOURCE[0]}"
     while [ -h "$SOURCE" ]; do
@@ -142,6 +142,8 @@ wait_for_shutdown() {
 }
 
 start() {
+    mkdir -p "$BIN"/../db
+
     status_class $CASSANDRA_FRIENDLY_NAME $CASSANDRA_CLASS_NAME >/dev/null && status && echo "Stop services before starting" && exit 1
     echo "Forking Cassandra..."
     if [ -n "$VERBOSE" ]; then

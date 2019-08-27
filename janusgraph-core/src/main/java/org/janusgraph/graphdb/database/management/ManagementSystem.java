@@ -14,114 +14,63 @@
 
 package org.janusgraph.graphdb.database.management;
 
-import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.Connection;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.Multiplicity;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.core.schema.EdgeLabelMaker;
-import org.janusgraph.core.schema.Index;
-import org.janusgraph.core.schema.JanusGraphConfiguration;
-import org.janusgraph.core.schema.JanusGraphIndex;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.core.schema.JanusGraphSchemaElement;
-import org.janusgraph.core.schema.JanusGraphSchemaType;
-import org.janusgraph.core.schema.JobStatus;
-import org.janusgraph.core.schema.Parameter;
-import org.janusgraph.core.schema.PropertyKeyMaker;
-import org.janusgraph.core.schema.RelationTypeIndex;
-import org.janusgraph.core.schema.SchemaAction;
-import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.core.schema.VertexLabelMaker;
-import org.janusgraph.core.VertexLabel;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_NS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
+import static org.janusgraph.graphdb.database.management.RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
+
+import org.janusgraph.core.*;
+import org.janusgraph.core.schema.*;
 import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.configuration.*;
 import org.janusgraph.diskstorage.configuration.backend.KCVSConfiguration;
-import org.janusgraph.diskstorage.configuration.BasicConfiguration;
-import org.janusgraph.diskstorage.configuration.ConfigOption;
-import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.janusgraph.diskstorage.configuration.TransactionalConfiguration;
-import org.janusgraph.diskstorage.configuration.UserModifiableConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScanner;
 import org.janusgraph.diskstorage.log.Log;
-import org.janusgraph.graphdb.database.cache.SchemaCache;
 import org.janusgraph.graphdb.database.IndexSerializer;
-import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.internal.ElementCategory;
-import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
-import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.graphdb.internal.Token;
+import org.janusgraph.graphdb.database.cache.SchemaCache;
+import org.janusgraph.graphdb.database.serialize.DataOutput;
+import org.janusgraph.graphdb.internal.*;
+import org.janusgraph.graphdb.olap.VertexJobConverter;
 import org.janusgraph.graphdb.olap.job.IndexRemoveJob;
 import org.janusgraph.graphdb.olap.job.IndexRepairJob;
-import org.janusgraph.graphdb.olap.VertexJobConverter;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.types.CompositeIndexType;
-import org.janusgraph.graphdb.types.IndexField;
-import org.janusgraph.graphdb.types.IndexType;
+import org.janusgraph.graphdb.types.*;
 import org.janusgraph.graphdb.types.indextype.IndexTypeWrapper;
-import org.janusgraph.graphdb.types.MixedIndexType;
-import org.janusgraph.graphdb.types.ParameterIndexField;
-import org.janusgraph.graphdb.types.ParameterType;
-import org.janusgraph.graphdb.types.SchemaSource;
-import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
-import org.janusgraph.graphdb.types.StandardPropertyKeyMaker;
-import org.janusgraph.graphdb.types.StandardRelationTypeMaker;
-import org.janusgraph.graphdb.types.TypeDefinitionCategory;
-import org.janusgraph.graphdb.types.TypeDefinitionDescription;
-import org.janusgraph.graphdb.types.TypeDefinitionMap;
-import org.janusgraph.graphdb.types.VertexLabelVertex;
 import org.janusgraph.graphdb.types.system.BaseKey;
 import org.janusgraph.graphdb.types.system.SystemTypeManager;
 import org.janusgraph.graphdb.types.vertices.EdgeLabelVertex;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.graphdb.types.vertices.PropertyKeyVertex;
 import org.janusgraph.graphdb.types.vertices.RelationTypeVertex;
-import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.apache.commons.lang.StringUtils;
+
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import javax.annotation.Nullable;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-import java.lang.StringBuilder;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
-import static org.janusgraph.graphdb.database.management.RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -1044,7 +993,7 @@ public class ManagementSystem implements JanusGraphManagement {
 
         @Override
         public int hashCode() {
-            return Long.valueOf(schemaVertexId).hashCode();
+            return Long.hashCode(schemaVertexId);
         }
 
         @Override
@@ -1143,7 +1092,7 @@ public class ManagementSystem implements JanusGraphManagement {
             if (index instanceof RelationTypeIndex) relationTypeName = ((RelationTypeIndex) index).getType().name();
             else relationTypeName = null;
             Preconditions.checkArgument(StringUtils.isNotBlank(indexName));
-            hashcode = new HashCodeBuilder().append(indexName).append(relationTypeName).toHashCode();
+            hashcode = Objects.hash(indexName, relationTypeName);
         }
 
         private Index retrieve(ManagementSystem management) {

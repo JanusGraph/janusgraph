@@ -14,20 +14,21 @@
 
 package org.janusgraph.blueprints.cql;
 
+import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.blueprints.AbstractJanusGraphProvider;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.janusgraph.diskstorage.cql.CassandraStorageSetup;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
  * @author Ted Wilmes (twilmes@gmail.com)
  */
 public class CQLMultiQueryGraphProvider extends AbstractJanusGraphProvider {
+    public static final JanusGraphCassandraContainer cqlContainer = new JanusGraphCassandraContainer();
 
     @Override
     public ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test, String testMethodName) {
-        CassandraStorageSetup.startCleanEmbedded();
-        return CassandraStorageSetup.getCQLConfiguration(graphName)
+        cqlContainer.start();
+        return cqlContainer.getConfiguration(graphName)
             .set(GraphDatabaseConfiguration.USE_MULTIQUERY, true);
     }
 

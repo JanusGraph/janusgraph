@@ -44,18 +44,17 @@ import java.util.*;
  */
 public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements HasStepFolder<Element, E>, Profiling, MultiQueriable<Element,E> {
 
+    private boolean initialized = false;
+    private boolean useMultiQuery = false;
+    private Map<JanusGraphVertex, Iterable<? extends JanusGraphProperty>> multiQueryResults = null;
+    private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
+
     public JanusGraphPropertiesStep(PropertiesStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnType(), originalStep.getPropertyKeys());
         originalStep.getLabels().forEach(this::addLabel);
         this.hasContainers = new ArrayList<>();
         this.limit = Query.NO_LIMIT;
     }
-
-    private boolean initialized = false;
-    private boolean useMultiQuery = false;
-    private Map<JanusGraphVertex, Iterable<? extends JanusGraphProperty>> multiQueryResults = null;
-    private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
-
 
     @Override
     public void setUseMultiQuery(boolean useMultiQuery) {
@@ -82,7 +81,6 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
         return (Iterator<E>) Iterators.transform(iterable.iterator(), Property::value);
     }
 
-    @SuppressWarnings("deprecation")
     private void initialize() {
         assert !initialized;
         initialized = true;
@@ -97,12 +95,28 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
         useMultiQuery = useMultiQuery && elements.stream().allMatch(e -> e.get() instanceof Vertex);
 
         if (useMultiQuery) {
-            final JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
-            elements.forEach(e -> multiQuery.addVertex((Vertex) e.get()));
-            makeQuery(multiQuery);
-
-            multiQueryResults = multiQuery.properties();
+            initializeMultiQuery(elements);
         }
+    }
+
+    /**
+     * This initialisation method is called the first time this instance is used and also when
+     * an attempt to retrieve a vertex from the cached multiQuery results doesn't find an entry.
+     * @param vertices A list of vertices with which to initialise the multiQuery
+     */
+    private void initializeMultiQuery(final List<Traverser.Admin<Element>> list) {
+        assert list.size() > 0;
+        final JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
+        list.forEach(v -> multiQuery.addVertex((Vertex)v.get()));
+        makeQuery(multiQuery);
+
+        Map<JanusGraphVertex, Iterable<? extends JanusGraphProperty>> results = multiQuery.properties();
+        if (multiQueryResults == null) {
+            multiQueryResults = results;
+        } else {
+            multiQueryResults.putAll(results);
+        }
+        initialized = true;
     }
 
     @Override
@@ -114,7 +128,9 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     @Override
     protected Iterator<E> flatMap(final Traverser.Admin<Element> traverser) {
         if (useMultiQuery) { //it is guaranteed that all elements are vertices
-            assert multiQueryResults != null;
+            if (multiQueryResults == null || !multiQueryResults.containsKey(traverser.get())) {
+                initializeMultiQuery(Arrays.asList(traverser));
+            }
             return convertIterator(multiQueryResults.get(traverser.get()));
         } else if (traverser.get() instanceof JanusGraphVertex || traverser.get() instanceof WrappedVertex) {
             final JanusGraphVertexQuery query = makeQuery((JanusGraphTraversalUtil.getJanusGraphVertex(traverser)).query());

@@ -1,5 +1,4 @@
-Building JanusGraph
---------------
+# Building JanusGraph
 
 Required:
 
@@ -59,6 +58,8 @@ mvn docker:build -Pjanusgraph-docker -pl janusgraph-dist
 docker-compose -f janusgraph-dist/janusgraph-dist-hadoop-2/docker-compose.yml up
 ```
 
+If you are building the Docker image behind a proxy please set an environment variable for either http_proxy or https_proxy accordingly.
+
 Note the above `docker-compose` call launches containers in the foreground and is convenient for monitoring logs but add "-d" to instead run in the background.
 
 To connect to the server in the same container on the console:
@@ -99,3 +100,24 @@ To find the Java binary in your environment, run the appropriate command for you
 * Linux/macOS: `which java`
 * Windows: `for %i in (java.exe) do @echo. %~$PATH:i`
 
+## Building documentation
+
+
+### Updating documentation
+You have check in the actual version of configuration reference. Therefore, you have to run following command:
+
+```bash
+mvn --quiet clean install -DskipTests=true -pl janusgraph-doc -am
+```
+
+### Required dependencies to build the documentation
+MkDocs need to be installed to build and serve the documentation locally.
+
+1. Install `python3` and `pip3` (newest version of pip) 
+    * You can also checkout the installation guide of [material-mkdocs](https://squidfunk.github.io/mkdocs-material/getting-started/)
+2. Install requirements using `pip3 install -r requirements.txt`
+
+### Build and serve documentation
+
+1. To create a test build locally use command `mkdocs build`
+2. To serve the documentation locally use command `mkdocs serve`

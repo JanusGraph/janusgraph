@@ -3,13 +3,13 @@
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.4.0-SNAPSHOT</version>
+        <version>0.5.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-hadoop-parent</artifactId>
     <name>JanusGraph-Hadoop: Parent Module</name>
     <packaging>pom</packaging>
-    <url>http://janusgraph.org</url>
+    <url>https://janusgraph.org</url>
 
     <properties>
         <top.level.basedir>${project.parent.basedir}</top.level.basedir>
@@ -31,7 +31,7 @@
         <developer>
             <name>Marko A. Rodriguez</name>
             <email>marko@markorodriguez.com</email>
-            <url>http://markorodriguez.com</url>
+            <url>https://markorodriguez.com</url>
         </developer>
     </developers>
 
@@ -39,7 +39,7 @@
         <contributor>
             <name>Stephen Mallette</name>
             <email>spmva@genoprime.com</email>
-            <url>http://stephen.genoprime.com</url>
+            <url>https://stephen.genoprime.com</url>
         </contributor>
         <contributor>
             <name>Matthias Broecheler</name>
@@ -75,6 +75,10 @@
                     <groupId>com.fasterxml.jackson.module</groupId>
                     <artifactId>jackson-module-scala_2.11</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-compress</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -96,8 +100,40 @@
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-cassandra</artifactId>
+            <artifactId>janusgraph-cql</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
+            <classifier>tests</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-cql</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-compress</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.annotation</groupId>
+                    <artifactId>javax.annotation-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>cassandra</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -324,12 +360,17 @@
                             <configuration>
                                 <includes>
                                     <include>**/*Cassandra*IT.java</include>
+                                    <include>**/*Cql*IT.java</include>
                                 </includes>
                                 <excludes>
                                     <exclude>**/*Cassandra3*IT.java</exclude>
                                 </excludes>
                                 <skipTests>${skipCassandra}</skipTests>
                                 <reuseForks>false</reuseForks>
+                                <systemPropertyVariables>
+                                    <cassandra.docker.version>2.2.14</cassandra.docker.version>
+                                    <cassandra.docker.partitioner>murmur</cassandra.docker.partitioner>
+                                </systemPropertyVariables>
                                 <summaryFile>target/failsafe-reports/failsafe-janusgraph-cassandra.xml</summaryFile>
                                 <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
                             </configuration>
@@ -344,9 +385,14 @@
                             <configuration>
                                 <includes>
                                     <include>**/*Cassandra3*IT.java</include>
+                                    <include>**/*Cql*IT.java</include>
                                 </includes>
                                 <skipTests>${skipCassandra3}</skipTests>
                                 <reuseForks>false</reuseForks>
+                                <systemPropertyVariables>
+                                    <cassandra.docker.version>3.11.4</cassandra.docker.version>
+                                    <cassandra.docker.partitioner>murmur</cassandra.docker.partitioner>
+                                </systemPropertyVariables>
                                 <summaryFile>target/failsafe-reports/failsafe-janusgraph-cassandra3.xml</summaryFile>
                             </configuration>
                         </execution>

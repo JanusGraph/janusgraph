@@ -3,17 +3,15 @@
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.4.0-SNAPSHOT</version>
+        <version>0.5.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-solr</artifactId>
     <name>JanusGraph-Solr: Distributed Indexing Support</name>
-    <url>http://janusgraph.org</url>
+    <url>https://janusgraph.org</url>
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
         <solr7.test.version>7.0.0</solr7.test.version>
-        <solr6.test.version>6.6.1</solr6.test.version>
-        <solr5.test.version>5.5.4</solr5.test.version>
         <solr.test.version>${solr7.test.version}</solr.test.version>
         <skip.solr.test>${skipTests}</skip.solr.test>
     </properties>
@@ -44,13 +42,23 @@
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-cassandra</artifactId>
+            <artifactId>janusgraph-cql</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.ow2.asm</groupId>
+                    <artifactId>asm</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.ow2.asm</groupId>
+                    <artifactId>asm-commons</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-cassandra</artifactId>
+            <artifactId>janusgraph-cql</artifactId>
             <version>${project.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
@@ -141,6 +149,21 @@
             <version>1.13</version>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>cassandra</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- Logging backends.
              Enforce a classpath ordering constraint to ensure slf4j-log4j12
              binding appears on the classpath before logback-classic.
@@ -172,36 +195,12 @@
         </testResources>
         <plugins>
             <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>filter-cassandra-murmur-config</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/cassandra/conf/localhost-murmur</outputDirectory>
-                            <filters>
-                                <filter>${top.level.basedir}/janusgraph-cassandra/config/cassandra-filters/localhost-murmur.properties</filter>
-                            </filters>
-                            <resources>
-                                <resource>
-                                    <directory>${top.level.basedir}/janusgraph-cassandra/config/cassandra</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <executions>
                     <execution>
                         <id>default-test</id>
                         <configuration>
-                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
+                            <argLine>${default.test.jvm.opts}</argLine>
                             <skipTests>${skip.solr.test}</skipTests>
                         </configuration>
                     </execution>
@@ -214,18 +213,6 @@
             <id>solr7</id>
             <properties>
                 <solr.test.version>${solr7.test.version}</solr.test.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>solr6</id>
-            <properties>
-                <solr.test.version>${solr6.test.version}</solr.test.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>solr5</id>
-            <properties>
-                <solr.test.version>${solr5.test.version}</solr.test.version>
             </properties>
         </profile>
         <profile>
@@ -262,7 +249,7 @@
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
                             <skipITs>false</skipITs>
-                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
+                            <argLine>${default.test.jvm.opts}</argLine>
                             <includes>
                                 <include>**/org/janusgraph/diskstorage/solr/*.java</include>
                             </includes>

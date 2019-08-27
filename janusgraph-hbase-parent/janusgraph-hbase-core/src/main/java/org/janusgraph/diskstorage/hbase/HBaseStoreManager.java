@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
@@ -134,12 +135,12 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             " If this configuration option is not provided but graph.graphname is, the table will be set" +
             " to that value.",
             ConfigOption.Type.LOCAL, "janusgraph");
-    
+
     public static final ConfigOption<String> HBASE_SNAPSHOT =
             new ConfigOption<>(HBASE_NS, "snapshot-name",
             "The name of an exising HBase snapshot to be used by HBaseSnapshotInputFormat",
             ConfigOption.Type.LOCAL, "janusgraph-snapshot");
-    
+
     public static final ConfigOption<String> HBASE_SNAPSHOT_RESTORE_DIR =
             new ConfigOption<>(HBASE_NS, "snapshot-restore-dir",
             "The tempoary directory to be used by HBaseSnapshotInputFormat to restore a snapshot." +
@@ -427,7 +428,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
         // In case of an addition and deletion with identical timestamps, the
         // deletion tombstone wins.
-        // http://hbase.apache.org/book/versions.html#d244e4250
+        // https://hbase.apache.org/book/versions.html#d244e4250
         final Map<StaticBuffer, Pair<List<Put>, Delete>> commandsPerKey =
                 convertToCommands(
                         mutations,
@@ -609,8 +610,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         for (HRegionLocation location : locations) {
             HRegionInfo regionInfo = location.getRegionInfo();
             ServerName serverName = location.getServerName();
-            byte startKey[] = regionInfo.getStartKey();
-            byte endKey[]   = regionInfo.getEndKey();
+            byte[] startKey = regionInfo.getStartKey();
+            byte[] endKey = regionInfo.getEndKey();
 
             if (0 == startKey.length) {
                 startKey = null;
@@ -681,7 +682,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         if (targetLength <= dataToPad.length)
             return dataToPad;
 
-        byte padded[] = new byte[targetLength];
+        byte[] padded = new byte[targetLength];
 
         System.arraycopy(dataToPad, 0, padded, 0, dataToPad.length);
 
@@ -944,7 +945,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                             // Convert ttl from second (JanusGraph TTL) to milliseconds (HBase TTL)
                             // @see JanusGraphManagement#setTTL(JanusGraphSchemaType, Duration)
                             // HBase supports cell-level TTL for versions 0.98.6 and above.
-                            (putColumnWithTtl).setTTL(ttl * 1000);
+                            (putColumnWithTtl).setTTL(TimeUnit.SECONDS.toMillis((long)ttl));
                             // commands.getFirst() is the list of Puts for this rowkey. Add this
                             // Put column with TTL to the list.
                             commands.getFirst().add(putColumnWithTtl);

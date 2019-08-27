@@ -18,6 +18,7 @@ package org.janusgraph.util.encoding;
 import com.google.common.base.Preconditions;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -26,7 +27,7 @@ public class StringEncoding {
 
     public static final String UTF8_ENCODING = "UTF-8";
 
-    public static final Charset UTF8_CHARSET = Charset.forName(UTF8_ENCODING);
+    public static final Charset UTF8_CHARSET = StandardCharsets.UTF_8;
 
     public static boolean isAsciiString(String input) {
         Preconditions.checkNotNull(input);

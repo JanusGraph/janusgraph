@@ -2,17 +2,17 @@
 
 ## About Cassandra and Elasticsearch
 
-[Apache Cassandra](http://cassandra.apache.org/) is a distributed database
+[Apache Cassandra](https://cassandra.apache.org/) is a distributed database
 designed for scalability and high availability. Cassandra supports two
 protocols for communications, Thrift (legacy RPC protocol) and CQL (native
 protocol). Depending on the Cassandra version, Thrift may not be started by
-default. Make sure that [Thrift is started](http://docs.datastax.com/en/cassandra/2.1/cassandra/tools/toolsStatusThrift.html)
+default. Make sure that [Thrift is started](https://docs.datastax.com/en/cassandra/2.1/cassandra/tools/toolsStatusThrift.html)
 when using this example.
 
 [Elasticsearch](https://www.elastic.co/products/elasticsearch) is a scalable,
 distributed search engine.
 
-> Check the JanusGraph [version compatibility](http://docs.janusgraph.org/latest/version-compat.html)
+> Check the JanusGraph [version compatibility](https://docs.janusgraph.org/latest/version-compat.html)
 to ensure you select versions of Cassandra and Elasticsearch compatible with
 this JanusGraph release.
 
@@ -22,7 +22,7 @@ this JanusGraph release.
 Cassandra and Elasticsearch server locations. By providing different values
 for `storage.cassandra.keyspace` and `index.jgex.index-name`, you can store
 multiple graphs on the same Cassandra and Elasticsearch servers. Refer to
-the JanusGraph [configuration reference](http://docs.janusgraph.org/latest/config-ref.html)
+the JanusGraph [configuration reference](https://docs.janusgraph.org/latest/config-ref.html)
 for additional properties.
 
 * [`logback.xml`](conf/logback.xml) configures logging with [Logback](https://logback.qos.ch/),
@@ -51,7 +51,7 @@ documentation for installation instructions.
 ### JanusGraph pre-packaged distribution
 
 Rather than installing Cassandra and Elasticsearch separately, the JanusGraph
-[pre-packaged distribution](http://docs.janusgraph.org/latest/server.html#_using_the_pre_packaged_distribution)
+[pre-packaged distribution](https://docs.janusgraph.org/latest/server.html#_using_the_pre_packaged_distribution)
 is provided for convenience. The distribution starts a local Cassandra,
 Elasticsearch, and Gremlin Server.
 

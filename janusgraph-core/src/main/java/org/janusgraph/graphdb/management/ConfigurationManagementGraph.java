@@ -38,6 +38,8 @@ import com.google.common.base.Preconditions;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -217,7 +219,7 @@ public class ConfigurationManagementGraph {
      * @return Map&lt;String, Object&gt;
      */
     public Map<String, Object> getConfiguration(final String configName) {
-        final List<Map<String, Object>> graphConfiguration = graph.traversal().V().has(PROPERTY_GRAPH_NAME, configName).valueMap().toList();
+        final List<Map<Object, Object>> graphConfiguration = graph.traversal().V().has(PROPERTY_GRAPH_NAME, configName).valueMap().toList();
         if (graphConfiguration.isEmpty()) return null;
         else if (graphConfiguration.size() > 1) { // this case shouldn't happen because our index has a unique constraint
             log.warn("Your configuration management graph is an a bad state. Please " +
@@ -234,7 +236,7 @@ public class ConfigurationManagementGraph {
      * @return List&lt;Map&lt;String, Object&gt;&gt;
      */
     public List<Map<String, Object>> getConfigurations() {
-        final List<Map<String, Object>> graphConfigurations = graph.traversal().V().has(PROPERTY_TEMPLATE, false).valueMap().toList();
+        final List<Map<Object, Object>> graphConfigurations = graph.traversal().V().has(PROPERTY_TEMPLATE, false).valueMap().toList();
         return graphConfigurations.stream().map(this::deserializeVertexProperties).collect(Collectors.toList());
     }
 
@@ -244,7 +246,7 @@ public class ConfigurationManagementGraph {
      * @return Map&lt;String, Object&gt;
      */
     public Map<String, Object> getTemplateConfiguration() {
-        final List<Map<String, Object>> templateConfigurations = graph.traversal().V().has(PROPERTY_TEMPLATE, true).valueMap().toList();
+        final List<Map<Object, Object>> templateConfigurations = graph.traversal().V().has(PROPERTY_TEMPLATE, true).valueMap().toList();
         if (templateConfigurations.size() == 0) return null;
 
         if (templateConfigurations.size() > 1) {
@@ -322,7 +324,8 @@ public class ConfigurationManagementGraph {
         }
     }
 
-    private Map<String, Object> deserializeVertexProperties(Map<String, Object> map) {
+    private Map<String, Object> deserializeVertexProperties(Map<Object, Object> map) {
+        HashMap<String, Object> deserializedProperties = new HashMap<>();
         map.forEach((key, value) -> {
             if (value instanceof List) {
                 if (((List) value).size() > 1) {
@@ -330,9 +333,9 @@ public class ConfigurationManagementGraph {
                              "ensure each vertex property is not supplied a Collection as a value. The behavior " +
                              "of the class' APIs are henceforth unpredictable until this is fixed.");
                 }
-                map.put(key, ((List) value).get(0));
+                deserializedProperties.put((String) key, ((List) value).get(0));
             }
         });
-        return map;
+        return deserializedProperties;
     }
 }

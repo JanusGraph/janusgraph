@@ -269,8 +269,9 @@ abstract class JanusGraphSpeedTest extends GroovySpeedTestSupport {
         sequentialUidTask { tx, vertex ->
             visited++
             for (p in ElementHelper.getPropertyKeys(v)) {
-                if (p.equals(Schema.UID_PROP))
+                if (p.equals(Schema.UID_PROP)) {
                     continue
+                }
                 int old = vertex.valueOrNull(p)
                 vertex.property(p).remove()
                 vertex.property(p, old * n)

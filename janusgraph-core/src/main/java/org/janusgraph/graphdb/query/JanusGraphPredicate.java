@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.query;
 
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Contain;
+import org.janusgraph.core.attribute.TinkerPopTextWrappingPredicate;
 import org.janusgraph.graphdb.predicate.AndJanusPredicate;
 import org.janusgraph.graphdb.predicate.ConnectiveJanusGraphP;
 import org.janusgraph.graphdb.predicate.ConnectiveJanusPredicate;
@@ -24,6 +25,7 @@ import org.janusgraph.graphdb.predicate.OrJanusPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Text;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
@@ -161,6 +163,10 @@ public interface JanusGraphPredicate extends BiPredicate<Object, Object> {
                     final ConnectiveJanusPredicate subPredicate = instanceConnectiveJanusPredicate(p);
                     toReturn.add(convert((ConnectiveP<?>)p, subPredicate));
                     connectivePredicate.add(subPredicate);
+                } else if (p.getBiPredicate() instanceof Text) {
+                    Text text = (Text) p.getBiPredicate();
+                    connectivePredicate.add(new TinkerPopTextWrappingPredicate(text));
+                    toReturn.add(p.getValue());
                 } else {
                     connectivePredicate.add(Converter.convert(p.getBiPredicate()));
                     toReturn.add(p.getValue());

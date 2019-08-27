@@ -50,7 +50,7 @@ public class CacheVertexProperty extends AbstractVertexProperty {
 
         if (startVertex.hasAddedRelations() && startVertex.hasRemovedRelations()) {
             //Test whether this relation has been replaced
-            final long id = super.longId();
+            final long id = longId();
             it = Iterables.getOnlyElement(startVertex.getAddedRelations(
                 internalRelation -> (internalRelation instanceof StandardVertexProperty) && ((StandardVertexProperty) internalRelation).getPreviousID() == id), null);
         }
@@ -67,21 +67,15 @@ public class CacheVertexProperty extends AbstractVertexProperty {
     }
 
     private synchronized InternalRelation update() {
-        StandardVertexProperty copy = new StandardVertexProperty(super.longId(), propertyKey(), getVertex(0), value(), ElementLifeCycle.Loaded);
+        StandardVertexProperty copy = new StandardVertexProperty(longId(), propertyKey(), getVertex(0), value(), ElementLifeCycle.Loaded);
         copyProperties(copy);
         copy.remove();
 
         StandardVertexProperty u = (StandardVertexProperty) tx().addProperty(getVertex(0), propertyKey(), value());
-        if (type.getConsistencyModifier()!= ConsistencyModifier.FORK) u.setId(super.longId());
-        u.setPreviousID(super.longId());
+        if (type.getConsistencyModifier()!= ConsistencyModifier.FORK) u.setId(longId());
+        u.setPreviousID(longId());
         copyProperties(u);
         return u;
-    }
-
-    @Override
-    public long longId() {
-        InternalRelation it = it();
-        return (it == this) ? super.longId() : it.longId();
     }
 
     private RelationCache getPropertyMap() {
@@ -120,14 +114,14 @@ public class CacheVertexProperty extends AbstractVertexProperty {
 
     @Override
     public byte getLifeCycle() {
-        if ((getVertex(0).hasRemovedRelations() || getVertex(0).isRemoved()) && tx().isRemovedRelation(super.longId()))
+        if ((getVertex(0).hasRemovedRelations() || getVertex(0).isRemoved()) && tx().isRemovedRelation(longId()))
             return ElementLifeCycle.Removed;
         else return ElementLifeCycle.Loaded;
     }
 
     @Override
     public void remove() {
-        if (!tx().isRemovedRelation(super.longId())) {
+        if (!tx().isRemovedRelation(longId())) {
             tx().removeRelation(this);
         }// else throw InvalidElementException.removedException(this);
     }

@@ -102,7 +102,7 @@ public class JanusGraphPSerializer extends Serializer<P> {
             case "without":
                 return P.without((Collection) value);
             default:
-                return (P) P.class.getMethod(predicate, Collection.class).invoke(null, (Collection) value);
+                return (P) P.class.getMethod(predicate, Collection.class).invoke(null, value);
             }
         } else {
             switch (predicate) {

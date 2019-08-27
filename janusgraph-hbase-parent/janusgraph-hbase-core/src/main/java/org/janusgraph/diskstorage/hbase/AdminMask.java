@@ -44,7 +44,7 @@ public interface AdminMask extends Closeable
      */
     void dropTable(String tableName) throws IOException;
 
-    HTableDescriptor getTableDescriptor(String tableName) throws TableNotFoundException, IOException;
+    HTableDescriptor getTableDescriptor(String tableName) throws IOException;
 
     boolean tableExists(String tableName) throws IOException;
 

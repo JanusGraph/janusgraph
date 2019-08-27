@@ -36,7 +36,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * Example Graph factory that creates a {@link JanusGraph} based on roman mythology.
  * Used in the documentation examples and tutorials.
  *
- * @author Marko A. Rodriguez (http://markorodriguez.com)
+ * @author Marko A. Rodriguez (https://markorodriguez.com)
  */
 public class GraphOfTheGodsFactory {
 
@@ -96,7 +96,7 @@ public class GraphOfTheGodsFactory {
         management.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
         management.makeEdgeLabel("mother").multiplicity(Multiplicity.MANY2ONE).make();
         EdgeLabel battled = management.makeEdgeLabel("battled").signature(time).make();
-        management.buildEdgeIndex(battled, "battlesByTime", Direction.BOTH, Order.decr, time);
+        management.buildEdgeIndex(battled, "battlesByTime", Direction.BOTH, Order.desc, time);
         management.makeEdgeLabel("lives").signature(reason).make();
         management.makeEdgeLabel("pet").make();
         management.makeEdgeLabel("brother").make();

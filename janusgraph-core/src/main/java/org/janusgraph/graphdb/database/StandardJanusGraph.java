@@ -57,6 +57,7 @@ import org.janusgraph.graphdb.relations.EdgeDirection;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphBlueprintsGraph;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphFeatures;
 import org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexFilterOptimizerStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphIoRegistrationStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStepStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphLocalQueryOptimizerStrategy;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
@@ -97,7 +98,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     static {
         TraversalStrategies graphStrategies = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone()
-                .addStrategies(AdjacentVertexFilterOptimizerStrategy.instance(), JanusGraphLocalQueryOptimizerStrategy.instance(), JanusGraphStepStrategy.instance());
+                .addStrategies(AdjacentVertexFilterOptimizerStrategy.instance(),
+                    JanusGraphLocalQueryOptimizerStrategy.instance(), JanusGraphStepStrategy.instance(),
+                    JanusGraphIoRegistrationStrategy.instance());
 
         //Register with cache
         TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraph.class, graphStrategies);
@@ -224,6 +227,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
              */
             for (StandardJanusGraphTx otx : openTransactions) {
                 try {
+                    otx.rollback();
                     otx.close();
                 } catch (RuntimeException e) {
                     // Catch and store these exceptions, but proceed wit the loop

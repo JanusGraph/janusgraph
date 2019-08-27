@@ -39,7 +39,7 @@ Requires:       java >= 1.7.0
 Requires(pre):  shadow-utils
 Group:          Applications/Databases
 License:        ASL 2.0
-URL:            http://janusgraph.org
+URL:            https://janusgraph.org
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 

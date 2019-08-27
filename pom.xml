@@ -2,13 +2,13 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.janusgraph</groupId>
     <artifactId>janusgraph</artifactId>
-    <version>0.4.0-SNAPSHOT</version>
+    <version>0.5.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <prerequisites>
         <maven>2.2.1</maven>
     </prerequisites>
     <name>JanusGraph: Distributed Graph Database</name>
-    <url>http://janusgraph.org</url>
+    <url>https://janusgraph.org</url>
 
     <description>
         JanusGraph is a distributed graph database optimized for processing massive-scale graphs represented over a machine
@@ -29,19 +29,19 @@
         <developer>
             <name>Pavel Yaskevich</name>
             <email>povel.y@gmail.com</email>
-            <url>http://github.com/xedin</url>
+            <url>https://github.com/xedin</url>
         </developer>
     </developers>
     <contributors>
         <contributor>
             <name>Marko A. Rodriguez</name>
             <email>marko@markorodriguez.com</email>
-            <url>http://markorodriguez.com</url>
+            <url>https://markorodriguez.com</url>
         </contributor>
         <contributor>
             <name>Stephen Mallette</name>
             <email>spmva@genoprime.com</email>
-            <url>http://stephen.genoprime.com</url>
+            <url>https://stephen.genoprime.com</url>
         </contributor>
     </contributors>
     <inceptionYear>2012</inceptionYear>
@@ -69,7 +69,7 @@
     </distributionManagement>
     <properties>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
-        <tinkerpop.version>3.3.3</tinkerpop.version>
+        <tinkerpop.version>3.4.1</tinkerpop.version>
         <junit-platform.version>1.4.0</junit-platform.version>
         <junit.version>5.4.0</junit.version>
         <mrunit.version>1.1.0</mrunit.version>
@@ -80,17 +80,17 @@
         <sesame.version>2.7.10</sesame.version>
         <slf4j.version>1.7.12</slf4j.version>
         <httpcomponents.version>4.4.1</httpcomponents.version>
-        <hadoop2.version>2.7.2</hadoop2.version>
-        <hbase1.version>1.2.6</hbase1.version>
-        <hbase2.version>2.1.0</hbase2.version>
-        <hbase.server.version>1.2.6</hbase.server.version>
-        <bigtable.version>1.4.0</bigtable.version>
+        <hadoop2.version>2.7.7</hadoop2.version>
+        <hbase1.version>1.4.10</hbase1.version>
+        <hbase2.version>2.1.5</hbase2.version>
+        <hbase.server.version>1.4.10</hbase.server.version>
+        <bigtable.version>1.11.0</bigtable.version>
         <scylladb.version>1.7.1</scylladb.version>
         <!-- align with org.apache.hbase:hbase -->
         <jackson1.version>1.9.13</jackson1.version>
         <jackson2.version>2.6.6</jackson2.version>
         <lucene-solr.version>7.0.0</lucene-solr.version>
-        <elasticsearch-driver.version>6.6.0</elasticsearch-driver.version>
+        <elasticsearch-driver.version>7.2.0</elasticsearch-driver.version>
         <elasticsearch-server.version>6.0.1</elasticsearch-server.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
@@ -103,7 +103,7 @@
         <zookeeper.version>3.4.6</zookeeper.version>
         <jersey.version>1.9</jersey.version>
         <!-- align with org.apache.tinkerpop:tinkerpop -->
-        <netty4.version>4.0.56.Final</netty4.version>
+        <netty4.version>4.1.25.Final</netty4.version>
         <jna.version>4.0.0</jna.version>
         <kuali.s3.wagon.version>1.1.20</kuali.s3.wagon.version>
         <jasper.version>5.5.23</jasper.version>
@@ -125,8 +125,8 @@
         <compiler.target>1.8</compiler.target>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
-        <cassandra-driver.version>3.3.2</cassandra-driver.version>
-        <testcontainers.version>1.10.6</testcontainers.version>
+        <cassandra-driver.version>3.7.2</cassandra-driver.version>
+        <testcontainers.version>1.11.4</testcontainers.version>
     </properties>
     <modules>
         <module>janusgraph-codepipelines-ci</module>
@@ -174,7 +174,7 @@
             <!-- for org.restlet.jee:org.restlet:jar -->
             <id>spring-releases</id>
             <name>Spring Release Repository</name>
-            <url>http://repo.spring.io/libs-release-remote/</url>
+            <url>https://repo.spring.io/libs-release-remote/</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
@@ -195,7 +195,7 @@
                         </goals>
                         <configuration>
                             <rules>
-                                <DependencyConvergence/>
+                                <DependencyConvergence />
                             </rules>
                         </configuration>
                     </execution>
@@ -273,6 +273,7 @@
                         <exclude>**/*.iml</exclude>
                         <exclude>**/*.json</exclude>
                         <exclude>**/*.xml</exclude>
+                        <exclude>**/*.xml.releaseBackup</exclude>
                         <exclude>docs/**</exclude>
                         <exclude>**/*.md</exclude>
                         <exclude>**/*.txt</exclude>
@@ -416,7 +417,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>2.6</version>
+                    <version>3.1.0</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-release-plugin</artifactId>
@@ -495,17 +496,6 @@
                           <server> stanza that matches the
                           <server>github</server> tag below.  Here's
                           an example settings.xml:
-
-                          <settings>
-                            ...
-                            <servers>
-                              ...
-                              <server>
-                                <id>github</id> << must match <username>dalaro</username>
-                                <password>allmypasswordsareliterallypassword</password>
-                              </server>
-                            </servers>
-                          </settings>
                         -->
                         <server>github</server>
                         <repositoryName>janusgraph</repositoryName>
@@ -515,11 +505,6 @@
                 <plugin>
                     <artifactId>maven-antrun-plugin</artifactId>
                     <version>1.7</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.asciidoctor</groupId>
-                    <artifactId>asciidoctor-maven-plugin</artifactId>
-                    <version>0.1.4</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
@@ -1235,6 +1220,17 @@
             </dependency>
             <dependency>
                 <groupId>org.testcontainers</groupId>
+                <artifactId>cassandra</artifactId>
+                <version>${testcontainers.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.datastax.cassandra</groupId>
+                        <artifactId>cassandra-driver-core</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
                 <artifactId>junit-jupiter</artifactId>
                 <version>${testcontainers.version}</version>
             </dependency>
@@ -1270,7 +1266,7 @@
               when this profile is automatically activated or whenever
               else it is manually activated.
     
-              Stolen from: http://blog.sonatype.com/people/2010/01/how-to-generate-pgp-signatures-with-maven/
+              Stolen from: https://blog.sonatype.com/people/2010/01/how-to-generate-pgp-signatures-with-maven/
             -->
             <build>
                 <plugins>
@@ -1645,184 +1641,5 @@
                 </plugins>
             </build>
         </profile>
-
-        <profile>
-            <id>asciidoc</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-                <property>
-                    <name>asciidoc</name>
-                </property>
-            </activation>
-
-            <properties>
-                <asciidoc.input.dir>${project.basedir}/docs</asciidoc.input.dir>
-                <xsl.input.dir>${asciidoc.input.dir}/xsl</xsl.input.dir>
-                <xsl.output.dir>${project.basedir}/target/docs/xsl</xsl.output.dir>
-                <docbook.output.dir>${project.basedir}/target/docs/docbook</docbook.output.dir>
-                <htmlsingle.output.dir>${project.basedir}/target/docs/htmlsingle</htmlsingle.output.dir>
-                <htmlchunk.output.dir>${project.basedir}/target/docs/htmlchunk</htmlchunk.output.dir>
-            </properties>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.asciidoctor</groupId>
-                        <artifactId>asciidoctor-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>asciidoc-to-docbook</id>
-                                <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>process-asciidoc</goal>
-                                </goals>
-                                <inherited>false</inherited>
-                                <configuration>
-                                    <sourceDirectory>${asciidoc.input.dir}</sourceDirectory>
-                                    <sourceDocumentName>index.adoc</sourceDocumentName>
-                                    <outputDirectory>${docbook.output.dir}</outputDirectory>
-                                    <backend>docbook5</backend>
-                                    <doctype>book</doctype>
-                                    <attributes>
-                                        <imagesdir>images</imagesdir>
-                                        <encoding>UTF-8</encoding>
-                                        <toc>true</toc>
-                                    </attributes>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>xml-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>docbook-to-htmlsingle</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>transform</goal>
-                                </goals>
-                                <inherited>false</inherited>
-                                <configuration>
-                                    <forceCreation>true</forceCreation>
-                                    <transformationSets>
-                                        <transformationSet>
-                                            <dir>${docbook.output.dir}</dir>
-                                            <outputDir>${htmlsingle.output.dir}</outputDir>
-                                            <includes>
-                                                <include>index.xml</include>
-                                            </includes>
-                                            <stylesheet>${xsl.output.dir}/single.xsl</stylesheet>
-                                            <fileMappers>
-                                                <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
-                                                    <targetExtension>.html</targetExtension>
-                                                </fileMapper>
-                                            </fileMappers>
-                                        </transformationSet>
-                                    </transformationSets>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>docbook-to-htmlchunk</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>transform</goal>
-                                </goals>
-                                <inherited>false</inherited>
-                                <configuration>
-                                    <forceCreation>true</forceCreation>
-                                    <transformationSets>
-                                        <transformationSet>
-                                            <dir>${docbook.output.dir}</dir>
-                                            <includes>
-                                                <include>index.xml</include>
-                                            </includes>
-                                            <stylesheet>${xsl.output.dir}/chunk.xsl</stylesheet>
-                                            <fileMappers>
-                                                <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
-                                                    <targetExtension>.html</targetExtension>
-                                                </fileMapper>
-                                            </fileMappers>
-                                        </transformationSet>
-                                    </transformationSets>
-                                </configuration>
-                            </execution>
-                        </executions>
-                        <dependencies>
-                            <dependency>
-                                <groupId>net.sf.xslthl</groupId>
-                                <artifactId>xslthl</artifactId>
-                                <version>2.1.0</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>saxon</groupId>
-                                <artifactId>saxon</artifactId>
-                                <version>6.5.3</version>
-                            </dependency>
-                        </dependencies>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>filter-xsl-stylesheets</id>
-                                <phase>generate-sources</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <inherited>false</inherited>
-                                <configuration>
-                                    <outputDirectory>${xsl.output.dir}</outputDirectory>
-                                    <delimiters>
-                                        <delimiter>$MAVEN{*}</delimiter>
-                                    </delimiters>
-                                    <resources>
-                                        <resource>
-                                            <directory>${xsl.input.dir}</directory>
-                                            <filtering>true</filtering>
-                                        </resource>
-                                    </resources>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>copy-static-assets-to-htmlsingle</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <inherited>false</inherited>
-                                <configuration>
-                                    <outputDirectory>${htmlsingle.output.dir}</outputDirectory>
-                                    <resources>
-                                        <resource>
-                                            <directory>${asciidoc.input.dir}/static</directory>
-                                            <filtering>false</filtering>
-                                        </resource>
-                                    </resources>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>copy-static-assets-to-htmlchunk</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <inherited>false</inherited>
-                                <configuration>
-                                    <outputDirectory>${htmlchunk.output.dir}</outputDirectory>
-                                    <resources>
-                                        <resource>
-                                            <directory>${asciidoc.input.dir}/static</directory>
-                                            <filtering>false</filtering>
-                                        </resource>
-                                    </resources>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
     </profiles>
 </project>

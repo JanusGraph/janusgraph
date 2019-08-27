@@ -103,9 +103,9 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     private static final String TTL_FUNCTION_NAME = "ttl";
     private static final String WRITETIME_FUNCTION_NAME = "writetime";
 
-    static final String KEY_COLUMN_NAME = "key";
-    static final String COLUMN_COLUMN_NAME = "column1";
-    static final String VALUE_COLUMN_NAME = "value";
+    public static final String KEY_COLUMN_NAME = "key";
+    public static final String COLUMN_COLUMN_NAME = "column1";
+    public static final String VALUE_COLUMN_NAME = "value";
     static final String WRITETIME_COLUMN_NAME = "writetime";
     static final String TTL_COLUMN_NAME = "ttl";
 
@@ -365,7 +365,10 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public void acquireLock(final StaticBuffer key, final StaticBuffer column, final StaticBuffer expectedValue, final StoreTransaction txh) throws BackendException {
-        throw new UnsupportedOperationException();
+        final boolean hasLocking = this.storeManager.getFeatures().hasLocking();
+        if (!hasLocking) {
+            throw new UnsupportedOperationException(String.format("%s doesn't support locking", getClass()));
+        }
     }
 
     @Override

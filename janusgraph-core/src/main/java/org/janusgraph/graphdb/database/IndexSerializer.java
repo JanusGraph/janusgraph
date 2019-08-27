@@ -17,11 +17,17 @@ package org.janusgraph.graphdb.database;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.graphdb.idmanagement.IDManager;
+import org.janusgraph.graphdb.internal.ElementCategory;
+import org.janusgraph.graphdb.internal.InternalRelation;
+import org.janusgraph.graphdb.internal.InternalRelationType;
+import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder;
 import org.janusgraph.graphdb.query.graph.MultiKeySliceQuery;
 import org.janusgraph.diskstorage.*;
@@ -35,7 +41,6 @@ import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.database.serialize.AttributeUtil;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.serialize.Serializer;
-import org.janusgraph.graphdb.internal.*;
 import org.janusgraph.graphdb.query.graph.IndexQueryBuilder;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.*;
@@ -46,14 +51,12 @@ import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.*;
 import org.janusgraph.util.encoding.LongEncoding;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME_MAPPING;
@@ -238,7 +241,7 @@ public class IndexSerializer {
 
         @Override
         public int hashCode() {
-            return new HashCodeBuilder().append(index).append(mutationType).append(key).append(entry).toHashCode();
+            return Objects.hash(index, mutationType, key, entry);
         }
 
         @Override
@@ -625,11 +628,34 @@ public class IndexSerializer {
         return queryStr;
     }
 
+    private ImmutableList<IndexQuery.OrderEntry> getOrders(IndexQueryBuilder query, final ElementCategory resultType,
+                                                           final StandardJanusGraphTx transaction, MixedIndexType index){
+        if (query.getOrders() == null) {
+            return ImmutableList.of();
+        }
+        Preconditions.checkArgument(index.getElement()==resultType,"Index is not configured for the desired result type: %s",resultType);
+        List<IndexQuery.OrderEntry> orderReplacement = new ArrayList<>();
+        for (Parameter<Order> order: query.getOrders()) {
+            if (transaction.containsRelationType(order.key())) {
+                final PropertyKey key = transaction.getPropertyKey(order.key());
+                Preconditions.checkNotNull(key);
+                Preconditions.checkArgument(index.indexesKey(key),
+                    "The used key [%s] is not indexed in the targeted index [%s]",key.name(),query.getIndex());
+                orderReplacement.add(new IndexQuery.OrderEntry(key2Field(index,key), org.janusgraph.graphdb.internal.Order.convert(order.value()), key.dataType()));
+            } else {
+                Preconditions.checkArgument(query.getUnknownKeyName()!=null,
+                    "Found reference to non-existant property key in query orders %s", order.key());
+            }
+        }
+        return ImmutableList.copyOf(orderReplacement);
+    }
+
     public Stream<RawQuery.Result> executeQuery(IndexQueryBuilder query, final ElementCategory resultType,
                                                   final BackendTransaction backendTx, final StandardJanusGraphTx transaction) {
         final MixedIndexType index = getMixedIndex(query.getIndex(), transaction);
         final String queryStr = createQueryString(query, resultType, transaction, index);
-        final RawQuery rawQuery = new RawQuery(index.getStoreName(),queryStr,query.getParameters());
+        ImmutableList<IndexQuery.OrderEntry> orders = getOrders(query, resultType, transaction, index);
+        final RawQuery rawQuery = new RawQuery(index.getStoreName(),queryStr,orders,query.getParameters());
         if (query.hasLimit()) rawQuery.setLimit(query.getLimit());
         rawQuery.setOffset(query.getOffset());
         return backendTx.rawQuery(index.getBackingIndexName(), rawQuery).map(result ->  new RawQuery.Result(string2ElementId(result.getResult()), result.getScore()));

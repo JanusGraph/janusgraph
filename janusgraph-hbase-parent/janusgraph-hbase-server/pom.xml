@@ -3,12 +3,12 @@
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph-hbase-parent</artifactId>
-        <version>0.4.0-SNAPSHOT</version>
+        <version>0.5.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-hbase-server</artifactId>
     <name>JanusGraph-HBase: HBase Server Used by Maven Testing</name>
-    <url>http://janusgraph.org</url>
+    <url>https://janusgraph.org</url>
     
     <properties>
         <top.level.basedir>${basedir}/../..</top.level.basedir>
@@ -113,7 +113,18 @@
     
     <profiles>
         <profile>
+            <id>hbase1</id>
+            <properties>
+                <hbase.server.version>${hbase1.version}</hbase.server.version>
+            </properties>
+        </profile>
+        <profile>
             <id>hbase2</id>
+            <activation>
+                <property>
+                    <name>!hbase.profile</name>
+                </property>
+            </activation>
             <properties>
                 <hbase.server.version>${hbase2.version}</hbase.server.version>
             </properties>

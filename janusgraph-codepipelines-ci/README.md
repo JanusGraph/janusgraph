@@ -11,20 +11,20 @@ one for CodeBuild. Finally, you need to have the [AWS CLI](https://aws.amazon.co
 The `repo` scope is used to push the latest updates on the branch selected below. The `admin:repo_hook` scope is for
 setting up the post-commit hook on GitHub programmatically.
 2. Navigate to the [AWS Console](https://console.aws.amazon.com) and
-[create an IAM User](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html) with the following managed
+[create an IAM User](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html) with the following managed
 policies: AmazonS3FullAccess, AWSCodePipelineFullAccess, AWSCodeBuildAdminAccess. This user should be created for
 __Programmatic access__.
 3. For this user, create security credentials and then register them in the `code-pipelines` profile on your computer
 with `aws configure --profile code-pipelines`. Create this profile with a default region that
 [supports CodePipeline and CodeBuild](https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/)
-and a default [output format](http://docs.aws.amazon.com/cli/latest/userguide/controlling-output.html#controlling-output-format)
+and a default [output format](https://docs.aws.amazon.com/cli/latest/userguide/controlling-output.html#controlling-output-format)
 of your choice (`json`, `text`, and `table` are available).
 4. Create an IAM policy for CodeBuild and associate it to a new service role as described
-[here](http://docs.aws.amazon.com/codebuild/latest/userguide/setting-up.html#setting-up-service-role). Select the
+[here](https://docs.aws.amazon.com/codebuild/latest/userguide/setting-up.html#setting-up-service-role). Select the
 __AWS CodeBuild__ role type. The documentation linked here says the CodeBuild service role type is not available, but
 it actually is.
 5. Create an IAM policy for CodePipelines and associate it to a new service role as described
-[here](http://docs.aws.amazon.com/codepipeline/latest/userguide/iam-identity-based-access-control.html#view-default-service-role-policy).
+[here](https://docs.aws.amazon.com/codepipeline/latest/userguide/iam-identity-based-access-control.html#view-default-service-role-policy).
 Select the __Amazon EC2__ role type as CodePipeline is not yet available on this page. Edit the new role's trust
 relationship and replace the principal `ec2.amazonaws.com` with `codepipeline.amazonaws.com`.
 
@@ -64,10 +64,10 @@ export PIPELINE_CONFIGURATION=''
 
 ## Create test pipeline
 This tool uses templates defined in YAML files to configure parallel builds in AWS CodePipeline. By default,
-you can have up to [five parallel actions per stage](http://docs.aws.amazon.com/codepipeline/latest/userguide/limits.html)
-in a pipeline and up to [twenty parallel builds](http://docs.aws.amazon.com/codebuild/latest/userguide/limits.html#limits-builds)
+you can have up to [five parallel actions per stage](https://docs.aws.amazon.com/codepipeline/latest/userguide/limits.html)
+in a pipeline and up to [twenty parallel builds](https://docs.aws.amazon.com/codebuild/latest/userguide/limits.html#limits-builds)
 per region per account. If you need more, you can
-[request to be whitelisted](http://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html) for more.
+[request to be whitelisted](https://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html) for more.
 
 Here is an example of a file that defines two pipelines with parallel build actions.
 

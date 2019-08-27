@@ -53,7 +53,7 @@ import org.locationtech.jts.geom.Polygon;
 /**
  * Tests JanusGraph specific serialization classes not covered by the TinkerPop suite.
  *
- * @author Stephen Mallette (http://stephen.genoprime.com)
+ * @author Stephen Mallette (https://stephen.genoprime.com)
  */
 public abstract class JanusGraphIoTest extends JanusGraphBaseTest {
 

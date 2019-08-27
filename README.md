@@ -1,6 +1,6 @@
-[![JanusGraph logo](janusgraph.png)](http://janusgraph.org/)
+[![JanusGraph logo](janusgraph.png)](https://janusgraph.org/)
 
-JanusGraph is a highly scalable [graph database](http://en.wikipedia.org/wiki/Graph_database)
+JanusGraph is a highly scalable [graph database](https://en.wikipedia.org/wiki/Graph_database)
 optimized for storing and querying large graphs with billions of vertices and edges
 distributed across a multi-machine cluster. JanusGraph is a transactional database that
 can support thousands of concurrent users, complex traversals, and analytic graph queries.
@@ -27,7 +27,7 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 
 ## Learn More
 
-The [project homepage](http://janusgraph.org) contains more information on JanusGraph and
+The [project homepage](https://janusgraph.org) contains more information on JanusGraph and
 provides links to documentation, getting-started guides and release downloads.
 
 ## Visualization
@@ -35,12 +35,14 @@ provides links to documentation, getting-started guides and release downloads.
 To visualize graphs stored in JanusGraph, you can use any of the following
 tools:
 
+* [Arcade Analytics](https://arcadeanalytics.com/usermanual/#arcade-analytics)
 * [Cytoscape](http://www.cytoscape.org/)
-* [Gephi](http://tinkerpop.apache.org/docs/current/reference/#gephi-plugin)
+* [Gephi](https://tinkerpop.apache.org/docs/current/reference/#gephi-plugin)
   plugin for Apache TinkerPop
 * [Graphexp](https://github.com/bricaud/graphexp)
 * [KeyLines by Cambridge Intelligence](https://cambridge-intelligence.com/visualizing-janusgraph-new-titandb-fork/)
 * [Linkurious](https://doc.linkurio.us/ogma/latest/tutorials/janusgraph/)
+* [Tom Sawyer Perspectives](https://www.tomsawyer.com/perspectives/)
 
 ## Community
 
@@ -83,7 +85,7 @@ CLAs and best practices for working with GitHub.
 
 ## Powered by JanusGraph
 
-* [Apache Atlas](https://github.com/apache/atlas) - metadata management for governance ([website](http://atlas.apache.org/))
+* [Apache Atlas](https://github.com/apache/atlas) - metadata management for governance ([website](https://atlas.apache.org/))
 * [Eclipse Keti](https://github.com/eclipse/keti) - access control service to protect RESTful APIs ([website](https://projects.eclipse.org/projects/iot.keti))
 * [Exakat](https://github.com/exakat/exakat) - PHP static analysis ([website](https://www.exakat.io/))
 * [Open Network Automation Platform (ONAP)](https://www.onap.org/) - automation and orchestration for Software-Defined Networks

@@ -127,7 +127,7 @@ if [ -z "$JAVA_HOME" ]; then
 |                    Error: JAVA_HOME is not set                       |
 +----------------------------------------------------------------------+
 | Please download the latest Sun JDK from the Sun Java web site        |
-|     > http://www.oracle.com/technetwork/java/javase/downloads        |
+|     > https://www.oracle.com/technetwork/java/javase/downloads        |
 |                                                                      |
 | HBase requires Java 1.7 or later.                                    |
 +======================================================================+

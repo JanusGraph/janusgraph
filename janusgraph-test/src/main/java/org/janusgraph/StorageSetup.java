@@ -44,27 +44,6 @@ public class StorageSetup {
         return homeDirectory;
     }
 
-    public static File getHomeDirFile() {
-        return getHomeDirFile(null);
-    }
-
-    public static File getHomeDirFile(String subDirectory) {
-        return new File(getHomeDir(subDirectory));
-    }
-
-    public static void deleteHomeDir() {
-        deleteHomeDir(null);
-    }
-
-    public static void deleteHomeDir(String subDirectory) {
-        File homeDirFile = getHomeDirFile(subDirectory);
-        // Make directory if it doesn't exist
-        if (!homeDirFile.exists())
-            homeDirFile.mkdirs();
-        boolean success = IOUtils.deleteFromDirectory(homeDirFile);
-        if (!success) throw new IllegalStateException("Could not remove " + homeDirFile);
-    }
-
     public static ModifiableConfiguration getInMemoryConfiguration() {
         return buildGraphConfiguration()
             .set(STORAGE_BACKEND, "inmemory")
@@ -74,6 +53,10 @@ public class StorageSetup {
 
     public static JanusGraph getInMemoryGraph() {
         return JanusGraphFactory.open(getInMemoryConfiguration());
+    }
+    
+    public static JanusGraph getInMemoryGraphWithMultiQuery() {
+        return JanusGraphFactory.open(getInMemoryConfiguration().set(USE_MULTIQUERY, true));
     }
 
     public static WriteConfiguration addPermanentCache(ModifiableConfiguration conf) {

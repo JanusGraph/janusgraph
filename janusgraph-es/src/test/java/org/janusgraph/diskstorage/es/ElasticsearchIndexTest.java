@@ -16,6 +16,7 @@ package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 
 import org.apache.commons.configuration.BaseConfiguration;
@@ -24,6 +25,7 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.client.methods.*;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -49,14 +51,19 @@ import org.json.simple.parser.ParseException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -79,13 +86,11 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         httpClient = HttpClients.createDefault();
         objectMapper = new ObjectMapper();
         host = new HttpHost(InetAddress.getByName(esr.getHostname()), esr.getPort());
-        if (JanusGraphElasticsearchContainer.getEsMajorVersion().value > 2) {
-            IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("_ingest/pipeline/pipeline_1")));
-            final HttpPut newPipeline = new HttpPut("_ingest/pipeline/pipeline_1");
-            newPipeline.setHeader("Content-Type", "application/json");
-            newPipeline.setEntity(new StringEntity("{\"description\":\"Test pipeline\",\"processors\":[{\"set\":{\"field\":\"" +STRING+ "\",\"value\":\"hello\"}}]}", Charset.forName("UTF-8")));
-            IOUtils.closeQuietly(httpClient.execute(host, newPipeline));
-        }
+        IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete("_ingest/pipeline/pipeline_1")));
+        final HttpPut newPipeline = new HttpPut("_ingest/pipeline/pipeline_1");
+        newPipeline.setHeader("Content-Type", "application/json");
+        newPipeline.setEntity(new StringEntity("{\"description\":\"Test pipeline\",\"processors\":[{\"set\":{\"field\":\"" +STRING+ "\",\"value\":\"hello\"}}]}", StandardCharsets.UTF_8));
+        IOUtils.closeQuietly(httpClient.execute(host, newPipeline));
     }
 
     @AfterAll
@@ -117,9 +122,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
     public Configuration getESTestConfig() {
         final String index = "es";
         final CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
-        if (esr.getEsMajorVersion().value > 2) {
-            cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
-        }
+        cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
         return esr.setConfiguration(new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,cc, BasicConfiguration.Restriction.NONE), index)
             .set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index)
             .restrictTo(index);
@@ -179,15 +182,12 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         String message = Throwables.getRootCause(janusGraphException).getMessage();
 
         switch (JanusGraphElasticsearchContainer.getEsMajorVersion().value){
+            case 7:
             case 6:
                 assertTrue(message.contains("mapper_parsing_exception"));
                 break;
             case 5:
-            case 2:
                 assertTrue(message.contains("number_format_exception"));
-                break;
-            case 1:
-                assertTrue(message.contains("NumberFormatException"));
                 break;
             default:
                 fail();
@@ -250,15 +250,13 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
      */
     @Test
     public void testIngestPipeline() throws Exception {
-        if (esr.getEsMajorVersion().value > 2) {
-            initialize("ingestvertex");
-            final Multimap<String, Object> docs = HashMultimap.create();
-            docs.put(TEXT, "bob");
-            add("ingestvertex", "pipeline", docs, true);
-            clopen();
-            assertEquals(1, tx.queryStream(new IndexQuery("ingestvertex", PredicateCondition.of(TEXT, Text.CONTAINS, "bob"))).count());
-            assertEquals(1, tx.queryStream(new IndexQuery("ingestvertex", PredicateCondition.of(STRING, Cmp.EQUAL, "hello"))).count());
-        }
+        initialize("ingestvertex");
+        final Multimap<String, Object> docs = HashMultimap.create();
+        docs.put(TEXT, "bob");
+        add("ingestvertex", "pipeline", docs, true);
+        clopen();
+        assertEquals(1, tx.queryStream(new IndexQuery("ingestvertex", PredicateCondition.of(TEXT, Text.CONTAINS, "bob"))).count());
+        assertEquals(1, tx.queryStream(new IndexQuery("ingestvertex", PredicateCondition.of(STRING, Cmp.EQUAL, "hello"))).count());
     }
 
     @Test
@@ -280,7 +278,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         IOUtils.closeQuietly(httpClient.execute(host, new HttpPut("test2")));
         final HttpPost addAlias = new HttpPost("_aliases");
         addAlias.setHeader("Content-Type", "application/json");
-        addAlias.setEntity(new StringEntity("{\"actions\": [{\"add\": {\"indices\": [\"test1\", \"test2\"], \"alias\": \"alias1\"}}]}", Charset.forName("UTF-8")));
+        addAlias.setEntity(new StringEntity("{\"actions\": [{\"add\": {\"indices\": [\"test1\", \"test2\"], \"alias\": \"alias1\"}}]}", StandardCharsets.UTF_8));
         IOUtils.closeQuietly(httpClient.execute(host, addAlias));
 
         initialize("vertex");
@@ -294,7 +292,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
     }
 
     @Test
-    public void testCustomMappingProperty() throws BackendException, IOException, ParseException {
+    public void testCustomMappingProperty() throws BackendException, IOException, ParseException, URISyntaxException {
 
         String mappingTypeName = "vertex";
         String indexPrefix = "janusgraph";
@@ -325,16 +323,92 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
 
         JSONObject json = (JSONObject) new JSONParser().parse(EntityUtils.toString(entity));
 
-        String returnedProperty = retrieveValueFromJSON(json,
-            indexName, "mappings", mappingTypeName, "properties", field, parameterName);
+        String returnedProperty;
+
+        if(JanusGraphElasticsearchContainer.getEsMajorVersion().value < 7){
+            returnedProperty = retrieveValueFromJSON(json,
+                indexName, "mappings", mappingTypeName, "properties", field, parameterName);
+        } else {
+            returnedProperty = retrieveValueFromJSON(json,
+                indexName, "mappings", "properties", field, parameterName);
+        }
 
         assertEquals(parameterValue.toString(), returnedProperty);
 
         IOUtils.closeQuietly(response);
     }
 
-    private CloseableHttpResponse getESMapping(String indexName, String mappingTypeName) throws IOException {
-        final HttpGet httpGet = new HttpGet(indexName+"/_mapping/"+mappingTypeName);
+    public static Stream<String> cardinalityTestCollectionNameParams() {
+        return ImmutableList.of(PHONE_SET, PHONE_LIST).stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("cardinalityTestCollectionNameParams")
+    public void testCollectionCardinality(String collectionName) throws Exception {
+        initialize("vertex");
+
+        Multimap<String, Object> initialDoc = HashMultimap.create();
+        initialDoc.put(collectionName, "12345");
+
+        add("vertex", "test", initialDoc, true);
+
+        clopen();
+
+        Multimap<String, Object> updateDoc = HashMultimap.create();
+        updateDoc.put(collectionName, "123456");
+
+        add("vertex", "test", updateDoc, false);
+
+        clopen();
+
+        add("vertex", "test", initialDoc, false);
+
+        clopen();
+
+        tx.delete("vertex", "test", collectionName, "12345", false);
+
+        clopen();
+
+        assertEquals("test", tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(collectionName, Cmp.EQUAL, "123456"))).toArray()[0]);
+
+        if(PHONE_SET.equals(collectionName)){
+            assertEquals(0, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "12345"))).count());
+        } else {
+            assertEquals("test", tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "12345"))).toArray()[0]);
+        }
+    }
+
+    @Test
+    public void testTextStringMapping() throws Exception {
+        initialize("vertex");
+
+        Multimap<String, Object> firstDoc = HashMultimap.create();
+        firstDoc.put(TEXT_STRING, "John Doe");
+
+        Multimap<String, Object> secondDoc = HashMultimap.create();
+        secondDoc.put(TEXT_STRING, "John");
+
+        add("vertex", "test1", firstDoc, true);
+        add("vertex", "test2", secondDoc, true);
+
+        clopen();
+
+        assertEquals(1, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Cmp.EQUAL, "John"))).count());
+        assertEquals(1, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Cmp.EQUAL, "John Doe"))).count());
+        assertEquals(2, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Text.CONTAINS, "John"))).count());
+    }
+
+    private CloseableHttpResponse getESMapping(String indexName, String mappingTypeName) throws IOException, URISyntaxException {
+
+        URIBuilder uriBuilder;
+
+        if(JanusGraphElasticsearchContainer.getEsMajorVersion().value < 7){
+            uriBuilder = new URIBuilder(indexName+"/_mapping/"+mappingTypeName);
+        } else {
+            uriBuilder = new URIBuilder(indexName+"/_mapping");
+        }
+
+        final HttpGet httpGet = new HttpGet(uriBuilder.build());
         return httpClient.execute(host, httpGet);
     }
 

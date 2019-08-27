@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -28,6 +27,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexSt
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -73,14 +73,15 @@ public class AdjacentVertexFilterOptimizerStrategy extends AbstractTraversalStra
                 P predicate = ((IsStep) steps.get(1)).getPredicate();
                 //Check that we have a valid direction and a valid vertex filter predicate
                 if (direction != null && predicate.getBiPredicate() == Compare.eq && predicate.getValue() instanceof Vertex) {
-                    JanusGraphVertex vertex = JanusGraphTraversalUtil.getJanusGraphVertex((Vertex) predicate.getValue());
+                    Vertex vertex = (Vertex) predicate.getValue();
 
                     //Now, check that this step is preceded by VertexStep that returns edges
                     Step<?, ?> currentStep = originalStep.getPreviousStep();
-                    while (true) {
+                    while (currentStep != EmptyStep.instance()) {
                         if (!(currentStep instanceof HasStep) && !(currentStep instanceof IdentityStep)) {
                             break;
                         } //We can jump over other steps as we move backward
+                        currentStep = currentStep.getPreviousStep();
                     }
                     if (currentStep instanceof VertexStep) {
                         VertexStep vertexStep = (VertexStep) currentStep;

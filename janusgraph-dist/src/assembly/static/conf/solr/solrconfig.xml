@@ -35,7 +35,7 @@
        that you fully re-index after changing this setting as it can
        affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>5.0.0</luceneMatchVersion>
+  <luceneMatchVersion>7.0.0</luceneMatchVersion>
 
   <!-- Data Directory
 
@@ -104,7 +104,7 @@
                    'simple' is the default
 
          More details on the nuances of each LockFactory...
-         http://wiki.apache.org/lucene-java/AvailableLockFactories
+         https://wiki.apache.org/lucene-java/AvailableLockFactories
     -->
     <lockType>${solr.lock.type:native}</lockType>
 
@@ -128,7 +128,7 @@
        parameters. Remove this to disable exposing Solr configuration
        and statistics to JMX.
 
-       For more details see http://wiki.apache.org/solr/SolrJmx
+       For more details see https://wiki.apache.org/solr/SolrJmx
     -->
   <jmx />
   <!-- If you want to connect to a particular server, specify the
@@ -158,7 +158,7 @@
          Instead of enabling autoCommit, consider using "commitWithin"
          when adding documents. 
 
-         http://wiki.apache.org/solr/UpdateXmlMessages
+         https://wiki.apache.org/solr/UpdateXmlMessages
 
          maxDocs - Maximum number of documents to add since the last
                    commit before automatically triggering a new commit.
@@ -391,7 +391,7 @@
 
   <!-- Request Handlers 
 
-       http://wiki.apache.org/solr/SolrRequestHandler
+       https://wiki.apache.org/solr/SolrRequestHandler
 
        Incoming queries will be dispatched to a specific handler by name
        based on the path specified in the request.
@@ -410,7 +410,7 @@
     -->
   <!-- SearchHandler
 
-       http://wiki.apache.org/solr/SearchHandler
+       https://wiki.apache.org/solr/SearchHandler
 
        For processing Search Queries, the primary Request Handler
        provided with Solr is "SearchHandler" It delegates to a sequent
@@ -486,7 +486,7 @@
 
   <!-- Document Analysis Handler
 
-       http://wiki.apache.org/solr/AnalysisRequestHandler
+       https://wiki.apache.org/solr/AnalysisRequestHandler
 
        An analysis handler that provides a breakdown of the analysis
        process of provided documents. This handler expects a (single)
@@ -546,7 +546,7 @@
 
   <!-- Terms Component
 
-       http://wiki.apache.org/solr/TermsComponent
+       https://wiki.apache.org/solr/TermsComponent
 
        A component to return terms and document frequency of those
        terms
