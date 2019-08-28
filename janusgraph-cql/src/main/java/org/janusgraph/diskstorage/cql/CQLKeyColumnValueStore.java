@@ -14,46 +14,28 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import static com.datastax.driver.core.querybuilder.QueryBuilder.bindMarker;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.column;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.delete;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.gte;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.insertInto;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.lt;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.lte;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.select;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.timestamp;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.token;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.ttl;
-import static com.datastax.driver.core.schemabuilder.SchemaBuilder.createTable;
-import static com.datastax.driver.core.schemabuilder.SchemaBuilder.dateTieredStrategy;
-import static com.datastax.driver.core.schemabuilder.SchemaBuilder.deflate;
-import static com.datastax.driver.core.schemabuilder.SchemaBuilder.leveledStrategy;
-import static com.datastax.driver.core.schemabuilder.SchemaBuilder.lz4;
-import static com.datastax.driver.core.schemabuilder.SchemaBuilder.noCompression;
-import static com.datastax.driver.core.schemabuilder.SchemaBuilder.sizedTieredStategy;
-import static com.datastax.driver.core.schemabuilder.SchemaBuilder.snappy;
-import static io.vavr.API.$;
-import static io.vavr.API.Case;
-import static io.vavr.API.Match;
-import static io.vavr.Predicates.instanceOf;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPACT_STORAGE;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_BLOCK_SIZE;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_TYPE;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_OPTIONS;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_STRATEGY;
-import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BatchableStatement;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.metadata.TokenMap;
+import com.datastax.oss.driver.api.core.servererrors.QueryValidationException;
+import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.querybuilder.relation.Relation;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
+import com.datastax.oss.driver.api.querybuilder.schema.compaction.CompactionStrategy;
+import com.datastax.oss.driver.internal.core.cql.ResultSets;
+import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import io.vavr.Lazy;
+import io.vavr.Tuple;
+import io.vavr.Tuple3;
+import io.vavr.collection.Array;
+import io.vavr.collection.Iterator;
+import io.vavr.concurrent.Future;
+import io.vavr.control.Try;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
@@ -70,30 +52,35 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
-import org.janusgraph.diskstorage.util.StaticArrayEntry.GetColVal;
+import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.janusgraph.diskstorage.util.StaticArrayEntryList;
 
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.exceptions.QueryValidationException;
-import com.datastax.driver.core.exceptions.UnsupportedFeatureException;
-import com.datastax.driver.core.schemabuilder.Create.Options;
-import com.datastax.driver.core.schemabuilder.TableOptions.CompactionOptions;
-import com.datastax.driver.core.schemabuilder.TableOptions.CompressionOptions;
-import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 
-import io.vavr.Lazy;
-import io.vavr.Tuple;
-import io.vavr.Tuple3;
-import io.vavr.collection.Array;
-import io.vavr.collection.Iterator;
-import io.vavr.concurrent.Future;
-import io.vavr.control.Try;
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.deleteFrom;
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.insertInto;
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
+import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.createTable;
+import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.leveledCompactionStrategy;
+import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.timeWindowCompactionStrategy;
+import static com.datastax.oss.driver.api.querybuilder.select.Selector.column;
+import static io.vavr.API.$;
+import static io.vavr.API.Case;
+import static io.vavr.API.Match;
+import static io.vavr.Predicates.instanceOf;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPACT_STORAGE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_BLOCK_SIZE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_TYPE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_OPTIONS;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_STRATEGY;
+import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
 
 /**
  * An implementation of {@link KeyColumnValueStore} which stores the data in a CQL connected backend.
@@ -122,12 +109,11 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
     static final Function<? super Throwable, BackendException> EXCEPTION_MAPPER = cause -> Match(cause).of(
             Case($(instanceOf(QueryValidationException.class)), PermanentBackendException::new),
-            Case($(instanceOf(UnsupportedFeatureException.class)), PermanentBackendException::new),
             Case($(), TemporaryBackendException::new));
 
     private final CQLStoreManager storeManager;
     private final ExecutorService executorService;
-    private final Session session;
+    private final CqlSession session;
     private final String tableName;
     private final CQLColValGetter getter;
     private final Runnable closer;
@@ -146,10 +132,9 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
      * @param tableName the name of the database table for storing the key/column/values
      * @param configuration data used in creating this store
      * @param closer callback used to clean up references to this store in the store manager
-     * @param allowCompactStorage whether to use compact storage is allowed (true only for Cassandra 2 and earlier)
-     * @param shouldInitializeTable if true is provided the table gets initialized
      */
-    public CQLKeyColumnValueStore(final CQLStoreManager storeManager, final String tableName, final Configuration configuration, final Runnable closer, final boolean allowCompactStorage, final Supplier<Boolean> shouldInitializeTable) {
+    public CQLKeyColumnValueStore(final CQLStoreManager storeManager, final String tableName, final Configuration configuration, final Runnable closer) {
+
         this.storeManager = storeManager;
         this.executorService = this.storeManager.getExecutorService();
         this.tableName = tableName;
@@ -157,112 +142,141 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         this.session = this.storeManager.getSession();
         this.getter = new CQLColValGetter(storeManager.getMetaDataSchema(this.tableName));
 
-        if(shouldInitializeTable.get()) {
-            initializeTable(this.session, this.storeManager.getKeyspaceName(), tableName, configuration, allowCompactStorage);
+        if(shouldInitializeTable()) {
+            initializeTable(this.session, this.storeManager.getKeyspaceName(), tableName, configuration, this.storeManager.isCompactStorageAllowed());
         }
 
         // @formatter:off
-        this.getSlice = this.session.prepare(select()
+        this.getSlice = this.session.prepare(selectFrom(this.storeManager.getKeyspaceName(), this.tableName)
                 .column(COLUMN_COLUMN_NAME)
                 .column(VALUE_COLUMN_NAME)
-                .fcall(WRITETIME_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(WRITETIME_COLUMN_NAME)
-                .fcall(TTL_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(TTL_COLUMN_NAME)
-                .from(this.storeManager.getKeyspaceName(), this.tableName)
-                .where(eq(KEY_COLUMN_NAME, bindMarker(KEY_BINDING)))
-                .and(gte(COLUMN_COLUMN_NAME, bindMarker(SLICE_START_BINDING)))
-                .and(lt(COLUMN_COLUMN_NAME, bindMarker(SLICE_END_BINDING)))
-                .limit(bindMarker(LIMIT_BINDING)));
+                .function(WRITETIME_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(WRITETIME_COLUMN_NAME)
+                .function(TTL_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(TTL_COLUMN_NAME)
+                .where(
+                    Relation.column(KEY_COLUMN_NAME).isEqualTo(bindMarker(KEY_BINDING)),
+                    Relation.column(COLUMN_COLUMN_NAME).isGreaterThanOrEqualTo(bindMarker(SLICE_START_BINDING)),
+                    Relation.column(COLUMN_COLUMN_NAME).isLessThan(bindMarker(SLICE_END_BINDING))
+                )
+                .limit(bindMarker(LIMIT_BINDING)).build());
 
-        this.getKeysRanged = this.session.prepare(select()
+        this.getKeysRanged = this.session.prepare(selectFrom(this.storeManager.getKeyspaceName(), this.tableName)
                 .column(KEY_COLUMN_NAME)
                 .column(COLUMN_COLUMN_NAME)
                 .column(VALUE_COLUMN_NAME)
-                .fcall(WRITETIME_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(WRITETIME_COLUMN_NAME)
-                .fcall(TTL_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(TTL_COLUMN_NAME)
-                .from(this.storeManager.getKeyspaceName(), this.tableName)
+                .function(WRITETIME_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(WRITETIME_COLUMN_NAME)
+                .function(TTL_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(TTL_COLUMN_NAME)
                 .allowFiltering()
-                .where(gte(token(KEY_COLUMN_NAME), bindMarker(KEY_START_BINDING)))
-                .and(lt(token(KEY_COLUMN_NAME), bindMarker(KEY_END_BINDING)))
-                .and(gte(COLUMN_COLUMN_NAME, bindMarker(SLICE_START_BINDING)))
-                .and(lte(COLUMN_COLUMN_NAME, bindMarker(SLICE_END_BINDING))));
+                .where(
+                    Relation.token(KEY_COLUMN_NAME).isGreaterThanOrEqualTo(bindMarker(KEY_START_BINDING)),
+                    Relation.token(KEY_COLUMN_NAME).isLessThan(bindMarker(KEY_END_BINDING))
+                )
+                .whereColumn(COLUMN_COLUMN_NAME).isGreaterThanOrEqualTo(bindMarker(SLICE_START_BINDING))
+                .whereColumn(COLUMN_COLUMN_NAME).isLessThanOrEqualTo(bindMarker(SLICE_END_BINDING))
+                .build());
 
-        this.getKeysAll = this.session.prepare(select()
+        this.getKeysAll = this.session.prepare(selectFrom(this.storeManager.getKeyspaceName(), this.tableName)
                 .column(KEY_COLUMN_NAME)
                 .column(COLUMN_COLUMN_NAME)
                 .column(VALUE_COLUMN_NAME)
-                .fcall(WRITETIME_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(WRITETIME_COLUMN_NAME)
-                .fcall(TTL_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(TTL_COLUMN_NAME)
-                .from(this.storeManager.getKeyspaceName(), this.tableName)
+                .function(WRITETIME_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(WRITETIME_COLUMN_NAME)
+                .function(TTL_FUNCTION_NAME, column(VALUE_COLUMN_NAME)).as(TTL_COLUMN_NAME)
                 .allowFiltering()
-                .where(gte(COLUMN_COLUMN_NAME, bindMarker(SLICE_START_BINDING)))
-                .and(lte(COLUMN_COLUMN_NAME, bindMarker(SLICE_END_BINDING))));
+                .whereColumn(COLUMN_COLUMN_NAME).isGreaterThanOrEqualTo(bindMarker(SLICE_START_BINDING))
+                .whereColumn(COLUMN_COLUMN_NAME).isLessThan(bindMarker(SLICE_END_BINDING))
+                .build());
 
-        this.deleteColumn = this.session.prepare(delete()
-                .from(this.storeManager.getKeyspaceName(), this.tableName)
-                .where(eq(KEY_COLUMN_NAME, bindMarker(KEY_BINDING)))
-                .and(eq(COLUMN_COLUMN_NAME, bindMarker(COLUMN_BINDING)))
-                .using(timestamp(bindMarker(TIMESTAMP_BINDING))));
+        this.deleteColumn = this.session.prepare(deleteFrom(this.storeManager.getKeyspaceName(), this.tableName)
+                .usingTimestamp(bindMarker(TIMESTAMP_BINDING))
+                .whereColumn(KEY_COLUMN_NAME).isEqualTo(bindMarker(KEY_BINDING))
+                .whereColumn(COLUMN_COLUMN_NAME).isEqualTo(bindMarker(COLUMN_BINDING))
+                .build());
 
         this.insertColumn = this.session.prepare(insertInto(this.storeManager.getKeyspaceName(), this.tableName)
                 .value(KEY_COLUMN_NAME, bindMarker(KEY_BINDING))
                 .value(COLUMN_COLUMN_NAME, bindMarker(COLUMN_BINDING))
                 .value(VALUE_COLUMN_NAME, bindMarker(VALUE_BINDING))
-                .using(timestamp(bindMarker(TIMESTAMP_BINDING))));
+                .usingTimestamp(bindMarker(TIMESTAMP_BINDING)).build());
 
         this.insertColumnWithTTL = this.session.prepare(insertInto(this.storeManager.getKeyspaceName(), this.tableName)
                 .value(KEY_COLUMN_NAME, bindMarker(KEY_BINDING))
                 .value(COLUMN_COLUMN_NAME, bindMarker(COLUMN_BINDING))
                 .value(VALUE_COLUMN_NAME, bindMarker(VALUE_BINDING))
-                .using(timestamp(bindMarker(TIMESTAMP_BINDING)))
-                .and(ttl(bindMarker(TTL_BINDING))));
+                .usingTimestamp(bindMarker(TIMESTAMP_BINDING))
+                .usingTtl(bindMarker(TTL_BINDING)).build());
         // @formatter:on
     }
 
-    private static void initializeTable(final Session session, final String keyspaceName, final String tableName, final Configuration configuration, final boolean allowCompactStorage) {
-        final Options createTable = createTable(keyspaceName, tableName)
+    /**
+     * Check if the current table should be initialized.
+     * NOTE: This additional check is needed when Cassandra security is enabled, for more info check issue #1103
+     * @return true if table already exists in current keyspace, false otherwise
+     */
+    private boolean shouldInitializeTable() {
+        return storeManager.getSession().getMetadata()
+            .getKeyspace(storeManager.getKeyspaceName()).map(k -> !k.getTable(this.tableName).isPresent())
+            .orElse(true);
+    }
+
+    private static void initializeTable(final CqlSession session, final String keyspaceName, final String tableName, final Configuration configuration, final boolean allowCompactStorage) {
+        CreateTableWithOptions createTable = createTable(keyspaceName, tableName)
                 .ifNotExists()
-                .addPartitionKey(KEY_COLUMN_NAME, DataType.blob())
-                .addClusteringColumn(COLUMN_COLUMN_NAME, DataType.blob())
-                .addColumn(VALUE_COLUMN_NAME, DataType.blob())
-                .withOptions()
-                .compressionOptions(compressionOptions(configuration))
-                .compactionOptions(compactionOptions(configuration));
+                .withPartitionKey(KEY_COLUMN_NAME, DataTypes.BLOB)
+                .withClusteringColumn(COLUMN_COLUMN_NAME, DataTypes.BLOB)
+                .withColumn(VALUE_COLUMN_NAME, DataTypes.BLOB);
+
+
+        createTable = compactionOptions(createTable, configuration);
         // COMPACT STORAGE is allowed on Cassandra 2 or earlier
         // when COMPACT STORAGE is allowed, the default is to enable it
-        final boolean useCompactStorage =
+        boolean useCompactStorage =
             (allowCompactStorage && configuration.has(CF_COMPACT_STORAGE))
             ? configuration.get(CF_COMPACT_STORAGE)
             : allowCompactStorage;
-        session.execute(useCompactStorage ? createTable.compactStorage() : createTable);
+
+        if(useCompactStorage){
+            createTable = createTable.withCompactStorage();
+        }
+
+        createTable = compressionOptions(createTable, configuration, allowCompactStorage);
+
+
+        session.execute(createTable.build());
     }
 
-    private static CompressionOptions compressionOptions(final Configuration configuration) {
+    private static CreateTableWithOptions compressionOptions(final CreateTableWithOptions createTable, final Configuration configuration, boolean allowCompactStorage) {
         if (!configuration.get(CF_COMPRESSION)) {
             // No compression
-            return noCompression();
+            return createTable.withNoCompression();
         }
+        String compressionType = configuration.get(CF_COMPRESSION_TYPE);
+        int chunkLengthInKb = configuration.get(CF_COMPRESSION_BLOCK_SIZE);
+        // AllowCompactStorage is true only when using Cassandra 2.x, which uses 'sstable_compression' instead of 'class' to refer to
+        // the compression type Class
+        String compressionKey = (allowCompactStorage) ? "sstable_compression" : "class";
 
-        return Match(configuration.get(CF_COMPRESSION_TYPE)).of(
-                Case($("LZ4Compressor"), lz4()),
-                Case($("SnappyCompressor"), snappy()),
-                Case($("DeflateCompressor"), deflate()))
-                .withChunkLengthInKb(configuration.get(CF_COMPRESSION_BLOCK_SIZE));
+        return createTable.withOption("compression",
+                ImmutableMap.of(compressionKey, compressionType, "chunk_length_kb", chunkLengthInKb));
+
     }
 
-    private static CompactionOptions<?> compactionOptions(final Configuration configuration) {
+    private static CreateTableWithOptions compactionOptions(CreateTableWithOptions createTable, final Configuration configuration) {
         if (!configuration.has(COMPACTION_STRATEGY)) {
-            return null;
+            return createTable;
         }
 
-        final CompactionOptions<?> compactionOptions = Match(configuration.get(COMPACTION_STRATEGY))
+        CompactionStrategy<?> compactionStrategy = Match(configuration.get(COMPACTION_STRATEGY))
                 .of(
-                        Case($("SizeTieredCompactionStrategy"), sizedTieredStategy()),
-                        Case($("DateTieredCompactionStrategy"), dateTieredStrategy()),
-                        Case($("LeveledCompactionStrategy"), leveledStrategy()));
-        Array.of(configuration.get(COMPACTION_OPTIONS))
-                .grouped(2)
-                .forEach(keyValue -> compactionOptions.freeformOption(keyValue.get(0), keyValue.get(1)));
-        return compactionOptions;
+                        Case($("SizeTieredCompactionStrategy"), leveledCompactionStrategy()),
+                        Case($("TimeWindowCompactionStrategy"), timeWindowCompactionStrategy()),
+                        Case($("LeveledCompactionStrategy"), leveledCompactionStrategy()));
+        Iterator<Array<String>> groupedOptions = Array.of(configuration.get(COMPACTION_OPTIONS))
+            .grouped(2);
+
+        for(Array<String> keyValue: groupedOptions){
+            compactionStrategy = compactionStrategy.withOption(keyValue.get(0), keyValue.get(1));
+        }
+
+        return createTable.withCompaction(compactionStrategy);
     }
 
     @Override
@@ -280,11 +294,12 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         final Future<EntryList> result = Future.fromJavaFuture(
                 this.executorService,
                 this.session.executeAsync(this.getSlice.bind()
-                        .setBytes(KEY_BINDING, query.getKey().asByteBuffer())
-                        .setBytes(SLICE_START_BINDING, query.getSliceStart().asByteBuffer())
-                        .setBytes(SLICE_END_BINDING, query.getSliceEnd().asByteBuffer())
+                        .setByteBuffer(KEY_BINDING, query.getKey().asByteBuffer())
+                        .setByteBuffer(SLICE_START_BINDING, query.getSliceStart().asByteBuffer())
+                        .setByteBuffer(SLICE_END_BINDING, query.getSliceEnd().asByteBuffer())
                         .setInt(LIMIT_BINDING, query.getLimit())
-                        .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel())))
+                        .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel()))
+                        .toCompletableFuture())
                 .map(resultSet -> fromResultSet(resultSet, this.getter));
         interruptibleWait(result);
         return result.getValue().get().getOrElseThrow(EXCEPTION_MAPPER);
@@ -299,7 +314,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
      * VAVR Future.await will throw InterruptedException wrapped in a FatalException. If the Thread was in Object.wait, the interrupted
      * flag will be cleared as a side effect and needs to be reset. This method checks that the underlying cause of the FatalException is
      * InterruptedException and resets the interrupted flag.
-     * 
+     *
      * @param result the future to wait on
      * @throws PermanentBackendException if the thread was interrupted while waiting for the future result
      */
@@ -307,23 +322,24 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         try {
             result.await();
         } catch (Exception e) {
-            if (e instanceof InterruptedException) {
+            if (e.getCause() instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
-            throw new PermanentBackendException(e);
+            throw new PermanentBackendException(e.getCause());
         }
     }
 
-    private static EntryList fromResultSet(final ResultSet resultSet, final GetColVal<Tuple3<StaticBuffer, StaticBuffer, Row>, StaticBuffer> getter) {
-        final Lazy<ArrayList<Row>> lazyList = Lazy.of(() -> Lists.newArrayList(resultSet));
+    private static EntryList fromResultSet(final AsyncResultSet resultSet, final StaticArrayEntry.GetColVal<Tuple3<StaticBuffer, StaticBuffer, Row>, StaticBuffer> getter) {
+        final Lazy<ArrayList<Row>> lazyList = Lazy.of(() -> Lists.newArrayList(ResultSets.newInstance(resultSet)));
+
         // Use the Iterable overload of ofByteBuffer as it's able to allocate
         // the byte array up front.
         // To ensure that the Iterator instance is recreated, it is created
         // within the closure otherwise
         // the same iterator would be reused and would be exhausted.
         return StaticArrayEntryList.ofStaticBuffer(() -> Iterator.ofAll(lazyList.get()).map(row -> Tuple.of(
-                        StaticArrayBuffer.of(row.getBytes(COLUMN_COLUMN_NAME)),
-                        StaticArrayBuffer.of(row.getBytes(VALUE_COLUMN_NAME)),
+                        StaticArrayBuffer.of(row.getByteBuffer(COLUMN_COLUMN_NAME)),
+                        StaticArrayBuffer.of(row.getByteBuffer(VALUE_COLUMN_NAME)),
                         row)),
                 getter);
     }
@@ -331,30 +347,30 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     /*
      * Used from CQLStoreManager
      */
-    Statement deleteColumn(final StaticBuffer key, final StaticBuffer column, final long timestamp) {
+    BatchableStatement<BoundStatement> deleteColumn(final StaticBuffer key, final StaticBuffer column, final long timestamp) {
         return this.deleteColumn.bind()
-                .setBytes(KEY_BINDING, key.asByteBuffer())
-                .setBytes(COLUMN_BINDING, column.asByteBuffer())
+                .setByteBuffer(KEY_BINDING, key.asByteBuffer())
+                .setByteBuffer(COLUMN_BINDING, column.asByteBuffer())
                 .setLong(TIMESTAMP_BINDING, timestamp);
     }
 
     /*
      * Used from CQLStoreManager
      */
-    Statement insertColumn(final StaticBuffer key, final Entry entry, final long timestamp) {
+    BatchableStatement<BoundStatement> insertColumn(final StaticBuffer key, final Entry entry, final long timestamp) {
         final Integer ttl = (Integer) entry.getMetaData().get(EntryMetaData.TTL);
         if (ttl != null) {
             return this.insertColumnWithTTL.bind()
-                    .setBytes(KEY_BINDING, key.asByteBuffer())
-                    .setBytes(COLUMN_BINDING, entry.getColumn().asByteBuffer())
-                    .setBytes(VALUE_BINDING, entry.getValue().asByteBuffer())
+                    .setByteBuffer(KEY_BINDING, key.asByteBuffer())
+                    .setByteBuffer(COLUMN_BINDING, entry.getColumn().asByteBuffer())
+                    .setByteBuffer(VALUE_BINDING, entry.getValue().asByteBuffer())
                     .setLong(TIMESTAMP_BINDING, timestamp)
                     .setInt(TTL_BINDING, ttl);
         }
         return this.insertColumn.bind()
-                .setBytes(KEY_BINDING, key.asByteBuffer())
-                .setBytes(COLUMN_BINDING, entry.getColumn().asByteBuffer())
-                .setBytes(VALUE_BINDING, entry.getValue().asByteBuffer())
+                .setByteBuffer(KEY_BINDING, key.asByteBuffer())
+                .setByteBuffer(COLUMN_BINDING, entry.getColumn().asByteBuffer())
+                .setByteBuffer(VALUE_BINDING, entry.getValue().asByteBuffer())
                 .setLong(TIMESTAMP_BINDING, timestamp);
     }
 
@@ -377,16 +393,16 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
             throw new PermanentBackendException("This operation is only allowed when the byteorderedpartitioner is used.");
         }
 
-        final Metadata metadata = this.session.getCluster().getMetadata();
+        TokenMap tokenMap = this.session.getMetadata().getTokenMap().get();
         return Try.of(() -> new CQLResultSetKeyIterator(
                 query,
                 this.getter,
                 this.session.execute(this.getKeysRanged.bind()
-                        .setToken(KEY_START_BINDING, metadata.newToken(query.getKeyStart().asByteBuffer()))
-                        .setToken(KEY_END_BINDING, metadata.newToken(query.getKeyEnd().asByteBuffer()))
-                        .setBytes(SLICE_START_BINDING, query.getSliceStart().asByteBuffer())
-                        .setBytes(SLICE_END_BINDING, query.getSliceEnd().asByteBuffer())
-                        .setFetchSize(this.storeManager.getPageSize())
+                        .setToken(KEY_START_BINDING, tokenMap.newToken(query.getKeyStart().asByteBuffer()))
+                        .setToken(KEY_END_BINDING, tokenMap.newToken(query.getKeyEnd().asByteBuffer()))
+                        .setByteBuffer(SLICE_START_BINDING, query.getSliceStart().asByteBuffer())
+                        .setByteBuffer(SLICE_END_BINDING, query.getSliceEnd().asByteBuffer())
+                        .setPageSize(this.storeManager.getPageSize())
                         .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel()))))
                 .getOrElseThrow(EXCEPTION_MAPPER);
     }
@@ -401,9 +417,9 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                 query,
                 this.getter,
                 this.session.execute(this.getKeysAll.bind()
-                        .setBytes(SLICE_START_BINDING, query.getSliceStart().asByteBuffer())
-                        .setBytes(SLICE_END_BINDING, query.getSliceEnd().asByteBuffer())
-                        .setFetchSize(this.storeManager.getPageSize())
+                        .setByteBuffer(SLICE_START_BINDING, query.getSliceStart().asByteBuffer())
+                        .setByteBuffer(SLICE_END_BINDING, query.getSliceEnd().asByteBuffer())
+                        .setPageSize(this.storeManager.getPageSize())
                         .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel()))))
                 .getOrElseThrow(EXCEPTION_MAPPER);
     }

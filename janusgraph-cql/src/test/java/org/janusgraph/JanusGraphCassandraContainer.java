@@ -31,8 +31,18 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.time.Duration;
 
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.*;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.MAX_REQUESTS_PER_CONNECTION;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_ENABLED;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_LOCATION;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_PASSWORD;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CONNECTION_TIMEOUT;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PAGE_SIZE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_HOSTS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_PORT;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.buildGraphConfiguration;
 
 public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphCassandraContainer> {
     private static final Logger LOGGER = LoggerFactory.getLogger(JanusGraphCassandraContainer.class);
@@ -149,7 +159,7 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
         config.set(STORAGE_PORT, getMappedPort(CQL_PORT));
         config.set(STORAGE_HOSTS, new String[]{getContainerIpAddress()});
         config.set(DROP_ON_CLEAR, false);
-        config.set(REMOTE_MAX_REQUESTS_PER_CONNECTION, 1024);
+        config.set(MAX_REQUESTS_PER_CONNECTION, 1024);
         if (useSSL() && useDynamicConfig()) {
             config.set(SSL_ENABLED, true);
             config.set(SSL_TRUSTSTORE_LOCATION,

@@ -39,11 +39,11 @@ public interface CQLConfigOptions {
             "janusgraph");
 
     ConfigOption<Integer> PROTOCOL_VERSION = new ConfigOption<>(
-            CQL_NS,
-            "protocol-version",
-            "The protocol version used to connect to the Cassandra database.  If no value is supplied then the driver will negotiate with the server.",
-            ConfigOption.Type.LOCAL,
-            0);
+        CQL_NS,
+        "protocol-version",
+        "The protocol version used to connect to the Cassandra database.  If no value is supplied then the driver will negotiate with the server.",
+        ConfigOption.Type.LOCAL,
+        0);
 
     ConfigOption<String> READ_CONSISTENCY = new ConfigOption<>(
             CQL_NS,
@@ -165,20 +165,6 @@ public interface CQLConfigOptions {
             ConfigOption.Type.FIXED,
             64);
 
-    ConfigOption<Integer> LOCAL_CORE_CONNECTIONS_PER_HOST = new ConfigOption<>(
-            CQL_NS,
-            "local-core-connections-per-host",
-            "The number of connections initially created and kept open to each host for local datacenter",
-            ConfigOption.Type.FIXED,
-            1);
-
-    ConfigOption<Integer> REMOTE_CORE_CONNECTIONS_PER_HOST = new ConfigOption<>(
-            CQL_NS,
-            "remote-core-connections-per-host",
-            "The number of connections initially created and kept open to each host for remote datacenter",
-            ConfigOption.Type.FIXED,
-            1);
-
     ConfigOption<Integer> LOCAL_MAX_CONNECTIONS_PER_HOST = new ConfigOption<>(
             CQL_NS,
             "local-max-connections-per-host",
@@ -193,19 +179,13 @@ public interface CQLConfigOptions {
             ConfigOption.Type.FIXED,
             1);
 
-    ConfigOption<Integer> LOCAL_MAX_REQUESTS_PER_CONNECTION = new ConfigOption<>(
+    ConfigOption<Integer> MAX_REQUESTS_PER_CONNECTION = new ConfigOption<>(
             CQL_NS,
-            "local-max-requests-per-connection",
-            "The maximum number of requests per connection for local datacenter",
+            "max-requests-per-connection",
+            "The maximum number of requests that can be executed concurrently on a connection.",
             ConfigOption.Type.FIXED,
             1024);
 
-    ConfigOption<Integer> REMOTE_MAX_REQUESTS_PER_CONNECTION = new ConfigOption<>(
-            CQL_NS,
-            "remote-max-requests-per-connection",
-            "The maximum number of requests per connection for remote datacenter",
-            ConfigOption.Type.FIXED,
-            256);
 
     // SSL
     ConfigNamespace SSL_NS = new ConfigNamespace(
@@ -239,13 +219,14 @@ public interface CQLConfigOptions {
             ConfigOption.Type.LOCAL,
             "");
 
-    // Other options
-    ConfigOption<String> CLUSTER_NAME = new ConfigOption<>(
-            CQL_NS,
-            "cluster-name",
-            "Default name for the Cassandra cluster",
-            ConfigOption.Type.MASKABLE,
-            "JanusGraph Cluster");
+    //Other options
+
+    ConfigOption<String> SESSION_NAME = new ConfigOption<>(
+        CQL_NS,
+        "session-name",
+        "Default name for the Cassandra session",
+        ConfigOption.Type.MASKABLE,
+        "JanusGraph Session");
 
     ConfigOption<String> LOCAL_DATACENTER = new ConfigOption<>(
             CQL_NS,
@@ -258,6 +239,7 @@ public interface CQLConfigOptions {
              * the same Cassandra DC.
              */
             ConfigOption.Type.MASKABLE,
-            String.class);
+            String.class,
+            "datacenter1");
 
 }

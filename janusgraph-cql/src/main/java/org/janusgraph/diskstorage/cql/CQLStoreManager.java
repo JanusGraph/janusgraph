@@ -14,68 +14,34 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import static com.datastax.driver.core.schemabuilder.SchemaBuilder.createKeyspace;
-import static com.datastax.driver.core.schemabuilder.SchemaBuilder.dropKeyspace;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.select;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.truncate;
-import static io.vavr.API.$;
-import static io.vavr.API.Case;
-import static io.vavr.API.Match;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CLUSTER_NAME;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ONLY_USE_LOCAL_CONSISTENCY_FOR_SYSTEM_OPERATIONS;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_CORE_CONNECTIONS_PER_HOST;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_DATACENTER;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_MAX_CONNECTIONS_PER_HOST;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_MAX_REQUESTS_PER_CONNECTION;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.PROTOCOL_VERSION;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.READ_CONSISTENCY;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REMOTE_CORE_CONNECTIONS_PER_HOST;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REMOTE_MAX_CONNECTIONS_PER_HOST;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REMOTE_MAX_REQUESTS_PER_CONNECTION;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_FACTOR;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_OPTIONS;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_STRATEGY;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_ENABLED;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_LOCATION;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_PASSWORD;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.WRITE_CONSISTENCY;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.USE_EXTERNAL_LOCKING;
-import static org.janusgraph.diskstorage.cql.CQLKeyColumnValueStore.EXCEPTION_MAPPER;
-import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_PASSWORD;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_USERNAME;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_PREFIX;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.buildGraphConfiguration;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
-
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-
-import javax.annotation.Resource;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.oss.driver.api.core.config.ProgrammaticDriverConfigLoaderBuilder;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BatchStatement;
+import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.BatchableStatement;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.DefaultBatchType;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.servererrors.QueryExecutionException;
+import com.datastax.oss.driver.api.core.servererrors.QueryValidationException;
+import com.datastax.oss.driver.internal.core.auth.PlainTextAuthProvider;
+import com.datastax.oss.driver.internal.core.ssl.DefaultSslEngineFactory;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.vavr.Tuple;
+import io.vavr.collection.Array;
+import io.vavr.collection.HashMap;
+import io.vavr.collection.Iterator;
+import io.vavr.collection.Seq;
+import io.vavr.concurrent.Future;
+import io.vavr.control.Option;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.PermanentBackendException;
@@ -91,36 +57,54 @@ import org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.util.system.NetworkUtil;
-
-import com.datastax.driver.core.BatchStatement;
-import com.datastax.driver.core.BatchStatement.Type;
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Cluster.Builder;
-import com.datastax.driver.core.HostDistance;
-import com.datastax.driver.core.JdkSSLOptions;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.PoolingOptions;
-import com.datastax.driver.core.ProtocolVersion;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.TableMetadata;
-import com.datastax.driver.core.exceptions.NoHostAvailableException;
-import com.datastax.driver.core.exceptions.QueryExecutionException;
-import com.datastax.driver.core.exceptions.QueryValidationException;
-import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
-import com.datastax.driver.core.policies.TokenAwarePolicy;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
-import io.vavr.Tuple;
-import io.vavr.collection.Array;
-import io.vavr.collection.HashMap;
-import io.vavr.collection.Iterator;
-import io.vavr.collection.Seq;
-import io.vavr.concurrent.Future;
-import io.vavr.control.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.annotation.Resource;
+import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.truncate;
+import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.createKeyspace;
+import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.dropKeyspace;
+import static io.vavr.API.$;
+import static io.vavr.API.Case;
+import static io.vavr.API.Match;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_DATACENTER;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_MAX_CONNECTIONS_PER_HOST;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.MAX_REQUESTS_PER_CONNECTION;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ONLY_USE_LOCAL_CONSISTENCY_FOR_SYSTEM_OPERATIONS;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.PROTOCOL_VERSION;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.READ_CONSISTENCY;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REMOTE_MAX_CONNECTIONS_PER_HOST;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_FACTOR;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_OPTIONS;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_STRATEGY;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SESSION_NAME;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_ENABLED;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_LOCATION;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_PASSWORD;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.USE_EXTERNAL_LOCKING;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.WRITE_CONSISTENCY;
+import static org.janusgraph.diskstorage.cql.CQLKeyColumnValueStore.EXCEPTION_MAPPER;
+import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_PASSWORD;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_USERNAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_PREFIX;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.buildGraphConfiguration;
 
 /**
  * This class creates see {@link CQLKeyColumnValueStore CQLKeyColumnValueStores} and handles Cassandra-backed allocation of vertex IDs for JanusGraph (when so
@@ -142,9 +126,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     final ExecutorService executorService;
 
     @Resource
-    private Cluster cluster;
-    @Resource
-    private Session session;
+    private CqlSession session;
     private final StoreFeatures storeFeatures;
     private final Map<String, CQLKeyColumnValueStore> openStores;
     private final Deployment deployment;
@@ -170,9 +152,9 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                         .setNameFormat("CQLStoreManager[%02d]")
                         .build());
 
-        this.cluster = initializeCluster();
-        this.session = initializeSession(this.keyspace);
+        this.session = initializeSession();
         this.allowCompactStorage = initializeCompactStorage();
+        initializeKeyspace();
 
         final Configuration global = buildGraphConfiguration()
                 .set(READ_CONSISTENCY, CONSISTENCY_QUORUM)
@@ -197,7 +179,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         fb.optimisticLocking(true);
         fb.multiQuery(false);
 
-        final String partitioner = this.cluster.getMetadata().getPartitioner();
+        final String partitioner = this.session.getMetadata().getTokenMap().get().getPartitionerName();
         switch (partitioner.substring(partitioner.lastIndexOf('.') + 1)) {
             case "RandomPartitioner":
             case "Murmur3Partitioner": {
@@ -221,92 +203,62 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         this.openStores = new ConcurrentHashMap<>();
     }
 
-    Cluster initializeCluster() throws PermanentBackendException {
+
+    CqlSession initializeSession() throws PermanentBackendException {
         final Configuration configuration = getStorageConfig();
 
         final List<InetSocketAddress> contactPoints;
         try {
             contactPoints = Array.of(this.hostnames)
-                    .map(hostName -> hostName.split(":"))
-                    .map(array -> Tuple.of(array[0], array.length == 2 ? Integer.parseInt(array[1]) : this.port))
-                    .map(tuple -> new InetSocketAddress(tuple._1, tuple._2))
-                    .toJavaList();
+                .map(hostName -> hostName.split(":"))
+                .map(array -> Tuple.of(array[0], array.length == 2 ? Integer.parseInt(array[1]) : this.port))
+                .map(tuple -> new InetSocketAddress(tuple._1, tuple._2))
+                .toJavaList();
         } catch (SecurityException | ArrayIndexOutOfBoundsException | NumberFormatException e) {
             throw new PermanentBackendException("Error initialising cluster contact points", e);
         }
 
-        final Builder builder = Cluster.builder()
-                .addContactPointsWithPorts(contactPoints)
-                .withClusterName(configuration.get(CLUSTER_NAME));
+        final CqlSessionBuilder builder = CqlSession.builder()
+            .addContactPoints(contactPoints)
+            .withLocalDatacenter(configuration.get(LOCAL_DATACENTER));
+
+        ProgrammaticDriverConfigLoaderBuilder configLoaderBuilder = DriverConfigLoader.programmaticBuilder();
+        configLoaderBuilder.withString(DefaultDriverOption.SESSION_NAME, configuration.get(SESSION_NAME));
 
         if (configuration.get(PROTOCOL_VERSION) != 0) {
-            builder.withProtocolVersion(ProtocolVersion.fromInt(configuration.get(PROTOCOL_VERSION)));
+            configLoaderBuilder.withInt(DefaultDriverOption.PROTOCOL_VERSION, configuration.get(PROTOCOL_VERSION));
         }
 
         if (configuration.has(AUTH_USERNAME) && configuration.has(AUTH_PASSWORD)) {
-            builder.withCredentials(configuration.get(AUTH_USERNAME), configuration.get(AUTH_PASSWORD));
-        }
-
-        if (configuration.has(LOCAL_DATACENTER)) {
-            builder.withLoadBalancingPolicy(new TokenAwarePolicy(DCAwareRoundRobinPolicy.builder()
-                    .withLocalDc(configuration.get(LOCAL_DATACENTER))
-                    .build()));
+            configLoaderBuilder
+                .withClass(DefaultDriverOption.AUTH_PROVIDER_CLASS, PlainTextAuthProvider.class)
+                .withString(DefaultDriverOption.AUTH_PROVIDER_USER_NAME, configuration.get(AUTH_USERNAME))
+                .withString(DefaultDriverOption.AUTH_PROVIDER_PASSWORD, configuration.get(AUTH_PASSWORD));
         }
 
         if (configuration.get(SSL_ENABLED)) {
-            try {
-                final TrustManager[] trustManagers;
-                try (final FileInputStream keyStoreStream = new FileInputStream(configuration.get(SSL_TRUSTSTORE_LOCATION))) {
-                    final KeyStore keystore = KeyStore.getInstance("jks");
-                    keystore.load(keyStoreStream, configuration.get(SSL_TRUSTSTORE_PASSWORD).toCharArray());
-                    final TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-                    trustManagerFactory.init(keystore);
-                    trustManagers = trustManagerFactory.getTrustManagers();
-                }
-
-                final SSLContext sslContext = SSLContext.getInstance("TLS");
-                sslContext.init(null, trustManagers, null);
-
-                final JdkSSLOptions sslOptions = JdkSSLOptions.builder()
-                        .withSSLContext(sslContext)
-                        .build();
-                builder.withSSL(sslOptions);
-
-            } catch (NoSuchAlgorithmException | CertificateException | IOException | KeyStoreException | KeyManagementException e) {
-                throw new PermanentBackendException("Error initialising SSL connection properties", e);
-            }
+            configLoaderBuilder
+                .withClass(DefaultDriverOption.SSL_ENGINE_FACTORY_CLASS, DefaultSslEngineFactory.class)
+                .withString(DefaultDriverOption.SSL_TRUSTSTORE_PATH, configuration.get(SSL_TRUSTSTORE_LOCATION))
+                .withString(DefaultDriverOption.SSL_TRUSTSTORE_PASSWORD, configuration.get(SSL_TRUSTSTORE_PASSWORD));
         }
 
-        // Build the PoolingOptions based on the configurations
-        PoolingOptions poolingOptions = new PoolingOptions();
-        poolingOptions
-            .setMaxRequestsPerConnection(
-                    HostDistance.LOCAL,
-                    configuration.get(LOCAL_MAX_REQUESTS_PER_CONNECTION))
-            .setMaxRequestsPerConnection(
-                    HostDistance.REMOTE,
-                    configuration.get(REMOTE_MAX_REQUESTS_PER_CONNECTION));
-        poolingOptions
-            .setConnectionsPerHost(
-                    HostDistance.LOCAL,
-                    configuration.get(LOCAL_CORE_CONNECTIONS_PER_HOST),
-                    configuration.get(LOCAL_MAX_CONNECTIONS_PER_HOST))
-            .setConnectionsPerHost(
-                    HostDistance.REMOTE,
-                    configuration.get(REMOTE_CORE_CONNECTIONS_PER_HOST),
-                    configuration.get(REMOTE_MAX_CONNECTIONS_PER_HOST));
-        return builder.withPoolingOptions(poolingOptions).build();
+        configLoaderBuilder.withInt(DefaultDriverOption.CONNECTION_POOL_LOCAL_SIZE, configuration.get(LOCAL_MAX_CONNECTIONS_PER_HOST));
+        configLoaderBuilder.withInt(DefaultDriverOption.CONNECTION_POOL_REMOTE_SIZE, configuration.get(REMOTE_MAX_CONNECTIONS_PER_HOST));
+        configLoaderBuilder.withInt(DefaultDriverOption.CONNECTION_MAX_REQUESTS, configuration.get(MAX_REQUESTS_PER_CONNECTION));
+
+        builder.withConfigLoader(configLoaderBuilder.build());
+        return builder.build();
     }
 
-    Session initializeSession(final String keyspaceName) {
-        final Session s = this.cluster.connect();
-
-        // if the keyspace already exists, just return the session
-        if (this.cluster.getMetadata().getKeyspace(keyspaceName) != null) {
-            return s;
+    void initializeKeyspace(){
+        // if the keyspace already exists, just return
+        if (this.session.getMetadata().getKeyspace(this.keyspace).isPresent()) {
+            return;
         }
 
         final Configuration configuration = getStorageConfig();
+
         // Setting replication strategy based on value reading from the configuration: either "SimpleStrategy" or "NetworkTopologyStrategy"
         final Map<String, Object> replication = Match(configuration.get(REPLICATION_STRATEGY)).of(
             Case($("SimpleStrategy"), strategy -> HashMap.<String, Object> of("class", strategy, "replication_factor", configuration.get(REPLICATION_FACTOR))),
@@ -317,26 +269,28 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                         .toMap(array -> Tuple.of(array.get(0), Integer.parseInt(array.get(1)))))))
             .toJavaMap();
 
-        s.execute(createKeyspace(keyspaceName)
+        session.execute(createKeyspace(this.keyspace)
                 .ifNotExists()
-                .with()
-                .replication(replication));
-        return s;
+                .withReplicationOptions(replication)
+                .build());
     }
 
-    boolean initializeCompactStorage() throws PermanentBackendException {
+    private boolean initializeCompactStorage() throws PermanentBackendException {
         try {
             final ResultSet versionResultSet = this.session.execute(
-                select().column("release_version").from("system", "local") );
+                selectFrom("system", "local").column("release_version").build());
             final String version = versionResultSet.one().getString(0);
             final int major = Integer.parseInt(version.substring(0, version.indexOf(".")));
             // starting with Cassandra 3 COMPACT STORAGE is deprecated and has no impact
             return (major < 3);
-        } catch (NumberFormatException | NoHostAvailableException | QueryExecutionException | QueryValidationException e) {
+        } catch (NumberFormatException | QueryExecutionException | QueryValidationException e) {
             throw new PermanentBackendException("Error determining Cassandra version", e);
         }
     }
 
+    /**
+     * @return whether to use compact storage is allowed (true only for Cassandra 2 and earlier)
+     */
     boolean isCompactStorageAllowed() {
         return this.allowCompactStorage;
     }
@@ -345,7 +299,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         return this.executorService;
     }
 
-    Session getSession() {
+    CqlSession getSession() {
         return this.session;
     }
 
@@ -353,31 +307,33 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         return this.keyspace;
     }
 
+    @VisibleForTesting
     Map<String, String> getCompressionOptions(final String name) throws BackendException {
-        final KeyspaceMetadata keyspaceMetadata = Option.of(this.cluster.getMetadata().getKeyspace(this.keyspace))
-                .getOrElseThrow(() -> new PermanentBackendException(String.format("Unknown keyspace '%s'", this.keyspace)));
-        return Option.of(keyspaceMetadata.getTable(name))
-                .map(tableMetadata -> tableMetadata.getOptions().getCompression())
-                .getOrElseThrow(() -> new PermanentBackendException(String.format("Unknown table '%s'", name)));
+        KeyspaceMetadata keyspaceMetadata1 = this.session.getMetadata().getKeyspace(this.keyspace)
+            .orElseThrow(() -> new PermanentBackendException(String.format("Unknown keyspace '%s'", this.keyspace)));
+
+        TableMetadata tableMetadata = keyspaceMetadata1.getTable(name)
+            .orElseThrow(() -> new PermanentBackendException(String.format("Unknown table '%s'", name)));
+
+        Object compressionOptions = tableMetadata.getOptions().get(CqlIdentifier.fromCql("compression"));
+
+       return (Map<String, String>) compressionOptions;
     }
 
+    @VisibleForTesting
     TableMetadata getTableMetadata(final String name) throws BackendException {
-        final KeyspaceMetadata keyspaceMetadata = Option.of(this.cluster.getMetadata().getKeyspace(this.keyspace))
-                .getOrElseThrow(() -> new PermanentBackendException(String.format("Unknown keyspace '%s'", this.keyspace)));
-        return Option.of(keyspaceMetadata.getTable(name))
-                .getOrElseThrow(() -> new PermanentBackendException(String.format("Unknown table '%s'", name)));
+        final KeyspaceMetadata keyspaceMetadata = (this.session.getMetadata().getKeyspace(this.keyspace))
+                .orElseThrow(() -> new PermanentBackendException(String.format("Unknown keyspace '%s'", this.keyspace)));
+        return keyspaceMetadata.getTable(name)
+                .orElseThrow(() -> new PermanentBackendException(String.format("Unknown table '%s'", name)));
     }
 
     @Override
-    public void close() throws BackendException {
+    public void close() {
         try {
             this.session.close();
         } finally {
-            try {
-                this.cluster.close();
-            } finally {
                 this.executorService.shutdownNow();
-            }
         }
     }
 
@@ -398,8 +354,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     @Override
     public KeyColumnValueStore openDatabase(final String name, final Container metaData) throws BackendException {
-        Supplier<Boolean> initializeTable = () -> Optional.ofNullable(this.cluster.getMetadata().getKeyspace(this.keyspace)).map(k -> k.getTable(name) == null).orElse(true);
-        return this.openStores.computeIfAbsent(name, n -> new CQLKeyColumnValueStore(this, n, getStorageConfig(), () -> this.openStores.remove(n), allowCompactStorage, initializeTable));
+        return this.openStores.computeIfAbsent(name, n -> new CQLKeyColumnValueStore(this, n, getStorageConfig(), () -> this.openStores.remove(n)));
     }
 
     @Override
@@ -410,11 +365,12 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     @Override
     public void clearStorage() throws BackendException {
         if (this.storageConfig.get(DROP_ON_CLEAR)) {
-            this.session.execute(dropKeyspace(this.keyspace));
+            this.session.execute(dropKeyspace(this.keyspace).build());
         } else if (this.exists()) {
-            final Future<Seq<ResultSet>> result = Future.sequence(
-                Iterator.ofAll(this.cluster.getMetadata().getKeyspace(this.keyspace).getTables())
-                    .map(table -> Future.fromJavaFuture(this.session.executeAsync(truncate(this.keyspace, table.getName())))));
+            final Future<Seq<AsyncResultSet>> result = Future.sequence(
+                Iterator.ofAll(this.session.getMetadata().getKeyspace(this.keyspace).get().getTables().values())
+                    .map(table -> Future.fromJavaFuture(this.session.executeAsync(truncate(this.keyspace, table.getName().toString()).build())
+                        .toCompletableFuture())));
             result.await();
         } else {
             LOGGER.info("Keyspace {} does not exist in the cluster", this.keyspace);
@@ -423,7 +379,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     @Override
     public boolean exists() throws BackendException {
-        return cluster.getMetadata().getKeyspace(this.keyspace) != null;
+        return session.getMetadata().getKeyspace(this.keyspace).isPresent();
     }
 
     @Override
@@ -444,10 +400,9 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     private void mutateManyLogged(final Map<String, Map<StaticBuffer, KCVMutation>> mutations, final StoreTransaction txh) throws BackendException {
         final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
 
-        final BatchStatement batchStatement = new BatchStatement(Type.LOGGED);
-        batchStatement.setConsistencyLevel(getTransaction(txh).getWriteConsistencyLevel());
-
-        batchStatement.addAll(Iterator.ofAll(mutations.entrySet()).flatMap(tableNameAndMutations -> {
+        BatchStatementBuilder builder = BatchStatement.builder(DefaultBatchType.UNLOGGED);
+        builder.setConsistencyLevel(getTransaction(txh).getWriteConsistencyLevel());
+        builder.addStatements(Iterator.ofAll(mutations.entrySet()).flatMap(tableNameAndMutations -> {
             final String tableName = tableNameAndMutations.getKey();
             final Map<StaticBuffer, KCVMutation> tableMutations = tableNameAndMutations.getValue();
 
@@ -457,15 +412,15 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                 final StaticBuffer key = keyAndMutations.getKey();
                 final KCVMutation keyMutations = keyAndMutations.getValue();
 
-                final Iterator<Statement> deletions = Iterator.of(commitTime.getDeletionTime(this.times))
+                final Iterator<BatchableStatement<BoundStatement>> deletions = Iterator.of(commitTime.getDeletionTime(this.times))
                         .flatMap(deleteTime -> Iterator.ofAll(keyMutations.getDeletions()).map(deletion -> columnValueStore.deleteColumn(key, deletion, deleteTime)));
-                final Iterator<Statement> additions = Iterator.of(commitTime.getAdditionTime(this.times))
+                final Iterator<BatchableStatement<BoundStatement>> additions = Iterator.of(commitTime.getAdditionTime(this.times))
                         .flatMap(addTime -> Iterator.ofAll(keyMutations.getAdditions()).map(addition -> columnValueStore.insertColumn(key, addition, addTime)));
 
                 return Iterator.concat(deletions, additions);
             });
         }));
-        final Future<ResultSet> result = Future.fromJavaFuture(this.executorService, this.session.executeAsync(batchStatement));
+        final Future<AsyncResultSet> result = Future.fromJavaFuture(this.executorService, this.session.executeAsync(builder.build()).toCompletableFuture());
 
         result.await();
         if (result.isFailure()) {
@@ -478,7 +433,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     private void mutateManyUnlogged(final Map<String, Map<StaticBuffer, KCVMutation>> mutations, final StoreTransaction txh) throws BackendException {
         final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
 
-        final Future<Seq<ResultSet>> result = Future.sequence(this.executorService, Iterator.ofAll(mutations.entrySet()).flatMap(tableNameAndMutations -> {
+        final Future<Seq<AsyncResultSet>> result = Future.sequence(this.executorService, Iterator.ofAll(mutations.entrySet()).flatMap(tableNameAndMutations -> {
             final String tableName = tableNameAndMutations.getKey();
             final Map<StaticBuffer, KCVMutation> tableMutations = tableNameAndMutations.getValue();
 
@@ -488,18 +443,19 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                 final StaticBuffer key = keyAndMutations.getKey();
                 final KCVMutation keyMutations = keyAndMutations.getValue();
 
-                final Iterator<Statement> deletions = Iterator.of(commitTime.getDeletionTime(this.times))
+                final Iterator<BatchableStatement<BoundStatement>> deletions = Iterator.of(commitTime.getDeletionTime(this.times))
                         .flatMap(deleteTime -> Iterator.ofAll(keyMutations.getDeletions()).map(deletion -> columnValueStore.deleteColumn(key, deletion, deleteTime)));
-                final Iterator<Statement> additions = Iterator.of(commitTime.getAdditionTime(this.times))
+                final Iterator<BatchableStatement<BoundStatement>> additions = Iterator.of(commitTime.getAdditionTime(this.times))
                         .flatMap(addTime -> Iterator.ofAll(keyMutations.getAdditions()).map(addition -> columnValueStore.insertColumn(key, addition, addTime)));
 
                 return Iterator.concat(deletions, additions)
                         .grouped(this.batchSize)
                         .map(group -> Future.fromJavaFuture(this.executorService,
                                 this.session.executeAsync(
-                                        new BatchStatement(Type.UNLOGGED)
+                                        BatchStatement.newInstance(DefaultBatchType.LOGGED)
                                                 .addAll(group)
-                                                .setConsistencyLevel(getTransaction(txh).getWriteConsistencyLevel()))));
+                                                .setConsistencyLevel(getTransaction(txh).getWriteConsistencyLevel()))
+                                    .toCompletableFuture()));
             });
         }));
 

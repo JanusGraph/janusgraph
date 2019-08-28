@@ -14,14 +14,15 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.*;
-
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.DefaultConsistencyLevel;
+import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.common.AbstractStoreTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 
-import com.datastax.driver.core.ConsistencyLevel;
-import com.google.common.base.Preconditions;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.READ_CONSISTENCY;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.WRITE_CONSISTENCY;
 
 /**
  * This class manages the translation of read and write consistency configuration values to CQL API {@link ConsistencyLevel} types.
@@ -33,8 +34,8 @@ public class CQLTransaction extends AbstractStoreTransaction {
 
     public CQLTransaction(final BaseTransactionConfig config) {
         super(config);
-        this.readConsistencyLevel = ConsistencyLevel.valueOf(getConfiguration().getCustomOption(READ_CONSISTENCY));
-        this.writeConsistencyLevel = ConsistencyLevel.valueOf(getConfiguration().getCustomOption(WRITE_CONSISTENCY));
+        this.readConsistencyLevel = DefaultConsistencyLevel.valueOf(getConfiguration().getCustomOption(READ_CONSISTENCY));
+        this.writeConsistencyLevel = DefaultConsistencyLevel.valueOf(getConfiguration().getCustomOption(WRITE_CONSISTENCY));
     }
 
     ConsistencyLevel getReadConsistencyLevel() {

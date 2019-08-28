@@ -14,7 +14,11 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import com.datastax.driver.core.*;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.Statement;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.TestCategory;
 import org.janusgraph.diskstorage.BackendException;
@@ -39,10 +43,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 @ExtendWith(MockitoExtension.class)
 @Testcontainers
@@ -52,7 +60,13 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
 
     private static final String TEST_CF_NAME = "testcf";
     private static final String DEFAULT_COMPRESSOR_PACKAGE = "org.apache.cassandra.io.compress";
-    private static final String TEST_KEYSPACE_NAME = "test_keyspace";
+    private final String TEST_KEYSPACE_NAME = getClass().getSimpleName();
+
+    @Mock
+    private CqlSession session;
+
+    @InjectMocks
+    private CQLStoreManager mockManager = new CQLStoreManager(getBaseStorageConfiguration());
 
     @Container
     public static final JanusGraphCassandraContainer cqlContainer = new JanusGraphCassandraContainer();
@@ -61,7 +75,7 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
     }
 
     protected ModifiableConfiguration getBaseStorageConfiguration() {
-        return cqlContainer.getConfiguration(getClass().getSimpleName());
+        return cqlContainer.getConfiguration(TEST_KEYSPACE_NAME);
     }
 
     private CQLStoreManager openStorageManager(final Configuration c) throws BackendException {
@@ -122,7 +136,7 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
 
         // COMPACT STORAGE is allowed on Cassandra 2 or earlier
         // when COMPACT STORAGE is allowed, the default is to enable it
-        assertTrue(cqlStoreManager.isCompactStorageAllowed() == cqlStoreManager.getTableMetadata(cf).getOptions().isCompactStorage());
+        assertTrue(cqlStoreManager.isCompactStorageAllowed() == cqlStoreManager.getTableMetadata(cf).isCompactStorage());
     }
 
     @Test
@@ -136,9 +150,9 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
         cqlStoreManager.openDatabase(cf);
 
         if (cqlStoreManager.isCompactStorageAllowed()) {
-            assertTrue(cqlStoreManager.getTableMetadata(cf).getOptions().isCompactStorage());
+            assertTrue(cqlStoreManager.getTableMetadata(cf).isCompactStorage());
         } else {
-            assertFalse(cqlStoreManager.getTableMetadata(cf).getOptions().isCompactStorage());
+            assertFalse(cqlStoreManager.getTableMetadata(cf).isCompactStorage());
         }
     }
 
@@ -151,7 +165,7 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
         final CQLStoreManager cqlStoreManager = openStorageManager(config);
         cqlStoreManager.openDatabase(cf);
 
-        assertFalse(cqlStoreManager.getTableMetadata(cf).getOptions().isCompactStorage());
+        assertFalse(cqlStoreManager.getTableMetadata(cf).isCompactStorage());
     }
 
     @Test
@@ -217,38 +231,28 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
         assertTrue(features.hasCellTTL());
     }
 
-    @Mock
-    private Cluster cluster;
-    @Mock
-    private Session session;
-
-    @InjectMocks
-    private CQLStoreManager mockManager = new CQLStoreManager(getBaseStorageConfiguration());
-
     @Test
     public void testExistKeyspaceSession() {
         Metadata metadata = mock(Metadata.class);
         KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
-        when(cluster.getMetadata()).thenReturn(metadata);
-        when(metadata.getKeyspace(TEST_KEYSPACE_NAME)).thenReturn(keyspaceMetadata);
-        when(cluster.connect()).thenReturn(session);
+        Optional<KeyspaceMetadata> keyspaceMetadataOptional = Optional.of(keyspaceMetadata);
+        when(session.getMetadata()).thenReturn(metadata);
+        when(metadata.getKeyspace(TEST_KEYSPACE_NAME)).thenReturn(keyspaceMetadataOptional);
 
-        mockManager.initializeSession(TEST_KEYSPACE_NAME);
+        mockManager.initializeKeyspace();
 
-        verify(cluster).connect();
         verify(session, never()).execute(any(Statement.class));
     }
 
     @Test
     public void testNewKeyspaceSession() {
         Metadata metadata = mock(Metadata.class);
-        when(cluster.getMetadata()).thenReturn(metadata);
-        when(metadata.getKeyspace(TEST_KEYSPACE_NAME)).thenReturn(null);
-        when(cluster.connect()).thenReturn(session);
+        Optional<KeyspaceMetadata> keyspaceMetadataOptional = Optional.empty();
+        when(session.getMetadata()).thenReturn(metadata);
+        when(metadata.getKeyspace(TEST_KEYSPACE_NAME)).thenReturn(keyspaceMetadataOptional);
 
-        mockManager.initializeSession(TEST_KEYSPACE_NAME);
+        mockManager.initializeKeyspace();
 
-        verify(cluster).connect();
         verify(session, times(1)).execute(any(Statement.class));
     }
 
@@ -258,9 +262,10 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
         String someTableName = "foo";
         Metadata metadata = mock(Metadata.class);
         KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
-        when(keyspaceMetadata.getTable(someTableName)).thenReturn(mock(TableMetadata.class));
-        when(cluster.getMetadata()).thenReturn(metadata);
-        when(metadata.getKeyspace(mockManager.getKeyspaceName())).thenReturn(keyspaceMetadata);
+        TableMetadata tableMetadata = mock(TableMetadata.class);
+        when(keyspaceMetadata.getTable(someTableName)).thenReturn(Optional.of(tableMetadata));
+        when(session.getMetadata()).thenReturn(metadata);
+        when(metadata.getKeyspace(mockManager.getKeyspaceName())).thenReturn(Optional.of(keyspaceMetadata));
 
         //act
         mockManager.openDatabase(someTableName, null);
@@ -275,9 +280,9 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
         String someTableName = "foo";
         Metadata metadata = mock(Metadata.class);
         KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
-        when(keyspaceMetadata.getTable(someTableName)).thenReturn(null);
-        when(cluster.getMetadata()).thenReturn(metadata);
-        when(metadata.getKeyspace(mockManager.getKeyspaceName())).thenReturn(keyspaceMetadata);
+        when(keyspaceMetadata.getTable(someTableName)).thenReturn(Optional.empty());
+        when(session.getMetadata()).thenReturn(metadata);
+        when(metadata.getKeyspace(mockManager.getKeyspaceName())).thenReturn(Optional.of(keyspaceMetadata));
 
         //act
         mockManager.openDatabase(someTableName, null);

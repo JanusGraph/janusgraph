@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -30,9 +32,6 @@ import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.RecordIterator;
 import org.junit.jupiter.api.Test;
-
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
 
 import io.vavr.Function1;
 import io.vavr.Tuple;
@@ -49,9 +48,9 @@ public class CQLResultSetKeyIteratorTest {
     public void testIterator() throws IOException {
         final Array<Row> rows = Array.rangeClosed(1, 100).map(idx -> {
             final Row row = mock(Row.class);
-            when(row.getBytes("key")).thenReturn(ByteBuffer.wrap(Integer.toString(idx / 5).getBytes()));
-            when(row.getBytes("column1")).thenReturn(ByteBuffer.wrap(Integer.toString(idx % 5).getBytes()));
-            when(row.getBytes("value")).thenReturn(ByteBuffer.wrap(Integer.toString(idx).getBytes()));
+            when(row.getByteBuffer("key")).thenReturn(ByteBuffer.wrap(Integer.toString(idx / 5).getBytes()));
+            when(row.getByteBuffer("column1")).thenReturn(ByteBuffer.wrap(Integer.toString(idx % 5).getBytes()));
+            when(row.getByteBuffer("value")).thenReturn(ByteBuffer.wrap(Integer.toString(idx).getBytes()));
             return row;
         });
 
@@ -69,9 +68,9 @@ public class CQLResultSetKeyIteratorTest {
                     final Row row = rows.get(i++);
                     final Entry entry = entries.next();
 
-                    assertEquals(row.getBytes("key"), next.asByteBuffer());
-                    assertEquals(row.getBytes("column1"), entry.getColumn().asByteBuffer());
-                    assertEquals(row.getBytes("value"), entry.getValue().asByteBuffer());
+                    assertEquals(row.getByteBuffer("key"), next.asByteBuffer());
+                    assertEquals(row.getByteBuffer("column1"), entry.getColumn().asByteBuffer());
+                    assertEquals(row.getByteBuffer("value"), entry.getValue().asByteBuffer());
                 }
             }
         }
@@ -189,9 +188,9 @@ public class CQLResultSetKeyIteratorTest {
     private ResultSet generateMockedResultSet(Array<Tuple2<ByteBuffer, Array<Tuple2<ByteBuffer, ByteBuffer>>>> keysMap){
         final Seq<Row> rows = keysMap.flatMap(tuple -> tuple._2.map(columnAndValue -> {
             final Row row = mock(Row.class);
-            when(row.getBytes("key")).thenReturn(tuple._1);
-            when(row.getBytes("column1")).thenReturn(columnAndValue._1);
-            when(row.getBytes("value")).thenReturn(columnAndValue._2);
+            when(row.getByteBuffer("key")).thenReturn(tuple._1);
+            when(row.getByteBuffer("column1")).thenReturn(columnAndValue._1);
+            when(row.getByteBuffer("value")).thenReturn(columnAndValue._2);
             return row;
         }));
 
