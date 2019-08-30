@@ -124,15 +124,15 @@ If you want to start fresh and remove the database and logs you can use
 the clean command with `janusgraph.sh`. The server should be stopped
 before running the clean operation.
 ```bash
-$ cd /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/
+$ cd /Path/to/janusgraph/janusgraph-{project.version}/
 $ ./bin/janusgraph.sh stop
 Killing Gremlin-Server (pid 91505)...
 Killing Elasticsearch (pid 91402)...
 Killing Cassandra (pid 91219)...
 $ ./bin/janusgraph.sh clean
 Are you sure you want to delete all stored data and logs? [y/N] y
-Deleted data in /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/db
-Deleted logs in /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/log
+Deleted data in /Path/to/janusgraph/janusgraph-{project.version}/db
+Deleted logs in /Path/to/janusgraph/janusgraph-{project.version}/log
 ```
 
 ## JanusGraph Server as a WebSocket Endpoint

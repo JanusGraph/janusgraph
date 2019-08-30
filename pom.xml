@@ -136,7 +136,7 @@
         <module>janusgraph-berkeleyje</module>
         <module>janusgraph-cql</module>
         <module>janusgraph-cassandra</module>
-        <module>janusgraph-hadoop-parent</module>
+        <module>janusgraph-hadoop</module>
         <module>janusgraph-hbase-parent</module>
         <module>janusgraph-bigtable</module>
         <module>janusgraph-es</module>

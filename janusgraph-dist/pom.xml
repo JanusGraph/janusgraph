@@ -19,11 +19,13 @@
         <assembly.cfilter.in.dir>${project.basedir}/src/assembly/cfilter</assembly.cfilter.in.dir>
         <assembly.cfilter.out.dir>${project.build.directory}/cfilter</assembly.cfilter.out.dir>
         <assembly.descriptor.dir>${project.basedir}/src/assembly/descriptor</assembly.descriptor.dir>
+        <assembly.static.dir>${project.basedir}/src/assembly/static</assembly.static.dir>
+        <assembly.resources.dir>${project.basedir}/src/assembly/resources</assembly.resources.dir>
         <assembly.es.dir>${project.build.directory}/elasticsearch-${elasticsearch-server.version}</assembly.es.dir>
 
         <!-- Variables for integration testing on release-candidate archive files -->
         <test.expect.dir>${project.build.directory}/test-classes</test.expect.dir>
-        <test.zipfile.path>${project.build.directory}/janusgraph-${project.version}-${hadoop.version.tag}.zip</test.zipfile.path>
+        <test.zipfile.path>${project.build.directory}/janusgraph-${project.version}.zip</test.zipfile.path>
 
         <!-- RPM/DEB packaging -->
         <pkg.release>1</pkg.release>
@@ -33,10 +35,6 @@
         <docker.maven.version>0.4.13</docker.maven.version>
         <doc.dir>${project.parent.basedir}/docs</doc.dir>
     </properties>
-
-    <modules>
-        <module>janusgraph-dist-hadoop-2</module>
-    </modules>
 
     <dependencies>
         <dependency>
@@ -395,9 +393,9 @@
                             <artifactId>docker-maven-plugin</artifactId>
                             <version>${docker.maven.version}</version>
                             <configuration>
-                                <dockerDirectory>${project.basedir}/janusgraph-dist-hadoop-2</dockerDirectory>
+                                <dockerDirectory>${project.basedir}</dockerDirectory>
                                 <buildArgs>
-                                    <server_zip>target/janusgraph-${project.version}-hadoop2.zip</server_zip>
+                                    <server_zip>target/janusgraph-${project.version}.zip</server_zip>
                                     <http_proxy>${env.http_proxy}</http_proxy>
                                     <https_proxy>${env.https_proxy}</https_proxy>
                                 </buildArgs>
@@ -426,59 +424,7 @@
             </dependencies>
 
             <build>
-
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <artifactId>maven-assembly-plugin</artifactId>
-                            <executions>
-                                <execution>
-                                    <id>assemble-distribution-archive</id>
-                                    <phase>package</phase>
-                                    <goals>
-                                        <goal>single</goal>
-                                    </goals>
-                                    <configuration>
-                                        <!--
-                                            We set attached=true so that the gpg plugin will
-                                            sign all of our assembly artifacts. We handle
-                                            deployment of the artifacts manually because
-                                            maven-deploy-plugin can't upload files to a flat
-                                            S3 directory; it insists on creating a
-                                            long/packagename/and/artifactid/and/version/
-                                            path at the destination before uploading, and we
-                                            don't want that for our files S3. codehaus's
-                                            wagon:upload plugin comes to our rescue.
-                                        -->
-                                        <attach>true</attach>
-                                        <!--
-                                            archive filenames are of the form
-                                            ${finalName}-${<id /> from assembly descriptor}.${archive
-                                            format extension}
-                                        -->
-                                        <finalName>janusgraph-${project.version}-${hadoop.version.tag}</finalName>
-                                        <appendAssemblyId>false</appendAssemblyId>
-                                        <tarLongFileMode>gnu</tarLongFileMode>
-                                        <descriptors>
-                                            <descriptor>${assembly.descriptor.dir}/archive.xml</descriptor>
-                                        </descriptors>
-                                        <formats>
-                                            <format>zip</format>
-                                        </formats>
-                                    </configuration>
-                                </execution>
-                            </executions>
-                        </plugin>
-
-                        <plugin>
-                            <artifactId>maven-gpg-plugin</artifactId>
-                            <executions>
-                                <execution>
-                                    <id>sign-artifacts</id>
-                                </execution>
-                            </executions>
-                        </plugin>
-
+                <plugins>
                         <plugin>
                             <artifactId>maven-jar-plugin</artifactId>
                             <executions>
@@ -508,9 +454,29 @@
                         <plugin>
                             <artifactId>maven-resources-plugin</artifactId>
                             <executions>
+                            <execution>
+                                <id>filter-release-resources</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/release</outputDirectory>
+                                    <useDefaultDelimiters>false</useDefaultDelimiters>
+                                    <delimiters>
+                                        <delimiter>$MAVEN{*}</delimiter>
+                                    </delimiters>
+                                    <resources>
+                                        <resource>
+                                            <directory>src/release</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
                                 <execution>
                                     <id>filter-cassandra-murmur-config</id>
-                                    <phase>none</phase>
+                                    <phase>process-test-resources</phase>
                                     <goals>
                                         <goal>copy-resources</goal>
                                     </goals>
@@ -529,7 +495,7 @@
                                 </execution>
                                 <execution>
                                     <id>filter-cassandra-bop-config</id>
-                                    <phase>none</phase>
+                                    <phase>process-test-resources</phase>
                                     <goals>
                                         <goal>copy-resources</goal>
                                     </goals>
@@ -548,7 +514,7 @@
                                 </execution>
                                 <execution>
                                     <id>filter-expect-scripts</id>
-                                    <phase>none</phase>
+                                    <phase>process-test-resources</phase>
                                     <goals>
                                         <goal>copy-resources</goal>
                                     </goals>
@@ -564,7 +530,7 @@
                                 </execution>
                                 <execution>
                                     <id>filter-test-resources</id>
-                                    <phase>none</phase>
+                                    <phase>process-test-resources</phase>
                                     <goals>
                                         <goal>copy-resources</goal>
                                     </goals>
@@ -580,7 +546,7 @@
                                 </execution>
                                 <execution>
                                     <id>copy-test-cfiles</id>
-                                    <phase>none</phase>
+                                    <phase>process-test-resources</phase>
                                     <goals>
                                         <goal>copy-resources</goal>
                                     </goals>
@@ -594,6 +560,25 @@
                                         <outputDirectory>${project.build.directory}</outputDirectory>
                                     </configuration>
                                 </execution>
+                            <execution>
+                                <id>copy-compat-test-config</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/conf</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/src/assembly/static/conf</directory>
+                                            <includes>
+                                                <include>*.properties</include>
+                                            </includes>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
                             </executions>
                         </plugin>
 
@@ -698,36 +683,6 @@
                                 </execution>
                             </executions>
                         </plugin>
-                    </plugins>
-                </pluginManagement>
-
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <inherited>false</inherited>
-                        <executions>
-                            <execution>
-                                <id>filter-release-resources</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${project.build.directory}/release</outputDirectory>
-                                    <useDefaultDelimiters>false</useDefaultDelimiters>
-                                    <delimiters>
-                                        <delimiter>$MAVEN{*}</delimiter>
-                                    </delimiters>
-                                    <resources>
-                                        <resource>
-                                            <directory>src/release</directory>
-                                            <filtering>true</filtering>
-                                        </resource>
-                                    </resources>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
 
                     <!--
                         We use maven-resources-plugin to filter src/release,
@@ -760,11 +715,44 @@
                             </execution>
                         </executions>
                     </plugin>
-
                     <plugin>
                         <artifactId>maven-assembly-plugin</artifactId>
-                        <inherited>false</inherited>
                         <executions>
+                            <execution>
+                                <id>assemble-distribution-archive</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <!--
+                                        We set attached=true so that the gpg plugin will
+                                        sign all of our assembly artifacts. We handle
+                                        deployment of the artifacts manually because
+                                        maven-deploy-plugin can't upload files to a flat
+                                        S3 directory; it insists on creating a
+                                        long/packagename/and/artifactid/and/version/
+                                        path at the destination before uploading, and we
+                                        don't want that for our files S3. codehaus's
+                                        wagon:upload plugin comes to our rescue.
+                                    -->
+                                    <attach>true</attach>
+                                    <!--
+                                        archive filenames are of the form
+                                        ${finalName}-${<id /> from assembly descriptor}.${archive
+                                        format extension}
+                                    -->
+                                    <finalName>janusgraph-${project.version}</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                    <tarLongFileMode>gnu</tarLongFileMode>
+                                    <descriptors>
+                                        <descriptor>${assembly.descriptor.dir}/archive.xml</descriptor>
+                                    </descriptors>
+                                    <formats>
+                                        <format>zip</format>
+                                    </formats>
+                                </configuration>
+                            </execution>
                             <execution>
                                 <id>unpack-janusgraph-core-javadocs</id>
                                 <phase>package</phase>
@@ -780,13 +768,9 @@
                                     </descriptors>
                                 </configuration>
                             </execution>
-
-                            <execution>
-                                <id>assemble-distribution-archive</id>
-                                <phase>none</phase>
-                            </execution>
                         </executions>
                     </plugin>
+
 
                     <!-- gpg must follow assembly.
                          Both plugins run in the package phase, so only <plugin> ordering
@@ -794,6 +778,11 @@
                          Hence this vacuous stanza down here. -->
                     <plugin>
                         <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>

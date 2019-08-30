@@ -132,11 +132,11 @@ zip-file that was downloaded.
     installed.
 
 ```bash
-$ unzip janusgraph-{{ latest_version }}-hadoop2.zip
-Archive:  janusgraph-{{ latest_version }}-hadoop2.zip
-  creating: janusgraph-{{ latest_version }}-hadoop2/
+$ unzip janusgraph-{{ latest_version }}.zip
+Archive:  janusgraph-{{ latest_version }}.zip
+  creating: janusgraph-{{ latest_version }}/
 ...
-$ cd janusgraph-{{ latest_version }}-hadoop2
+$ cd janusgraph-{{ latest_version }}
 $ bin/gremlin.sh
 
          \,,,/
