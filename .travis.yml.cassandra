@@ -26,7 +26,7 @@ cache:
 
 env:
   matrix:
-    - MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='3.11.0' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false'
+    - MODULE='hadoop' CASSANDRA_VERSION='3.11.0' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false'
     - MODULE='cassandra' CASSANDRA_VERSION='3.11.0' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
     - MODULE='cassandra' CASSANDRA_VERSION='3.11.0' ARGS='-Dtest=**/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true'
     - MODULE='cassandra' CASSANDRA_VERSION='3.11.0' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true'
@@ -35,7 +35,7 @@ env:
     - MODULE='cassandra' CASSANDRA_VERSION='3.11.0' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest=**/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true'
     - MODULE='cassandra' CASSANDRA_VERSION='3.11.0' ARGS='-Dtest=**/cassandra/*,**/utils/*'
 
-    - MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='3.0.14' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false'
+    - MODULE='hadoop' CASSANDRA_VERSION='3.0.14' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false'
     - MODULE='cassandra' CASSANDRA_VERSION='3.0.14' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
     - MODULE='cassandra' CASSANDRA_VERSION='3.0.14' ARGS='-Dtest=**/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true'
     - MODULE='cassandra' CASSANDRA_VERSION='3.0.14' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true'
@@ -43,8 +43,8 @@ env:
     - MODULE='cassandra' CASSANDRA_VERSION='3.0.14' ARGS='-Dtest=**/astyanax/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true'
     - MODULE='cassandra' CASSANDRA_VERSION='3.0.14' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest=**/astyanax/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true'
     - MODULE='cassandra' CASSANDRA_VERSION='3.0.14' ARGS='-Dtest=**/cassandra/*,**/utils/*'
-    
-    - MODULE='hadoop-parent/janusgraph-hadoop-2' CASSANDRA_VERSION='2.2.10' ARGS='-DskipHBase'
+
+    - MODULE='hadoop' CASSANDRA_VERSION='2.2.10' ARGS='-DskipHBase'
     - MODULE='cassandra' CASSANDRA_VERSION='2.2.10' CASSANDRA_ENABLE_BOP='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true'
     - MODULE='cassandra' CASSANDRA_VERSION='2.2.10' ARGS='-Dtest=**/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true'
     - MODULE='cassandra' CASSANDRA_VERSION='2.2.10' CASSANDRA_ENABLE_SSL='true' ARGS='-Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true'

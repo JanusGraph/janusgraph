@@ -204,7 +204,7 @@ After the updates are approved and merged, continue on with the release process.
     * `mkdocs.yml`
 2. Update the configuration reference: `mvn install -DskipTests=true -pl janusgraph-doc -am`
 3. For building documentation: see `building.md`
-4. Zip documentation: `$ zip janusgraph-${JANUSGRAPH_VERSION}-hadoop2-doc.zip site`
+4. Zip documentation: `$ zip janusgraph-${JANUSGRAPH_VERSION}-doc.zip site`
 5. You may also need to update the following file in the main repo for any new or updated dependencies: `NOTICE.txt`
 
 Build Release Artifacts
@@ -228,14 +228,14 @@ mvn clean javadoc:jar deploy -Pjanusgraph-release -DskipTests=true
 
 *   Prepare files for GitHub release
 ```Shell
-export JG_VER="janusgraph-0.2.3"
+export JG_VER="janusgraph-0.5.0"
 mkdir -p ~/jg-staging
-cp janusgraph-dist/janusgraph-dist-hadoop-2/target/${JG_VER}-hadoop2.zip* ~/jg-staging/
+cp janusgraph-dist/target/${JG_VER}.zip* ~/jg-staging/
 cd janusgraph-doc/target/docs/
-mv chunk ${JG_VER}-hadoop2-doc
-zip -r ${JG_VER}-hadoop2-doc.zip ${JG_VER}-hadoop2-doc
-gpg --armor --detach-sign ${JG_VER}-hadoop2-doc.zip
-cp ${JG_VER}-hadoop2-doc.zip* ~/jg-staging/
+mv chunk ${JG_VER}-doc
+zip -r ${JG_VER}-doc.zip ${JG_VER}-doc
+gpg --armor --detach-sign ${JG_VER}-doc.zip
+cp ${JG_VER}-doc.zip* ~/jg-staging/
 ```
 
 If it fails due to Inappropriate ioctl for device error, run:
@@ -246,8 +246,8 @@ export GPG_TTY=$(tty)
 *   Verify signature validity (both commands should show good signature)
 ```Shell
 cd ~/jg-staging
-gpg --verify ${JG_VER}-hadoop2.zip.asc ${JG_VER}-hadoop2.zip
-gpg --verify ${JG_VER}-hadoop2-doc.zip.asc ${JG_VER}-hadoop2-doc.zip
+gpg --verify ${JG_VER}.zip.asc ${JG_VER}.zip
+gpg --verify ${JG_VER}-doc.zip.asc ${JG_VER}-doc.zip
 ```
 
 ### Create a Draft Release on GitHub

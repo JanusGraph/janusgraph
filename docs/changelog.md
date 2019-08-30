@@ -59,6 +59,10 @@ For more information on features and bug fixes in 0.5.0, see the GitHub mileston
 
 #### Upgrade Instructions
 
+##### Distributed package is renamed
+
+The distribution has no longer the suffix `-hadoop2`.
+
 ##### ElasticSearch: Upgrade from 6.6.0 to 7.2.0 and drop support for 5.x version
 The ElasticSearch version has been changed to 7.2.0 which removes support for `max-retry-timeout` option. 
 That is why this option no longer available in JanusGraph.

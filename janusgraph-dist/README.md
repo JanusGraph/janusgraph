@@ -15,7 +15,7 @@ SNAPSHOT or a release tag.
 
 This command writes one archive:
 
-* janusgraph-dist/janusgraph-dist-hadoop-2/target/janusgraph-$VERSION-hadoop2.zip
+* janusgraph-dist/target/janusgraph-$VERSION.zip
 
 It's also possible to leave off the `-DskipTests=true`.  However, in
 the absence of `-DskipTests=true`, the -Pjanusgraph-release argument
