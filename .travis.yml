@@ -159,7 +159,8 @@ jobs:
           sudo chown -R $UID site;
       deploy:
         provider: pages
-        repo: janusgraph/janusgraph
+        repo: janusgraph/docs.janusgraph.org
+        target_branch: master
         edge: false
         github_token: ${GITHUB_TOKEN}
         local_dir: site
