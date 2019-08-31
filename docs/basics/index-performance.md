@@ -368,7 +368,7 @@ mgmt.commit()
 ManagementSystem.awaitRelationIndexStatus(graph, 'battlesByTime').call()
 //Reindex the existing data
 mgmt = graph.openManagement()
-mgmt.updateIndex(mgmt.getGraphIndex("battlesByTime"), SchemaAction.REINDEX).get()
+mgmt.updateIndex(mgmt.getRelationIndex(battled, "battlesByTime"), SchemaAction.REINDEX).get()
 mgmt.commit()
 ```
 
