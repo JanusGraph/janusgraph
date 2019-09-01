@@ -166,6 +166,7 @@ jobs:
         local_dir: site
         skip_cleanup: true
         on:
+          repo: janusgraph/janusgraph
           all_branches: true
           condition: $TRAVIS_BRANCH =~ ^master$|^v[0-9.]+$
 
