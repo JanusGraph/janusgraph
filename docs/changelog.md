@@ -24,18 +24,18 @@ use the latest versions of the software.
 
 ## Release Notes
 ### Version 0.2.3 (Release Date: May 21, 2019)
-Documentation: <https://docs.janusgraph.org/0.2.2/index.html>
+Legacy documentation: <https://old-docs.janusgraph.org/0.2.3/index.html>
 
 ```xml tab='Maven'
 <dependency>
     <groupId>org.janusgraph</groupId>
     <artifactId>janusgraph-core</artifactId>
-    <version>0.2.2</version>
+    <version>0.2.3</version>
 </dependency>
 ```
 
 ```groovy tab='Gradle'
-compile "org.janusgraph:janusgraph-core:0.2.2"
+compile "org.janusgraph:janusgraph-core:0.2.3"
 ```
 
 **Tested Compatibility:**
@@ -53,10 +53,10 @@ compile "org.janusgraph:janusgraph-core:0.2.2"
 For more information on features and bug fixes in 0.2.3, see the GitHub
 milestone:
 
--   https://github.com/JanusGraph/janusgraph/milestone/9?closed=1
+-   <https://github.com/JanusGraph/janusgraph/milestone/9?closed=1>
 
 ### Version 0.2.2 (Release Date: October 9, 2018)
-Documentation: <https://docs.janusgraph.org/0.2.2/index.html>
+Legacy documentation: <https://old-docs.janusgraph.org/0.2.2/index.html>
 
 ```xml tab='Maven'
 <dependency>
@@ -88,7 +88,7 @@ milestone:
 -   <https://github.com/JanusGraph/janusgraph/milestone/6?closed=1>
 
 ### Version 0.2.1 (Release Date: July 9, 2018)
-Documentation: <https://docs.janusgraph.org/0.2.1/index.html>
+Legacy documentation: <https://old-docs.janusgraph.org/0.2.1/index.html>
 
 ```xml tab='Maven'
 <dependency>
@@ -131,7 +131,7 @@ is FIXED, a new graph needs to be created to make any change of the
 `graph.timestamps` property effective.
 
 ### Version 0.2.0 (Release Date: October 11, 2017)
-Documentation: <https://docs.janusgraph.org/0.2.0/index.html>
+Legacy documentation: <https://old-docs.janusgraph.org/0.2.0/index.html>
 
 ```xml tab='Maven'
 <dependency>
@@ -236,7 +236,7 @@ the previous sections and migrate to the `REST_CLIENT`.
 
 
 ### Version 0.1.1 (Release Date: May 11, 2017)
-Documentation: <https://docs.janusgraph.org/0.1.1/index.html>
+Documentation: <https://old-docs.janusgraph.org/0.1.1/index.html>
 
 ```xml tab='Maven'
 <dependency>
@@ -268,7 +268,7 @@ milestone:
 -   <https://github.com/JanusGraph/janusgraph/milestone/3?closed=1>
 
 ### Version 0.1.0 (Release Date: April 11, 2017)
-Documentation: <https://docs.janusgraph.org/0.1.0/index.html>
+Documentation: <https://old-docs.janusgraph.org/0.1.0/index.html>
 
 ```xml tab='Maven'
 <dependency>
@@ -336,34 +336,3 @@ adjust your code and configuration accordingly:
 
 For more information on how to configure JanusGraph to read data which
 had previously been written by Titan refer to [Migration from titan](advanced-topics/migrating.md).
-
-### Unreleased Version 0.2.3
-
-```xml tab='Maven'
-<dependency>
-    <groupId>org.janusgraph</groupId>
-    <artifactId>janusgraph-core</artifactId>
-    <version>0.2.3</version>
-</dependency>
-```
-
-```groovy tab='Gradle'
-compile "org.janusgraph:janusgraph-core:0.2.3"
-```
-
-**Tested Compatibility:**
-
--   Apache Cassandra 2.1.20, 2.2.10, 3.0.14, 3.11.0
--   Apache HBase 0.98.24-hadoop2, 1.2.6, 1.3.1
--   Google Bigtable 1.0.0
--   Oracle BerkeleyJE 7.3.7
--   Elasticsearch 1.7.6, 2.4.6, 5.6.5, 6.0.1
--   Apache Lucene 7.0.0
--   Apache Solr 5.5.4, 6.6.1, 7.0.0
--   Apache TinkerPop 3.2.9
--   Java 1.8
-
-For more information on features and bug fixes in 0.2.3, see the GitHub
-milestone:
-
--   <https://github.com/JanusGraph/janusgraph/milestone/9?closed=1>
