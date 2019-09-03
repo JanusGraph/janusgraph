@@ -26,6 +26,7 @@ use the latest versions of the software.
 ## Release Notes
 
 ### Version 0.3.2 (Release Date: June 16, 2019)
+Legacy documentation: <https://old-docs.janusgraph.org/0.3.2/index.html>
 
 ```xml tab='Maven'
 <dependency>
@@ -53,9 +54,10 @@ compile "org.janusgraph:janusgraph-core:0.3.2"
 
 For more information on features and bug fixes in 0.3.2, see the GitHub milestone:
 
-* https://github.com/JanusGraph/janusgraph/milestone/10?closed=1
+-   <https://github.com/JanusGraph/janusgraph/milestone/10?closed=1>
 
 ### Version 0.3.1 (Release Date: October 2, 2018)
+Legacy documentation: <https://old-docs.janusgraph.org/0.3.1/index.html>
 
 ```xml tab='Maven'
 <dependency>
@@ -83,9 +85,10 @@ compile "org.janusgraph:janusgraph-core:0.3.1"
 
 For more information on features and bug fixes in 0.3.1, see the GitHub milestone:
 
-* https://github.com/JanusGraph/janusgraph/milestone/7?closed=1
+-   <https://github.com/JanusGraph/janusgraph/milestone/7?closed=1>
 
 ### Version 0.3.0 (Release Date: July 31, 2018)
+Legacy documentation: <https://old-docs.janusgraph.org/0.3.0/index.html>
 
 ```xml tab='Maven'
 <dependency>
@@ -113,7 +116,7 @@ compile "org.janusgraph:janusgraph-core:0.3.0"
 
 For more information on features and bug fixes in 0.3.0, see the GitHub milestone:
 
-* https://github.com/JanusGraph/janusgraph/milestone/4?closed=1
+-   <https://github.com/JanusGraph/janusgraph/milestone/4?closed=1>
 
 
 #### Upgrade Instructions
@@ -165,18 +168,18 @@ You can verify the upgrade was successful by opening the management API and vali
 Once the storage version has been set you should remove `graph.allow-upgrade=true` from your properties file and reopen your graph to ensure that the upgrade was successful. 
 
 ### Version 0.2.3 (Release Date: May 21, 2019)
-Documentation: <https://docs.janusgraph.org/0.2.2/index.html>
+Legacy documentation: <https://old-docs.janusgraph.org/0.2.3/index.html>
 
 ```xml tab='Maven'
 <dependency>
     <groupId>org.janusgraph</groupId>
     <artifactId>janusgraph-core</artifactId>
-    <version>0.2.2</version>
+    <version>0.2.3</version>
 </dependency>
 ```
 
 ```groovy tab='Gradle'
-compile "org.janusgraph:janusgraph-core:0.2.2"
+compile "org.janusgraph:janusgraph-core:0.2.3"
 ```
 
 **Tested Compatibility:**
@@ -194,10 +197,10 @@ compile "org.janusgraph:janusgraph-core:0.2.2"
 For more information on features and bug fixes in 0.2.3, see the GitHub
 milestone:
 
--   https://github.com/JanusGraph/janusgraph/milestone/9?closed=1
+-   <https://github.com/JanusGraph/janusgraph/milestone/9?closed=1>
 
 ### Version 0.2.2 (Release Date: October 9, 2018)
-Documentation: <https://docs.janusgraph.org/0.2.2/index.html>
+Legacy documentation: <https://old-docs.janusgraph.org/0.2.2/index.html>
 
 ```xml tab='Maven'
 <dependency>
@@ -229,7 +232,7 @@ milestone:
 -   <https://github.com/JanusGraph/janusgraph/milestone/6?closed=1>
 
 ### Version 0.2.1 (Release Date: July 9, 2018)
-Documentation: <https://docs.janusgraph.org/0.2.1/index.html>
+Legacy documentation: <https://old-docs.janusgraph.org/0.2.1/index.html>
 
 ```xml tab='Maven'
 <dependency>
@@ -272,7 +275,7 @@ is FIXED, a new graph needs to be created to make any change of the
 `graph.timestamps` property effective.
 
 ### Version 0.2.0 (Release Date: October 11, 2017)
-Documentation: <https://docs.janusgraph.org/0.2.0/index.html>
+Legacy documentation: <https://old-docs.janusgraph.org/0.2.0/index.html>
 
 ```xml tab='Maven'
 <dependency>
@@ -377,7 +380,7 @@ the previous sections and migrate to the `REST_CLIENT`.
 
 
 ### Version 0.1.1 (Release Date: May 11, 2017)
-Documentation: <https://docs.janusgraph.org/0.1.1/index.html>
+Documentation: <https://old-docs.janusgraph.org/0.1.1/index.html>
 
 ```xml tab='Maven'
 <dependency>
@@ -409,7 +412,7 @@ milestone:
 -   <https://github.com/JanusGraph/janusgraph/milestone/3?closed=1>
 
 ### Version 0.1.0 (Release Date: April 11, 2017)
-Documentation: <https://docs.janusgraph.org/0.1.0/index.html>
+Documentation: <https://old-docs.janusgraph.org/0.1.0/index.html>
 
 ```xml tab='Maven'
 <dependency>
