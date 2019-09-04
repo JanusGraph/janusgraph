@@ -109,6 +109,9 @@ The following users have deployed JanusGraph in production.
 * [Sift Security](https://siftsecurity.com)
 * [Times Internet](http://timesinternet.in) - [blog post about CMS use case](http://denmarkblog.timesinternet.in/blogs/graph/times-internet-is-using-janusgraph-as-main-database-in-cms-for-all-newsrooms/articleshow/63709837.cms) (the CMS which is serving this blog post runs on JanusGraph)
 * [Uber](https://uber.com)
+* [Target](https://www.target.com) - 
+  [video](https://vimeo.com/352567863#t=1920s) (usecase starts at 32nd minute) and
+  [slides](https://training.experoinc.com/janus-meetup-august7) (2nd presentation)
 
 The following companies offer JanusGraph hosted as-a-service:
 
