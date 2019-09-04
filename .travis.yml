@@ -220,14 +220,14 @@ jobs:
           sudo chown -R $UID site;
       deploy:
         provider: pages
-        repo: janusgraph/docs.janusgraph.org
+        repo: JanusGraph/docs.janusgraph.org
         target_branch: master
         edge: false
         github_token: ${GITHUB_TOKEN}
         local_dir: site
         skip_cleanup: true
         on:
-          repo: janusgraph/janusgraph
+          repo: JanusGraph/janusgraph
           all_branches: true
           condition: $TRAVIS_BRANCH =~ ^master$|^v[0-9.]+$
 
