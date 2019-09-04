@@ -103,7 +103,7 @@ The following users have deployed JanusGraph in production.
 * [G DATA](https://gdatasoftware.com)
 * [Netflix](https://www.netflix.com) -
   [video](https://youtu.be/KSmAdtMJYEo?t=1h2m17s) and
-  [slides](https://www.slideshare.net/RoopaTangirala/polyglot-persistence-netflix-cde-meetup-90955706) (graph discussion starts at #86)
+  [slides](https://www.slideshare.net/RoopaTangirala/polyglot-persistence-netflix-cde-meetup-90955706#86) (graph discussion starts at #86)
 * [Qihoo 360](https://www.360.cn/) ([about](https://en.wikipedia.org/wiki/Qihoo_360))
 * [Red Hat](https://www.redhat.com/) - [application migration and assessment tool](https://developers.redhat.com/products/rhamt/overview/) built on [Windup](https://github.com/windup/windup)
 * [Sift Security](https://siftsecurity.com)
