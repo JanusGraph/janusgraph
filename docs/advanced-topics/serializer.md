@@ -1,9 +1,6 @@
 Datatype and Attribute Serializer Configuration
 ===============================================
 
-!!! Info
-    `ObjectNode` and `ArrayNode` serializers are added in JanusGraph version `0.3.2`
-
 JanusGraph supports a number of classes for attribute values on
 properties. JanusGraph efficiently serializes primitives, primitive
 arrays and `Geoshape`, `UUID`, `Date`, `ObjectNode` and `ArrayNode`.
