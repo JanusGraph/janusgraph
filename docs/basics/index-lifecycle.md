@@ -10,14 +10,18 @@ After the index is build you should wait until it is registered (i.e. available)
 ManagementSystem.awaitGraphIndexStatus(graph, "myIndex").call();
 ```
 
-After the index is registered we should either enable the index 
-(if we are sure that the current data should not be indexed by the newly created index) or we should reindex current data 
-so that it would be available in the newly created index.
+After the index is registered we should either enable the index (if we are sure that the current data should not be indexed by the newly created index) or we should reindex current data so that it would be available in the newly created index.
+
+Reindex the existing data and automatically enable the index example:
 ```java
 mgmt = graph.openManagement();
-//Reindex the existing data and enable the index
 mgmt.updateIndex(mgmt.getGraphIndex("myIndex"), SchemaAction.REINDEX).get();
-//Enable the index without reindexing existing data 
+mgmt.commit();
+```
+
+Enable the index without reindexing existing data example:
+```java
+mgmt = graph.openManagement();
 mgmt.updateIndex(mgmt.getGraphIndex("myAnotherIndex"), SchemaAction.ENABLE_INDEX).get();
 mgmt.commit();
 ```
