@@ -29,15 +29,24 @@ Index states and transitions
 
 ## States (SchemaStatus)
 An index can be in one of the following states:
-* **INSTALLED** The index is installed in the system but not yet registered with all instances in the cluster
-* **REGISTERED** The index is registered with all instances in the cluster but not (yet) enabled
-* **ENABLED** The index is enabled and in use
-* **DISABLED** The index is disabled and no longer in use
+
+-   **INSTALLED** The index is installed in the system but not yet registered with all instances in the cluster
+
+-   **REGISTERED** The index is registered with all instances in the cluster but not (yet) enabled
+
+-   **ENABLED** The index is enabled and in use
+
+-   **DISABLED** The index is disabled and no longer in use
 
 ## Actions (SchemaAction)
 The following actions can be performed on an index to change its state via `mgmt.updateIndex()`:
-* **REGISTER_INDEX** Registers the index with all instances in the graph cluster. After an index is installed, it must be registered with all graph instances
-* **REINDEX** Re-builds the index from the graph
-* **ENABLE_INDEX** Enables the index so that it can be used by the query processing engine. An index must be registered before it can be enabled.
-* **DISABLE_INDEX** Disables the index in the graph so that it is no longer used.
-* **REMOVE_INDEX** Removes the index from the graph (optional operation). Only on composite index.
+
+-   **REGISTER_INDEX** Registers the index with all instances in the graph cluster. After an index is installed, it must be registered with all graph instances
+
+-   **REINDEX** Re-builds the index from the graph
+
+-   **ENABLE_INDEX** Enables the index so that it can be used by the query processing engine. An index must be registered before it can be enabled.
+
+-   **DISABLE_INDEX** Disables the index in the graph so that it is no longer used.
+
+-   **REMOVE_INDEX** Removes the index from the graph (optional operation). Only on composite index.
