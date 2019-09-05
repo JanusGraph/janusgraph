@@ -61,6 +61,9 @@ same transaction as the initial schema.
     production environment. Enable the `force-index` configuration option
     in production deployments of JanusGraph to prohibit graph scans.
 
+!!! Info
+    See [index lifecycle documentation](./index-lifecycle.md) for more information about index states.
+
 ### Composite Index
 
 Composite indexes retrieve vertices or edges by one or a (fixed)

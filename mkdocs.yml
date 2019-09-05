@@ -71,6 +71,7 @@ nav:
         - ConfiguredGraphFactory: basics/configured-graph-factory.md
         - Things to Consider in a Multi-Node JanusGraph Cluster: basics/multi-node.md
         - Indexing for Better Performance: basics/index-performance.md
+        - Index Lifecycle: basics/index-lifecycle.md
         - Transactions: basics/transactions.md
         - JanusGraph Cache: basics/cache.md
         - Transaction Log: basics/transaction-log.md
