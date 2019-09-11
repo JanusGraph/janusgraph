@@ -62,6 +62,7 @@ import org.apache.hadoop.hbase.client.Row;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.VersionInfo;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
@@ -238,6 +239,41 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             "at runtime.  Setting this option forces JanusGraph to instead reflectively load and instantiate the specified class.",
             ConfigOption.Type.MASKABLE, String.class);
 
+    public static final ConfigOption<String> KERBEROS_PRINCIPAL =
+        new ConfigOption<>(HBASE_NS, "kerberos-principal",
+            "Kerberos principal.",
+            ConfigOption.Type.MASKABLE, String.class);
+
+    public static final ConfigOption<String> KERBEROS_KEYTAB_PATH =
+        new ConfigOption<>(HBASE_NS, "kerberos-keytab-path",
+            "Kerberos keytab path.",
+            ConfigOption.Type.MASKABLE, String.class);
+
+    /**
+     * If the value of this key <b>is true</b>, {@link HBaseStoreManager#KERBEROS_PRINCIPAL}
+     * and {@link HBaseStoreManager#KERBEROS_KEYTAB_PATH} <b>must be</b> set.
+     * <p>
+     * And also, HBase configuration <b>must be</b> configured for Kerberos. Usually,
+     * the following configuration <b>should be</b> set:
+     * <p>
+     * hadoop.security.authentication
+     * <p>
+     * hbase.security.authentication
+     * <p>
+     * hbase.master.kerberos.principal
+     * <p>
+     * hbase.regionserver.kerberos.principal
+     *
+     */
+    public static final ConfigOption<Boolean> KERBEROS_ENABLED =
+        new ConfigOption<>(HBASE_NS, "kerberos-enabled",
+            "Whether HBase instance is Kerberized or not. When the value is true," +
+                " JanusGraph will try to log in to Kerberos from KDC with " + ConfigElement.getPath(KERBEROS_PRINCIPAL) +
+                " as principal and " + ConfigElement.getPath(KERBEROS_KEYTAB_PATH) +
+                " as keytab. And also, HBase configuration must be configured for Kerberos.",
+            ConfigOption.Type.MASKABLE, Boolean.class, false);
+
+
     public static final int PORT_DEFAULT = 2181;  // Not used. Just for the parent constructor.
 
     public static final TimestampProviders PREFERRED_TIMESTAMPS = TimestampProviders.MILLI;
@@ -329,6 +365,22 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
 
         this.shortCfNames = config.get(SHORT_CF_NAMES);
+
+        /*
+         * Check the value of KERBEROS_ENABLED, if true, do the login with
+         * the given keytab.
+         */
+        if (config.get(KERBEROS_ENABLED)) {
+            try {
+                UserGroupInformation.setConfiguration(hconf);
+                UserGroupInformation ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(config.get(KERBEROS_PRINCIPAL), config.get(KERBEROS_KEYTAB_PATH));
+                UserGroupInformation.setLoginUser(ugi);
+                HBaseAdmin.available(hconf);
+                logger.info("Log in with: principal={}, keytab={}", config.get(KERBEROS_PRINCIPAL), config.get(KERBEROS_KEYTAB_PATH));
+            } catch (Exception e) {
+                throw new PermanentBackendException(e);
+            }
+        }
 
         try {
             //this.cnx = HConnectionManager.createConnection(hconf);
