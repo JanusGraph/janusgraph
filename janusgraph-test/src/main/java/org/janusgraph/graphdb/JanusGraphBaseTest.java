@@ -16,6 +16,7 @@ package org.janusgraph.graphdb;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+import org.janusgraph.JanusGraphBaseStoreFeaturesTest;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
@@ -53,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class JanusGraphBaseTest {
+public abstract class JanusGraphBaseTest implements JanusGraphBaseStoreFeaturesTest {
 
     public static final String LABEL_NAME = T.label.getAccessor();
     public static final String ID_NAME = T.id.getAccessor();
@@ -90,6 +91,10 @@ public abstract class JanusGraphBaseTest {
             backend.initialize(adjustedConfig);
         }
         return backend;
+    }
+
+    public StoreFeatures getStoreFeatures(){
+        return features;
     }
 
     @BeforeEach
