@@ -14,12 +14,12 @@
 
 package org.janusgraph.diskstorage.cassandra.embedded;
 
-import org.janusgraph.TestCategory;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.testutil.FeatureFlag;
+import org.janusgraph.testutil.JanusGraphFeature;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.janusgraph.CassandraStorageSetup;
@@ -51,7 +51,7 @@ public class EmbeddedStoreTest extends AbstractCassandraStoreTest {
     }
 
     @Test
-    @Tag(TestCategory.ORDERED_KEY_STORE_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.OrderedScan)
     public void testConfiguration() {
         StoreFeatures features = manager.getFeatures();
         assertTrue(features.isKeyOrdered());

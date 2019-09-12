@@ -21,8 +21,12 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.Lists;
+import org.janusgraph.JanusGraphBaseStoreFeaturesTest;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.*;
 import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.testutil.FeatureFlag;
+import org.janusgraph.testutil.JanusGraphFeature;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +39,7 @@ import org.janusgraph.diskstorage.util.RecordIterator;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public abstract class KeyValueStoreTest extends AbstractKCVSTest {
+public abstract class KeyValueStoreTest extends AbstractKCVSTest implements JanusGraphBaseStoreFeaturesTest {
 
     private final Logger log = LoggerFactory.getLogger(KeyValueStoreTest.class);
 
@@ -62,6 +66,11 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
     }
 
     public abstract OrderedKeyValueStoreManager openStorageManager() throws BackendException;
+
+    @Override
+    public StoreFeatures getStoreFeatures(){
+        return manager.getFeatures();
+    }
 
     @AfterEach
     public void tearDown() throws Exception {
@@ -205,24 +214,23 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test
+    @FeatureFlag(feature = JanusGraphFeature.Scan)
     public void scanTest() throws BackendException {
-        if (manager.getFeatures().hasScan()) {
-            String[] values = generateValues();
-            loadValues(values);
-            RecordIterator<KeyValueEntry> iterator0 = getAllData(tx);
-            assertEquals(numKeys, KeyValueStoreUtil.count(iterator0));
-            clopen();
-            RecordIterator<KeyValueEntry> iterator1 = getAllData(tx);
-            RecordIterator<KeyValueEntry> iterator2 = getAllData(tx);
+        String[] values = generateValues();
+        loadValues(values);
+        RecordIterator<KeyValueEntry> iterator0 = getAllData(tx);
+        assertEquals(numKeys, KeyValueStoreUtil.count(iterator0));
+        clopen();
+        RecordIterator<KeyValueEntry> iterator1 = getAllData(tx);
+        RecordIterator<KeyValueEntry> iterator2 = getAllData(tx);
 
-            // The idea is to open an iterator without using it
-            // to make sure that closing a transaction will clean it up.
-            // (important for BerkeleyJE where leaving cursors open causes exceptions)
-            @SuppressWarnings("unused")
-            RecordIterator<KeyValueEntry> iterator3 = getAllData(tx);
-            assertEquals(numKeys, KeyValueStoreUtil.count(iterator1));
-            assertEquals(numKeys, KeyValueStoreUtil.count(iterator2));
-        }
+        // The idea is to open an iterator without using it
+        // to make sure that closing a transaction will clean it up.
+        // (important for BerkeleyJE where leaving cursors open causes exceptions)
+        @SuppressWarnings("unused")
+        RecordIterator<KeyValueEntry> iterator3 = getAllData(tx);
+        assertEquals(numKeys, KeyValueStoreUtil.count(iterator1));
+        assertEquals(numKeys, KeyValueStoreUtil.count(iterator2));
     }
 
     private RecordIterator<KeyValueEntry> getAllData(StoreTransaction tx) throws BackendException {

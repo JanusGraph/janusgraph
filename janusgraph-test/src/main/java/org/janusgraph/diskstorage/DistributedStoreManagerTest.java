@@ -14,33 +14,39 @@
 
 package org.janusgraph.diskstorage;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
-import java.util.List;
-
+import org.janusgraph.JanusGraphBaseStoreFeaturesTest;
 import org.janusgraph.diskstorage.common.DistributedStoreManager;
 import org.janusgraph.diskstorage.common.DistributedStoreManager.Deployment;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
-import org.janusgraph.TestCategory;
-import org.junit.jupiter.api.Tag;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
+import org.janusgraph.testutil.FeatureFlag;
+import org.janusgraph.testutil.JanusGraphFeature;
 import org.junit.jupiter.api.Test;
 
-public abstract class DistributedStoreManagerTest<T extends DistributedStoreManager> {
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+public abstract class DistributedStoreManagerTest<T extends DistributedStoreManager> implements JanusGraphBaseStoreFeaturesTest {
 
     protected T manager;
     protected KeyColumnValueStore store;
 
+    public StoreFeatures getStoreFeatures(){
+        return manager.getFeatures();
+    }
+
     @Test
-    @Tag(TestCategory.ORDERED_KEY_STORE_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.OrderedScan)
     public void testGetDeployment() {
         assertEquals(Deployment.LOCAL, manager.getDeployment());
     }
 
     @Test
-    @Tag(TestCategory.ORDERED_KEY_STORE_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.OrderedScan)
     public void testGetLocalKeyPartition() throws BackendException {
         assumeTrue(manager.getFeatures().hasLocalKeyPartition());
         List<KeyRange> local = manager.getLocalKeyPartition();

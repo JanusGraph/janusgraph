@@ -106,6 +106,8 @@ import org.janusgraph.graphdb.types.StandardPropertyKeyMaker;
 import org.janusgraph.graphdb.types.system.BaseVertexLabel;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.janusgraph.TestCategory;
+import org.janusgraph.testutil.JanusGraphFeature;
+import org.janusgraph.testutil.FeatureFlag;
 import org.janusgraph.testutil.TestGraphConfigs;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
@@ -5194,7 +5196,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
      ==================================================================================*/
 
     @Test
-    @Tag(TestCategory.CELL_TTL_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.CellTtl)
     public void testEdgeTTLTiming() throws Exception {
         EdgeLabel label1 = mgmt.makeEdgeLabel("likes").make();
         int ttl1 = 1;
@@ -5245,7 +5247,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
-    @Tag(TestCategory.CELL_TTL_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.CellTtl)
     public void testEdgeTTLWithTransactions() throws Exception {
         EdgeLabel label1 = mgmt.makeEdgeLabel("likes").make();
         mgmt.setTTL(label1, Duration.ofSeconds(1));
@@ -5281,7 +5283,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     @Test
     @Tag(TestCategory.BRITTLE_TESTS)
-    @Tag(TestCategory.CELL_TTL_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.CellTtl)
     public void testEdgeTTLWithIndex() throws Exception {
         int ttl = 1; // artificially low TTL for test
         final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
@@ -5317,7 +5319,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     @Test
     @Tag(TestCategory.BRITTLE_TESTS)
-    @Tag(TestCategory.CELL_TTL_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.CellTtl)
     public void testPropertyTTLTiming() throws Exception {
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         PropertyKey place = mgmt.makePropertyKey("place").dataType(String.class).make();
@@ -5364,7 +5366,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
-    @Tag(TestCategory.CELL_TTL_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.CellTtl)
     public void testVertexTTLWithCompositeIndex() throws Exception {
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Long.class).make();
@@ -5397,7 +5399,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     @Test
     @Tag(TestCategory.BRITTLE_TESTS)
-    @Tag(TestCategory.CELL_TTL_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.CellTtl)
     public void testEdgeTTLLimitedByVertexTTL() throws Exception {
         Boolean dbCache = config.get("cache.db-cache", Boolean.class);
         if (null == dbCache) {
@@ -5494,7 +5496,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
-    @Tag(TestCategory.CELL_TTL_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.CellTtl)
     public void testSettingTTLOnUnsupportedType() {
         assertThrows(IllegalArgumentException.class, () -> {
             JanusGraphSchemaType type = ImplicitKey.ID;
@@ -5503,7 +5505,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
-    @Tag(TestCategory.CELL_TTL_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.CellTtl)
     public void testUnsettingTTL() throws InterruptedException {
         int initialTTLMillis = 2000;
 
@@ -5552,7 +5554,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
-    @Tag(TestCategory.CELL_TTL_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.CellTtl)
     public void testGettingUndefinedEdgeLabelTTL() {
         // getTTL should return a null duration on an extant type without a TTL
         mgmt.makeEdgeLabel("likes").make();
@@ -5566,7 +5568,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
-    @Tag(TestCategory.CELL_TTL_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.CellTtl)
     public void testGettingUndefinedVertexLabelTTL() {
         // getTTL should return a null duration on an extant type without a TTL
         mgmt.makeVertexLabel("foo").make();
@@ -5580,7 +5582,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
-    @Tag(TestCategory.CELL_TTL_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.CellTtl)
     public void testGetTTLFromUnsupportedType() {
         assertThrows(IllegalArgumentException.class, () -> {
             JanusGraphSchemaType type = ImplicitKey.ID;
@@ -5589,7 +5591,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
-    @Tag(TestCategory.CELL_TTL_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.CellTtl)
     public void testSettingTTLOnNonStaticVertexLabel() {
         assertThrows(IllegalArgumentException.class, () -> {
             VertexLabel label1 = mgmt.makeVertexLabel("event").make();
@@ -5598,7 +5600,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
-    @Tag(TestCategory.CELL_TTL_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.CellTtl)
     public void testEdgeTTLImplicitKey() throws Exception {
         Duration d;
 
@@ -5642,7 +5644,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
-    @Tag(TestCategory.CELL_TTL_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.CellTtl)
     public void testVertexTTLImplicitKey() throws Exception {
         Duration d;
 
