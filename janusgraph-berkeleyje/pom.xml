@@ -67,7 +67,7 @@
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <excludedGroups>${test.excluded.groups},CELL_TTL_TESTS</excludedGroups>
+                    <excludedGroups>${test.excluded.groups}</excludedGroups>
                 </configuration>
             </plugin>
         </plugins>

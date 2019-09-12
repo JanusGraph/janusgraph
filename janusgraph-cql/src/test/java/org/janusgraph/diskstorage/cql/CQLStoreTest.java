@@ -16,14 +16,14 @@ package org.janusgraph.diskstorage.cql;
 
 import com.datastax.driver.core.*;
 import org.janusgraph.JanusGraphCassandraContainer;
-import org.janusgraph.TestCategory;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.KeyColumnValueStoreTest;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.jupiter.api.Tag;
+import org.janusgraph.testutil.FeatureFlag;
+import org.janusgraph.testutil.JanusGraphFeature;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.EnabledIf;
@@ -74,34 +74,16 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
     }
 
     @Test
-    @Tag(TestCategory.UNORDERED_KEY_STORE_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.UnorderedScan)
     public void testUnorderedConfiguration(TestInfo testInfo) {
-        if (!this.manager.getFeatures().hasUnorderedScan()) {
-            LOGGER.warn(
-                "Can't test key-unordered features on incompatible store.  "
-                    + "This warning could indicate reduced test coverage and "
-                    + "a broken JUnit configuration.  Skipping test {}.",
-                testInfo.getDisplayName());
-            return;
-        }
-
         final StoreFeatures features = this.manager.getFeatures();
         assertFalse(features.isKeyOrdered());
         assertFalse(features.hasLocalKeyPartition());
     }
 
     @Test
-    @Tag(TestCategory.ORDERED_KEY_STORE_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.OrderedScan)
     public void testOrderedConfiguration(TestInfo testInfo) {
-        if (!this.manager.getFeatures().hasOrderedScan()) {
-            LOGGER.warn(
-                "Can't test key-ordered features on incompatible store.  "
-                    + "This warning could indicate reduced test coverage and "
-                    + "a broken JUnit configuration.  Skipping test {}.",
-                testInfo.getDisplayName());
-            return;
-        }
-
         final StoreFeatures features = this.manager.getFeatures();
         assertTrue(features.isKeyOrdered());
     }

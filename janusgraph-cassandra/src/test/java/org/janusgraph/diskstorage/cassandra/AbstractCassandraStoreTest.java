@@ -14,32 +14,25 @@
 
 package org.janusgraph.diskstorage.cassandra;
 
-import java.util.Collections;
-import java.util.Map;
-
-import org.janusgraph.TestCategory;
+import com.google.common.collect.ImmutableMap;
 import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.KeyColumnValueStoreTest;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableMap;
-import org.janusgraph.diskstorage.KeyColumnValueStoreTest;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.testutil.FeatureFlag;
+import org.janusgraph.testutil.JanusGraphFeature;
+import org.junit.jupiter.api.Test;
+
+import java.util.Collections;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(AbstractCassandraStoreTest.class);
     private static final String TEST_CF_NAME = "testcf";
     private static final String DEFAULT_COMPRESSOR_PACKAGE = "org.apache.cassandra.io.compress";
 
@@ -49,34 +42,16 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
     public abstract AbstractCassandraStoreManager openStorageManager(Configuration c) throws BackendException;
 
     @Test
-    @Tag(TestCategory.UNORDERED_KEY_STORE_TESTS)
-    public void testUnorderedConfiguration(TestInfo testInfo) {
-        if (!manager.getFeatures().hasUnorderedScan()) {
-            log.warn(
-                "Can't test key-unordered features on incompatible store.  "
-                + "This warning could indicate reduced test coverage and "
-                + "a broken JUnit configuration.  Skipping test {}.",
-                testInfo.getTestMethod().toString());
-            return;
-        }
-
+    @FeatureFlag(feature = JanusGraphFeature.UnorderedScan)
+    public void testUnorderedConfiguration() {
         StoreFeatures features = manager.getFeatures();
         assertFalse(features.isKeyOrdered());
         assertFalse(features.hasLocalKeyPartition());
     }
 
     @Test
-    @Tag(TestCategory.ORDERED_KEY_STORE_TESTS)
-    public void testOrderedConfiguration(TestInfo testInfo) {
-        if (!manager.getFeatures().hasOrderedScan()) {
-            log.warn(
-                "Can't test key-ordered features on incompatible store.  "
-                + "This warning could indicate reduced test coverage and "
-                + "a broken JUnit configuration.  Skipping test {}.",
-                testInfo.getTestMethod().toString());
-            return;
-        }
-
+    @FeatureFlag(feature = JanusGraphFeature.OrderedScan)
+    public void testOrderedConfiguration() {
         StoreFeatures features = manager.getFeatures();
         assertTrue(features.isKeyOrdered());
     }
