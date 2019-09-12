@@ -303,7 +303,7 @@
                         <phase>test</phase>
                         <configuration>
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-bop -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-bop</argLine>
-                            <excludedGroups>${test.excluded.groups},UNORDERED_KEY_STORE_TESTS,SERIAL_TESTS,CASSANDRA_SSL_TESTS</excludedGroups>
+                            <excludedGroups>${test.excluded.groups},SERIAL_TESTS,CASSANDRA_SSL_TESTS</excludedGroups>
                             <groups />
                             <forkCount>1</forkCount>
                             <reuseForks>false</reuseForks>
@@ -323,7 +323,7 @@
                         <phase>test</phase>
                         <configuration>
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
-                            <excludedGroups>${test.excluded.groups},ORDERED_KEY_STORE_TESTS,SERIAL_TESTS,CASSANDRA_SSL_TESTS</excludedGroups>
+                            <excludedGroups>${test.excluded.groups},SERIAL_TESTS,CASSANDRA_SSL_TESTS</excludedGroups>
                             <groups />
                             <forkCount>1</forkCount>
                             <reuseForks>false</reuseForks>

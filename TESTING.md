@@ -27,8 +27,6 @@ All of JanusGraph's tests are written for JUnit.  JanusGraph's JUnit tests are a
 | ------------- | ------------------- |:------------:| ------- |
 | MEMORY_TESTS | test.skip.mem | true (disabled) | Tests intended to exert memory pressure |
 | PERFORMANCE_TESTS | test.skip.perf | true (disabled) | Tests written as simple speed tests using JUnitBenchmarks|
-| ORDERED_KEY_STORE_TESTS | test.skip.ordered | false (enabled) | Tests written for a storage backend that stores data in key order |
-| UNORDERED_KEY_STORE_TESTS | test.skip.unordered | false (enabled) | Tests written for a storage backend that doesn't store data in key order |
 | (No&nbsp;tag) | test.skip.default | false (enabled) | Tests without any Tag annotations |
 
 **Tag Name** above is a Java interface defined in the package [org.janusgraph.testcategory](janusgraph-test/src/main/org/janusgraph/testcategory).  These interfaces appear as arguments to the JUnit `@Tag(...)` annotation, e.g. `@Tag(TestCategory.MEMORY_TESTS)`.
@@ -45,6 +43,21 @@ If a test should be marked as flaky add following annotation to the test and ope
 @FlakyTest
 public void testFlakyFailsSometimes(){}
 ```
+
+### Marking tests to require certain Features from StoreManager
+
+A test can be annotated that a test is only execute, if the StoreManager support this feature.
+
+```java
+@FeatureFlag(feature = JanusGraphFeature.UnorderedScan)
+public void testRequiresUnorderedScanOnDatabase(){}
+```
+
+| Feature flag  | Required feature                   |
+| ------------- | ---------------------------------- |
+| UnorderedScan | `StoreFeatures.hasUnorderedScan()` |
+| OrderedScan   | `StoreFeatures.hasOrderedScan()`   |
+| CellTtl       | `StoreFeatures.hasCellTtl()`       |
 
 ### Running a Single Test via Maven
 
