@@ -192,7 +192,7 @@
                 <cassandra.docker.version>${test.docker.version.cassandra2}</cassandra.docker.version>
                 <cassandra.docker.partitioner>${test.byteordered}</cassandra.docker.partitioner>
                 <test.skip.murmur-serial>true</test.skip.murmur-serial>
-                <test.cql.excludes>${test.excluded.groups},UNORDERED_KEY_STORE_TESTS,SERIAL_TESTS</test.cql.excludes>
+                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
             </properties>
         </profile>
         <profile>
@@ -204,7 +204,7 @@
                 <cassandra.docker.version>${test.docker.version.cassandra2}</cassandra.docker.version>
                 <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
                 <test.skip.murmur-serial>false</test.skip.murmur-serial>
-                <test.cql.excludes>${test.excluded.groups},ORDERED_KEY_STORE_TESTS,SERIAL_TESTS</test.cql.excludes>
+                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
             </properties>
         </profile>
         <profile>
@@ -217,7 +217,7 @@
                 <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
                 <cassandra.docker.useSSL>true</cassandra.docker.useSSL>
                 <test.skip.murmur-serial>false</test.skip.murmur-serial>
-                <test.cql.excludes>${test.excluded.groups},ORDERED_KEY_STORE_TESTS,SERIAL_TESTS</test.cql.excludes>
+                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
             </properties>
         </profile>
 
@@ -230,7 +230,7 @@
                 <cassandra.docker.version>${test.docker.version.cassandra2}</cassandra.docker.version>
                 <cassandra.docker.partitioner>${test.byteordered}</cassandra.docker.partitioner>
                 <test.skip.murmur-serial>true</test.skip.murmur-serial>
-                <test.cql.excludes>${test.excluded.groups},UNORDERED_KEY_STORE_TESTS,SERIAL_TESTS</test.cql.excludes>
+                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
             </properties>
         </profile>
         <profile>
@@ -242,7 +242,7 @@
                 <cassandra.docker.version>${test.docker.version.cassandra3}</cassandra.docker.version>
                 <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
                 <test.skip.murmur-serial>false</test.skip.murmur-serial>
-                <test.cql.excludes>${test.excluded.groups},ORDERED_KEY_STORE_TESTS,SERIAL_TESTS</test.cql.excludes>
+                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
             </properties>
         </profile>
         <profile>
@@ -255,7 +255,7 @@
                 <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
                 <cassandra.docker.useSSL>true</cassandra.docker.useSSL>
                 <test.skip.murmur-serial>false</test.skip.murmur-serial>
-                <test.cql.excludes>${test.excluded.groups},ORDERED_KEY_STORE_TESTS,SERIAL_TESTS</test.cql.excludes>
+                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
             </properties>
         </profile>
 

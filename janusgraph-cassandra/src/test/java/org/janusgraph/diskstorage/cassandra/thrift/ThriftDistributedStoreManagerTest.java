@@ -15,10 +15,11 @@
 package org.janusgraph.diskstorage.cassandra.thrift;
 
 import org.janusgraph.CassandraStorageSetup;
-import org.janusgraph.TestCategory;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.DistributedStoreManagerTest;
 import org.janusgraph.diskstorage.common.DistributedStoreManager.Deployment;
+import org.janusgraph.testutil.FeatureFlag;
+import org.janusgraph.testutil.JanusGraphFeature;
 import org.junit.jupiter.api.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,7 +46,7 @@ public class ThriftDistributedStoreManagerTest extends DistributedStoreManagerTe
 
     @Override
     @Test
-    @Tag(TestCategory.ORDERED_KEY_STORE_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.OrderedScan)
     public void testGetDeployment() {
         final Deployment deployment = CassandraStorageSetup.HOSTNAME == null ? Deployment.LOCAL : Deployment.REMOTE;
         assertEquals(deployment, manager.getDeployment());

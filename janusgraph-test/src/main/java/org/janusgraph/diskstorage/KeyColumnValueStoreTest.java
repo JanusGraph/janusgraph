@@ -20,6 +20,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import com.google.common.collect.ImmutableList;
+import org.janusgraph.JanusGraphBaseStoreFeaturesTest;
 import org.janusgraph.TestCategory;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
@@ -28,6 +29,8 @@ import org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScanner;
 import org.janusgraph.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
 import org.janusgraph.diskstorage.util.*;
 
+import org.janusgraph.testutil.FeatureFlag;
+import org.janusgraph.testutil.JanusGraphFeature;
 import org.janusgraph.testutil.TestGraphConfigs;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
@@ -41,7 +44,7 @@ import org.janusgraph.testutil.RandomGenerator;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
+public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest implements JanusGraphBaseStoreFeaturesTest {
 
     public static final int TRIALS = 5000;
     private final Logger log = LoggerFactory.getLogger(KeyColumnValueStoreTest.class);
@@ -69,6 +72,10 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         manager = openStorageManager();
         store = manager.openDatabase(storeName);
         tx = startTx();
+    }
+
+    public StoreFeatures getStoreFeatures(){
+        return manager.getFeatures();
     }
 
     public StoreTransaction startTx() throws BackendException {
@@ -395,23 +402,22 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
      * scans.
      */
     @Test
+    @FeatureFlag(feature = JanusGraphFeature.Scan)
     public void scanTest() throws BackendException {
-        if (manager.getFeatures().hasScan()) {
-            String[][] values = generateValues();
-            loadValues(values);
-            KeyIterator iterator0 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
-            verifyIterator(iterator0,numKeys);
-            clopen();
-            KeyIterator iterator1 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
-            KeyIterator iterator2 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
-            // The idea is to open an iterator without using it
-            // to make sure that closing a transaction will clean it up.
-            // (important for BerkeleyJE where leaving cursors open causes exceptions)
-            @SuppressWarnings("unused")
-            KeyIterator iterator3 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
-            verifyIterator(iterator1,numKeys);
-            verifyIterator(iterator2,numKeys);
-        }
+        String[][] values = generateValues();
+        loadValues(values);
+        KeyIterator iterator0 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
+        verifyIterator(iterator0, numKeys);
+        clopen();
+        KeyIterator iterator1 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
+        KeyIterator iterator2 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
+        // The idea is to open an iterator without using it
+        // to make sure that closing a transaction will clean it up.
+        // (important for BerkeleyJE where leaving cursors open causes exceptions)
+        @SuppressWarnings("unused")
+        KeyIterator iterator3 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
+        verifyIterator(iterator1, numKeys);
+        verifyIterator(iterator2, numKeys);
     }
 
     private void verifyIterator(KeyIterator iterator, int expectedKeys) {
@@ -442,16 +448,8 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
      * @throws BackendException
      */
     @Test
-    @Tag(TestCategory.ORDERED_KEY_STORE_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.OrderedScan)
     public void testOrderedGetKeysRespectsKeyLimit(TestInfo testInfo) throws BackendException {
-        if (!manager.getFeatures().hasOrderedScan()) {
-            log.warn("Can't test key-ordered features on incompatible store.  "
-                    + "This warning could indicate reduced test coverage and "
-                    + "a broken JUnit configuration.  Skipping test {}.",
-                testInfo.getDisplayName());
-            return;
-        }
-
         Preconditions.checkState(4 <= numKeys && 4 <= numColumns);
 
         final long minKey = KeyValueStoreUtil.idOffset + 1;
@@ -487,28 +485,28 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
      * @throws BackendException
      */
     @Test
+    @FeatureFlag(feature = JanusGraphFeature.Scan)
     public void testGetKeysColumnSlicesSimple()
-            throws BackendException {
-        if (manager.getFeatures().hasScan()) {
+        throws BackendException {
 
-            final int shiftEveryNthRows = 10;
-            final int expectedKeyCount = numKeys / shiftEveryNthRows * (shiftEveryNthRows - 1);
+        final int shiftEveryNthRows = 10;
+        final int expectedKeyCount = numKeys / shiftEveryNthRows * (shiftEveryNthRows - 1);
 
-            Preconditions.checkArgument(0 == numKeys % shiftEveryNthRows);
-            Preconditions.checkArgument(10 < numKeys / shiftEveryNthRows);
+        Preconditions.checkArgument(0 == numKeys % shiftEveryNthRows);
+        Preconditions.checkArgument(10 < numKeys / shiftEveryNthRows);
 
-            String[][] values = generateValues();
-            loadValues(values, shiftEveryNthRows, 4);
+        String[][] values = generateValues();
+        loadValues(values, shiftEveryNthRows, 4);
 
-            RecordIterator<StaticBuffer> i;
-            i = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
-            assertEquals(expectedKeyCount, KeyValueStoreUtil.count(i));
+        RecordIterator<StaticBuffer> i;
+        i = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
+        assertEquals(expectedKeyCount, KeyValueStoreUtil.count(i));
 
-            clopen();
+        clopen();
 
-            i = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
-            assertEquals(expectedKeyCount, KeyValueStoreUtil.count(i));
-        }
+        i = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
+        assertEquals(expectedKeyCount, KeyValueStoreUtil.count(i));
+
     }
 
 
@@ -527,92 +525,91 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
      * @throws IOException      shouldn't happen
      */
     @Test
+    @FeatureFlag(feature = JanusGraphFeature.Scan)
     public void testGetKeysColumnSlicesOnLowerTriangular() throws BackendException, IOException {
-        if (manager.getFeatures().hasScan()) {
-            final int offset = 10; //should be greater than or equal to 1
-            final int size = 10; //should be greater than or equal to 4
-            final int midpoint = size / 2 + offset;
-            final int upper = offset + size;
-            final int step = 1;
+        final int offset = 10; //should be greater than or equal to 1
+        final int size = 10; //should be greater than or equal to 4
+        final int midpoint = size / 2 + offset;
+        final int upper = offset + size;
+        final int step = 1;
 
-            loadLowerTriangularValues(size, offset);
+        loadLowerTriangularValues(size, offset);
 
-            boolean executed = false;
+        boolean executed = false;
 
-            if (manager.getFeatures().hasUnorderedScan()) {
+        if (manager.getFeatures().hasUnorderedScan()) {
 
-                final Collection<StaticBuffer> expected = new HashSet<>(size);
+            final Collection<StaticBuffer> expected = new HashSet<>(size);
 
-                for (int start = midpoint; start >= offset - step; start -= step) {
-                    for (int end = midpoint + 1; end <= upper + step; end += step) {
-                        Preconditions.checkArgument(start < end);
+            for (int start = midpoint; start >= offset - step; start -= step) {
+                for (int end = midpoint + 1; end <= upper + step; end += step) {
+                    Preconditions.checkArgument(start < end);
 
-                        // Set column bounds
-                        StaticBuffer startCol = BufferUtil.getIntBuffer(start);
-                        StaticBuffer endCol = BufferUtil.getIntBuffer(end);
-                        SliceQuery sq = new SliceQuery(startCol, endCol);
+                    // Set column bounds
+                    StaticBuffer startCol = BufferUtil.getIntBuffer(start);
+                    StaticBuffer endCol = BufferUtil.getIntBuffer(end);
+                    SliceQuery sq = new SliceQuery(startCol, endCol);
 
-                        // Compute expectation
-                        expected.clear();
-                        for (long l = Math.max(start, offset); l < upper; l++) {
-                            expected.add(BufferUtil.getLongBuffer(l));
-                        }
-
-                        // Compute actual
-                        KeyIterator i = store.getKeys(sq, tx);
-                        Collection<StaticBuffer> actual = Sets.newHashSet(i);
-
-                        // Check
-                        log.debug("Checking bounds [{}, {}) (expect {} keys)", startCol, endCol, expected.size());
-                        assertEquals(expected, actual);
-                        i.close();
-                        executed = true;
+                    // Compute expectation
+                    expected.clear();
+                    for (long l = Math.max(start, offset); l < upper; l++) {
+                        expected.add(BufferUtil.getLongBuffer(l));
                     }
+
+                    // Compute actual
+                    KeyIterator i = store.getKeys(sq, tx);
+                    Collection<StaticBuffer> actual = Sets.newHashSet(i);
+
+                    // Check
+                    log.debug("Checking bounds [{}, {}) (expect {} keys)", startCol, endCol, expected.size());
+                    assertEquals(expected, actual);
+                    i.close();
+                    executed = true;
                 }
-
-            } else if (manager.getFeatures().hasOrderedScan()) {
-
-                final Collection<StaticBuffer> expected = new ArrayList<>(size);
-
-                for (int start = midpoint; start >= offset - step; start -= step) {
-                    for (int end = midpoint + 1; end <= upper + step; end += step) {
-                        Preconditions.checkArgument(start < end);
-
-                        // Set column bounds
-                        StaticBuffer startCol = BufferUtil.getIntBuffer(start);
-                        StaticBuffer endCol = BufferUtil.getIntBuffer(end);
-                        SliceQuery sq = new SliceQuery(startCol, endCol);
-
-                        // Set key bounds
-                        StaticBuffer keyStart = BufferUtil.getLongBuffer(start);
-                        StaticBuffer keyEnd = BufferUtil.getLongBuffer(end);
-                        KeyRangeQuery krq = new KeyRangeQuery(keyStart, keyEnd, sq);
-
-                        // Compute expectation
-                        expected.clear();
-                        for (long l = Math.max(start, offset); l < Math.min(upper, end); l++) {
-                            expected.add(BufferUtil.getLongBuffer(l));
-                        }
-
-                        // Compute actual
-                        KeyIterator i = store.getKeys(krq, tx);
-                        Collection<StaticBuffer> actual = Lists.newArrayList(i);
-
-                        log.debug("Checking bounds key:[{}, {}) & col:[{}, {}) (expect {} keys)",
-                            keyStart, keyEnd, startCol, endCol, expected.size());
-                        assertEquals(expected, actual);
-                        i.close();
-                        executed = true;
-                    }
-                }
-
-            } else {
-                throw new UnsupportedOperationException(
-                        "Illegal store configuration: supportsScan()=true but supportsOrderedScan()=supportsUnorderedScan()=false");
             }
 
-            Preconditions.checkArgument(executed);
+        } else if (manager.getFeatures().hasOrderedScan()) {
+
+            final Collection<StaticBuffer> expected = new ArrayList<>(size);
+
+            for (int start = midpoint; start >= offset - step; start -= step) {
+                for (int end = midpoint + 1; end <= upper + step; end += step) {
+                    Preconditions.checkArgument(start < end);
+
+                    // Set column bounds
+                    StaticBuffer startCol = BufferUtil.getIntBuffer(start);
+                    StaticBuffer endCol = BufferUtil.getIntBuffer(end);
+                    SliceQuery sq = new SliceQuery(startCol, endCol);
+
+                    // Set key bounds
+                    StaticBuffer keyStart = BufferUtil.getLongBuffer(start);
+                    StaticBuffer keyEnd = BufferUtil.getLongBuffer(end);
+                    KeyRangeQuery krq = new KeyRangeQuery(keyStart, keyEnd, sq);
+
+                    // Compute expectation
+                    expected.clear();
+                    for (long l = Math.max(start, offset); l < Math.min(upper, end); l++) {
+                        expected.add(BufferUtil.getLongBuffer(l));
+                    }
+
+                    // Compute actual
+                    KeyIterator i = store.getKeys(krq, tx);
+                    Collection<StaticBuffer> actual = Lists.newArrayList(i);
+
+                    log.debug("Checking bounds key:[{}, {}) & col:[{}, {}) (expect {} keys)",
+                        keyStart, keyEnd, startCol, endCol, expected.size());
+                    assertEquals(expected, actual);
+                    i.close();
+                    executed = true;
+                }
+            }
+
+        } else {
+            throw new UnsupportedOperationException(
+                "Illegal store configuration: supportsScan()=true but supportsOrderedScan()=supportsUnorderedScan()=false");
         }
+
+        Preconditions.checkArgument(executed);
     }
 
     public void checkSlice(String[][] values, Set<KeyColumn> removed, int key,
@@ -962,16 +959,8 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test
-    @Tag(TestCategory.UNORDERED_KEY_STORE_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.UnorderedScan)
     public void testGetKeysWithSliceQuery(TestInfo testInfo) throws Exception {
-        if (!manager.getFeatures().hasUnorderedScan()) {
-            log.warn("Can't test key-unordered features on incompatible store.  "
-                    + "This warning could indicate reduced test coverage and "
-                    + "a broken JUnit configuration.  Skipping test {}.",
-                    testInfo.getDisplayName());
-            return;
-        }
-
         populateDBWith100Keys();
 
         tx.commit();
@@ -985,16 +974,8 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test
-    @Tag(TestCategory.ORDERED_KEY_STORE_TESTS)
+    @FeatureFlag(feature = JanusGraphFeature.OrderedScan)
     public void testGetKeysWithKeyRange(TestInfo testInfo) throws Exception {
-        if (!manager.getFeatures().hasOrderedScan()) {
-            log.warn("Can't test ordered scans on incompatible store.  "
-                    + "This warning could indicate reduced test coverage and "
-                    + "shouldn't happen in an ideal JUnit configuration.  "
-                    + "Skipping test {}.", testInfo.getDisplayName());
-            return;
-        }
-
         populateDBWith100Keys();
 
         tx.commit();
@@ -1011,12 +992,8 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
     @Tag(TestCategory.BRITTLE_TESTS)
     @Test
+    @FeatureFlag(feature = JanusGraphFeature.CellTtl)
     public void testTtl() throws Exception {
-
-        if (!manager.getFeatures().hasCellTTL()) {
-            return;
-        }
-
         StaticBuffer key = KeyColumnValueStoreUtil.longToByteBuffer(0);
 
         int[] ttls = new int[]{0, 1, 2};
