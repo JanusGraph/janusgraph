@@ -52,6 +52,15 @@ public class StorageFeaturesTest {
         assertTrue(features.hasScan());
         assertFalse(features.isDistributed());
         assertFalse(features.hasLocking());
+
+        features = new StandardStoreFeatures.Builder().multiQuery(true).orderedScan(true).build();
+
+        assertTrue(features.hasMultiQuery());
+        assertFalse(features.hasUnorderedScan());
+        assertTrue(features.hasOrderedScan());
+        assertTrue(features.hasScan());
+        assertFalse(features.isDistributed());
+        assertFalse(features.hasLocking());
     }
 
 

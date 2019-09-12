@@ -77,18 +77,6 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
         idManager = graph.getIDManager();
     }
 
-//    @Test
-//    @Tag(TestCategory.ORDERED_KEY_STORE_TESTS)
-//    public void testOrderedConfig() {
-//        assertTrue(graph.getConfiguration().getStoreFeatures().isKeyOrdered());
-//    }
-//
-//    @Test
-//    @Tag(TestCategory.UNORDERED_KEY_STORE_TESTS)
-//    public void testUnorderedConfig() {
-//        assertFalse(graph.getConfiguration().getStoreFeatures().isKeyOrdered());
-//    }
-
     @Test
     public void testPartitionHashes() {
         assertEquals(8, idManager.getPartitionBound());

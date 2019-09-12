@@ -14,9 +14,8 @@
 
 package org.janusgraph;
 
-public final class TestCategory {
-    public static final String BRITTLE_TESTS = "BRITTLE_TESTS";
-    public static final String SERIAL_TESTS = "SERIAL_TESTS";
-    public static final String MEMORY_TESTS = "MEMORY_TESTS";
-    public static final String PERFORMANCE_TESTS = "PERFORMANCE_TESTS";
+import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
+
+public interface JanusGraphBaseStoreFeaturesTest {
+    StoreFeatures getStoreFeatures();
 }

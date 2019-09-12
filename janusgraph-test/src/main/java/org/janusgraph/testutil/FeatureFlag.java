@@ -12,11 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph;
+package org.janusgraph.testutil;
 
-public final class TestCategory {
-    public static final String BRITTLE_TESTS = "BRITTLE_TESTS";
-    public static final String SERIAL_TESTS = "SERIAL_TESTS";
-    public static final String MEMORY_TESTS = "MEMORY_TESTS";
-    public static final String PERFORMANCE_TESTS = "PERFORMANCE_TESTS";
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD})
+@ExtendWith(FeatureRequirementCondition.class)
+public @interface FeatureFlag {
+    JanusGraphFeature feature();
 }
