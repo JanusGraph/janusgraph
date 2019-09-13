@@ -274,7 +274,7 @@ If this step fails, there are changes that must be made before starting the vote
 Once all the artifacts have been upload to the GItHub releases page and the staging repository has been populated and closed it's time to create a `[VOTE]` thread.
 Here is an example [vote thread from JanusGraph 0.3.1](https://groups.google.com/d/msg/janusgraph-dev/iV8IsUqhcnw/74p3Y7lNAAAJ) that can be used as a template.
 Similar to the [Apache release voting policy](https://www.apache.org/foundation/voting.html#ReleaseVotes) a release vote requires 3 TSC members to pass.
-See the documentation on the [JanusGraph release policy](https://docs.janusgraph.org/latest/release-policy.html) for more information.
+See the documentation on the [JanusGraph release policy](https://docs.janusgraph.org/development/#release-policy) for more information.
 
 ### Finalize the Release
 
@@ -320,4 +320,4 @@ Here is an [example announcement thread](https://groups.google.com/forum/#!searc
 ### Document lessons learned
 
 If you find anything incorrect or incomplete in this document during the process of preparing a release it is important to feed that information back into the community.
-Fine details should be added to this document, while high level items could merit updates to the [releasing policy.](https://docs.janusgraph.org/latest/release-policy.html)
+Fine details should be added to this document, while high level items could merit updates to the [releasing policy.](https://docs.janusgraph.org/development/#release-policy)

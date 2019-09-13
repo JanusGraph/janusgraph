@@ -38,7 +38,7 @@ uses the script `scripts/empty-graph.groovy` to define the graph traversal sourc
 ### JanusGraph pre-packaged distribution
 
 Rather than installing Cassandra and Elasticsearch separately, the JanusGraph
-[pre-packaged distribution](https://docs.janusgraph.org/latest/server.html#_using_the_pre_packaged_distribution)
+[pre-packaged distribution](https://docs.janusgraph.org/basics/server/#using-the-pre-packaged-distribution)
 is provided for convenience. The distribution starts a local Cassandra,
 Elasticsearch, and Gremlin Server.
 

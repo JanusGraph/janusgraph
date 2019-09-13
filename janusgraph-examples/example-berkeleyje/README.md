@@ -15,7 +15,7 @@ stored in a directory on the file system.
 [`jgex-berkeleyje.properties`](conf/jgex-berkeleyje.properties) contains
 the directory locations for BerkeleyJE and Lucene.
 
-Refer to the JanusGraph [configuration reference](https://docs.janusgraph.org/latest/config-ref.html)
+Refer to the JanusGraph [configuration reference](https://docs.janusgraph.org/basics/configuration-reference/)
 for additional properties.
 
 ## Dependencies
