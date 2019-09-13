@@ -32,7 +32,7 @@ import java.nio.file.Paths;
 public class CqlInputFormatIT extends AbstractInputFormatIT {
 
     @Container
-    private static JanusGraphCassandraContainer cql = new JanusGraphCassandraContainer(true);
+    private static JanusGraphCassandraContainer cql = new JanusGraphCassandraContainer();
 
     private PropertiesConfiguration getGraphConfiguration() throws ConfigurationException, IOException {
         final PropertiesConfiguration config = new PropertiesConfiguration("target/test-classes/cql-read.properties");
@@ -40,6 +40,7 @@ public class CqlInputFormatIT extends AbstractInputFormatIT {
         baseOutDir.toFile().mkdirs();
         String outDir = Files.createTempDirectory(baseOutDir, null).toAbsolutePath().toString();
         config.setProperty("gremlin.hadoop.outputLocation", outDir);
+        config.setProperty("janusgraphmr.ioformat.conf.storage.port", String.valueOf(cql.getMappedCqlPort()));
         return config;
     }
 

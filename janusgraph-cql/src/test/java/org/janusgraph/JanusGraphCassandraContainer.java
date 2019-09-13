@@ -95,15 +95,9 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
         }
         return "cassandra2";
     }
-    public JanusGraphCassandraContainer(){
-        this(false);
-    }
 
-    public JanusGraphCassandraContainer(boolean fixedExposedPortOfCQL) {
+    public JanusGraphCassandraContainer() {
         super(getCassandraImage() + ":" + getVersion());
-        if (fixedExposedPortOfCQL) {
-            addFixedExposedPort(CQL_PORT, CQL_PORT);
-        }
         withEnv("MAX_HEAP_SIZE", "2G");
         withEnv("HEAP_NEWSIZE", "1G");
         if (useDynamicConfig()) {
@@ -157,6 +151,10 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
             config.set(SSL_TRUSTSTORE_PASSWORD, "cassandra");
         }
         return config;
+    }
+
+    public int getMappedCqlPort() {
+        return getMappedPort(CQL_PORT);
     }
 
     private static void setWrapperStoreManager() {
