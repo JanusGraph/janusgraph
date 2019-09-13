@@ -8,7 +8,7 @@ store.
 [Apache Solr](https://lucene.apache.org/solr/) is a scalable, distributed
 search engine.
 
-> Check the JanusGraph [version compatibility](https://docs.janusgraph.org/latest/version-compat.html)
+> Check the JanusGraph [version compatibility](https://docs.janusgraph.org/changelog/#version-compatibility)
 to ensure you select versions of HBase and Solr compatible with this
 JanusGraph release.
 
@@ -16,7 +16,7 @@ JanusGraph release.
 
 * Be aware that Solr has two configuration options: SolrCloud or HTTP. With
 either option, there is manual configuration required for the Solr cores (config
-sets). Refer to the JanusGraph [Solr documentation](https://docs.janusgraph.org/latest/solr.html)
+sets). Refer to the JanusGraph [Solr documentation](https://docs.janusgraph.org/index-backend/solr/)
 for additional details.
 
     * [`jgex-hbase-solr-cloud.properties`](conf/jgex-hbase-solr-cloud.properties)
@@ -27,7 +27,7 @@ for additional details.
 
 * By providing different values for `storage.hbase.table` and `index.jgex.index-name`,
 you can store multiple graphs on the same HBase and Solr servers. Refer to
-the JanusGraph [configuration reference](https://docs.janusgraph.org/latest/config-ref.html)
+the JanusGraph [configuration reference](https://docs.janusgraph.org/basics/configuration-reference/)
 for additional properties.
 
 * [`logback.xml`](conf/logback.xml) configures logging with [Logback](https://logback.qos.ch/).
