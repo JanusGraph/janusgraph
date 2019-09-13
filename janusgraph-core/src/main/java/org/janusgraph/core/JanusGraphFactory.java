@@ -72,8 +72,8 @@ public class JanusGraphFactory {
      *
      * @param shortcutOrFile Configuration file name or configuration short-cut
      * @return JanusGraph graph database configured according to the provided configuration
-     * @see <a href="https://docs.janusgraph.org/latest/configuration.html">"Configuration" manual chapter</a>
-     * @see <a href="https://docs.janusgraph.org/latest/config-ref.html">Configuration Reference</a>
+     * @see <a href="https://docs.janusgraph.org/basics/configuration/">"Configuration" manual chapter</a>
+     * @see <a href="https://docs.janusgraph.org/basics/configuration-reference/">Configuration Reference</a>
      */
     public static JanusGraph open(String shortcutOrFile) {
         return open(getLocalConfiguration(shortcutOrFile));
@@ -93,8 +93,8 @@ public class JanusGraphFactory {
      * @param shortcutOrFile Configuration file name or configuration short-cut
      * @param backupName Backup name for graph
      * @return JanusGraph graph database configured according to the provided configuration
-     * @see <a href="https://docs.janusgraph.org/latest/configuration.html">"Configuration" manual chapter</a>
-     * @see <a href="https://docs.janusgraph.org/latest/config-ref.html">Configuration Reference</a>
+     * @see <a href="https://docs.janusgraph.org/basics/configuration/">"Configuration" manual chapter</a>
+     * @see <a href="https://docs.janusgraph.org/basics/configuration-reference/">Configuration Reference</a>
      */
     public static JanusGraph open(String shortcutOrFile, String backupName) {
         return open(getLocalConfiguration(shortcutOrFile), backupName);
@@ -105,8 +105,8 @@ public class JanusGraphFactory {
      *
      * @param configuration Configuration for the graph database
      * @return JanusGraph graph database
-     * @see <a href="https://docs.janusgraph.org/latest/configuration.html">"Configuration" manual chapter</a>
-     * @see <a href="https://docs.janusgraph.org/latest/config-ref.html">Configuration Reference</a>
+     * @see <a href="https://docs.janusgraph.org/basics/configuration/">"Configuration" manual chapter</a>
+     * @see <a href="https://docs.janusgraph.org/basics/configuration-reference/">Configuration Reference</a>
      */
     public static JanusGraph open(Configuration configuration) {
         return open(new CommonsConfiguration(configuration));

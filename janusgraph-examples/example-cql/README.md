@@ -10,7 +10,7 @@ protocol).
 [Elasticsearch](https://www.elastic.co/products/elasticsearch) is a scalable,
 distributed search engine.
 
-> Check the JanusGraph [version compatibility](https://docs.janusgraph.org/latest/version-compat.html)
+> Check the JanusGraph [version compatibility](https://docs.janusgraph.org/changelog/#version-compatibility)
 to ensure you select versions of Cassandra and Elasticsearch compatible with
 this JanusGraph release.
 
@@ -20,7 +20,7 @@ this JanusGraph release.
 and Elasticsearch server locations. By providing different values for
 `storage.cql.keyspace` and `index.jgex.index-name`, you can store multiple
 graphs on the same Cassandra and Elasticsearch servers. Refer to the JanusGraph
-[configuration reference](https://docs.janusgraph.org/latest/config-ref.html)
+[configuration reference](https://docs.janusgraph.org/basics/configuration-reference/)
 for additional properties.
 
 * [`logback.xml`](conf/logback.xml) configures logging with [Logback](https://logback.qos.ch/),
@@ -44,7 +44,7 @@ documentation for installation instructions.
 ### JanusGraph pre-packaged distribution
 
 Rather than installing Cassandra and Elasticsearch separately, the JanusGraph
-[pre-packaged distribution](https://docs.janusgraph.org/latest/server.html#_using_the_pre_packaged_distribution)
+[pre-packaged distribution](https://docs.janusgraph.org/basics/server/#using-the-pre-packaged-distribution)
 is provided for convenience. The distribution starts a local Cassandra,
 Elasticsearch, and Gremlin Server.
 
