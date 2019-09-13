@@ -69,7 +69,7 @@ import java.util.Map;
 import static org.janusgraph.diskstorage.cassandra.CassandraTransaction.getTx;
 
 /**
- * @deprecated use CQL backend instead, see https://docs.janusgraph.org/latest/cassandra.html.
+ * @deprecated use CQL backend instead, see https://docs.janusgraph.org/storage-backend/cassandra/.
  */
 @PreInitializeConfigOptions
 @Deprecated
