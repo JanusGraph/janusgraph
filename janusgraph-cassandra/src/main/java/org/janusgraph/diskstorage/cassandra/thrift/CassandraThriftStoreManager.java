@@ -61,7 +61,7 @@ import static org.janusgraph.diskstorage.configuration.ConfigOption.disallowEmpt
  * handles Cassandra-backed allocation of vertex IDs for JanusGraph (when so
  * configured).
 
- * @deprecated use CQL backend instead, see https://docs.janusgraph.org/latest/cassandra.html.
+ * @deprecated use CQL backend instead, see https://docs.janusgraph.org/storage-backend/cassandra/.
  *
  * @author Dan LaRocque &lt;dalaro@hopcount.org&gt;
  */
