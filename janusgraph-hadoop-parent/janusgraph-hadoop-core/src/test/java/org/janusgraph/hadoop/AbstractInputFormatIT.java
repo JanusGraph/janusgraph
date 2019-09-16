@@ -66,9 +66,6 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
             Vertex v = graph.addVertex();
             for (int i = 0; i < numProps; i++) {
                 v.property("p", i);
-                if (i % 8 == 0) {
-                    graph.tx().commit();
-                }
             }
         }
         graph.tx().commit();

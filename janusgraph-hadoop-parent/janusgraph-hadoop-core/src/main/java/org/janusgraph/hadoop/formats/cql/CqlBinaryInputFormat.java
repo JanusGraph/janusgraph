@@ -56,7 +56,9 @@ public class CqlBinaryInputFormat extends AbstractBinaryInputFormat {
     @Override
     public RecordReader<StaticBuffer, Iterable<Entry>> createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
         CqlRecordReader recordReader = (CqlRecordReader) cqlInputFormat.createRecordReader(inputSplit, taskAttemptContext);
-        return new CqlBinaryRecordReader(recordReader);
+        CqlBinaryRecordReader reader = new CqlBinaryRecordReader(recordReader);
+
+        return reader;
     }
 
     @Override
