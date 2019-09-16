@@ -491,6 +491,9 @@ HBase storage options
 | ---- | ---- | ---- | ---- | ---- |
 | storage.hbase.compat-class | The package and class name of the HBaseCompat implementation. HBaseCompat masks version-specific HBase API differences. When this option is unset, JanusGraph calls HBase's VersionInfo.getVersion() and loads the matching compat class at runtime.  Setting this option forces JanusGraph to instead reflectively load and instantiate the specified class. | String | (no default value) | MASKABLE |
 | storage.hbase.compression-algorithm | An HBase Compression.Algorithm enum string which will be applied to newly created column families. The compression algorithm must be installed and available on the HBase cluster.  JanusGraph cannot install and configure new compression algorithms on the HBase cluster by itself. | String | GZ | MASKABLE |
+| storage.hbase.kerberos-enabled | Whether HBase instance is Kerberized or not. When the value is true, JanusGraph will try to log in to Kerberos from KDC with storage.hbase.kerberos-principal as principal and storage.hbase.kerberos-keytab-path as keytab. And also, HBase configuration must be configured for Kerberos. | Boolean | false | MASKABLE |
+| storage.hbase.kerberos-keytab-path | Kerberos keytab path. | String | (no default value) | MASKABLE |
+| storage.hbase.kerberos-principal | Kerberos principal. | String | (no default value) | MASKABLE |
 | storage.hbase.region-count | The number of initial regions set when creating JanusGraph's HBase table | Integer | (no default value) | MASKABLE |
 | storage.hbase.regions-per-server | The number of regions per regionserver to set when creating JanusGraph's HBase table | Integer | (no default value) | MASKABLE |
 | storage.hbase.short-cf-names | Whether to shorten the names of JanusGraph's column families to one-character mnemonics to conserve storage space | Boolean | true | FIXED |
