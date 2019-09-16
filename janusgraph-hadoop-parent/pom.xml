@@ -360,7 +360,7 @@
                             <configuration>
                                 <includes>
                                     <include>**/*Cassandra*IT.java</include>
-                                    <include>**/*CQL*IT.java</include>
+                                    <include>**/*Cql*IT.java</include>
                                 </includes>
                                 <excludes>
                                     <exclude>**/*Cassandra3*IT.java</exclude>
@@ -385,7 +385,7 @@
                             <configuration>
                                 <includes>
                                     <include>**/*Cassandra3*IT.java</include>
-                                    <include>**/*CQL*IT.java</include>
+                                    <include>**/*Cql*IT.java</include>
                                 </includes>
                                 <skipTests>${skipCassandra3}</skipTests>
                                 <reuseForks>false</reuseForks>
