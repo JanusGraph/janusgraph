@@ -227,7 +227,7 @@
 	            <activeByDefault>false</activeByDefault>
 	        </activation>
             <properties>
-                <cassandra.docker.version>${test.docker.version.cassandra2}</cassandra.docker.version>
+                <cassandra.docker.version>${test.docker.version.cassandra3}</cassandra.docker.version>
                 <cassandra.docker.partitioner>${test.byteordered}</cassandra.docker.partitioner>
                 <test.skip.murmur-serial>true</test.skip.murmur-serial>
                 <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>

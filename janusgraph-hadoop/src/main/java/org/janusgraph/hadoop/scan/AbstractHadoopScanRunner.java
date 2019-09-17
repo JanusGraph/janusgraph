@@ -18,13 +18,8 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ReadConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.graphdb.olap.VertexScanJob;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 abstract class AbstractHadoopScanRunner<R> {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(CassandraHadoopScanRunner.class);
 
     protected final ScanJob scanJob;
     protected final VertexScanJob vertexScanJob;
