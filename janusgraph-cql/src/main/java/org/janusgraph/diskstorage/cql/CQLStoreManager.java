@@ -368,6 +368,10 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                 .getOrElseThrow(() -> new PermanentBackendException(String.format("Unknown table '%s'", name)));
     }
 
+    public String getPartitioner(){
+        return this.cluster.getMetadata().getPartitioner();
+    }
+
     @Override
     public void close() throws BackendException {
         try {

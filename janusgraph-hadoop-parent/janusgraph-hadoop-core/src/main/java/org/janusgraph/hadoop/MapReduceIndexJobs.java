@@ -23,6 +23,7 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.olap.job.IndexRemoveJob;
 import org.janusgraph.graphdb.olap.job.IndexRepairJob;
 import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
+import org.janusgraph.hadoop.scan.CQLHadoopScanRunner;
 import org.janusgraph.hadoop.scan.CassandraHadoopScanRunner;
 import org.janusgraph.hadoop.scan.HBaseHadoopScanRunner;
 import org.apache.commons.configuration.BaseConfiguration;
@@ -42,7 +43,7 @@ public class MapReduceIndexJobs {
             LoggerFactory.getLogger(MapReduceIndexJobs.class);
 
     public static ScanMetrics cassandraRepair(String janusgraphPropertiesPath, String indexName, String relationType, String partitionerName)
-            throws InterruptedException, IOException, ClassNotFoundException {
+        throws InterruptedException, IOException, ClassNotFoundException {
         Properties p = new Properties();
         FileInputStream fis = null;
         try {
@@ -56,13 +57,13 @@ public class MapReduceIndexJobs {
 
     public static ScanMetrics cassandraRepair(Properties janusgraphProperties, String indexName, String relationType,
                                               String partitionerName)
-            throws InterruptedException, IOException, ClassNotFoundException {
+        throws InterruptedException, IOException, ClassNotFoundException {
         return cassandraRepair(janusgraphProperties, indexName, relationType, partitionerName, new Configuration());
     }
 
     public static ScanMetrics cassandraRepair(Properties janusgraphProperties, String indexName, String relationType,
                                               String partitionerName, Configuration hadoopBaseConf)
-            throws InterruptedException, IOException, ClassNotFoundException {
+        throws InterruptedException, IOException, ClassNotFoundException {
         IndexRepairJob job = new IndexRepairJob();
         CassandraHadoopScanRunner cr = new CassandraHadoopScanRunner(job);
         ModifiableConfiguration mc = getIndexJobConf(indexName, relationType);
@@ -76,7 +77,7 @@ public class MapReduceIndexJobs {
 
 
     public static ScanMetrics cassandraRemove(String janusgraphPropertiesPath, String indexName, String relationType, String partitionerName)
-            throws InterruptedException, IOException, ClassNotFoundException {
+        throws InterruptedException, IOException, ClassNotFoundException {
         Properties p = new Properties();
         FileInputStream fis = null;
         try {
@@ -90,15 +91,82 @@ public class MapReduceIndexJobs {
 
     public static ScanMetrics cassandraRemove(Properties janusgraphProperties, String indexName, String relationType,
                                               String partitionerName)
-            throws InterruptedException, IOException, ClassNotFoundException {
+        throws InterruptedException, IOException, ClassNotFoundException {
         return cassandraRemove(janusgraphProperties, indexName, relationType, partitionerName, new Configuration());
     }
 
     public static ScanMetrics cassandraRemove(Properties janusgraphProperties, String indexName, String relationType,
                                               String partitionerName, Configuration hadoopBaseConf)
-            throws InterruptedException, IOException, ClassNotFoundException {
+        throws InterruptedException, IOException, ClassNotFoundException {
         IndexRemoveJob job = new IndexRemoveJob();
         CassandraHadoopScanRunner cr = new CassandraHadoopScanRunner(job);
+        ModifiableConfiguration mc = getIndexJobConf(indexName, relationType);
+        copyPropertiesToInputAndOutputConf(hadoopBaseConf, janusgraphProperties);
+        cr.partitionerOverride(partitionerName);
+        cr.scanJobConf(mc);
+        cr.scanJobConfRoot(GraphDatabaseConfiguration.class.getName() + "#JOB_NS");
+        cr.baseHadoopConf(hadoopBaseConf);
+        return cr.run();
+    }
+
+    public static ScanMetrics cqlRepair(String janusgraphPropertiesPath, String indexName, String relationType, String partitionerName)
+        throws InterruptedException, IOException, ClassNotFoundException {
+        Properties p = new Properties();
+        FileInputStream fis = null;
+        try {
+            fis = new FileInputStream(janusgraphPropertiesPath);
+            p.load(fis);
+            return cqlRepair(p, indexName, relationType, partitionerName);
+        } finally {
+            IOUtils.closeQuietly(fis);
+        }
+    }
+
+    public static ScanMetrics cqlRepair(Properties janusgraphProperties, String indexName, String relationType,
+                                              String partitionerName)
+        throws InterruptedException, IOException, ClassNotFoundException {
+        return cqlRepair(janusgraphProperties, indexName, relationType, partitionerName, new Configuration());
+    }
+
+    public static ScanMetrics cqlRepair(Properties janusgraphProperties, String indexName, String relationType,
+                                              String partitionerName, Configuration hadoopBaseConf)
+        throws InterruptedException, IOException, ClassNotFoundException {
+        IndexRepairJob job = new IndexRepairJob();
+        CQLHadoopScanRunner cr = new CQLHadoopScanRunner(job);
+        ModifiableConfiguration mc = getIndexJobConf(indexName, relationType);
+        copyPropertiesToInputAndOutputConf(hadoopBaseConf, janusgraphProperties);
+        cr.partitionerOverride(partitionerName);
+        cr.scanJobConf(mc);
+        cr.scanJobConfRoot(GraphDatabaseConfiguration.class.getName() + "#JOB_NS");
+        cr.baseHadoopConf(hadoopBaseConf);
+        return cr.run();
+    }
+
+
+    public static ScanMetrics cqlRemove(String janusgraphPropertiesPath, String indexName, String relationType, String partitionerName)
+        throws InterruptedException, IOException, ClassNotFoundException {
+        Properties p = new Properties();
+        FileInputStream fis = null;
+        try {
+            fis = new FileInputStream(janusgraphPropertiesPath);
+            p.load(fis);
+            return cqlRemove(p, indexName, relationType, partitionerName);
+        } finally {
+            IOUtils.closeQuietly(fis);
+        }
+    }
+
+    public static ScanMetrics cqlRemove(Properties janusgraphProperties, String indexName, String relationType,
+                                              String partitionerName)
+        throws InterruptedException, IOException, ClassNotFoundException {
+        return cqlRemove(janusgraphProperties, indexName, relationType, partitionerName, new Configuration());
+    }
+
+    public static ScanMetrics cqlRemove(Properties janusgraphProperties, String indexName, String relationType,
+                                              String partitionerName, Configuration hadoopBaseConf)
+        throws InterruptedException, IOException, ClassNotFoundException {
+        IndexRemoveJob job = new IndexRemoveJob();
+        CQLHadoopScanRunner cr = new CQLHadoopScanRunner(job);
         ModifiableConfiguration mc = getIndexJobConf(indexName, relationType);
         copyPropertiesToInputAndOutputConf(hadoopBaseConf, janusgraphProperties);
         cr.partitionerOverride(partitionerName);
