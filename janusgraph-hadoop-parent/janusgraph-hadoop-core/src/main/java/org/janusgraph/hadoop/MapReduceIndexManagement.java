@@ -32,6 +32,7 @@ import org.janusgraph.diskstorage.cassandra.astyanax.AstyanaxStoreManager;
 import org.janusgraph.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager;
 import org.janusgraph.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.cql.CQLStoreManager;
 import org.janusgraph.diskstorage.hbase.HBaseStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
@@ -43,6 +44,7 @@ import org.janusgraph.graphdb.olap.job.IndexUpdateJob;
 import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
 import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
 import org.janusgraph.hadoop.formats.cassandra.CassandraBinaryInputFormat;
+import org.janusgraph.hadoop.formats.cql.CqlBinaryInputFormat;
 import org.janusgraph.hadoop.formats.hbase.HBaseBinaryInputFormat;
 import org.janusgraph.hadoop.scan.HadoopScanMapper;
 import org.janusgraph.hadoop.scan.HadoopScanRunner;
@@ -160,6 +162,10 @@ public class MapReduceIndexManagement {
             hadoopConf.set("cassandra.input.partitioner.class", part.getClass().getName());
         } else if (HBASE_STORE_MANAGER_CLASSES.contains(storeManagerClass)) {
             inputFormat = HBaseBinaryInputFormat.class;
+        } else if (graph.getBackend().getStoreManager() instanceof CQLStoreManager) {
+            inputFormat = CqlBinaryInputFormat.class;
+            String part = ((CQLStoreManager)graph.getBackend().getStoreManager()).getPartitioner();
+            hadoopConf.set("cassandra.input.partitioner.class", part);
         } else {
             throw new IllegalArgumentException("Store manager class " + storeManagerClass + "is not supported");
         }
