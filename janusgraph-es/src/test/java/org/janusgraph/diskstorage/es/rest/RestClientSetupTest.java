@@ -76,6 +76,8 @@ public class RestClientSetupTest {
     private static final String ES_BULK_REFRESH =
             String.valueOf(!Boolean.valueOf(ElasticSearchIndex.BULK_REFRESH.getDefaultValue()));
 
+    private static final Integer RETRY_ON_CONFLICT = ElasticSearchIndex.RETRY_ON_CONFLICT.getDefaultValue();
+
     private static final AtomicInteger instanceCount = new AtomicInteger();
 
     @Captor
@@ -190,6 +192,7 @@ public class RestClientSetupTest {
                 put("index." + INDEX_NAME + ".port", String.valueOf(ES_PORT)).
                 put("index." + INDEX_NAME + ".elasticsearch.scroll-keep-alive", String.valueOf(ES_SCROLL_KA)).
                 put("index." + INDEX_NAME + ".elasticsearch.bulk-refresh", ES_BULK_REFRESH).
+                put("index." + INDEX_NAME + ".elasticsearch.retry_on_conflict", String.valueOf(RETRY_ON_CONFLICT)).
                 build());
 
         assertNotNull(hostsConfigured);
@@ -205,6 +208,8 @@ public class RestClientSetupTest {
                 scrollKACaptor.getValue().intValue());
 
         verify(restElasticSearchClientMock).setBulkRefresh(eq(ES_BULK_REFRESH));
+        verify(restElasticSearchClientMock).setRetryOnConflict(eq(RETRY_ON_CONFLICT));
+
     }
 
     @Test
@@ -228,6 +233,7 @@ public class RestClientSetupTest {
                 scrollKACaptor.getValue().intValue());
 
         verify(restElasticSearchClientMock, never()).setBulkRefresh(anyString());
+        verify(restElasticSearchClientMock, times(1)).setRetryOnConflict(null);
     }
 
     private HttpClientConfigCallback authTestBase(Map<String, String> extraConfigValues) throws Exception {
