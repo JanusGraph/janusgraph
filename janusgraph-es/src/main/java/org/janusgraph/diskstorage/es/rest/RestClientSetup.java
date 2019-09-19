@@ -77,6 +77,9 @@ public class RestClientSetup {
             client.setBulkRefresh(config.get(ElasticSearchIndex.BULK_REFRESH));
         }
 
+        Integer retryOnConflict = config.has(ElasticSearchIndex.RETRY_ON_CONFLICT) ? config.get(ElasticSearchIndex.RETRY_ON_CONFLICT) : null;
+        client.setRetryOnConflict(retryOnConflict);
+
         return client;
     }
 
