@@ -48,7 +48,8 @@ management transaction as the index, are immediately available. The same
 applies to graph indexes that are constrained to a label that is created
 in the same management transaction as the index. Graph indexes built
 against property keys that are already in use without being constrained
-to a newly created label require the execution of a [reindex procedure](../advanced-topics/index-admin.md) to ensure that the index contains all previously
+to a newly created label require the execution of a [reindex procedure](./index-reindexing.md) 
+to ensure that the index contains all previously
 added elements. Until the reindex procedure has completed, the index
 will not be available. It is encouraged to define graph indexes in the
 same transaction as the initial schema.
@@ -249,7 +250,7 @@ method to add the key to this index.
 
 If the added key is defined in the same management transaction, it will
 be immediately available for querying. If the property key has already
-been in use, adding the key requires the execution of a [reindex procedure](../advanced-topics/index-admin.md) to ensure that the index contains all previously
+been in use, adding the key requires the execution of a [reindex procedure](./index-reindexing.md) to ensure that the index contains all previously
 added elements. Until the reindex procedure has completed, the key will
 not be available in the mixed index.
 
@@ -448,7 +449,7 @@ If the vertex-centric index is built against an edge label that is
 defined in the same management transaction, the index will be
 immediately available for querying. If the edge label has already been
 in use, building a vertex-centric index against it requires the
-execution of a [reindex procedure](../advanced-topics/index-admin.md) to ensure that the index
+execution of a [reindex procedure](./index-reindexing.md) to ensure that the index
 contains all previously added edges. Until the reindex procedure has
 completed, the index will not be available.
 

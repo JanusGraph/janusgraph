@@ -141,7 +141,7 @@ graph.indexQuery("vertexByText", "$v$name:v.john").setElementIdentifier("$v$").v
 
 ### Mixed Index Availability Delay
 
-When a query traverses a [mixed index](../basics/index-performance.md#mixed-index) immediately after
+When a query traverses a [mixed index](../index-management/index-performance.md#mixed-index) immediately after
 data is inserted the changes may not be visible. In
 [Elasticsearch](elasticsearch.md) the configuration option that determines
 this delay is [index refresh
