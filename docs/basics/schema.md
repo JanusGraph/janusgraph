@@ -95,6 +95,10 @@ as the argument. Property key names must be unique in the graph, and it
 is recommended to avoid spaces or special characters in property names.
 This method returns a builder for the property keys.
 
+!!! note
+    During property key creation, consider creating also graph indices for better 
+    performance, see [Index Performance](../index-management/index-performance.md).
+
 ### Property Key Data Type
 
 Use `dataType(Class)` to define the data type of a property key.
