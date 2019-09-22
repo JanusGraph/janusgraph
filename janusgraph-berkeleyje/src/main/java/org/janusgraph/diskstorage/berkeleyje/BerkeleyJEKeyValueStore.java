@@ -227,7 +227,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         try {
             log.trace("db={}, op=delete, tx={}", name, txh);
             OperationStatus status = db.delete(tx, key.as(ENTRY_FACTORY));
-            if (status != OperationStatus.SUCCESS) {
+            if (status != OperationStatus.SUCCESS && status != OperationStatus.NOTFOUND) {
                 throw new PermanentBackendException("Could not remove: " + status);
             }
         } catch (DatabaseException e) {
