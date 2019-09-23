@@ -14,7 +14,6 @@
 
 package org.janusgraph.diskstorage.cql;
 
-
 import static com.datastax.driver.core.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.column;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.delete;
