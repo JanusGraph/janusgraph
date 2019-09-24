@@ -108,8 +108,7 @@ Otherwise you will have to type in your gpg passphrase many times when prompted 
 </settings>
 ```
 
-Release Checklist
------------------
+# Release Checklist
 
 *   [ ] Start up new `[DISCUSS]` thread on janusgraph-dev with suggestions on what should be included in the release and target date
 *   [ ] Make sure all PRs and issues added since last release are associated to the milestone
@@ -128,8 +127,8 @@ Release Checklist
 *   [ ] Prepare the next SNAPSHOT release
 *   [ ] Document lessons learned
 
-Release Steps
--------------
+# Release Steps
+
 
 ### Create discussion thread
 
@@ -166,10 +165,8 @@ Example: `<tag>v0.3.2</tag>`
 
 Update version-sensitive files in the root and documentation sources in the `docs` subdirectory:
 
-*   `docs/changelog.adoc`
-*   `docs/versions.adoc`
-*   `docs/upgrade.adoc`
-*   `docs/xsl/common.xsl`
+* `docs/changelog.md` - Add / finalize release section
+* `mkdocs.yml` - Update `latest_version` and check all others package versions. 
 
 You may also need to update the following files in the main repo for any new or updated dependencies:
 
@@ -197,22 +194,11 @@ Open up pull requests for the version updates.
 It is recommended to add `[full build]` to the commit message so the full suite of compatibility tests will run.
 After the updates are approved and merged, continue on with the release process.
 
-### Release Documentation update
+# Build Release Artifacts
 
-1. Update version-sensitive files in the root and documentation sources in the `docs` subdirectory: 
-    * `docs/changelog.md`
-    * `mkdocs.yml`
-2. Update the configuration reference: `mvn install -DskipTests=true -pl janusgraph-doc -am`
-3. For building documentation: see `building.md`
-4. Zip documentation: `$ zip janusgraph-${JANUSGRAPH_VERSION}-doc.zip site`
-5. You may also need to update the following file in the main repo for any new or updated dependencies: `NOTICE.txt`
-
-Build Release Artifacts
------------------------
-
-*   Pull down the latest, merged code from GitHub.
-*   Stash any uncommitted changes.
-*   Delete untracked files and directories.
+* Pull down the latest, merged code from GitHub.
+* Stash any uncommitted changes.
+* Delete untracked files and directories.
 
 ```Shell
 git fetch
@@ -221,7 +207,7 @@ git stash save
 git clean -fdx
 ```
 
-*   Deploy all jars (including javadoc and sources) and all signatures for jars to a staging repository on Sonatype.
+* Deploy all jars (including javadoc and sources) and all signatures for jars to a staging repository on Sonatype.
 ```Shell
 mvn clean javadoc:jar deploy -Pjanusgraph-release -DskipTests=true
 ```
@@ -260,6 +246,12 @@ Be sure to mark it as `pre-release`.
 It is recommended and keep the release in draft until you're ready to start a vote.
 In addition to the artifacts in `~/jg-staging/` a `KEYS` file must also be added to the release.
 
+#### Include documentation of this version into the GitHub release
+
+1. For building documentation: see `building.md`
+2. Zip documentation: `$ zip janusgraph-${JANUSGRAPH_VERSION}-doc.zip site`
+3. Add documentation to artifacts
+
 ### Close the staging repository
 
 Log into [Sonatype](https://oss.sonatype.org/#welcome) and select Staging Repositories under Build Promotion.
@@ -280,7 +272,13 @@ See the documentation on the [JanusGraph release policy](https://docs.janusgraph
 
 *This is the point of no return.* After releasing artifacts to Maven
 Central and pushing history to the public GitHub repo, the release
-can't be canceled.
+can't be canceled. 
+
+Update the `STRUCTOR_LATEST_TAG` variable in the settings of the JanusGraph project 
+in the Travis CI web interface and ensure that 
+the newest version is the acutally latest version in our documentation, 
+for example, you release `v0.3.3` but `v0.4.0` is already released,
+`STRUCTOR_LATEST_TAG` variable should be `v0.4.0`.
 
 ### Release the staging repository
 
@@ -310,7 +308,8 @@ Restore the `<scm>` to `<tag>HEAD</tag>` in the root `pom.xml` file.
 
 Create an issue to initialize the next SNAPSHOT release.
 
-Open a pull request with the `pom.xml` updates as a fix for that issue.
+Open a pull request with the `pom.xml` updates as a fix for that issue and also
+update `snapshot_version` in the `mkdocs.yml`. 
 
 ### Announce the release
 
