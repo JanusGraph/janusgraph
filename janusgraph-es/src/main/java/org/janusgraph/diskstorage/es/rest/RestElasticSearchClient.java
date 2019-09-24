@@ -108,12 +108,17 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     private final boolean esVersion7;
 
+    private Integer retryOnConflict;
+
+    private final String retryOnConflictKey;
+
     public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean useMappingTypesForES7) {
         this.delegate = delegate;
         majorVersion = getMajorVersion();
         this.scrollKeepAlive = scrollKeepAlive+"s";
         esVersion7 = ElasticMajorVersion.SEVEN.equals(majorVersion);
         useMappingTypes = majorVersion.getValue() < 7 || (useMappingTypesForES7 && esVersion7);
+        retryOnConflictKey = majorVersion.getValue() >= 7 ? "retry_on_conflict" : "_retry_on_conflict";
     }
 
     @Override
@@ -356,17 +361,20 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     public void bulkRequest(List<ElasticSearchMutation> requests, String ingestPipeline) throws IOException {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         for (final ElasticSearchMutation request : requests) {
-            final Map<String, String> requestData;
-            if(useMappingTypes){
-                requestData = ImmutableMap.of(
-                    "_index", request.getIndex(),
-                    "_type", request.getType(),
-                    "_id", request.getId());
+            Map<String, Object> requestData = new HashMap<>();
+            if (useMappingTypes) {
+                requestData.put("_index", request.getIndex());
+                requestData.put("_type", request.getType());
+                requestData.put("_id", request.getId());
             } else {
-                requestData = ImmutableMap.of(
-                    "_index", request.getIndex(),
-                    "_id", request.getId());
+                requestData.put("_index", request.getIndex());
+                requestData.put("_id", request.getId());
             }
+
+            if (retryOnConflict != null && request.getRequestType() == ElasticSearchMutation.RequestType.UPDATE) {
+                requestData.put(retryOnConflictKey, retryOnConflict);
+            }
+
             outputStream.write(mapWriter.writeValueAsBytes(
                 ImmutableMap.of(request.getRequestType().name().toLowerCase(), requestData))
             );
@@ -400,6 +408,9 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         }
     }
 
+    public void setRetryOnConflict(Integer retryOnConflict) {
+            this.retryOnConflict = retryOnConflict;
+    }
     @Override
     public long countTotal(String indexName, Map<String, Object> requestData) throws IOException {
 
