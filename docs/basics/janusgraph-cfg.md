@@ -1,3 +1,7 @@
+<!--
+NOTE: THIS FILE IS GENERATED VIA "mvn --quiet clean install -DskipTests=true -pl janusgraph-doc -am"
+DO NOT EDIT IT DIRECTLY; CHANGES WILL BE OVERWRITTEN.
+-->
 
 ### attributes.custom *
 Custom attribute serialization and handling

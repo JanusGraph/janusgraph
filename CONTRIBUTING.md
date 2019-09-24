@@ -115,6 +115,20 @@ $ git checkout -b my-new-feature
 
 Make that feature or bugfix awesome!
 
+## Configuration changes
+
+If you add any configuration or change any configuration, 
+you have to update `docs/basics/janusgraph-cfg.md`. 
+
+To update config reference use following command:
+
+```
+mvn --quiet clean install -DskipTests=true -pl janusgraph-doc -am
+```
+
+Our release branches should always contain the correct configuration documentation,
+that is enforced by our build pipeline.
+
 ## Commit changes and sign the Developer Certificate of Origin
 
 The Linux Foundation requires that each contributor to its projects signs the

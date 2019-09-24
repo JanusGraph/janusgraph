@@ -73,7 +73,14 @@ public class ConfigurationPrinter {
     }
 
     private void write(ConfigNamespace root) {
+        printAutoGnerationHeader();
         printNamespace(root, "");
+    }
+    private void printAutoGnerationHeader(){
+        stream.println("<!--");
+        stream.println("NOTE: THIS FILE IS GENERATED VIA \"mvn --quiet clean install -DskipTests=true -pl janusgraph-doc -am\"");
+        stream.println("DO NOT EDIT IT DIRECTLY; CHANGES WILL BE OVERWRITTEN.");
+        stream.println("-->");
     }
 
     private static ConfigNamespace stringToNamespace(String raw)

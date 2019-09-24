@@ -35,7 +35,6 @@ env:
     - COVERITY_EMAIL="sjudeng@gmail.com"
     # Default Elasticsearch heap size can be too large for Travis
     - ES_JAVA_OPTS="-Xms256m -Xmx512m"
-    - export STRUCTOR_LATEST_TAG=v0.4.0
     - export STRUCTOR_VERSION=v1.7.1
 
 stages:
