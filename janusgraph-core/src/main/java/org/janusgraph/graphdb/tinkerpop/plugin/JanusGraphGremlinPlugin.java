@@ -14,10 +14,8 @@
 
 package org.janusgraph.graphdb.tinkerpop.plugin;
 
-import org.apache.tinkerpop.gremlin.jsr223.AbstractGremlinPlugin;
 import org.apache.tinkerpop.gremlin.jsr223.Customizer;
 import org.apache.tinkerpop.gremlin.jsr223.DefaultImportCustomizer;
-import org.apache.tinkerpop.gremlin.jsr223.ImportCustomizer;
 import org.janusgraph.core.BaseVertexQuery;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.ConfiguredGraphFactory;
@@ -47,12 +45,6 @@ import org.janusgraph.core.TransactionBuilder;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.VertexList;
 import org.janusgraph.core.attribute.AttributeSerializer;
-import org.janusgraph.core.attribute.Cmp;
-import org.janusgraph.core.attribute.Contain;
-import org.janusgraph.core.attribute.Geo;
-import org.janusgraph.core.attribute.Geoshape;
-import org.janusgraph.core.attribute.JtsGeoshapeHelper;
-import org.janusgraph.core.attribute.Text;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.DefaultSchemaMaker;
 import org.janusgraph.core.schema.EdgeLabelMaker;
@@ -76,37 +68,16 @@ import org.janusgraph.core.schema.VertexLabelMaker;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
-import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.time.Clock;
-import java.time.DayOfWeek;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Month;
-import java.time.MonthDay;
-import java.time.OffsetDateTime;
-import java.time.OffsetTime;
-import java.time.Period;
-import java.time.Year;
-import java.time.YearMonth;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * @author Marko A. Rodriguez (https://markorodriguez.com)
  */
-public class JanusGraphGremlinPlugin extends AbstractGremlinPlugin {
+public class JanusGraphGremlinPlugin extends JanusGraphGremlinDriverPlugin {
 
     private static final String NAME = "janusgraph.imports";
 
@@ -149,12 +120,6 @@ public class JanusGraphGremlinPlugin extends AbstractGremlinPlugin {
         CLASS_IMPORTS.add(VertexList.class);
 
         CLASS_IMPORTS.add(AttributeSerializer.class);
-        CLASS_IMPORTS.add(Cmp.class);
-        CLASS_IMPORTS.add(Contain.class);
-        CLASS_IMPORTS.add(Geo.class);
-        CLASS_IMPORTS.add(Geoshape.class);
-        CLASS_IMPORTS.add(JtsGeoshapeHelper.class);
-        CLASS_IMPORTS.add(Text.class);
 
         CLASS_IMPORTS.add(ConsistencyModifier.class);
         CLASS_IMPORTS.add(DefaultSchemaMaker.class);
@@ -178,28 +143,8 @@ public class JanusGraphGremlinPlugin extends AbstractGremlinPlugin {
         CLASS_IMPORTS.add(VertexLabelMaker.class);
 
         CLASS_IMPORTS.add(GraphOfTheGodsFactory.class);
-        CLASS_IMPORTS.add(JanusGraphIoRegistry.class);
         CLASS_IMPORTS.add(ConfigurationManagementGraph.class);
         CLASS_IMPORTS.add(ManagementSystem.class);
-
-        CLASS_IMPORTS.add(Instant.class);
-        CLASS_IMPORTS.add(Clock.class);
-        CLASS_IMPORTS.add(DayOfWeek.class);
-        CLASS_IMPORTS.add(Duration.class);
-        CLASS_IMPORTS.add(LocalDate.class);
-        CLASS_IMPORTS.add(LocalTime.class);
-        CLASS_IMPORTS.add(LocalDateTime.class);
-        CLASS_IMPORTS.add(Month.class);
-        CLASS_IMPORTS.add(MonthDay.class);
-        CLASS_IMPORTS.add(OffsetDateTime.class);
-        CLASS_IMPORTS.add(OffsetTime.class);
-        CLASS_IMPORTS.add(Period.class);
-        CLASS_IMPORTS.add(Year.class);
-        CLASS_IMPORTS.add(YearMonth.class);
-        CLASS_IMPORTS.add(ZonedDateTime.class);
-        CLASS_IMPORTS.add(ZoneId.class);
-        CLASS_IMPORTS.add(ZoneOffset.class);
-        CLASS_IMPORTS.add(ChronoUnit.class);
 
         ///////////
         // ENUMS //
@@ -209,48 +154,16 @@ public class JanusGraphGremlinPlugin extends AbstractGremlinPlugin {
 
         Collections.addAll(ENUM_IMPORTS, Multiplicity.values());
         Collections.addAll(ENUM_IMPORTS, Cardinality.values());
-        Collections.addAll(ENUM_IMPORTS, ChronoUnit.values());
 
-        /////////////
-        // METHODS //
-        /////////////
-
-        // only include the static predicates
-        // also make sure the class is imported for these methods
-
-        Stream.of(Geo.values())
-            .map(v -> {
-                try {
-                    return Geo.class.getMethod(v.toString(), Object.class);
-                } catch (NoSuchMethodException e) {
-                    throw new RuntimeException(e);
-                }
-            })
-            .filter(JanusGraphGremlinPlugin::isMethodStatic)
-            .forEach(METHOD_IMPORTS::add);
-
-        Stream.of(Text.values())
-            .map(v -> {
-                try {
-                    return Text.class.getMethod(v.toString(), Object.class);
-                } catch (NoSuchMethodException e) {
-                    throw new RuntimeException(e);
-                }
-            })
-            .filter(JanusGraphGremlinPlugin::isMethodStatic)
-            .forEach(METHOD_IMPORTS::add);
     }
-
-    private static final ImportCustomizer IMPORTS = DefaultImportCustomizer.build()
-        .addClassImports(CLASS_IMPORTS)
-        .addEnumImports(ENUM_IMPORTS)
-        .addMethodImports(METHOD_IMPORTS)
-        .create();
 
     private static final JanusGraphGremlinPlugin instance = new JanusGraphGremlinPlugin();
 
     public JanusGraphGremlinPlugin() {
-        super(NAME, IMPORTS);
+        super(NAME, DefaultImportCustomizer.build()
+            .addClassImports(CLASS_IMPORTS)
+            .addEnumImports(ENUM_IMPORTS)
+            .addMethodImports(METHOD_IMPORTS));
     }
 
     public static JanusGraphGremlinPlugin instance() {
@@ -264,10 +177,6 @@ public class JanusGraphGremlinPlugin extends AbstractGremlinPlugin {
     @Override
     public boolean requireRestart() {
         return true;
-    }
-
-    private static boolean isMethodStatic(final Method method) {
-        return Modifier.isStatic(method.getModifiers());
     }
 
 }

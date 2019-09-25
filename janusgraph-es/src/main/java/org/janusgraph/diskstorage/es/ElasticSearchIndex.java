@@ -56,7 +56,7 @@ import org.janusgraph.diskstorage.util.DefaultTransaction;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import static org.janusgraph.diskstorage.configuration.ConfigOption.disallowEmpty;
 
-import org.janusgraph.graphdb.database.serialize.AttributeUtil;
+import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.And;
 import org.janusgraph.graphdb.query.condition.Condition;
@@ -490,8 +490,8 @@ public class ElasticSearchIndex implements IndexProvider {
                          BaseTransaction tx) throws BackendException {
         final Class<?> dataType = information.getDataType();
         final Mapping map = Mapping.getMapping(information);
-        Preconditions.checkArgument(map==Mapping.DEFAULT || AttributeUtil.isString(dataType) ||
-                (map==Mapping.PREFIX_TREE && AttributeUtil.isGeo(dataType)),
+        Preconditions.checkArgument(map==Mapping.DEFAULT || AttributeUtils.isString(dataType) ||
+                (map==Mapping.PREFIX_TREE && AttributeUtils.isGeo(dataType)),
                 "Specified illegal mapping [%s] for data type [%s]",map,dataType);
         final String indexStoreName = getIndexStoreName(store);
         if (useExternalMappings) {
@@ -529,7 +529,7 @@ public class ElasticSearchIndex implements IndexProvider {
         final Class<?> dataType = information.getDataType();
         Mapping map = Mapping.getMapping(information);
         final Map<String,Object> properties = new HashMap<>();
-        if (AttributeUtil.isString(dataType)) {
+        if (AttributeUtils.isString(dataType)) {
             if (map==Mapping.DEFAULT) map=Mapping.TEXT;
             log.debug("Registering string type for {} with mapping {}", key, map);
             final String stringAnalyzer
@@ -629,14 +629,14 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     private static Mapping getStringMapping(KeyInformation information) {
-        assert AttributeUtil.isString(information.getDataType());
+        assert AttributeUtils.isString(information.getDataType());
         Mapping map = Mapping.getMapping(information);
         if (map==Mapping.DEFAULT) map = Mapping.TEXT;
         return map;
     }
 
     private static boolean hasDualStringMapping(KeyInformation information) {
-        return AttributeUtil.isString(information.getDataType()) && getStringMapping(information)==Mapping.TEXTSTRING;
+        return AttributeUtils.isString(information.getDataType()) && getStringMapping(information)==Mapping.TEXTSTRING;
     }
 
     public Map<String, Object> getNewDocument(final List<IndexEntry> additions,
@@ -687,12 +687,12 @@ public class ElasticSearchIndex implements IndexProvider {
 
     private static Object convertToEsType(Object value, Mapping mapping) {
         if (value instanceof Number) {
-            if (AttributeUtil.isWholeNumber((Number) value)) {
+            if (AttributeUtils.isWholeNumber((Number) value)) {
                 return ((Number) value).longValue();
             } else { //double or float
                 return ((Number) value).doubleValue();
             }
-        } else if (AttributeUtil.isString(value)) {
+        } else if (AttributeUtils.isString(value)) {
             return value;
         } else if (value instanceof Geoshape) {
             return convertGeoshape((Geoshape) value, mapping);
@@ -1230,8 +1230,8 @@ public class ElasticSearchIndex implements IndexProvider {
     public boolean supports(KeyInformation information, JanusGraphPredicate janusgraphPredicate) {
         final Class<?> dataType = information.getDataType();
         final Mapping mapping = Mapping.getMapping(information);
-        if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType) &&
-                !(mapping==Mapping.PREFIX_TREE && AttributeUtil.isGeo(dataType))) return false;
+        if (mapping!=Mapping.DEFAULT && !AttributeUtils.isString(dataType) &&
+                !(mapping==Mapping.PREFIX_TREE && AttributeUtils.isGeo(dataType))) return false;
 
         if (Number.class.isAssignableFrom(dataType)) {
             return janusgraphPredicate instanceof Cmp;
@@ -1242,7 +1242,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 case PREFIX_TREE:
                     return janusgraphPredicate instanceof Geo;
             }
-        } else if (AttributeUtil.isString(dataType)) {
+        } else if (AttributeUtils.isString(dataType)) {
             switch(mapping) {
                 case DEFAULT:
                 case TEXT:
@@ -1272,10 +1272,10 @@ public class ElasticSearchIndex implements IndexProvider {
         if (Number.class.isAssignableFrom(dataType) || dataType == Date.class || dataType== Instant.class
                 || dataType == Boolean.class || dataType == UUID.class) {
             return mapping == Mapping.DEFAULT;
-        } else if (AttributeUtil.isString(dataType)) {
+        } else if (AttributeUtils.isString(dataType)) {
             return mapping == Mapping.DEFAULT || mapping == Mapping.STRING
                 || mapping == Mapping.TEXT || mapping == Mapping.TEXTSTRING;
-        } else if (AttributeUtil.isGeo(dataType)) {
+        } else if (AttributeUtils.isGeo(dataType)) {
             return mapping == Mapping.DEFAULT || mapping == Mapping.PREFIX_TREE;
         }
         return false;

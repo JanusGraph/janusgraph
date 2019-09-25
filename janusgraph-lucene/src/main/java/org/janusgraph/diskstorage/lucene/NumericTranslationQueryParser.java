@@ -15,7 +15,7 @@
 package org.janusgraph.diskstorage.lucene;
 
 import org.janusgraph.diskstorage.indexing.KeyInformation;
-import org.janusgraph.graphdb.database.serialize.AttributeUtil;
+import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 
 import org.apache.tinkerpop.shaded.jackson.databind.util.StdDateFormat;
 
@@ -89,7 +89,7 @@ public class NumericTranslationQueryParser extends QueryParser {
 
     private Query buildNumericRangeQuery(final String field, final Class<?> type, String start, String end, final boolean includeLower,
                                          final boolean includeUpper) {
-        if (AttributeUtil.isWholeNumber(type) || isTemporalType(type)) {
+        if (AttributeUtils.isWholeNumber(type) || isTemporalType(type)) {
             long min;
             long max;
             if (isTemporalType(type)) {
@@ -121,7 +121,7 @@ public class NumericTranslationQueryParser extends QueryParser {
 
     private Query buildNumericQuery(final String field, final String value, Class<?> type) {
         Query query;
-        if (AttributeUtil.isWholeNumber(type) || isTemporalType(type)) {
+        if (AttributeUtils.isWholeNumber(type) || isTemporalType(type)) {
             if (isMatchAll(value)) {
                 query = LongPoint.newRangeQuery(field, Long.MIN_VALUE, Long.MAX_VALUE);
             } else {

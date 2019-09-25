@@ -15,13 +15,24 @@
 package org.janusgraph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import com.google.common.primitives.Doubles;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONUtil;
+import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
 import org.apache.tinkerpop.shaded.jackson.core.JsonParser;
 import org.apache.tinkerpop.shaded.jackson.databind.DeserializationContext;
+import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
+import org.apache.tinkerpop.shaded.jackson.databind.ObjectReader;
+import org.apache.tinkerpop.shaded.jackson.databind.ObjectWriter;
+import org.apache.tinkerpop.shaded.jackson.databind.SerializerProvider;
 import org.apache.tinkerpop.shaded.jackson.databind.deser.std.StdDeserializer;
+import org.apache.tinkerpop.shaded.jackson.databind.jsontype.TypeSerializer;
+import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
+import org.apache.tinkerpop.shaded.kryo.Kryo;
 import org.apache.tinkerpop.shaded.kryo.KryoException;
-import org.janusgraph.diskstorage.util.ReadArrayBuffer;
+import org.apache.tinkerpop.shaded.kryo.Serializer;
+import org.apache.tinkerpop.shaded.kryo.io.Input;
+import org.apache.tinkerpop.shaded.kryo.io.Output;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Circle;
@@ -30,38 +41,13 @@ import org.locationtech.spatial4j.shape.ShapeFactory;
 import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
 import org.locationtech.spatial4j.shape.ShapeFactory.MultiShapeBuilder;
 import org.locationtech.spatial4j.shape.SpatialRelation;
-import org.apache.tinkerpop.shaded.jackson.databind.ObjectReader;
-import org.apache.tinkerpop.shaded.jackson.databind.ObjectWriter;
-import org.janusgraph.diskstorage.ScanBuffer;
-import org.janusgraph.diskstorage.WriteBuffer;
-import org.janusgraph.graphdb.database.idhandling.VariableLong;
 
-import org.apache.commons.io.output.ByteArrayOutputStream;
-
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONUtil;
-import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
-import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
-import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
-import org.apache.tinkerpop.shaded.jackson.databind.SerializerProvider;
-import org.apache.tinkerpop.shaded.jackson.databind.jsontype.TypeSerializer;
-import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
-import org.apache.tinkerpop.shaded.kryo.Kryo;
-import org.apache.tinkerpop.shaded.kryo.Serializer;
-import org.apache.tinkerpop.shaded.kryo.io.Input;
-import org.apache.tinkerpop.shaded.kryo.io.Output;
-
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.StringReader;
-import java.lang.reflect.Array;
+import java.io.*;
 import java.text.ParseException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A generic representation of a geographic shape, which can either be a single point,
@@ -75,15 +61,15 @@ public class Geoshape {
 
     private static final String FIELD_LABEL = "geometry";
     private static final String FIELD_TYPE = "type";
-    private static final String FIELD_COORDINATES = "coordinates";
+    public static final String FIELD_COORDINATES = "coordinates";
 
     private static final double MAX_LONGITUDE = 180.0;
     private static final double MAX_LATITUDE = 90.0;
 
-    private static final JtsGeoshapeHelper HELPER = new JtsGeoshapeHelper();
+    public static final JtsGeoshapeHelper HELPER = new JtsGeoshapeHelper();
 
     private static final ObjectReader mapReader;
-    private static final ObjectWriter mapWriter;
+    public static final ObjectWriter mapWriter;
     static {
         final ObjectMapper mapper = new ObjectMapper();
         mapReader = mapper.readerWithView(LinkedHashMap.class).forType(LinkedHashMap.class);
@@ -421,173 +407,6 @@ public class Geoshape {
             return DistanceUtils.degrees2Dist(HELPER.getContext().getDistCalc().distance(getSpatial4jPoint(),other.getSpatial4jPoint()),DistanceUtils.EARTH_MEAN_RADIUS_KM);
         }
 
-    }
-
-    /**
-     * Geoshape attribute serializer for JanusGraph.
-     * @author Matthias Broecheler (me@matthiasb.com)
-     */
-    public static class GeoshapeSerializer implements AttributeSerializer<Geoshape> {
-
-        @Override
-        public void verifyAttribute(Geoshape value) {
-            //All values of Geoshape are valid
-        }
-
-        @Override
-        public Geoshape convert(Object value) {
-            if(value instanceof Map) {
-                return convertGeoJson(value);
-            }
-
-            if(value instanceof Collection) {
-                value = convertCollection((Collection<Object>) value);
-            }
-
-            if (value.getClass().isArray() && (value.getClass().getComponentType().isPrimitive() ||
-                    Number.class.isAssignableFrom(value.getClass().getComponentType())) ) {
-                int len= Array.getLength(value);
-                double[] arr = new double[len];
-                for (int i=0;i<len;i++) arr[i]=((Number)Array.get(value,i)).doubleValue();
-                switch (len) {
-                    case 2:
-                        return point(arr[0], arr[1]);
-                    case 3:
-                        return circle(arr[0], arr[1], arr[2]);
-                    case 4:
-                        return box(arr[0], arr[1], arr[2], arr[3]);
-                    default:
-                        throw new IllegalArgumentException("Expected 2-4 coordinates to create Geoshape, but given: " + value);
-                }
-            } else if (value instanceof String) {
-                String[] components=null;
-                for (String delimiter : new String[]{",",";"}) {
-                    components = ((String)value).split(delimiter);
-                    if (components.length>=2 && components.length<=4) break;
-                    else components=null;
-                }
-                Preconditions.checkNotNull(components, "Could not parse coordinates from string: %s",value);
-                double[] coordinates = new double[components.length];
-                try {
-                    for (int i=0;i<components.length;i++) {
-                        coordinates[i]=Double.parseDouble(components[i]);
-                    }
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Could not parse coordinates from string: " + value, e);
-                }
-                return convert(coordinates);
-            } else return null;
-        }
-
-
-        private double[] convertCollection(Collection<Object> c) {
-
-            List<Double> numbers = c.stream().map(o -> {
-                if (!(o instanceof Number)) {
-                    throw new IllegalArgumentException("Collections may only contain numbers to create a Geoshape");
-                }
-                return ((Number) o).doubleValue();
-            }).collect(Collectors.toList());
-            return Doubles.toArray(numbers);
-        }
-
-        private Geoshape convertGeoJson(Object value) {
-            //Note that geoJson is long,lat
-            try {
-                Map<String, Object> map = (Map) value;
-                String type = (String) map.get("type");
-                if("Feature".equals(type)) {
-                    Map<String, Object> geometry = (Map) map.get("geometry");
-                    return convertGeometry(geometry);
-                } else {
-                    return convertGeometry(map);
-                }
-            } catch (ClassCastException | IOException | ParseException e) {
-                throw new IllegalArgumentException("GeoJSON was unparsable");
-            }
-        }
-
-        private Geoshape convertGeometry(Map<String, Object> geometry) throws IOException, ParseException {
-            String type = (String) geometry.get("type");
-            List<Object> coordinates = (List) geometry.get(FIELD_COORDINATES);
-
-            switch (type) {
-                case "Point": {
-                    double[] parsedCoordinates = convertCollection(coordinates);
-                    return point(parsedCoordinates[1], parsedCoordinates[0]);
-                }
-                case "Circle": {
-                    Number radius = (Number) geometry.get("radius");
-                    if (radius == null) {
-                        throw new IllegalArgumentException("GeoJSON circles require a radius");
-                    }
-                    double[] parsedCoordinates = convertCollection(coordinates);
-                    return circle(parsedCoordinates[1], parsedCoordinates[0], radius.doubleValue());
-                }
-                case "Polygon":
-                    // check whether this is a box
-                    if (coordinates.size() == 4) {
-                        double[] p0 = convertCollection((Collection) coordinates.get(0));
-                        double[] p1 = convertCollection((Collection) coordinates.get(1));
-                        double[] p2 = convertCollection((Collection) coordinates.get(2));
-                        double[] p3 = convertCollection((Collection) coordinates.get(3));
-
-                        //This may be a clockwise or counterclockwise polygon, we have to verify that it is a box
-                        if ((p0[0] == p1[0] && p1[1] == p2[1] && p2[0] == p3[0] && p3[1] == p0[1] && p3[0] != p0[0]) ||
-                            (p0[1] == p1[1] && p1[0] == p2[0] && p2[1] == p3[1] && p3[0] == p0[0] && p3[1] != p0[1])) {
-                            return box(min(p0[1], p1[1], p2[1], p3[1]), min(p0[0], p1[0], p2[0], p3[0]), max(p0[1], p1[1], p2[1], p3[1]), max(p0[0], p1[0], p2[0], p3[0]));
-                        }
-                    }
-                    break;
-            }
-
-            String json = mapWriter.writeValueAsString(geometry);
-            return new Geoshape(HELPER.getGeojsonReader().read(new StringReader(json)));
-        }
-
-        private double min(double... numbers) {
-            return Arrays.stream(numbers).min().getAsDouble();
-        }
-
-        private double max(double... numbers) {
-            return Arrays.stream(numbers).max().getAsDouble();
-        }
-
-
-        @Override
-        public Geoshape read(ScanBuffer buffer) {
-            long l = VariableLong.readPositive(buffer);
-            assert l>0 && l<Integer.MAX_VALUE;
-            int length = (int)l;
-            int position = ((ReadArrayBuffer) buffer).getPosition();
-            InputStream inputStream = new ByteArrayInputStream(buffer.getBytes(length));
-            try {
-                return GeoshapeBinarySerializer.read(inputStream);
-            } catch (IOException e) {
-                // retry using legacy point deserialization
-                try {
-                    ((ReadArrayBuffer) buffer).movePositionTo(position);
-                    final float lat = buffer.getFloat();
-                    final float lon = buffer.getFloat();
-                    return point(lat, lon);
-                } catch (Exception ignored) { }
-                // throw original exception
-                throw new RuntimeException("I/O exception reading geoshape", e);
-            }
-        }
-
-        @Override
-        public void write(WriteBuffer buffer, Geoshape attribute) {
-            try {
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                GeoshapeBinarySerializer.write(outputStream, attribute);
-                byte[] bytes = outputStream.toByteArray();
-                VariableLong.writePositive(buffer,bytes.length);
-                buffer.putBytes(bytes);
-            } catch (IOException e) {
-                throw new RuntimeException("I/O exception writing geoshape", e);
-            }
-        }
     }
 
     /**
