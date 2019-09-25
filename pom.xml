@@ -128,6 +128,7 @@
     </properties>
     <modules>
         <module>janusgraph-codepipelines-ci</module>
+        <module>janusgraph-driver</module>
         <module>janusgraph-core</module>
         <module>janusgraph-server</module>
         <module>janusgraph-backend-testutils</module>

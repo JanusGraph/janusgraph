@@ -15,7 +15,7 @@
 package org.janusgraph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.graphdb.database.serialize.AttributeUtil;
+import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.apache.commons.lang.ArrayUtils;
 
@@ -106,7 +106,7 @@ public enum Cmp implements JanusGraphPredicate {
 
         @Override
         public boolean test(Object value, Object condition) {
-            Integer cmp = AttributeUtil.compare(value,condition);
+            Integer cmp = AttributeUtils.compare(value,condition);
             return cmp != null && cmp < 0;
         }
 
@@ -136,7 +136,7 @@ public enum Cmp implements JanusGraphPredicate {
 
         @Override
         public boolean test(Object value, Object condition) {
-            Integer cmp = AttributeUtil.compare(value,condition);
+            Integer cmp = AttributeUtils.compare(value,condition);
             return cmp != null && cmp <= 0;
         }
 
@@ -166,7 +166,7 @@ public enum Cmp implements JanusGraphPredicate {
 
         @Override
         public boolean test(Object value, Object condition) {
-            Integer cmp = AttributeUtil.compare(value,condition);
+            Integer cmp = AttributeUtils.compare(value,condition);
             return cmp != null && cmp > 0;
         }
 
@@ -196,7 +196,7 @@ public enum Cmp implements JanusGraphPredicate {
 
         @Override
         public boolean test(Object value, Object condition) {
-            Integer cmp = AttributeUtil.compare(value,condition);
+            Integer cmp = AttributeUtils.compare(value,condition);
             return cmp != null && cmp >= 0;
         }
 

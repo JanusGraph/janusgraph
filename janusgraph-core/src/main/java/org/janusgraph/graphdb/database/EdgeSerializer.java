@@ -29,8 +29,8 @@ import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.janusgraph.graphdb.database.idhandling.IDHandler;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
-import org.janusgraph.graphdb.database.serialize.AttributeUtil;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
+import org.janusgraph.graphdb.database.serialize.InternalAttributeUtil;
 import org.janusgraph.graphdb.database.serialize.Serializer;
 import org.janusgraph.graphdb.internal.*;
 import org.janusgraph.graphdb.relations.EdgeDirection;
@@ -199,7 +199,7 @@ public class EdgeSerializer implements RelationReader {
     }
 
     private Object readPropertyValue(ReadBuffer read, PropertyKey key, InlineType inlineType) {
-        if (AttributeUtil.hasGenericDataType(key)) {
+        if (InternalAttributeUtil.hasGenericDataType(key)) {
             return serializer.readClassAndObject(read);
         } else {
             if (inlineType.writeByteOrdered())
@@ -355,7 +355,7 @@ public class EdgeSerializer implements RelationReader {
     }
 
     private void writeInline(DataOutput out, PropertyKey inlineKey, Object value, InlineType inlineType) {
-        assert inlineType.writeInlineKey() || !AttributeUtil.hasGenericDataType(inlineKey);
+        assert inlineType.writeInlineKey() || !InternalAttributeUtil.hasGenericDataType(inlineKey);
 
         if (inlineType.writeInlineKey()) {
             IDHandler.writeInlineRelationType(out, inlineKey.longId());
@@ -369,7 +369,7 @@ public class EdgeSerializer implements RelationReader {
     }
 
     private void writePropertyValue(DataOutput out, PropertyKey key, Object value, InlineType inlineType) {
-        if (AttributeUtil.hasGenericDataType(key)) {
+        if (InternalAttributeUtil.hasGenericDataType(key)) {
             assert !inlineType.writeByteOrdered();
             out.writeClassAndObject(value);
         } else {

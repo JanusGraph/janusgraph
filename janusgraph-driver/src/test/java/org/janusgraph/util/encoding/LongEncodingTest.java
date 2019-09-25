@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.util;
+package org.janusgraph.util.encoding;
 
 import com.google.common.collect.Sets;
-import org.janusgraph.util.encoding.LongEncoding;
 import org.junit.jupiter.api.Test;
 
 import java.util.Random;
@@ -28,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 
 public class LongEncodingTest {
-
 
     @Test
     public void testEncoding() {
