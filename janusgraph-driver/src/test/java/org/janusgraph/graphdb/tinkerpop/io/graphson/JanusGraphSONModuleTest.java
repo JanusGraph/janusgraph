@@ -25,12 +25,8 @@ import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.attribute.Text;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -38,17 +34,17 @@ import java.io.ByteArrayOutputStream;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.gt;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.within;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 
 public class JanusGraphSONModuleTest {
 
     @ParameterizedTest(name= "GraphSON Version: {0}")
-    @EnumSource(value = GraphSONVersion.class, mode = EXCLUDE, names = { "V1_0" })
+    @EnumSource(value = GraphSONVersion.class, mode = EnumSource.Mode.EXCLUDE, names = { "V1_0" })
     public void testTinkerPopPredicatesAsGraphSON(GraphSONVersion graphSONVersion) throws Exception {
         Graph graph = EmptyGraph.instance();
         GraphTraversalSource g = graph.traversal();
 
-        GraphTraversal[] traversals = { g.V().has("age", gt(13)),
+        GraphTraversal[] traversals = {
+            g.V().has("age", gt(13)),
             g.V().has("age", within(20, 29)),
             g.V().has("age", P.not(within(20, 29))) };
 
@@ -56,12 +52,13 @@ public class JanusGraphSONModuleTest {
     }
 
     @ParameterizedTest(name= "GraphSON Version: {0}")
-    @EnumSource(value = GraphSONVersion.class, mode = EXCLUDE, names = { "V1_0" })
+    @EnumSource(value = GraphSONVersion.class, mode = EnumSource.Mode.EXCLUDE, names = { "V1_0" })
     public void testJanusGraphPredicatesAsGraphSON(GraphSONVersion graphSONVersion) throws Exception {
         Graph graph = EmptyGraph.instance();
         GraphTraversalSource g = graph.traversal();
 
-        GraphTraversal[] traversals = { g.E().has("place", Geo.geoIntersect(Geoshape.circle(37.97, 23.72, 50))),
+        GraphTraversal[] traversals = {
+            g.E().has("place", Geo.geoIntersect(Geoshape.circle(37.97, 23.72, 50))),
             g.E().has("place", Geo.geoWithin(Geoshape.circle(37.97, 23.72, 50))),
             g.E().has("place", Geo.geoDisjoint(Geoshape.circle(37.97, 23.72, 50))),
             g.V().has("place", Geo.geoContains(Geoshape.point(37.97, 23.72))),
@@ -74,7 +71,7 @@ public class JanusGraphSONModuleTest {
     }
 
     private void graphsonSerializationTest(GraphTraversal[] traversals, GraphSONVersion version) throws Exception {
-        final GraphSONMapper mapper = GraphSONMapper.build().version(version).typeInfo(TypeInfo.PARTIAL_TYPES).addRegistry(JanusGraphIoRegistry.getInstance()).create();
+        final GraphSONMapper mapper = GraphSONMapper.build().version(version).typeInfo(TypeInfo.PARTIAL_TYPES).addRegistry(JanusGraphIoRegistry.instance()).create();
         final GraphSONWriter writer = GraphSONWriter.build().mapper(mapper).create();
         final GraphSONReader reader = GraphSONReader.build().mapper(mapper).create();
 

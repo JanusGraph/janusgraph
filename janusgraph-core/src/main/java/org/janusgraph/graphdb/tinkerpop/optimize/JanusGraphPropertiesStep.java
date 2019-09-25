@@ -20,8 +20,8 @@ import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.janusgraph.core.*;
 import org.janusgraph.graphdb.query.BaseQuery;
+import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
 import org.janusgraph.graphdb.query.Query;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
@@ -65,7 +65,7 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
         final String[] keys = getPropertyKeys();
         query.keys(keys);
         for (final HasContainer condition : hasContainers) {
-            query.has(condition.getKey(), JanusGraphPredicate.Converter.convert(condition.getBiPredicate()), condition.getValue());
+            query.has(condition.getKey(), JanusGraphPredicateUtils.convert(condition.getBiPredicate()), condition.getValue());
         }
         for (final OrderEntry order : orders) query.orderBy(order.key, order.order);
         if (limit != BaseQuery.NO_LIMIT) query.limit(limit);

@@ -33,6 +33,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.relations.RelationComparator;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.janusgraph.graphdb.relations.RelationIdentifierUtils;
 import org.janusgraph.graphdb.relations.StandardEdge;
 import org.janusgraph.graphdb.relations.StandardVertexProperty;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphBlueprintsTransaction;
@@ -839,7 +840,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         List<JanusGraphEdge> result = new ArrayList<>(ids.length);
         for (RelationIdentifier id : ids) {
             if (id==null) continue;
-            JanusGraphEdge edge = id.findEdge(this);
+            JanusGraphEdge edge = RelationIdentifierUtils.findEdge(id,this);
             if (edge!=null && !edge.isRemoved()) result.add(edge);
         }
         return result;
@@ -1359,13 +1360,13 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     private final Function<Object, JanusGraphEdge> edgeIDConversionFct = id -> {
         Preconditions.checkNotNull(id);
         Preconditions.checkArgument(id instanceof RelationIdentifier);
-        return ((RelationIdentifier)id).findEdge(StandardJanusGraphTx.this);
+        return RelationIdentifierUtils.findEdge((RelationIdentifier)id, StandardJanusGraphTx.this);
     };
 
     private final Function<Object, JanusGraphVertexProperty> propertyIDConversionFct = id -> {
         Preconditions.checkNotNull(id);
         Preconditions.checkArgument(id instanceof RelationIdentifier);
-        return ((RelationIdentifier)id).findProperty(StandardJanusGraphTx.this);
+        return RelationIdentifierUtils.findProperty((RelationIdentifier)id, StandardJanusGraphTx.this);
     };
 
     @Override

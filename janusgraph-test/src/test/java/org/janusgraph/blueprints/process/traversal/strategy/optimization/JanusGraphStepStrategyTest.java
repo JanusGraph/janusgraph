@@ -47,7 +47,7 @@ import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.predicate.ConnectiveJanusPredicate;
-import org.janusgraph.graphdb.query.JanusGraphPredicate.Converter;
+import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
 import org.janusgraph.graphdb.tinkerpop.optimize.HasStepFolder;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphLocalQueryOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphMultiQueryStep;
@@ -173,8 +173,8 @@ public class JanusGraphStepStrategyTest {
                 final RangeGlobalStep range = (RangeGlobalStep) ((DefaultGraphTraversal) hasKeyValues[i]).getStartStep();
                 graphStep.setLimit((int) range.getLowRange(), (int) range.getHighRange());
             }  else if (i < hasKeyValues.length -1 && hasKeyValues[i + 1] instanceof ConnectiveP) {
-                final ConnectiveJanusPredicate connectivePredicate = Converter.instanceConnectiveJanusPredicate((ConnectiveP) hasKeyValues[i + 1] );
-                graphStep.addHasContainer(new HasContainer((String) hasKeyValues[i], new P<>(connectivePredicate, Converter.convert(((ConnectiveP<?>) hasKeyValues[i + 1]), connectivePredicate))));
+                final ConnectiveJanusPredicate connectivePredicate = JanusGraphPredicateUtils.instanceConnectiveJanusPredicate((ConnectiveP) hasKeyValues[i + 1] );
+                graphStep.addHasContainer(new HasContainer((String) hasKeyValues[i], new P<>(connectivePredicate, JanusGraphPredicateUtils.convert(((ConnectiveP<?>) hasKeyValues[i + 1]), connectivePredicate))));
                 i++;
             } else {
                 graphStep.addHasContainer(new HasContainer((String) hasKeyValues[i], (P) hasKeyValues[i + 1]));
