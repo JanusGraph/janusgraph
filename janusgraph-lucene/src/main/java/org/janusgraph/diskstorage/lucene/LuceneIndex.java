@@ -557,11 +557,11 @@ public class LuceneIndex implements IndexProvider {
             }
         } else if (terms.size() == 1) {
             if (janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate == Text.CONTAINS) {
-                params.addQuery(new TermQuery(new Term(key, value)));
+                params.addQuery(new TermQuery(new Term(key, terms.get(0))));
             } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
                 final BooleanQuery.Builder q = new BooleanQuery.Builder();
                 q.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
-                q.add(new TermQuery(new Term(key, value)), BooleanClause.Occur.MUST_NOT);
+                q.add(new TermQuery(new Term(key, terms.get(0))), BooleanClause.Occur.MUST_NOT);
                 params.addQuery(q.build(), BooleanClause.Occur.MUST);
             } else if (janusgraphPredicate == Text.CONTAINS_PREFIX) {
                 final Term term;
@@ -573,10 +573,17 @@ public class LuceneIndex implements IndexProvider {
                 params.addQuery(new PrefixQuery(term), BooleanClause.Occur.MUST);
             } else throw new IllegalArgumentException("LuceneIndex does not support this predicate with 1 token : " + janusgraphPredicate);
         } else {
-            // at the moment, this is only walked for EQUAL and Text.CONTAINS (String and Text mappings)
+            // at the moment, this is only walked for EQUAL, NOT_EQUAL and Text.CONTAINS (String and Text mappings)
             final BooleanQuery.Builder q = new BooleanQuery.Builder();
+            BooleanClause.Occur occur;
+            if (janusgraphPredicate == Cmp.NOT_EQUAL) {
+                q.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
+                occur = BooleanClause.Occur.MUST_NOT;
+            } else {
+                occur = BooleanClause.Occur.MUST;
+            }
             for (final String term : terms) {
-                q.add(new TermQuery(new Term(key, term)), BooleanClause.Occur.MUST);
+                q.add(new TermQuery(new Term(key, term)), occur);
             }
             params.addQuery(q.build());
         }
@@ -628,13 +635,8 @@ public class LuceneIndex implements IndexProvider {
                             // putting this to lowercase because Text search is supposed to be case insensitive
                             final RegexpQuery rq = new RegexpQuery(new Term(key, ".*" + (((String) value).toLowerCase()) + ".*"));
                             params.addQuery(rq);
-                        } else if (janusgraphPredicate == Cmp.EQUAL) {
+                        } else if (janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate == Cmp.NOT_EQUAL) {
                             tokenize(params, map, delegatingAnalyzer, (String) value, key, janusgraphPredicate);
-                        } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
-                            final BooleanQuery.Builder q = new BooleanQuery.Builder();
-                            q.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
-                            q.add(new TermQuery(new Term(key, (String) value)), BooleanClause.Occur.MUST_NOT);
-                            params.addQuery(q.build());
                         } else if (janusgraphPredicate == Text.FUZZY) {
                             params.addQuery(new FuzzyQuery(new Term(key, (String) value)));
                         } else if (janusgraphPredicate == Text.CONTAINS_FUZZY) {
