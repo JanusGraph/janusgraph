@@ -29,10 +29,9 @@ import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
@@ -131,51 +130,62 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         final StaticBuffer keyStart = query.getStart();
         final StaticBuffer keyEnd = query.getEnd();
         final KeySelector selector = query.getKeySelector();
-        final List<KeyValueEntry> result = new ArrayList<>();
         final DatabaseEntry foundKey = keyStart.as(ENTRY_FACTORY);
         final DatabaseEntry foundData = new DatabaseEntry();
-
         final Cursor cursor = openCursor(txh);
-        try {
-            OperationStatus status = cursor.getSearchKeyRange(foundKey, foundData, getLockMode(txh));
-            //Iterate until given condition is satisfied or end of records
-            while (status == OperationStatus.SUCCESS) {
-                StaticBuffer key = getBuffer(foundKey);
-
-                if (key.compareTo(keyEnd) >= 0)
-                    break;
-
-                if (selector.include(key)) {
-                    result.add(new KeyValueEntry(key, getBuffer(foundData)));
-                }
-
-                if (selector.reachedLimit())
-                    break;
-
-                status = cursor.getNext(foundKey, foundData, getLockMode(txh));
-            }
-        } catch (Exception e) {
-            throw new PermanentBackendException(e);
-        } finally {
-            closeCursor(txh, cursor);
-        }
-        log.trace("db={}, op=getSlice, tx={}, resultcount={}", name, txh, result.size());
 
         return new RecordIterator<KeyValueEntry>() {
-            private final Iterator<KeyValueEntry> entries = result.iterator();
+            private OperationStatus status;
+            private KeyValueEntry current;
 
             @Override
             public boolean hasNext() {
-                return entries.hasNext();
+                if (current == null) {
+                    current = getNextEntry();
+                }
+                return current != null;
             }
 
             @Override
             public KeyValueEntry next() {
-                return entries.next();
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                KeyValueEntry next = current;
+                current = null;
+                return next;
+            }
+
+            private KeyValueEntry getNextEntry() {
+                if (status != null && status != OperationStatus.SUCCESS) {
+                    return null;
+                }
+                while (!selector.reachedLimit()) {
+                    if (status == null) {
+                        status = cursor.getSearchKeyRange(foundKey, foundData, getLockMode(txh));
+                    } else {
+                        status = cursor.getNext(foundKey, foundData, getLockMode(txh));
+                    }
+                    if (status != OperationStatus.SUCCESS) {
+                        break;
+                    }
+                    StaticBuffer key = getBuffer(foundKey);
+
+                    if (key.compareTo(keyEnd) >= 0) {
+                        status = OperationStatus.NOTFOUND;
+                        break;
+                    }
+
+                    if (selector.include(key)) {
+                        return new KeyValueEntry(key, getBuffer(foundData));
+                    }
+                }
+                return null;
             }
 
             @Override
             public void close() {
+                closeCursor(txh, cursor);
             }
 
             @Override
