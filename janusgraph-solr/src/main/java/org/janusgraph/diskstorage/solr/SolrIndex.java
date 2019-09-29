@@ -781,16 +781,16 @@ public class SolrIndex implements IndexProvider {
                     return (key + ":" + escapeValue(value) + "*");
                 } else if (predicate == Text.REGEX || predicate == Text.CONTAINS_REGEX) {
                     return (key + ":/" + value + "/");
-                } else if (predicate == Cmp.EQUAL) {
+                } else if (predicate == Cmp.EQUAL || predicate == Cmp.NOT_EQUAL) {
                     final String tokenizer =
                             ParameterType.STRING_ANALYZER.findParameter(information.get(key).getParameters(), null);
-                    if(tokenizer != null){
-                        return tokenize(information, value, key, predicate,tokenizer);
-                    } else {
+                    if (tokenizer != null) {
+                        return tokenize(information, value, key, predicate, tokenizer);
+                    } else if (predicate == Cmp.EQUAL) {
                         return (key + ":\"" + escapeValue(value) + "\"");
+                    } else { // Cmp.NOT_EQUAL case
+                        return ("-" + key + ":\"" + escapeValue(value) + "\"");
                     }
-                } else if (predicate == Cmp.NOT_EQUAL) {
-                    return ("-" + key + ":\"" + escapeValue(value) + "\"");
                 } else if (predicate == Text.FUZZY || predicate == Text.CONTAINS_FUZZY) {
                     return (key + ":"+escapeValue(value)+"~");
                 } else if (predicate == Cmp.LESS_THAN) {
@@ -921,7 +921,11 @@ public class SolrIndex implements IndexProvider {
         if (terms.isEmpty()) {
             return "";
         } else if (terms.size() == 1) {
-            return (key + ":(" + escapeValue(terms.get(0)) + ")");
+            if (janusgraphPredicate == Cmp.NOT_EQUAL) {
+                return ("-" + key + ":(" + escapeValue(terms.get(0)) + ")");
+            } else {
+                return (key + ":(" + escapeValue(terms.get(0)) + ")");
+            }
         } else {
             final And<JanusGraphElement> andTerms = new And<>();
             for (final String term : terms) {

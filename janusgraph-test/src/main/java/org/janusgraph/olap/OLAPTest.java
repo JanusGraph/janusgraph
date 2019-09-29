@@ -231,9 +231,15 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         mgmt.commit();
 
         ScanMetrics result = executeScanJob(new GhostVertexRemover(graph));
-        assertEquals(1,result.getCustom(GhostVertexRemover.REMOVED_VERTEX_COUNT));
-        assertEquals(2,result.getCustom(GhostVertexRemover.REMOVED_RELATION_COUNT));
-        assertEquals(0,result.getCustom(GhostVertexRemover.SKIPPED_GHOST_LIMIT_COUNT));
+        assertEquals(1, result.getCustom(GhostVertexRemover.REMOVED_VERTEX_COUNT));
+        assertEquals(2, result.getCustom(GhostVertexRemover.REMOVED_RELATION_COUNT));
+        assertEquals(0, result.getCustom(GhostVertexRemover.SKIPPED_GHOST_LIMIT_COUNT));
+
+        // Second scan should not find any ghost vertices
+        result = executeScanJob(new GhostVertexRemover(graph));
+        assertEquals(0, result.getCustom(GhostVertexRemover.REMOVED_VERTEX_COUNT));
+        assertEquals(0, result.getCustom(GhostVertexRemover.REMOVED_RELATION_COUNT));
+        assertEquals(0, result.getCustom(GhostVertexRemover.SKIPPED_GHOST_LIMIT_COUNT));
     }
 
     @Test

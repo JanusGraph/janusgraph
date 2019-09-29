@@ -1018,6 +1018,12 @@ public abstract class IndexProviderTest {
 
         IndexQuery query = new IndexQuery(store, PredicateCondition.of(STRING, Cmp.EQUAL, "Tom and Jerry"));
         assertEquals(1, tx.queryStream(query).count(), query.toString());
+        query = new IndexQuery(store, PredicateCondition.of(STRING, Cmp.EQUAL, "Tom"));
+        assertEquals(1, tx.queryStream(query).count(), query.toString());
+        query = new IndexQuery(store, PredicateCondition.of(STRING, Cmp.NOT_EQUAL, "Tom"));
+        assertEquals(0, tx.queryStream(query).count(), query.toString());
+        query = new IndexQuery(store, PredicateCondition.of(STRING, Cmp.NOT_EQUAL, "Tom Jerry"));
+        assertEquals(0, tx.queryStream(query).count(), query.toString());
         query = new IndexQuery(store, PredicateCondition.of(STRING, Cmp.EQUAL, "Tom Jerry"));
         assertEquals(1, tx.queryStream(query).count(), query.toString());
         query = new IndexQuery(store, PredicateCondition.of(STRING, Cmp.EQUAL, "Tom or Jerry"));
@@ -1029,6 +1035,8 @@ public abstract class IndexProviderTest {
         query = new IndexQuery(store, PredicateCondition.of(ANALYZED, Text.CONTAINS, "Tom and Jerry"));
         assertEquals(1, tx.queryStream(query).count(), query.toString());
         query = new IndexQuery(store, PredicateCondition.of(ANALYZED, Text.CONTAINS, "Tom Jerry"));
+        assertEquals(1, tx.queryStream(query).count(), query.toString());
+        query = new IndexQuery(store, PredicateCondition.of(ANALYZED, Text.CONTAINS, "Tom"));
         assertEquals(1, tx.queryStream(query).count(), query.toString());
         query = new IndexQuery(store, PredicateCondition.of(ANALYZED, Text.CONTAINS, "Tom or Jerry"));
         assertEquals(1, tx.queryStream(query).count(), query.toString());
