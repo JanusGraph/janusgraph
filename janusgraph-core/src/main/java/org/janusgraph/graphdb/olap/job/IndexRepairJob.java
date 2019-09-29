@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.*;
+import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -59,6 +60,8 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
      * document in the backend implementation) modified by this job
      */
     public static final String DOCUMENT_UPDATES_COUNT = "doc-updates";
+
+    private Map<String,Map<String,List<IndexEntry>>> documentsPerStore = new HashMap<>();
 
     public IndexRepairJob() {
         super();
@@ -173,12 +176,10 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                     }
                 } else {
                     assert indexType.isMixedIndex();
-                    Map<String,Map<String,List<IndexEntry>>> documentsPerStore = new HashMap<>();
                     for (JanusGraphElement element : elements) {
                         indexSerializer.reindexElement(element, (MixedIndexType) indexType, documentsPerStore);
                         metrics.incrementCustom(DOCUMENT_UPDATES_COUNT);
                     }
-                    mutator.getIndexTransaction(indexType.getBackingIndexName()).restore(documentsPerStore);
                 }
 
             } else throw new UnsupportedOperationException("Unsupported index found: "+index);
@@ -187,6 +188,24 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
             writeTx.rollback();
             metrics.incrementCustom(FAILED_TX);
             throw new JanusGraphException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void workerIterationEnd(final ScanMetrics metrics) {
+        try {
+            if (index instanceof JanusGraphIndex) {
+                BackendTransaction mutator = writeTx.getTxHandle();
+                IndexType indexType = managementSystem.getSchemaVertex(index).asIndexType();
+                if (indexType.isMixedIndex() && documentsPerStore.size() > 0) {
+                    mutator.getIndexTransaction(indexType.getBackingIndexName()).restore(documentsPerStore);
+                    documentsPerStore = new HashMap<>();
+                }
+            }
+        } catch (BackendException e) {
+            throw new JanusGraphException(e.getMessage(), e);
+        } finally {
+            super.workerIterationEnd(metrics);
         }
     }
 
