@@ -70,8 +70,6 @@ nav:
         - Deployment Scenarios: basics/deployment.md
         - ConfiguredGraphFactory: basics/configured-graph-factory.md
         - Things to Consider in a Multi-Node JanusGraph Cluster: basics/multi-node.md
-        - Indexing for Better Performance: basics/index-performance.md
-        - Index Lifecycle: basics/index-lifecycle.md
         - Transactions: basics/transactions.md
         - JanusGraph Cache: basics/cache.md
         - Transaction Log: basics/transaction-log.md
@@ -79,6 +77,11 @@ nav:
         - Config Example: basics/example-config.md
         - Common Questions: basics/common-questions.md
         - Technical Limitations: basics/technical-limitations.md
+    - Index Management:
+        - Indexing for Better Performance: index-management/index-performance.md
+        - Index Lifecycle: index-management/index-lifecycle.md
+        - Reindexing: index-management/index-reindexing.md
+        - Removal: index-management/index-removal.md
     - Storage Backends:
         - Introduction: storage-backend/index.md
         - Apache Cassandra: storage-backend/cassandra.md
@@ -86,7 +89,7 @@ nav:
         - Google Cloud Bigtable: storage-backend/bigtable.md
         - Oracle Berkeley DB Java Edition: storage-backend/bdb.md
         - InMemory Storage Backend: storage-backend/inmemorybackend.md
-    - Index Backends:
+    - Mixed Index Backends:
         - Introduction: index-backend/index.md
         - Search Predicates and Data Types: index-backend/search-predicates.md
         - Index Parameters and Full-Text Search: index-backend/text-search.md
@@ -99,7 +102,6 @@ nav:
         - Advanced Schema: advanced-topics/advschema.md
         - Eventually-Consistent Storage Backends: advanced-topics/eventual-consistency.md
         - Failure & Recovery: advanced-topics/recovery.md
-        - Index Management: advanced-topics/index-admin.md
         - Bulk Loading: advanced-topics/bulk-loading.md
         - Graph Partitioning: advanced-topics/partitioning.md
         - Datatype and Attribute Serializer Configuration: advanced-topics/serializer.md

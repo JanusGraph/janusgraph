@@ -128,7 +128,7 @@ useful in high-concurrency, scale-out design patterns as described in
 
 Vertex-centric indexes and global graph indexes are supported for
 properties in the same manner as they are supported for edges. Refer to
-[Indexing for Better Performance](../basics/index-performance.md) for information on defining these indexes for edges and
+[Indexing for Better Performance](../index-management/index-performance.md) for information on defining these indexes for edges and
 use the corresponding API methods to define the same indexes for
 properties.
 
