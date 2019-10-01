@@ -1,10 +1,8 @@
-Index Management
-================
+# Reindexing
 
-Reindexing
-----------
-
-[Graph Index](../basics/index-performance.md#graph-index) and [Vertex-centric Indexes](../basics/index-performance.md#vertex-centric-indexes) describe how to build
+[Graph Index](./index-performance.md#graph-index) and 
+[Vertex-centric Indexes](./index-performance.md#vertex-centric-indexes) 
+describe how to build
 graph-global and vertex-centric indexes to improve query performance.
 These indexes are immediately available if the indexed keys or labels
 have been newly defined in the same management transaction. In this
@@ -19,7 +17,7 @@ describes the reindexing process.
     steps must be carefully followed in the right order to avoid index
     inconsistencies.
 
-### Overview
+## Overview
 
 JanusGraph can begin writing incremental index updates right after an
 index is defined. However, before the index is complete and usable,
@@ -29,10 +27,10 @@ reindexing job has completed, the index is fully populated and ready to
 be used. The index must then be enabled to be used during query
 processing.
 
-### Prior to Reindex
+## Prior to Reindex
 
 The starting point of the reindexing process is the construction of an
-index. Refer to [Indexing for Better Performance](../basics/index-performance.md) for a complete discussion of global
+index. Refer to [Indexing for Better Performance](./index-performance.md) for a complete discussion of global
 graph and vertex-centric indexes. Note, that a global graph index is
 uniquely identified by its name. A vertex-centric index is uniquely
 identified by the combination of its name and the edge label or property
@@ -45,7 +43,7 @@ recommended to wait a few minutes for the index to be announced to the
 cluster. Note the index name (and the index type in case of a
 vertex-centric index) since this information is needed when reindexing.
 
-### Preparing to Reindex
+## Preparing to Reindex
 
 There is a choice between two execution frameworks for reindex jobs:
 
@@ -65,7 +63,7 @@ Reindexing requires:
     key on which the vertex-centric index is built). This applies only
     to vertex-centric indexes - leave blank for global graph indexes.
 
-### Executing a Reindex Job on MapReduce
+## Executing a Reindex Job on MapReduce
 
 The recommended way to generate and run a reindex job on MapReduce is
 through the `MapReduceIndexManagement` class. Here is a rough outline of
@@ -90,7 +88,7 @@ mr.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("battled"), "battlesBy
 mgmt.commit()
 ```
 
-#### Reindex Example on MapReduce
+### Reindex Example on MapReduce
 
 The following Gremlin snippet outlines all steps of the MapReduce
 reindex process in one self-contained example using minimal dummy data
@@ -151,7 +149,7 @@ graph = JanusGraphFactory.open("conf/janusgraph-cql-es.properties")
 g.V().has("desc", containsText("baz"))
 ```
 
-### Executing a Reindex job on JanusGraphManagement
+## Executing a Reindex job on JanusGraphManagement
 
 To run a reindex job on JanusGraphManagement, invoke
 `JanusGraphManagement.updateIndex` with the `SchemaAction.REINDEX`
@@ -163,7 +161,7 @@ m.updateIndex(i, SchemaAction.REINDEX).get()
 m.commit()
 ```
 
-#### Example for JanusGraphManagement
+### Example for JanusGraphManagement
 
 The following loads some sample data into a BerkeleyDB-backed JanusGraph
 database, defines an index after the fact, reindexes using
@@ -216,187 +214,7 @@ g = graph.traversal()
 g.V().has('name', 'lop')
 ```
 
-Index Removal
--------------
-
-!!! warning
-    Index removal is a manual process comprised of multiple steps. These
-    steps must be carefully followed in the right order to avoid index
-    inconsistencies.
-
-### Overview
-
-Index removal is a two-stage process. In the first stage, one JanusGraph
-signals to all others via the storage backend that the index is slated
-for deletion. This changes the index’s state to `DISABLED`. At that
-point, JanusGraph stops using the index to answer queries and stops
-incrementally updating the index. Index-related data in the storage
-backend remains present but ignored.
-
-The second stage depends on whether the index is mixed or composite. A
-composite index can be deleted via JanusGraph. As with reindexing,
-removal can be done through either MapReduce or JanusGraphManagement.
-However, a mixed index must be manually dropped in the index backend;
-JanusGraph does not provide an automated mechanism to delete an index
-from its index backend.
-
-Index removal deletes everything associated with the index except its
-schema definition and its `DISABLED` state. This schema stub for the
-index remains even after deletion, though its storage footprint is
-negligible and fixed.
-
-### Preparing for Index Removal
-
-If the index is currently enabled, it should first be disabled. This is
-done through the `ManagementSystem`.
-```groovy
-mgmt = graph.openManagement()
-rindex = mgmt.getRelationIndex(mgmt.getRelationType("battled"), "battlesByTime")
-mgmt.updateIndex(rindex, SchemaAction.DISABLE_INDEX).get()
-gindex = mgmt.getGraphIndex("byName")
-mgmt.updateIndex(gindex, SchemaAction.DISABLE_INDEX).get()
-mgmt.commit()
-```
-
-Once the status of all keys on the index changes to `DISABLED`, the
-index is ready to be removed. A utility in ManagementSystem can automate
-the wait-for-`DISABLED` step:
-```groovy
-ManagementSystem.awaitGraphIndexStatus(graph, 'byName').status(SchemaStatus.DISABLED).call()
-```
-
-After a composite index is `DISABLED`, there is a choice between two
-execution frameworks for its removal:
-
--   MapReduce
--   JanusGraphManagement
-
-Index removal on MapReduce supports large, horizontally-distributed
-databases. Index removal on JanusGraphManagement spawns a single-machine
-OLAP job. This is intended for convenience and speed on those databases
-small enough to be handled by one machine.
-
-Index removal requires:
-
--   The index name (a string — the user provides this to JanusGraph when
-    building a new index)
--   The index type (a string — the name of the edge label or property
-    key on which the vertex-centric index is built). This applies only
-    to vertex-centric indexes - leave blank for global graph indexes.
-
-As noted in the overview, a mixed index must be manually dropped from
-the indexing backend. Neither the MapReduce framework nor the
-JanusGraphManagement framework will delete a mixed backend from the
-indexing backend.
-
-### Executing an Index Removal Job on MapReduce
-
-As with reindexing, the recommended way to generate and run an index
-removal job on MapReduce is through the `MapReduceIndexManagement`
-class. Here is a rough outline of the steps to run an index removal job
-using this class:
-
-- Open a `JanusGraph` instance
-- If the index has not yet been disabled, disable it through `JanusGraphManagement`
-- Pass the graph instance into `MapReduceIndexManagement`'s constructor
-- Call `updateIndex(<index>, SchemaAction.REMOVE_INDEX)`
-
-A commented code example follows in the next subsection.
-
-#### Example for MapReduce
-
-```groovy
-import org.janusgraph.graphdb.database.management.ManagementSystem
-
-// Load the "Graph of the Gods" sample data
-graph = JanusGraphFactory.open('conf/janusgraph-cql-es.properties')
-g = graph.traversal()
-GraphOfTheGodsFactory.load(graph)
-
-g.V().has('name', 'jupiter')
-
-// Disable the "name" composite index
-m = graph.openManagement()
-nameIndex = m.getGraphIndex('name')
-m.updateIndex(nameIndex, SchemaAction.DISABLE_INDEX).get()
-m.commit()
-graph.tx().commit()
-
-// Block until the SchemaStatus transitions from INSTALLED to REGISTERED
-ManagementSystem.awaitGraphIndexStatus(graph, 'name').status(SchemaStatus.DISABLED).call()
-
-// Delete the index using MapReduceIndexJobs
-m = graph.openManagement()
-mr = new MapReduceIndexManagement(graph)
-future = mr.updateIndex(m.getGraphIndex('name'), SchemaAction.REMOVE_INDEX)
-m.commit()
-graph.tx().commit()
-future.get()
-
-// Index still shows up in management interface as DISABLED -- this is normal
-m = graph.openManagement()
-idx = m.getGraphIndex('name')
-idx.getIndexStatus(m.getPropertyKey('name'))
-m.rollback()
-
-// JanusGraph should issue a warning about this query requiring a full scan
-g.V().has('name', 'jupiter')
-```
-
-### Executing an Index Removal job on JanusGraphManagement
-
-To run an index removal job on JanusGraphManagement, invoke
-`JanusGraphManagement.updateIndex` with the `SchemaAction.REMOVE_INDEX`
-argument. For example:
-```groovy
-m = graph.openManagement()
-i = m.getGraphIndex('indexName')
-m.updateIndex(i, SchemaAction.REMOVE_INDEX).get()
-m.commit()
-```
-
-#### Example for JanusGraphManagement
-
-The following loads some indexed sample data into a BerkeleyDB-backed
-JanusGraph database, then disables and removes the index through
-JanusGraphManagement:
-```groovy
-import org.janusgraph.graphdb.database.management.ManagementSystem
-
-// Load the "Graph of the Gods" sample data
-graph = JanusGraphFactory.open('conf/janusgraph-cql-es.properties')
-g = graph.traversal()
-GraphOfTheGodsFactory.load(graph)
-
-g.V().has('name', 'jupiter')
-
-// Disable the "name" composite index
-m = graph.openManagement()
-nameIndex = m.getGraphIndex('name')
-m.updateIndex(nameIndex, SchemaAction.DISABLE_INDEX).get()
-m.commit()
-graph.tx().commit()
-
-// Block until the SchemaStatus transitions from INSTALLED to REGISTERED
-ManagementSystem.awaitGraphIndexStatus(graph, 'name').status(SchemaStatus.DISABLED).call()
-
-// Delete the index using JanusGraphManagement
-m = graph.openManagement()
-nameIndex = m.getGraphIndex('name')
-future = m.updateIndex(nameIndex, SchemaAction.REMOVE_INDEX)
-m.commit()
-graph.tx().commit()
-
-future.get()
-
-m = graph.openManagement()
-nameIndex = m.getGraphIndex('name')
-
-g.V().has('name', 'jupiter')
-```
-
-Common Problems with Index Management
--------------------------------------
+## Common problems
 
 ### IllegalArgumentException when starting job
 
@@ -421,7 +239,7 @@ Note, that the acknowledgment might fail due to JanusGraph instance
 failure. In other words, the cluster might wait indefinitely on the
 acknowledgment of a failed instance. In this case, the user must
 manually remove the failed instance from the cluster registry as
-described in [Failure & Recovery](recovery.md). After the cluster state has been
+described in [Failure & Recovery](../advanced-topics/recovery.md). After the cluster state has been
 restored, the acknowledgment process must be reinitiated by manually
 registering the index again in the management system.
 
