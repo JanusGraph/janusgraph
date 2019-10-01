@@ -67,7 +67,7 @@ in JanusGraph.
     JanusGraph’s index options start with the string "`index.[X].`" where
     "`[X]`" is a user-defined name for the backend. This user-defined name
     must be passed to JanusGraph’s ManagementSystem interface when
-    building a mixed index, as described in [Mixed Index](../basics/index-performance.md#mixed-index), so that
+    building a mixed index, as described in [Mixed Index](../index-management/index-performance.md#mixed-index), so that
     JanusGraph knows which of potentially multiple configured index
     backends to use. Configuration snippets in this chapter use the name
     `search`, whereas prose discussion of options typically write `[X]` in

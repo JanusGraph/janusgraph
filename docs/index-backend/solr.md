@@ -34,7 +34,7 @@ Solr Configuration Overview
 
 JanusGraph supports Solr running in either a SolrCloud or Solr
 Standalone (HTTP) configuration for use with a **mixed index** 
-(see [Mixed Index](../basics/index-performance.md#mixed-index)). 
+(see [Mixed Index](../index-management/index-performance.md#mixed-index)). 
 The desired connection mode is configured via the
 parameter `mode` which must be set to either `cloud` or `http`, the
 former being the default value. For example, to explicitly specify that
