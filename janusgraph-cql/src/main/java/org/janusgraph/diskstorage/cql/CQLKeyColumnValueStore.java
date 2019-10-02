@@ -54,6 +54,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import com.datastax.driver.core.PagingState;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
@@ -381,7 +382,8 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         return Try.of(() -> new CQLResultSetKeyIterator(
                 query,
                 this.getter,
-                this.session.execute(this.getKeysRanged.bind()
+                new CQLPagingIterator(this.storeManager.getPageSize(), () ->
+                    getKeysRanged.bind()
                         .setToken(KEY_START_BINDING, metadata.newToken(query.getKeyStart().asByteBuffer()))
                         .setToken(KEY_END_BINDING, metadata.newToken(query.getKeyEnd().asByteBuffer()))
                         .setBytes(SLICE_START_BINDING, query.getSliceStart().asByteBuffer())
@@ -400,11 +402,63 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         return Try.of(() -> new CQLResultSetKeyIterator(
                 query,
                 this.getter,
-                this.session.execute(this.getKeysAll.bind()
+                new CQLPagingIterator(this.storeManager.getPageSize(), () ->
+                    getKeysAll.bind()
                         .setBytes(SLICE_START_BINDING, query.getSliceStart().asByteBuffer())
                         .setBytes(SLICE_END_BINDING, query.getSliceEnd().asByteBuffer())
                         .setFetchSize(this.storeManager.getPageSize())
                         .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel()))))
                 .getOrElseThrow(EXCEPTION_MAPPER);
+    }
+
+    /**
+     * This class provides a paging implementation that sits on top of the DSE Cassandra driver. The driver already
+     * has its own built in paging support but this has limitations when doing a full scan of the key ring due
+     * to how driver paging metadata is stored. The driver stores a full history of a given query's paging metadata
+     * which can lead to OOM issues on non-trivially sized data sets. This class overcomes this by doing another level
+     * of paging that re-executes the query after a configurable number of rows. When the original query is re-executed
+     * it is initialized to the correct offset using the last page's metadata.
+     */
+    private class CQLPagingIterator implements Iterator<Row> {
+
+        private ResultSet currentResultSet;
+
+        private int index;
+        private int paginatedResultSize;
+        private final Supplier<Statement> statementSupplier;
+
+        private PagingState lastPagingState = null;
+
+        public CQLPagingIterator(final int pageSize, Supplier<Statement> statementSupplier) {
+            this.index = 0;
+            this.paginatedResultSize = pageSize;
+            this.statementSupplier = statementSupplier;
+            this.currentResultSet = getResultSet();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return !currentResultSet.isExhausted();
+        }
+
+        @Override
+        public Row next() {
+            if(index == paginatedResultSize) {
+                currentResultSet = getResultSet();
+                this.index = 0;
+            }
+            this.index++;
+            lastPagingState = currentResultSet.getExecutionInfo().getPagingState();
+            return currentResultSet.one();
+
+        }
+
+        private ResultSet getResultSet() {
+            final Statement boundStmnt = statementSupplier.get();
+            if (lastPagingState != null) {
+                boundStmnt.setPagingState(lastPagingState);
+            }
+            return session.execute(boundStmnt);
+        }
     }
 }
