@@ -48,10 +48,10 @@ class CQLResultSetKeyIterator extends AbstractIterator<StaticBuffer> implements 
     private StaticBuffer currentKey = null;
     private StaticBuffer lastKey = null;
 
-    CQLResultSetKeyIterator(final SliceQuery sliceQuery, final CQLColValGetter getter, final ResultSet resultSet) {
+    CQLResultSetKeyIterator(final SliceQuery sliceQuery, final CQLColValGetter getter, final Iterable<Row> resultSet) {
         this.sliceQuery = sliceQuery;
         this.getter = getter;
-        this.iterator = Iterator.ofAll(resultSet.iterator())
+        this.iterator = Iterator.ofAll(resultSet)
                 .peek(row -> {
                     this.currentRow = row;
                     this.currentKey = StaticArrayBuffer.of(row.getBytes(CQLKeyColumnValueStore.KEY_COLUMN_NAME));
