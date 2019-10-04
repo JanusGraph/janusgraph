@@ -16,6 +16,7 @@ package org.janusgraph.core;
 
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 /**
  * The multiplicity of edges between vertices for a given label. Multiplicity here is understood in the same sense as
@@ -96,6 +97,15 @@ public enum Multiplicity {
             case LIST: return MULTI;
             case SET: return SIMPLE;
             case SINGLE: return MANY2ONE;
+            default: throw new AssertionError("Unknown cardinality: " + cardinality);
+        }
+    }
+    public static Multiplicity convert(VertexProperty.Cardinality cardinality) {
+        Preconditions.checkNotNull(cardinality);
+        switch(cardinality) {
+            case list: return MULTI;
+            case set: return SIMPLE;
+            case single: return MANY2ONE;
             default: throw new AssertionError("Unknown cardinality: " + cardinality);
         }
     }

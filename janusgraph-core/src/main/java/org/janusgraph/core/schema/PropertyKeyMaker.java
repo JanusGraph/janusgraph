@@ -14,6 +14,7 @@
 
 package org.janusgraph.core.schema;
 
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.PropertyKey;
 
@@ -33,6 +34,21 @@ public interface PropertyKeyMaker extends RelationTypeMaker {
      * @return this PropertyKeyMaker
      */
     PropertyKeyMaker cardinality(Cardinality cardinality);
+
+    /**
+     * Configures the {@link org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality} of this property key.
+     *
+     * @param cardinality
+     * @return this PropertyKeyMaker
+     */
+    PropertyKeyMaker cardinality(VertexProperty.Cardinality cardinality);
+
+    /**
+     * This method allows to check if is set using method cardinality();
+     *
+     * @return
+     */
+    boolean cardinalityIsSet();
 
     /**
      * Configures the data type for this property key.
