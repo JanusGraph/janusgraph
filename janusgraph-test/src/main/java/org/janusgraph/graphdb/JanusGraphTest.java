@@ -173,7 +173,6 @@ import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
 import static org.apache.tinkerpop.gremlin.structure.Direction.BOTH;
 import static org.apache.tinkerpop.gremlin.structure.Direction.IN;
 import static org.apache.tinkerpop.gremlin.structure.Direction.OUT;
-import static org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality.single;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.janusgraph.graphdb.internal.RelationCategory.EDGE;
 import static org.janusgraph.graphdb.internal.RelationCategory.PROPERTY;
@@ -754,7 +753,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
 
         //Only one property for weight allowed
-        v.property(single, "weight", 1.0);
+        v.property(VertexProperty.Cardinality.single, "weight", 1.0);
         assertCount(1, v.properties("weight"));
         v.property(VertexProperty.Cardinality.single, "weight", 0.5);
         assertEquals(0.5, v.<Float>value("weight").doubleValue(), 0.00001);
@@ -3420,6 +3419,44 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     }
 
+    @Test
+    public void testAutoSchemaMakerAllowsToSetCardinalityList(){
+        GraphTraversalSource g = graph.traversal();
+
+        Vertex next = g.addV()
+            .property(VertexProperty.Cardinality.list, "name", "marko a. rodriguez")
+            .property("name", "sdsdsd")
+            .next();
+
+        assertEquals(2, g.V(next).values("name").toList().size());
+    }
+
+    @Test
+    public void testAutoSchemaMakerAllowsToSetCardinalitySet(){
+        GraphTraversalSource g = graph.traversal();
+
+        Vertex next = g.addV()
+            .property(VertexProperty.Cardinality.set, "name", "marko a. rodriguez")
+            .property("name", "sdsdsd")
+            .property("name", "sdsdsd")
+            .next();
+
+        assertEquals(2, g.V(next).values("name").toList().size());
+    }
+
+    @Test
+    public void testAutoSchemaMakerAllowsToSetCardinalitySingle(){
+        GraphTraversalSource g = graph.traversal();
+
+        Vertex next = g.addV()
+            .property(VertexProperty.Cardinality.single, "name", "marko a. rodriguez")
+            .property("name", "sdsdsd")
+            .property("name", "sdsdsd")
+            .next();
+
+        assertEquals(1, g.V(next).values("name").toList().size());
+    }
+
     private void createStrictSchemaForVertexProperties() {
         clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
         VertexLabel label = mgmt.makeVertexLabel("user").make();
@@ -3899,15 +3936,15 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         Vertex v;
 
         v = graph.addVertex("id", 1);
-        v.property(single, "name", "t1");
+        v.property(VertexProperty.Cardinality.single, "name", "t1");
         graph.addVertex("id", 2, "names", "n1", "names", "n2");
         graph.tx().commit();
 
         gts = graph.traversal();
         v = gts.V().has("id", 1).next();
-        v.property(single, "name", "t2");
+        v.property(VertexProperty.Cardinality.single, "name", "t2");
         v = gts.V().has("id", 1).next();
-        v.property(single, "name", "t3");
+        v.property(VertexProperty.Cardinality.single, "name", "t3");
         assertCount(1, gts.V(v).properties("name"));
         assertCount(2, gts.V().has("id", 2).properties("names"));
         assertCount(2, gts.V().hasLabel("vertex"));

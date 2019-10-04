@@ -59,6 +59,7 @@ public class JanusGraphDefaultSchemaMakerTest extends EasyMockSupport {
       expect(propertyKeyMaker.make()).andReturn(pk).anyTimes();
       expect(propertyKeyMaker.getName()).andReturn("Quux").anyTimes();
       expect(propertyKeyMaker.cardinality(Cardinality.SINGLE)).andReturn(propertyKeyMaker).anyTimes();
+      expect(propertyKeyMaker.cardinalityIsSet()).andReturn(false).anyTimes();
       expect(propertyKeyMaker.dataType(String.class)).andReturn(propertyKeyMaker);
       expect(propertyKeyMaker.dataType(Character.class)).andReturn(propertyKeyMaker);
       expect(propertyKeyMaker.dataType(Boolean.class)).andReturn(propertyKeyMaker);

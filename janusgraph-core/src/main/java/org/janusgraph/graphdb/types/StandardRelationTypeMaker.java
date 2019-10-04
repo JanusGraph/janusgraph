@@ -41,7 +41,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     private final List<PropertyKey> sortKey;
     private Order sortOrder;
     private final List<PropertyKey> signature;
-    private Multiplicity multiplicity;
+    protected Multiplicity multiplicity;
     private SchemaStatus status = SchemaStatus.ENABLED;
 
     public StandardRelationTypeMaker(final StandardJanusGraphTx tx, String name,

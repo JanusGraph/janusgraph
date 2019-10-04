@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.types;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.PropertyKeyMaker;
 import org.janusgraph.graphdb.database.IndexSerializer;
@@ -34,12 +35,13 @@ import static org.janusgraph.graphdb.types.TypeDefinitionCategory.DATATYPE;
 public class StandardPropertyKeyMaker extends StandardRelationTypeMaker implements PropertyKeyMaker {
 
     private Class<?> dataType;
+    private boolean cardinalityIsSet;
 
     public StandardPropertyKeyMaker(StandardJanusGraphTx tx, String name, IndexSerializer indexSerializer,
                                     final AttributeHandler attributeHandler) {
         super(tx, name, indexSerializer, attributeHandler);
-        dataType = null;
         cardinality(Cardinality.SINGLE);
+        cardinalityIsSet = false;
     }
 
     @Override
@@ -57,9 +59,21 @@ public class StandardPropertyKeyMaker extends StandardRelationTypeMaker implemen
     @Override
     public StandardPropertyKeyMaker cardinality(Cardinality cardinality) {
         super.multiplicity(Multiplicity.convert(cardinality));
+        cardinalityIsSet = true;
         return this;
     }
 
+    @Override
+    public StandardPropertyKeyMaker cardinality(VertexProperty.Cardinality cardinality) {
+        super.multiplicity(Multiplicity.convert(cardinality));
+        cardinalityIsSet = true;
+        return this;
+    }
+
+    @Override
+    public boolean cardinalityIsSet() {
+        return cardinalityIsSet;
+    }
 
     @Override
     public StandardPropertyKeyMaker invisible() {
