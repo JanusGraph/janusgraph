@@ -17,8 +17,6 @@ package org.janusgraph.hadoop.formats.util;
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetup;
-import org.janusgraph.util.system.ConfigurationUtil;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.GraphFilterAware;
 import org.apache.tinkerpop.gremlin.process.computer.GraphFilter;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.VertexWritable;
@@ -26,13 +24,12 @@ import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.*;
+import org.janusgraph.hadoop.formats.util.input.current.JanusGraphHadoopSetupImpl;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Function;
 
-import static org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon.SETUP_CLASS_NAME;
-import static org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon.SETUP_PACKAGE_PREFIX;
 
 public abstract class HadoopInputFormat extends InputFormat<NullWritable, VertexWritable> implements Configurable, GraphFilterAware {
 
@@ -40,19 +37,9 @@ public abstract class HadoopInputFormat extends InputFormat<NullWritable, Vertex
     private static final RefCountedCloseable<JanusGraphVertexDeserializer> refCounter;
 
     static {
-        refCounter = new RefCountedCloseable<>((conf) -> {
-            final String janusgraphVersion = "current";
-
-            String className = SETUP_PACKAGE_PREFIX + janusgraphVersion + SETUP_CLASS_NAME;
-
-            JanusGraphHadoopSetup ts = ConfigurationUtil.instantiate(
-                    className, new Object[]{ conf }, new Class[]{ Configuration.class });
-
-            return new JanusGraphVertexDeserializer(ts);
-        });
+        refCounter = new RefCountedCloseable<>((conf) ->
+            new JanusGraphVertexDeserializer(new JanusGraphHadoopSetupImpl(conf)));
     }
-
-
 
     public HadoopInputFormat(InputFormat<StaticBuffer, Iterable<Entry>> inputFormat) {
         this.inputFormat = inputFormat;

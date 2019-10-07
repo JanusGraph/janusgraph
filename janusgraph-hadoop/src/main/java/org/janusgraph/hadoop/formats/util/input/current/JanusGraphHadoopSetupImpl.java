@@ -17,7 +17,10 @@ package org.janusgraph.hadoop.formats.util.input.current;
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.graphdb.database.RelationReader;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.idmanagement.IDManager;
@@ -32,15 +35,18 @@ import org.janusgraph.graphdb.types.system.BaseLabel;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
 import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
+import org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetup;
 import org.janusgraph.hadoop.formats.util.input.SystemTypeInspector;
-import org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.hadoop.conf.Configuration;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class JanusGraphHadoopSetupImpl extends JanusGraphHadoopSetupCommon {
+public class JanusGraphHadoopSetupImpl implements JanusGraphHadoopSetup {
+
+    private static final StaticBuffer DEFAULT_COLUMN = StaticArrayBuffer.of(new byte[0]);
+    public static final SliceQuery DEFAULT_SLICE_QUERY = new SliceQuery(DEFAULT_COLUMN, DEFAULT_COLUMN);
 
     private final ModifiableHadoopConfiguration scanConf;
     private final StandardJanusGraph graph;
@@ -108,7 +114,7 @@ public class JanusGraphHadoopSetupImpl extends JanusGraphHadoopSetupCommon {
     }
 
     @Override
-    public RelationReader getRelationReader(long vertexId) {
+    public RelationReader getRelationReader() {
         return graph.getEdgeSerializer();
     }
 

@@ -16,6 +16,7 @@ package org.janusgraph.hadoop.formats.util;
 
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.conf.Configuration;
 import org.janusgraph.core.*;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -56,6 +57,7 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
         this.idManager = setup.getIDManager();
     }
 
+
     private static Boolean isLoopAdded(Vertex vertex, String label) {
         Iterator<Vertex> adjacentVertices = vertex.vertices(Direction.BOTH, label);
 
@@ -93,7 +95,7 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
 
         // Iterate over edgestore columns to find the vertex's label relation
         for (final Entry data : entries) {
-            RelationReader relationReader = setup.getRelationReader(vertexId);
+            RelationReader relationReader = setup.getRelationReader();
             final RelationCache relation = relationReader.parseRelation(data, false, typeManager);
             if (systemTypes.isVertexLabelSystemType(relation.typeId)) {
                 // Found vertex Label
@@ -114,7 +116,7 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
         // Iterate over and decode edgestore columns (relations) on this vertex
         for (final Entry data : entries) {
             try {
-                RelationReader relationReader = setup.getRelationReader(vertexId);
+                RelationReader relationReader = setup.getRelationReader();
                 final RelationCache relation = relationReader.parseRelation(data, false, typeManager);
 
                 if (systemTypes.isSystemType(relation.typeId)) continue; //Ignore system types
