@@ -31,7 +31,7 @@ import org.janusgraph.diskstorage.cql.CQLConfigOptions;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
 import org.janusgraph.hadoop.formats.util.AbstractBinaryInputFormat;
-import org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon;
+import org.janusgraph.hadoop.formats.util.input.current.JanusGraphHadoopSetupImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,9 +89,9 @@ public class CqlBinaryInputFormat extends AbstractBinaryInputFormat {
 
     private SliceRange getSliceRange(final int limit) {
         final SliceRange sliceRange = new SliceRange();
-        sliceRange.setStart(JanusGraphHadoopSetupCommon.DEFAULT_SLICE_QUERY.getSliceStart().asByteBuffer());
-        sliceRange.setFinish(JanusGraphHadoopSetupCommon.DEFAULT_SLICE_QUERY.getSliceEnd().asByteBuffer());
-        sliceRange.setCount(Math.min(limit, JanusGraphHadoopSetupCommon.DEFAULT_SLICE_QUERY.getLimit()));
+        sliceRange.setStart(JanusGraphHadoopSetupImpl.DEFAULT_SLICE_QUERY.getSliceStart().asByteBuffer());
+        sliceRange.setFinish(JanusGraphHadoopSetupImpl.DEFAULT_SLICE_QUERY.getSliceEnd().asByteBuffer());
+        sliceRange.setCount(Math.min(limit, JanusGraphHadoopSetupImpl.DEFAULT_SLICE_QUERY.getLimit()));
         return sliceRange;
     }
 }
