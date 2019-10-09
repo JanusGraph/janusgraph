@@ -65,6 +65,11 @@ whether they come from the ID store, edge store, etc. When
 file, the "stores" string in metric names is replaced by "idStore",
 "edgeStore", "vertexIndexStore", or "edgeIndexStore".
 
+#### Index Provider Metrics
+
+JanusGraph collects basic metrics for mixed index operations. These metrics 
+can be found here `<prefix>.indexProvider.<INDEX-NAME>.<opname>`.
+
 ## Configuring Metrics Reporting
 
 JanusGraph supports the following Metrics reporters:
