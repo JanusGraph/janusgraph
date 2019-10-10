@@ -203,3 +203,24 @@ is required of the master or region servers, simply edit the
 `$HBASE_HOME/conf/hbase-env.sh` files on the respective machines with
 requisite `-Xmx -Xms` parameters. Once edited, stop/start the master
 and/or region servers as described previous.
+
+Kerberos Configuration
+----------------------
+
+When connecting to a HBase environment that is protected by Kerberos we must specify that Kerberos is being used. 
+
+First,add the following to the hbase-site.xml file:
+```xml
+<property>
+  <name>hbase.security.authentication</name>
+  <value>kerberos</value>
+</property>
+```
+Please refer to the [HBase secure configuration documentation](https://hbase.apache.org/book.html#hbase.secure.configuration) for more HBase secure client configuration options and their description. 
+
+Then,you can specify the following configurations to make JanusGraph communication with the HBase cluster will be possible. And also this makes JanusGraph can automatically do the login and credential renewal jobs.
+```properties
+storage.hbase.kerberos-enabled=true
+storage.hbase.kerberos-keytab-path=/local/path/to/hbase/client/keytab
+storage.hbase.kerberos-principal=foo@EXAMPLE.COM
+```
