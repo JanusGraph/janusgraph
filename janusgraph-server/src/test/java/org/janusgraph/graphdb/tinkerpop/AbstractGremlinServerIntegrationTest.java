@@ -33,20 +33,14 @@ package org.janusgraph.graphdb.tinkerpop;
 import org.apache.tinkerpop.gremlin.server.GremlinServer;
 import org.apache.tinkerpop.gremlin.server.Settings;
 import org.apache.tinkerpop.gremlin.server.op.OpLoader;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 import org.junit.jupiter.api.TestInfo;
-import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.InputStream;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assume.assumeThat;
 
 /**
  * Starts and stops an instance for each executed test.

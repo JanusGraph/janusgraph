@@ -35,7 +35,6 @@ It also includes software from other open source projects including, but not lim
  * Elasticsearch [https://www.elastic.co/]
  * Google Cloud Bigtable [https://github.com/googlecloudplatform/cloud-bigtable-client]
  * Google Guava [https://github.com/google/guava]
- * H2 [https://h2database.com]
  * HPPC [https://labs.carrotsearch.com/hppc.html]
  * JUnit [https://www.junit.org/]
  * Jackson [https://github.com/FasterXML/jackson]
