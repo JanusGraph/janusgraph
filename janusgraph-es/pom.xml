@@ -60,11 +60,6 @@
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-client</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.antlr</groupId>
-            <artifactId>antlr-runtime</artifactId>
-            <version>${antlr.version}</version>
-        </dependency>
 
         <!-- Logging backends.
              Enforce a classpath ordering constraint to ensure log4j is used for logging.
