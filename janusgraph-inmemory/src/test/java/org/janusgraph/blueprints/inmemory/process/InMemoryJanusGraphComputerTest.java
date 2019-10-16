@@ -12,17 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.blueprints;
+package org.janusgraph.blueprints.inmemory.process;
 
-import org.janusgraph.StorageSetup;
-import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.blueprints.inmemory.InMemoryGraphComputerProvider;
+import org.janusgraph.core.JanusGraph;
+import org.apache.tinkerpop.gremlin.GraphProviderClass;
+import org.apache.tinkerpop.gremlin.process.ProcessComputerSuite;
+import org.junit.runner.RunWith;
 
-/**
- * Created by bryn on 06/05/15.
- */
-public class InMemoryGraphProvider extends AbstractJanusGraphProvider {
-    @Override
-    public ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test, String testMethodName) {
-        return StorageSetup.getInMemoryConfiguration();
-    }
+@RunWith(ProcessComputerSuite.class)
+@GraphProviderClass(provider = InMemoryGraphComputerProvider.class, graph = JanusGraph.class)
+public class InMemoryJanusGraphComputerTest {
 }

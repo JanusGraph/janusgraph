@@ -12,15 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.blueprints;
+package org.janusgraph.blueprints.inmemory.process;
 
+import org.janusgraph.blueprints.inmemory.InMemoryMultiQueryGraphProvider;
 import org.janusgraph.core.JanusGraph;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
-import org.apache.tinkerpop.gremlin.structure.StructureStandardSuite;
+import org.apache.tinkerpop.gremlin.process.ProcessStandardSuite;
 import org.junit.runner.RunWith;
 
-
-@RunWith(StructureStandardSuite.class)
-@GraphProviderClass(provider = InMemoryGraphProvider.class, graph = JanusGraph.class)
-public class InMemoryJanusGraphStructureTest {
+/**
+ * @author Ted Wilmes (twilmes@gmail.com)
+ */
+@RunWith(ProcessStandardSuite.class)
+@GraphProviderClass(provider = InMemoryMultiQueryGraphProvider.class, graph = JanusGraph.class)
+public class InMemoryMultiQueryJanusGraphProcessTest {
 }

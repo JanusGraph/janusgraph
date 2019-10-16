@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.diskstorage.keycolumnvalue.inmemory;
+package org.janusgraph.diskstorage.inmemory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;

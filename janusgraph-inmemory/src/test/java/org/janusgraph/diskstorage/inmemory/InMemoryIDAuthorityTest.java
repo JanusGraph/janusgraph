@@ -15,9 +15,7 @@
 package org.janusgraph.diskstorage.inmemory;
 
 import org.janusgraph.diskstorage.IDAuthorityTest;
-import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
