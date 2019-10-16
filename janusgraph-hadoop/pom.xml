@@ -187,7 +187,7 @@
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-test</artifactId>
+            <artifactId>janusgraph-backend-testutils</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

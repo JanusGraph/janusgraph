@@ -30,7 +30,7 @@ public enum StandardStoreManager {
     CASSANDRA_EMBEDDED("org.janusgraph.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager", "embeddedcassandra"),
     CQL("org.janusgraph.diskstorage.cql.CQLStoreManager", "cql"),
     HBASE("org.janusgraph.diskstorage.hbase.HBaseStoreManager", "hbase"),
-    IN_MEMORY("org.janusgraph.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager", "inmemory");
+    IN_MEMORY("org.janusgraph.diskstorage.inmemory.InMemoryStoreManager", "inmemory");
 
     private final String managerClass;
     private final ImmutableList<String> shorthands;
