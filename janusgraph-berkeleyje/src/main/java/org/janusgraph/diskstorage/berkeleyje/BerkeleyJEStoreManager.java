@@ -175,7 +175,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
             Database db = environment.openDatabase(null, name, dbConfig);
 
-            log.debug("Opened database {}", name, new Throwable());
+            log.debug("Opened database {}", name);
 
             BerkeleyJEKeyValueStore store = new BerkeleyJEKeyValueStore(name, db, this);
             stores.put(name, store);
