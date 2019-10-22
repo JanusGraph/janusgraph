@@ -70,9 +70,6 @@ JanusGraph-Hadoop works with TinkerPop’s hadoop-gremlin package for
 general-purpose OLAP to traverse over the graph, and parallelize queries
 by leveraging Apache Spark.
 
-!!! tip
-    When OLAP traverses, if a vertex has no edges and no properties, it will be filtered out.
-
 ### OLAP Traversals with Spark Local
 
 The backend demonstrated here is Cassandra for the OLAP example below.
