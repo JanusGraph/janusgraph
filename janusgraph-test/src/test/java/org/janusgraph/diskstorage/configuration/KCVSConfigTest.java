@@ -19,7 +19,7 @@ import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.diskstorage.configuration.backend.KCVSConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
+import org.janusgraph.diskstorage.inmemory.InMemoryStoreManager;
 import org.janusgraph.diskstorage.util.BackendOperation;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;

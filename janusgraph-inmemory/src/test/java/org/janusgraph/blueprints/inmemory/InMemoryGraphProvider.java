@@ -12,29 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.diskstorage.inmemory;
+package org.janusgraph.blueprints.inmemory;
 
-import org.janusgraph.diskstorage.KeyColumnValueStoreTest;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
+import org.janusgraph.StorageSetup;
+import org.janusgraph.blueprints.AbstractJanusGraphProvider;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 
 /**
- * @author Matthias Broecheler (me@matthiasb.com)
+ * Created by bryn on 06/05/15.
  */
-
-public class InMemoryKeyColumnValueStoreTest extends KeyColumnValueStoreTest {
-
+public class InMemoryGraphProvider extends AbstractJanusGraphProvider {
     @Override
-    public KeyColumnValueStoreManager openStorageManager() {
-        return new InMemoryStoreManager();
+    public ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test, String testMethodName) {
+        return StorageSetup.getInMemoryConfiguration();
     }
-
-    @Override
-    public void clopen() {
-        //Do nothing
-    }
-
-    @Override
-    public void testClearStorage() {}
-
 }
