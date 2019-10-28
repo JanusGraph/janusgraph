@@ -130,7 +130,9 @@
         <module>janusgraph-codepipelines-ci</module>
         <module>janusgraph-core</module>
         <module>janusgraph-server</module>
+        <module>janusgraph-backend-testutils</module>
         <module>janusgraph-test</module>
+        <module>janusgraph-inmemory</module>
         <module>janusgraph-berkeleyje</module>
         <module>janusgraph-cql</module>
         <module>janusgraph-cassandra</module>
