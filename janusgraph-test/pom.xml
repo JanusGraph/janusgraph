@@ -35,11 +35,17 @@
             <artifactId>janusgraph-core</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!-- TinkerPop -->
         <dependency>
-            <groupId>org.apache.tinkerpop</groupId>
-            <artifactId>gremlin-test</artifactId>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-inmemory</artifactId>
+            <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-backend-testutils</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- TinkerPop -->
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-groovy</artifactId>
@@ -53,61 +59,9 @@
             <artifactId>gremlin-server</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-math</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.locationtech.jts</groupId>
             <artifactId>jts-core</artifactId>
         </dependency>
-        <!-- Test Dependencies -->
-        <dependency>
-            <groupId>com.carrotsearch</groupId>
-            <artifactId>junit-benchmarks</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.carrotsearch.randomizedtesting</groupId>
-            <artifactId>randomizedtesting-runner</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-launcher</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-params</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.vintage</groupId>
-            <artifactId>junit-vintage-engine</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.easymock</groupId>
-            <artifactId>easymock</artifactId>
-            <version>3.4</version>
-        </dependency>
-
     </dependencies>
 
     <build>
@@ -118,33 +72,11 @@
             </resource>
         </resources>
         <plugins>
-            <!-- Groovy -->
-            <plugin>
-                <groupId>org.codehaus.gmavenplus</groupId>
-                <artifactId>gmavenplus-plugin</artifactId>
-                <version>${gmavenplus.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>addSources</goal>
-                            <goal>addTestSources</goal>
-                            <goal>generateStubs</goal>
-                            <goal>compile</goal>
-                            <goal>testGenerateStubs</goal>
-                            <goal>testCompile</goal>
-                            <goal>removeStubs</goal>
-                            <goal>removeTestStubs</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <invokeDynamic>true</invokeDynamic>
-                </configuration>
-            </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <excludedGroups>${test.excluded.groups}</excludedGroups>
+                    <forkCount>4</forkCount>
                 </configuration>
             </plugin>
         </plugins>

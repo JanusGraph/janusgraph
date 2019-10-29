@@ -20,7 +20,7 @@ import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.janusgraph.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
+import org.janusgraph.diskstorage.inmemory.InMemoryStoreManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.OrderList;

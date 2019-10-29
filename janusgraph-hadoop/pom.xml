@@ -111,7 +111,12 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>janusgraph-cassandra</artifactId>
             <version>${project.version}</version>
-            <!-- TODO this should be scoped test -->
+            <exclusions>
+                <exclusion>
+                    <groupId>com.ning</groupId>
+                    <artifactId>compress-lzf</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
@@ -182,7 +187,7 @@
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-test</artifactId>
+            <artifactId>janusgraph-backend-testutils</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -200,32 +205,6 @@
             <artifactId>jna</artifactId>
             <version>${jna.version}</version>
             <scope>test</scope>
-        </dependency>
-
-        <!-- RDF PARSING -->
-        <dependency>
-            <groupId>org.openrdf.sesame</groupId>
-            <artifactId>sesame-rio-n3</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.openrdf.sesame</groupId>
-            <artifactId>sesame-rio-ntriples</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.openrdf.sesame</groupId>
-            <artifactId>sesame-rio-rdfxml</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.openrdf.sesame</groupId>
-            <artifactId>sesame-rio-trig</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.openrdf.sesame</groupId>
-            <artifactId>sesame-rio-trix</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.openrdf.sesame</groupId>
-            <artifactId>sesame-rio-turtle</artifactId>
         </dependency>
 
         <!-- Required for Cassandra-3 connectivity, see issue 172 -->
