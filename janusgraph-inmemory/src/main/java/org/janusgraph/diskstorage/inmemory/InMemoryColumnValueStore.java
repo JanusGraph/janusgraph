@@ -1,4 +1,4 @@
-// Copyright 2017 JanusGraph Authors
+// Copyright 2019 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
 
 package org.janusgraph.diskstorage.inmemory;
 
-import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -22,6 +21,9 @@ import org.janusgraph.diskstorage.keycolumnvalue.*;
 import org.janusgraph.diskstorage.util.NoLock;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -32,27 +34,31 @@ import java.util.concurrent.locks.ReentrantLock;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL;
 
 /**
- * Implements a row in the in-memory implementation {@link InMemoryKeyColumnValueStore} which is comprised of
- * column-value pairs. This data is held in a sorted array for space and retrieval efficiency.
- *
- * @author Matthias Broecheler (me@matthiasb.com)
+ * Implements a "row" in the {@link InMemoryKeyColumnValueStore}, which is comprised of
+ * column-value pairs. This data is held in a shared sorted array for space and retrieval efficiency, and is paged
+ * when/if data size exceeds a threshold to avoid excessive copying on updates.
  */
 
-class ColumnValueStore {
+class InMemoryColumnValueStore {
 
-    private static final double SIZE_THRESHOLD = 0.66;
+    static final int DEF_PAGE_SIZE = 500;
 
-    private Data data;
+    private SharedEntryBuffer buffer;
 
-    public ColumnValueStore() {
-        data = new Data(new Entry[0], 0);
+    public InMemoryColumnValueStore() {
+        //we expect most stores to fit into one page, so start with a single-page implementation which has much less overhead
+        buffer = new SinglePageEntryBuffer();
+    }
+
+    public int getMaxPageSize() {
+        return DEF_PAGE_SIZE;
     }
 
     boolean isEmpty(StoreTransaction txh) {
         Lock lock = getLock(txh);
         lock.lock();
         try {
-            return data.isEmpty();
+            return buffer.isEmpty();
         } finally {
             lock.unlock();
         }
@@ -62,21 +68,7 @@ class ColumnValueStore {
         Lock lock = getLock(txh);
         lock.lock();
         try {
-            Data datacp = data;
-            int start = datacp.getIndex(query.getSliceStart());
-            if (start < 0) start = (-start - 1);
-            int end = datacp.getIndex(query.getSliceEnd());
-            if (end < 0) end = (-end - 1);
-            if (start < end) {
-                MemoryEntryList result = new MemoryEntryList(end - start);
-                for (int i = start; i < end; i++) {
-                    if (query.hasLimit() && result.size() >= query.getLimit()) break;
-                    result.add(datacp.get(i));
-                }
-                return result;
-            } else {
-                return EntryList.EMPTY_LIST;
-            }
+            return buffer.getSlice(query);
         } finally {
             lock.unlock();
         }
@@ -102,7 +94,6 @@ class ColumnValueStore {
             return size;
         }
     }
-
 
     synchronized void mutate(List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) {
         //Prepare data
@@ -134,50 +125,16 @@ class ColumnValueStore {
         Lock lock = getLock(txh);
         lock.lock();
         try {
-            Entry[] oldData = data.array;
-            int oldSize = data.size;
-            Entry[] newData = new Entry[oldSize + add.length];
+            buffer.mutate(add, del, getMaxPageSize());
 
-            //Merge sort
-            int i = 0, indexOld = 0, indexAdd = 0, indexDelete = 0;
-            while (indexOld < oldSize) {
-                Entry e = oldData[indexOld];
-                indexOld++;
-                //Compare with additions
-                if (indexAdd < add.length) {
-                    int compare = e.compareTo(add[indexAdd]);
-                    if (compare >= 0) {
-                        e = add[indexAdd];
-                        indexAdd++;
-                        //Skip duplicates
-                        while (indexAdd < add.length && e.equals(add[indexAdd])) indexAdd++;
-                    }
-                    if (compare > 0) indexOld--;
-                }
-                //Compare with deletions
-                if (indexDelete < del.length) {
-                    int compare = e.compareTo(del[indexDelete]);
-                    if (compare == 0) e = null;
-                    if (compare >= 0) indexDelete++;
-                }
-                if (e != null) {
-                    newData[i] = e;
-                    i++;
-                }
+            if (!buffer.isPaged() && buffer.numEntries() > getMaxPageSize()) {
+                //single buffer exceeded max page size - switch to multipage buffer
+                //expecting any non-paged buffer implementation to implement BufferPage contract i.e. behave same as a single page
+                buffer = new MultiPageEntryBuffer((BufferPage) buffer);
             }
-            while (indexAdd < add.length) {
-                newData[i] = add[indexAdd];
-                i++;
-                indexAdd++;
-            }
-
-            if (i * 1.0 / newData.length < SIZE_THRESHOLD) {
-                //shrink array to free space
-                Entry[] tempData = newData;
-                newData = new Entry[i];
-                System.arraycopy(tempData, 0, newData, 0, i);
-            }
-            data = new Data(newData, i);
+            //NOTE: we could check here if a multi-page buffer was reduced to fit into one page, and switch back to single buffer,
+            //however this is unlikely to happen, and would involve copying of all pages into one (similar to defragmentation)
+            //so unclear if we need this at all
         } finally {
             lock.unlock();
         }
@@ -201,38 +158,57 @@ class ColumnValueStore {
         } else return NoLock.INSTANCE;
     }
 
-    private static class Data {
-
-        final Entry[] array;
-        final int size;
-
-        Data(final Entry[] array, final int size) {
-            Preconditions.checkArgument(size >= 0 && size <= array.length);
-            assert isSorted();
-            this.array = array;
-            this.size = size;
+    public int numPages(StoreTransaction txh) {
+        this.lock.lock();
+        try {
+            return buffer.numPages();
+        } finally {
+            this.lock.unlock();
         }
-
-        boolean isEmpty() {
-            return size == 0;
-        }
-
-        int getIndex(StaticBuffer column) {
-            return Arrays.binarySearch(array, 0, size, StaticArrayEntry.of(column));
-        }
-
-        Entry get(int index) {
-            return array[index];
-        }
-
-        boolean isSorted() {
-            for (int i = 1; i < size; i++) {
-                if (!(array[i].compareTo(array[i - 1]) > 0)) return false;
-            }
-            return true;
-        }
-
     }
 
+    public int numEntries(StoreTransaction txh) {
+        this.lock.lock();
+        try {
+            return buffer.numEntries();
+        } finally {
+            this.lock.unlock();
+        }
+    }
+
+    public SharedEntryBufferFragmentationReport createFragmentationReport(StoreTransaction txh) {
+        this.lock.lock();
+        try {
+            return buffer.createFragmentationReport(getMaxPageSize());
+        } finally {
+            this.lock.unlock();
+        }
+    }
+
+    public void quickDefragment(StoreTransaction txh) {
+        this.lock.lock();
+        try {
+            buffer.quickDefragment(getMaxPageSize());
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void dumpTo(DataOutputStream out) throws IOException {
+        this.lock.lock();
+        try {
+            buffer.dumpTo(out);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public static InMemoryColumnValueStore readFrom(DataInputStream in) throws IOException {
+        InMemoryColumnValueStore store = new InMemoryColumnValueStore();
+
+        store.buffer = BufferPageUtils.readFrom(in);
+
+        return store;
+    }
 
 }
