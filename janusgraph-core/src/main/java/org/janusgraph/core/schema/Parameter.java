@@ -55,8 +55,8 @@ public class Parameter<V> {
 
     @Override
     public boolean equals(Object oth) {
-        if (this==oth) return true;
-        if (oth==null || !getClass().isInstance(oth)) return false;
+        if (this == oth) return true;
+        if (!getClass().isInstance(oth)) return false;
         Parameter other = (Parameter)oth;
         return key.equals(other.key) && (value==other.value || (value!=null && value.equals(other.value)));
     }

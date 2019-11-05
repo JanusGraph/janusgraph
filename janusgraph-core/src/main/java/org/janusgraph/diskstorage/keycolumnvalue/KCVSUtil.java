@@ -36,6 +36,9 @@ public class KCVSUtil {
 
     private static final Logger log = LoggerFactory.getLogger(KeyColumnValueStore.class);
 
+    private static final int MAX_COLUMN_LENGTH = 32;
+    private static final StaticBuffer START = BufferUtil.zeroBuffer(1);
+    private static final StaticBuffer END = BufferUtil.oneBuffer(MAX_COLUMN_LENGTH);
 
     /**
      * Retrieves the value for the specified column and key under the given transaction
@@ -84,19 +87,12 @@ public class KCVSUtil {
         return get(store, key, column, txh) != null;
     }
 
-    private static final StaticBuffer START = BufferUtil.zeroBuffer(1), END = BufferUtil.oneBuffer(32);
-
     public static boolean containsKey(KeyColumnValueStore store, StaticBuffer key, StoreTransaction txh) throws BackendException {
-        return containsKey(store,key,32,txh);
+        return containsKey(store, key, MAX_COLUMN_LENGTH, txh);
     }
 
     public static boolean containsKey(KeyColumnValueStore store, StaticBuffer key, int maxColumnLength, StoreTransaction txh) throws BackendException {
-        final StaticBuffer end;
-        if (maxColumnLength>32) {
-            end = BufferUtil.oneBuffer(maxColumnLength);
-        } else {
-            end = END;
-        }
+        final StaticBuffer end = maxColumnLength > MAX_COLUMN_LENGTH ? BufferUtil.oneBuffer(maxColumnLength) : END;
         return !store.getSlice(new KeySliceQuery(key, START, end).setLimit(1),txh).isEmpty();
     }
 
