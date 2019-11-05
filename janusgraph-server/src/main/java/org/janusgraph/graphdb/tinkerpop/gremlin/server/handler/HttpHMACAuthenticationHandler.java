@@ -83,7 +83,6 @@ public class HttpHMACAuthenticationHandler extends AbstractAuthenticationHandler
                     ctx.fireChannelRead(req);
                 } catch (Exception e) {
                     sendError(ctx, msg);
-                    return;
                 }
             }
         }

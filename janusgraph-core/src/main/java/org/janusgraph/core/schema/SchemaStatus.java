@@ -43,10 +43,6 @@ public enum SchemaStatus {
 
 
     public boolean isStable() {
-        switch(this) {
-            case INSTALLED: return false;
-            default: return true;
-        }
+        return this != SchemaStatus.INSTALLED;
     }
-
 }

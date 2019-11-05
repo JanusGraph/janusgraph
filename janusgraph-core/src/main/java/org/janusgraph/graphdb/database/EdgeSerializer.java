@@ -86,7 +86,6 @@ public class EdgeSerializer implements RelationReader {
     public RelationCache parseRelation(Entry data, boolean excludeProperties, TypeInspector tx) {
         ReadBuffer in = data.asReadBuffer();
 
-        LongObjectHashMap properties = excludeProperties ? null : new LongObjectHashMap(4);
         RelationTypeParse typeAndDir = IDHandler.readRelationType(in);
 
         long typeId = typeAndDir.typeId;
@@ -138,21 +137,23 @@ public class EdgeSerializer implements RelationReader {
             Preconditions.checkNotNull(other,
                 "Encountered error in deserializer [null value returned]. Check serializer compatibility.");
         }
-        assert other!=null;
-
-        if (!excludeProperties && !multiplicity.isConstrained() && keySignature.length>0) {
-            int currentPos = in.getPosition();
-            //Read sort key which only exists if type is not unique in this direction
-            assert endKeyPos>startKeyPos;
-            int keyLength = endKeyPos-startKeyPos; //after reading the ids, we are on the last byte of the key
-            in.movePositionTo(startKeyPos);
-            ReadBuffer inKey = in;
-            if (def.getSortOrder()== Order.DESC) inKey = in.subrange(keyLength,true);
-            readInlineTypes(keySignature, properties, inKey, tx, InlineType.KEY);
-            in.movePositionTo(currentPos);
-        }
 
         if (!excludeProperties) {
+
+            LongObjectHashMap<Object> properties = new LongObjectHashMap<>(4);
+
+            if (!multiplicity.isConstrained() && keySignature.length > 0) {
+                int currentPos = in.getPosition();
+                //Read sort key which only exists if type is not unique in this direction
+                assert endKeyPos > startKeyPos;
+                int keyLength = endKeyPos - startKeyPos; //after reading the ids, we are on the last byte of the key
+                in.movePositionTo(startKeyPos);
+                ReadBuffer inKey = in;
+                if (def.getSortOrder() == Order.DESC) inKey = in.subrange(keyLength, true);
+                readInlineTypes(keySignature, properties, inKey, tx, InlineType.KEY);
+                in.movePositionTo(currentPos);
+            }
+
             //read value signature
             readInlineTypes(def.getSignature(), properties, in, tx, InlineType.SIGNATURE);
 
@@ -167,18 +168,20 @@ public class EdgeSerializer implements RelationReader {
             if (data.hasMetaData()) {
                 for (Map.Entry<EntryMetaData,Object> metas : data.getMetaData().entrySet()) {
                     ImplicitKey key = ImplicitKey.MetaData2ImplicitKey.get(metas.getKey());
-                    if (key!=null) {
-                        assert metas.getValue()!=null;
+                    if (key != null) {
+                        assert metas.getValue() != null;
                         properties.put(key.longId(),metas.getValue());
                     }
                 }
             }
-        }
 
-        return new RelationCache(dir, typeId, relationId, other, properties);
+            return new RelationCache(dir, typeId, relationId, other, properties);
+        } else {
+            return new RelationCache(dir, typeId, relationId, other);
+        }
     }
 
-    private void readInlineTypes(long[] keyIds, LongObjectHashMap properties, ReadBuffer in, TypeInspector tx,
+    private void readInlineTypes(long[] keyIds, LongObjectHashMap<Object> properties, ReadBuffer in, TypeInspector tx,
                                  InlineType inlineType) {
         for (long keyId : keyIds) {
             PropertyKey keyType = tx.getExistingPropertyKey(keyId);
@@ -415,8 +418,7 @@ public class EdgeSerializer implements RelationReader {
 
                 if (i>=sortKeyIDs.length) {
                     assert !type.multiplicity().isUnique(dir);
-                    assert (propertyKey instanceof ImplicitKey)
-                            && (propertyKey==ImplicitKey.JANUSGRAPHID || propertyKey==ImplicitKey.ADJACENT_ID);
+                    assert propertyKey==ImplicitKey.JANUSGRAPHID || propertyKey==ImplicitKey.ADJACENT_ID;
                     assert propertyKey!=ImplicitKey.ADJACENT_ID || (i==sortKeyIDs.length);
                     assert propertyKey!=ImplicitKey.JANUSGRAPHID || (!type.multiplicity().isConstrained() &&
                                                   (i==sortKeyIDs.length && propertyKey.isPropertyKey()

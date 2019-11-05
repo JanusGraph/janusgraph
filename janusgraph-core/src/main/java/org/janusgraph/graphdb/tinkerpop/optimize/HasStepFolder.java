@@ -142,9 +142,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                     traversal.removeStep(currentStep);
                 }
             }
-            else if (currentStep instanceof IdentityStep) {
-                // do nothing, has no impact
-            } else if (currentStep instanceof NoOpBarrierStep) {
+            else if (currentStep instanceof IdentityStep || currentStep instanceof NoOpBarrierStep) {
                 // do nothing, has no impact
             } else {
                 break;

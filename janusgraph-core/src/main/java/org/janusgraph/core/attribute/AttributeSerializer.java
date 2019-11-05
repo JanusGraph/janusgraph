@@ -82,7 +82,7 @@ public interface AttributeSerializer<V> {
      */
     default V convert(Object value) {
         try {
-            return (V)value;
+            return (V) value;
         } catch (ClassCastException e) {
             return null;
         }
