@@ -140,7 +140,7 @@ public enum Geo implements JanusGraphPredicate {
 
     @Override
     public boolean isValidCondition(Object condition) {
-        return condition != null && condition instanceof Geoshape;
+        return condition instanceof Geoshape;
     }
 
     @Override

@@ -40,6 +40,4 @@ public class JanusGraphCleanup {
     public static void clear(JanusGraph graph) throws BackendException {
         JanusGraphFactory.drop(graph);
     }
-
-
 }

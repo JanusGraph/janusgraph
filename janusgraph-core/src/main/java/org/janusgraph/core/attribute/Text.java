@@ -65,7 +65,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean isValidCondition(Object condition) {
-            return condition != null && condition instanceof String && StringUtils.isNotBlank((String) condition);
+            return condition instanceof String && StringUtils.isNotBlank((String) condition);
         }
         @Override
         public String toString() {
@@ -93,7 +93,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean isValidCondition(Object condition) {
-            return condition != null && condition instanceof String;
+            return condition instanceof String;
         }
 
         @Override
@@ -123,7 +123,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean isValidCondition(Object condition) {
-            return condition != null && condition instanceof String && StringUtils.isNotBlank(condition.toString());
+            return condition instanceof String && StringUtils.isNotBlank(condition.toString());
         }
 
         @Override
@@ -150,7 +150,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean isValidCondition(Object condition) {
-            return condition != null && condition instanceof String;
+            return condition instanceof String;
         }
 
         @Override
@@ -176,7 +176,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean isValidCondition(Object condition) {
-            return condition != null && condition instanceof String && StringUtils.isNotBlank(condition.toString());
+            return condition instanceof String && StringUtils.isNotBlank(condition.toString());
         }
 
         @Override
@@ -207,7 +207,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean isValidCondition(Object condition) {
-            return condition != null && condition instanceof String && StringUtils.isNotBlank(condition.toString());
+            return condition instanceof String && StringUtils.isNotBlank(condition.toString());
         }
         @Override
         public String toString() {
@@ -240,7 +240,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean isValidCondition(Object condition) {
-            return condition != null && condition instanceof String && StringUtils.isNotBlank(condition.toString());
+            return condition instanceof String && StringUtils.isNotBlank(condition.toString());
         }
         @Override
         public String toString() {

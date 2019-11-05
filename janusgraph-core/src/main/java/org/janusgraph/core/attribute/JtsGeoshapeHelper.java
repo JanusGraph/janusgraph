@@ -178,7 +178,7 @@ public class JtsGeoshapeHelper {
             case BOX:
                 return 2;
             case GEOMETRYCOLLECTION:
-                return ((ShapeCollection<?>) shape).getShapes().stream().map(s -> (Shape) s).mapToInt(s -> size(s)).sum();
+                return ((ShapeCollection<?>) shape).getShapes().stream().map(s -> (Shape) s).mapToInt(this::size).sum();
             default:
                 throw new IllegalStateException("size() not supported for type: " + getType(shape));
         }
