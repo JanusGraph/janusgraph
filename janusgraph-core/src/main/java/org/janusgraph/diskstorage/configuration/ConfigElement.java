@@ -89,8 +89,8 @@ public abstract class ConfigElement {
 
     @Override
     public boolean equals(Object oth) {
-        if (this==oth) return true;
-        else if (oth==null || !getClass().isInstance(oth)) return false;
+        if (this == oth) return true;
+        else if (!getClass().isInstance(oth)) return false;
         ConfigElement c = (ConfigElement)oth;
         return name.equals(c.name) && namespace ==c.namespace;
     }

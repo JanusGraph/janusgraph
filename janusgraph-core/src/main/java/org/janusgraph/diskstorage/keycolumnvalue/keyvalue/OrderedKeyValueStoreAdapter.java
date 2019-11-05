@@ -290,7 +290,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
             while (iterator.hasNext()) {
                 current = iterator.next();
                 StaticBuffer key = getKey(current.getKey());
-                if (currentKey == null || !key.equals(currentKey)) {
+                if (!key.equals(currentKey)) {
                     return key;
                 }
             }

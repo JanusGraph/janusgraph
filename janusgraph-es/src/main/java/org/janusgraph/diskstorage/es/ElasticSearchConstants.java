@@ -19,8 +19,6 @@ import org.slf4j.LoggerFactory;
 
 public class ElasticSearchConstants {
 
-    private static final Logger log = LoggerFactory.getLogger(ElasticSearchConstants.class);
-
     public static final String ES_DOC_KEY = "doc";
     public static final String ES_UPSERT_KEY = "upsert";
     public static final String ES_SCRIPT_KEY = "script";
@@ -33,5 +31,4 @@ public class ElasticSearchConstants {
     public static final String ES_ANALYZER = "analyzer";
     public static final String ES_GEO_COORDS_KEY = "coordinates";
     public static final String CUSTOM_ALL_FIELD = "all";
-
 }
