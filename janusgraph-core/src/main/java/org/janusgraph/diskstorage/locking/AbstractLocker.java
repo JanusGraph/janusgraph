@@ -82,7 +82,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
 
     /**
      * Stores all information about all locks this implementation has taken on
-     * behalf of any {@link StoreTransaction}. It is parametrized in a type
+     * behalf of any {@link StoreTransaction}. It is parameterized in a type
      * specific to the concrete subclass, so that concrete implementations can
      * store information specific to their locking primitives.
      */

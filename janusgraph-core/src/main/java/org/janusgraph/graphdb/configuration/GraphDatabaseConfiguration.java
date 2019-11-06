@@ -146,7 +146,7 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<String> INITIAL_STORAGE_VERSION = new ConfigOption<>(GRAPH_NS,"storage-version",
             "The version of JanusGraph storage schema with which this database was created. Automatically set on first start of graph. " +
-            "Should only ever be changed if upgraing to a new major release version of JanusGraph that contains schema changes",
+            "Should only ever be changed if upgrading to a new major release version of JanusGraph that contains schema changes",
             ConfigOption.Type.FIXED, String.class);
 
     public static ConfigOption<Boolean> ALLOW_UPGRADE = new ConfigOption<>(GRAPH_NS, "allow-upgrade",
@@ -635,7 +635,7 @@ public class GraphDatabaseConfiguration {
             "between concurrent JanusGraph graph instances within the same process which are connected to the same " +
             "storage backend.  JanusGraph instances that have the same value for this variable will attempt to discover " +
             "lock contention among themselves in memory before proceeding with the general-case distributed locking " +
-            "code.  JanusGraph generates an appropriate default value for this option at startup.  Overridding " +
+            "code.  JanusGraph generates an appropriate default value for this option at startup.  Overriding " +
             "the default is generally only useful in testing.", ConfigOption.Type.LOCAL, String.class);
 
 

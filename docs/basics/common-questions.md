@@ -141,7 +141,7 @@ JanusGraphFactory.drop(graph);
 
 Note that on JanusGraph versions prior to 0.3.0 if multiple Gremlin
 Server instances are connecting to the graph that has been dropped it is
-reccomended to close the graph on all active nodes by running either
+recommended to close the graph on all active nodes by running either
 `JanusGraphFactory.close(graph)` or
 `ConfiguredGraphFactory.close("example")` depending on which graph
 manager is in use. Closing and reopening the graph on all active nodes

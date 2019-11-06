@@ -372,7 +372,7 @@ The Gremlin traversals below provide more examples over *The Graph of
 the Gods*. The explanation of each traversal is provided in the prior
 line as a `//` comment.
 
-##### Cohabiters of Tartarus
+##### Cohabitors of Tartarus
 ```groovy
 gremlin> pluto = g.V().has('name', 'pluto').next()
 ==>v[2048]

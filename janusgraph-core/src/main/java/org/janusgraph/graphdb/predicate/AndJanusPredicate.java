@@ -33,7 +33,7 @@ public class AndJanusPredicate extends ConnectiveJanusPredicate {
     }
 
     @Override
-    ConnectiveJanusPredicate getNewNegateIntance() {
+    ConnectiveJanusPredicate getNewNegateInstance() {
         return new OrJanusPredicate();
     }
 

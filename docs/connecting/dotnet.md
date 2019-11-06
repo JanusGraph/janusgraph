@@ -1,7 +1,7 @@
 # Connecting from .NET
 
 Gremlin traversals can be constructed with Gremlin.Net just like in
-Gremlin-Java or Gremiln-Groovy. Refer to [Gremlin Query Language](../basics/gremlin.md) for an
+Gremlin-Java or Gremlin-Groovy. Refer to [Gremlin Query Language](../basics/gremlin.md) for an
 introduction to Gremlin and pointers to further resources. The main
 syntactical difference for Gremlin.Net is that it follows .NET naming
 conventions, e.g., method names use PascalCase instead of camelCase.

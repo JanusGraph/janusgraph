@@ -24,7 +24,7 @@
 #
 # I've tried to automate this step into release:prepare, but the
 # plugin does not support adding files to the commits that it
-# creates.  It expliticly names all of the poms in its invocation
+# creates.  It explicitly names all of the poms in its invocation
 # of `git commit`, so other files added to the git index won't be
 # committed.  There's no way to override or append to the list of
 # committed files.  The issue to remove this limitation,

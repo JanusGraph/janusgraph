@@ -50,7 +50,7 @@ public abstract class CassandraGraphTest extends JanusGraphTest {
     }
 
     @Test
-    public void testStorageVerisonSet() {
+    public void testStorageVersionSet() {
         close();
         WriteConfiguration wc = getConfiguration();
         assertNull(wc.get(ConfigElement.getPath(GraphDatabaseConfiguration.INITIAL_STORAGE_VERSION), 

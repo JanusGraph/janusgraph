@@ -37,7 +37,7 @@ public interface TransactionBuilder {
      * Enabling batch loading disables a number of consistency checks inside JanusGraph to speed up the ingestion of
      * data under the assumptions that inconsistencies are resolved prior to loading.
      *
-     * @return Object containting properties that will enable batch loading
+     * @return Object containing properties that will enable batch loading
      */
     TransactionBuilder enableBatchLoading();
 
@@ -46,7 +46,7 @@ public interface TransactionBuilder {
      * an individual transaction to use consistency checks when the graph as a whole is configured to not use them,
      * which is useful when defining schema elements in a graph with batch-loading enabled.
      *
-     * @return Object containting properties that will disable batch loading
+     * @return Object containing properties that will disable batch loading
      */
     TransactionBuilder disableBatchLoading();
 
@@ -65,7 +65,7 @@ public interface TransactionBuilder {
      * expected.
      *
      * @param size The initial size of the transaction's dirty vertex collection
-     * @return Object containing properties that configure inital map size of modified vertices
+     * @return Object containing properties that configure initial map size of modified vertices
      */
     TransactionBuilder dirtyVertexSize(int size);
 

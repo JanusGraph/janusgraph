@@ -117,7 +117,7 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
     public Map<StaticBuffer, EntryList> getNamesSlice(List<StaticBuffer> keys,
                                                       SliceQuery query, StoreTransaction txh) throws BackendException {
         /*
-         * RowQuery<K,C> should be parametrized as
+         * RowQuery<K,C> should be parameterized as
          * RowQuery<ByteBuffer,ByteBuffer>. However, this causes the following
          * compilation error when attempting to call withColumnRange on a
          * RowQuery<ByteBuffer,ByteBuffer> instance:

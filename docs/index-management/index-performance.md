@@ -441,7 +441,7 @@ range/interval constraints.
     The property keys used in a vertex-centric index must have an
     explicitly defined data type (i.e. *not* `Object.class`) which
     supports a native sort order. This means not only that they must implement `Comparable` 
-    but that their serializer must impement `OrderPreservingSerializer`. 
+    but that their serializer must implement `OrderPreservingSerializer`. 
     The types that are currently supported are `Boolean`, `UUID`, `Byte`, `Float`, `Long`, `String`, 
     `Integer`, `Date`, `Double`, `Character`, and `Short`
 

@@ -34,7 +34,7 @@ public class OrJanusPredicate extends ConnectiveJanusPredicate {
     }
 
     @Override
-    ConnectiveJanusPredicate getNewNegateIntance() {
+    ConnectiveJanusPredicate getNewNegateInstance() {
         return new AndJanusPredicate();
     }
 

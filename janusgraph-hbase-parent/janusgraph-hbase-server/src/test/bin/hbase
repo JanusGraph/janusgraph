@@ -179,7 +179,7 @@ add_maven_deps_to_classpath() {
     # to target the version of Hadoop used during compilation.  This is
     # necessary when the user compiles janusgraph-hbase with a non-default Hadoop
     # version (e.g. 2.2.0).  If we omitted this check, then we'd try to start
-    # HBase with the default Hadoop version (currentl 1.0.4), and it would break.
+    # HBase with the default Hadoop version (currently 1.0.4), and it would break.
     MVN_OPTS=
     optf="${HBASE_HOME}/target/test-classes/mvn_opts.txt"
     unset IFS

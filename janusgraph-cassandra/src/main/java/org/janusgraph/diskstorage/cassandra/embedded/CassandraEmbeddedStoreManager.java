@@ -148,7 +148,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     /*
      * Raw type warnings are suppressed in this method because
      * {@link StorageService#getLocalPrimaryRanges(String)} returns a raw
-     * (not parametrized) type.
+     * (not parameterized) type.
      */
     public List<KeyRange> getLocalKeyPartition() throws BackendException {
         ensureKeyspaceExists(keySpaceName);

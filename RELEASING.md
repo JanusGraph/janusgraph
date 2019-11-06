@@ -56,7 +56,7 @@ Steps below were taken from [this guide.](https://maven.apache.org/guides/mini/g
 
 ```xml
 <settingsSecurity>
-  <master>{master passsword}</master>
+  <master>{master password}</master>
 </settingsSecurity>
 ```
 
@@ -276,7 +276,7 @@ can't be canceled.
 
 Update the `STRUCTOR_LATEST_TAG` variable in the settings of the JanusGraph project 
 in the Travis CI web interface and ensure that 
-the newest version is the acutally latest version in our documentation, 
+the newest version is the actually latest version in our documentation, 
 for example, you release `v0.3.3` but `v0.4.0` is already released,
 `STRUCTOR_LATEST_TAG` variable should be `v0.4.0`.
 

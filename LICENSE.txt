@@ -11,7 +11,7 @@ The code of JanusGraph is under the APACHE-2.0 license.
 The documentation of JanusGraph is under a combination of licenses:
 
 * APACHE-2.0 license for all documentation contributed prior to the JanusGraph
-  fork (27 Dec 2016), i.e., imported with the intial Titan fork
+  fork (27 Dec 2016), i.e., imported with the initial Titan fork
 * CC-BY-4.0 license for all documentation contributed on or after the JanusGraph
   fork (27 Dec 2016)
 
