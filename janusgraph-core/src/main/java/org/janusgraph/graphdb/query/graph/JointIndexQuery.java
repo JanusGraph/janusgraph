@@ -100,9 +100,11 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
 
     @Override
     public JointIndexQuery updateLimit(int newLimit) {
-        JointIndexQuery ji = new JointIndexQuery(Lists.newArrayList(queries));
-        ji.setLimit(newLimit);
-        return ji;
+        List<Subquery> subqueries = (queries.size() == 1) ? Lists.newArrayList(queries.get(0).updateLimit(newLimit)) :
+            Lists.newArrayList(queries);
+        JointIndexQuery jointIndexQuery = new JointIndexQuery(subqueries);
+        jointIndexQuery.setLimit(newLimit);
+        return jointIndexQuery;
     }
 
     public static class Subquery implements BackendQuery<Subquery>, ProfileObservable {

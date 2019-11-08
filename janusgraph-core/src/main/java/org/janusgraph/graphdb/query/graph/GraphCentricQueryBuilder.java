@@ -359,8 +359,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             }
             indexLimit = Math.min(HARD_MAX_LIMIT,
                 QueryUtil.adjustLimitForTxModifications(tx, coveredClauses.size(), indexLimit));
-            jointQuery.setLimit(indexLimit);
-            query = new BackendQueryHolder<>(jointQuery,
+            query = new BackendQueryHolder<>(jointQuery.updateLimit(indexLimit),
                     coveredClauses.size() == conditions.numChildren(), isSorted);
         } else {
             query = new BackendQueryHolder<>(new JointIndexQuery(), false, isSorted);
