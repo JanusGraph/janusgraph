@@ -77,7 +77,10 @@ public class Geoshape {
     private static final String FIELD_TYPE = "type";
     private static final String FIELD_COORDINATES = "coordinates";
 
-    public static final JtsGeoshapeHelper HELPER = new JtsGeoshapeHelper();
+    private static final double MAX_LONGITUDE = 180.0;
+    private static final double MAX_LATITUDE = 90.0;
+
+    private static final JtsGeoshapeHelper HELPER = new JtsGeoshapeHelper();
 
     private static final ObjectReader mapReader;
     private static final ObjectWriter mapWriter;
@@ -108,7 +111,7 @@ public class Geoshape {
         }
 
         public boolean gsonEquals(String otherGson) {
-            return otherGson != null && gsonName.equals(otherGson);
+            return gsonName.equals(otherGson);
         }
 
         public static Type fromGson(String gsonShape) {
@@ -351,7 +354,10 @@ public class Geoshape {
      * @return
      */
     public static boolean isValidCoordinate(final double latitude, final double longitude) {
-        return latitude>=-90.0 && latitude<=90.0 && longitude>=-180.0 && longitude<=180.0;
+        return latitude >= -MAX_LATITUDE &&
+            latitude <= MAX_LATITUDE &&
+            longitude >= -MAX_LONGITUDE &&
+            longitude <= MAX_LONGITUDE;
     }
 
     public static SpatialContext getSpatialContext() {

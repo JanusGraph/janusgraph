@@ -91,17 +91,17 @@ public class HMACAuthenticator extends JanusGraphAbstractAuthenticator {
     }
 
     public void setup(final Map<String,Object> config) {
-    		Preconditions.checkArgument(config != null, "Credential configuration cannot be null");
+        Preconditions.checkArgument(config != null, "Credential configuration cannot be null");
         Preconditions.checkState(config.containsKey(CONFIG_HMAC_SECRET), 
         			String.format("Credential configuration missing the %s key", CONFIG_HMAC_SECRET));
 
-        if (null != config && config.containsKey(CONFIG_HMAC_ALGO)) {
+        if (config.containsKey(CONFIG_HMAC_ALGO)) {
             hmacAlgo = config.get(CONFIG_HMAC_ALGO).toString();
         } else {
             hmacAlgo = DEFAULT_HMAC_ALGO;
         }
 
-        if (null != config && config.containsKey(CONFIG_TOKEN_TIMEOUT)) {
+        if (config.containsKey(CONFIG_TOKEN_TIMEOUT)) {
             timeout = ((Number) config.get(CONFIG_TOKEN_TIMEOUT)).longValue();
         } else {
             timeout = DEFAULT_HMAC_TOKEN_TIMEOUT;
@@ -109,22 +109,15 @@ public class HMACAuthenticator extends JanusGraphAbstractAuthenticator {
 
         super.setup(config);
 
-        if (null != config & config.containsKey(CONFIG_HMAC_SECRET)) {
-            secret = config.get(CONFIG_HMAC_SECRET).toString().toCharArray();
-        } else {
-            secret = DEFAULT_HMAC_SECRET;
-        }
+        secret = config.containsKey(CONFIG_HMAC_SECRET) ? config.get(CONFIG_HMAC_SECRET).toString().toCharArray() :
+            DEFAULT_HMAC_SECRET;
     }
 
     @Override
     public AuthenticatedUser authenticate(final Map<String, String> credentials) throws AuthenticationException {
         if (credentials.get(PROPERTY_GENERATE_TOKEN) != null) {
-            final AuthenticatedUser user = authenticateUser(credentials);
-            if (user == null) {
-                throw new AuthenticationException(AUTH_ERROR);
-            }
             credentials.put(PROPERTY_TOKEN, getToken(credentials));
-            return user;
+            return authenticateUser(credentials);
         } else if (credentials.get(PROPERTY_TOKEN) != null) {
             if (validateToken(credentials)) {
                 final Map<String, String> tokenMap = parseToken(credentials.get(PROPERTY_TOKEN));
@@ -154,7 +147,7 @@ public class HMACAuthenticator extends JanusGraphAbstractAuthenticator {
         final String salt = getBcryptSaltFromStoredPassword(password);
         final String expected = generateToken(username, salt, time);
         final Long timeLong = Long.parseLong(time);
-        final Long currentTime = new Date().getTime();
+        final long currentTime = new Date().getTime();
         final String base64Token = new String(Base64.getUrlEncoder().encode(token.getBytes()));
         //Short circuit if the lengths aren't the same or time has expired
         if (timeLong + timeout < currentTime || expected.length() != base64Token.length()) {
@@ -209,7 +202,7 @@ public class HMACAuthenticator extends JanusGraphAbstractAuthenticator {
 
     //In BCrypt, the salt is the 22 chars after the 3rd $
     private String getBcryptSaltFromStoredPassword(String password) {
-        Integer saltStart = StringUtils.ordinalIndexOf(password, "$", 3);
+        int saltStart = StringUtils.ordinalIndexOf(password, "$", 3);
         return password.substring(saltStart + 1, saltStart + 23);
     }
 

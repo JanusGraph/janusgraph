@@ -34,15 +34,15 @@ public class JobStatus {
     }
 
     public boolean isDone() {
-        return state==State.DONE || state==State.UNKNOWN;
+        return state == State.DONE || state == State.UNKNOWN;
     }
 
     public boolean hasFailed() {
-        return state==State.FAILED;
+        return state == State.FAILED;
     }
 
     public boolean isRunning() {
-        return state==State.RUNNING;
+        return state == State.RUNNING;
     }
 
     public long getNumProcessed() {
