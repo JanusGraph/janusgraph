@@ -37,6 +37,22 @@ mvn clean install -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true
 This command generates the distribution archive in `janusgraph-dist/janusgraph-dist-hadoop-2/target/janusgraph-$VERSION-hadoop2.zip`.
 For more details information, please see [here](janusgraph-dist/README.md#building-zip-archives)
 
+## Docker Based Build
+
+It is also possible to build and test JanusGraph using Docker.
+This has the advantage that no dependencies need to be installed.
+
+The Bash script `docker-build/docker-build.sh` can be used to execute the
+build.
+It has the following options:
+
+* `-t` / `--tests`: Run standard test suite.
+* `-p` / `--tinkerpop-tests`: Run TinkerPop tests.
+* `-m` / `--in-memory`: Use tmpfs to build in-memory.
+
+**NOTE:** The tests can currently not be executed on Docker for Windows due to
+limitations in the networking implementation.
+
 ## Building Docker Image for JanusGraph Server
 
 In order to build Docker image for JanusGraph Server, a
