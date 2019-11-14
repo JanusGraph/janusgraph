@@ -21,7 +21,7 @@ import java.net.InetAddress;
 import java.util.Map;
 
 /**
- * A wrapper authenticator that instantiates A JansuGraphSimpleAuthenticator (for Sasl)
+ * A wrapper authenticator that instantiates A JanusGraphSimpleAuthenticator (for Sasl)
  * and an HMACAuthenticator (for http)
  * @author Keith Lohnes lohnesk@gmail.com
  */

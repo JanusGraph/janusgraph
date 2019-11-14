@@ -261,7 +261,7 @@ public class ElasticSearchIndex implements IndexProvider {
      */
     public static final double DEFAULT_GEO_DIST_ERROR_PCT = 0.025;
 
-    private static final String PARAMETERIZED_DELETION_SCRIPT = parametrizedScriptPrepare("",
+    private static final String PARAMETERIZED_DELETION_SCRIPT = parameterizedScriptPrepare("",
             "for (field in params.fields) {",
             "    if (field.cardinality == 'SINGLE') {",
             "        ctx._source.remove(field.name);",
@@ -273,7 +273,7 @@ public class ElasticSearchIndex implements IndexProvider {
             "    }",
             "}");
 
-    private static final String PARAMETERIZED_ADDITION_SCRIPT = parametrizedScriptPrepare("",
+    private static final String PARAMETERIZED_ADDITION_SCRIPT = parameterizedScriptPrepare("",
             "for (field in params.fields) {",
             "    if (ctx._source[field.name] == null) {",
             "        ctx._source[field.name] = [];",
@@ -310,13 +310,13 @@ public class ElasticSearchIndex implements IndexProvider {
     private final boolean useAllField;
     private final Map<String, Object> ingestPipelines;
     private final boolean useMappingForES7;
-    private final String parametrizedAdditionScriptId;
-    private final String parametrizedDeletionScriptId;
+    private final String parameterizedAdditionScriptId;
+    private final String parameterizedDeletionScriptId;
 
     public ElasticSearchIndex(Configuration config) throws BackendException {
         indexName = config.get(INDEX_NAME);
-        parametrizedAdditionScriptId = generateScriptId("add");
-        parametrizedDeletionScriptId = generateScriptId("del");
+        parameterizedAdditionScriptId = generateScriptId("add");
+        parameterizedDeletionScriptId = generateScriptId("del");
         useAllField = config.get(USE_ALL_FIELD);
         useExternalMappings = config.get(USE_EXTERNAL_MAPPINGS);
         allowMappingUpdate = config.get(ALLOW_MAPPING_UPDATE);
@@ -361,8 +361,8 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     private void setupStoredScripts() throws PermanentBackendException {
-        setupStoredScriptIfNeeded(parametrizedAdditionScriptId, PARAMETERIZED_ADDITION_SCRIPT);
-        setupStoredScriptIfNeeded(parametrizedDeletionScriptId, PARAMETERIZED_DELETION_SCRIPT);
+        setupStoredScriptIfNeeded(parameterizedAdditionScriptId, PARAMETERIZED_ADDITION_SCRIPT);
+        setupStoredScriptIfNeeded(parameterizedDeletionScriptId, PARAMETERIZED_DELETION_SCRIPT);
     }
 
     private void setupStoredScriptIfNeeded(String storedScriptId, String source) throws PermanentBackendException {
@@ -778,7 +778,7 @@ public class ElasticSearchIndex implements IndexProvider {
                         } else {
                             List<Map<String, Object>> params = getParameters(information.get(storeName),
                                 mutation.getDeletions(), true);
-                            Map doc = compat.prepareStoredScript(parametrizedDeletionScriptId, params).build();
+                            Map doc = compat.prepareStoredScript(parameterizedDeletionScriptId, params).build();
                             log.trace("Deletion script {} with params {}", PARAMETERIZED_DELETION_SCRIPT, params);
                             requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storeName,
                                 documentId, doc));
@@ -802,7 +802,7 @@ public class ElasticSearchIndex implements IndexProvider {
                             List<Map<String, Object>> params = getParameters(information.get(storeName),
                                     mutation.getAdditions(), false, Cardinality.SINGLE);
                             if (!params.isEmpty()) {
-                                ImmutableMap.Builder builder = compat.prepareStoredScript(parametrizedAdditionScriptId, params);
+                                ImmutableMap.Builder builder = compat.prepareStoredScript(parameterizedAdditionScriptId, params);
                                 requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storeName,
                                         documentId, builder, upsert));
                                 log.trace("Adding script {} with params {}", PARAMETERIZED_ADDITION_SCRIPT, params);
@@ -1367,7 +1367,7 @@ public class ElasticSearchIndex implements IndexProvider {
         return useMappingForES7;
     }
 
-    private static String parametrizedScriptPrepare(String ... lines){
+    private static String parameterizedScriptPrepare(String ... lines){
         return Arrays.stream(lines).map(String::trim).collect(Collectors.joining(""));
     }
 }

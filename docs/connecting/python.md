@@ -1,7 +1,7 @@
 # Connecting from Python
 
 Gremlin traversals can be constructed with Gremlin-Python just like in
-Gremlin-Java or Gremiln-Groovy. Refer to [Gremlin Query Language](../basics/gremlin.md) for an
+Gremlin-Java or Gremlin-Groovy. Refer to [Gremlin Query Language](../basics/gremlin.md) for an
 introduction to Gremlin and pointers to further resources.
 
 !!! important

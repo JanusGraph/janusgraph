@@ -97,7 +97,7 @@ public abstract class KCVSCacheTest {
 
     @Test
     public void testSmallCache() throws Exception {
-        final int numKeys = 100, numCols = 10; //numCols must be greater than or equal to 10 as it is assummed below
+        final int numKeys = 100, numCols = 10; //numCols must be greater than or equal to 10 as it is assumed below
         final int repeats = 100, clearEvery = 20, numMulti = 10;
         loadStore(numKeys,numCols);
 

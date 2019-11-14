@@ -214,7 +214,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
     void removeDatabase(BerkeleyJEKeyValueStore db) {
         if (!stores.containsKey(db.getName())) {
-            throw new IllegalArgumentException("Tried to remove an unkown database from the storage manager");
+            throw new IllegalArgumentException("Tried to remove an unknown database from the storage manager");
         }
         String name = db.getName();
         stores.remove(name);

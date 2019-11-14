@@ -118,7 +118,7 @@ public class LuceneIndex implements IndexProvider {
     private final String basePath;
 
     /**
-     * lazy cache for the delegating analyzers used for writting or querrying for each store
+     * lazy cache for the delegating analyzers used for writing or querrying for each store
      */
     private final Map<String, LuceneCustomAnalyzer> delegatingAnalyzers = new HashMap<>();
 

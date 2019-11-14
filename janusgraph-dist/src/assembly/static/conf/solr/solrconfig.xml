@@ -413,7 +413,7 @@
        https://wiki.apache.org/solr/SearchHandler
 
        For processing Search Queries, the primary Request Handler
-       provided with Solr is "SearchHandler" It delegates to a sequent
+       provided with Solr is "SearchHandler" It delegates to a sequence
        of SearchComponents (see below) and supports distributed
        queries across multiple shards
     -->
