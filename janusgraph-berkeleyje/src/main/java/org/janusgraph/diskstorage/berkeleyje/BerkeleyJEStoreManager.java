@@ -32,6 +32,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
+import org.janusgraph.graphdb.transaction.TransactionConfiguration;
 import org.janusgraph.util.system.IOUtils;
 
 import org.slf4j.Logger;
@@ -142,6 +143,13 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
                 TransactionConfig txnConfig = new TransactionConfig();
                 ConfigOption.getEnumValue(effectiveCfg.get(ISOLATION_LEVEL),IsolationLevel.class).configure(txnConfig);
                 tx = environment.beginTransaction(null, txnConfig);
+            } else {
+                if (txCfg instanceof TransactionConfiguration) {
+                    if (!((TransactionConfiguration) txCfg).isSingleThreaded()) {
+                        // Non-transactional cursors can't shared between threads, more info ThreadLocker.checkState
+                        throw new PermanentBackendException("BerkeleyJE does not support non-transactional for multi threaded tx");
+                    }
+                }
             }
             BerkeleyJETx btx = new BerkeleyJETx(tx, ConfigOption.getEnumValue(effectiveCfg.get(LOCK_MODE),LockMode.class), txCfg);
 
