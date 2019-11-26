@@ -2918,6 +2918,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(1, u.query().labels("friendDesc").direction(OUT).has("weight", 0.5).interval("time", 4, 10).edgeCount());
         assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).edgeCount());
         assertEquals(4, v.query().labels("friend").direction(OUT).has("time", Cmp.LESS_THAN_EQUAL, 10).edgeCount());
+        assertEquals(2, v.query().labels("friend").direction(OUT).has("time", Cmp.LESS_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN_EQUAL, 5).edgeCount());
         assertEquals(edgesPerLabel - 4, v.query().labels("friend").direction(OUT).has("time", Cmp.GREATER_THAN, 10).edgeCount());
         assertEquals(20, v.query().labels("friend", "connect").direction(OUT).interval("time", 3, 33).edgeCount());
 
