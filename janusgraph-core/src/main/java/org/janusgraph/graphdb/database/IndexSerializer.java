@@ -345,8 +345,8 @@ public class IndexSerializer {
         return new IndexUpdate<>(index, updateType, element2String(element), new IndexEntry(key2Field(index.getField(key)), value), element);
     }
 
-    public void reindexElement(JanusGraphElement element, MixedIndexType index, Map<String,Map<String,List<IndexEntry>>> documentsPerStore) {
-        if (!indexAppliesTo(index,element)) return;
+    public boolean reindexElement(JanusGraphElement element, MixedIndexType index, Map<String,Map<String,List<IndexEntry>>> documentsPerStore) {
+        if (!indexAppliesTo(index,element)) return false;
         final List<IndexEntry> entries = Lists.newArrayList();
         for (final ParameterIndexField field: index.getFieldKeys()) {
             final PropertyKey key = field.getFieldKey();
@@ -355,8 +355,9 @@ public class IndexSerializer {
                 element.values(key.name()).forEachRemaining(value->entries.add(new IndexEntry(key2Field(field), value)));
             }
         }
-        final Map<String, List<IndexEntry>> documents = documentsPerStore.computeIfAbsent(index.getStoreName(), k -> Maps.newHashMap());
+        if(entries.isEmpty()) return false;
         getDocuments(documentsPerStore,index).put(element2String(element),entries);
+        return true;
     }
 
     private Map<String,List<IndexEntry>> getDocuments(Map<String,Map<String,List<IndexEntry>>> documentsPerStore, MixedIndexType index) {

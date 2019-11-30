@@ -47,6 +47,8 @@ class CQLResultSetKeyIterator extends AbstractIterator<StaticBuffer> implements 
     private Row currentRow = null;
     private StaticBuffer currentKey = null;
     private StaticBuffer lastKey = null;
+    private boolean isExhausted = false; //by default false
+    
 
     CQLResultSetKeyIterator(final SliceQuery sliceQuery, final CQLColValGetter getter, final Iterable<Row> resultSet) {
         this.sliceQuery = sliceQuery;
@@ -57,7 +59,12 @@ class CQLResultSetKeyIterator extends AbstractIterator<StaticBuffer> implements 
                     this.currentKey = StaticArrayBuffer.of(row.getBytes(CQLKeyColumnValueStore.KEY_COLUMN_NAME));
                 });
     }
-
+    
+    @Override
+    public boolean isExhausted() {
+        return isExhausted;
+    }
+    
     @Override
     protected StaticBuffer computeNext() {
         if (this.currentKey != null && !this.currentKey.equals(this.lastKey)) {
@@ -72,6 +79,7 @@ class CQLResultSetKeyIterator extends AbstractIterator<StaticBuffer> implements 
                 return this.lastKey;
             }
         }
+        isExhausted = true;
         return endOfData();
     }
 

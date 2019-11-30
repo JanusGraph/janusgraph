@@ -402,6 +402,11 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         @Override
+        public boolean isExhausted() {
+            return !hasNext();
+        }
+        
+        @Override
         public boolean hasNext() {
             ensureOpen();
 

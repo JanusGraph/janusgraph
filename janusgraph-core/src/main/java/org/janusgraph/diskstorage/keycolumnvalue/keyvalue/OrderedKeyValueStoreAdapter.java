@@ -302,6 +302,11 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
             Preconditions.checkNotNull(currentIterator);
             return currentIterator;
         }
+        
+        @Override
+        public boolean isExhausted() {
+            return !hasNext();
+        }
 
         @Override
         public boolean hasNext() {

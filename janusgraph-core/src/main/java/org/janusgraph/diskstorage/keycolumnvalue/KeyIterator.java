@@ -38,4 +38,13 @@ public interface KeyIterator extends RecordIterator<StaticBuffer> {
      */
     RecordIterator<Entry> getEntries();
 
+    /**
+     * Helper method to let clients know that BE it still working on iterator. There
+     * are cases where `hasNext` can take few minutes to respond if the vertex as many
+     * many edges. And this can cause failures while re-indexing. We may not be able
+     * to use `hasNext` of the iterator implementation, as some implementations (eg: CQLResultSetKeyIterator ) 
+     * 
+     * @return boolean. `true` is the Iterator is still working on getting the next. `false` if iterator has nothing left.
+     */
+    boolean isExhausted();
 }

@@ -297,6 +297,11 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         @Override
+        public boolean isExhausted() {
+            return !hasNext();
+        }
+        
+        @Override
         public boolean hasNext() {
             ensureOpen();
             return rows.hasNext();
