@@ -14,10 +14,9 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -170,6 +169,26 @@ public class CQLResultSetKeyIteratorTest {
             }
         }
     }
+    
+    @Test
+    public void testIsExhausted() throws IOException {
+        final Array<Tuple2<ByteBuffer, Array<Tuple2<ByteBuffer, ByteBuffer>>>> keysMap = generateRandomKeysMap();
+        final ResultSet resultSet = generateMockedResultSet(keysMap);
+
+        final CQLColValGetter getter = new CQLColValGetter(new EntryMetaData[0]);
+        try (final CQLResultSetKeyIterator resultSetKeyIterator = new CQLResultSetKeyIterator(ALL_COLUMNS, getter, resultSet)) {
+            final Iterator<Tuple2<ByteBuffer, Array<Tuple2<ByteBuffer, ByteBuffer>>>> iterator = keysMap.iterator();
+            
+            assertFalse("isExhausted", resultSetKeyIterator.isExhausted());
+            while (resultSetKeyIterator.hasNext()) {
+                final StaticBuffer next = resultSetKeyIterator.next();
+                assertEquals(iterator.next()._1, next.asByteBuffer());
+            }
+            assertTrue("isExhausted", resultSetKeyIterator.isExhausted());
+        }
+    }
+    
+    
 
     private Array<Tuple2<ByteBuffer, Array<Tuple2<ByteBuffer, ByteBuffer>>>> generateRandomKeysMap(){
         final Random random = new Random();
