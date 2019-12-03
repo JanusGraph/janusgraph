@@ -453,7 +453,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                 this.index = 0;
             }
             this.index++;
-         // Using getPagingStateUnsafe rather than getPagingState, to avoid the md5
+            // Using getPagingStateUnsafe rather than getPagingState, to avoid the md5
             // compute of the pageState, which can be quite expensive.
             lastPagingState = currentResultSet.getExecutionInfo().getPagingStateUnsafe();
             recordCount.incrementAndGet();

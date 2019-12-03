@@ -442,8 +442,7 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
             ensureOpen();
             return rows.hasNext();
         }
-        
-        
+
         @Override
         public StaticBuffer next() {
             ensureOpen();
