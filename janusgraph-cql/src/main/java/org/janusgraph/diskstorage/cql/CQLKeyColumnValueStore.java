@@ -55,7 +55,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.datastax.driver.core.PagingState;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
@@ -74,8 +73,6 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry.GetColVal;
 import org.janusgraph.diskstorage.util.StaticArrayEntryList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Metadata;
@@ -103,7 +100,6 @@ import io.vavr.control.Try;
  * An implementation of {@link KeyColumnValueStore} which stores the data in a CQL connected backend.
  */
 public class CQLKeyColumnValueStore implements KeyColumnValueStore {
-    private static final Logger log = LoggerFactory.getLogger(CQLKeyColumnValueStore.class);
 
     private static final String TTL_FUNCTION_NAME = "ttl";
     private static final String WRITETIME_FUNCTION_NAME = "writetime";
