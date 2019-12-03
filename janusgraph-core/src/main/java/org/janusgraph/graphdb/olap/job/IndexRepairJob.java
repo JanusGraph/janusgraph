@@ -177,8 +177,9 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                 } else {
                     assert indexType.isMixedIndex();
                     for (JanusGraphElement element : elements) {
-                        indexSerializer.reindexElement(element, (MixedIndexType) indexType, documentsPerStore);
-                        metrics.incrementCustom(DOCUMENT_UPDATES_COUNT);
+                        if (indexSerializer.reindexElement(element, (MixedIndexType) indexType, documentsPerStore)) {
+                            metrics.incrementCustom(DOCUMENT_UPDATES_COUNT);
+                        }
                     }
                 }
 

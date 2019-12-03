@@ -355,7 +355,7 @@ public class Backend implements LockerProvider, AutoCloseable {
                 .setJobConfiguration(jobConfig)
                 .setGraphConfiguration(configuration)
                 .setNumProcessingThreads(1)
-                .setWorkBlockSize(10000);
+                .setWorkBlockSize(this.configuration.get(PAGE_SIZE));
     }
 
     public JanusGraphManagement.IndexJobFuture getScanJobStatus(Object jobId) {
