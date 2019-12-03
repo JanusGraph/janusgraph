@@ -132,11 +132,11 @@ zip-file that was downloaded.
     installed.
 
 ```bash
-$ unzip janusgraph-{{ latest_version }}-hadoop2.zip
-Archive:  janusgraph-{{ latest_version }}-hadoop2.zip
-  creating: janusgraph-{{ latest_version }}-hadoop2/
+$ unzip janusgraph-{{ latest_version }}.zip
+Archive:  janusgraph-{{ latest_version }}.zip
+  creating: janusgraph-{{ latest_version }}/
 ...
-$ cd janusgraph-{{ latest_version }}-hadoop2
+$ cd janusgraph-{{ latest_version }}
 $ bin/gremlin.sh
 
          \,,,/
@@ -372,7 +372,7 @@ The Gremlin traversals below provide more examples over *The Graph of
 the Gods*. The explanation of each traversal is provided in the prior
 line as a `//` comment.
 
-##### Cohabiters of Tartarus
+##### Cohabitors of Tartarus
 ```groovy
 gremlin> pluto = g.V().has('name', 'pluto').next()
 ==>v[2048]

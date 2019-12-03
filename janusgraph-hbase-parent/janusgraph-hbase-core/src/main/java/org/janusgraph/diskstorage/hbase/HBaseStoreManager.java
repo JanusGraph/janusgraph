@@ -138,12 +138,12 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     public static final ConfigOption<String> HBASE_SNAPSHOT =
             new ConfigOption<>(HBASE_NS, "snapshot-name",
-            "The name of an exising HBase snapshot to be used by HBaseSnapshotInputFormat",
+            "The name of an existing HBase snapshot to be used by HBaseSnapshotInputFormat",
             ConfigOption.Type.LOCAL, "janusgraph-snapshot");
 
     public static final ConfigOption<String> HBASE_SNAPSHOT_RESTORE_DIR =
             new ConfigOption<>(HBASE_NS, "snapshot-restore-dir",
-            "The tempoary directory to be used by HBaseSnapshotInputFormat to restore a snapshot." +
+            "The temporary directory to be used by HBaseSnapshotInputFormat to restore a snapshot." +
             " This directory should be on the same File System as the HBase root dir.",
             ConfigOption.Type.LOCAL, System.getProperty("java.io.tmpdir"));
 
@@ -843,7 +843,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                     adm.addColumn(tableName, columnDescriptor);
 
                     try {
-                        logger.debug("Added HBase ColumnFamily {}, waiting for 1 sec. to propogate.", columnFamily);
+                        logger.debug("Added HBase ColumnFamily {}, waiting for 1 sec. to propagate.", columnFamily);
                         Thread.sleep(1000L);
                     } catch (InterruptedException ie) {
                         throw new TemporaryBackendException(ie);

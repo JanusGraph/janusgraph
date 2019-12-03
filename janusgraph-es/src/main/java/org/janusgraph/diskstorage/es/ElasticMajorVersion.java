@@ -19,9 +19,9 @@ import java.util.regex.Pattern;
 
 public enum ElasticMajorVersion {
 
-    FIVE(5),
-
     SIX(6),
+
+    SEVEN(7),
 
     ;
 
@@ -40,10 +40,10 @@ public enum ElasticMajorVersion {
     public static ElasticMajorVersion parse(final String value) {
         final Matcher m = value != null ? PATTERN.matcher(value) : null;
         switch (m != null && m.find() ? Integer.valueOf(m.group(1)) : -1) {
-            case 5:
-                return ElasticMajorVersion.FIVE;
             case 6:
                 return ElasticMajorVersion.SIX;
+            case 7:
+                return ElasticMajorVersion.SEVEN;
             default:
                 throw new IllegalArgumentException("Unsupported Elasticsearch server major version: " + value);
         }

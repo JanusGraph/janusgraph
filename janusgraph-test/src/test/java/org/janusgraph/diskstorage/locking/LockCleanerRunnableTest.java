@@ -111,15 +111,15 @@ public class LockCleanerRunnableTest {
         final int lockCount = 10;
         final int expiredCount = 3;
         assertTrue(expiredCount + 2 <= lockCount);
-        final long timeIncremement = 1L;
+        final long timeIncrement = 1L;
         final Instant timeStart = Instant.EPOCH;
-        final Instant timeCutoff = timeStart.plusMillis(expiredCount * timeIncremement);
+        final Instant timeCutoff = timeStart.plusMillis(expiredCount * timeIncrement);
 
         ImmutableList.Builder<Entry> locksBuilder = ImmutableList.builder();
         ImmutableList.Builder<Entry> deletionBuilder  = ImmutableList.builder();
 
         for (int i = 0; i < lockCount; i++) {
-            final Instant ts = timeStart.plusMillis(timeIncremement * i);
+            final Instant ts = timeStart.plusMillis(timeIncrement * i);
             Entry lock = StaticArrayEntry.of(
                     codec.toLockCol(ts, defaultLockRid, TimestampProviders.MILLI),
                     BufferUtil.getIntBuffer(0));

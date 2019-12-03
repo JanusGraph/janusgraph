@@ -32,13 +32,7 @@ Please see [Version Compatibility](../changelog.md#version-compatibility) for de
 Elasticsearch will work with JanusGraph.
 
 !!! important
-    Beginning with Elasticsearch 5.0 JanusGraph uses sandboxed [Painless scripts](https://www.elastic.co/guide/en/elasticsearch/reference/master/modules-scripting-painless.html)
-    for inline updates, which are enabled by default in Elasticsearch 5.x.
-    
-    Using JanusGraph with Elasticsearch 2.x requires enabling Groovy
-    inline scripting by setting `script.engine.groovy.inline.update` to
-    `true` on the Elasticsearch cluster (see [dynamic scripting documentation](https://www.elastic.co/guide/en/elasticsearch/reference/2.3/modules-scripting.html#enable-dynamic-scripting)
-    for more information).
+    JanusGraph uses sandboxed https://www.elastic.co/guide/en/elasticsearch/reference/master/modules-scripting-painless.html[Painless scripts] for inline updates, which are enabled by default in Elasticsearch.
 
 Running Elasticsearch
 ---------------------
@@ -236,11 +230,12 @@ public class AWSV4AuthHttpClientConfigCallback extends RestClientAuthenticatorBa
 This custom authenticator does not use any constructor arguments.
 
 ### Ingest Pipelines
-
-If using Elasticsearch 5.0 or higher, a different ingest pipelines can
-be set for each mixed index. Ingest pipeline can be use to pre-process
-documents before indexing. A pipeline is composed by a series of
-processors. Each processor transforms the document in some way. For
+Different ingest pipelines can be set for each mixed index.
+Ingest pipeline can be use to pre-process documents before indexing. 
+A pipeline is composed by a series of processors.
+Each processor transforms the document in some way.
+Ingest pipeline can be used to pre-process documents before indexing.
+A pipeline is composed by a series of processors. Each processor transforms the document in some way. For
 example [date processor](https://www.elastic.co/guide/en/elasticsearch/reference/current/date-processor.html)
 can extract a date from a text to a date field. So you can query this
 date with JanusGraph without it being physically in the primary storage.

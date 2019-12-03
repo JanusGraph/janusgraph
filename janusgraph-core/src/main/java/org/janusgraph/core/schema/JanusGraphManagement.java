@@ -420,7 +420,7 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
     String printVertexLabels();
 
     /**
-     * Prints out schema infomration related to edge labels.
+     * Prints out schema information related to edge labels.
      *
      * @return String with edge label schema information
      */

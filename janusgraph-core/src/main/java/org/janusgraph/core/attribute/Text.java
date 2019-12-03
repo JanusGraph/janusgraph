@@ -65,7 +65,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean isValidCondition(Object condition) {
-            return condition != null && condition instanceof String && StringUtils.isNotBlank((String) condition);
+            return condition instanceof String && StringUtils.isNotBlank((String) condition);
         }
         @Override
         public String toString() {
@@ -93,7 +93,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean isValidCondition(Object condition) {
-            return condition != null && condition instanceof String;
+            return condition instanceof String;
         }
 
         @Override
@@ -123,7 +123,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean isValidCondition(Object condition) {
-            return condition != null && condition instanceof String && StringUtils.isNotBlank(condition.toString());
+            return condition instanceof String && StringUtils.isNotBlank(condition.toString());
         }
 
         @Override
@@ -150,7 +150,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean isValidCondition(Object condition) {
-            return condition != null && condition instanceof String;
+            return condition instanceof String;
         }
 
         @Override
@@ -176,7 +176,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean isValidCondition(Object condition) {
-            return condition != null && condition instanceof String && StringUtils.isNotBlank(condition.toString());
+            return condition instanceof String && StringUtils.isNotBlank(condition.toString());
         }
 
         @Override
@@ -187,7 +187,7 @@ public enum Text implements JanusGraphPredicate {
     }, 
     
     /**
-     * Whether the text is at X Lenvenstein of a token (case sensitive)
+     * Whether the text is at X Levenshtein of a token (case sensitive)
      * with X=:
      * - 0 for strings of one or two characters
      * - 1 for strings of three, four or five characters
@@ -207,7 +207,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean isValidCondition(Object condition) {
-            return condition != null && condition instanceof String && StringUtils.isNotBlank(condition.toString());
+            return condition instanceof String && StringUtils.isNotBlank(condition.toString());
         }
         @Override
         public String toString() {
@@ -217,7 +217,7 @@ public enum Text implements JanusGraphPredicate {
     }, 
     
     /**
-     * Whether the text contains a token is at X Lenvenstein of a token (case insensitive)
+     * Whether the text contains a token is at X Levenshtein of a token (case insensitive)
      * with X=:
      * - 0 for strings of one or two characters
      * - 1 for strings of three, four or five characters
@@ -240,7 +240,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean isValidCondition(Object condition) {
-            return condition != null && condition instanceof String && StringUtils.isNotBlank(condition.toString());
+            return condition instanceof String && StringUtils.isNotBlank(condition.toString());
         }
         @Override
         public String toString() {
@@ -250,7 +250,7 @@ public enum Text implements JanusGraphPredicate {
     };
 
     /**
-     * Whether {@code term} is at X Lenvenstein of a {@code value} 
+     * Whether {@code term} is at X Levenshtein of a {@code value} 
      * with X=:
      * - 0 for strings of one or two characters
      * - 1 for strings of three, four or five characters

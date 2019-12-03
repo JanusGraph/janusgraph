@@ -112,7 +112,7 @@ janusgraphmr.ioformat.conf.storage.hostname=127.0.0.1
 janusgraphmr.ioformat.conf.storage.port=9160
 # This specifies the keyspace where data is stored.
 janusgraphmr.ioformat.conf.storage.cassandra.keyspace=janusgraph
-# This defines the indexing backned configuration used while writing data to JanusGraph.
+# This defines the indexing backend configuration used while writing data to JanusGraph.
 janusgraphmr.ioformat.conf.index.search.backend=elasticsearch
 janusgraphmr.ioformat.conf.index.search.hostname=127.0.0.1
 # Use the appropriate properties for the backend when using a different storage backend (HBase) or indexing backend (Solr).
@@ -203,7 +203,7 @@ janusgraphmr.ioformat.conf.storage.hostname=127.0.0.1
 janusgraphmr.ioformat.conf.storage.port=9160
 # This specifies the keyspace where data is stored.
 janusgraphmr.ioformat.conf.storage.cassandra.keyspace=janusgraph
-# This defines the indexing backned configuration used while writing data to JanusGraph.
+# This defines the indexing backend configuration used while writing data to JanusGraph.
 janusgraphmr.ioformat.conf.index.search.backend=elasticsearch
 janusgraphmr.ioformat.conf.index.search.hostname=127.0.0.1
 # Use the appropriate properties for the backend when using a different storage backend (HBase) or indexing backend (Solr).

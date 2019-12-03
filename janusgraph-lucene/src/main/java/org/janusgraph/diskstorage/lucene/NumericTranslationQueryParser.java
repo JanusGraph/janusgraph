@@ -14,17 +14,24 @@
 
 package org.janusgraph.diskstorage.lucene;
 
+import org.janusgraph.diskstorage.indexing.KeyInformation;
+import org.janusgraph.graphdb.database.serialize.AttributeUtil;
+
+import org.apache.tinkerpop.shaded.jackson.databind.util.StdDateFormat;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.Query;
-import org.janusgraph.diskstorage.indexing.KeyInformation;
-import org.janusgraph.graphdb.database.serialize.AttributeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.Instant;
+import java.util.Date;
 
 public class NumericTranslationQueryParser extends QueryParser {
     private static final Logger log = LoggerFactory.getLogger(NumericTranslationQueryParser.class);
@@ -38,11 +45,10 @@ public class NumericTranslationQueryParser extends QueryParser {
     @Override
     protected Query newRangeQuery(final String field, final String start, final String end, final boolean startInclusive,
                                   final boolean endInclusive) {
-
-        Class<?> dataType = storeRetriever.get(field).getDataType();
-        if (Number.class.isAssignableFrom(dataType)) {
+        Class<?> dataType = getKeyDataType(field);
+        if (isPossibleRangeQuery(dataType)) {
             try {
-                return getNumericRangeQuery(field, dataType, start, end, startInclusive, endInclusive);
+                return buildNumericRangeQuery(field, dataType, start, end, startInclusive, endInclusive);
             } catch (NumberFormatException e) {
                 printNumberFormatException(field, dataType, e);
             }
@@ -52,36 +58,16 @@ public class NumericTranslationQueryParser extends QueryParser {
     }
 
     @Override
-    protected Query getRangeQuery(final String field, final String start, final String end, final boolean includeLower,
-                                  final boolean includeUpper) throws ParseException {
-        Class<?> dataType = storeRetriever.get(field).getDataType();
-        if (Number.class.isAssignableFrom(dataType)) {
+    protected Query newFieldQuery(final Analyzer analyzer, final String field, final String queryText, final boolean quoted) throws ParseException {
+        Class<?> dataType = getKeyDataType(field);
+        if (isPossibleRangeQuery(dataType) || Boolean.class.equals(dataType)) {
             try {
-                return getNumericRangeQuery(field, dataType, start, end, includeLower, includeUpper);
+                return buildNumericQuery(field, queryText, dataType);
             } catch (NumberFormatException e) {
                 printNumberFormatException(field, dataType, e);
             }
         }
-
-        return super.getRangeQuery(field, start, end, includeLower, includeUpper);
-    }
-
-    @Override
-    protected Query newTermQuery(Term t) {
-        if (t.field() == null) {
-            return super.newTermQuery(t);
-        }
-
-        Class<?> dataType = storeRetriever.get(t.field()).getDataType();
-        if (Number.class.isAssignableFrom(dataType)) {
-            try {
-                return buildNumericQuery(t.field(), t.text(), dataType);
-            } catch (NumberFormatException e) {
-                printNumberFormatException(t.field(), dataType, e);
-            }
-        }
-
-        return super.newTermQuery(t);
+        return super.newFieldQuery(analyzer, field, queryText, quoted);
     }
 
     @Override
@@ -89,9 +75,8 @@ public class NumericTranslationQueryParser extends QueryParser {
         if (t.field() == null) {
             return super.newWildcardQuery(t);
         }
-
-        Class<?> dataType = storeRetriever.get(t.field()).getDataType();
-        if (Number.class.isAssignableFrom(dataType)) {
+        Class<?> dataType = getKeyDataType(t.field());
+        if (isPossibleRangeQuery(dataType) || Boolean.class.equals(dataType)) {
             try {
                 return buildNumericQuery(t.field(), t.text(), dataType);
             } catch (NumberFormatException e) {
@@ -102,11 +87,18 @@ public class NumericTranslationQueryParser extends QueryParser {
         return super.newWildcardQuery(t);
     }
 
-    private Query getNumericRangeQuery(final String field, final Class<?> type, String start, String end, final boolean includeLower,
-                                       final boolean includeUpper) {
-        if (AttributeUtil.isWholeNumber(type)) {
-            long min = isMatchAll(start) ? Long.MIN_VALUE : Long.parseLong(start);
-            long max = isMatchAll(end) ? Long.MAX_VALUE : Long.parseLong(end);
+    private Query buildNumericRangeQuery(final String field, final Class<?> type, String start, String end, final boolean includeLower,
+                                         final boolean includeUpper) {
+        if (AttributeUtil.isWholeNumber(type) || isTemporalType(type)) {
+            long min;
+            long max;
+            if (isTemporalType(type)) {
+                min = isMatchAll(start) ? Long.MIN_VALUE : parseDate(start).getTime();
+                max = isMatchAll(end) ? Long.MAX_VALUE : parseDate(end).getTime();
+            } else {
+                min = isMatchAll(start) ? Long.MIN_VALUE : Long.parseLong(start);
+                max = isMatchAll(end) ? Long.MAX_VALUE : Long.parseLong(end);
+            }
             if (!includeLower) {
                 min = Math.addExact(min, 1);
             }
@@ -128,19 +120,59 @@ public class NumericTranslationQueryParser extends QueryParser {
     }
 
     private Query buildNumericQuery(final String field, final String value, Class<?> type) {
-        if (AttributeUtil.isWholeNumber(type)) {
+        Query query;
+        if (AttributeUtil.isWholeNumber(type) || isTemporalType(type)) {
             if (isMatchAll(value)) {
-                return LongPoint.newRangeQuery(field, Long.MIN_VALUE, Long.MAX_VALUE);
+                query = LongPoint.newRangeQuery(field, Long.MIN_VALUE, Long.MAX_VALUE);
             } else {
-                return LongPoint.newExactQuery(field, Long.parseLong(value));
+                if (isTemporalType(type)) {
+                    query = LongPoint.newExactQuery(field, parseDate(value).getTime());
+                } else {
+                    query = LongPoint.newExactQuery(field, Long.parseLong(value));
+                }
+            }
+        } else if (Boolean.class.isAssignableFrom(type)) {
+            if (isMatchAll(value)) {
+                return IntPoint.newRangeQuery(field, Integer.MIN_VALUE, Integer.MAX_VALUE);
+            } else {
+                return IntPoint.newExactQuery(field, Boolean.parseBoolean(value) ? 1 : 0);
             }
         } else {
             if (isMatchAll(value)) {
-                return DoublePoint.newRangeQuery(field, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
+                query = DoublePoint.newRangeQuery(field, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
             } else {
-                return DoublePoint.newExactQuery(field, Double.parseDouble(value));
+                query = DoublePoint.newExactQuery(field, Double.parseDouble(value));
             }
         }
+        return query;
+    }
+
+    private Class<?> getKeyDataType(final String field) {
+        KeyInformation keyInformation = storeRetriever.get(field);
+        if (keyInformation == null) {
+            log.warn(String.format("Could not find key information for: %s", field));
+            return null;
+        }
+        return keyInformation.getDataType();
+    }
+
+    private Date parseDate(String value) {
+        try {
+            return StdDateFormat.instance.parse(value);
+        } catch (java.text.ParseException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private boolean isPossibleRangeQuery(final Class<?> dataType) {
+        if (dataType == null) {
+            return false;
+        }
+        return Number.class.isAssignableFrom(dataType) || isTemporalType(dataType);
+    }
+
+    private boolean isTemporalType(final Class<?> dataType) {
+        return Date.class.equals(dataType) || Instant.class.equals(dataType);
     }
 
     private boolean isMatchAll(final String value) {

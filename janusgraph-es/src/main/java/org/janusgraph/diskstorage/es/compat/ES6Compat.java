@@ -29,5 +29,4 @@ public class ES6Compat extends AbstractESCompat {
     public IndexFeatures getIndexFeatures() {
         return FEATURES;
     }
-
 }

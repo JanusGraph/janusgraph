@@ -995,8 +995,21 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             return config.getAutoSchemaMaker().makePropertyKey(makePropertyKey(name), value);
         } else if (et.isPropertyKey()) {
             return (PropertyKey) et;
-        } else
+        } else {
             throw new IllegalArgumentException("The type of given name is not a key: " + name);
+        }
+    }
+
+    @Override
+    public PropertyKey getOrCreatePropertyKey(String name, Object value, VertexProperty.Cardinality cardinality) {
+        RelationType et = getRelationType(name);
+        if (et == null) {
+            return config.getAutoSchemaMaker().makePropertyKey(makePropertyKey(name).cardinality(cardinality), value);
+        } else if (et.isPropertyKey()) {
+            return (PropertyKey) et;
+        } else {
+            throw new IllegalArgumentException("The type of given name is not a key: " + name);
+        }
     }
 
     @Override
@@ -1006,8 +1019,9 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             return config.getAutoSchemaMaker().makePropertyKey(makePropertyKey(name));
         } else if (et.isPropertyKey()) {
             return (PropertyKey) et;
-        } else
+        } else {
             throw new IllegalArgumentException("The type of given name is not a key: " + name);
+        }
     }
 
     @Override

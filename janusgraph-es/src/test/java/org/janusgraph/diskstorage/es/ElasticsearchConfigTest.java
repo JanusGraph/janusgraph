@@ -14,7 +14,9 @@
 
 package org.janusgraph.diskstorage.es;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.apache.http.client.utils.URIBuilder;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.attribute.Text;
@@ -25,6 +27,9 @@ import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.es.mapping.TypedIndexMappings;
+import org.janusgraph.diskstorage.es.mapping.TypelessIndexMappings;
+import org.janusgraph.diskstorage.es.rest.RestElasticSearchClient;
 import org.janusgraph.diskstorage.indexing.*;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 
@@ -47,6 +52,8 @@ import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
@@ -55,11 +62,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Stream;
 
 import static org.janusgraph.diskstorage.es.ElasticSearchIndex.*;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
@@ -89,6 +98,10 @@ public class ElasticsearchConfigTest {
     private CloseableHttpClient httpClient;
 
     private ObjectMapper objectMapper;
+
+    public static Stream<Boolean> useMappingsForES7Configuration() {
+        return ImmutableList.of(true, false).stream();
+    }
 
     @BeforeEach
     public void setup() throws Exception {
@@ -128,12 +141,16 @@ public class ElasticsearchConfigTest {
         assertThrows(Exception.class, () -> new ElasticSearchIndex(wrongHostConfig));
     }
 
-    @Test
-    public void testIndexCreationOptions() throws InterruptedException, BackendException, IOException {
+    @ParameterizedTest
+    @MethodSource("useMappingsForES7Configuration")
+    public void testIndexCreationOptions(Boolean useMappingsForES7) throws InterruptedException, BackendException, IOException {
         final int shards = 7;
 
         final CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
         cc.set("index." + INDEX_NAME + ".elasticsearch.create.ext.number_of_shards", String.valueOf(shards));
+        if(useMappingsForES7){
+            cc.set("index." + INDEX_NAME + ".elasticsearch.use-mapping-for-es7", String.valueOf(true));
+        }
         final ModifiableConfiguration config =
             new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
                 cc, BasicConfiguration.Restriction.NONE);
@@ -150,12 +167,21 @@ public class ElasticsearchConfigTest {
         client.close();
     }
 
-    @Test
-    public void testExternalMappingsViaMapping() throws Exception {
+    @ParameterizedTest
+    @MethodSource("useMappingsForES7Configuration")
+    public void testExternalMappingsViaMapping(Boolean useMappingsForES7) throws Exception {
         final Duration maxWrite = Duration.ofMillis(2000L);
         final String storeName = "test_mapping";
-        final Configuration indexConfig = esr.setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME)
-            .set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME).restrictTo(INDEX_NAME);
+        final ModifiableConfiguration modifiableConfiguration = esr
+            .setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME)
+            .set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME);
+
+        if(useMappingsForES7){
+            modifiableConfiguration.set(USE_MAPPING_FOR_ES7, true, INDEX_NAME);
+        }
+
+        final Configuration indexConfig = modifiableConfiguration.restrictTo(INDEX_NAME);
+
         final IndexProvider idx = open(indexConfig);
 
         // Test that the "date" property throws an exception.
@@ -170,9 +196,11 @@ public class ElasticsearchConfigTest {
             log.debug(e.getMessage(), e);
         }
 
-        final HttpPut newMapping = new HttpPut("janusgraph_"+storeName);
-        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(readMapping("/strict_mapping.json")), StandardCharsets.UTF_8));
-        executeRequest(newMapping);
+        if(isMappingUsed(idx)){
+            executeRequestWithStringEntity(idx, "janusgraph_"+storeName, readTypesMapping("/strict_mapping.json"));
+        } else {
+            executeRequestWithStringEntity(idx, "janusgraph_"+storeName, readTypelessMapping("/typeless_strict_mapping.json"));
+        }
 
         // Test that the "date" property works well.
         idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
@@ -187,36 +215,61 @@ public class ElasticsearchConfigTest {
         idx.close();
     }
 
-    private IndexMappings readMapping(final String mappingFilePath) throws IOException {
+    private TypedIndexMappings readTypesMapping(final String mappingFilePath) throws IOException {
         try (final InputStream inputStream = getClass().getResourceAsStream(mappingFilePath)) {
-            return objectMapper.readValue(inputStream, new TypeReference<IndexMappings>() {});
+            return objectMapper.readValue(inputStream, new TypeReference<TypedIndexMappings>() {});
         }
     }
 
-    @Test
-    public void testExternalDynamic() throws Exception {
-
-        testExternalDynamic(false);
+    private TypelessIndexMappings readTypelessMapping(final String mappingFilePath) throws IOException {
+        try (final InputStream inputStream = getClass().getResourceAsStream(mappingFilePath)) {
+            return objectMapper.readValue(inputStream, new TypeReference<TypelessIndexMappings>() {});
+        }
     }
 
-    @Test
-    public void testUpdateExternalDynamicMapping() throws Exception {
+    @ParameterizedTest
+    @MethodSource("useMappingsForES7Configuration")
+    public void testExternalDynamic(Boolean useMappingsForES7) throws Exception {
 
-        testExternalDynamic(true);
+        testExternalDynamic(false, useMappingsForES7);
     }
 
-    @Test
-    public void testExternalMappingsViaTemplate() throws Exception {
+    @ParameterizedTest
+    @MethodSource("useMappingsForES7Configuration")
+    public void testUpdateExternalDynamicMapping(Boolean useMappingsForES7) throws Exception {
+
+        testExternalDynamic(true, useMappingsForES7);
+    }
+
+    @ParameterizedTest
+    @MethodSource("useMappingsForES7Configuration")
+    public void testExternalMappingsViaTemplate(Boolean useMappingsForES7) throws Exception {
         final Duration maxWrite = Duration.ofMillis(2000L);
         final String storeName = "test_mapping";
-        final Configuration indexConfig = esr.setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME)
-            .set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME).restrictTo(INDEX_NAME);
+        final ModifiableConfiguration modifiableConfiguration = esr
+            .setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME)
+            .set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME);
+
+        if(useMappingsForES7){
+            modifiableConfiguration.set(USE_MAPPING_FOR_ES7, true, INDEX_NAME);
+        }
+
+        final Configuration indexConfig = modifiableConfiguration.restrictTo(INDEX_NAME);
+
         final IndexProvider idx = open(indexConfig);
 
-        final HttpPut newTemplate = new HttpPut("_template/template_1");
-        final Map<String, Object> content = ImmutableMap.of("template", "janusgraph_test_mapping*", "mappings", readMapping("/strict_mapping.json").getMappings());
-        newTemplate.setEntity(new StringEntity(objectMapper.writeValueAsString(content), StandardCharsets.UTF_8));
-        executeRequest(newTemplate);
+        final Map<String, Object> content;
+
+        if(isMappingUsed(idx)){
+            content = ImmutableMap.of("template", "janusgraph_test_mapping*",
+                "mappings", readTypesMapping("/strict_mapping.json").getMappings());
+        } else {
+            content = ImmutableMap.of("template", "janusgraph_test_mapping*",
+                "mappings", readTypelessMapping("/typeless_strict_mapping.json").getMappings());
+        }
+
+        executeRequestWithStringEntity(idx, "_template/template_1", content);
+
         final HttpPut newMapping = new HttpPut("janusgraph_" + storeName);
         executeRequest(newMapping);
 
@@ -235,61 +288,6 @@ public class ElasticsearchConfigTest {
             log.debug(e.getMessage(), e);
         }
         itx.rollback();
-        idx.close();
-    }
-
-    @Test
-    public void testSplitIndexToMultiType() throws InterruptedException, BackendException, IOException {
-        final ModifiableConfiguration config = esr.setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME);
-        config.set(USE_DEPRECATED_MULTITYPE_INDEX, false, INDEX_NAME);
-        Configuration indexConfig = config.restrictTo(INDEX_NAME);
-        final IndexProvider idx = open(indexConfig);
-        simpleWriteAndQuery(idx);
-
-        try {
-            config.set(USE_DEPRECATED_MULTITYPE_INDEX, true, INDEX_NAME);
-            indexConfig = config.restrictTo(INDEX_NAME);
-            open(indexConfig);
-            fail("should fail");
-        } catch (final IllegalArgumentException e) {
-            log.debug(e.getMessage(), e);
-        }
-        idx.close();
-    }
-
-    @Test
-    public void testMultiTypeToSplitIndex() throws InterruptedException, BackendException, IOException {
-        final ModifiableConfiguration config = esr.setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME);
-        config.set(USE_DEPRECATED_MULTITYPE_INDEX, true, INDEX_NAME);
-        Configuration indexConfig = config.restrictTo(INDEX_NAME);
-        final IndexProvider idx = open(indexConfig);
-        simpleWriteAndQuery(idx);
-
-        try {
-            config.set(USE_DEPRECATED_MULTITYPE_INDEX, false, INDEX_NAME);
-            indexConfig = config.restrictTo(INDEX_NAME);
-            open(indexConfig);
-            fail("should fail");
-        } catch (final IllegalArgumentException e) {
-            log.debug(e.getMessage(), e);
-        }
-        idx.close();
-    }
-
-    @Test
-    public void testMultiTypeUpgrade() throws InterruptedException, BackendException, IOException {
-        // create multi-type index
-        final ModifiableConfiguration config = esr.setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME);
-        config.set(USE_DEPRECATED_MULTITYPE_INDEX, true, INDEX_NAME);
-        Configuration indexConfig = config.restrictTo(INDEX_NAME);
-        IndexProvider idx = open(indexConfig);
-        simpleWriteAndQuery(idx);
-        idx.close();
-
-        // should be able to open multi-type index if USE_DEPRECATED_MULTITYPE_INDEX is unset
-        config.remove(USE_DEPRECATED_MULTITYPE_INDEX, INDEX_NAME);
-        indexConfig = config.restrictTo(INDEX_NAME);
-        idx = open(indexConfig);
         idx.close();
     }
 
@@ -317,8 +315,9 @@ public class ElasticsearchConfigTest {
         request.setHeader("Content-Type", "application/json");
         try (final CloseableHttpResponse res = httpClient.execute(host, request)) {
             final int statusCode = res.getStatusLine().getStatusCode();
-            assertTrue(statusCode >= 200 && statusCode < 300, "request failed");
-            assertFalse(EntityUtils.toString(res.getEntity()).contains("error"));
+            if(statusCode < 200 || statusCode >= 300 || EntityUtils.toString(res.getEntity()).contains("error")){
+                fail("Failed to execute a request:"+request.toString()+". Entity: "+EntityUtils.toString(res.getEntity()));
+            }
         }
     }
 
@@ -329,12 +328,12 @@ public class ElasticsearchConfigTest {
         return new ElasticSearchIndex(indexConfig);
     }
 
-    private void testExternalDynamic(boolean withUpdateMapping) throws Exception {
+    private void testExternalDynamic(boolean withUpdateMapping, boolean useMappingsForES7) throws Exception {
 
         final Duration maxWrite = Duration.ofMillis(2000L);
         final String storeName = "test_mapping";
 
-        final Configuration indexConfig = buildIndexConfigurationForExternalDynamic(withUpdateMapping);
+        final Configuration indexConfig = buildIndexConfigurationForExternalDynamic(withUpdateMapping, useMappingsForES7);
 
         final IndexProvider idx = open(indexConfig);
 
@@ -350,9 +349,11 @@ public class ElasticsearchConfigTest {
             log.debug(e.getMessage(), e);
         }
 
-        final HttpPut newMapping = new HttpPut("janusgraph_"+storeName);
-        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(readMapping("/dynamic_mapping.json")), StandardCharsets.UTF_8));
-        executeRequest(newMapping);
+        if(isMappingUsed(idx)){
+            executeRequestWithStringEntity(idx, "janusgraph_"+storeName, readTypesMapping("/dynamic_mapping.json"));
+        } else {
+            executeRequestWithStringEntity(idx, "janusgraph_"+storeName, readTypelessMapping("/typeless_dynamic_mapping.json"));
+        }
 
         // Test that the "date" property works well.
         idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
@@ -366,14 +367,37 @@ public class ElasticsearchConfigTest {
         assertEquals(withUpdateMapping, properties.containsKey("weight"), properties.toString());
     }
 
-    private Configuration buildIndexConfigurationForExternalDynamic(boolean withUpdateMapping){
+    private Configuration buildIndexConfigurationForExternalDynamic(boolean withUpdateMapping, boolean useMappingsForES7){
 
         ModifiableConfiguration indexConfig = GraphDatabaseConfiguration.buildGraphConfiguration().set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME);
         indexConfig = indexConfig.set(INDEX_PORT, esr.getPort(), INDEX_NAME);
         if(withUpdateMapping){
             indexConfig = indexConfig.set(ALLOW_MAPPING_UPDATE, true, INDEX_NAME);
         }
+        if(useMappingsForES7){
+            indexConfig.set(USE_MAPPING_FOR_ES7, true, INDEX_NAME);
+        }
         return indexConfig.restrictTo(INDEX_NAME);
     }
 
+    private void executeRequestWithStringEntity(IndexProvider idx, String endpoint, Object content) throws URISyntaxException, IOException {
+
+        ElasticSearchIndex elasticSearchIndex = ((ElasticSearchIndex) idx);
+
+        URIBuilder uriBuilder = new URIBuilder(endpoint);
+        if(ElasticMajorVersion.SEVEN.equals(elasticSearchIndex.getVersion()) && elasticSearchIndex.isUseMappingForES7()){
+            uriBuilder.setParameter(RestElasticSearchClient.INCLUDE_TYPE_NAME_PARAMETER, "true");
+        }
+
+        final HttpPut newMapping = new HttpPut(uriBuilder.build());
+        newMapping.setEntity(new StringEntity(objectMapper.writeValueAsString(content), StandardCharsets.UTF_8));
+        executeRequest(newMapping);
+    }
+
+    private boolean isMappingUsed(IndexProvider idx){
+        ElasticSearchIndex elasticSearchIndex = ((ElasticSearchIndex) idx);
+
+        return elasticSearchIndex.getVersion().getValue() < 7 ||
+            (ElasticMajorVersion.SEVEN.equals(elasticSearchIndex.getVersion()) && elasticSearchIndex.isUseMappingForES7());
+    }
 }

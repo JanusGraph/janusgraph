@@ -266,7 +266,7 @@
          name and the version of the index. As long as the index version
          remains unchanged, and the same field name is reused,
          the ordering of the docs will be consistent.
-         If you want different psuedo-random orderings of documents,
+         If you want different pseudo-random orderings of documents,
          for the same version of the index, use a dynamicField and
          change the field name in the request.
      -->
@@ -415,7 +415,7 @@
         <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
         <filter class="solr.EnglishMinimalStemFilterFactory"/>
         <!-- this filter can remove any duplicate tokens that appear at the same position - sometimes
-             possible with WordDelimiterFilter in conjuncton with stemming. -->
+             possible with WordDelimiterFilter in conjunction with stemming. -->
         <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
       </analyzer>
     </fieldType>

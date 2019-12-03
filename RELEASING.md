@@ -56,7 +56,7 @@ Steps below were taken from [this guide.](https://maven.apache.org/guides/mini/g
 
 ```xml
 <settingsSecurity>
-  <master>{master passsword}</master>
+  <master>{master password}</master>
 </settingsSecurity>
 ```
 
@@ -108,8 +108,7 @@ Otherwise you will have to type in your gpg passphrase many times when prompted 
 </settings>
 ```
 
-Release Checklist
------------------
+# Release Checklist
 
 *   [ ] Start up new `[DISCUSS]` thread on janusgraph-dev with suggestions on what should be included in the release and target date
 *   [ ] Make sure all PRs and issues added since last release are associated to the milestone
@@ -128,8 +127,8 @@ Release Checklist
 *   [ ] Prepare the next SNAPSHOT release
 *   [ ] Document lessons learned
 
-Release Steps
--------------
+# Release Steps
+
 
 ### Create discussion thread
 
@@ -166,10 +165,8 @@ Example: `<tag>v0.3.2</tag>`
 
 Update version-sensitive files in the root and documentation sources in the `docs` subdirectory:
 
-*   `docs/changelog.adoc`
-*   `docs/versions.adoc`
-*   `docs/upgrade.adoc`
-*   `docs/xsl/common.xsl`
+* `docs/changelog.md` - Add / finalize release section
+* `mkdocs.yml` - Update `latest_version` and check all others package versions. 
 
 You may also need to update the following files in the main repo for any new or updated dependencies:
 
@@ -197,22 +194,11 @@ Open up pull requests for the version updates.
 It is recommended to add `[full build]` to the commit message so the full suite of compatibility tests will run.
 After the updates are approved and merged, continue on with the release process.
 
-### Release Documentation update
+# Build Release Artifacts
 
-1. Update version-sensitive files in the root and documentation sources in the `docs` subdirectory: 
-    * `docs/changelog.md`
-    * `mkdocs.yml`
-2. Update the configuration reference: `mvn install -DskipTests=true -pl janusgraph-doc -am`
-3. For building documentation: see `building.md`
-4. Zip documentation: `$ zip janusgraph-${JANUSGRAPH_VERSION}-hadoop2-doc.zip site`
-5. You may also need to update the following file in the main repo for any new or updated dependencies: `NOTICE.txt`
-
-Build Release Artifacts
------------------------
-
-*   Pull down the latest, merged code from GitHub.
-*   Stash any uncommitted changes.
-*   Delete untracked files and directories.
+* Pull down the latest, merged code from GitHub.
+* Stash any uncommitted changes.
+* Delete untracked files and directories.
 
 ```Shell
 git fetch
@@ -221,21 +207,21 @@ git stash save
 git clean -fdx
 ```
 
-*   Deploy all jars (including javadoc and sources) and all signatures for jars to a staging repository on Sonatype.
+* Deploy all jars (including javadoc and sources) and all signatures for jars to a staging repository on Sonatype.
 ```Shell
 mvn clean javadoc:jar deploy -Pjanusgraph-release -DskipTests=true
 ```
 
 *   Prepare files for GitHub release
 ```Shell
-export JG_VER="janusgraph-0.2.3"
+export JG_VER="janusgraph-0.5.0"
 mkdir -p ~/jg-staging
-cp janusgraph-dist/janusgraph-dist-hadoop-2/target/${JG_VER}-hadoop2.zip* ~/jg-staging/
+cp janusgraph-dist/target/${JG_VER}.zip* ~/jg-staging/
 cd janusgraph-doc/target/docs/
-mv chunk ${JG_VER}-hadoop2-doc
-zip -r ${JG_VER}-hadoop2-doc.zip ${JG_VER}-hadoop2-doc
-gpg --armor --detach-sign ${JG_VER}-hadoop2-doc.zip
-cp ${JG_VER}-hadoop2-doc.zip* ~/jg-staging/
+mv chunk ${JG_VER}-doc
+zip -r ${JG_VER}-doc.zip ${JG_VER}-doc
+gpg --armor --detach-sign ${JG_VER}-doc.zip
+cp ${JG_VER}-doc.zip* ~/jg-staging/
 ```
 
 If it fails due to Inappropriate ioctl for device error, run:
@@ -246,8 +232,8 @@ export GPG_TTY=$(tty)
 *   Verify signature validity (both commands should show good signature)
 ```Shell
 cd ~/jg-staging
-gpg --verify ${JG_VER}-hadoop2.zip.asc ${JG_VER}-hadoop2.zip
-gpg --verify ${JG_VER}-hadoop2-doc.zip.asc ${JG_VER}-hadoop2-doc.zip
+gpg --verify ${JG_VER}.zip.asc ${JG_VER}.zip
+gpg --verify ${JG_VER}-doc.zip.asc ${JG_VER}-doc.zip
 ```
 
 ### Create a Draft Release on GitHub
@@ -259,6 +245,12 @@ All of the artifacts that were created and moved to `~/jg-staging/` in the previ
 Be sure to mark it as `pre-release`.
 It is recommended and keep the release in draft until you're ready to start a vote.
 In addition to the artifacts in `~/jg-staging/` a `KEYS` file must also be added to the release.
+
+#### Include documentation of this version into the GitHub release
+
+1. For building documentation: see `building.md`
+2. Zip documentation: `$ zip janusgraph-${JANUSGRAPH_VERSION}-doc.zip site`
+3. Add documentation to artifacts
 
 ### Close the staging repository
 
@@ -280,7 +272,13 @@ See the documentation on the [JanusGraph release policy](https://docs.janusgraph
 
 *This is the point of no return.* After releasing artifacts to Maven
 Central and pushing history to the public GitHub repo, the release
-can't be canceled.
+can't be canceled. 
+
+Update the `STRUCTOR_LATEST_TAG` variable in the settings of the JanusGraph project 
+in the Travis CI web interface and ensure that 
+the newest version is the actually latest version in our documentation, 
+for example, you release `v0.3.3` but `v0.4.0` is already released,
+`STRUCTOR_LATEST_TAG` variable should be `v0.4.0`.
 
 ### Release the staging repository
 
@@ -310,7 +308,8 @@ Restore the `<scm>` to `<tag>HEAD</tag>` in the root `pom.xml` file.
 
 Create an issue to initialize the next SNAPSHOT release.
 
-Open a pull request with the `pom.xml` updates as a fix for that issue.
+Open a pull request with the `pom.xml` updates as a fix for that issue and also
+update `snapshot_version` in the `mkdocs.yml`. 
 
 ### Announce the release
 

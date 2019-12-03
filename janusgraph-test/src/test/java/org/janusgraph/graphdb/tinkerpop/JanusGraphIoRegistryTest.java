@@ -111,7 +111,7 @@ public class JanusGraphIoRegistryTest {
     }
 
     @Test
-    public void testGeoshapAsGryo() throws SerializationException {
+    public void testGeoshapeAsGryo() throws SerializationException {
         Graph graph = EmptyGraph.instance();
         GraphTraversalSource g = graph.traversal();
 
@@ -145,7 +145,7 @@ public class JanusGraphIoRegistryTest {
     }
 
     @Test
-    public void testLegacyGeoshapAsGryo() {
+    public void testLegacyGeoshapeAsGryo() {
         final Geoshape point = Geoshape.point(1.0d, 4.0d);
 
         Kryo kryo = new Kryo();

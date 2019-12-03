@@ -82,7 +82,7 @@ The `:remote` command tells the console to configure a remote connection
 to Gremlin Server using the `conf/remote.yaml` file to connect. That
 file points to a Gremlin Server instance running on `localhost`. The
 `:>` is the "submit" command which sends the Gremlin on that line to the
-currently active remote. By default remote conenctions are sessionless,
+currently active remote. By default remote connections are sessionless,
 meaning that each line sent in the console is interpreted as a single
 request. Multiple statements can be sent on a single line using a
 semicolon as the delimiter. Alternately, you can establish a console
@@ -124,15 +124,15 @@ If you want to start fresh and remove the database and logs you can use
 the clean command with `janusgraph.sh`. The server should be stopped
 before running the clean operation.
 ```bash
-$ cd /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/
+$ cd /Path/to/janusgraph/janusgraph-{project.version}/
 $ ./bin/janusgraph.sh stop
 Killing Gremlin-Server (pid 91505)...
 Killing Elasticsearch (pid 91402)...
 Killing Cassandra (pid 91219)...
 $ ./bin/janusgraph.sh clean
 Are you sure you want to delete all stored data and logs? [y/N] y
-Deleted data in /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/db
-Deleted logs in /Path/to/janusgraph/janusgraph-0.2.0-hadoop2/log
+Deleted data in /Path/to/janusgraph/janusgraph-{project.version}/db
+Deleted logs in /Path/to/janusgraph/janusgraph-{project.version}/log
 ```
 
 ## JanusGraph Server as a WebSocket Endpoint
@@ -342,7 +342,7 @@ authentication: {
 !!! important
     In the preceding example, credentialsDb should be different from the graph(s) you are using. It should be configured with the correct backend and a different keyspace, table, or storage directory as appropriate for the configured backend. This graph will be used for storing usernames and passwords.
 
-If you are connecting through the gremlin console, your remote yaml file should ammend the `username` and `password` properties with the appropriate values.
+If you are connecting through the gremlin console, your remote yaml file should amend the `username` and `password` properties with the appropriate values.
 
 ```yaml
 username: user
@@ -351,7 +351,7 @@ password: password
 
 ### Authentication over HTTP and WebSocket
 
-If you are using the combined channelizer for both HTTP and WebSocket you can use the SaslAndHMACAuthenticator to authorize through either WebSocket through SASL, HTTP through basic auth, and HTTP through hash-based messsage authentication code (https://en.wikipedia.org/wiki/Hash-based_message_authentication_code[HMAC]) Auth. HMAC is a token based authentication designed to be used over HTTP. You first acquire a token via the `/session` endpoint and then use that to authenticate. It is used to amortize the time spent encrypting the password using basic auth.
+If you are using the combined channelizer for both HTTP and WebSocket you can use the SaslAndHMACAuthenticator to authorize through either WebSocket through SASL, HTTP through basic auth, and HTTP through hash-based message authentication code (https://en.wikipedia.org/wiki/Hash-based_message_authentication_code[HMAC]) Auth. HMAC is a token based authentication designed to be used over HTTP. You first acquire a token via the `/session` endpoint and then use that to authenticate. It is used to amortize the time spent encrypting the password using basic auth.
 
 The `gremlin-server.yaml` should include the following configurations
 

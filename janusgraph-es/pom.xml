@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.5.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-es</artifactId>
@@ -11,10 +11,10 @@
     <url>https://janusgraph.org</url>
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
-        <elasticsearch5.docker.version>5.6.14</elasticsearch5.docker.version>
         <elasticsearch60.docker.version>6.0.1</elasticsearch60.docker.version>
         <elasticsearch6.docker.version>6.6.0</elasticsearch6.docker.version>
-        <elasticsearch.docker.version>${elasticsearch6.docker.version}</elasticsearch.docker.version>
+        <elasticsearch7.docker.version>7.3.1</elasticsearch7.docker.version>
+        <elasticsearch.docker.version>${elasticsearch7.docker.version}</elasticsearch.docker.version>
         <skip.es.test>${skipTests}</skip.es.test>
         <elasticsearch.docker.image>docker.elastic.co/elasticsearch/elasticsearch</elasticsearch.docker.image>
     </properties>
@@ -26,7 +26,13 @@
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-test</artifactId>
+            <artifactId>janusgraph-backend-testutils</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-inmemory</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -59,11 +65,6 @@
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-client</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.antlr</groupId>
-            <artifactId>antlr-runtime</artifactId>
-            <version>${antlr.version}</version>
         </dependency>
 
         <!-- Logging backends.
@@ -174,12 +175,6 @@
 
     <profiles>
         <profile>
-            <id>elasticsearch5</id>
-            <properties>
-                <elasticsearch.docker.version>${elasticsearch5.docker.version}</elasticsearch.docker.version>
-            </properties>
-        </profile>
-        <profile>
             <id>elasticsearch60</id>
             <properties>
                 <elasticsearch.docker.version>${elasticsearch60.docker.version}</elasticsearch.docker.version>
@@ -187,11 +182,17 @@
         </profile>
         <profile>
             <id>elasticsearch6</id>
+            <properties>
+                <elasticsearch.docker.version>${elasticsearch6.docker.version}</elasticsearch.docker.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>elasticsearch7</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <elasticsearch.docker.version>${elasticsearch6.docker.version}</elasticsearch.docker.version>
+                <elasticsearch.docker.version>${elasticsearch7.docker.version}</elasticsearch.docker.version>
             </properties>
         </profile>
 

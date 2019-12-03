@@ -56,6 +56,11 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
             "Percentage of JVM heap reserved for BerkeleyJE's cache",
             ConfigOption.Type.MASKABLE, 65, ConfigOption.positiveInt());
 
+    public static final ConfigOption<Boolean> SHARED_CACHE =
+        new ConfigOption<>(BERKELEY_NS, "shared-cache",
+            "If true, the shared cache is used for all graph instances",
+            ConfigOption.Type.MASKABLE, true);
+
     public static final ConfigOption<String> LOCK_MODE =
             new ConfigOption<>(BERKELEY_NS, "lock-mode",
             "The BDB record lock mode used for read operations",
@@ -77,7 +82,8 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         stores = new HashMap<>();
 
         int cachePercentage = configuration.get(JVM_CACHE);
-        initialize(cachePercentage);
+        boolean sharedCache = configuration.get(SHARED_CACHE);
+        initialize(cachePercentage, sharedCache);
 
         features = new StandardStoreFeatures.Builder()
                     .orderedScan(true)
@@ -90,26 +96,15 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
                     .supportsInterruption(false)
                     .optimisticLocking(false)
                     .build();
-
-//        features = new StoreFeatures();
-//        features.supportsOrderedScan = true;
-//        features.supportsUnorderedScan = false;
-//        features.supportsBatchMutation = false;
-//        features.supportsTxIsolation = transactional;
-//        features.supportsConsistentKeyOperations = true;
-//        features.supportsLocking = true;
-//        features.isKeyOrdered = true;
-//        features.isDistributed = false;
-//        features.hasLocalKeyPartition = false;
-//        features.supportsMultiQuery = false;
     }
 
-    private void initialize(int cachePercent) throws BackendException {
+    private void initialize(int cachePercent, final boolean sharedCache) throws BackendException {
         try {
             EnvironmentConfig envConfig = new EnvironmentConfig();
             envConfig.setAllowCreate(true);
             envConfig.setTransactional(transactional);
             envConfig.setCachePercent(cachePercent);
+            envConfig.setSharedCache(sharedCache);
 
             if (batchLoading) {
                 envConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CHECKPOINTER, "false");
@@ -118,7 +113,6 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
             //Open the environment
             environment = new Environment(directory, envConfig);
-
 
         } catch (DatabaseException e) {
             throw new PermanentBackendException("Error during BerkeleyJE initialization: ", e);
@@ -181,7 +175,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
             Database db = environment.openDatabase(null, name, dbConfig);
 
-            log.debug("Opened database {}", name, new Throwable());
+            log.debug("Opened database {}", name);
 
             BerkeleyJEKeyValueStore store = new BerkeleyJEKeyValueStore(name, db, this);
             stores.put(name, store);
@@ -220,7 +214,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
     void removeDatabase(BerkeleyJEKeyValueStore db) {
         if (!stores.containsKey(db.getName())) {
-            throw new IllegalArgumentException("Tried to remove an unkown database from the storage manager");
+            throw new IllegalArgumentException("Tried to remove an unknown database from the storage manager");
         }
         String name = db.getName();
         stores.remove(name);

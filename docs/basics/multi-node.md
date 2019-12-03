@@ -66,7 +66,7 @@ able to successfully remove the graph from the cache.
     update the individual graph configurations, you must do so using the
     [available update
     APIs](configured-graph-factory.md#updating-configurations). These
-    update APIs will *then* result in the graphe cache eviction across all
+    update APIs will *then* result in the graph cache eviction across all
     JanusGraph nodes in your cluster.
 
 ### Dynamic Graph and Traversal Bindings

@@ -18,10 +18,10 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.inmemory.InMemoryStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.*;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
-import org.janusgraph.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
@@ -97,7 +97,7 @@ public abstract class KCVSCacheTest {
 
     @Test
     public void testSmallCache() throws Exception {
-        final int numKeys = 100, numCols = 10; //numCols must be greater than or equal to 10 as it is assummed below
+        final int numKeys = 100, numCols = 10; //numCols must be greater than or equal to 10 as it is assumed below
         final int repeats = 100, clearEvery = 20, numMulti = 10;
         loadStore(numKeys,numCols);
 

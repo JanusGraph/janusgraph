@@ -65,7 +65,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     private final List<PredicateCondition<String, JanusGraphElement>> constraints = new ArrayList<>(5);
 
     /**
-     * List of constraints added to an Or query. None by defautl
+     * List of constraints added to an Or query. None by default
      */
     private final List<List<PredicateCondition<String, JanusGraphElement>>> globalConstraints = new ArrayList<>();
     /**

@@ -58,6 +58,4 @@ public interface VertexLabelMaker {
      * @return the created vertex label
      */
     VertexLabel make();
-
-
 }

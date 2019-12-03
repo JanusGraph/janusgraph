@@ -8,14 +8,14 @@ Run `mvn clean install -Pjanusgraph-release -Dgpg.skip=true
 -DskipTests=true`.  This command can be run from either the root of
 the JanusGraph repository (the parent of the janusgraph-dist directory) or the
 janusgraph-dist directory.  Running from the root of the repository is
-recommended.  Running from janusgraph-dist requries that JanusGraph's jars be
+recommended.  Running from janusgraph-dist requires that JanusGraph's jars be
 available on either Sonatype, Maven Central, or your local Maven
 repository (~/.m2/repository/) depending on whether you're building a
 SNAPSHOT or a release tag.
 
 This command writes one archive:
 
-* janusgraph-dist/janusgraph-dist-hadoop-2/target/janusgraph-$VERSION-hadoop2.zip
+* janusgraph-dist/target/janusgraph-$VERSION.zip
 
 It's also possible to leave off the `-DskipTests=true`.  However, in
 the absence of `-DskipTests=true`, the -Pjanusgraph-release argument
@@ -52,7 +52,7 @@ three folders to the root of the janusgraph repository:
 * redhat
 
 The debian and redhat folders contain platform-specific packaging
-conttrol and payoad files.  The pkgcommon folder contains shared
+control and payload files.  The pkgcommon folder contains shared
 payload and helper scripts.
 
 To build the .deb and .rpm packages:

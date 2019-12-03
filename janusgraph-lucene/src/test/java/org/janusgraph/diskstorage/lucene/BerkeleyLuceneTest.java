@@ -47,9 +47,7 @@ public class BerkeleyLuceneTest extends JanusGraphIndexTest {
 
     @Override
     public boolean supportsLuceneStyleQueries() {
-        return false;
-        //TODO: The query [v.name:"Uncle Berry has a farm"] has an empty result set which indicates that exact string
-        //matching inside this query is not supported for some reason. INVESTIGATE!
+        return true;
     }
 
     @Override
@@ -59,6 +57,11 @@ public class BerkeleyLuceneTest extends JanusGraphIndexTest {
 
     @Override
     protected boolean supportsCollections() {
+        return true;
+    }
+
+    @Override
+    protected boolean supportsGeoCollections() {
         return false;
     }
 

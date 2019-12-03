@@ -30,7 +30,7 @@ pipelines:
     timeout: 42
     env:
     - name: MODULE
-      value: janusgraph-hadoop-parent/janusgraph-hadoop-2,janusgraph-lucene,janusgraph-solr
+      value: janusgraph-hadoop,janusgraph-lucene,janusgraph-solr
   - name: cassandra
     timeout: 220
     env:

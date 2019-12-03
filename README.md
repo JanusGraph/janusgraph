@@ -89,7 +89,7 @@ CLAs and best practices for working with GitHub.
 * [Eclipse Keti](https://github.com/eclipse/keti) - access control service to protect RESTful APIs ([website](https://projects.eclipse.org/projects/iot.keti))
 * [Exakat](https://github.com/exakat/exakat) - PHP static analysis ([website](https://www.exakat.io/))
 * [Open Network Automation Platform (ONAP)](https://www.onap.org/) - automation and orchestration for Software-Defined Networks
-* [Unifi Catalog & Discovery](https://unifisoftware.com/product/catalog-discovery/) - JanusGraph is embedded into the Unifi Data Catalog UI to enable users to determine how datasets and attributes are related.
+* [Unifi Catalog & Discovery](https://unifisoftware.com/product/data-catalog) - JanusGraph is embedded into the Unifi Data Catalog UI to enable users to determine how datasets and attributes are related.
 - [Uber Knowledge Graph](https://www.youtube.com/watch?v=C01Gh0g01JE) ([event info](https://leap.ai/events/2017/08/06/uber_knowledge_graph))
 - [Express-Cassandra](https://github.com/masumsoft/express-cassandra) - Cassandra ORM/ODM/OGM for Node.js with optional support for Elassandra & JanusGraph
 * [Windup](https://github.com/windup/windup) by RedHat - application migration and assessment tool ([website](https://developers.redhat.com/products/rhamt/overview/))
@@ -103,7 +103,7 @@ The following users have deployed JanusGraph in production.
 * [G DATA](https://gdatasoftware.com)
 * [Netflix](https://www.netflix.com) -
   [video](https://youtu.be/KSmAdtMJYEo?t=1h2m17s) and
-  [slides](https://www.slideshare.net/RoopaTangirala/polyglot-persistence-netflix-cde-meetup-90955706) (graph discussion starts at #86)
+  [slides](https://www.slideshare.net/RoopaTangirala/polyglot-persistence-netflix-cde-meetup-90955706#86) (graph discussion starts at #86)
 * [Qihoo 360](https://www.360.cn/) ([about](https://en.wikipedia.org/wiki/Qihoo_360))
 * [Red Hat](https://www.redhat.com/) - [application migration and assessment tool](https://developers.redhat.com/products/rhamt/overview/) built on [Windup](https://github.com/windup/windup)
 * [Sift Security](https://siftsecurity.com)

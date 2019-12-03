@@ -25,6 +25,7 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.client.methods.*;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -57,6 +58,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
@@ -180,6 +182,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         String message = Throwables.getRootCause(janusGraphException).getMessage();
 
         switch (JanusGraphElasticsearchContainer.getEsMajorVersion().value){
+            case 7:
             case 6:
                 assertTrue(message.contains("mapper_parsing_exception"));
                 break;
@@ -289,7 +292,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
     }
 
     @Test
-    public void testCustomMappingProperty() throws BackendException, IOException, ParseException {
+    public void testCustomMappingProperty() throws BackendException, IOException, ParseException, URISyntaxException {
 
         String mappingTypeName = "vertex";
         String indexPrefix = "janusgraph";
@@ -320,8 +323,15 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
 
         JSONObject json = (JSONObject) new JSONParser().parse(EntityUtils.toString(entity));
 
-        String returnedProperty = retrieveValueFromJSON(json,
-            indexName, "mappings", mappingTypeName, "properties", field, parameterName);
+        String returnedProperty;
+
+        if(JanusGraphElasticsearchContainer.getEsMajorVersion().value < 7){
+            returnedProperty = retrieveValueFromJSON(json,
+                indexName, "mappings", mappingTypeName, "properties", field, parameterName);
+        } else {
+            returnedProperty = retrieveValueFromJSON(json,
+                indexName, "mappings", "properties", field, parameterName);
+        }
 
         assertEquals(parameterValue.toString(), returnedProperty);
 
@@ -388,9 +398,17 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertEquals(2, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Text.CONTAINS, "John"))).count());
     }
 
+    private CloseableHttpResponse getESMapping(String indexName, String mappingTypeName) throws IOException, URISyntaxException {
 
-    private CloseableHttpResponse getESMapping(String indexName, String mappingTypeName) throws IOException {
-        final HttpGet httpGet = new HttpGet(indexName+"/_mapping/"+mappingTypeName);
+        URIBuilder uriBuilder;
+
+        if(JanusGraphElasticsearchContainer.getEsMajorVersion().value < 7){
+            uriBuilder = new URIBuilder(indexName+"/_mapping/"+mappingTypeName);
+        } else {
+            uriBuilder = new URIBuilder(indexName+"/_mapping");
+        }
+
+        final HttpGet httpGet = new HttpGet(uriBuilder.build());
         return httpClient.execute(host, httpGet);
     }
 

@@ -614,7 +614,7 @@ public class IndexSerializer {
                 replacement = key2Field(index,key);
             } else {
                 Preconditions.checkArgument(query.getUnknownKeyName()!=null,
-                        "Found reference to non-existant property key in query at position [%s]: %s",startPos,keyName);
+                        "Found reference to nonexistent property key in query at position [%s]: %s",startPos,keyName);
                 replacement = query.getUnknownKeyName();
             }
             Preconditions.checkArgument(StringUtils.isNotBlank(replacement));
@@ -645,7 +645,7 @@ public class IndexSerializer {
                 orderReplacement.add(new IndexQuery.OrderEntry(key2Field(index,key), org.janusgraph.graphdb.internal.Order.convert(order.value()), key.dataType()));
             } else {
                 Preconditions.checkArgument(query.getUnknownKeyName()!=null,
-                    "Found reference to non-existant property key in query orders %s", order.key());
+                    "Found reference to nonexistent property key in query orders %s", order.key());
             }
         }
         return ImmutableList.copyOf(orderReplacement);

@@ -14,18 +14,10 @@
 
 package org.janusgraph.diskstorage.es.compat;
 
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_ANALYZER;
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_INLINE_KEY;
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_LANG_KEY;
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_SCRIPT_KEY;
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_TYPE_KEY;
-
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.janusgraph.core.Cardinality;
@@ -37,6 +29,8 @@ import org.janusgraph.diskstorage.indexing.IndexFeatures;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.*;
 
 /**
  * Base class for building Elasticsearch mapping and query objects.
@@ -74,9 +68,23 @@ public abstract class AbstractESCompat {
         return "painless";
     }
 
-    public ImmutableMap.Builder prepareScript(String inline) {
-        final Map<String, String> script = ImmutableMap.of(ES_INLINE_KEY, inline, ES_LANG_KEY, scriptLang());
-        return ImmutableMap.builder().put(ES_SCRIPT_KEY, script);
+    public ImmutableMap.Builder<String, Object> prepareScript(String source) {
+        Map<String, Object> script = ImmutableMap.of(ES_SOURCE_KEY, source,
+            ES_LANG_KEY, scriptLang());
+        return ImmutableMap.<String, Object>builder().put(ES_SCRIPT_KEY, script);
+    }
+
+    public ImmutableMap.Builder<String, Object> prepareStoredScript(String scriptId, List<Map<String, Object>> fields) {
+        Map<String, Object> script = ImmutableMap.of(ES_ID_KEY, scriptId,
+            ES_PARAMS_KEY, ImmutableMap.of(ES_PARAMS_FIELDS_KEY, fields));
+        return ImmutableMap.<String, Object>builder().put(ES_SCRIPT_KEY, script);
+    }
+
+    public ImmutableMap.Builder<String, Object> prepareInlineScript(String source, List<Map<String, Object>> fields) {
+        Map<String, Object> script = ImmutableMap.of(ES_SOURCE_KEY, source,
+            ES_PARAMS_KEY, ImmutableMap.of(ES_PARAMS_FIELDS_KEY, fields),
+            ES_LANG_KEY, scriptLang());
+        return ImmutableMap.<String, Object>builder().put(ES_SCRIPT_KEY, script);
     }
 
     public Map<String,Object> prepareQuery(Map<String,Object> query) {
@@ -173,18 +181,40 @@ public abstract class AbstractESCompat {
     }
 
     public Map<String,Object> createRequestBody(ElasticSearchRequest request, Parameter[] parameters) {
-        final Map<String,Object> requestBody = new HashMap<>();
+        final Map<String,Object> requestBody = createRequestBody(request.getQuery(), parameters);
 
-        Optional.ofNullable(request.getSize()).ifPresent(parameter -> requestBody.put("size", parameter));
-        Optional.ofNullable(request.getFrom()).ifPresent(parameter -> requestBody.put("from", parameter));
+        if(request.getSize() != null){
+            requestBody.put("size", request.getSize());
+        }
+
+        if(request.getFrom() != null){
+            requestBody.put("from", request.getFrom());
+        }
 
         if (!request.getSorts().isEmpty()) {
             requestBody.put("sort", request.getSorts());
         }
 
-        Optional.ofNullable(request.getQuery()).ifPresent(parameter -> requestBody.put("query", parameter));
-        Optional.ofNullable(parameters).ifPresent(p -> Arrays.stream(p).forEachOrdered(parameter -> requestBody.put(parameter.key(), parameter.value())));
+        if(request.isDisableSourceRetrieval()){
+            requestBody.put("_source", false);
+        }
+
         return requestBody;
     }
 
+    public Map<String,Object> createRequestBody(Map<String,Object> query, Parameter[] parameters) {
+        final Map<String,Object> requestBody = new HashMap<>();
+
+        if(query != null){
+            requestBody.put("query", query);
+        }
+
+        if(parameters != null){
+            for(Parameter parameter : parameters){
+                requestBody.put(parameter.key(), parameter.value());
+            }
+        }
+
+        return requestBody;
+    }
 }

@@ -50,7 +50,7 @@ complete the pull request template checklist, and provide a description
 of what test suites were run to validate the pull request. Pull requests
 commit messages should clearly describe what work was accomplished.
 Intermediate work-in-progress commits should be squashed prior to pull
-request submittal.
+request submission.
 
 ### Review-Then-Commit (RTC)
 
