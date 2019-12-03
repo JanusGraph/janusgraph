@@ -51,6 +51,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -73,6 +74,8 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry.GetColVal;
 import org.janusgraph.diskstorage.util.StaticArrayEntryList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Metadata;
@@ -100,6 +103,7 @@ import io.vavr.control.Try;
  * An implementation of {@link KeyColumnValueStore} which stores the data in a CQL connected backend.
  */
 public class CQLKeyColumnValueStore implements KeyColumnValueStore {
+    private static final Logger log = LoggerFactory.getLogger(CQLKeyColumnValueStore.class);
 
     private static final String TTL_FUNCTION_NAME = "ttl";
     private static final String WRITETIME_FUNCTION_NAME = "writetime";
@@ -426,8 +430,9 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         private int index;
         private int paginatedResultSize;
         private final Supplier<Statement> statementSupplier;
+        private AtomicLong recordCount = new AtomicLong();
 
-        private PagingState lastPagingState = null;
+        private byte[] lastPagingState = null;
 
         public CQLPagingIterator(final int pageSize, Supplier<Statement> statementSupplier) {
             this.index = 0;
@@ -448,7 +453,10 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                 this.index = 0;
             }
             this.index++;
-            lastPagingState = currentResultSet.getExecutionInfo().getPagingState();
+         // Using getPagingStateUnsafe rather than getPagingState, to avoid the md5
+            // compute of the pageState, which can be quite expensive.
+            lastPagingState = currentResultSet.getExecutionInfo().getPagingStateUnsafe();
+            recordCount.incrementAndGet();
             return currentResultSet.one();
 
         }
@@ -456,7 +464,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         private ResultSet getResultSet() {
             final Statement boundStmnt = statementSupplier.get();
             if (lastPagingState != null) {
-                boundStmnt.setPagingState(lastPagingState);
+                boundStmnt.setPagingStateUnsafe(lastPagingState);
             }
             return session.execute(boundStmnt);
         }

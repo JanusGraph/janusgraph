@@ -16,6 +16,7 @@ package org.janusgraph.diskstorage.cql;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -199,5 +200,23 @@ public class CQLResultSetKeyIteratorTest {
         when(resultSet.iterator()).thenReturn(rows.iterator());
 
         return resultSet;
+    }
+    
+    @Test
+    public void testIsExhausted() throws IOException {
+        final Array<Tuple2<ByteBuffer, Array<Tuple2<ByteBuffer, ByteBuffer>>>> keysMap = generateRandomKeysMap();
+        final ResultSet resultSet = generateMockedResultSet(keysMap);
+
+        final CQLColValGetter getter = new CQLColValGetter(new EntryMetaData[0]);
+        try (final CQLResultSetKeyIterator resultSetKeyIterator = new CQLResultSetKeyIterator(ALL_COLUMNS, getter, resultSet)) {
+            final Iterator<Tuple2<ByteBuffer, Array<Tuple2<ByteBuffer, ByteBuffer>>>> iterator = keysMap.iterator();
+
+            assertFalse(resultSetKeyIterator.isExhausted());
+            while (resultSetKeyIterator.hasNext()) {
+                final StaticBuffer next = resultSetKeyIterator.next();
+                assertEquals(iterator.next()._1, next.asByteBuffer());
+            }
+            assertTrue(resultSetKeyIterator.isExhausted());
+        }
     }
 }
