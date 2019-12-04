@@ -239,6 +239,39 @@ public interface CQLConfigOptions {
             ConfigOption.Type.LOCAL,
             "");
 
+    ConfigOption<Boolean> SSL_CLIENT_AUTHENTICATION_ENABLED = new ConfigOption<>(
+            SSL_NS,
+            "client-authentication-enabled",
+            "Enables use of a client key to authenticate with Cassandra",
+            ConfigOption.Type.LOCAL,
+            false);
+
+    ConfigNamespace SSL_KEYSTORE_NS = new ConfigNamespace(
+            SSL_NS, 
+            "keystore", 
+            "Configuration options for SSL Keystore.");
+
+    ConfigOption<String> SSL_KEYSTORE_LOCATION = new ConfigOption<>(
+            SSL_KEYSTORE_NS,
+            "location",
+            "Marks the location of the SSL Keystore.",
+            ConfigOption.Type.LOCAL,
+            "");
+    
+    ConfigOption<String> SSL_KEYSTORE_KEY_PASSWORD = new ConfigOption<>(
+            SSL_KEYSTORE_NS,
+            "keypassword",
+            "The password to access the key in SSL Keystore.",
+            ConfigOption.Type.LOCAL,
+            "");
+    
+    ConfigOption<String> SSL_KEYSTORE_STORE_PASSWORD = new ConfigOption<>(
+            SSL_KEYSTORE_NS,
+            "storepassword",
+            "The password to access the store in SSL Keystore.",
+            ConfigOption.Type.LOCAL,
+            "");
+    
     // Other options
     ConfigOption<String> CLUSTER_NAME = new ConfigOption<>(
             CQL_NS,
