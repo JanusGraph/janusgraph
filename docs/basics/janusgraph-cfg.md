@@ -478,7 +478,18 @@ Configuration options for SSL
 
 | Name | Description | Datatype | Default Value | Mutability |
 | ---- | ---- | ---- | ---- | ---- |
+| storage.cql.ssl.client-authentication-enabled | Enables use of a client key to authenticate with Cassandra | Boolean | false | LOCAL |
 | storage.cql.ssl.enabled | Controls use of the SSL connection to Cassandra | Boolean | false | LOCAL |
+
+### storage.cql.ssl.keystore
+Configuration options for SSL Keystore.
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| storage.cql.ssl.keystore.keypassword | The password to access the key in SSL Keystore. | String |  | LOCAL |
+| storage.cql.ssl.keystore.location | Marks the location of the SSL Keystore. | String |  | LOCAL |
+| storage.cql.ssl.keystore.storepassword | The password to access the SSL Keystore. | String |  | LOCAL |
 
 ### storage.cql.ssl.truststore
 Configuration options for SSL Truststore.

@@ -124,6 +124,7 @@
                         <cassandra.docker.version>${cassandra.docker.version}</cassandra.docker.version>
                         <cassandra.docker.partitioner>${cassandra.docker.partitioner}</cassandra.docker.partitioner>
                         <cassandra.docker.useSSL>${cassandra.docker.useSSL}</cassandra.docker.useSSL>
+                        <cassandra.docker.enableClientAuth>${cassandra.docker.enableClientAuth}</cassandra.docker.enableClientAuth>
                         <cassandra.docker.useDefaultConfigFromImage>${cassandra.docker.useDefaultConfigFromImage}</cassandra.docker.useDefaultConfigFromImage>
                     </systemPropertyVariables>
                 </configuration>
@@ -254,6 +255,20 @@
                 <cassandra.docker.version>${test.docker.version.cassandra3}</cassandra.docker.version>
                 <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
                 <cassandra.docker.useSSL>true</cassandra.docker.useSSL>
+                <test.skip.murmur-serial>false</test.skip.murmur-serial>
+                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
+            </properties>
+        </profile>
+        <profile>
+            <id>cassandra3-murmur-client-auth</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <cassandra.docker.version>${test.docker.version.cassandra3}</cassandra.docker.version>
+                <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
+                <cassandra.docker.useSSL>true</cassandra.docker.useSSL>
+                <cassandra.docker.enableClientAuth>true</cassandra.docker.enableClientAuth>
                 <test.skip.murmur-serial>false</test.skip.murmur-serial>
                 <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
             </properties>

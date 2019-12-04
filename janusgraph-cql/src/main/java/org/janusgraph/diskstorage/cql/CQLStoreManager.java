@@ -41,6 +41,10 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_STRATE
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_LOCATION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_PASSWORD;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_CLIENT_AUTHENTICATION_ENABLED;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_KEYSTORE_LOCATION;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_KEYSTORE_KEY_PASSWORD;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_KEYSTORE_STORE_PASSWORD;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.WRITE_CONSISTENCY;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.USE_EXTERNAL_LOCKING;
 import static org.janusgraph.diskstorage.cql.CQLKeyColumnValueStore.EXCEPTION_MAPPER;
@@ -60,6 +64,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +77,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import javax.annotation.Resource;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -255,6 +262,16 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
         if (configuration.get(SSL_ENABLED)) {
             try {
+                KeyManager[] keyManagers = null;
+                if(configuration.get(SSL_CLIENT_AUTHENTICATION_ENABLED)) {
+                    try (final FileInputStream keyStoreStream = new FileInputStream(configuration.get(SSL_KEYSTORE_LOCATION))) {
+                        final KeyStore keystore = KeyStore.getInstance("jks");
+                        keystore.load(keyStoreStream, configuration.get(SSL_KEYSTORE_STORE_PASSWORD).toCharArray());
+                        final KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+                        keyManagerFactory.init(keystore, configuration.get(SSL_KEYSTORE_KEY_PASSWORD).toCharArray());
+                        keyManagers = keyManagerFactory.getKeyManagers();
+                    }
+                }
                 final TrustManager[] trustManagers;
                 try (final FileInputStream keyStoreStream = new FileInputStream(configuration.get(SSL_TRUSTSTORE_LOCATION))) {
                     final KeyStore keystore = KeyStore.getInstance("jks");
@@ -265,14 +282,14 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                 }
 
                 final SSLContext sslContext = SSLContext.getInstance("TLS");
-                sslContext.init(null, trustManagers, null);
+                sslContext.init(keyManagers, trustManagers, null);
 
                 final JdkSSLOptions sslOptions = JdkSSLOptions.builder()
                         .withSSLContext(sslContext)
                         .build();
                 builder.withSSL(sslOptions);
 
-            } catch (NoSuchAlgorithmException | CertificateException | IOException | KeyStoreException | KeyManagementException e) {
+            } catch (UnrecoverableKeyException | NoSuchAlgorithmException | CertificateException | IOException | KeyStoreException | KeyManagementException e) {
                 throw new PermanentBackendException("Error initialising SSL connection properties", e);
             }
         }
@@ -368,7 +385,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                 .getOrElseThrow(() -> new PermanentBackendException(String.format("Unknown table '%s'", name)));
     }
 
-    public String getPartitioner(){
+    public String getPartitioner() {
         return this.cluster.getMetadata().getPartitioner();
     }
 

@@ -20,9 +20,13 @@ hinted_handoff_enabled: false
 max_hint_window_in_ms: 10800000 # 3 hours
 hinted_handoff_throttle_in_kb: 1024
 max_hints_delivery_threads: 2
+hints_flush_period_in_ms: 10000
+max_hints_file_size_in_mb: 128
 batchlog_replay_throttle_in_kb: 1024
 authenticator: AllowAllAuthenticator
 authorizer: AllowAllAuthorizer
+role_manager: CassandraRoleManager
+roles_validity_in_ms: 2000
 permissions_validity_in_ms: 2000
 partitioner: org.apache.cassandra.dht.Murmur3Partitioner
 data_file_directories:
@@ -47,7 +51,8 @@ seed_provider:
 concurrent_reads: 32
 concurrent_writes: 32
 concurrent_counter_writes: 32
-memtable_allocation_type: offheap_objects
+concurrent_materialized_view_writes: 32
+memtable_allocation_type: heap_buffers
 index_summary_capacity_in_mb:
 index_summary_resize_interval_in_minutes: 60
 trickle_fsync: false
@@ -84,23 +89,37 @@ dynamic_snitch_update_interval_in_ms: 100
 dynamic_snitch_reset_interval_in_ms: 600000
 dynamic_snitch_badness_threshold: 0.1
 request_scheduler: org.apache.cassandra.scheduler.NoScheduler
+
 server_encryption_options:
     internode_encryption: none
     keystore: conf/.keystore
     keystore_password: cassandra
     truststore: conf/.truststore
     truststore_password: cassandra
+
 client_encryption_options:
     enabled: true
     # If enabled and optional is set to true encrypted and unencrypted connections are handled.
     optional: false
     keystore: /etc/ssl/node.keystore
     keystore_password: cassandra
+    require_client_auth: true
+    truststore: /etc/ssl/node.truststore
+    truststore_password: cassandra
+    protocol: TLS
+
 internode_compression: dc
 inter_dc_tcp_nodelay: false
+tracetype_query_ttl: 86400
+tracetype_repair_ttl: 604800
+enable_user_defined_functions: false
+enable_scripted_user_defined_functions: false
+enable_materialized_views: true
+windows_timer_interval: 1
 tombstone_warn_threshold: 1000
 tombstone_failure_threshold: 100000
 batch_size_warn_threshold_in_kb: 5
+batch_size_fail_threshold_in_kb: 50
 unlogged_batch_across_partitions_warn_threshold: 10
 compaction_large_partition_warning_threshold_mb: 100
 gc_warn_threshold_in_ms: 1000

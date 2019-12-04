@@ -41,6 +41,7 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
     private static final String DEFAULT_IMAGE = "cassandra";
     private static final String DEFAULT_PARTITIONER = "murmur";
     private static final boolean DEFAULT_USE_SSL = false;
+    private static final boolean DEFAULT_ENABLE_CLIENT_AUTH = false;
     private static final boolean DEFAULT_USE_DEFAULT_CONFIG_FROM_IMAGE = false;
 
     static {
@@ -82,6 +83,13 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
         return DEFAULT_USE_SSL;
     }
 
+    private static boolean enableClientAuth() {
+        String property = System.getProperty("cassandra.docker.enableClientAuth");
+        if (property != null && !property.isEmpty())
+            return Boolean.parseBoolean(property);
+        return DEFAULT_ENABLE_CLIENT_AUTH;
+    }
+
     /**
      * This function is used as a condition to executed tests if compacted storage is supported.
      */
@@ -115,10 +123,15 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
                     break;
                 case "murmur":
                     if (useSSL()) {
-                        withClasspathResourceMapping("cert/test.crt", "/etc/ssl/test.crt", BindMode.READ_WRITE);
-                        withClasspathResourceMapping("cert/test.keystore", "/etc/ssl/test.keystore", BindMode.READ_WRITE);
+                        withClasspathResourceMapping("cert/node.crt", "/etc/ssl/node.crt", BindMode.READ_WRITE);
+                        withClasspathResourceMapping("cert/node.keystore", "/etc/ssl/node.keystore", BindMode.READ_WRITE);
                         withClasspathResourceMapping("cqlshrc", "/root/.cassandra/cqlshrc", BindMode.READ_WRITE);
-                        withClasspathResourceMapping(getConfigPrefix() + "-murmur-ssl.yaml", "/opt/cassandra.yaml", BindMode.READ_WRITE);
+                        if(enableClientAuth()) {
+                            withClasspathResourceMapping("cert/node.truststore", "/etc/ssl/node.truststore", BindMode.READ_WRITE);
+                            withClasspathResourceMapping(getConfigPrefix() + "-murmur-client-auth.yaml", "/opt/cassandra.yaml", BindMode.READ_WRITE);
+                        } else {
+                            withClasspathResourceMapping(getConfigPrefix() + "-murmur-ssl.yaml", "/opt/cassandra.yaml", BindMode.READ_WRITE);
+                        }
                     } else {
                         withClasspathResourceMapping(getConfigPrefix() + "-murmur.yaml", "/opt/cassandra.yaml", BindMode.READ_WRITE);
                     }
@@ -151,11 +164,20 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
         config.set(STORAGE_HOSTS, new String[]{getContainerIpAddress()});
         config.set(DROP_ON_CLEAR, false);
         config.set(REMOTE_MAX_REQUESTS_PER_CONNECTION, 1024);
-        if (useSSL() && useDynamicConfig()) {
-            config.set(SSL_ENABLED, true);
-            config.set(SSL_TRUSTSTORE_LOCATION,
-                Joiner.on(File.separator).join("target", "test-classes", "cert", "test.truststore"));
-            config.set(SSL_TRUSTSTORE_PASSWORD, "cassandra");
+        if (useDynamicConfig()) {
+            if(useSSL()) {
+                config.set(SSL_ENABLED, true);
+                config.set(SSL_TRUSTSTORE_LOCATION,
+                    Joiner.on(File.separator).join("target", "test-classes", "cert", "client.truststore"));
+                config.set(SSL_TRUSTSTORE_PASSWORD, "client");
+            }
+            if (enableClientAuth()) {
+                config.set(SSL_CLIENT_AUTHENTICATION_ENABLED, true);
+                config.set(SSL_KEYSTORE_LOCATION, 
+                    Joiner.on(File.separator).join("target", "test-classes", "cert", "client.keystore"));
+                config.set(SSL_KEYSTORE_STORE_PASSWORD, "client");
+                config.set(SSL_KEYSTORE_KEY_PASSWORD, "client");
+            }
         }
         return config;
     }
