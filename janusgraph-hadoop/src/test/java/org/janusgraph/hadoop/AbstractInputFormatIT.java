@@ -145,5 +145,31 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
         assertEquals(14L, (long) t.E().count().next());
     }
 
+    @Test
+    public void testGraphWithIsolatedVertices() throws Exception {
+        String key = "vertexKey";
+
+        graph.addVertex(key);
+        graph.tx().commit();
+
+        // Read graph using the inputformat.
+        Graph g = getGraph();
+        GraphTraversalSource t = g.traversal().withComputer(SparkGraphComputer.class);
+        assertEquals(1L, (long) t.V().count().next());
+    }
+
+    @Test
+    public void testSchemaVerticesAreSkipped() throws Exception {
+        mgmt.makePropertyKey("p").dataType(Integer.class).make();
+        mgmt.makeVertexLabel("v").make();
+        mgmt.makeEdgeLabel("e").make();
+        finishSchema();
+
+        // Read graph using the inputformat.
+        Graph g = getGraph();
+        GraphTraversalSource t = g.traversal().withComputer(SparkGraphComputer.class);
+        assertEquals(0L, (long) t.V().count().next());
+    }
+
     abstract protected Graph getGraph() throws IOException, ConfigurationException;
 }
