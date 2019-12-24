@@ -202,21 +202,5 @@ public class CQLResultSetKeyIteratorTest {
         return resultSet;
     }
     
-    @Test
-    public void testIsExhausted() throws IOException {
-        final Array<Tuple2<ByteBuffer, Array<Tuple2<ByteBuffer, ByteBuffer>>>> keysMap = generateRandomKeysMap();
-        final ResultSet resultSet = generateMockedResultSet(keysMap);
-
-        final CQLColValGetter getter = new CQLColValGetter(new EntryMetaData[0]);
-        try (final CQLResultSetKeyIterator resultSetKeyIterator = new CQLResultSetKeyIterator(ALL_COLUMNS, getter, resultSet)) {
-            final Iterator<Tuple2<ByteBuffer, Array<Tuple2<ByteBuffer, ByteBuffer>>>> iterator = keysMap.iterator();
-
-            assertFalse(resultSetKeyIterator.isExhausted());
-            while (resultSetKeyIterator.hasNext()) {
-                final StaticBuffer next = resultSetKeyIterator.next();
-                assertEquals(iterator.next()._1, next.asByteBuffer());
-            }
-            assertTrue(resultSetKeyIterator.isExhausted());
-        }
-    }
+    
 }

@@ -401,10 +401,6 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             this.omitEndToken = omitEndToken;
         }
 
-        @Override
-        public boolean isExhausted() {
-            return !hasNext();
-        }
         
         @Override
         public boolean hasNext() {

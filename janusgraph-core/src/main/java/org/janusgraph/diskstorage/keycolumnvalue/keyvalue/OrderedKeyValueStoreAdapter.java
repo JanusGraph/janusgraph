@@ -303,10 +303,6 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
             return currentIterator;
         }
         
-        @Override
-        public boolean isExhausted() {
-            return !hasNext();
-        }
 
         @Override
         public boolean hasNext() {
