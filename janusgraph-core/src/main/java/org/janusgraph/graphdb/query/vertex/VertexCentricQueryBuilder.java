@@ -90,6 +90,7 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
 
     @Override
     public Iterable<JanusGraphEdge> edges() {
+        check();
         return (Iterable)execute(RelationCategory.EDGE,new RelationConstructor());
     }
 
@@ -102,6 +103,7 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
 
     @Override
     public Iterable<JanusGraphRelation> relations() {
+        check();
         return (Iterable)(isImplicitKeyQuery(RelationCategory.RELATION)?
                 executeImplicitKeyQuery(vertex):
                 execute(RelationCategory.RELATION,new RelationConstructor()));
@@ -111,11 +113,13 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
 
     @Override
     public Iterable<JanusGraphVertex> vertices() {
+        check();
         return execute(RelationCategory.EDGE,new VertexConstructor());
     }
 
     @Override
     public VertexList vertexIds() {
+        check();
         return execute(RelationCategory.EDGE,new VertexIdConstructor());
     }
 
