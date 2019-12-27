@@ -26,6 +26,7 @@ public class KeyValueEntry {
 
     private final StaticBuffer key;
     private final StaticBuffer value;
+    private Integer ttl;
 
     public KeyValueEntry(StaticBuffer key, StaticBuffer value) {
         assert key != null;
@@ -43,5 +44,12 @@ public class KeyValueEntry {
         return value;
     }
 
+    public Integer getTtl() {
+        return ttl;
+    }
+
+    public void setTTL(final Integer ttl) {
+        this.ttl = ttl;
+    }
 
 }
