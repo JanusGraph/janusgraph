@@ -18,6 +18,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.StoreMetaData;
@@ -110,7 +111,9 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
                 KCVMutation mutation = entry.getValue();
                 if (mutation.hasAdditions()) {
                     for (Entry addition : mutation.getAdditions()) {
-                        mut.addition(store.concatenate(key,addition));
+                        KeyValueEntry concatenate = store.concatenate(key, addition);
+                        concatenate.setTTL((Integer) addition.getMetaData().get(EntryMetaData.TTL));
+                        mut.addition(concatenate);
                     }
                 }
 

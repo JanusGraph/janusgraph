@@ -21,8 +21,6 @@ import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import org.janusgraph.util.datastructures.Retriever;
 
-import java.util.List;
-
 /**
  * Internal Vertex interface adding methods that should only be used by JanusGraph
  *
@@ -57,7 +55,7 @@ public interface InternalVertex extends JanusGraphVertex, InternalElement {
      * @param query
      * @return
      */
-    List<InternalRelation> getAddedRelations(Predicate<InternalRelation> query);
+    Iterable<InternalRelation> getAddedRelations(Predicate<InternalRelation> query);
 
     /**
      * Returns all relations that match the given query. If these matching relations are not currently
