@@ -157,7 +157,7 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
                 }
             };
         }
-        
+
         @Override
         public boolean hasNext() {
             ensureOpen();

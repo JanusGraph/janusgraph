@@ -432,7 +432,6 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
             };
         }
 
-                
         @Override
         public boolean hasNext() {
             ensureOpen();

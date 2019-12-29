@@ -1,4 +1,4 @@
-// Copyright 2017 JanusGraph Authors
+// Copyright 2019 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public class IndexSerializerTest {
     }
 
     @Test
-    public void testReindexElementAppliesToWithEntries() {
+    public void testReindexElementAppliesToWithEntries2() {
         String key = "foo";
         String value = "bar";
         Configuration config = mock(Configuration.class);
@@ -72,7 +72,6 @@ public class IndexSerializerTest {
         Map<String, ? extends IndexInformation> indexes = new HashMap<>();
         IndexSerializer mockSerializer = spy(new IndexSerializer(config, serializer, indexes, true));
         StandardJanusGraphTx tx = mock(StandardJanusGraphTx.class);
-        doReturn(true).when(tx).isOpen();
 
         JanusGraphElement indexableElement = spy(new StandardVertex(tx, 1l, ElementLifeCycle.New));
         Property pk2 = indexableElement.property(key, value);
@@ -81,9 +80,8 @@ public class IndexSerializerTest {
         doReturn(Arrays.asList(value).iterator()).when(indexableElement).values(key);
 
         MixedIndexType mit = mock(MixedIndexType.class);
-        ElementCategory ec = mock(ElementCategory.class);
+        ElementCategory ec = ElementCategory.VERTEX;
 
-        doReturn(true).when(ec).isInstance(indexableElement);
         doReturn(ec).when(mit).getElement();
 
         doReturn(false).when(mit).hasSchemaTypeConstraint();
@@ -117,7 +115,6 @@ public class IndexSerializerTest {
         Map<String, ? extends IndexInformation> indexes = new HashMap<>();
         IndexSerializer mockSerializer = spy(new IndexSerializer(config, serializer, indexes, true));
         StandardJanusGraphTx tx = mock(StandardJanusGraphTx.class);
-        doReturn(true).when(tx).isOpen();
 
         JanusGraphElement indexableElement = spy(new StandardVertex(tx, 1l, ElementLifeCycle.New));
         Property pk2 = indexableElement.property(key, value);
@@ -126,9 +123,8 @@ public class IndexSerializerTest {
         doReturn(new ArrayList<>().iterator()).when(indexableElement).values(key); // skpping the values section!!
 
         MixedIndexType mit = mock(MixedIndexType.class);
-        ElementCategory ec = mock(ElementCategory.class);
+        ElementCategory ec = ElementCategory.VERTEX;
 
-        doReturn(true).when(ec).isInstance(indexableElement);
         doReturn(ec).when(mit).getElement();
 
         doReturn(false).when(mit).hasSchemaTypeConstraint();

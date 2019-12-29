@@ -68,7 +68,6 @@ public class MetricInstrumentedIterator implements KeyIterator {
         this.p = p;
     }
 
-    
     @Override
     public boolean hasNext() {
         return MetricInstrumentedStore.runWithMetrics(p, M_HAS_NEXT,
