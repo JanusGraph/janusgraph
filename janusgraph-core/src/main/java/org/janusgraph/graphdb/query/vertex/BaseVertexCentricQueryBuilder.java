@@ -48,7 +48,7 @@ import java.util.List;
  */
 public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>> implements BaseVertexQuery<Q> {
 
-    private static final String[] NO_TYPES = new String[0];
+    protected static final String[] NO_TYPES = new String[0];
     private static final List<PredicateCondition<String, JanusGraphRelation>> NO_CONSTRAINTS = ImmutableList.of();
 
     /**

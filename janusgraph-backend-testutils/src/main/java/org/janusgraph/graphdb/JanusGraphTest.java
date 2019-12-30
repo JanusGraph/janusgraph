@@ -2853,6 +2853,13 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(2, v.query().labels("connect").adjacent(vs[6]).has("time", 6).edgeCount());
         assertEquals(0, v.query().labels("connect").adjacent(vs[8]).has("time", 8).edgeCount());
 
+        assertEquals(1, v.query().direction(OUT).adjacent(vs[6]).has("time", 6).edgeCount());
+        assertEquals(1, Iterables.size(v.query().direction(OUT).adjacent(vs[11]).edges()));
+        assertEquals(1, Iterables.size(v.query().direction(IN).adjacent(vs[11]).vertices()));
+        assertEquals(2, v.query().direction(BOTH).adjacent(vs[11]).edgeCount());
+        assertEquals(1, v.query().direction(OUT).adjacent(vs[11]).has("weight", 3.5).edgeCount());
+        assertEquals(2, Iterables.size(v.query().adjacent(vs[6]).has("time", 6).vertexIds()));
+
         assertEquals(edgesPerLabel, v.query().labels("connect").direction(OUT).edgeCount());
         assertEquals(edgesPerLabel, v.query().labels("connect").direction(IN).edgeCount());
         assertEquals(2 * edgesPerLabel, v.query().labels("connect").direction(BOTH).edgeCount());
@@ -2890,6 +2897,20 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         for (Iterable<JanusGraphVertexProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
         results2 = tx.multiQuery(qvs).keys("name").properties();
         for (Iterable<JanusGraphVertexProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
+
+        //MultiQuerys with adjacent
+        results = tx.multiQuery(qvs).direction(IN).adjacent(v).edges();
+        for (Iterable<JanusGraphEdge> result : results.values()) assertEquals(1, Iterables.size(result));
+        results = tx.multiQuery(qvs).adjacent(v).edges();
+        for (Iterable<JanusGraphEdge> result : results.values()) assertEquals(2, Iterables.size(result));
+
+        Map<JanusGraphVertex, Iterable<JanusGraphVertex>> resultVertices;
+        resultVertices = tx.multiQuery(qvs).adjacent(v).vertices();
+        for (Iterable<JanusGraphVertex> result : resultVertices.values()) assertEquals(2, Iterables.size(result));
+
+        Map<JanusGraphVertex, VertexList> resultVertexList;
+        resultVertexList = tx.multiQuery(qvs).adjacent(v).vertexIds();
+        for (VertexList result : resultVertexList.values()) assertEquals(2, Iterables.size(result));
 
         //##################################################
         //Same queries as above but without memory loading (i.e. omitting the first query)
@@ -2967,6 +2988,13 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(2, v.query().labels("connect").adjacent(vs[6]).has("time", 6).edgeCount());
         assertEquals(0, v.query().labels("connect").adjacent(vs[8]).has("time", 8).edgeCount());
 
+        assertEquals(1, v.query().direction(OUT).adjacent(vs[6]).has("time", 6).edgeCount());
+        assertEquals(1, Iterables.size(v.query().direction(OUT).adjacent(vs[11]).edges()));
+        assertEquals(1, Iterables.size(v.query().direction(IN).adjacent(vs[11]).vertices()));
+        assertEquals(2, v.query().direction(BOTH).adjacent(vs[11]).edgeCount());
+        assertEquals(1, v.query().direction(OUT).adjacent(vs[11]).has("weight", 3.5).edgeCount());
+        assertEquals(2, Iterables.size(v.query().adjacent(vs[6]).has("time", 6).vertexIds()));
+
         assertEquals(edgesPerLabel, v.query().labels("connect").direction(OUT).edgeCount());
         assertEquals(edgesPerLabel, v.query().labels("connect").direction(IN).edgeCount());
         assertEquals(2 * edgesPerLabel, v.query().labels("connect").direction(BOTH).edgeCount());
@@ -3004,6 +3032,16 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         for (final Iterable<JanusGraphVertexProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
         results2 = tx.multiQuery(qvs).keys("name").properties();
         for (final Iterable<JanusGraphVertexProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
+
+        //MultiQuerys with adjacent
+        results = tx.multiQuery(qvs).direction(IN).adjacent(v).edges();
+        for (Iterable<JanusGraphEdge> result : results.values()) assertEquals(1, Iterables.size(result));
+        results = tx.multiQuery(qvs).adjacent(v).edges();
+        for (Iterable<JanusGraphEdge> result : results.values()) assertEquals(2, Iterables.size(result));
+        resultVertices = tx.multiQuery(qvs).adjacent(v).vertices();
+        for (Iterable<JanusGraphVertex> result : resultVertices.values()) assertEquals(2, Iterables.size(result));
+        resultVertexList = tx.multiQuery(qvs).adjacent(v).vertexIds();
+        for (VertexList result : resultVertexList.values()) assertEquals(2, Iterables.size(result));
 
         //##################################################
         //End copied queries

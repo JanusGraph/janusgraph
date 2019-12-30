@@ -29,10 +29,12 @@ import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.relations.StandardVertexProperty;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.core.schema.SchemaStatus;
+import org.janusgraph.graphdb.types.system.BaseKey;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.janusgraph.graphdb.types.system.SystemRelationType;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.util.datastructures.Interval;
+import org.janusgraph.util.datastructures.IterablesUtil;
 import org.janusgraph.util.datastructures.PointInterval;
 import org.janusgraph.util.datastructures.RangeInterval;
 import org.slf4j.Logger;
@@ -418,6 +420,20 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         assert returnType != null;
         Preconditions.checkArgument(adjacentVertex==null || returnType == RelationCategory.EDGE,
                 "Vertex constraints only apply to edges");
+
+        if(this.adjacentVertex != null && this.types == NO_TYPES){
+            Iterable<JanusGraphVertex> allTypes = QueryUtil.getVertices(this.tx,
+                    BaseKey.SchemaCategory, JanusGraphSchemaCategory.EDGELABEL);
+            int length = IterablesUtil.size(allTypes);
+            int index = 0;
+            String[] labels = new String[length];
+            for(JanusGraphVertex labelVertex : allTypes){
+                labels[index] = ((EdgeLabel)labelVertex).name();
+                index++;
+            }
+            labels(labels);
+        }
+
         if (limit <= 0)
             return BaseVertexCentricQuery.emptyQuery();
 
