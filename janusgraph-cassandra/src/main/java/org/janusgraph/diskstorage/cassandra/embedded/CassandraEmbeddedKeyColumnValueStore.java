@@ -335,7 +335,6 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             this.nowMillis = times.getTime().toEpochMilli();
             this.keys = getRowsIterator(getKeySlice(minimum, maximum, sliceQuery, pageSize, nowMillis));
         }
-        
 
         @Override
         public boolean hasNext() {

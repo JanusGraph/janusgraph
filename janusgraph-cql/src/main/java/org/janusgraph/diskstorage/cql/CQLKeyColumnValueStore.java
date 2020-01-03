@@ -426,7 +426,6 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         private int index;
         private int paginatedResultSize;
         private final Supplier<Statement> statementSupplier;
-        private AtomicLong recordCount = new AtomicLong();
 
         private byte[] lastPagingState = null;
 
@@ -452,7 +451,6 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
             // Using getPagingStateUnsafe rather than getPagingState, to avoid the md5
             // compute of the pageState, which can be quite expensive.
             lastPagingState = currentResultSet.getExecutionInfo().getPagingStateUnsafe();
-            recordCount.incrementAndGet();
             return currentResultSet.one();
 
         }
