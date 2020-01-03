@@ -80,7 +80,7 @@ data from the storage backend.
 
 JanusGraph currently supports following graphReader classes:
 
-* `Cassandra3InputFormat` for use with Cassandra 3
+* `CqlInputFormat` for use with Cassandra 3
 * `CassandraInputFormat` for use with Cassandra 2
 * `HBaseInputFormat` and `HBaseSnapshotInputFormat` for use with HBase
 
@@ -94,7 +94,7 @@ OLAP queries.
 # Hadoop Graph Configuration
 #
 gremlin.graph=org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph
-gremlin.hadoop.graphReader=org.janusgraph.hadoop.formats.cassandra.Cassandra3InputFormat
+gremlin.hadoop.graphReader=org.janusgraph.hadoop.formats.cql.CqlInputFormat
 gremlin.hadoop.graphWriter=org.apache.tinkerpop.gremlin.hadoop.structure.io.gryo.GryoOutputFormat
 
 gremlin.hadoop.jarsInDistributedCache=true
@@ -106,12 +106,12 @@ gremlin.spark.persistContext=true
 # JanusGraph Cassandra InputFormat configuration
 #
 # These properties defines the connection properties which were used while write data to JanusGraph.
-janusgraphmr.ioformat.conf.storage.backend=cassandra
+janusgraphmr.ioformat.conf.storage.backend=cql
 # This specifies the hostname & port for Cassandra data store.
 janusgraphmr.ioformat.conf.storage.hostname=127.0.0.1
-janusgraphmr.ioformat.conf.storage.port=9160
+janusgraphmr.ioformat.conf.storage.port=9042
 # This specifies the keyspace where data is stored.
-janusgraphmr.ioformat.conf.storage.cassandra.keyspace=janusgraph
+janusgraphmr.ioformat.conf.storage.cql.keyspace=janusgraph
 # This defines the indexing backend configuration used while writing data to JanusGraph.
 janusgraphmr.ioformat.conf.index.search.backend=elasticsearch
 janusgraphmr.ioformat.conf.index.search.hostname=127.0.0.1
@@ -146,10 +146,10 @@ gremlin> :plugin use tinkerpop.spark
 ==>tinkerpop.spark activated
 gremlin> // 1. Open a the graph for OLAP processing reading in from Cassandra 3
 gremlin> graph = GraphFactory.open('conf/hadoop-graph/read-cassandra-3.properties')
-==>hadoopgraph[cassandra3inputformat->gryooutputformat]
+==>hadoopgraph[cqlinputformat->gryooutputformat]
 gremlin> // 2. Configure the traversal to run with Spark
 gremlin> g = graph.traversal().withComputer(SparkGraphComputer)
-==>graphtraversalsource[hadoopgraph[cassandra3inputformat->gryooutputformat], sparkgraphcomputer]
+==>graphtraversalsource[hadoopgraph[cqlinputformat->gryooutputformat], sparkgraphcomputer]
 gremlin> // 3. Run some OLAP traversals
 gremlin> g.V().count()
 ......
@@ -185,7 +185,7 @@ The final properties file used for OLAP traversal is as follows:
 # Hadoop Graph Configuration
 #
 gremlin.graph=org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph
-gremlin.hadoop.graphReader=org.janusgraph.hadoop.formats.cassandra.Cassandra3InputFormat
+gremlin.hadoop.graphReader=org.janusgraph.hadoop.formats.cql.CqlInputFormat
 gremlin.hadoop.graphWriter=org.apache.tinkerpop.gremlin.hadoop.structure.io.gryo.GryoOutputFormat
 
 gremlin.hadoop.jarsInDistributedCache=true
@@ -197,12 +197,12 @@ gremlin.spark.persistContext=true
 # JanusGraph Cassandra InputFormat configuration
 #
 # These properties defines the connection properties which were used while write data to JanusGraph.
-janusgraphmr.ioformat.conf.storage.backend=cassandra
+janusgraphmr.ioformat.conf.storage.backend=cql
 # This specifies the hostname & port for Cassandra data store.
 janusgraphmr.ioformat.conf.storage.hostname=127.0.0.1
-janusgraphmr.ioformat.conf.storage.port=9160
+janusgraphmr.ioformat.conf.storage.port=9042
 # This specifies the keyspace where data is stored.
-janusgraphmr.ioformat.conf.storage.cassandra.keyspace=janusgraph
+janusgraphmr.ioformat.conf.storage.cql.keyspace=janusgraph
 # This defines the indexing backend configuration used while writing data to JanusGraph.
 janusgraphmr.ioformat.conf.index.search.backend=elasticsearch
 janusgraphmr.ioformat.conf.index.search.hostname=127.0.0.1
@@ -237,10 +237,10 @@ gremlin> :plugin use tinkerpop.spark
 ==>tinkerpop.spark activated
 gremlin> // 1. Open a the graph for OLAP processing reading in from Cassandra 3
 gremlin> graph = GraphFactory.open('conf/hadoop-graph/read-cassandra-3.properties')
-==>hadoopgraph[cassandra3inputformat->gryooutputformat]
+==>hadoopgraph[cqlinputformat->gryooutputformat]
 gremlin> // 2. Configure the traversal to run with Spark
 gremlin> g = graph.traversal().withComputer(SparkGraphComputer)
-==>graphtraversalsource[hadoopgraph[cassandra3inputformat->gryooutputformat], sparkgraphcomputer]
+==>graphtraversalsource[hadoopgraph[cqlinputformat->gryooutputformat], sparkgraphcomputer]
 gremlin> // 3. Run some OLAP traversals
 gremlin> g.V().count()
 ......

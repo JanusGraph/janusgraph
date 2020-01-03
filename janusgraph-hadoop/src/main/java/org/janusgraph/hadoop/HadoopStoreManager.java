@@ -1,4 +1,4 @@
-// Copyright 2017 JanusGraph Authors
+// Copyright 2020 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.hadoop.formats.cassandra;
+package org.janusgraph.hadoop;
 
-import org.janusgraph.hadoop.formats.util.HadoopInputFormat;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapreduce.InputFormat;
 
-public class Cassandra3InputFormat extends HadoopInputFormat {
-
-    public Cassandra3InputFormat() {
-        super(new Cassandra3BinaryInputFormat());
-    }
+public interface HadoopStoreManager {
+    Class<? extends InputFormat> getInputFormat(Configuration hadoopConf);
 }

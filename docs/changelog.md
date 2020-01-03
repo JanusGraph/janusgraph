@@ -63,6 +63,25 @@ For more information on features and bug fixes in 0.5.0, see the GitHub mileston
 
 The distribution has no longer the suffix `-hadoop2`.
 
+##### Reorder dependency of Hadoop
+
+Hadoop is now a dependency of supported backends. Therefore, `MapReduceIndexJobs` is now split up into different classes:
+
+| Old Function | New Function |
+| ------------ | ------------ |
+|`MapReduceIndexJobs.cassandraRepair`|`CassandraMapReduceIndexJobsUtils.repair`| 
+|`MapReduceIndexJobs.cassandraRemove`|`CassandraMapReduceIndexJobsUtils.remove`| 
+|`MapReduceIndexJobs.cqlRepair`|`CqlMapReduceIndexJobsUtils.repair`| 
+|`MapReduceIndexJobs.cqlRemove`|`CqlMapReduceIndexJobsUtils.remove`| 
+|`MapReduceIndexJobs.hbaseRepair`|`HBaseMapReduceIndexJobsUtils.repair`| 
+|`MapReduceIndexJobs.hbaseRemove`|`HBaseMapReduceIndexJobsUtils.remove`| 
+
+!!! note
+    Now, you can easily support for any backend.
+
+!!! warning
+    `Cassandra3InputFormat` is replaced by `CqlInputFormat`
+
 ##### ElasticSearch: Upgrade from 6.6.0 to 7.3.1 and drop support for 5.x version
 The ElasticSearch version has been changed to 7.3.1 which removes support for `max-retry-timeout` option. 
 That is why this option no longer available in JanusGraph.
