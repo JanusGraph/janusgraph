@@ -14,8 +14,6 @@
 
 package org.janusgraph.graphdb.database.serialize;
 
-import org.janusgraph.core.PropertyKey;
-
 import org.janusgraph.core.attribute.Geoshape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,17 +22,13 @@ import org.slf4j.LoggerFactory;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class AttributeUtil {
+public class AttributeUtils {
 
-    private static final Logger log = LoggerFactory.getLogger(AttributeUtil.class);
+    private static final Logger log = LoggerFactory.getLogger(AttributeUtils.class);
 
 
     public static boolean isWholeNumber(Number n) {
         return isWholeNumber(n.getClass());
-    }
-
-    public static boolean isDecimal(Number n) {
-        return isDecimal(n.getClass());
     }
 
     public static boolean isWholeNumber(Class<?> clazz) {
@@ -93,9 +87,5 @@ public class AttributeUtil {
                 return null;
             }
         }
-    }
-
-    public static boolean hasGenericDataType(PropertyKey key) {
-        return key.dataType().equals(Object.class);
     }
 }

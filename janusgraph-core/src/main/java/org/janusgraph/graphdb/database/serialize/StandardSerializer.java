@@ -87,7 +87,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(15,Boolean.class, new BooleanSerializer());
         registerClassInternal(16,Date.class, new DateSerializer());
 
-        registerClassInternal(17,Geoshape.class, new Geoshape.GeoshapeSerializer());
+        registerClassInternal(17,Geoshape.class, new GeoshapeSerializer());
         registerClassInternal(18,String.class, new StringSerializer()); //supports null serialization
         registerClassInternal(19,Float.class, new FloatSerializer());
         registerClassInternal(20,Double.class, new DoubleSerializer());

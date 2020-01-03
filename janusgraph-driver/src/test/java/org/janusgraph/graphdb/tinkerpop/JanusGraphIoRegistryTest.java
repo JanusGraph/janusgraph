@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.tinkerpop;
 
+import static org.apache.tinkerpop.gremlin.driver.ser.AbstractMessageSerializer.TOKEN_IO_REGISTRIES;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.between;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.inside;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.within;
@@ -24,11 +25,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Modifier;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import org.apache.tinkerpop.gremlin.driver.MessageSerializer;
 import org.apache.tinkerpop.gremlin.driver.Tokens;
 import org.apache.tinkerpop.gremlin.driver.message.RequestMessage;
+import org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0;
 import org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0;
 import org.apache.tinkerpop.gremlin.driver.ser.SerializationException;
 import org.apache.tinkerpop.gremlin.process.traversal.Bytecode;
@@ -127,7 +132,7 @@ public class JanusGraphIoRegistryTest {
     }
 
     private void serializationTest(GraphTraversal[] traversals) throws SerializationException {
-        Builder mapper = GryoMapper.build().addRegistry(JanusGraphIoRegistry.getInstance());
+        Builder mapper = GryoMapper.build().addRegistry(JanusGraphIoRegistry.instance());
         MessageSerializer binarySerializer = new GryoMessageSerializerV1d0(mapper);
 
         for (GraphTraversal traversal : traversals) {
@@ -161,4 +166,22 @@ public class JanusGraphIoRegistryTest {
         assertEquals(point, serializer.read(kryo, input, Geoshape.class));
     }
 
+    @Test
+    public void testTokenIoRegistyInConfig() throws SerializationException {
+        final GraphSONMessageSerializerV3d0 serializer = new GraphSONMessageSerializerV3d0();
+        final Map<String,Object> config = new HashMap<>();
+        config.put(TOKEN_IO_REGISTRIES, Collections.singletonList(JanusGraphIoRegistry.class.getName()));
+        serializer.configure(config, Collections.emptyMap());
+
+        GraphTraversal traversal = EmptyGraph.instance().traversal().addV().property("loc", Geoshape.point(1.0f, 1.0f));
+        Bytecode expectedBytecode = traversal.asAdmin().getBytecode();
+
+        String serializedMessage = serializer.serializeRequestAsString(
+            RequestMessage.build(Tokens.OPS_BYTECODE).processor("traversal")
+            .addArg(Tokens.ARGS_GREMLIN, expectedBytecode).create());
+
+        RequestMessage requestMessage1 = serializer.deserializeRequest(serializedMessage);
+        Bytecode result = (Bytecode)requestMessage1.getArgs().get(Tokens.ARGS_GREMLIN);
+        assertEquals(expectedBytecode, result);
+    }
 }
