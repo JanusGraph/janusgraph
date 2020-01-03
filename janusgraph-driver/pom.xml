@@ -8,7 +8,7 @@
     </parent>
     <artifactId>janusgraph-driver</artifactId>
     <name>JanusGraph-Driver: Gremlin-Driver Library for JanusGraph</name>
-    <url>http://janusgraph.org</url>
+    <url>https://janusgraph.org</url>
 
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>

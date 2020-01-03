@@ -70,7 +70,7 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
+            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-hadoop</artifactId>
             <version>${project.version}</version>
         </dependency>

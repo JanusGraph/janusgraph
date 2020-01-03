@@ -62,8 +62,6 @@ x-template:
 jobs:
   include:
     - <<: *STANDARD_TEST_JOB
-      env: MODULE='hadoop'
-    - <<: *STANDARD_TEST_JOB
       env: MODULE='lucene'
     - <<: *STANDARD_TEST_JOB
       env: MODULE='solr' ARGS='-Pdocker,solr7'
@@ -106,17 +104,21 @@ jobs:
       env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/embedded/*'
     - <<: *STANDARD_TEST_JOB
       env: MODULE='cassandra' ARGS='-Dtest=***/cassandra/*,*/graphdb/embedded/*'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cassandra' ARGS='-Pcassandra2-murmur -Dtest=**/hadoop/*'
 
     - <<: *STANDARD_TEST_JOB
       env: MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/diskstorage/hbase/*'
     - <<: *STANDARD_TEST_JOB
       env: MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/graphdb/hbase/*'
     - <<: *STANDARD_TEST_JOB
+      env: MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/hadoop/*'
+    - <<: *STANDARD_TEST_JOB
       env: MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dtest=**/diskstorage/hbase/* -Dhbase.profile -Phbase2'
     - <<: *STANDARD_TEST_JOB
       env: MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dtest=**/graphdb/hbase/* -Dhbase.profile -Phbase2'
     - <<: *STANDARD_TEST_JOB
-      env: MODULE='hadoop' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dhbase.profile -Phbase2 -DskipCassandra'
+      env: MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dtest=**/hadoop/* -Dhbase.profile -Phbase2'
     - <<: *STANDARD_TEST_JOB
       env: MODULE='cql' ARGS='-Pcassandra2-byteordered -Dtest=**/diskstorage/cql/*'
     - <<: *STANDARD_TEST_JOB
@@ -127,15 +129,11 @@ jobs:
       env: MODULE='cql' ARGS='-Pcassandra2-byteordered -Dtest=**/graphdb/cql/*'
     - <<: *STANDARD_TEST_JOB
       env: MODULE='cql' ARGS='-Pcassandra2-murmur -Dtest=**/graphdb/cql/*'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cql' ARGS='-Pcassandra2-murmur -Dtest=**/hadoop/*'
 
     - <<: *FULL_BUILD_JOB
-      env: MODULE='hadoop' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false -Dcassandra.docker.version=3.11.4'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-byteordered -Dtest=**/diskstorage/cassandra/thrift/* -Dcassandra.docker.version=3.11.4'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-murmur -Dtest=**/diskstorage/cassandra/thrift/* -Dcassandra.docker.version=3.11.4'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-murmur-ssl -Dtest=**/diskstorage/cassandra/thrift/ThriftStoreTest.java -Dcassandra.docker.version=3.11.4'
+      env: MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
     - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' ARGS='-Pcassandra3-byteordered -Dtest=**/graphdb/thrift/* -Dcassandra.docker.version=3.11.4'
     - <<: *FULL_BUILD_JOB
@@ -157,14 +155,6 @@ jobs:
     - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra3-murmur-ssl -Dcassandra.docker.version=3.11.4 -Dtest=**/diskstorage/cql/CQLStoreTest.java'
     
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='hadoop' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false -Dcassandra.docker.version=3.0.18'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-byteordered -Dtest=**/diskstorage/cassandra/thrift/* -Dcassandra.docker.version=3.0.18'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-murmur -Dtest=**/diskstorage/cassandra/thrift/* -Dcassandra.docker.version=3.0.18'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-murmur-ssl -Dtest=**/diskstorage/cassandra/thrift/ThriftStoreTest.java -Dcassandra.docker.version=3.0.18'
     - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' ARGS='-Pcassandra3-byteordered -Dtest=**/graphdb/thrift/* -Dcassandra.docker.version=3.0.18'
     - <<: *FULL_BUILD_JOB
@@ -236,14 +226,6 @@ jobs:
           repo: JanusGraph/janusgraph
           all_branches: true
           condition: $TRAVIS_BRANCH =~ ^master$|^v[0-9.]+$
-
-  # https://docs.travis-ci.com/user/customizing-the-build#Rows-that-are-Allowed-to-Fail
-  allow_failures:
-    - env: MODULE='hadoop' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false -Dcassandra.docker.version=3.0.18'
-    - env: MODULE='hadoop' ARGS='-DskipHBase -DskipCassandra -DskipCassandra3=false -Dcassandra.docker.version=3.11.4'
-
-  fast_finish: true
-  # https://docs.travis-ci.com/user/customizing-the-build#Rows-that-are-Allowed-to-Fail
 
 # Syntax and more info: https://docs.travis-ci.com/user/notifications
 notifications:
