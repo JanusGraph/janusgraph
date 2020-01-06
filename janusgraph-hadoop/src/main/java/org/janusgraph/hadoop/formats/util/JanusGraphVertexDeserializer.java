@@ -103,6 +103,9 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
                 VertexLabel vl = typeManager.getExistingVertexLabel(vertexLabelId);
                 // Create TinkerVertex with this label
                 tv = getOrCreateVertex(vertexId, vl.name(), tg);
+            } else if (systemTypes.isTypeSystemType(relation.typeId)) {
+                log.trace("Vertex {} is a system vertex", vertexId);
+                return null;
             }
         }
 
@@ -179,13 +182,6 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        }
-
-        /*Since we are filtering out system relation types, we might end up with vertices that have no incident relations.
-         This is especially true for schema vertices. Those are filtered out.     */
-        if (!tv.edges(Direction.BOTH).hasNext() && !tv.properties().hasNext()) {
-            log.trace("Vertex {} has no relations", vertexId);
-            return null;
         }
         return tv;
     }
