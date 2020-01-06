@@ -141,7 +141,7 @@ public abstract class IndexUpdateJob {
             metrics.incrementCustom(FAILED_TX);
             throw e;
         } finally {
-            log.info("Index {} metrics success-tx {} doc-updates  {} success {}", indexName,
+            log.info("Index {} metrics: success-tx: {} doc-updates: {} succeeded: {}", indexName,
                     metrics.getCustom(SUCCESS_TX), metrics.getCustom(IndexRepairJob.DOCUMENT_UPDATES_COUNT),
                     metrics.get(Metric.SUCCESS));
         }

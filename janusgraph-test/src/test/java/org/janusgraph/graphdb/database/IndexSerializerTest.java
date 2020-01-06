@@ -64,42 +64,12 @@ public class IndexSerializerTest {
     }
 
     @Test
-    public void testReindexElementAppliesToWithEntries2() {
-        String key = "foo";
-        String value = "bar";
-        Configuration config = mock(Configuration.class);
-        Serializer serializer = mock(Serializer.class);
-        Map<String, ? extends IndexInformation> indexes = new HashMap<>();
-        IndexSerializer mockSerializer = spy(new IndexSerializer(config, serializer, indexes, true));
-        StandardJanusGraphTx tx = mock(StandardJanusGraphTx.class);
-
-        JanusGraphElement indexableElement = spy(new StandardVertex(tx, 1l, ElementLifeCycle.New));
-        Property pk2 = indexableElement.property(key, value);
-        Iterator it = Arrays.asList(pk2).iterator();
-        doReturn(it).when(indexableElement).properties(key);
-        doReturn(Arrays.asList(value).iterator()).when(indexableElement).values(key);
-
-        MixedIndexType mit = mock(MixedIndexType.class);
-        ElementCategory ec = ElementCategory.VERTEX;
-
-        doReturn(ec).when(mit).getElement();
-
-        doReturn(false).when(mit).hasSchemaTypeConstraint();
-
+    public void testReindexElementAppliesToWithEntries() {
         Map<String, Map<String, List<IndexEntry>>> docStore = new HashMap<>();
-        PropertyKey pk = mock(PropertyKey.class);
-        doReturn(1l).when(pk).longId();
+        IndexSerializer mockSerializer = mockSerializer();
+        MixedIndexType mit = mock(MixedIndexType.class);
 
-        doReturn(key).when(pk).name();
-        ParameterIndexField pif = mock(ParameterIndexField.class);
-        Parameter[] parameter = { new Parameter(key, value) };
-        doReturn(parameter).when(pif).getParameters();
-        doReturn(SchemaStatus.REGISTERED).when(pif).getStatus();
-        doReturn(pk).when(pif).getFieldKey();
-
-        ParameterIndexField[] ifField = { pif };
-
-        doReturn(ifField).when(mit).getFieldKeys();
+        JanusGraphElement indexableElement = mockIndexAppliesTo(mit, true);
 
         assertTrue("re-index", mockSerializer.reindexElement(indexableElement, mit, docStore));
         assertEquals("doc store size", 1, docStore.size());
@@ -108,21 +78,28 @@ public class IndexSerializerTest {
 
     @Test
     public void testReindexElementAppliesToNoEntries() {
-        String key = "foo";
-        String value = "bar";
+        Map<String, Map<String, List<IndexEntry>>> docStore = new HashMap<>();
+        IndexSerializer mockSerializer = mockSerializer();
+        MixedIndexType mit = mock(MixedIndexType.class);
+        JanusGraphElement indexableElement = mockIndexAppliesTo(mit, false);
+
+        assertFalse("re-index", mockSerializer.reindexElement(indexableElement, mit, docStore));
+        assertEquals("doc store size", 0, docStore.size());
+
+    }
+
+    private IndexSerializer mockSerializer() {
         Configuration config = mock(Configuration.class);
         Serializer serializer = mock(Serializer.class);
         Map<String, ? extends IndexInformation> indexes = new HashMap<>();
-        IndexSerializer mockSerializer = spy(new IndexSerializer(config, serializer, indexes, true));
-        StandardJanusGraphTx tx = mock(StandardJanusGraphTx.class);
+        return spy(new IndexSerializer(config, serializer, indexes, true));
+    }
 
-        JanusGraphElement indexableElement = spy(new StandardVertex(tx, 1l, ElementLifeCycle.New));
-        Property pk2 = indexableElement.property(key, value);
-        Iterator it = Arrays.asList(pk2).iterator();
-        doReturn(it).when(indexableElement).properties(key);
-        doReturn(new ArrayList<>().iterator()).when(indexableElement).values(key); // skpping the values section!!
+    private JanusGraphElement mockIndexAppliesTo(MixedIndexType mit, boolean indexable) {
+        String key = "foo";
+        String value = "bar";
 
-        MixedIndexType mit = mock(MixedIndexType.class);
+        JanusGraphElement indexableElement = mockIndexableElement(key, value, indexable);
         ElementCategory ec = ElementCategory.VERTEX;
 
         doReturn(ec).when(mit).getElement();
@@ -144,8 +121,22 @@ public class IndexSerializerTest {
 
         doReturn(ifField).when(mit).getFieldKeys();
 
-        assertFalse("re-index", mockSerializer.reindexElement(indexableElement, mit, docStore));
-        assertEquals("doc store size", 0, docStore.size());
+        return indexableElement;
+
+    }
+
+    private JanusGraphElement mockIndexableElement(String key, String value, boolean indexable) {
+        StandardJanusGraphTx tx = mock(StandardJanusGraphTx.class);
+        JanusGraphElement indexableElement = spy(new StandardVertex(tx, 1l, ElementLifeCycle.New));
+        Property pk2 = indexableElement.property(key, value);
+        Iterator it = Arrays.asList(pk2).iterator();
+        doReturn(it).when(indexableElement).properties(key);
+        if (indexable)
+            doReturn(Arrays.asList(value).iterator()).when(indexableElement).values(key);
+        else
+            doReturn(new ArrayList<>().iterator()).when(indexableElement).values(key); // skpping the values section!!
+
+        return indexableElement;
 
     }
 
