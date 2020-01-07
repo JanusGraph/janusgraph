@@ -54,6 +54,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import com.datastax.driver.core.PagingState;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
@@ -426,7 +427,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         private int paginatedResultSize;
         private final Supplier<Statement> statementSupplier;
 
-        private byte[] lastPagingState = null;
+        private PagingState lastPagingState = null;
 
         public CQLPagingIterator(final int pageSize, Supplier<Statement> statementSupplier) {
             this.index = 0;
@@ -447,9 +448,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                 this.index = 0;
             }
             this.index++;
-            // Using getPagingStateUnsafe rather than getPagingState, to avoid the md5
-            // compute of the pageState, which can be quite expensive.
-            lastPagingState = currentResultSet.getExecutionInfo().getPagingStateUnsafe();
+            lastPagingState = currentResultSet.getExecutionInfo().getPagingState();
             return currentResultSet.one();
 
         }
@@ -457,7 +456,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         private ResultSet getResultSet() {
             final Statement boundStmnt = statementSupplier.get();
             if (lastPagingState != null) {
-                boundStmnt.setPagingStateUnsafe(lastPagingState);
+                boundStmnt.setPagingState(lastPagingState);
             }
             return session.execute(boundStmnt);
         }
