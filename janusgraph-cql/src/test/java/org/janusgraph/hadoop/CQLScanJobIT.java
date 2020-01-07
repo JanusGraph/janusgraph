@@ -143,7 +143,7 @@ public class CQLScanJobIT extends JanusGraphBaseTest {
         c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.cql.keyspace", getClass().getSimpleName().toLowerCase());
         c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.backend", "cql");
         c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.port", String.valueOf(cql.getMappedCQLPort()));
-        c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.FILTER_PARTITIONED_VERTICES), "true");
+        c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.FILTER_PARTITIONED_VERTICES, true), "true");
         c.set("cassandra.input.partitioner.class", "org.apache.cassandra.dht.Murmur3Partitioner");
 
         Job job = getVertexJobWithDefaultMapper(c);

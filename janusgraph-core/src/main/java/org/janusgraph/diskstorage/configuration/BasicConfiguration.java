@@ -30,7 +30,7 @@ import java.util.Set;
 public class BasicConfiguration extends AbstractConfiguration {
 
     private static final Logger log =
-            LoggerFactory.getLogger(BasicConfiguration.class);
+        LoggerFactory.getLogger(BasicConfiguration.class);
 
     public enum Restriction { LOCAL, GLOBAL, NONE }
 
@@ -57,15 +57,15 @@ public class BasicConfiguration extends AbstractConfiguration {
 
 
     @Override
-    public boolean has(ConfigOption option, String... umbrellaElements) {
+    public boolean has(ConfigOption option, boolean includeRoot, String... umbrellaElements) {
         verifyOption(option);
-        return config.get(super.getPath(option,umbrellaElements),option.getDatatype())!=null;
+        return config.get(super.getPath(option, includeRoot, umbrellaElements),option.getDatatype())!=null;
     }
 
     @Override
-    public<O> O get(ConfigOption<O> option, String... umbrellaElements) {
+    public<O> O get(ConfigOption<O> option, boolean includeRoot, String... umbrellaElements) {
         verifyOption(option);
-        O result = config.get(super.getPath(option,umbrellaElements),option.getDatatype());
+        O result = config.get(super.getPath(option, includeRoot, umbrellaElements),option.getDatatype());
         return option.get(result);
     }
 
