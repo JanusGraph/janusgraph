@@ -69,7 +69,7 @@
     </distributionManagement>
     <properties>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
-        <tinkerpop.version>3.4.1</tinkerpop.version>
+        <tinkerpop.version>3.4.4</tinkerpop.version>
         <junit-platform.version>1.5.1</junit-platform.version>
         <junit.version>5.5.1</junit.version>
         <mrunit.version>1.1.0</mrunit.version>
@@ -126,7 +126,7 @@
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <cassandra-driver.version>3.7.2</cassandra-driver.version>
-        <testcontainers.version>1.11.4</testcontainers.version>
+        <testcontainers.version>1.12.4</testcontainers.version>
     </properties>
     <modules>
         <module>janusgraph-codepipelines-ci</module>
