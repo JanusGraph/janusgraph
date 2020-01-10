@@ -27,7 +27,7 @@ use the latest versions of the software.
 
 ## Release Notes
 
-### Version 0.5.0 (Release Date: July ?, 2019)
+### Version 0.5.0 (Release Date: January ?, 2020)
 
 ```xml tab='Maven'
 <dependency>
@@ -50,7 +50,7 @@ compile "org.janusgraph:janusgraph-core:0.5.0"
 * Elasticsearch 6.0.1, 6.6.0, 7.3.1
 * Apache Lucene 7.0.0
 * Apache Solr 7.0.0
-* Apache TinkerPop 3.4.1
+* Apache TinkerPop 3.4.4
 * Java 1.8
 
 For more information on features and bug fixes in 0.5.0, see the GitHub milestone:
@@ -81,6 +81,45 @@ Parameter `use-deprecated-multitype-index` is no more supported by JanusGraph.
 ##### BerkeleyDB
 
 BerkeleyDB storage configured with [SHARED_CACHE](https://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/EnvironmentConfig.html#SHARED_CACHE) for better memory usage.
+
+### Version 0.4.1 (Release Date: January ?, 2020)
+
+```xml tab='Maven'
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.4.1</version>
+</dependency>
+```
+
+```groovy tab='Gradle'
+compile "org.janusgraph:janusgraph-core:0.4.1"
+```
+
+**Tested Compatibility:**
+
+-   Apache Cassandra 2.2.10, 3.0.14, 3.11.0
+-   Apache HBase 1.2.6, 1.3.1, 1.4.10, 2.1.5
+-   Google Bigtable 1.3.0, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.10.0, 1.11.0
+-   Oracle BerkeleyJE 7.5.11
+-   Elasticsearch 5.6.14, 6.0.1, 6.6.0
+-   Apache Lucene 7.0.0
+-   Apache Solr 7.0.0
+-   Apache TinkerPop 3.4.4
+-   Java 1.8
+
+For more information on features and bug fixes in 0.4.1, see the GitHub milestone:
+
+-   <https://github.com/JanusGraph/janusgraph/milestone/15?closed=1>
+
+#### Upgrade Instructions
+
+##### TinkerPop: Upgrade from 3.4.1 to 3.4.4
+
+Adding multiple values in the same query to a new vertex property without explicitly defined type 
+(i.e. using `Automatic Schema Maker` to create a property type) requires explicit usage of `VertexProperty.Cardinality` 
+for each call (only for the first query which defines a property) if the `VertexProperty.Cardinality` is different than 
+`VertexProperty.Cardinality.single`.
 
 ### Version 0.4.0 (Release Date: July 1, 2019)
 Legacy documentation: <https://old-docs.janusgraph.org/0.4.0/index.html>

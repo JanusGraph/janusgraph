@@ -3425,10 +3425,12 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         Vertex next = g.addV()
             .property(VertexProperty.Cardinality.list, "name", "marko a. rodriguez")
-            .property("name", "sdsdsd")
+            .property(VertexProperty.Cardinality.list, "name", "sdsdsd")
             .next();
 
-        assertEquals(2, g.V(next).values("name").toList().size());
+        next = g.V(next.id()).property("name", "sdsdsd").next();
+
+        assertEquals(3, g.V(next).values("name").toList().size());
     }
 
     @Test
@@ -3437,9 +3439,11 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         Vertex next = g.addV()
             .property(VertexProperty.Cardinality.set, "name", "marko a. rodriguez")
-            .property("name", "sdsdsd")
-            .property("name", "sdsdsd")
+            .property(VertexProperty.Cardinality.set, "name", "sdsdsd")
+            .property(VertexProperty.Cardinality.set, "name", "sdsdsd")
             .next();
+
+        next = g.V(next.id()).property("name", "sdsdsd").next();
 
         assertEquals(2, g.V(next).values("name").toList().size());
     }
