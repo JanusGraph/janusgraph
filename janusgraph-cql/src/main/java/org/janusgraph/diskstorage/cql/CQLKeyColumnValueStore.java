@@ -427,7 +427,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         private int paginatedResultSize;
         private final Supplier<Statement> statementSupplier;
 
-        private PagingState lastPagingState = null;
+        private byte[] lastPagingState = null;
 
         public CQLPagingIterator(final int pageSize, Supplier<Statement> statementSupplier) {
             this.index = 0;
@@ -448,7 +448,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                 this.index = 0;
             }
             this.index++;
-            lastPagingState = currentResultSet.getExecutionInfo().getPagingState();
+            lastPagingState = currentResultSet.getExecutionInfo().getPagingStateUnsafe();
             return currentResultSet.one();
 
         }
@@ -456,7 +456,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         private ResultSet getResultSet() {
             final Statement boundStmnt = statementSupplier.get();
             if (lastPagingState != null) {
-                boundStmnt.setPagingState(lastPagingState);
+                boundStmnt.setPagingStateUnsafe(lastPagingState);
             }
             return session.execute(boundStmnt);
         }
