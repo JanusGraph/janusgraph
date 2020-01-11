@@ -1,4 +1,4 @@
-// Copyright 2017 JanusGraph Authors
+// Copyright 2019 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -106,7 +106,7 @@ public class StaticArrayBuffer implements StaticBuffer {
     ############## BULK READING ################
      */
 
-    void copyTo(byte[] dest, int destOffset) {
+    public void copyTo(byte[] dest, int destOffset) {
         System.arraycopy(array,offset,dest,destOffset,length());
     }
 
@@ -378,6 +378,10 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     public int compareTo(StaticArrayBuffer other) {
         return compareTo(array, offset, limit, other.array, other.offset, other.limit);
+    }
+
+    public int compareTo(byte[] otherBuffer, int otherOffset, int otherLimit) {
+        return compareTo(array, offset, limit, otherBuffer, otherOffset, otherLimit);
     }
 
     protected int compareTo(int length, StaticBuffer buffer, int bufferLen) {
