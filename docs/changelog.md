@@ -25,6 +25,36 @@ use the latest versions of the software.
 
 ## Release Notes
 
+### Version 0.3.3 (Release Date: January 11, 2020)
+
+```xml tab='Maven'
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.3.3</version>
+</dependency>
+```
+
+```groovy tab='Gradle'
+compile "org.janusgraph:janusgraph-core:0.3.3"
+```
+
+**Tested Compatibility:**
+
+-   Apache Cassandra 2.1.20, 2.2.10, 3.0.14, 3.11.0
+-   Apache HBase 1.2.6, 1.3.1, 1.4.4
+-   Google Bigtable 1.0.0, 1.1.2, 1.2.0, 1.3.0, 1.4.0
+-   Oracle BerkeleyJE 7.4.5
+-   Elasticsearch 1.7.6, 2.4.6, 5.6.5, 6.0.1
+-   Apache Lucene 7.0.0
+-   Apache Solr 5.5.4, 6.6.1, 7.0.0
+-   Apache TinkerPop 3.3.3
+-   Java 1.8
+
+For more information on features and bug fixes in 0.3.3, see the GitHub milestone:
+
+-   <https://github.com/JanusGraph/janusgraph/milestone/14?closed=1>
+
 ### Version 0.3.2 (Release Date: June 16, 2019)
 Legacy documentation: <https://old-docs.janusgraph.org/0.3.2/index.html>
 
