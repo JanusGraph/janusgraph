@@ -27,6 +27,8 @@ import static org.janusgraph.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
 public class HadoopVertexScanMapper extends HadoopScanMapper {
 
+    private JanusGraph graph;
+
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         /* Don't call super implementation super.setup(context); */
@@ -34,7 +36,7 @@ public class HadoopVertexScanMapper extends HadoopScanMapper {
         ModifiableHadoopConfiguration scanConf = ModifiableHadoopConfiguration.of(JanusGraphHadoopConfiguration.MAPRED_NS, hadoopConf);
         VertexScanJob vertexScan = getVertexScanJob(scanConf);
         ModifiableConfiguration graphConf = getJanusGraphConfiguration(context);
-        JanusGraph graph = JanusGraphFactory.open(graphConf);
+        graph = JanusGraphFactory.open(graphConf);
         job = VertexJobConverter.convert(graph, vertexScan);
         metrics = new HadoopContextScanMetrics(context);
         finishSetup(scanConf, graphConf);
@@ -48,5 +50,11 @@ public class HadoopVertexScanMapper extends HadoopScanMapper {
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    protected void cleanup(Context context) throws IOException, InterruptedException {
+        super.cleanup(context);
+        graph.close();
     }
 }
