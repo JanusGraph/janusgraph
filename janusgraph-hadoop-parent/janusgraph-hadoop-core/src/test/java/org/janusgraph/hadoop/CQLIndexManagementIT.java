@@ -21,7 +21,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 public class CQLIndexManagementIT extends AbstractIndexManagementIT {
-
     @Container
     private static JanusGraphCassandraContainer cql = new JanusGraphCassandraContainer();
 

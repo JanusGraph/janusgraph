@@ -39,7 +39,6 @@ public class CassandraStorageSetup {
 
     public static final String CONFDIR_SYSPROP = "test.cassandra.confdir";
     public static final String DATADIR_SYSPROP = "test.cassandra.datadir";
-    public static final String HOSTNAME = System.getProperty(ConfigElement.getPath(STORAGE_HOSTS));
 
     private static volatile Paths paths;
 
@@ -54,7 +53,7 @@ public class CassandraStorageSetup {
         return paths;
     }
 
-    private static ModifiableConfiguration getGenericConfiguration(String ks, String backend) {
+    public static ModifiableConfiguration getEmbeddedConfiguration(String ks) {
         ModifiableConfiguration config = buildGraphConfiguration();
         if (null != ks) {
             config.set(CASSANDRA_KEYSPACE, cleanKeyspaceName(ks));
@@ -62,73 +61,15 @@ public class CassandraStorageSetup {
         }
         config.set(PAGE_SIZE,500);
         config.set(CONNECTION_TIMEOUT, Duration.ofSeconds(60L));
-        config.set(STORAGE_BACKEND, backend);
-        if (HOSTNAME != null) config.set(STORAGE_HOSTS, new String[]{HOSTNAME});
+        config.set(STORAGE_BACKEND, "embeddedcassandra");
         config.set(DROP_ON_CLEAR, false);
-        return config;
-    }
-
-
-    public static ModifiableConfiguration getEmbeddedConfiguration(String ks) {
-        ModifiableConfiguration config = getGenericConfiguration(ks, "embeddedcassandra");
         config.set(STORAGE_CONF_FILE, getPaths().yamlPath);
         return config;
     }
 
-    public static ModifiableConfiguration getEmbeddedCassandraPartitionConfiguration(String ks) {
-        ModifiableConfiguration config = getEmbeddedConfiguration(ks);
-        config.set(IDS_FLUSH,false);
-        return config;
-    }
-
-    public static WriteConfiguration getEmbeddedGraphConfiguration(String ks) {
-        return getEmbeddedConfiguration(ks).getConfiguration();
-    }
 
     public static WriteConfiguration getEmbeddedCassandraPartitionGraphConfiguration(String ks) {
         return getEmbeddedConfiguration(ks).getConfiguration();
-    }
-
-    public static ModifiableConfiguration getAstyanaxConfiguration(String ks) {
-        return getGenericConfiguration(ks, "astyanax");
-    }
-
-    public static ModifiableConfiguration getAstyanaxSSLConfiguration(String ks) {
-        return enableSSL(getGenericConfiguration(ks, "astyanax"));
-    }
-
-    public static WriteConfiguration getAstyanaxGraphConfiguration(String ks) {
-        return getAstyanaxConfiguration(ks).getConfiguration();
-    }
-
-    public static ModifiableConfiguration getCassandraConfiguration(String ks) {
-        return getGenericConfiguration(ks, "cassandra");
-    }
-
-    public static WriteConfiguration getCassandraGraphConfiguration(String ks) {
-        return getCassandraConfiguration(ks).getConfiguration();
-    }
-
-    public static ModifiableConfiguration getCassandraThriftConfiguration(String ks) {
-        return getGenericConfiguration(ks, "cassandrathrift");
-    }
-
-    public static ModifiableConfiguration getCassandraThriftSSLConfiguration(String ks) {
-        return enableSSL(getGenericConfiguration(ks, "cassandrathrift"));
-    }
-
-    public static WriteConfiguration getCassandraThriftGraphConfiguration(String ks) {
-        return getCassandraThriftConfiguration(ks).getConfiguration();
-    }
-
-    public static ModifiableConfiguration getEmbeddedOrThriftConfiguration(String keyspace) {
-        final ModifiableConfiguration config;
-        if (HOSTNAME == null) {
-            config = getEmbeddedConfiguration(keyspace);
-        }  else {
-            config = getCassandraThriftConfiguration(keyspace);
-        }
-        return config;
     }
 
     /**
@@ -140,9 +81,7 @@ public class CassandraStorageSetup {
      * from logging statements.
      */
     public static void startCleanEmbedded() {
-        if (HOSTNAME == null) {
-            startCleanEmbedded(getPaths());
-        }
+        startCleanEmbedded(getPaths());
     }
 
     /*
@@ -158,15 +97,6 @@ public class CassandraStorageSetup {
         } else {
             return raw;
         }
-    }
-
-    private static ModifiableConfiguration enableSSL(ModifiableConfiguration mc) {
-        mc.set(AbstractCassandraStoreManager.SSL_ENABLED, true);
-        mc.set(STORAGE_HOSTS, new String[] {HOSTNAME != null ? HOSTNAME : "127.0.0.1"});
-        mc.set(AbstractCassandraStoreManager.SSL_TRUSTSTORE_LOCATION,
-                Joiner.on(File.separator).join("target", "cassandra", "conf", "localhost-murmur-ssl", "test.truststore"));
-        mc.set(AbstractCassandraStoreManager.SSL_TRUSTSTORE_PASSWORD, "cassandra");
-        return mc;
     }
 
     private static void startCleanEmbedded(Paths p) {

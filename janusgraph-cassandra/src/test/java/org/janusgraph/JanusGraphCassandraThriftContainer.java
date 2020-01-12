@@ -1,4 +1,4 @@
-// Copyright 2019 JanusGraph Authors
+// Copyright 2020 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,36 +16,31 @@ package org.janusgraph;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import org.janusgraph.diskstorage.StandardStoreManager;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.janusgraph.diskstorage.cql.CachingCQLStoreManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.CassandraContainer;
 
 import java.io.File;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.time.Duration;
 
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.*;
+import static org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager.CASSANDRA_KEYSPACE;
+import static org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager.SSL_ENABLED;
+import static org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager.SSL_TRUSTSTORE_LOCATION;
+import static org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager.SSL_TRUSTSTORE_PASSWORD;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
-public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphCassandraContainer> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(JanusGraphCassandraContainer.class);
+public class JanusGraphCassandraThriftContainer extends CassandraContainer<JanusGraphCassandraThriftContainer> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JanusGraphCassandraThriftContainer.class);
 
     private static final String DEFAULT_VERSION = "2.2.14";
     private static final String DEFAULT_IMAGE = "cassandra";
     private static final String DEFAULT_PARTITIONER = "murmur";
     private static final boolean DEFAULT_USE_SSL = false;
     private static final boolean DEFAULT_USE_DEFAULT_CONFIG_FROM_IMAGE = false;
+    public static final Integer THRIFT_PORT = 9160;
 
-    static {
-        setWrapperStoreManager();
-    }
 
     private static String getVersion() {
         String property = System.getProperty("cassandra.docker.version");
@@ -96,14 +91,15 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
         return "cassandra2";
     }
 
-    public JanusGraphCassandraContainer() {
+    public JanusGraphCassandraThriftContainer() {
         this(false);
     }
 
-    public JanusGraphCassandraContainer(boolean fixedExposedPortOfCQL) {
+    public JanusGraphCassandraThriftContainer(boolean fixedExposedPorts) {
         super(getCassandraImage() + ":" + getVersion());
-        if (fixedExposedPortOfCQL) {
+        if (fixedExposedPorts) {
             addFixedExposedPort(CQL_PORT, CQL_PORT);
+            addFixedExposedPort(THRIFT_PORT, THRIFT_PORT);
         }
         withEnv("MAX_HEAP_SIZE", "2G");
         withEnv("HEAP_NEWSIZE", "1G");
@@ -140,17 +136,26 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
         }
     }
 
-    public ModifiableConfiguration getConfiguration(final String keyspace) {
+    public ModifiableConfiguration getThriftConfiguration(final String keyspace) {
+        return getConfiguration(keyspace, "cassandrathrift");
+    }
+
+    public ModifiableConfiguration getAstyanaxConfiguration(final String keyspace) {
+        return getConfiguration(keyspace, "astyanax");
+    }
+
+    private ModifiableConfiguration getConfiguration(final String keyspace, final String storage_backend) {
         final ModifiableConfiguration config = buildGraphConfiguration();
-        config.set(KEYSPACE, cleanKeyspaceName(keyspace));
-        LOGGER.debug("Set keyspace name: {}", config.get(KEYSPACE));
+        if (null != keyspace) {
+            config.set(CASSANDRA_KEYSPACE, cleanKeyspaceName(keyspace));
+            LOGGER.debug("Set keyspace name: {}", config.get(CASSANDRA_KEYSPACE));
+        }
         config.set(PAGE_SIZE, 500);
         config.set(CONNECTION_TIMEOUT, Duration.ofSeconds(60L));
-        config.set(STORAGE_BACKEND, "cql");
-        config.set(STORAGE_PORT, getMappedPort(CQL_PORT));
+        config.set(STORAGE_BACKEND, storage_backend);
+        config.set(STORAGE_PORT, getMappedPort(THRIFT_PORT));
         config.set(STORAGE_HOSTS, new String[]{getContainerIpAddress()});
         config.set(DROP_ON_CLEAR, false);
-        config.set(REMOTE_MAX_REQUESTS_PER_CONNECTION, 1024);
         if (useSSL() && useDynamicConfig()) {
             config.set(SSL_ENABLED, true);
             config.set(SSL_TRUSTSTORE_LOCATION,
@@ -160,30 +165,8 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
         return config;
     }
 
-    public int getMappedCQLPort() {
-        return getMappedPort(CQL_PORT);
+    public int getMappedThirftPort() {
+        return getMappedPort(THRIFT_PORT);
     }
 
-    private static void setWrapperStoreManager() {
-        try {
-            final Field modifiersField = Field.class.getDeclaredField("modifiers");
-            modifiersField.setAccessible(true);
-
-            Field field = StandardStoreManager.class.getDeclaredField("managerClass");
-            field.setAccessible(true);
-            field.set(StandardStoreManager.CQL, CachingCQLStoreManager.class.getCanonicalName());
-
-            field = StandardStoreManager.class.getDeclaredField("ALL_SHORTHANDS");
-            field.setAccessible(true);
-            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-            field.set(null, ImmutableList.copyOf(StandardStoreManager.CQL.getShorthands()));
-
-            field = StandardStoreManager.class.getDeclaredField("ALL_MANAGER_CLASSES");
-            field.setAccessible(true);
-            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-            field.set(null, ImmutableMap.of(StandardStoreManager.CQL.getShorthands().get(0), StandardStoreManager.CQL.getManagerClass()));
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException("Unable to set wrapper CQL store manager", e);
-        }
-    }
 }

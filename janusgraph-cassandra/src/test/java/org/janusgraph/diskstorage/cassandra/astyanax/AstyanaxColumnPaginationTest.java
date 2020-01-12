@@ -14,29 +14,27 @@
 
 package org.janusgraph.diskstorage.cassandra.astyanax;
 
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.junit.jupiter.api.BeforeAll;
-
-import org.janusgraph.CassandraStorageSetup;
-import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreTest;
-import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
-import org.janusgraph.core.JanusGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-
+import org.janusgraph.JanusGraphCassandraThriftContainer;
+import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
+import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreTest;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@Testcontainers
 public class AstyanaxColumnPaginationTest extends AbstractCassandraStoreTest {
+    @Container
+    public static final JanusGraphCassandraThriftContainer thriftContainer = new JanusGraphCassandraThriftContainer();
 
     private static final int DEFAULT_READ_PAGE_SIZE = 4096;
-
-    @BeforeAll
-    public static void startCassandra() {
-        CassandraStorageSetup.startCleanEmbedded();
-    }
 
     @Override
     public ModifiableConfiguration getBaseStorageConfiguration() {
@@ -45,7 +43,7 @@ public class AstyanaxColumnPaginationTest extends AbstractCassandraStoreTest {
 
     @Override
     public ModifiableConfiguration getBaseStorageConfiguration(String keyspace) {
-        return CassandraStorageSetup.getAstyanaxConfiguration(keyspace);
+        return thriftContainer.getAstyanaxConfiguration(keyspace);
     }
 
     @Override

@@ -14,27 +14,28 @@
 
 package org.janusgraph.diskstorage.cassandra.thrift;
 
-import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.JanusGraphCassandraThriftContainer;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.DistributedStoreManagerTest;
 import org.janusgraph.diskstorage.common.DistributedStoreManager.Deployment;
 import org.janusgraph.testutil.FeatureFlag;
 import org.janusgraph.testutil.JanusGraphFeature;
 import org.junit.jupiter.api.*;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@Testcontainers
 public class ThriftDistributedStoreManagerTest extends DistributedStoreManagerTest<CassandraThriftStoreManager> {
+    @Container
+    public static final JanusGraphCassandraThriftContainer thriftContainer = new JanusGraphCassandraThriftContainer();
 
-    @BeforeAll
-    public static void startCassandra() {
-        CassandraStorageSetup.startCleanEmbedded();
-    }
 
     @BeforeEach
     public void setUp() throws BackendException {
         manager = new CassandraThriftStoreManager(
-                CassandraStorageSetup.getCassandraThriftConfiguration(this.getClass().getSimpleName()));
+            thriftContainer.getThriftConfiguration(this.getClass().getSimpleName()));
         store = manager.openDatabase("distributedcf");
     }
 
@@ -48,7 +49,7 @@ public class ThriftDistributedStoreManagerTest extends DistributedStoreManagerTe
     @Test
     @FeatureFlag(feature = JanusGraphFeature.OrderedScan)
     public void testGetDeployment() {
-        final Deployment deployment = CassandraStorageSetup.HOSTNAME == null ? Deployment.LOCAL : Deployment.REMOTE;
+        final Deployment deployment = Deployment.LOCAL;
         assertEquals(deployment, manager.getDeployment());
     }
 }
