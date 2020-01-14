@@ -26,7 +26,7 @@ use the latest versions of the software.
 
 ## Release Notes
 
-### Version 0.4.1 (Release Date: January ?, 2020)
+### Version 0.4.1 (Release Date: January 14, 2020)
 
 ```xml tab='Maven'
 <dependency>
