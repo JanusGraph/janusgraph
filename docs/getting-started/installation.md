@@ -70,9 +70,9 @@ Make sure the `$JAVA_HOME` environment variable points to the correct location w
 JanusGraph can be downloaded as a .zip archive from the [Releases](https://github.com/JanusGraph/janusgraph/releases) section of the project repository.
 
 ```bash
-$ unzip janusgraph-{{ latest_version }}.zip
-Archive:  janusgraph-{{ latest_version }}.zip
-  creating: janusgraph-{{ latest_version }}/
+$ unzip janusgraph-{{ latest_version }}-hadoop2.zip
+Archive:  janusgraph-{{ latest_version }}-hadoop2.zip
+  creating: janusgraph-{{ latest_version }}-hadoop2/
 ...
 ```
 
@@ -84,7 +84,7 @@ The Gremlin Console is an interactive shell that gives you access to the data ma
 You can reach it by running the `gremlin.sh` script which is located in the project's `bin` directory.
 
 ```bash
-$ cd janusgraph-{{ latest_version }}
+$ cd janusgraph-{{ latest_version }}-hadoop2
 $ bin/gremlin.sh
 
          \,,,/
