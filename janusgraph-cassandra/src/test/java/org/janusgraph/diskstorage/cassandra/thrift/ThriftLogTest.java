@@ -14,25 +14,24 @@
 
 package org.janusgraph.diskstorage.cassandra.thrift;
 
+import org.janusgraph.JanusGraphCassandraThriftContainer;
 import org.janusgraph.TestCategory;
 import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.janusgraph.diskstorage.log.KCVSLogTest;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Tag(TestCategory.SERIAL_TESTS)
+@Testcontainers
 public class ThriftLogTest extends KCVSLogTest {
-
-    @BeforeAll
-    public static void startCassandra() {
-        CassandraStorageSetup.startCleanEmbedded();
-    }
+    @Container
+    public static final JanusGraphCassandraThriftContainer thriftContainer = new JanusGraphCassandraThriftContainer();
 
     @Override
     public KeyColumnValueStoreManager openStorageManager() throws BackendException {
-        return new CassandraThriftStoreManager(CassandraStorageSetup.getCassandraThriftConfiguration(this.getClass().getSimpleName()));
+        return new CassandraThriftStoreManager(thriftContainer.getThriftConfiguration(this.getClass().getSimpleName()));
     }
 
 }

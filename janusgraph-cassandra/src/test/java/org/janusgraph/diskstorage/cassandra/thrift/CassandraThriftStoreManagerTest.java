@@ -14,19 +14,24 @@
 
 package org.janusgraph.diskstorage.cassandra.thrift;
 
-import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.JanusGraphCassandraThriftContainer;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@Testcontainers
 public class CassandraThriftStoreManagerTest {
+    @Container
+    public static final JanusGraphCassandraThriftContainer thriftContainer = new JanusGraphCassandraThriftContainer();
 
     @Test
     public void configOptionFrameSizeMbShouldErrorOnLowValue() {
         assertThrows(IllegalArgumentException.class, () -> {
-            ModifiableConfiguration config = CassandraStorageSetup.getCassandraThriftConfiguration("janusgraph");
+            ModifiableConfiguration config = thriftContainer.getThriftConfiguration("janusgraph");
             config.set(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB, 0);
             config.get(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB);
         });
@@ -34,7 +39,7 @@ public class CassandraThriftStoreManagerTest {
 
     @Test
     public void configOptionFrameSizeMbShouldBeHappy() {
-        ModifiableConfiguration config = CassandraStorageSetup.getCassandraThriftConfiguration("janusgraph");
+        ModifiableConfiguration config = thriftContainer.getThriftConfiguration("janusgraph");
         config.set(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB, 1);
         Integer result = config.get(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB);
         assertEquals(1, result.intValue());
@@ -43,7 +48,7 @@ public class CassandraThriftStoreManagerTest {
     @Test
     public void configOptionFrameSizeMbShouldErrorOnHighValue() {
         assertThrows(IllegalArgumentException.class, () -> {
-            ModifiableConfiguration config = CassandraStorageSetup.getCassandraThriftConfiguration("janusgraph");
+            ModifiableConfiguration config = thriftContainer.getThriftConfiguration("janusgraph");
             config.set(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB, 2048);
             config.get(CassandraThriftStoreManager.THRIFT_FRAME_SIZE_MB);
         });

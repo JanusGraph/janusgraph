@@ -14,14 +14,19 @@
 
 package org.janusgraph.graphdb.astyanax;
 
-import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.JanusGraphCassandraThriftContainer;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.CassandraGraphTest;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 public class AstyanaxGraphTest extends CassandraGraphTest {
+    @Container
+    public static final JanusGraphCassandraThriftContainer thriftContainer = new JanusGraphCassandraThriftContainer();
 
     @Override
     public WriteConfiguration getConfiguration() {
-        return CassandraStorageSetup.getAstyanaxGraphConfiguration(getClass().getSimpleName());
+        return thriftContainer.getAstyanaxConfiguration(getClass().getSimpleName()).getConfiguration();
     }
 }
