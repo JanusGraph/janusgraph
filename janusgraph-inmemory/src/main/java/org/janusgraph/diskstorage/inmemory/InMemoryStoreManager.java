@@ -1,4 +1,4 @@
-// Copyright 2017 JanusGraph Authors
+// Copyright 2019 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,19 +24,26 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.*;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+import java.util.stream.Collectors;
 
 /**
  * In-memory backend storage engine.
  *
- * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class InMemoryStoreManager implements KeyColumnValueStoreManager {
 
-    private final ConcurrentHashMap<String, InMemoryKeyColumnValueStore> stores;
+    private ConcurrentHashMap<String, InMemoryKeyColumnValueStore> stores;
 
     private final StoreFeatures features;
 
@@ -130,6 +137,58 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
     @Override
     public String getName() {
         return toString();
+    }
+
+    public void makeSnapshot(File targetSnapshotDirectory, ForkJoinPool parallelOperationsExecutor) throws IOException {
+        Files.createDirectory(Paths.get(targetSnapshotDirectory.getAbsolutePath()));
+
+        stores.entrySet().stream().map(e -> parallelOperationsExecutor.submit(() ->
+        {
+            try {
+                dumpStore(e.getKey(), e.getValue(), targetSnapshotDirectory.getAbsolutePath(), parallelOperationsExecutor);
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+        })).collect(Collectors.toList()).stream() //force it to submit all tasks
+            .map(ForkJoinTask::join).collect(Collectors.toList());
+    }
+
+    private void dumpStore(String storeName, InMemoryKeyColumnValueStore store, String rootPath, ForkJoinPool parallelOperationsExecutor) throws IOException {
+        Path filePath = Paths.get(rootPath, storeName);
+
+        Files.createDirectory(filePath);
+
+        store.dumpTo(filePath, parallelOperationsExecutor);
+    }
+
+    public void restoreFromSnapshot(File sourceSnapshotDirectory, boolean rollbackIfFailed, ForkJoinPool parallelOperationsExecutor) throws IOException, BackendException {
+        final Path root = Paths.get(sourceSnapshotDirectory.getAbsolutePath());
+        if (!rollbackIfFailed) {
+            //NOTE: if rollbackIfFailed is false, we clear current contents of stores before loading, thus freeing up memory to load new data,
+            //but we lose the ability to go back to old data if load failed
+            clearStorage();
+        }
+
+        ConcurrentHashMap<String, InMemoryKeyColumnValueStore> newStores = rollbackIfFailed ? new ConcurrentHashMap<>(stores.size()) : stores;
+
+        //this assumes that any subdirectory is a dumped store, ignores non-directories such as serializer mappings file etc
+        Files.list(root).filter(path -> path.toFile().isDirectory()).map(storePath -> parallelOperationsExecutor.submit(() ->
+        {
+            try {
+                newStores.put(storePath.getFileName().toString(), InMemoryKeyColumnValueStore.readFrom(storePath, storePath.getFileName().toString(), parallelOperationsExecutor));
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        })).collect(Collectors.toList()).stream() //force it to submit all tasks
+            .map(ForkJoinTask::join).collect(Collectors.toList());
+
+        if (rollbackIfFailed) {
+            //NOTE: if rollbackIfFailed is true, we clear current contents of stores only AFTER successful loading,
+            // thus having the option to get back to old data if load failed, but we then require 2x memory to hold both old and new data
+            // so the risk of OOM increases
+            clearStorage();
+            stores = newStores;
+        }
     }
 
     private static class InMemoryTransaction extends AbstractStoreTransaction {

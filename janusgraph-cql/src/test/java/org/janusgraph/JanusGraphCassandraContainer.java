@@ -39,7 +39,7 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
 
     private static final String DEFAULT_VERSION = "2.2.14";
     private static final String DEFAULT_IMAGE = "cassandra";
-    private static final String DEFAULT_PARTITIONER = "byteordered";
+    private static final String DEFAULT_PARTITIONER = "murmur";
     private static final boolean DEFAULT_USE_SSL = false;
     private static final boolean DEFAULT_USE_DEFAULT_CONFIG_FROM_IMAGE = false;
 

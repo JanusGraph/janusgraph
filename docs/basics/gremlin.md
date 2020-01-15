@@ -22,11 +22,13 @@ other graph databases supporting Gremlin.
 This section is a brief overview of the Gremlin query language. For more
 information on Gremlin, refer to the following resources:
 
+- [Practical Gremlin](https://kelvinlawrence.net/book/Gremlin-Graph-Guide.html): An online book by Kelvin R. Lawrence providing an in-depth overview of Gremlin and it's interaction with JanusGraph.
+
 - [Complete Gremlin Manual](https://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/reference/): Reference manual for all of the Gremlin steps.
 
 - [Gremlin Console Tutorial](https://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/tutorials/the-gremlin-console/): Learn how to use the Gremlin Console effectively to traverse and analyze a graph interactively.
 
-- [Gremlin Recipes](tinkerpop.apache.org/docs/{{ tinkerpop_version }}/recipes/): A collection of best practices and common traversal patterns for Gremlin.
+- [Gremlin Recipes](https://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/recipes/): A collection of best practices and common traversal patterns for Gremlin.
 
 - [Gremlin Language Drivers](https://tinkerpop.apache.org/index.html#language-drivers):
     Connect to a Gremlin Server with different programming languages,

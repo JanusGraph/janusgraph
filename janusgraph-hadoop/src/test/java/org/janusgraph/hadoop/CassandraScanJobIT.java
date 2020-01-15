@@ -15,7 +15,7 @@
 package org.janusgraph.hadoop;
 
 
-import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.JanusGraphCassandraThriftContainer;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
@@ -38,6 +38,8 @@ import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -45,7 +47,11 @@ import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Testcontainers
 public class CassandraScanJobIT extends JanusGraphBaseTest {
+
+    @Container
+    private static JanusGraphCassandraThriftContainer thriftContainer = new JanusGraphCassandraThriftContainer(true);
 
     private static final Logger log = LoggerFactory.getLogger(CassandraScanJobIT.class);
 
@@ -101,6 +107,7 @@ public class CassandraScanJobIT extends JanusGraphBaseTest {
         org.apache.hadoop.conf.Configuration c = new org.apache.hadoop.conf.Configuration();
         c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.cassandra.keyspace", getClass().getSimpleName());
         c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.backend", "cassandrathrift");
+        c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.port", String.valueOf(thriftContainer.getMappedThirftPort()));
         c.set("cassandra.input.partitioner.class", "org.apache.cassandra.dht.Murmur3Partitioner");
 
         Job job = getVertexJobWithDefaultMapper(c);
@@ -129,6 +136,7 @@ public class CassandraScanJobIT extends JanusGraphBaseTest {
         org.apache.hadoop.conf.Configuration c = new org.apache.hadoop.conf.Configuration();
         c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.cassandra.keyspace", getClass().getSimpleName());
         c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.backend", "cassandrathrift");
+        c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.port", String.valueOf(thriftContainer.getMappedThirftPort()));
         c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.FILTER_PARTITIONED_VERTICES), "true");
         c.set("cassandra.input.partitioner.class", "org.apache.cassandra.dht.Murmur3Partitioner");
 
@@ -157,20 +165,6 @@ public class CassandraScanJobIT extends JanusGraphBaseTest {
 
     @Override
     public WriteConfiguration getConfiguration() {
-        return CassandraStorageSetup.getEmbeddedOrThriftConfiguration(getClass().getSimpleName()).getConfiguration();
+        return thriftContainer.getThriftConfiguration(getClass().getSimpleName()).getConfiguration();
     }
-
-//    public static class NoopScanJob implements ScanJob {
-//
-//        @Override
-//        public void process(StaticBuffer key, Map<SliceQuery, EntryList> entries, ScanMetrics metrics) {
-//            // do nothing
-//        }
-//
-//        @Override
-//        public List<SliceQuery> getQueries() {
-//            int len = 4;
-//            return ImmutableList.of(new SliceQuery(BufferUtil.zeroBuffer(len), BufferUtil.oneBuffer(len)));
-//        }
-//    }
 }

@@ -14,13 +14,18 @@
 
 package org.janusgraph.hadoop;
 
-import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.JanusGraphCassandraThriftContainer;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 public class CassandraIndexManagementIT extends AbstractIndexManagementIT {
+    @Container
+    private static JanusGraphCassandraThriftContainer thriftContainer = new JanusGraphCassandraThriftContainer(true);
 
     @Override
     public WriteConfiguration getConfiguration() {
-        return CassandraStorageSetup.getEmbeddedOrThriftConfiguration(getClass().getSimpleName()).getConfiguration();
+        return thriftContainer.getThriftConfiguration(getClass().getSimpleName().toLowerCase()).getConfiguration();
     }
 }

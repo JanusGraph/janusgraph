@@ -54,6 +54,7 @@ extra:
 markdown_extensions:
     - pymdownx.superfences
     - pymdownx.snippets
+    - pymdownx.details
     - markdown.extensions.admonition
     - markdown_include.include:
         base_path: docs
@@ -62,6 +63,10 @@ markdown_extensions:
 
 nav:
     - Introduction: index.md
+    - Getting Started:
+        - Installation: getting-started/installation.md
+        - Basic Usage: getting-started/basic-usage.md
+        - Architectural Overview: getting-started/architecture.md
     - JanusGraph Basics:
         - Configuration: basics/configuration.md
         - Schema and Data Modeling: basics/schema.md
@@ -122,6 +127,6 @@ nav:
 extra:
     latest_version: 0.5.0
     snapshot_version: 0.5.0-SNAPSHOT
-    tinkerpop_version: 3.4.1
+    tinkerpop_version: 3.4.4
     hadoop2_version: 2.7.7
     jamm_version: 0.3.0
