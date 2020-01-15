@@ -82,7 +82,7 @@ Parameter `use-deprecated-multitype-index` is no more supported by JanusGraph.
 
 BerkeleyDB storage configured with [SHARED_CACHE](https://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/EnvironmentConfig.html#SHARED_CACHE) for better memory usage.
 
-### Version 0.4.1 (Release Date: January ?, 2020)
+### Version 0.4.1 (Release Date: January 14, 2020)
 
 ```xml tab='Maven'
 <dependency>
