@@ -37,21 +37,31 @@ exploration. Automated testing and ad-hoc prototyping remains its main purpose w
 The initial test-only implementation was further evolved to use a more compact
  in-memory representation, which made it suitable for production use in certain scenarios, such as 
  Janusgraph engine being embedded into an application process, or spawned dynamically on demand, where:
-- Ease of setup/configuration/maintenance/start up is important (just run Janusgraph from distribution jar, no management of clusters for backend DBs etc) 
-- Loss of data due to _unexpected_ death of host process is acceptable (the backend provides a simple mechanism for making fast snapshots to handle _expected_ restarts, and the data can always be exported on Gremlin/Tinkerpop level to say GraphSON)
-- Size of the graph data makes it possible to host it in a single JVM process (i.e. a few tens of Gigabytes max, unless you use a specialized JVM and hardware)
-- Higher performance is required, but no expertise/resources available to tune more complex backends. Due to its memory-only nature, in-memory backend typically performs faster than disk-based ones, in queries using simple indices
-and in graph modifications. However it is not specifically optimized for performance, and does not support advanced indexing functionality. 
+
+- Ease of setup/configuration/maintenance/start up is important (just run Janusgraph from distribution jar, 
+no management of clusters for backend DBs etc)  
+- Loss of data due to _unexpected_ death of host process is acceptable (the backend provides a 
+simple mechanism for making fast snapshots to handle _expected_ restarts, and the data can always 
+be exported on Gremlin/Tinkerpop level to say GraphSON)  
+- Size of the graph data makes it possible to host it in a single JVM process (i.e. a few tens of Gigabytes max, 
+unless you use a specialized JVM and hardware)  
+- Higher performance is required, but no expertise/resources available to tune more complex backends. 
+Due to its memory-only nature, in-memory backend typically performs faster than disk-based ones, 
+in queries using simple indices and in graph modifications. However it is not specifically optimized for performance, 
+and does not support advanced indexing functionality. 
 
 ### Limitations
 
-- Obviously the scalability is limited to the heap size of a single JVM, and no transparent resilience to failures is offered
-- The backend offers store-level locking only, whereas a Janusgraph transaction typically changes multiple stores (e.g. vertex store and index store).
-This means that in scenarios where data is modified in parallel transactions, care should be taken on application level to avoid conflicting updates.
-At a high level, this means that you can modify unrelated parts of the graph in parallel, but you should avoid changing the same vertex or its edges in parallel
-transactions.
-- The backend does not guarantee a clean rollback once commit has started. Chances of a failure in the middle of commit to an in-memory data structure are low,
-however this can happen - e.g. when a large heap nears saturation and the GC pause exceeds configured backend timeout.
+- Obviously the scalability is limited to the heap size of a single JVM, 
+and no transparent resilience to failures is offered  
+- The backend offers store-level locking only, whereas a Janusgraph transaction typically changes multiple stores 
+(e.g. vertex store and index store). This means that in scenarios where data is modified in parallel transactions, 
+care should be taken on application level to avoid conflicting updates. At a high level, this means that you can 
+modify unrelated parts of the graph in parallel, but you should avoid changing the same vertex or 
+its edges in parallel transactions.  
+- The backend does not guarantee a clean rollback once commit has started. Chances of a failure in the middle of commit 
+to an in-memory data structure are low, however this can happen - e.g. when a large heap nears saturation and the 
+GC pause exceeds configured backend timeout.  
 - The data layout used by the backend can theoretically be susceptible to fragmentation in certain scenarios
  (with a lot of add/delete operations), thus reducing the amount of useful data that can be stored in a heap
   of specified size. The backend provides simple mechanisms to report fragmentation and defragment the storage if required.
@@ -63,11 +73,12 @@ however this can happen - e.g. when a large heap nears saturation and the GC pau
 Generally, except for the above class of use cases, there doesn't seem to be much point in specifically 100% in-memory-only backend.
 Many of the other supported backends, based on mature key-value databases, 
 can be tuned to provide high performance and resiliency, plus advanced indexing capabilities etc 
-(provided that you have resources and expertise to host and tune them, or use them as a service).
+(provided that you have resources and expertise to host and tune them, or use them as a service).  
 However there are a few in-memory alternatives, such as (not exhaustive list, and in no particular order):
+
 - BerkeleyJE backend configured with je.log.memOnly set to true 
-(care should be taken to avoid using it for scenarios with continuous write operations, even if the effective size of the data
- remains the same - continuous write operations can drive uncontrolled log growth, leading to OOM). 
- The backend has dump/load capability, and supports compression.
-- [Aerospike-based backend](https://github.com/Playtika/aerospike-janusgraph-storage-backend) (not part of Janugraph but a separate project)
+(care should be taken to avoid using it for scenarios with continuous write operations, even if the effective size of 
+the data remains the same - continuous write operations can drive uncontrolled log growth, leading to OOM). 
+The backend has dump/load capability, and supports compression.  
+- [Aerospike-based backend](https://github.com/Playtika/aerospike-janusgraph-storage-backend) (not part of Janugraph but a separate project)  
  
