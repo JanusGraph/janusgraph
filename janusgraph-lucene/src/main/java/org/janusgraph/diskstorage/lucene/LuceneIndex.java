@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.lucene;
 
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Geo;
@@ -72,6 +73,7 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -603,15 +605,23 @@ public class LuceneIndex implements IndexProvider {
     }
 
     // adapted from SolrIndex
-    private List<String> customTokenize(Analyzer analyzer, String fieldName, String value) {
-        final List<String> terms = new ArrayList<>();
+    private List<List<String>> customTokenize(Analyzer analyzer, String fieldName, String value) {
+        Map<Integer, List<String>> stemsByOffset = new HashMap<>();
         try (CachingTokenFilter stream = new CachingTokenFilter(analyzer.tokenStream(fieldName, value))) {
+            final OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
             final TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
             stream.reset();
             while (stream.incrementToken()) {
-                terms.add(termAtt.getBytesRef().utf8ToString());
+                int offset = offsetAtt.startOffset();
+                String stem = termAtt.getBytesRef().utf8ToString();
+                List<String> stemList = stemsByOffset.get(offset);
+                if(stemList == null){
+                    stemList = new ArrayList<>();
+                    stemsByOffset.put(offset, stemList);
+                }
+                stemList.add(stem);
             }
-            return terms;
+            return new ArrayList<>(stemsByOffset.values());
         } catch (IOException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
@@ -619,7 +629,7 @@ public class LuceneIndex implements IndexProvider {
 
     private void tokenize(SearchParams params, final Mapping mapping, final LuceneCustomAnalyzer delegatingAnalyzer, String value, String key, JanusGraphPredicate janusgraphPredicate) {
         final Analyzer analyzer = delegatingAnalyzer.getWrappedAnalyzer(key);
-        final List<String>    terms = customTokenize(analyzer, key, value);
+        final List<List<String>> terms = customTokenize(analyzer, key, value);
         if (terms.isEmpty()) {
             // This might happen with very short terms
             if (janusgraphPredicate == Text.CONTAINS_PREFIX ) {
@@ -633,20 +643,18 @@ public class LuceneIndex implements IndexProvider {
             }
         } else if (terms.size() == 1) {
             if (janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate == Text.CONTAINS) {
-                params.addQuery(new TermQuery(new Term(key, terms.get(0))));
+                params.addQuery(combineTerms(key, terms.get(0), TermQuery::new));
             } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
                 final BooleanQuery.Builder q = new BooleanQuery.Builder();
                 q.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
-                q.add(new TermQuery(new Term(key, terms.get(0))), BooleanClause.Occur.MUST_NOT);
+                q.add(combineTerms(key, terms.get(0), TermQuery::new), BooleanClause.Occur.MUST_NOT);
                 params.addQuery(q.build(), BooleanClause.Occur.MUST);
             } else if (janusgraphPredicate == Text.CONTAINS_PREFIX) {
-                final Term term;
-                if (mapping == Mapping.STRING) {
-                    term = new Term(key, terms.get(0));
-                } else {
-                    term = new Term(key, terms.get(0).toLowerCase());
+                List<String> preparedTerms = new ArrayList<>(terms.get(0));
+                if (mapping != Mapping.STRING) {
+                    preparedTerms = terms.get(0).stream().map(String::toLowerCase).collect(Collectors.toList());
                 }
-                params.addQuery(new PrefixQuery(term), BooleanClause.Occur.MUST);
+                params.addQuery(combineTerms(key, preparedTerms, PrefixQuery::new), BooleanClause.Occur.MUST);
             } else throw new IllegalArgumentException("LuceneIndex does not support this predicate with 1 token : " + janusgraphPredicate);
         } else {
             // at the moment, this is only walked for EQUAL, NOT_EQUAL and Text.CONTAINS (String and Text mappings)
@@ -658,10 +666,24 @@ public class LuceneIndex implements IndexProvider {
             } else {
                 occur = BooleanClause.Occur.MUST;
             }
-            for (final String term : terms) {
-                q.add(new TermQuery(new Term(key, term)), occur);
+            for (final List<String> stems : terms) {
+                q.add(combineTerms(key, stems, TermQuery::new), occur);
             }
             params.addQuery(q.build());
+        }
+    }
+
+    private Query combineTerms(String key, List<String> terms, Function<Term, Query> queryCreator) {
+        if (terms.size() > 1) {
+            final Builder q = new Builder();
+            for (String term : terms) {
+                q.add(queryCreator.apply(new Term(key, term)), BooleanClause.Occur.SHOULD);
+            }
+            return q.build();
+        } else if (terms.size() == 1){
+            return queryCreator.apply(new Term(key, terms.get(0)));
+        } else {
+            return new MatchNoDocsQuery("No terms for key " + key);
         }
     }
 
