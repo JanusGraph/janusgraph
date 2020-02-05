@@ -445,10 +445,10 @@ range/interval constraints.
     The types that are currently supported are `Boolean`, `UUID`, `Byte`, `Float`, `Long`, `String`, 
     `Integer`, `Date`, `Double`, `Character`, and `Short`
 
-If the vertex-centric index is built against an edge label that is
-defined in the same management transaction, the index will be
-immediately available for querying. If the edge label has already been
-in use, building a vertex-centric index against it requires the
+If the vertex-centric index is built against either an edge label or at least one
+property key that is defined in the same management transaction, the index will be
+immediately available for querying. If both the edge label and all of the indexed
+property keys have already been in use, building a vertex-centric index against it requires the
 execution of a [reindex procedure](./index-reindexing.md) to ensure that the index
 contains all previously added edges. Until the reindex procedure has
 completed, the index will not be available.
