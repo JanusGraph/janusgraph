@@ -741,6 +741,9 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 }
                 messageTimeStart = messageTimeEnd;
             } catch (Throwable e) {
+                if (e.getCause() instanceof PermanentBackendException) {
+                    throw e;
+                }
                 log.warn("Could not read messages for timestamp ["+messageTimeStart+"] (this read will be retried)",e);
             }
         }
