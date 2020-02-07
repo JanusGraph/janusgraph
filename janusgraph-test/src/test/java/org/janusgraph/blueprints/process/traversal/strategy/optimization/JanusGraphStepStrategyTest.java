@@ -188,7 +188,9 @@ public class JanusGraphStepStrategyTest {
             arguments(g.V().or(__.has("name", "marko"), has("lang", "java").order().by("name", Order.decr)),
                 g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.decr)))), Collections.emptyList()),
             arguments(g.V().or(__.has("name", "marko"), has("lang", "java").order().by("name", Order.decr)).order().by("lang", Order.incr),
-                g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.decr))), new HasStepFolder.OrderEntry("lang", Order.incr)), Collections.emptyList())
+                g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.decr))), new HasStepFolder.OrderEntry("lang", Order.incr)), Collections.emptyList()),
+            arguments(g.V().or(__.has("name", "marko").has("age", 29), __.has("name", "vadas").has("age", 27)).as("x").select("x"),
+                g_V(__.or(g_V("name", eq("marko"), "age", eq(29)), g_V("name", eq("vadas"), "age", eq(27)))).as("x").select("x"), Collections.emptyList()),
         });
     }
 }
