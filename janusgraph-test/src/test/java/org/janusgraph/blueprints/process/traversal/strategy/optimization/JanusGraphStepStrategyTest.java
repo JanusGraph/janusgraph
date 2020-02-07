@@ -269,10 +269,12 @@ public class JanusGraphStepStrategyTest {
             arguments(g.V().or(has("name", "marko"), has("lang", "java").order().by("name", Order.desc)).order().by(
                 "lang", Order.asc),
                 g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), new HasStepFolder.OrderEntry("name",
-                    Order.desc))), new HasStepFolder.OrderEntry("lang", Order.asc)), Collections.emptyList())
+                    Order.desc))), new HasStepFolder.OrderEntry("lang", Order.asc)), Collections.emptyList()),
+            arguments(g.V().or(__.has("name", "marko").has("age", 29), __.has("name", "vadas").has("age", 27)).as("x").select("x"),
+                g_V(__.or(g_V("name", eq("marko"), "age", eq(29)), g_V("name", eq("vadas"), "age", eq(27)))).as("x").select("x"), Collections.emptyList()),
         });
     }
-    
+
     private static Stream<Arguments> generateMultiQueryTestParameters() {
         final StandardJanusGraph graph = (StandardJanusGraph) StorageSetup.getInMemoryGraphWithMultiQuery();
         final GraphTraversalSource g = graph.traversal();
