@@ -4171,7 +4171,6 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     }
 
-
     @Test
     public void testSimpleTinkerPopTraversal() {
         Vertex v1 = graph.addVertex("name", "josh");
@@ -4183,6 +4182,47 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertNotNull(id);
     }
 
+    @Test
+    public void testHasKeyOnEdgePropertyTraversal() {
+
+        Vertex vertex = prepareDataForEdgePropertyFilterTest();
+
+        List<Object> result = graph.traversal().V(vertex).bothE().properties().hasKey("name").value().toList();
+        assertEquals(1, result.size());
+        assertEquals(result.get(0), "testValue");
+    }
+
+    @Test
+    public void testHasValueOnEdgePropertyTraversal() {
+
+        Vertex vertex = prepareDataForEdgePropertyFilterTest();
+
+        List<Object> result = graph.traversal().V(vertex).bothE().properties().hasValue("testValue").value().toList();
+        assertEquals(1, result.size());
+        assertEquals(result.get(0), "testValue");
+    }
+
+    @Test
+    public void testHasKeyAndHasValueOnEdgePropertyTraversal() {
+
+        Vertex vertex = prepareDataForEdgePropertyFilterTest();
+
+        List<Object> result = graph.traversal().V(vertex).bothE().properties().hasKey("weight").hasValue(P.lt(3)).value().toList();
+        assertEquals(1, result.size());
+        assertEquals(result.get(0), 2);
+    }
+
+    private Vertex prepareDataForEdgePropertyFilterTest(){
+
+        Vertex v1 = graph.addVertex("name", "josh");
+        Vertex v2 = graph.addVertex("name", "lop");
+        Vertex v3 = graph.addVertex("name", "lop2");
+
+        graph.traversal().V(v1).addE("created").to(v2).property("name", "testValue").next();
+        graph.traversal().V(v1).addE("created").to(v3).property("weight", 2).next();
+
+        return v1;
+    }
 
    /* ==================================================================================
                             LOGGING
