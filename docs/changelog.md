@@ -50,7 +50,7 @@ compile "org.janusgraph:janusgraph-core:0.5.0"
 * Elasticsearch 6.0.1, 6.6.0, 7.3.1
 * Apache Lucene 7.0.0
 * Apache Solr 7.0.0
-* Apache TinkerPop 3.4.4
+* Apache TinkerPop 3.4.5
 * Java 1.8
 
 For more information on features and bug fixes in 0.5.0, see the GitHub milestone:
