@@ -297,7 +297,10 @@ public class ManagementSystem implements JanusGraphManagement {
             lm.dataType(((PropertyKey) type).dataType());
             maker = lm;
         }
-        maker.status(type.isNew() ? SchemaStatus.ENABLED : SchemaStatus.INSTALLED);
+
+        boolean canIndexBeEnabled = type.isNew() || Arrays.stream(sortKeys).anyMatch(key -> key.isNew());
+
+        maker.status(canIndexBeEnabled ? SchemaStatus.ENABLED : SchemaStatus.INSTALLED);
         maker.invisible();
         maker.multiplicity(Multiplicity.MULTI);
         maker.sortKey(sortKeys);
@@ -315,7 +318,7 @@ public class ManagementSystem implements JanusGraphManagement {
         RelationType typeIndex = maker.make();
         addSchemaEdge(type, typeIndex, TypeDefinitionCategory.RELATIONTYPE_INDEX, null);
         RelationTypeIndexWrapper index = new RelationTypeIndexWrapper((InternalRelationType) typeIndex);
-        if (!type.isNew()) updateIndex(index, SchemaAction.REGISTER_INDEX);
+        if (!canIndexBeEnabled) updateIndex(index, SchemaAction.REGISTER_INDEX);
         return index;
     }
 
@@ -697,7 +700,7 @@ public class ManagementSystem implements JanusGraphManagement {
         }
         updateSchemaVertex(indexVertex);
         JanusGraphIndexWrapper index = new JanusGraphIndexWrapper(indexVertex.asIndexType());
-        if (!oneNewKey) updateIndex(index, SchemaAction.REGISTER_INDEX);
+        if (!canIndexBeEnabled) updateIndex(index, SchemaAction.REGISTER_INDEX);
         return index;
     }
 

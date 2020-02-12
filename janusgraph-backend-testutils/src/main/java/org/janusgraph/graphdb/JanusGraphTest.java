@@ -1839,6 +1839,92 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertNotEquals(SchemaStatus.ENABLED, mgmt.getGraphIndex("newIndex").getIndexStatus(existingPropertyKey));
     }
 
+    @Test
+    public void testRelationTypeIndexShouldBeEnabledForExistingPropertyKeyAndNewRelationType() {
+        mgmt.makePropertyKey("alreadyExistingProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        finishSchema();
+
+        mgmt.makeEdgeLabel("newLabel").make();
+        PropertyKey existingPropertyKey  = mgmt.getPropertyKey("alreadyExistingProperty");
+        EdgeLabel newLabel = mgmt.getEdgeLabel("newLabel");
+        mgmt.buildEdgeIndex(newLabel, "newIndex", Direction.BOTH, existingPropertyKey);
+        finishSchema();
+
+        assertEquals(SchemaStatus.ENABLED, mgmt.getRelationIndex(newLabel, "newIndex").getIndexStatus());
+    }
+
+    @Test
+    public void testRelationTypeIndexShouldBeEnabledForNewPropertyKeyAndExistingRelationType() {
+        mgmt.makeEdgeLabel("alreadyExistingLabel").make();
+        finishSchema();
+
+        mgmt.makePropertyKey("newProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey newPropertyKey  = mgmt.getPropertyKey("newProperty");
+        EdgeLabel existingLabel = mgmt.getEdgeLabel("alreadyExistingLabel");
+        mgmt.buildEdgeIndex(existingLabel, "newIndex", Direction.BOTH, newPropertyKey);
+        finishSchema();
+
+        assertEquals(SchemaStatus.ENABLED, mgmt.getRelationIndex(existingLabel, "newIndex").getIndexStatus());
+    }
+
+    @Test
+    public void testRelationTypeIndexShouldBeEnabledForSingleNewPropertyKeyAndExistingRelationType() {
+        mgmt.makeEdgeLabel("alreadyExistingLabel").make();
+        mgmt.makePropertyKey("alreadyExistingProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        finishSchema();
+
+        mgmt.makePropertyKey("newProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey existingPropertyKey  = mgmt.getPropertyKey("alreadyExistingProperty");
+        PropertyKey newPropertyKey  = mgmt.getPropertyKey("newProperty");
+        EdgeLabel existingLabel = mgmt.getEdgeLabel("alreadyExistingLabel");
+        mgmt.buildEdgeIndex(existingLabel, "newIndex", Direction.BOTH, existingPropertyKey, newPropertyKey);
+        finishSchema();
+
+        assertEquals(SchemaStatus.ENABLED, mgmt.getRelationIndex(existingLabel, "newIndex").getIndexStatus());
+    }
+
+    @Test
+    public void testRelationTypeIndexShouldBeEnabledForSingleNewPropertyKeyAndNewRelationType() {
+        mgmt.makePropertyKey("alreadyExistingProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        finishSchema();
+
+        mgmt.makeEdgeLabel("newLabel").make();
+        mgmt.makePropertyKey("newProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey existingPropertyKey  = mgmt.getPropertyKey("alreadyExistingProperty");
+        PropertyKey newPropertyKey  = mgmt.getPropertyKey("newProperty");
+        EdgeLabel newLabel = mgmt.getEdgeLabel("newLabel");
+        mgmt.buildEdgeIndex(newLabel, "newIndex", Direction.BOTH, existingPropertyKey, newPropertyKey);
+        finishSchema();
+
+        assertEquals(SchemaStatus.ENABLED, mgmt.getRelationIndex(newLabel, "newIndex").getIndexStatus());
+    }
+
+    @Test
+    public void testRelationTypeIndexShouldBeEnabledForNewPropertyKeyAndNewRelationType() {
+        mgmt.makePropertyKey("newProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makeEdgeLabel("newLabel").make();
+        PropertyKey newPropertyKey  = mgmt.getPropertyKey("newProperty");
+        EdgeLabel newLabel = mgmt.getEdgeLabel("newLabel");
+        mgmt.buildEdgeIndex(newLabel, "newIndex", Direction.BOTH, newPropertyKey);
+        finishSchema();
+
+        assertEquals(SchemaStatus.ENABLED, mgmt.getRelationIndex(newLabel, "newIndex").getIndexStatus());
+    }
+
+    @Test
+    public void testRelationTypeIndexShouldNotBeEnabledForExistingPropertyKeyAndExistingRelationType() {
+        mgmt.makePropertyKey("alreadyExistingProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makeEdgeLabel("alreadyExistingLabel").make();
+        finishSchema();
+
+        PropertyKey existingPropertyKey  = mgmt.getPropertyKey("alreadyExistingProperty");
+        EdgeLabel existingLabel = mgmt.getEdgeLabel("alreadyExistingLabel");
+        mgmt.buildEdgeIndex(existingLabel, "newIndex", Direction.BOTH, existingPropertyKey);
+        finishSchema();
+
+        assertNotEquals(SchemaStatus.ENABLED, mgmt.getRelationIndex(existingLabel, "newIndex").getIndexStatus());
+    }
+
    /* ==================================================================================
                             ADVANCED
      ==================================================================================*/
