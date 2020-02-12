@@ -4096,10 +4096,18 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         // to enforce this lower bound and the LocalStep will be left as is as the local behavior will have not been
         // entirely subsumed by the JanusGraphVertexStep
         assertNumStep(5, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).has("weight", 1).order().by("weight", asc).range(10, 15)), LocalStep.class);
-        assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.inV().is(vs[50])), JanusGraphVertexStep.class);
-        assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.otherV().is(vs[50])), JanusGraphVertexStep.class);
-        assertNumStep(1, 1, gts.V(sv[0]).bothE("knows").filter(__.otherV().is(vs[50])), JanusGraphVertexStep.class);
+        
+        // is() optimization within filter
+        assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.inV().is(vs[50])), JanusGraphVertexStep.class, TraversalFilterStep.class);
+        assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.otherV().is(vs[50])), JanusGraphVertexStep.class, TraversalFilterStep.class);
+        assertNumStep(1, 1, gts.V(sv[0]).bothE("knows").filter(__.otherV().is(vs[50])), JanusGraphVertexStep.class, TraversalFilterStep.class);
         assertNumStep(1, 2, gts.V(sv[0]).bothE("knows").filter(__.inV().is(vs[50])), JanusGraphVertexStep.class, TraversalFilterStep.class);
+
+        // hasId() optimization within filter
+        assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.inV().hasId(vs[50].id())), JanusGraphVertexStep.class, TraversalFilterStep.class);
+        assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.otherV().hasId(vs[50].id())), JanusGraphVertexStep.class, TraversalFilterStep.class);
+        assertNumStep(1, 1, gts.V(sv[0]).bothE("knows").filter(__.otherV().hasId(vs[50].id())), JanusGraphVertexStep.class, TraversalFilterStep.class);
+        assertNumStep(1, 2, gts.V(sv[0]).bothE("knows").filter(__.inV().hasId(vs[50].id())), JanusGraphVertexStep.class, TraversalFilterStep.class);
 
         //Property
         assertNumStep(numV / 5, 1, gts.V(sv[0]).properties("names").has("weight", 1), JanusGraphPropertiesStep.class);
