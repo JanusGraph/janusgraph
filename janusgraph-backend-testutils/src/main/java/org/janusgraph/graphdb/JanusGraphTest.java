@@ -14,7 +14,90 @@
 
 package org.janusgraph.graphdb;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
+import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
+import static org.apache.tinkerpop.gremlin.structure.Direction.BOTH;
+import static org.apache.tinkerpop.gremlin.structure.Direction.IN;
+import static org.apache.tinkerpop.gremlin.structure.Direction.OUT;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.internal.RelationCategory.EDGE;
+import static org.janusgraph.graphdb.internal.RelationCategory.PROPERTY;
+import static org.janusgraph.graphdb.internal.RelationCategory.RELATION;
+import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
+import static org.janusgraph.testutil.JanusGraphAssert.assertEmpty;
+import static org.janusgraph.testutil.JanusGraphAssert.assertNotEmpty;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import java.io.File;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.TextP;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.OptionalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.UnionStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.IsStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
+import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversalStrategies;
+import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalExplanation;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.TestCategory;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
@@ -91,50 +174,24 @@ import org.janusgraph.graphdb.schema.SchemaContainer;
 import org.janusgraph.graphdb.schema.VertexLabelDefinition;
 import org.janusgraph.graphdb.serializer.SpecialInt;
 import org.janusgraph.graphdb.serializer.SpecialIntSerializer;
+import org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexFilterOptimizerStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexHasIdOptimizerStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexIsOptimizerStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphIoRegistrationStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphLocalQueryOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphPropertiesStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStepStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphVertexStep;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.graphdb.types.StandardPropertyKeyMaker;
 import org.janusgraph.graphdb.types.system.BaseVertexLabel;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
-import org.janusgraph.testutil.JanusGraphFeature;
 import org.janusgraph.testutil.FeatureFlag;
+import org.janusgraph.testutil.FlakyTest;
+import org.janusgraph.testutil.JanusGraphFeature;
 import org.janusgraph.testutil.TestGraphConfigs;
-
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.Step;
-import org.apache.tinkerpop.gremlin.process.traversal.TextP;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.branch.OptionalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.branch.UnionStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
-import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Property;
-import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -143,52 +200,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
-import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
-import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
-import static org.apache.tinkerpop.gremlin.structure.Direction.BOTH;
-import static org.apache.tinkerpop.gremlin.structure.Direction.IN;
-import static org.apache.tinkerpop.gremlin.structure.Direction.OUT;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
-import static org.janusgraph.graphdb.internal.RelationCategory.EDGE;
-import static org.janusgraph.graphdb.internal.RelationCategory.PROPERTY;
-import static org.janusgraph.graphdb.internal.RelationCategory.RELATION;
-import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
-import static org.janusgraph.testutil.JanusGraphAssert.assertEmpty;
-import static org.janusgraph.testutil.JanusGraphAssert.assertNotEmpty;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -4110,6 +4121,80 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertNumStep(1, 1, gts.V(sv[0]).bothE("knows").filter(__.otherV().hasId(vs[50].id())), JanusGraphVertexStep.class, TraversalFilterStep.class);
         assertNumStep(1, 2, gts.V(sv[0]).bothE("knows").filter(__.inV().hasId(vs[50].id())), JanusGraphVertexStep.class, TraversalFilterStep.class);
 
+        // AdjacentVertexIsOptimizer outE/inE/bothE
+        assertOptimization(gts.V(sv[0]).outE("knows").has(ImplicitKey.ADJACENT_ID.name(), vs[50]).inV(),
+                           gts.V(sv[0]).outE("knows").inV().is(vs[50]),
+                           AdjacentVertexIsOptimizerStrategy.instance());
+        assertOptimization(gts.V(sv[0]).inE("knows").has(ImplicitKey.ADJACENT_ID.name(), vs[50]).outV(),
+                           gts.V(sv[0]).inE("knows").outV().is(vs[50]),
+                           AdjacentVertexIsOptimizerStrategy.instance());
+        assertOptimization(gts.V(sv[0]).bothE("knows").has(ImplicitKey.ADJACENT_ID.name(), vs[50]).otherV(),
+                           gts.V(sv[0]).bothE("knows").otherV().is(vs[50]),
+                           AdjacentVertexIsOptimizerStrategy.instance());
+
+        // AdjacentVertexIsOptimizer out/in/both
+        assertOptimization(gts.V(sv[0]).outE("knows").has(ImplicitKey.ADJACENT_ID.name(), vs[50]).inV(),
+                           gts.V(sv[0]).out("knows").is(vs[50]),
+                           AdjacentVertexIsOptimizerStrategy.instance());
+        assertOptimization(gts.V(sv[0]).inE("knows").has(ImplicitKey.ADJACENT_ID.name(), vs[50]).outV(),
+                           gts.V(sv[0]).in("knows").is(vs[50]),
+                           AdjacentVertexIsOptimizerStrategy.instance());
+        assertOptimization(gts.V(sv[0]).bothE("knows").has(ImplicitKey.ADJACENT_ID.name(), vs[50]).otherV(),
+                           gts.V(sv[0]).both("knows").is(vs[50]),
+                           AdjacentVertexIsOptimizerStrategy.instance());
+
+        // AdjacentVertexHasIdOptimizer outE/inE/bothE
+        assertOptimization(gts.V(sv[0]).outE("knows").has(ImplicitKey.ADJACENT_ID.name(), vs[50]).inV(),
+                           gts.V(sv[0]).outE("knows").inV().hasId(vs[50]),
+                           AdjacentVertexHasIdOptimizerStrategy.instance());
+        assertOptimization(gts.V(sv[0]).inE("knows").has(ImplicitKey.ADJACENT_ID.name(), vs[50]).outV(),
+                           gts.V(sv[0]).inE("knows").outV().hasId(vs[50]),
+                           AdjacentVertexHasIdOptimizerStrategy.instance());
+        assertOptimization(gts.V(sv[0]).bothE("knows").has(ImplicitKey.ADJACENT_ID.name(), vs[50]).otherV(),
+                           gts.V(sv[0]).bothE("knows").otherV().hasId(vs[50]),
+                           AdjacentVertexHasIdOptimizerStrategy.instance());
+
+        // AdjacentVertexHasIdOptimizer out/in/both
+        assertOptimization(gts.V(sv[0]).outE("knows").has(ImplicitKey.ADJACENT_ID.name(), vs[50]).inV(),
+                           gts.V(sv[0]).out("knows").hasId(vs[50]),
+                           AdjacentVertexHasIdOptimizerStrategy.instance());
+        assertOptimization(gts.V(sv[0]).inE("knows").has(ImplicitKey.ADJACENT_ID.name(), vs[50]).outV(),
+                           gts.V(sv[0]).in("knows").hasId(vs[50]),
+                           AdjacentVertexHasIdOptimizerStrategy.instance());
+        assertOptimization(gts.V(sv[0]).bothE("knows").has(ImplicitKey.ADJACENT_ID.name(), vs[50]).otherV(),
+                           gts.V(sv[0]).both("knows").hasId(vs[50]),
+                           AdjacentVertexHasIdOptimizerStrategy.instance());
+
+        // neq should not be optimized
+        assertOptimization(gts.V(sv[0]).in().hasId(P.neq(vs[50])),
+                           gts.V(sv[0]).in().hasId(P.neq(vs[50])),
+                           AdjacentVertexHasIdOptimizerStrategy.instance());
+
+        int[] loop1 = {0}; // repeat starts from vertex with id 0 and goes in to the sv[0] vertex then loops back out to the vertex with the next id
+        int[] loop2 = {0};
+        GraphTraversal t1 = gts.V(vs[0], vs[1], vs[2])
+                           .repeat(__.inE("knows")
+                                       .has(ImplicitKey.ADJACENT_ID.name(), sv[0].id())
+                                       .outV()
+                                        //.outE("knows")
+                                        //.inV()
+                                       .out("knows") // TINKERPOP-2342
+                                       .sideEffect(e -> loop1[0] = e.loops())
+                                       .has("id", loop1[0]))
+                           .times(numV);
+        GraphTraversal t2 = gts.V(vs[0], vs[1], vs[2])
+                           .repeat(__.inE("knows")
+                                       .outV()
+                                       .hasId(sv[0].id())
+                                        //.outE("knows")
+                                        //.inV()
+                                       .out("knows") // TINKERPOP-2342
+                                       .sideEffect(e -> loop2[0] = e.loops())
+                                       .has("id", loop2[0]))
+                           .times(numV);
+
+        assertOptimization(t1, t2, AdjacentVertexHasIdOptimizerStrategy.instance());
+
         //Property
         assertNumStep(numV / 5, 1, gts.V(sv[0]).properties("names").has("weight", 1), JanusGraphPropertiesStep.class);
         assertNumStep(numV, 1, gts.V(sv[0]).properties("names"), JanusGraphPropertiesStep.class);
@@ -4171,7 +4256,17 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
 
         int[] loop = {0}; // repeat starts from vertex with id 0 and goes in to the sv[0] vertex then loops back out to the vertex with the next id
-        t = gts.V(vs[0],vs[1],vs[2]).repeat( __.inE("knows").outV().hasId(sv[0].id()).outE("knows").inV().sideEffect(e -> loop[0] = e.loops()).has("id", loop[0])).times(numV).profile("~metrics");
+        t = gts.V(vs[0], vs[1], vs[2])
+                .repeat(__.inE("knows")
+                            .outV()
+                            .hasId(sv[0].id())
+                            //.outE("knows")
+                            //.inV()
+                            .out("knows") // TINKERPOP-2342
+                            .sideEffect(e -> loop[0] = e.loops())
+                            .has("id", loop[0]))
+                .times(numV)
+                .profile("~metrics");
         assertNumStep(3, 1, (GraphTraversal)t, RepeatStep.class);
         assertEquals(numV - 1, loop[0]);
         assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
@@ -4241,6 +4336,23 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             }
         }
         assertEquals(expectedSteps, numSteps);
+    }
+
+    private static void
+    assertOptimization(Traversal<?,?> expectedTraversal, Traversal<?,?> originalTraversal,
+                       TraversalStrategy... optimizationStrategies) {
+        final TraversalStrategies optimizations = new DefaultTraversalStrategies();
+        for (final TraversalStrategy<?> strategy : optimizationStrategies) {
+            optimizations.addStrategies(strategy);
+
+        }
+        
+        originalTraversal.asAdmin().setStrategies(optimizations);
+
+        originalTraversal.asAdmin().applyStrategies();
+
+        assertEquals(expectedTraversal.asAdmin().getSteps().toString(),
+                     originalTraversal.asAdmin().getSteps().toString());
     }
 
     private static void verifyMetrics(Metrics metric, boolean fromCache, boolean multiQuery) {
