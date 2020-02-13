@@ -78,7 +78,8 @@
         <jamm.version>0.3.0</jamm.version>
         <metrics.version>3.2.2</metrics.version>
         <slf4j.version>1.7.12</slf4j.version>
-        <httpcomponents.version>4.4.1</httpcomponents.version>
+        <httpcomponents.httpclient.version>4.5.10</httpcomponents.httpclient.version>
+        <httpcomponents.httpcore.version>4.4.12</httpcomponents.httpcore.version>
         <hadoop2.version>2.7.7</hadoop2.version>
         <hbase1.version>1.4.10</hbase1.version>
         <hbase2.version>2.1.5</hbase2.version>
@@ -89,7 +90,7 @@
         <jackson1.version>1.9.13</jackson1.version>
         <jackson2.version>2.10.2</jackson2.version>
         <lucene-solr.version>7.0.0</lucene-solr.version>
-        <elasticsearch-driver.version>7.3.1</elasticsearch-driver.version>
+        <elasticsearch-driver.version>7.6.0</elasticsearch-driver.version>
         <elasticsearch-server.version>6.2.4</elasticsearch-server.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
@@ -903,12 +904,17 @@
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
-                <version>${httpcomponents.version}</version>
+                <version>${httpcomponents.httpclient.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpcore</artifactId>
-                <version>${httpcomponents.version}</version>
+                <version>${httpcomponents.httpcore.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore-nio</artifactId>
+                <version>${httpcomponents.httpcore.version}</version>
             </dependency>
 
             <dependency>
