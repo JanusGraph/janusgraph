@@ -97,6 +97,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
 import org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.hadoop.CqlHadoopStoreManager;
 import org.janusgraph.util.system.NetworkUtil;
 
 import com.datastax.driver.core.BatchStatement;
@@ -385,10 +386,6 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                 .getOrElseThrow(() -> new PermanentBackendException(String.format("Unknown table '%s'", name)));
     }
 
-    public String getPartitioner() {
-        return this.cluster.getMetadata().getPartitioner();
-    }
-
     @Override
     public void close() throws BackendException {
         try {
@@ -534,5 +531,10 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     private String determineKeyspaceName(Configuration config) {
         if ((!config.has(KEYSPACE) && (config.has(GRAPH_NAME)))) return config.get(GRAPH_NAME);
         return config.get(KEYSPACE);
+    }
+
+    @Override
+    public Object getHadoopManager() {
+        return new CqlHadoopStoreManager(this.cluster);
     }
 }

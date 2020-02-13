@@ -18,6 +18,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.DefaultSchemaMaker;
+import org.janusgraph.core.schema.LoggingSchemaMaker;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.StandardIndexProvider;
 import org.janusgraph.diskstorage.StandardStoreManager;
@@ -277,8 +278,13 @@ public class GraphDatabaseConfiguration {
             "Schema related configuration options");
 
     public static final ConfigOption<String> AUTO_TYPE = new ConfigOption<>(SCHEMA_NS,"default",
-            "Configures the DefaultSchemaMaker to be used by this graph. If set to 'none', automatic schema creation is disabled. " +
-                    "Defaults to a blueprints compatible schema maker with MULTI edge labels and SINGLE property keys",
+            "Configures the DefaultSchemaMaker to be used by this graph."
+            + " Either one of the following shorthands can be used: <br>"
+            + " - `default` (a blueprints compatible schema maker with MULTI edge labels and SINGLE property keys),<br>"
+            + " - `none` (automatic schema creation is disabled)<br>"
+            + " - `logging` (same as default, but with a log done when an automatic schema creation is done)<br>"
+            + " - or to the full package and classname of a custom/third-party implementing the"
+            + " interface `org.janusgraph.core.schema.DefaultSchemaMaker`",
             ConfigOption.Type.MASKABLE, "default", new Predicate<String>() {
         @Override
         public boolean apply(@Nullable String s) {
@@ -296,7 +302,8 @@ public class GraphDatabaseConfiguration {
     private static final Map<String, DefaultSchemaMaker> PREREGISTERED_AUTO_TYPE =
             ImmutableMap.of("none", DisableDefaultSchemaMaker.INSTANCE,
                     "default", JanusGraphDefaultSchemaMaker.INSTANCE,
-                    "tp3", Tp3DefaultSchemaMaker.INSTANCE);
+                    "tp3", Tp3DefaultSchemaMaker.INSTANCE,
+                    "logging", LoggingSchemaMaker.DEFAULT_INSTANCE);
 
     public static final ConfigOption<Boolean> SCHEMA_CONSTRAINTS = new ConfigOption<>(SCHEMA_NS, "constraints",
             "Configures the schema constraints to be used by this graph. If config 'schema.constraints' " +

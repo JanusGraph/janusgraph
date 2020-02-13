@@ -35,6 +35,7 @@ import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import org.apache.cassandra.dht.IPartitioner;
+import org.janusgraph.hadoop.CassandraHadoopStoreManager;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -330,5 +331,10 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         }
 
         return ImmutableMap.copyOf(converted);
+    }
+
+    @Override
+    public Object getHadoopManager() throws BackendException {
+        return new CassandraHadoopStoreManager(this.getCassandraPartitioner());
     }
 }

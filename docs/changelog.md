@@ -47,10 +47,10 @@ compile "org.janusgraph:janusgraph-core:0.5.0"
 * Apache HBase 1.2.6, 1.3.1, 1.4.10, 2.1.5
 * Google Bigtable 1.3.0, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.10.0, 1.11.0
 * Oracle BerkeleyJE 7.5.11
-* Elasticsearch 6.0.1, 6.6.0, 7.3.1
+* Elasticsearch 6.0.1, 6.6.0, 7.6.0
 * Apache Lucene 7.0.0
 * Apache Solr 7.0.0
-* Apache TinkerPop 3.4.4
+* Apache TinkerPop 3.4.5
 * Java 1.8
 
 For more information on features and bug fixes in 0.5.0, see the GitHub milestone:
@@ -63,8 +63,27 @@ For more information on features and bug fixes in 0.5.0, see the GitHub mileston
 
 The distribution has no longer the suffix `-hadoop2`.
 
-##### ElasticSearch: Upgrade from 6.6.0 to 7.3.1 and drop support for 5.x version
-The ElasticSearch version has been changed to 7.3.1 which removes support for `max-retry-timeout` option. 
+##### Reorder dependency of Hadoop
+
+Hadoop is now a dependency of supported backends. Therefore, `MapReduceIndexJobs` is now split up into different classes:
+
+| Old Function | New Function |
+| ------------ | ------------ |
+|`MapReduceIndexJobs.cassandraRepair`|`CassandraMapReduceIndexJobsUtils.repair`| 
+|`MapReduceIndexJobs.cassandraRemove`|`CassandraMapReduceIndexJobsUtils.remove`| 
+|`MapReduceIndexJobs.cqlRepair`|`CqlMapReduceIndexJobsUtils.repair`| 
+|`MapReduceIndexJobs.cqlRemove`|`CqlMapReduceIndexJobsUtils.remove`| 
+|`MapReduceIndexJobs.hbaseRepair`|`HBaseMapReduceIndexJobsUtils.repair`| 
+|`MapReduceIndexJobs.hbaseRemove`|`HBaseMapReduceIndexJobsUtils.remove`| 
+
+!!! note
+    Now, you can easily support for any backend.
+
+!!! warning
+    `Cassandra3InputFormat` is replaced by `CqlInputFormat`
+
+##### ElasticSearch: Upgrade from 6.6.0 to 7.6.0 and drop support for 5.x version
+The ElasticSearch version has been changed to 7.6.0 which removes support for `max-retry-timeout` option. 
 That is why this option no longer available in JanusGraph.
 Users should be aware that by default JanusGraph setups maximum open scroll contexts to maximum value of `2147483647` with the parameter `setup-max-open-scroll-contexts` for ElasticSearch 7.y. 
 This option can be disabled and updated manually in ElasticSearch
@@ -82,7 +101,7 @@ Parameter `use-deprecated-multitype-index` is no more supported by JanusGraph.
 
 BerkeleyDB storage configured with [SHARED_CACHE](https://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/EnvironmentConfig.html#SHARED_CACHE) for better memory usage.
 
-### Version 0.4.1 (Release Date: January ?, 2020)
+### Version 0.4.1 (Release Date: January 14, 2020)
 
 ```xml tab='Maven'
 <dependency>

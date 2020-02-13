@@ -324,7 +324,7 @@ Schema related configuration options
 | Name | Description | Datatype | Default Value | Mutability |
 | ---- | ---- | ---- | ---- | ---- |
 | schema.constraints | Configures the schema constraints to be used by this graph. If config 'schema.constraints' is set to 'true' and 'schema.default' is set to 'none', then an 'IllegalArgumentException' is thrown for schema constraint violations. If 'schema.constraints' is set to 'true' and 'schema.default' is not set 'none', schema constraints are automatically created as described in the config option 'schema.default'. If 'schema.constraints' is set to 'false' which is the default, then no schema constraints are applied. | Boolean | false | GLOBAL_OFFLINE |
-| schema.default | Configures the DefaultSchemaMaker to be used by this graph. If set to 'none', automatic schema creation is disabled. Defaults to a blueprints compatible schema maker with MULTI edge labels and SINGLE property keys | String | default | MASKABLE |
+| schema.default | Configures the DefaultSchemaMaker to be used by this graph. Either one of the following shorthands can be used: <br> - `default` (a blueprints compatible schema maker with MULTI edge labels and SINGLE property keys),<br> - `none` (automatic schema creation is disabled)<br> - `logging` (same as default, but with a log done when an automatic schema creation is done)<br> - or to the full package and classname of a custom/third-party implementing the interface `org.janusgraph.core.schema.DefaultSchemaMaker` | String | default | MASKABLE |
 
 ### storage
 Configuration options for the storage backend.  Some options are applicable only for certain backends.

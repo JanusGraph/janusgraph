@@ -88,6 +88,7 @@ import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
+import org.janusgraph.hadoop.HBaseHadoopStoreManager;
 import org.janusgraph.util.system.IOUtils;
 import org.janusgraph.util.system.NetworkUtil;
 import org.slf4j.Logger;
@@ -991,5 +992,10 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     @VisibleForTesting
     protected org.apache.hadoop.conf.Configuration getHBaseConf() {
         return hconf;
+    }
+
+    @Override
+    public Object getHadoopManager() throws BackendException {
+        return new HBaseHadoopStoreManager();
     }
 }
