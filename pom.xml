@@ -126,6 +126,7 @@
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <cassandra-driver.version>3.8.0</cassandra-driver.version>
         <testcontainers.version>1.12.4</testcontainers.version>
+        <easymock.version>3.4</easymock.version>
     </properties>
     <modules>
         <module>janusgraph-codepipelines-ci</module>
@@ -1084,6 +1085,11 @@
                 <groupId>org.testcontainers</groupId>
                 <artifactId>junit-jupiter</artifactId>
                 <version>${testcontainers.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.easymock</groupId>
+                <artifactId>easymock</artifactId>
+                <version>${easymock.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
