@@ -58,7 +58,7 @@ JanusGraph can interface with multiple logging backends, such as the
 options. To configure the send batch size of the `user` log to 100
 transaction changes, one would have to set the following option in the
 configuration
-```conf
+```properties
 log.user.send-batch-size = 100
 ```
 

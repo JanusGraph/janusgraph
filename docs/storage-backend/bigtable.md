@@ -29,7 +29,7 @@ project id of the Google Cloud Platform project containing the Bigtable
 instance, and the Cloud Bigtable instance id you are connecting to.
 
 Example:
-```conf
+```properties
 storage.backend=hbase
 storage.hbase.ext.hbase.client.connection.impl=com.google.cloud.bigtable.hbase1_x.BigtableConnection
 storage.hbase.ext.google.bigtable.project.id=<Google Cloud Platform project id>

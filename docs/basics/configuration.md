@@ -34,7 +34,7 @@ for the complete list of all options.
 Sets up JanusGraph to use the Cassandra persistence engine running
 locally and a remote Elastic search indexing system:
 
-```conf
+```properties
 storage.backend=cql
 storage.hostname=localhost
 
@@ -47,7 +47,7 @@ index.search.elasticsearch.client-only=true
 
 Sets up JanusGraph to use the HBase persistence engine running remotely
 and uses JanusGraph’s caching component for better performance.
-```conf
+```properties
 storage.backend=hbase
 storage.hostname=100.100.101.1
 storage.port=2181
@@ -62,7 +62,7 @@ cache.db-cache-size = 0.5
 
 Sets up JanusGraph to use BerkeleyDB as an embedded persistence engine
 with Elasticsearch as an embedded indexing system.
-```conf
+```properties
 storage.backend=berkeleyje
 storage.directory=/tmp/graph
 

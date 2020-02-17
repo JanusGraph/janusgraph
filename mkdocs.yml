@@ -60,6 +60,7 @@ markdown_extensions:
         base_path: docs
     - markdown.extensions.codehilite:
           linenums: True
+    - codehilite
 
 nav:
     - Introduction: index.md
