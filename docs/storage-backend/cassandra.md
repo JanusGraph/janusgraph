@@ -374,7 +374,7 @@ configuration depends on your use case.
     [Getting Started guide](../index.md#getting-started)
 -   Create a configuration file with `vi janusgraph.properties` and add
     the following lines::
-```conf
+```properties
 storage.backend = cql
 storage.hostname = [IP-address-of-one-Cassandra-EC2-instance]
 ```

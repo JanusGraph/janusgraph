@@ -4,7 +4,7 @@ InMemory Storage Backend
 JanusGraph ships with an in-memory storage backend which can be used
 through the following configuration:
 
-```conf
+```properties
 storage.backend=inmemory
 ```
 

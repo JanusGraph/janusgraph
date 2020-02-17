@@ -155,7 +155,7 @@ environment, follow these steps:
     JanusGraph for various storage backends, see
     [Storage Backends](../storage-backend/index.md). Make sure the properties file contains the
     following line:
-```conf
+```properties
 gremlin.graph=org.janusgraph.core.JanusGraphFactory
 ```
 
@@ -223,7 +223,7 @@ steps:
     JanusGraph for various storage backends, see
     [Storage Backends](../storage-backend/index.md). Make sure the properties file contains the
     following line:
-```conf
+```properties
 gremlin.graph=org.janusgraph.core.JanusGraphFactory
 ```
 
@@ -433,7 +433,7 @@ instantiate `JanusGraph` objects.
 
 Create a file called `GREMLIN_SERVER_HOME/conf/janusgraph.properties`
 with the following contents:
-```conf
+```properties
 gremlin.graph=org.janusgraph.core.JanusGraphFactory
 storage.backend=berkeleyje
 storage.directory=db/berkeley

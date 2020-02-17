@@ -82,14 +82,14 @@ in JanusGraph.
 ### Connecting to Elasticsearch
 
 The Elasticsearch client is specified as follows:
-```conf
+```properties
 index.search.backend=elasticsearch
 ```
 
 When connecting to Elasticsearch a single or list of hostnames for the
 Elasticsearch instances must be provided. These are supplied via
 JanusGraph’s `index.[X].hostname` key.
-```conf
+```properties
 index.search.backend=elasticsearch
 index.search.hostname=10.0.0.10:9200
 ```
@@ -98,7 +98,7 @@ Each host or host:port pair specified here will be added to the HTTP
 client’s round-robin list of request targets. Here’s a minimal
 configuration that will round-robin over 10.0.0.10 on the default
 Elasticsearch HTTP port (9200) and 10.0.0.20 on port 7777:
-```conf
+```properties
 index.search.backend=elasticsearch
 index.search.hostname=10.0.0.10, 10.0.0.20:7777
 ```
@@ -316,7 +316,7 @@ Elasticsearch’s assumption, implemented server-side, that unqualified
 to spell out the index prefix explicitly. Here’s a JanusGraph config
 file functionally equivalent to the one listed above, except that the
 `index.` prefix before the index creation settings is explicit:
-```conf
+```properties
 index.search.backend=elasticsearch
 index.search.elasticsearch.create.ext.index.number_of_shards=15
 index.search.elasticsearch.create.ext.index.number_of_replicas=3

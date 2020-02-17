@@ -330,7 +330,7 @@ For more information on features and bug fixes in 0.3.0, see the GitHub mileston
 JanusGraph 0.3.0 implements [Schema Constraints](./basics/schema.md#schema-constraints) which made it necessary to also introduce the concept of a schema version. There is a check to prevent client connections that either expect a different schema version or have no concept of a schema version. To perform an upgrade, the configuration option `graph.allow-upgrade=true` must be set on each graph you wish to upgrade. The graph must be opened with a 0.3.0 or greater version of JanusGraph since older versions have no concept of `graph.storage-version` and will not allow for it to be set.
 
 Example excerpt from `janusgraph.properties` file
-```conf
+```properties
 # JanusGraph configuration sample: Cassandra over a socket
 #
 # This file connects to a Cassandra daemon running on localhost via
@@ -524,7 +524,7 @@ offers only a single configuration option using the REST client.
 The `TRANSPORT_CLIENT` interface has been replaced with `REST_CLIENT`.
 When migrating an existing graph to JanusGraph 0.2.0, the `interface`
 property must be set when connecting to the graph:
-```conf
+```properties
 index.search.backend=elasticsearch
 index.search.elasticsearch.interface=REST_CLIENT
 index.search.hostname=127.0.0.1

@@ -10,7 +10,7 @@ files in the `conf/` directory.
 
 BerkeleyDB
 ----------
-```conf
+```properties
 storage.backend=berkeleyje
 storage.directory=/tmp/graph
 
@@ -36,7 +36,7 @@ Cassandra
 
 ### Cassandra Remote
 
-```conf
+```properties
 storage.backend=cql
 storage.hostname=100.100.100.1, 100.100.100.2
 
@@ -59,7 +59,7 @@ Configuring an index backend is optional.
 
 ### Embedded Cassandra
 
-```conf
+```properties
 storage.backend=embeddedcassandra
 storage.conf-file=config/cassandra.yaml
 
@@ -81,7 +81,7 @@ configuration described above.
 HBase
 -----
 
-```conf
+```properties
 storage.backend=hbase
 storage.hostname=127.0.0.1
 storage.port=2181

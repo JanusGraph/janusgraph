@@ -23,7 +23,7 @@ Cassandra
 The default keyspace used by Titan was `titan` and in order to reuse
 that existing keyspace the `storage.cassandra.keyspace` property needs
 to be set accordingly.
-```conf
+```properties
 storage.cassandra.keyspace=titan
 ```
 
@@ -40,7 +40,7 @@ HBase
 The name of the table used by Titan was `titan` and in order to reuse
 that existing table the `storage.hbase.table` property needs to be set
 accordingly.
-```conf
+```properties
 storage.hbase.table=titan
 ```
 
