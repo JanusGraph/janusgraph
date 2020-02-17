@@ -100,7 +100,7 @@ The following users have deployed JanusGraph in production.
 
 * [CELUM](https://www.celum.com/) - [use case and system architecture](https://www.celum.com/en/graph-driven-and-reactive-architecture)
 * [FiNC](https://finc.com)
-* [G DATA](https://gdatasoftware.com)
+* [G DATA](https://gdatasoftware.com) - [blog post series about malware analysis use case](https://www.gdatasoftware.com/blog/2018/11/31203-malware-analysis-with-a-graph-database)
 * [Netflix](https://www.netflix.com) -
   [video](https://youtu.be/KSmAdtMJYEo?t=1h2m17s) and
   [slides](https://www.slideshare.net/RoopaTangirala/polyglot-persistence-netflix-cde-meetup-90955706#86) (graph discussion starts at #86)
