@@ -261,18 +261,6 @@
                 </executions>
             </plugin>
             <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>set-dependency-properties</id>
-                        <phase>process-test-classes</phase>
-                        <goals>
-                            <goal>properties</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <excludedGroups>${test.cassandra.excludes}</excludedGroups>
@@ -325,6 +313,13 @@
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
+                    <execution>
+                        <id>set-dependency-properties</id>
+                        <phase>process-test-classes</phase>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
                     <!-- Provide Java Memory Meter for Cassandra. Cassandra logs warnings if JAMM 
                       is not available. Also, production Cassandra deployments will probably use JAMM, 
                       so we might as well include it in our test configuration. -->

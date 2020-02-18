@@ -90,8 +90,7 @@
         <jackson1.version>1.9.13</jackson1.version>
         <jackson2.version>2.10.2</jackson2.version>
         <lucene-solr.version>7.0.0</lucene-solr.version>
-        <elasticsearch-driver.version>7.6.0</elasticsearch-driver.version>
-        <elasticsearch-server.version>6.2.4</elasticsearch-server.version>
+        <elasticsearch.version>7.6.0</elasticsearch.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <joda.version>2.8.2</joda.version>
@@ -1052,7 +1051,7 @@
             <dependency>
                 <groupId>org.elasticsearch.client</groupId>
                 <artifactId>elasticsearch-rest-client</artifactId>
-                <version>${elasticsearch-driver.version}</version>
+                <version>${elasticsearch.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.testcontainers</groupId>

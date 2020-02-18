@@ -101,6 +101,10 @@ Parameter `use-deprecated-multitype-index` is no more supported by JanusGraph.
 
 BerkeleyDB storage configured with [SHARED_CACHE](https://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/EnvironmentConfig.html#SHARED_CACHE) for better memory usage.
 
+##### Default logging location has changed
+
+If you are using `janusgraph.sh` to start your instance, the default logging has been changed from `log` to `logs`
+
 ### Version 0.4.1 (Release Date: January 14, 2020)
 
 ```xml tab='Maven'
