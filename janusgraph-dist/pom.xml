@@ -21,7 +21,7 @@
         <assembly.descriptor.dir>${project.basedir}/src/assembly/descriptor</assembly.descriptor.dir>
         <assembly.static.dir>${project.basedir}/src/assembly/static</assembly.static.dir>
         <assembly.resources.dir>${project.basedir}/src/assembly/resources</assembly.resources.dir>
-        <assembly.es.dir>${project.build.directory}/elasticsearch-${elasticsearch-server.version}</assembly.es.dir>
+        <assembly.es.dir>${project.build.directory}/elasticsearch-${elasticsearch.version}</assembly.es.dir>
 
         <!-- Variables for integration testing on release-candidate archive files -->
         <test.expect.dir>${project.build.directory}/test-classes</test.expect.dir>
@@ -86,6 +86,17 @@
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-groovy</artifactId>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>janusgraph-solr</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>solr-core</artifactId>
+                    <groupId>org.apache.solr</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         
         <!-- Test dependencies -->
         <dependency>
@@ -109,31 +120,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.elasticsearch.distribution.zip</groupId>
-            <artifactId>elasticsearch</artifactId>
-            <version>${elasticsearch-server.version}</version>
-            <type>zip</type>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>janusgraph-solr</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>solr-core</artifactId>
-                    <groupId>org.apache.solr</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>janusgraph-cassandra</artifactId>
+            <artifactId>janusgraph-cql</artifactId>
             <version>${project.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
@@ -154,30 +142,72 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>cassandra</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>elasticsearch</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Logging backends.
+             Enforce a classpath ordering constraint to ensure slf4j-log4j12
+             binding appears on the classpath before logback-classic.
+             See comments in janusgraph-cassandra/pom.xml for more information. -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+        <!-- End logging backends. -->
     </dependencies>
 
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
+                <groupId>com.googlecode.maven-download-plugin</groupId>
+                <artifactId>download-maven-plugin</artifactId>
+                <version>1.3.0</version>
                 <executions>
                     <execution>
-                        <id>unpack-plugins</id>
-                        <goals>
-                            <goal>unpack-dependencies</goal>
-                        </goals>
+                        <id>get-elasticsearch</id>
                         <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
                         <configuration>
+                            <url>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${elasticsearch.version}-linux-x86_64.tar.gz</url>
+                            <outputFileName>elasticsearch.tar.gz</outputFileName>
                             <outputDirectory>${project.build.directory}</outputDirectory>
-                            <includeGroupIds>org.elasticsearch.distribution.zip</includeGroupIds>
                         </configuration>
                     </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
                     <execution>
-                        <id>copy-dependencies</id>
-                        <phase>package</phase>
+                        <phase>generate-test-resources</phase>
                         <goals>
-                            <goal>copy-dependencies</goal>
+                            <goal>run</goal>
                         </goals>
+                        <configuration>
+                            <target>
+                                <exec executable="tar">
+                                    <arg value="-xzf"/>
+                                    <arg value="${project.build.directory}/elasticsearch.tar.gz"/>
+                                    <arg value="-C"/>
+                                    <arg value="${project.build.directory}"/>
+                                </exec>
+                            </target>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -475,44 +505,6 @@
                                 </configuration>
                             </execution>
                                 <execution>
-                                    <id>filter-cassandra-murmur-config</id>
-                                    <phase>process-test-resources</phase>
-                                    <goals>
-                                        <goal>copy-resources</goal>
-                                    </goals>
-                                    <configuration>
-                                        <outputDirectory>${project.build.directory}/cassandra/conf/localhost-murmur</outputDirectory>
-                                        <filters>
-                                            <filter>${top.level.basedir}/janusgraph-cassandra/config/cassandra-filters/localhost-murmur.properties</filter>
-                                        </filters>
-                                        <resources>
-                                            <resource>
-                                                <directory>${top.level.basedir}/janusgraph-cassandra/config/cassandra</directory>
-                                                <filtering>true</filtering>
-                                            </resource>
-                                        </resources>
-                                    </configuration>
-                                </execution>
-                                <execution>
-                                    <id>filter-cassandra-bop-config</id>
-                                    <phase>process-test-resources</phase>
-                                    <goals>
-                                        <goal>copy-resources</goal>
-                                    </goals>
-                                    <configuration>
-                                        <outputDirectory>${project.build.directory}/cassandra/conf/localhost-bop</outputDirectory>
-                                        <filters>
-                                            <filter>${top.level.basedir}/janusgraph-cassandra/config/cassandra-filters/localhost-bop.properties</filter>
-                                        </filters>
-                                        <resources>
-                                            <resource>
-                                                <directory>${top.level.basedir}/janusgraph-cassandra/config/cassandra</directory>
-                                                <filtering>true</filtering>
-                                            </resource>
-                                        </resources>
-                                    </configuration>
-                                </execution>
-                                <execution>
                                     <id>filter-expect-scripts</id>
                                     <phase>process-test-resources</phase>
                                     <goals>
@@ -601,39 +593,8 @@
                                         <failIfNoTests>false</failIfNoTests>
                                         <excludes>
                                             <exclude>**/*HBase*IT.java</exclude>
-                                            <exclude>**/*Cassandra*IT.java</exclude>
                                             <exclude>**/*CompatIT.java</exclude>
                                         </excludes>
-                                    </configuration>
-                                </execution>
-                                <execution>
-                                    <id>cassandra-murmur-integration-test</id>
-                                    <phase>integration-test</phase>
-                                    <goals>
-                                        <goal>integration-test</goal>
-                                    </goals>
-                                    <configuration>
-                                        <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
-                                        <reportNameSuffix>murmur</reportNameSuffix>
-                                        <failIfNoTests>false</failIfNoTests>
-                                        <includes>
-                                            <include>**/*Cassandra*IT.java</include>
-                                        </includes>
-                                    </configuration>
-                                </execution>
-                                <execution>
-                                    <id>cassandra-bop-integration-test</id>
-                                    <phase>integration-test</phase>
-                                    <goals>
-                                        <goal>integration-test</goal>
-                                    </goals>
-                                    <configuration>
-                                        <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-bop -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-bop</argLine>
-                                        <reportNameSuffix>bop</reportNameSuffix>
-                                        <failIfNoTests>false</failIfNoTests>
-                                        <includes>
-                                            <include>**/*Cassandra*IT.java</include>
-                                        </includes>
                                     </configuration>
                                 </execution>
                                 <execution>
@@ -680,38 +641,6 @@
                                 </execution>
                             </executions>
                         </plugin>
-
-                    <!--
-                        We use maven-resources-plugin to filter src/release,
-                        but that plugin has an open bug about the fact that it
-                        doesn't copy file permissions during filtering. Make
-                        the script executable with chmod. Not portable.
-
-                        Bug: http://jira.codehaus.org/browse/MRESOURCES-132
-                    -->
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <inherited>false</inherited>
-                        <executions>
-                            <execution>
-                                <id>fix-script-permissions</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>chmod</executable>
-                                    <arguments>
-                                        <argument>-R</argument>
-                                        <argument>ug+x</argument>
-                                        <argument>${project.build.directory}/release/</argument>
-                                    </arguments>
-                                    <workingDirectory>${project.basedir}</workingDirectory>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
                     <plugin>
                         <artifactId>maven-assembly-plugin</artifactId>
                         <executions>

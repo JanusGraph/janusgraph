@@ -14,8 +14,16 @@
 
 package org.janusgraph.diskstorage.es;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
+import org.apache.http.HttpHost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
+
+import java.io.IOException;
 
 import static org.janusgraph.diskstorage.es.ElasticSearchIndex.BULK_REFRESH;
 import static org.janusgraph.diskstorage.es.ElasticSearchIndex.INTERFACE;
@@ -64,6 +72,21 @@ public class JanusGraphElasticsearchContainer extends ElasticsearchContainer {
         }
     }
 
+    protected void containerIsStarted(InspectContainerResponse containerInfo) {
+        createDefaultIndexTemplate();
+    }
+
+    private void createDefaultIndexTemplate() {
+        try (CloseableHttpClient client = HttpClients.createDefault()) {
+            HttpPut request = new HttpPut("_template/default");
+            request.addHeader("Content-Type", "application/json");
+            request.setEntity(new StringEntity("{\"index_patterns\":[\"*\"],\"settings\":{\"number_of_shards\":1,\"number_of_replicas\":0}}"));
+            client.execute(new HttpHost(getHostname(), getPort()), request);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public String getHostname() {
         return getContainerIpAddress();
     }
@@ -71,7 +94,6 @@ public class JanusGraphElasticsearchContainer extends ElasticsearchContainer {
     public Integer getPort() {
         return getMappedPort(ELASTIC_PORT);
     }
-
 
     public ModifiableConfiguration setConfiguration(ModifiableConfiguration config, String index) {
         config.set(INTERFACE, ElasticSearchSetup.REST_CLIENT.toString(), index);

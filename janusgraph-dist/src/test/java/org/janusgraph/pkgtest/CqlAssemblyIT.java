@@ -14,12 +14,19 @@
 
 package org.janusgraph.pkgtest;
 
+import org.janusgraph.JanusGraphCassandraContainer;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
-public class CassandraEmbeddedAssemblyIT extends AbstractJanusGraphAssemblyIT {
+@Testcontainers
+public class CqlAssemblyIT extends AbstractJanusGraphAssemblyIT {
+
+    @Container
+    private static JanusGraphCassandraContainer cql = new JanusGraphCassandraContainer(true);
 
     @Test
-    public void testEmbeddedCassandraSimpleSession() throws Exception {
-        testSimpleGremlinSession("conf/janusgraph-cassandra-embedded.properties", "embeddedcassandra");
+    public void testCassandraThriftSimpleSession() throws Exception {
+        testSimpleGremlinSession("conf/janusgraph-cql.properties", "cql");
     }
 }

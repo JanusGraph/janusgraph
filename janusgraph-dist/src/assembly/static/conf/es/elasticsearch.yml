@@ -12,5 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-path.data: db/es/data
-path.logs: log
+path.data: ../db/es/data
+path.logs: ../logs

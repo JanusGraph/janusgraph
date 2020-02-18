@@ -84,7 +84,7 @@ if [[ -z "$JANUSGRAPH_LOG4J_CONF" ]]; then
 fi
 
 if [[ -z "$JANUSGRAPH_LOGDIR" ]] ; then
-  JANUSGRAPH_LOGDIR="$JANUSGRAPH_HOME/log"
+  JANUSGRAPH_LOGDIR="$JANUSGRAPH_HOME/logs"
 fi
 
 if [[ -z "$JANUSGRAPH_LOG_FILE" ]]; then
