@@ -154,6 +154,8 @@ jobs:
       env: MODULE='cql' ARGS=' -Pcassandra3-murmur -Dcassandra.docker.version=3.11.4'
     - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra3-murmur-ssl -Dcassandra.docker.version=3.11.4 -Dtest=**/diskstorage/cql/CQLStoreTest.java'
+    - <<: *FULL_BUILD_JOB
+      env: MODULE='cql' ARGS=' -Pcassandra3-murmur-client-auth -Dcassandra.docker.version=3.11.4 -Dtest=**/diskstorage/cql/CQLStoreTest.java'
     
     - <<: *FULL_BUILD_JOB
       env: MODULE='cassandra' ARGS='-Pcassandra3-byteordered -Dtest=**/graphdb/thrift/* -Dcassandra.docker.version=3.0.18'
@@ -175,6 +177,8 @@ jobs:
       env: MODULE='cql' ARGS=' -Pcassandra3-murmur -Dcassandra.docker.version=3.0.18'
     - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra3-murmur-ssl -Dcassandra.docker.version=3.0.18 -Dtest=**/diskstorage/cql/CQLStoreTest.java'
+    - <<: *FULL_BUILD_JOB
+      env: MODULE='cql' ARGS=' -Pcassandra3-murmur-client-auth -Dcassandra.docker.version=3.0.18 -Dtest=**/diskstorage/cql/CQLStoreTest.java'
 
     - stage: test
       env: COVERITY_ONLY=true

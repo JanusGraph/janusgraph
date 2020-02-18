@@ -100,7 +100,7 @@ client_encryption_options:
     enabled: true
     # If enabled and optional is set to true encrypted and unencrypted connections are handled.
     optional: false
-    keystore: /etc/ssl/test.keystore
+    keystore: /etc/ssl/node.keystore
     keystore_password: cassandra
 
 internode_compression: dc

@@ -16,9 +16,12 @@
 
 import os,re
 
-keystore = '/etc/ssl/test.keystore'
+keystore = '/etc/ssl/node.keystore'
 keystore_password = 'cassandra'
+truststore = '/etc/ssl/node.truststore'
+truststore_password = 'cassandra'
 enableSsl = os.environ.get('CASSANDRA_ENABLE_SSL','').lower() == 'true'
+enableClientAuth = os.environ.get('CASSANDRA_ENABLE_CLIENT_AUTH').lower() == 'true'
 enableBop = os.environ.get('CASSANDRA_ENABLE_BOP','').lower() == 'true'
 
 filename = '/etc/cassandra/cassandra.yaml'
@@ -30,6 +33,16 @@ if enableSsl:
     ssl_conf_new = re.sub('enabled:.*','enabled: true', ssl_conf)
     ssl_conf_new = re.sub('keystore:.*','keystore: %s' % keystore, ssl_conf_new)
     ssl_conf_new = re.sub('keystore_password:.*','keystore_password: %s' % keystore_password, ssl_conf_new)
+    s = s.replace(ssl_conf, ssl_conf_new)
+
+if enableClientAuth:
+    ssl_conf = re.search('(client_encryption_options:.*?)[\n\r]{2}',s,re.M|re.DOTALL).group(1)
+    ssl_conf_new = re.sub('enabled:.*','enabled: true', ssl_conf)
+    ssl_conf_new = re.sub('keystore:.*','keystore: %s' % keystore, ssl_conf_new)
+    ssl_conf_new = re.sub('keystore_password:.*','keystore_password: %s' % keystore_password, ssl_conf_new)
+    ssl_conf_new = re.sub('require_client_auth:.*','require_client_auth: true', ssl_conf_new)
+    ssl_conf_new = re.sub('truststore:.*','truststore: %s' % truststore, ssl_conf_new)
+    ssl_conf_new = re.sub('truststore_password:.*','truststore_password: %s' % truststore_password, ssl_conf_new)
     s = s.replace(ssl_conf, ssl_conf_new)
 
 if enableBop:
