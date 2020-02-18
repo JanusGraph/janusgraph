@@ -14,9 +14,16 @@
 
 package org.janusgraph.pkgtest;
 
+import org.janusgraph.diskstorage.es.JanusGraphElasticsearchContainer;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 public class BerkeleyESAssemblyIT extends AbstractJanusGraphAssemblyIT {
+
+    @Container
+    private static JanusGraphElasticsearchContainer esr = new JanusGraphElasticsearchContainer(true);
     
     @Test
     public void testBerkeleyGettingStarted() throws Exception {

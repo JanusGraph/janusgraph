@@ -82,7 +82,7 @@ SET CP=%CLASSPATH%;%SLF4J_LOG4J_JAR%;%JANUSGRAPH_JARS%;%JANUSGRAPH_LIB%\*;%EXTDI
 :: to debug log4j include -Dlog4j.debug=true
 IF NOT DEFINED JAVA_OPTIONS (
  SET JAVA_OPTIONS=-Xms32m -Xmx512m ^
- -Djanusgraph.logdir=%JANUSGRAPH_HOME%\log ^
+ -Djanusgraph.logdir=%JANUSGRAPH_HOME%\logs ^
  -Dtinkerpop.ext=%JANUSGRAPH_EXT% ^
  -Dlogback.configurationFile=conf\logback.xml ^
  -Dlog4j.configuration=file:/%JANUSGRAPH_HOME%\conf\gremlin-server\log4j-server.properties ^

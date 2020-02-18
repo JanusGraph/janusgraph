@@ -16,7 +16,10 @@
 # of the gremlin.script file and makes any variables it sets available
 # in the scriptengine binding attached to the prompt eventually
 # presented to the user.
-spawn bin/gremlin.sh ../test-classes/test_gremlin_init.groovy
+
+set timeout 30
+
+spawn bin/gremlin.sh -i ../test-classes/test_gremlin_init.groovy
 expect_after {
     timeout {
         # Default timeout handler
@@ -26,19 +29,19 @@ expect_after {
 expect gremlin>
 
 send "test_i\r"
-expect "==>4"
+expect "4"
 expect gremlin>
 
 send "test_g\r"
-expect "==>tinkergraph"
+expect "tinkergraph"
 expect gremlin>
 
 send "test_graph_factory_class\r"
-expect "==>class"
+expect "class"
 expect gremlin>
 
 send "test_janusgraph_factory_class\r"
-expect "==>class"
+expect "class"
 expect gremlin>
 
 # Now the control case -- vars must be undefined without the script

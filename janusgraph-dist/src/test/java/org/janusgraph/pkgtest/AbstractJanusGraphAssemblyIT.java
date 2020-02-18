@@ -67,21 +67,25 @@ public abstract class AbstractJanusGraphAssemblyIT {
     }
 
     protected void testSimpleGremlinSession(String graphConfig, String graphToString) throws Exception {
-        unzipAndRunExpect("single-vertex.expect.vm", graphConfig, graphToString);
+        unzipAndRunExpect("single-vertex.expect.vm", graphConfig, graphToString, false);
     }
 
     protected void testGettingStartedGremlinSession(String graphConfig, String graphToString) throws Exception {
-        unzipAndRunExpect("getting-started.expect.vm", graphConfig, graphToString);
+        unzipAndRunExpect("getting-started.expect.vm", graphConfig, graphToString, false);
     }
 
-    protected void unzipAndRunExpect(String expectTemplateName, Map<String, String> contextVars) throws Exception {
+    protected void unzipAndRunExpect(String expectTemplateName, Map<String, String> contextVars, boolean debug) throws Exception {
         FileUtils.deleteQuietly(new File(ZIPFILE_EXTRACTED));
         unzip(BUILD_DIR, ZIPFILE_PATH);
 
-        parseTemplateAndRunExpect(expectTemplateName, contextVars);
+        parseTemplateAndRunExpect(expectTemplateName, contextVars, debug);
     }
 
     protected void parseTemplateAndRunExpect(String expectTemplateName, Map<String, String> contextVars) throws IOException, InterruptedException {
+        parseTemplateAndRunExpect(expectTemplateName, contextVars, false);
+    }
+
+    protected void parseTemplateAndRunExpect(String expectTemplateName, Map<String, String> contextVars, boolean debug) throws IOException, InterruptedException {
         VelocityContext context = new VelocityContext();
         for (Map.Entry<String, String> ent : contextVars.entrySet()) {
             context.put(ent.getKey(), ent.getValue());
@@ -95,19 +99,27 @@ public abstract class AbstractJanusGraphAssemblyIT {
         template.merge(context, output);
         output.close();
 
-        expect(ZIPFILE_EXTRACTED, outputPath);
+        expect(ZIPFILE_EXTRACTED, outputPath, debug);
     }
 
     protected void unzipAndRunExpect(String expectTemplateName) throws Exception {
-        unzipAndRunExpect(expectTemplateName, Collections.emptyMap());
+        unzipAndRunExpect(expectTemplateName, Collections.emptyMap(), false);
     }
 
-    protected void unzipAndRunExpect(String expectTemplateName, String graphConfig, String graphToString) throws Exception {
-        unzipAndRunExpect(expectTemplateName, ImmutableMap.of("graphConfig", graphConfig, "graphToString", graphToString));
+    protected void unzipAndRunExpect(String expectTemplateName, boolean debug) throws Exception {
+        unzipAndRunExpect(expectTemplateName, Collections.emptyMap(), debug);
     }
 
-    private static void expect(String dir, String expectScript) throws IOException, InterruptedException {
-        command(new File(dir), "expect", expectScript);
+    protected void unzipAndRunExpect(String expectTemplateName, String graphConfig, String graphToString, boolean debug) throws Exception {
+        unzipAndRunExpect(expectTemplateName, ImmutableMap.of("graphConfig", graphConfig, "graphToString", graphToString), debug);
+    }
+
+    private static void expect(String dir, String expectScript, boolean debug) throws IOException, InterruptedException {
+        if (debug) {
+            command(new File(dir), "expect", "-d", expectScript);
+        } else {
+            command(new File(dir), "expect", expectScript);
+        }
     }
 
     protected static void unzip(String dir, String zipFile) throws IOException, InterruptedException {

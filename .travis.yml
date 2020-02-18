@@ -13,12 +13,15 @@
 # limitations under the License.
 
 language: java
-sudo: required
-dist: trusty
+os: linux
+dist: xenial
 services:
   - docker
 jdk:
   - openjdk8
+addons:
+  apt:
+    update: true
 
 git:
   depth: false
@@ -42,7 +45,7 @@ stages:
   - documentation
   - deploy
 
-x-template:
+x-template-full:
   &FULL_BUILD_JOB
   stage: test
   install: travis_wait mvn clean install --projects janusgraph-${MODULE} --also-make -DskipTests=true
@@ -50,7 +53,7 @@ x-template:
   script: travis_wait 50 mvn verify --projects janusgraph-${MODULE} ${ARGS};
   if: type = cron OR commit_message =~ /\[full build\]/
 
-x-template:
+x-template-standard:
   &STANDARD_TEST_JOB
   stage: test
   install: travis_wait mvn clean install --projects janusgraph-${MODULE} --also-make -DskipTests=true 
@@ -61,6 +64,13 @@ x-template:
 
 jobs:
   include:
+    - stage: test
+      env: MODULE='release'
+      before_install: sudo apt-get -y install expect
+      install: mvn clean install -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true
+      script: mvn install -pl janusgraph-dist -Pjanusgraph-release -Dgpg.skip=true
+      if: commit_message !~ /\[doc only\]/
+
     - <<: *STANDARD_TEST_JOB
       env: MODULE='lucene'
     - <<: *STANDARD_TEST_JOB
