@@ -137,7 +137,7 @@ public class CassandraScanJobIT extends JanusGraphBaseTest {
         c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.cassandra.keyspace", getClass().getSimpleName());
         c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.backend", "cassandrathrift");
         c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.port", String.valueOf(thriftContainer.getMappedThirftPort()));
-        c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.FILTER_PARTITIONED_VERTICES), "true");
+        c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.FILTER_PARTITIONED_VERTICES, true), "true");
         c.set("cassandra.input.partitioner.class", "org.apache.cassandra.dht.Murmur3Partitioner");
 
         Job job = getVertexJobWithDefaultMapper(c);

@@ -31,17 +31,17 @@ public class MergedConfiguration implements Configuration {
     }
 
     @Override
-    public boolean has(ConfigOption option, String... umbrellaElements) {
-        return first.has(option, umbrellaElements) || second.has(option, umbrellaElements);
+    public boolean has(ConfigOption option, boolean includeRoot, String... umbrellaElements) {
+        return first.has(option, includeRoot, umbrellaElements) || second.has(option, includeRoot, umbrellaElements);
     }
 
     @Override
-    public <O> O get(ConfigOption<O> option, String... umbrellaElements) {
-        if (first.has(option, umbrellaElements))
-            return first.get(option, umbrellaElements);
+    public <O> O get(ConfigOption<O> option, boolean includeRoot, String... umbrellaElements) {
+        if (first.has(option, includeRoot, umbrellaElements))
+            return first.get(option, includeRoot, umbrellaElements);
 
-        if (second.has(option, umbrellaElements))
-            return second.get(option, umbrellaElements);
+        if (second.has(option, includeRoot, umbrellaElements))
+            return second.get(option, includeRoot, umbrellaElements);
 
         return option.getDefaultValue();
     }
