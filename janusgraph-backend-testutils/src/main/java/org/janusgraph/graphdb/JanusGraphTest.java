@@ -80,7 +80,11 @@ import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
 import org.janusgraph.graphdb.olap.job.IndexRemoveJob;
 import org.janusgraph.graphdb.olap.job.IndexRepairJob;
+import org.janusgraph.graphdb.query.BackendQueryHolder;
+import org.janusgraph.graphdb.query.QueryExecutor;
+import org.janusgraph.graphdb.query.graph.GraphCentricQuery;
 import org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder;
+import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.query.profile.SimpleQueryProfiler;
 import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
@@ -4080,7 +4084,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertNumStep(3, 1, (GraphTraversal)t, RepeatStep.class);
         assertEquals(numV - 1, loop[0]);
         assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
- 
+
         t = gts.V(vs[0],vs[1],vs[2]).optional(__.inE("knows").has("weight", 0)).profile("~metrics");
         assertNumStep(12, 1, (GraphTraversal)t, OptionalStep.class);
         assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
@@ -4088,7 +4092,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         t = gts.V(vs[0],vs[1],vs[2]).filter(__.inE("knows").has("weight", 0)).profile("~metrics");
         assertNumStep(1, 1, (GraphTraversal)t, TraversalFilterStep.class);
         assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
- 
+
         assertNumStep(superV * (numV / 5), 2, gts.V().has("id", sid).outE("knows").has("weight", 1), JanusGraphStep.class, JanusGraphVertexStep.class);
         assertNumStep(superV * (numV / 5 * 2), 2, gts.V().has("id", sid).outE("knows").has("weight", P.between(1, 3)), JanusGraphStep.class, JanusGraphVertexStep.class);
         assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).limit(10)), JanusGraphStep.class, JanusGraphVertexStep.class);
@@ -5182,6 +5186,55 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertCount(multiplier, graph.query().has("sid", 11).has("color", colors[3]).vertices());
     }
 
+    @Test
+    public void testRetrievalNotCommittedNodes() {
+        //This test demonstrates issue #1970
+        makeVertexIndexedKey("key1", String.class);
+        makeVertexIndexedKey("key2", String.class);
+        finishSchema();
+
+        String value1 = "SameKeyValue";
+        String value2 = "KeyValue";
+        String value3 = "PropertyValue";
+        try (JanusGraphTransaction tx = graph.buildTransaction().start()) {
+            final GraphTraversalSource traversal = tx.traversal();
+            for (int i = 0; i < 1000; i++) {
+                traversal.addV()
+                         .property("key1", value1)
+                         .property("key2", value2 + i)
+                         .property("simpleProperty", value3)
+                         .iterate();
+            }
+            QueryExecutor<GraphCentricQuery, JanusGraphElement, JointIndexQuery> processor = ((StandardJanusGraphTx) tx).elementProcessorImpl;
+            JanusGraphQuery<? extends JanusGraphQuery> query = graph.query().has("key2", "KeyValue1").has("key1", "SameKeyValue");
+            int size1 = getUnfilteredNewNodesSize(query, (StandardJanusGraphTx) tx);
+            query = graph.query().has("key1", "SameKeyValue").has("key2", "KeyValue1");
+            int size2 = getUnfilteredNewNodesSize(query, (StandardJanusGraphTx) tx);
+            assertEquals(size1, size2);
+            tx.commit();
+        }
+    }
+
+    private int getUnfilteredNewNodesSize(JanusGraphQuery<? extends JanusGraphQuery> query, StandardJanusGraphTx tx) {
+        QueryExecutor<GraphCentricQuery, JanusGraphElement, JointIndexQuery> processor = tx.elementProcessorImpl;
+        final GraphCentricQuery delegate = ((GraphCentricQueryBuilder) query).constructQuery(ElementCategory.VERTEX);
+        GraphCentricQuery graphCentricQuery = new GraphCentricQuery(delegate.getResultType(),
+            delegate.getCondition(),
+            delegate.getOrder(),
+            new BackendQueryHolder<>(new JointIndexQuery(), true, false),
+            0) {
+            @Override
+            public BackendQueryHolder<JointIndexQuery> getSubQuery(int position) {
+                return delegate.getSubQuery(position);
+            }
+
+            @Override
+            public boolean matches(JanusGraphElement element) {
+                return true;
+            }
+        };
+        return Iterators.size(processor.getNew(graphCentricQuery));
+    }
 
     @Test
     public void testIndexQueryWithLabelsAndContainsIN() {
