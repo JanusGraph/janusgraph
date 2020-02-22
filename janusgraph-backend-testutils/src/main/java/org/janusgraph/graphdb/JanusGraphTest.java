@@ -1839,6 +1839,92 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertNotEquals(SchemaStatus.ENABLED, mgmt.getGraphIndex("newIndex").getIndexStatus(existingPropertyKey));
     }
 
+    @Test
+    public void testRelationTypeIndexShouldBeEnabledForExistingPropertyKeyAndNewRelationType() {
+        mgmt.makePropertyKey("alreadyExistingProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        finishSchema();
+
+        mgmt.makeEdgeLabel("newLabel").make();
+        PropertyKey existingPropertyKey  = mgmt.getPropertyKey("alreadyExistingProperty");
+        EdgeLabel newLabel = mgmt.getEdgeLabel("newLabel");
+        mgmt.buildEdgeIndex(newLabel, "newIndex", Direction.BOTH, existingPropertyKey);
+        finishSchema();
+
+        assertEquals(SchemaStatus.ENABLED, mgmt.getRelationIndex(newLabel, "newIndex").getIndexStatus());
+    }
+
+    @Test
+    public void testRelationTypeIndexShouldBeEnabledForNewPropertyKeyAndExistingRelationType() {
+        mgmt.makeEdgeLabel("alreadyExistingLabel").make();
+        finishSchema();
+
+        mgmt.makePropertyKey("newProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey newPropertyKey  = mgmt.getPropertyKey("newProperty");
+        EdgeLabel existingLabel = mgmt.getEdgeLabel("alreadyExistingLabel");
+        mgmt.buildEdgeIndex(existingLabel, "newIndex", Direction.BOTH, newPropertyKey);
+        finishSchema();
+
+        assertEquals(SchemaStatus.ENABLED, mgmt.getRelationIndex(existingLabel, "newIndex").getIndexStatus());
+    }
+
+    @Test
+    public void testRelationTypeIndexShouldBeEnabledForSingleNewPropertyKeyAndExistingRelationType() {
+        mgmt.makeEdgeLabel("alreadyExistingLabel").make();
+        mgmt.makePropertyKey("alreadyExistingProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        finishSchema();
+
+        mgmt.makePropertyKey("newProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey existingPropertyKey  = mgmt.getPropertyKey("alreadyExistingProperty");
+        PropertyKey newPropertyKey  = mgmt.getPropertyKey("newProperty");
+        EdgeLabel existingLabel = mgmt.getEdgeLabel("alreadyExistingLabel");
+        mgmt.buildEdgeIndex(existingLabel, "newIndex", Direction.BOTH, existingPropertyKey, newPropertyKey);
+        finishSchema();
+
+        assertEquals(SchemaStatus.ENABLED, mgmt.getRelationIndex(existingLabel, "newIndex").getIndexStatus());
+    }
+
+    @Test
+    public void testRelationTypeIndexShouldBeEnabledForSingleNewPropertyKeyAndNewRelationType() {
+        mgmt.makePropertyKey("alreadyExistingProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        finishSchema();
+
+        mgmt.makeEdgeLabel("newLabel").make();
+        mgmt.makePropertyKey("newProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey existingPropertyKey  = mgmt.getPropertyKey("alreadyExistingProperty");
+        PropertyKey newPropertyKey  = mgmt.getPropertyKey("newProperty");
+        EdgeLabel newLabel = mgmt.getEdgeLabel("newLabel");
+        mgmt.buildEdgeIndex(newLabel, "newIndex", Direction.BOTH, existingPropertyKey, newPropertyKey);
+        finishSchema();
+
+        assertEquals(SchemaStatus.ENABLED, mgmt.getRelationIndex(newLabel, "newIndex").getIndexStatus());
+    }
+
+    @Test
+    public void testRelationTypeIndexShouldBeEnabledForNewPropertyKeyAndNewRelationType() {
+        mgmt.makePropertyKey("newProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makeEdgeLabel("newLabel").make();
+        PropertyKey newPropertyKey  = mgmt.getPropertyKey("newProperty");
+        EdgeLabel newLabel = mgmt.getEdgeLabel("newLabel");
+        mgmt.buildEdgeIndex(newLabel, "newIndex", Direction.BOTH, newPropertyKey);
+        finishSchema();
+
+        assertEquals(SchemaStatus.ENABLED, mgmt.getRelationIndex(newLabel, "newIndex").getIndexStatus());
+    }
+
+    @Test
+    public void testRelationTypeIndexShouldNotBeEnabledForExistingPropertyKeyAndExistingRelationType() {
+        mgmt.makePropertyKey("alreadyExistingProperty").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makeEdgeLabel("alreadyExistingLabel").make();
+        finishSchema();
+
+        PropertyKey existingPropertyKey  = mgmt.getPropertyKey("alreadyExistingProperty");
+        EdgeLabel existingLabel = mgmt.getEdgeLabel("alreadyExistingLabel");
+        mgmt.buildEdgeIndex(existingLabel, "newIndex", Direction.BOTH, existingPropertyKey);
+        finishSchema();
+
+        assertNotEquals(SchemaStatus.ENABLED, mgmt.getRelationIndex(existingLabel, "newIndex").getIndexStatus());
+    }
+
    /* ==================================================================================
                             ADVANCED
      ==================================================================================*/
@@ -2832,6 +2918,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(1, u.query().labels("friendDesc").direction(OUT).has("weight", 0.5).interval("time", 4, 10).edgeCount());
         assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).edgeCount());
         assertEquals(4, v.query().labels("friend").direction(OUT).has("time", Cmp.LESS_THAN_EQUAL, 10).edgeCount());
+        assertEquals(2, v.query().labels("friend").direction(OUT).has("time", Cmp.LESS_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN_EQUAL, 5).edgeCount());
         assertEquals(edgesPerLabel - 4, v.query().labels("friend").direction(OUT).has("time", Cmp.GREATER_THAN, 10).edgeCount());
         assertEquals(20, v.query().labels("friend", "connect").direction(OUT).interval("time", 3, 33).edgeCount());
 
@@ -3425,10 +3512,12 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         Vertex next = g.addV()
             .property(VertexProperty.Cardinality.list, "name", "marko a. rodriguez")
-            .property("name", "sdsdsd")
+            .property(VertexProperty.Cardinality.list, "name", "sdsdsd")
             .next();
 
-        assertEquals(2, g.V(next).values("name").toList().size());
+        next = g.V(next.id()).property("name", "sdsdsd").next();
+
+        assertEquals(3, g.V(next).values("name").toList().size());
     }
 
     @Test
@@ -3437,9 +3526,11 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         Vertex next = g.addV()
             .property(VertexProperty.Cardinality.set, "name", "marko a. rodriguez")
-            .property("name", "sdsdsd")
-            .property("name", "sdsdsd")
+            .property(VertexProperty.Cardinality.set, "name", "sdsdsd")
+            .property(VertexProperty.Cardinality.set, "name", "sdsdsd")
             .next();
+
+        next = g.V(next.id()).property("name", "sdsdsd").next();
 
         assertEquals(2, g.V(next).values("name").toList().size());
     }
@@ -4006,10 +4097,18 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         // to enforce this lower bound and the LocalStep will be left as is as the local behavior will have not been
         // entirely subsumed by the JanusGraphVertexStep
         assertNumStep(5, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).has("weight", 1).order().by("weight", asc).range(10, 15)), LocalStep.class);
-        assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.inV().is(vs[50])), JanusGraphVertexStep.class);
-        assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.otherV().is(vs[50])), JanusGraphVertexStep.class);
-        assertNumStep(1, 1, gts.V(sv[0]).bothE("knows").filter(__.otherV().is(vs[50])), JanusGraphVertexStep.class);
+        
+        // is() optimization within filter
+        assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.inV().is(vs[50])), JanusGraphVertexStep.class, TraversalFilterStep.class);
+        assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.otherV().is(vs[50])), JanusGraphVertexStep.class, TraversalFilterStep.class);
+        assertNumStep(1, 1, gts.V(sv[0]).bothE("knows").filter(__.otherV().is(vs[50])), JanusGraphVertexStep.class, TraversalFilterStep.class);
         assertNumStep(1, 2, gts.V(sv[0]).bothE("knows").filter(__.inV().is(vs[50])), JanusGraphVertexStep.class, TraversalFilterStep.class);
+
+        // hasId() optimization within filter
+        assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.inV().hasId(vs[50].id())), JanusGraphVertexStep.class, TraversalFilterStep.class);
+        assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.otherV().hasId(vs[50].id())), JanusGraphVertexStep.class, TraversalFilterStep.class);
+        assertNumStep(1, 1, gts.V(sv[0]).bothE("knows").filter(__.otherV().hasId(vs[50].id())), JanusGraphVertexStep.class, TraversalFilterStep.class);
+        assertNumStep(1, 2, gts.V(sv[0]).bothE("knows").filter(__.inV().hasId(vs[50].id())), JanusGraphVertexStep.class, TraversalFilterStep.class);
 
         //Property
         assertNumStep(numV / 5, 1, gts.V(sv[0]).properties("names").has("weight", 1), JanusGraphPropertiesStep.class);
@@ -4167,7 +4266,6 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     }
 
-
     @Test
     public void testSimpleTinkerPopTraversal() {
         Vertex v1 = graph.addVertex("name", "josh");
@@ -4179,6 +4277,47 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertNotNull(id);
     }
 
+    @Test
+    public void testHasKeyOnEdgePropertyTraversal() {
+
+        Vertex vertex = prepareDataForEdgePropertyFilterTest();
+
+        List<Object> result = graph.traversal().V(vertex).bothE().properties().hasKey("name").value().toList();
+        assertEquals(1, result.size());
+        assertEquals(result.get(0), "testValue");
+    }
+
+    @Test
+    public void testHasValueOnEdgePropertyTraversal() {
+
+        Vertex vertex = prepareDataForEdgePropertyFilterTest();
+
+        List<Object> result = graph.traversal().V(vertex).bothE().properties().hasValue("testValue").value().toList();
+        assertEquals(1, result.size());
+        assertEquals(result.get(0), "testValue");
+    }
+
+    @Test
+    public void testHasKeyAndHasValueOnEdgePropertyTraversal() {
+
+        Vertex vertex = prepareDataForEdgePropertyFilterTest();
+
+        List<Object> result = graph.traversal().V(vertex).bothE().properties().hasKey("weight").hasValue(P.lt(3)).value().toList();
+        assertEquals(1, result.size());
+        assertEquals(result.get(0), 2);
+    }
+
+    private Vertex prepareDataForEdgePropertyFilterTest(){
+
+        Vertex v1 = graph.addVertex("name", "josh");
+        Vertex v2 = graph.addVertex("name", "lop");
+        Vertex v3 = graph.addVertex("name", "lop2");
+
+        graph.traversal().V(v1).addE("created").to(v2).property("name", "testValue").next();
+        graph.traversal().V(v1).addE("created").to(v3).property("weight", 2).next();
+
+        return v1;
+    }
 
    /* ==================================================================================
                             LOGGING

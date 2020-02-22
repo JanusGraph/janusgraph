@@ -30,7 +30,7 @@ storage backend is the authoritative source of the graph.
 However, this can create inconsistencies with the indexes and logs. To
 automatically repair such inconsistencies, JanusGraph can maintain a
 transaction write-ahead log which is enabled through the configuration.
-```conf
+```properties
 tx.log-tx = true
 tx.max-commit-time = 10000
 ```

@@ -160,6 +160,7 @@ public class ReadConfigurationBuilder {
 
     private Map<ConfigElement.PathIdentifier, Object> getGlobalSubset(Map<ConfigElement.PathIdentifier, Object> m) {
         return Maps.filterEntries(m, entry -> {
+            assert entry != null;
             assert entry.getKey().element.isOption();
             return ((ConfigOption)entry.getKey().element).isGlobal();
         });
@@ -167,6 +168,7 @@ public class ReadConfigurationBuilder {
 
     private Map<ConfigElement.PathIdentifier, Object> getManagedSubset(Map<ConfigElement.PathIdentifier, Object> m) {
         return Maps.filterEntries(m, entry -> {
+            assert entry != null;
             assert entry.getKey().element.isOption();
             return ((ConfigOption)entry.getKey().element).isManaged();
         });

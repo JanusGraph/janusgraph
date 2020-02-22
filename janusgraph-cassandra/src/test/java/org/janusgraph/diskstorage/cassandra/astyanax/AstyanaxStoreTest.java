@@ -14,30 +14,28 @@
 
 package org.janusgraph.diskstorage.cassandra.astyanax;
 
+import org.janusgraph.JanusGraphCassandraThriftContainer;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.junit.jupiter.api.BeforeAll;
-
-import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreTest;
 import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 public class AstyanaxStoreTest extends AbstractCassandraStoreTest {
+    @Container
+    public static final JanusGraphCassandraThriftContainer thriftContainer = new JanusGraphCassandraThriftContainer();
 
-    @BeforeAll
-    public static void startCassandra() {
-        CassandraStorageSetup.startCleanEmbedded();
+    @Override
+    public ModifiableConfiguration getBaseStorageConfiguration(String keyspace) {
+        return thriftContainer.getAstyanaxConfiguration(keyspace);
     }
 
     @Override
     public ModifiableConfiguration getBaseStorageConfiguration() {
         return getBaseStorageConfiguration(getClass().getSimpleName());
-    }
-
-    @Override
-    public ModifiableConfiguration getBaseStorageConfiguration(String keyspace) {
-        return CassandraStorageSetup.getAstyanaxConfiguration(keyspace);
     }
 
     @Override

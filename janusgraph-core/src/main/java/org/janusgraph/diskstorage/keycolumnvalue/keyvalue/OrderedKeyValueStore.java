@@ -35,9 +35,10 @@ public interface OrderedKeyValueStore extends KeyValueStore {
      * @param key
      * @param value
      * @param txh
+     * @param ttl
      * @throws org.janusgraph.diskstorage.BackendException
      */
-    void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh) throws BackendException;
+    void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh, final Integer ttl) throws BackendException;
 
     /**
      * Returns a list of all Key-value pairs ({@link KeyValueEntry} where the keys satisfy the given {@link KVQuery}.

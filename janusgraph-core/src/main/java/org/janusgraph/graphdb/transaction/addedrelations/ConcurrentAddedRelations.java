@@ -14,10 +14,11 @@
 
 package org.janusgraph.graphdb.transaction.addedrelations;
 
-import com.google.common.base.Predicate;
 import org.janusgraph.graphdb.internal.InternalRelation;
 
-import java.util.List;
+import com.google.common.base.Predicate;
+
+import java.util.Collection;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -26,18 +27,22 @@ import java.util.List;
 public class ConcurrentAddedRelations extends SimpleAddedRelations {
 
     @Override
-    public synchronized boolean add(InternalRelation relation) {
+    public synchronized boolean add(final InternalRelation relation) {
         return super.add(relation);
     }
 
     @Override
-    public synchronized boolean remove(InternalRelation relation) {
+    public synchronized boolean remove(final InternalRelation relation) {
         return super.remove(relation);
     }
 
     @Override
-    public synchronized List<InternalRelation> getView(Predicate<InternalRelation> filter) {
+    public synchronized Iterable<InternalRelation> getView(final Predicate<InternalRelation> filter) {
         return super.getView(filter);
     }
 
+    @Override
+    public synchronized Collection<InternalRelation> getAll() {
+        return super.getAll();
+    }
 }

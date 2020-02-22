@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.attribute;
 
+import org.janusgraph.core.attribute.GeoshapeSerializer;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.janusgraph.core.attribute.Geoshape;
 
@@ -102,7 +103,7 @@ public class GeoshapeTest {
 
     @Test
     public void testParseCollection() {
-        Geoshape.GeoshapeSerializer serializer = new Geoshape.GeoshapeSerializer();
+        GeoshapeSerializer serializer = new GeoshapeSerializer();
         assertEquals(Geoshape.point(10, 20), serializer.convert(Arrays.asList(10, 20)));
         assertEquals(Geoshape.circle(10, 20, 30), serializer.convert(Arrays.asList(10, 20, 30)));
         assertEquals(Geoshape.box(10, 20, 30, 40), serializer.convert(Arrays.asList(10, 20, 30, 40)));
@@ -111,7 +112,7 @@ public class GeoshapeTest {
     @Test
     public void testFailParseCollection() {
         assertThrows(IllegalArgumentException.class, () -> {
-            Geoshape.GeoshapeSerializer serializer = new Geoshape.GeoshapeSerializer();
+            GeoshapeSerializer serializer = new GeoshapeSerializer();
             serializer.convert(Arrays.asList(10, "Foo"));
         });
     }
@@ -119,7 +120,7 @@ public class GeoshapeTest {
 
     @Test
     public void testGeoJsonPoint() throws IOException {
-        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+        GeoshapeSerializer s = new GeoshapeSerializer();
         Map json = new ObjectMapper().readValue("{\n" +
                 "  \"type\": \"Feature\",\n" +
                 "  \"geometry\": {\n" +
@@ -135,9 +136,9 @@ public class GeoshapeTest {
 
 
     @Test
-    public void testGeoJsonPointNotParseable() throws IOException {
+    public void testGeoJsonPointNotParsable() throws IOException {
         assertThrows(IllegalArgumentException.class, () -> {
-            Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+            GeoshapeSerializer s = new GeoshapeSerializer();
             Map json = new ObjectMapper().readValue("{\n" +
                 "  \"type\": \"Feature\",\n" +
                 "  \"geometry\": {\n" +
@@ -155,7 +156,7 @@ public class GeoshapeTest {
 
     @Test
     public void testGeoJsonCircle() throws IOException {
-        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+        GeoshapeSerializer s = new GeoshapeSerializer();
         Map json = new ObjectMapper().readValue("{\n" +
                 "  \"type\": \"Feature\",\n" +
                 "  \"geometry\": {\n" +
@@ -173,7 +174,7 @@ public class GeoshapeTest {
     @Test
     public void testGeoJsonCircleMissingRadius() throws IOException {
         assertThrows(IllegalArgumentException.class, () -> {
-            Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+            GeoshapeSerializer s = new GeoshapeSerializer();
             Map json = new ObjectMapper().readValue("{\n" +
                 "  \"type\": \"Feature\",\n" +
                 "  \"geometry\": {\n" +
@@ -190,7 +191,7 @@ public class GeoshapeTest {
 
     @Test
     public void testGeoJsonBox() throws IOException {
-        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+        GeoshapeSerializer s = new GeoshapeSerializer();
         Map json = new ObjectMapper().readValue("{\n" +
                 "  \"type\": \"Feature\",\n" +
                 "  \"geometry\": {\n" +
@@ -220,7 +221,7 @@ public class GeoshapeTest {
     @Test
     public void testGeoJsonInvalidBox1() throws IOException {
         assertThrows(IllegalArgumentException.class, () -> {
-            Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+            GeoshapeSerializer s = new GeoshapeSerializer();
             Map json = new ObjectMapper().readValue("{\n" +
                 "  \"type\": \"Feature\",\n" +
                 "  \"geometry\": {\n" +
@@ -238,7 +239,7 @@ public class GeoshapeTest {
     @Test
     public void testGeoJsonInvalidBox2() throws IOException {
         assertThrows(IllegalArgumentException.class, () -> {
-            Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+            GeoshapeSerializer s = new GeoshapeSerializer();
             Map json = new ObjectMapper().readValue("{\n" +
                 "  \"type\": \"Feature\",\n" +
                 "  \"geometry\": {\n" +
@@ -255,7 +256,7 @@ public class GeoshapeTest {
 
     @Test
     public void testGeoJsonLine() throws IOException {
-        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+        GeoshapeSerializer s = new GeoshapeSerializer();
         Map json = new ObjectMapper().readValue("{\n" +
                 "  \"type\": \"Feature\",\n" +
                 "  \"geometry\": {\n" +
@@ -271,7 +272,7 @@ public class GeoshapeTest {
 
     @Test
     public void testGeoJsonPolygon() throws IOException {
-        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+        GeoshapeSerializer s = new GeoshapeSerializer();
         Map json = new ObjectMapper().readValue("{\n" +
                 "  \"type\": \"Feature\",\n" +
                 "  \"geometry\": {\n" +
@@ -284,7 +285,7 @@ public class GeoshapeTest {
 
     @Test
     public void testGeoJsonMultiPoint() throws IOException {
-        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+        GeoshapeSerializer s = new GeoshapeSerializer();
         Map json = new ObjectMapper().readValue("{\n" +
                 "  \"type\": \"Feature\",\n" +
                 "  \"geometry\": {\n" +
@@ -297,7 +298,7 @@ public class GeoshapeTest {
 
     @Test
     public void testGeoJsonMultiLineString() throws IOException {
-        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+        GeoshapeSerializer s = new GeoshapeSerializer();
         Map json = new ObjectMapper().readValue("{\n" +
                 "  \"type\": \"Feature\",\n" +
                 "  \"geometry\": {\n" +
@@ -312,7 +313,7 @@ public class GeoshapeTest {
 
     @Test
     public void testGeoJsonMultiPolygon() throws IOException {
-        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+        GeoshapeSerializer s = new GeoshapeSerializer();
         Map json = new ObjectMapper().readValue("{\n" +
                 "  \"type\": \"Feature\",\n" +
                 "  \"geometry\": {\n" +
@@ -330,7 +331,7 @@ public class GeoshapeTest {
 
     @Test
     public void testGeoJsonGeometry() throws IOException {
-        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+        GeoshapeSerializer s = new GeoshapeSerializer();
         Map json = new ObjectMapper().readValue("{\n" +
                 "    \"type\": \"Point\",\n" +
                 "    \"coordinates\": [20.5, 10.5]\n" +

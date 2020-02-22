@@ -15,17 +15,12 @@
     </properties>
 
     <dependencies>
-        <!-- TinkerPop -->
         <dependency>
-            <groupId>org.apache.tinkerpop</groupId>
-            <artifactId>gremlin-core</artifactId>
-            <exclusions>
-                <exclusion>
-                    <artifactId>gossip</artifactId>
-                    <groupId>org.sonatype.gossip</groupId>
-                </exclusion>
-            </exclusions>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-driver</artifactId>
+            <version>${project.version}</version>
         </dependency>
+        <!-- TinkerPop -->
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-groovy</artifactId>
@@ -69,14 +64,6 @@
             <artifactId>reflections</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.locationtech.spatial4j</groupId>
-            <artifactId>spatial4j</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.locationtech.jts</groupId>
-            <artifactId>jts-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>commons-collections</groupId>
             <artifactId>commons-collections</artifactId>
         </dependency>
@@ -93,10 +80,6 @@
             <artifactId>commons-codec</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.carrotsearch</groupId>
             <artifactId>hppc</artifactId>
         </dependency>
@@ -107,24 +90,6 @@
        <dependency>
            <groupId>com.google.code.findbugs</groupId>
            <artifactId>jsr305</artifactId>
-       </dependency>
-       <!-- The Noggit JSON parsing library is needed for GeoJSON parsing -->
-       <dependency>
-           <groupId>org.noggit</groupId>
-           <artifactId>noggit</artifactId>
-           <version>0.6</version>
-       </dependency>
-       <!-- We keep the gremlin version of org.apache.commons commons-lang3 -->
-       <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-text</artifactId>
-            <version>1.0</version>
-            <exclusions>
-                 <exclusion>
-                      <groupId>org.apache.commons</groupId>
-                      <artifactId>commons-lang3</artifactId>
-                  </exclusion>
-             </exclusions>
        </dependency>
     </dependencies>
     <build>
@@ -143,24 +108,6 @@
         </testResources>
         <plugins>
             <plugin>
-                <groupId>org.codehaus.gmavenplus</groupId>
-                <artifactId>gmavenplus-plugin</artifactId>
-                <version>${gmavenplus.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>generateStubs</goal>
-                            <goal>compile</goal>
-                            <goal>testGenerateStubs</goal>
-                            <goal>testCompile</goal>
-                        </goals>
-                        <configuration>
-                            <providerSelection>1.8</providerSelection>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
@@ -170,24 +117,6 @@
                         </manifestEntries>
                     </archive>
                 </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <windowtitle>JanusGraph ${project.version} API</windowtitle>
-                            <doctitle>JanusGraph ${project.version} API</doctitle>
-                            <!-- Quiet mode still shows warnings and errors -->
-                            <quiet>true</quiet>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -243,36 +172,6 @@
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
-
-    <profiles>
-        <!-- This profile forces gpg-plugin to run after shade-plugin.
-             Otherwise, Maven will sign the unshaded jar, then shade the jar
-             (giving it completely different contents and breaking the sig) -->
-        <profile>
-            <id>janusgraph-release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-shade-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>shade-gremlin-groovy</id>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

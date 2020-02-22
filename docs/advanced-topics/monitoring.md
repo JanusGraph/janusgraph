@@ -19,7 +19,7 @@ measure the following:
 
 To enable Metrics collection, set the following in JanusGraph’s
 properties file:
-```conf
+```properties
 # Required to enable Metrics in JanusGraph
 metrics.enabled = true
 ```
@@ -35,7 +35,7 @@ JanusGraph prefixes all metric names with "org.janusgraph" by default.
 This prefix can be set through the `metrics.prefix` configuration
 property. For example, to shorten the default "org.janusgraph" prefix to
 just "janusgraph":
-```conf
+```properties
 # Optional
 metrics.prefix = janusgraph
 ```
@@ -110,7 +110,7 @@ directed above).
 
 Example janusgraph.properties snippet that prints metrics to the console
 once a minute:
-```conf
+```properties
 metrics.enabled = true
 # Required; specify logging interval in milliseconds
 metrics.console.interval = 60000
@@ -147,7 +147,7 @@ metrics.console.interval = 60000
 Example janusgraph.properties snippet that writes CSV files once a
 minute to the directory `./foo/bar/` (relative to the process’s working
 directory):
-```conf
+```properties
 metrics.enabled = true
 # Required; specify logging interval in milliseconds
 metrics.csv.interval = 60000
@@ -229,7 +229,7 @@ metrics.csv.directory = foo/bar
 
 Example janusgraph.properties snippet that sends unicast UDP datagrams
 to localhost on the default port once every 30 seconds:
-```conf
+```properties
 metrics.enabled = true
 # Required; IP or hostname string
 metrics.ganglia.hostname = 127.0.0.1
@@ -240,7 +240,7 @@ metrics.ganglia.interval = 30000
 Example janusgraph.properties snippet that sends unicast UDP datagrams
 to a non-default destination port and which also spoofs the IP and
 hostname reported to Ganglia:
-```conf
+```properties
 metrics.enabled = true
 # Required; IP or hostname string
 metrics.ganglia.hostname = 1.2.3.4
@@ -293,7 +293,7 @@ metrics.ganglia.spoof = 10.0.0.1:zombo.com
 
 Example janusgraph.properties snippet that sends metrics to a Graphite
 server on 192.168.0.1 every minute:
-```conf
+```properties
 metrics.enabled = true
 # Required; IP or hostname string
 metrics.graphite.hostname = 192.168.0.1
@@ -336,7 +336,7 @@ metrics.graphite.interval = 60000
 </table>
 
 Example janusgraph.properties snippet:
-```conf
+```properties
 metrics.enabled = true
 # Required
 metrics.jmx.enabled = true
@@ -375,7 +375,7 @@ metrics.jmx.agentid = baz
 
 Example janusgraph.properties snippet that logs metrics once a minute to
 the logger named `foo`:
-```conf
+```properties
 metrics.enabled = true
 # Required; specify logging interval in milliseconds
 metrics.slf4j.interval = 60000

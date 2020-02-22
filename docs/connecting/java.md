@@ -22,12 +22,12 @@ mvn archetype:generate -DgroupId=com.mycompany.project
     -DarchetypeArtifactId=maven-archetype-quickstart
     -DinteractiveMode=false
 ```
-2.  Add dependencies on `janusgraph-core` and `gremlin-driver` to the dependency manager:
+2.  Add dependencies on `janusgraph-driver` and `gremlin-driver` to the dependency manager:
 
 ```xml tab='Maven'
 <dependency>
     <groupId>org.janusgraph</groupId>
-    <artifactId>janusgraph-core</artifactId>
+    <artifactId>janusgraph-driver</artifactId>
     <version>{{ latest_version }}</version>
 </dependency>
 <dependency>
@@ -38,14 +38,14 @@ mvn archetype:generate -DgroupId=com.mycompany.project
 ```
 
 ```groovy tab='Gradle'
-compile "org.janusgraph:janusgraph-core:{{ latest_version }}"
+compile "org.janusgraph:janusgraph-driver:{{ latest_version }}"
 compile "org.apache.tinkerpop:gremlin-driver:{{ tinkerpop_version }}"
 ```
 
 3.  Add two configuration files, `conf/remote-graph.properties` and
     `conf/remote-objects.yaml`:
 
-```conf tab='conf/remote-graph.properties'
+```properties tab='conf/remote-graph.properties'
 gremlin.remote.remoteConnectionClass=org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection
 gremlin.remote.driver.clusterFile=conf/remote-objects.yaml
 gremlin.remote.driver.sourceName=g
@@ -76,5 +76,10 @@ System.out.println("Hercules is " + herculesAge + " years old.");
 ## JanusGraph Specific Types and Predicates
 
 JanusGraph specific types and [predicates](../index-backend/search-predicates.md) can be
-used directly from a Java application through the dependency
-`janusgraph-core`.
+used directly from a Java application through the dependency `janusgraph-driver`.
+
+
+## JanusGraph-Core vs JanusGraph-Driver
+
+1. If you just want to use Gremlin to communicate with JanusGraph, consider to use the maven package `janusgraph-driver`.
+2. If you require to access to internal JanusGraph component such as ManagementSystem, consider to use the maven package `janusgraph-core`. 

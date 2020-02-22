@@ -22,13 +22,12 @@ import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.query.BaseQuery;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
 import org.janusgraph.graphdb.query.graph.GraphCentricQuery;
 import org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 import org.janusgraph.graphdb.util.MultiDistinctOrderedIterator;
-import org.javatuples.Triplet;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
@@ -92,7 +91,7 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
 
             final GraphCentricQueryBuilder builder = (GraphCentricQueryBuilder) tx.query();
             final List<Iterator<E>> responses = new ArrayList<>();
-            queries.entries().forEach(q ->  executeGraphCentryQuery(builder, responses, q));
+            queries.entries().forEach(q ->  executeGraphCentricQuery(builder, responses, q));
 
             return new MultiDistinctOrderedIterator<E>(lowLimit, highLimit, responses, orders);
         });
@@ -129,10 +128,10 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
 
     private void addConstraint(final JanusGraphQuery query, final List<HasContainer> localContainers) {
         for (final HasContainer condition : hasContainers) {
-            query.has(condition.getKey(), JanusGraphPredicate.Converter.convert(condition.getBiPredicate()), condition.getValue());
+            query.has(condition.getKey(), JanusGraphPredicateUtils.convert(condition.getBiPredicate()), condition.getValue());
         }
         for (final HasContainer condition : localContainers) {
-            query.has(condition.getKey(), JanusGraphPredicate.Converter.convert(condition.getBiPredicate()), condition.getValue());
+            query.has(condition.getKey(), JanusGraphPredicateUtils.convert(condition.getBiPredicate()), condition.getValue());
         }
     }
 
@@ -150,10 +149,10 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
         return graphCentricQuery;
     }
 
-    private void executeGraphCentryQuery(final GraphCentricQueryBuilder builder, final List<Iterator<E>> responses,
+    private void executeGraphCentricQuery(final GraphCentricQueryBuilder builder, final List<Iterator<E>> responses,
             final Entry<Integer, GraphCentricQuery> query) {
-        final Class<? extends JanusGraphElement> classe = Vertex.class.isAssignableFrom(this.returnClass) ? JanusGraphVertex.class: JanusGraphEdge.class;
-        final Iterator<E> response = (Iterator<E>) builder.iterables(query.getValue(), classe).iterator();
+        final Class<? extends JanusGraphElement> graphClass = Vertex.class.isAssignableFrom(this.returnClass) ? JanusGraphVertex.class: JanusGraphEdge.class;
+        final Iterator<E> response = (Iterator<E>) builder.iterables(query.getValue(), graphClass).iterator();
         long i = 0;
         while (i < query.getKey() && response.hasNext()) {
             response.next();

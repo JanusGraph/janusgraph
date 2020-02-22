@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.lucene;
 
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Geo;
@@ -24,7 +25,7 @@ import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.indexing.*;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.serialize.AttributeUtil;
+import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.*;
@@ -72,6 +73,7 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -118,7 +120,7 @@ public class LuceneIndex implements IndexProvider {
     private final String basePath;
 
     /**
-     * lazy cache for the delegating analyzers used for writting or querrying for each store
+     * lazy cache for the delegating analyzers used for writing or querrying for each store
      */
     private final Map<String, LuceneCustomAnalyzer> delegatingAnalyzers = new HashMap<>();
 
@@ -203,8 +205,8 @@ public class LuceneIndex implements IndexProvider {
     public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws BackendException {
         final Class<?> dataType = information.getDataType();
         final Mapping map = Mapping.getMapping(information);
-        Preconditions.checkArgument(map == Mapping.DEFAULT || AttributeUtil.isString(dataType) ||
-                (map == Mapping.PREFIX_TREE && AttributeUtil.isGeo(dataType)),
+        Preconditions.checkArgument(map == Mapping.DEFAULT || AttributeUtils.isString(dataType) ||
+                (map == Mapping.PREFIX_TREE && AttributeUtils.isGeo(dataType)),
             "Specified illegal mapping [%s] for data type [%s]", map, dataType);
     }
 
@@ -389,7 +391,7 @@ public class LuceneIndex implements IndexProvider {
         String converted;
         if (value instanceof Number) {
             converted = value.toString();
-        } else if (AttributeUtil.isString(value)) {
+        } else if (AttributeUtils.isString(value)) {
             Mapping mapping = Mapping.getMapping(ki);
             if (mapping == Mapping.DEFAULT || mapping == Mapping.TEXT) {
                 converted = ((String) value).toLowerCase();
@@ -414,12 +416,12 @@ public class LuceneIndex implements IndexProvider {
     private Field buildStoreField(final String fieldName, final Object value, final KeyInformation keyInformation) {
         final Field field;
         if (value instanceof Number) {
-            if (AttributeUtil.isWholeNumber((Number) value)) {
+            if (AttributeUtils.isWholeNumber((Number) value)) {
                 field = new StoredField(fieldName, ((Number) value).longValue());
             } else { //double or float
                 field = new StoredField(fieldName, ((Number) value).doubleValue());
             }
-        } else if (AttributeUtil.isString(value)) {
+        } else if (AttributeUtils.isString(value)) {
             final String str = (String) value;
             final Mapping mapping = Mapping.getMapping(keyInformation);
             switch (mapping) {
@@ -462,24 +464,24 @@ public class LuceneIndex implements IndexProvider {
             KeyInformation ki = information.get(fieldName);
             boolean isPossibleSortIndex = ki.getCardinality() == Cardinality.SINGLE;
             Class<?> dataType = ki.getDataType();
-            if (AttributeUtil.isWholeNumber(dataType)) {
+            if (AttributeUtils.isWholeNumber(dataType)) {
                 long value = field.numericValue().longValue();
                 fields.add(new LongPoint(fieldName, value));
                 if (isPossibleSortIndex) {
                     fields.add(new NumericDocValuesField(fieldName, value));
                 }
-            } else if (AttributeUtil.isDecimal(dataType)) {
+            } else if (AttributeUtils.isDecimal(dataType)) {
                 double value = field.numericValue().doubleValue();
                 fields.add(new DoublePoint(fieldName, value));
                 if (isPossibleSortIndex) {
                     fields.add(new DoubleDocValuesField(fieldName, value));
                 }
-            } else if (AttributeUtil.isString(dataType)) {
+            } else if (AttributeUtils.isString(dataType)) {
                 final Mapping mapping = Mapping.getMapping(information.get(fieldName));
                 if (mapping.equals(Mapping.STRING) && isPossibleSortIndex) {
                     fields.add(new SortedDocValuesField(fieldName, new BytesRef(field.stringValue())));
                 }
-            } else if (AttributeUtil.isGeo(dataType)) {
+            } else if (AttributeUtils.isGeo(dataType)) {
                 if (log.isTraceEnabled())
                     log.trace("Updating geo-indexes for key {}", fieldName);
                 Shape shape;
@@ -514,9 +516,9 @@ public class LuceneIndex implements IndexProvider {
                 final IndexQuery.OrderEntry order = orders.get(i);
                 SortField.Type sortType = null;
                 final Class dataType = order.getDatatype();
-                if (AttributeUtil.isString(dataType)) sortType = SortField.Type.STRING;
-                else if (AttributeUtil.isWholeNumber(dataType)) sortType = SortField.Type.LONG;
-                else if (AttributeUtil.isDecimal(dataType)) sortType = SortField.Type.DOUBLE;
+                if (AttributeUtils.isString(dataType)) sortType = SortField.Type.STRING;
+                else if (AttributeUtils.isWholeNumber(dataType)) sortType = SortField.Type.LONG;
+                else if (AttributeUtils.isDecimal(dataType)) sortType = SortField.Type.DOUBLE;
                 else if (dataType.equals(Instant.class) || dataType.equals(Date.class)) sortType = SortField.Type.LONG;
                 else if (dataType.equals(Boolean.class)) sortType = SortField.Type.LONG;
                 else
@@ -568,12 +570,12 @@ public class LuceneIndex implements IndexProvider {
     private static Query numericQuery(String key, Cmp relation, Number value) {
         switch (relation) {
             case EQUAL:
-                return AttributeUtil.isWholeNumber(value) ?
+                return AttributeUtils.isWholeNumber(value) ?
                     LongPoint.newRangeQuery(key, value.longValue(), value.longValue()) :
                     DoublePoint.newRangeQuery(key, value.doubleValue(), value.doubleValue());
             case NOT_EQUAL:
                 final BooleanQuery.Builder q = new BooleanQuery.Builder();
-                if (AttributeUtil.isWholeNumber(value)) {
+                if (AttributeUtils.isWholeNumber(value)) {
                     q.add(LongPoint.newRangeQuery(key, Long.MIN_VALUE, Math.addExact(value.longValue(), -1)), BooleanClause.Occur.SHOULD);
                     q.add(LongPoint.newRangeQuery(key, Math.addExact(value.longValue(), 1), Long.MAX_VALUE), BooleanClause.Occur.SHOULD);
                 } else {
@@ -582,19 +584,19 @@ public class LuceneIndex implements IndexProvider {
                 }
                 return q.build();
             case LESS_THAN:
-                return (AttributeUtil.isWholeNumber(value)) ?
+                return (AttributeUtils.isWholeNumber(value)) ?
                     LongPoint.newRangeQuery(key, Long.MIN_VALUE, Math.addExact(value.longValue(), -1)) :
                     DoublePoint.newRangeQuery(key, Double.MIN_VALUE, DoublePoint.nextDown(value.doubleValue()));
             case LESS_THAN_EQUAL:
-                return (AttributeUtil.isWholeNumber(value)) ?
+                return (AttributeUtils.isWholeNumber(value)) ?
                     LongPoint.newRangeQuery(key, Long.MIN_VALUE, value.longValue()) :
                     DoublePoint.newRangeQuery(key, Double.MIN_VALUE, value.doubleValue());
             case GREATER_THAN:
-                return (AttributeUtil.isWholeNumber(value)) ?
+                return (AttributeUtils.isWholeNumber(value)) ?
                     LongPoint.newRangeQuery(key, Math.addExact(value.longValue(), 1), Long.MAX_VALUE) :
                     DoublePoint.newRangeQuery(key, DoublePoint.nextUp(value.doubleValue()), Double.MAX_VALUE);
             case GREATER_THAN_EQUAL:
-                return (AttributeUtil.isWholeNumber(value)) ?
+                return (AttributeUtils.isWholeNumber(value)) ?
                     LongPoint.newRangeQuery(key, value.longValue(), Long.MAX_VALUE) :
                     DoublePoint.newRangeQuery(key, value.doubleValue(), Double.MAX_VALUE);
             default:
@@ -603,15 +605,23 @@ public class LuceneIndex implements IndexProvider {
     }
 
     // adapted from SolrIndex
-    private List<String> customTokenize(Analyzer analyzer, String fieldName, String value) {
-        final List<String> terms = new ArrayList<>();
+    private List<List<String>> customTokenize(Analyzer analyzer, String fieldName, String value) {
+        Map<Integer, List<String>> stemsByOffset = new HashMap<>();
         try (CachingTokenFilter stream = new CachingTokenFilter(analyzer.tokenStream(fieldName, value))) {
+            final OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
             final TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
             stream.reset();
             while (stream.incrementToken()) {
-                terms.add(termAtt.getBytesRef().utf8ToString());
+                int offset = offsetAtt.startOffset();
+                String stem = termAtt.getBytesRef().utf8ToString();
+                List<String> stemList = stemsByOffset.get(offset);
+                if(stemList == null){
+                    stemList = new ArrayList<>();
+                    stemsByOffset.put(offset, stemList);
+                }
+                stemList.add(stem);
             }
-            return terms;
+            return new ArrayList<>(stemsByOffset.values());
         } catch (IOException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
@@ -619,7 +629,7 @@ public class LuceneIndex implements IndexProvider {
 
     private void tokenize(SearchParams params, final Mapping mapping, final LuceneCustomAnalyzer delegatingAnalyzer, String value, String key, JanusGraphPredicate janusgraphPredicate) {
         final Analyzer analyzer = delegatingAnalyzer.getWrappedAnalyzer(key);
-        final List<String>    terms = customTokenize(analyzer, key, value);
+        final List<List<String>> terms = customTokenize(analyzer, key, value);
         if (terms.isEmpty()) {
             // This might happen with very short terms
             if (janusgraphPredicate == Text.CONTAINS_PREFIX ) {
@@ -633,20 +643,18 @@ public class LuceneIndex implements IndexProvider {
             }
         } else if (terms.size() == 1) {
             if (janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate == Text.CONTAINS) {
-                params.addQuery(new TermQuery(new Term(key, terms.get(0))));
+                params.addQuery(combineTerms(key, terms.get(0), TermQuery::new));
             } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
                 final BooleanQuery.Builder q = new BooleanQuery.Builder();
                 q.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
-                q.add(new TermQuery(new Term(key, terms.get(0))), BooleanClause.Occur.MUST_NOT);
+                q.add(combineTerms(key, terms.get(0), TermQuery::new), BooleanClause.Occur.MUST_NOT);
                 params.addQuery(q.build(), BooleanClause.Occur.MUST);
             } else if (janusgraphPredicate == Text.CONTAINS_PREFIX) {
-                final Term term;
-                if (mapping == Mapping.STRING) {
-                    term = new Term(key, terms.get(0));
-                } else {
-                    term = new Term(key, terms.get(0).toLowerCase());
+                List<String> preparedTerms = new ArrayList<>(terms.get(0));
+                if (mapping != Mapping.STRING) {
+                    preparedTerms = terms.get(0).stream().map(String::toLowerCase).collect(Collectors.toList());
                 }
-                params.addQuery(new PrefixQuery(term), BooleanClause.Occur.MUST);
+                params.addQuery(combineTerms(key, preparedTerms, PrefixQuery::new), BooleanClause.Occur.MUST);
             } else throw new IllegalArgumentException("LuceneIndex does not support this predicate with 1 token : " + janusgraphPredicate);
         } else {
             // at the moment, this is only walked for EQUAL, NOT_EQUAL and Text.CONTAINS (String and Text mappings)
@@ -658,10 +666,24 @@ public class LuceneIndex implements IndexProvider {
             } else {
                 occur = BooleanClause.Occur.MUST;
             }
-            for (final String term : terms) {
-                q.add(new TermQuery(new Term(key, term)), occur);
+            for (final List<String> stems : terms) {
+                q.add(combineTerms(key, stems, TermQuery::new), occur);
             }
             params.addQuery(q.build());
+        }
+    }
+
+    private Query combineTerms(String key, List<String> terms, Function<Term, Query> queryCreator) {
+        if (terms.size() > 1) {
+            final Builder q = new Builder();
+            for (String term : terms) {
+                q.add(queryCreator.apply(new Term(key, term)), BooleanClause.Occur.SHOULD);
+            }
+            return q.build();
+        } else if (terms.size() == 1){
+            return queryCreator.apply(new Term(key, terms.get(0)));
+        } else {
+            return new MatchNoDocsQuery("No terms for key " + key);
         }
     }
 
@@ -867,15 +889,15 @@ public class LuceneIndex implements IndexProvider {
     public boolean supports(KeyInformation information, JanusGraphPredicate janusgraphPredicate) {
         final Class<?> dataType = information.getDataType();
         final Mapping mapping = Mapping.getMapping(information);
-        if (mapping != Mapping.DEFAULT && !AttributeUtil.isString(dataType) &&
-            !(mapping == Mapping.PREFIX_TREE && AttributeUtil.isGeo(dataType))) return false;
+        if (mapping != Mapping.DEFAULT && !AttributeUtils.isString(dataType) &&
+            !(mapping == Mapping.PREFIX_TREE && AttributeUtils.isGeo(dataType))) return false;
 
         if (Number.class.isAssignableFrom(dataType)) {
             return janusgraphPredicate instanceof Cmp;
         } else if (dataType == Geoshape.class) {
             if (information.getCardinality() != Cardinality.SINGLE) return false;
             return janusgraphPredicate == Geo.INTERSECT || janusgraphPredicate == Geo.WITHIN || janusgraphPredicate == Geo.CONTAINS;
-        } else if (AttributeUtil.isString(dataType)) {
+        } else if (AttributeUtils.isString(dataType)) {
             switch (mapping) {
                 case DEFAULT:
                 case TEXT:
@@ -899,9 +921,9 @@ public class LuceneIndex implements IndexProvider {
         final Mapping mapping = Mapping.getMapping(information);
         if (Number.class.isAssignableFrom(dataType) || dataType == Date.class || dataType == Instant.class || dataType == Boolean.class || dataType == UUID.class) {
             return mapping == Mapping.DEFAULT;
-        } else if (AttributeUtil.isString(dataType)) {
+        } else if (AttributeUtils.isString(dataType)) {
             return mapping == Mapping.DEFAULT || mapping == Mapping.STRING || mapping == Mapping.TEXT;
-        } else if (AttributeUtil.isGeo(dataType)) {
+        } else if (AttributeUtils.isGeo(dataType)) {
             return information.getCardinality() == Cardinality.SINGLE && (mapping == Mapping.DEFAULT || mapping == Mapping.PREFIX_TREE);
         }
         return false;

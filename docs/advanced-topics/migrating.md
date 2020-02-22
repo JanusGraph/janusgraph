@@ -23,7 +23,7 @@ Cassandra
 The default keyspace used by Titan was `titan` and in order to reuse
 that existing keyspace the `storage.cassandra.keyspace` property needs
 to be set accordingly.
-```conf
+```properties
 storage.cassandra.keyspace=titan
 ```
 
@@ -31,7 +31,7 @@ These configuration options allow JanusGraph to read data from a
 Cassandra database which had previously been created by Titan. However,
 once JanusGraph writes back to that database it will register additional
 serializers which mean that it will no longer be compatible with Titan.
-Users are therefore encouraged to backup the data in Casssandra before
+Users are therefore encouraged to backup the data in Cassandra before
 attempting to use it with the JanusGraph release.
 
 HBase
@@ -40,7 +40,7 @@ HBase
 The name of the table used by Titan was `titan` and in order to reuse
 that existing table the `storage.hbase.table` property needs to be set
 accordingly.
-```conf
+```properties
 storage.hbase.table=titan
 ```
 

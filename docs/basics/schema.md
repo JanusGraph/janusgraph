@@ -221,6 +221,10 @@ implicitly created property keys have cardinality SINGLE and data type
 `Object.class`. Users can control automatic schema element creation by
 implementing and registering their own `DefaultSchemaMaker`.
 
+When defining a cardinality for a vertex property which differs from SINGLE, 
+the cardinality should be used for all values of the vertex property in the 
+first query (i.e. the query which defines a new vertex property key).
+
 It is strongly encouraged to explicitly define all schema elements and
 to disable automatic schema creation by setting `schema.default=none` in
 the JanusGraph graph configuration.

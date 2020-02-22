@@ -338,7 +338,8 @@ public class JanusGraphFactory {
      * @return A configuration derived from {@code file}
      */
     private static ReadConfiguration getLocalConfiguration(File file) {
-        Preconditions.checkArgument(file != null && file.exists() && file.isFile() && file.canRead(),
+        Preconditions.checkNotNull(file);
+        Preconditions.checkArgument(file.exists() && file.isFile() && file.canRead(),
                 "Need to specify a readable configuration file, but was given: %s", file.toString());
 
         try {

@@ -119,4 +119,9 @@ public class MetricInstrumentedStoreManager implements KeyColumnValueStoreManage
     public List<KeyRange> getLocalKeyPartition() throws BackendException {
         return backend.getLocalKeyPartition();
     }
+
+    @Override
+    public Object getHadoopManager() throws BackendException {
+        return backend.getHadoopManager();
+    }
 }

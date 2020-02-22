@@ -17,11 +17,10 @@ package org.janusgraph.graphdb.tinkerpop.optimize;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import org.apache.tinkerpop.gremlin.structure.Property;
 import org.janusgraph.core.*;
 import org.janusgraph.graphdb.query.BaseQuery;
+import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
 import org.janusgraph.graphdb.query.Query;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
@@ -33,6 +32,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedVertex;
@@ -65,7 +65,7 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
         final String[] keys = getPropertyKeys();
         query.keys(keys);
         for (final HasContainer condition : hasContainers) {
-            query.has(condition.getKey(), JanusGraphPredicate.Converter.convert(condition.getBiPredicate()), condition.getValue());
+            query.has(condition.getKey(), JanusGraphPredicateUtils.convert(condition.getBiPredicate()), condition.getValue());
         }
         for (final OrderEntry order : orders) query.orderBy(order.key, order.order);
         if (limit != BaseQuery.NO_LIMIT) query.limit(limit);
@@ -104,10 +104,10 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
      * an attempt to retrieve a vertex from the cached multiQuery results doesn't find an entry.
      * @param vertices A list of vertices with which to initialise the multiQuery
      */
-    private void initializeMultiQuery(final List<Traverser.Admin<Element>> list) {
-        assert list.size() > 0;
+    private void initializeMultiQuery(final List<Traverser.Admin<Element>> vertices) {
+        assert vertices.size() > 0;
         final JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
-        list.forEach(v -> multiQuery.addVertex((Vertex)v.get()));
+        vertices.forEach(v -> multiQuery.addVertex((Vertex)v.get()));
         makeQuery(multiQuery);
 
         Map<JanusGraphVertex, Iterable<? extends JanusGraphProperty>> results = multiQuery.properties();
@@ -144,9 +144,16 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
             } else {
                 //this asks for properties
                 assert orders.isEmpty();
-                //HasContainers don't apply => empty result set
-                if (!hasContainers.isEmpty()) return Collections.emptyIterator();
                 iterator = (Iterator<E>) traverser.get().properties(getPropertyKeys());
+                if (!hasContainers.isEmpty()) {
+                    List<E> properties = new LinkedList<>();
+                    iterator.forEachRemaining(e -> {
+                        if(HasContainer.testAll(e, hasContainers)){
+                            properties.add(e);
+                        }
+                    });
+                    iterator = properties.iterator();
+                }
             }
             if (limit!=Query.NO_LIMIT) iterator = Iterators.limit(iterator,limit);
             return iterator;

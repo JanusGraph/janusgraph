@@ -17,8 +17,13 @@ package org.janusgraph.graphdb.embedded;
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.CassandraGraphTest;
+import org.junit.jupiter.api.BeforeAll;
 
 public class EmbeddedGraphTest extends CassandraGraphTest {
+    @BeforeAll
+    public static void startEmbeddedCassandra() {
+        CassandraStorageSetup.startCleanEmbedded();
+    }
 
     @Override
     public WriteConfiguration getConfiguration() {

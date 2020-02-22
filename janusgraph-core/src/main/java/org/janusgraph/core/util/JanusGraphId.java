@@ -72,6 +72,4 @@ public class JanusGraphId {
         Preconditions.checkArgument(v.hasId(), "Invalid vertex provided: %s", v);
         return fromVertexId(v.longId());
     }
-
-
 }

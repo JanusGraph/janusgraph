@@ -47,7 +47,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
             return this;
         }
 
-        InternalRelation next = (InternalRelation) RelationIdentifier.get(this).findRelation(tx());
+        InternalRelation next = (InternalRelation) RelationIdentifierUtils.findRelation(RelationIdentifierUtils.get(this), tx());
         if (next == null) {
             throw InvalidElementException.removedException(this);
         }
@@ -113,7 +113,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
     @Override
     public RelationIdentifier id() {
-        return RelationIdentifier.get(this);
+        return RelationIdentifierUtils.get(this);
     }
 
     /* ---------------------------------------------------------------

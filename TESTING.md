@@ -176,108 +176,53 @@ The file `janusgraph-cql/src/test/resources/docker/docker-compose.yml` can be us
 Therefore, you have to start a Cassandra instance using `docker-compose up`. 
 Afterward, you can extract the configuration which is located in the following file `/etc/cassandra/cassandra.yaml`.
 
-### Running Tests with an External Cassandra
+### Running Cassandra Tests
 
-Default and TinkerPop tests can be run against an externally-managed Cassandra instance. For convenience a Docker Compose file is provided in the JanusGraph-Cassandra source distribution for managing a Cassandra instance in a Docker container.
+**Note** Running Cassandra tests require Docker with the exclusion of Cassandra embedded.
 
-```bash
-CASSANDRA_VERSION=3.11.0 docker-compose -f janusgraph-cassandra/src/test/resources/docker-compose.yml up -d
-```
-
-Environment variables used when starting the container are described below
-
-| Variable | Description | Example |
-| ---- | ---- | ---- |
-| CASSANDRA_VERSION | Docker image version to pull and run | 3.11.0 |
-| CASSANDRA_ENABLE_BOP | Enable the `ByteOrderedPartitioner`. Required for TinkerPop tests. | true |
-| CASSANDRA_ENABLE_SSL | Enable SSL | true |
-
-(Optional) Once the instance is started logs can be monitored or alternatively omit the `-d` flag in the above call and run tests in a separate shell
+Cassandra tests are executed using [testcontainers-java](https://www.testcontainers.org/). 
+Cassandra tests can be executed against a Cassandra 2 using the profile `cassandra2`, 
+a Cassandra 3 using the profile `cassandra3`, or a Scylla 3 using the profile `scylladb`.
 
 ```bash
-docker-compose -f janusgraph-cassandra/src/test/resources/docker-compose.yml logs -f
+mvn clean install -pl janusgraph-cassandra -Pcassandra2-murmur
+mvn clean install -pl janusgraph-cassandra -Pcassandra3-murmur
+mvn clean install -pl janusgraph-cassandra -Pscylladb
 ```
 
-Wait for the instance to become available by monitoring logs or programmatically as shown below. Note the two cases being checked are to accommodate both unencrypted and encrypted connections.
+#### Special versions of Cassandra
+
+System properties to configure Cassandra test executions:
+
+| Property | Description | Default value |
+| -------- | ----------- | ------------- |
+| `cassandra.docker.image` | Docker image to pull and run. | `cassandra` |
+| `cassandra.docker.version` | Docker image tag to pull and run  | `3.11.4` |
+| `cassandra.docker.partitioner` | Set the cassandra partitioner. Supported partitioner are `murmur`, or `byteordered`| `murmur` |
+| `cassandra.docker.useSSL` | Activate SSL **Note: This property currently only works with the partitioner set to `murmur`.** | `false` |
+| `cassandra.docker.useDefaultConfigFromImage` | If set to `false` default configs of the image are used. **Note: `cassandra.docker.partitioner` and `cassandra.docker.useSSL` are ignored.** | `false` |
+
+The following examples show possible configuration combinations.
 
 ```bash
-until docker exec -it jg-cassandra sh -c 'exec cqlsh -e "show host"' || docker exec -it jg-cassandra sh -c 'exec cqlsh --ssl -e "show host"'; do
-  >&2 echo "Cassandra is unavailable - sleeping";
-  sleep 1;
-done
+mvn clean install -pl janusgraph-cassandra -Dcassandra.docker.version=2.2.14
+mvn clean install -pl janusgraph-cassandra -Dcassandra.docker.image=cassandra
+mvn clean install -pl janusgraph-cassandra -Dcassandra.docker.image=cassandra -Dcassandra.docker.version=3.11.2
 ```
 
-The `storage.hostname` property is used when running tests to indicate an external instance should be used. Depending on the tests being run it may be necessary to provide the Docker container IP address rather than the host address (127.0.0.1) to avoid test failures. The Docker container IP address can be obtained as shown below.
+#### TinkerPop tests
+
+The Cassandra backend is tested with TinkerPop tests using following command. 
+
+**Note: Profiles are not supported during running TinkerPop tests. 
+If you do not want to use the default config, you can set `cassandra.docker.image`, 
+`cassandra.docker.version`, or `cassandra.docker.partitioner`.**
 
 ```bash
-STORAGE_HOSTNAME=`docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' jg-cassandra`
+mvn clean install -Dtest.skip.tp=false -DskipTests=true -pl janusgraph-cassandra \
+  -Dcassandra.docker.partitioner=murmur -Dcassandra.docker.version=2.2.14
 ```
 
-After running tests the container can be stopped and removed as shown below
+#### Create new configuration files for new Versions of Cassandra
 
-```bash
-docker-compose -f janusgraph-cassandra/src/test/resources/docker-compose.yml stop
-docker-compose -f janusgraph-cassandra/src/test/resources/docker-compose.yml rm -f
-```
-
-#### Default Tests
-
-Default Thrift tests with the `Murmur3Partitioner` partitioner:
-
-```bash
-CASSANDRA_VERSION=3.11.0 docker-compose -f janusgraph-cassandra/src/test/resources/docker-compose.yml up -d
-# wait for instance to start (see above)
-mvn clean install -pl janusgraph-cassandra -Dtest=**/thrift/* -Dtest.skip.ordered=true -Dtest.skip.ssl=true -Dstorage.hostname=$STORAGE_HOSTNAME
-```
-
-Default Thrift tests with the `ByteOrderedPartitioner` partitioner:
-
-```bash
-CASSANDRA_VERSION=3.11.0 CASSANDRA_ENABLE_BOP=true docker-compose -f janusgraph-cassandra/src/test/resources/docker-compose.yml up -d
-# wait for instance to start (see above)
-mvn clean install -pl janusgraph-cassandra -Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ssl=true -Dtest.skip.serial=true -Dstorage.hostname=$STORAGE_HOSTNAME
-```
-
-Default Thrift SSL tests with the `Murmur3Partitioner` partitioner:
-
-```bash
-CASSANDRA_VERSION=3.11.0 CASSANDRA_ENABLE_SSL=true docker-compose -f janusgraph-cassandra/src/test/resources/docker-compose.yml up -d
-# wait for instance to start (see above)
-mvn clean install -pl janusgraph-cassandra -Dtest=**/thrift/* -Dtest.skip.unordered=true -Dtest.skip.ordered=true -Dtest.skip.serial=true -Dtest.skip.serial=true -Dstorage.hostname=$STORAGE_HOSTNAME
-```
-
-To run default Astyanax or CQL tests change the `test` property value in the above calls. Also note that the CQL module uses different property names to toggle the partitioner and enable SSL.
-
-| Description | Property (Cassandra Module) | Property (CQL Module) |
-| ---- | ---- | ---- |
-| Skip Murmur3Partitioner tests | test.skip.unordered | test.skip.murmur |
-| Skip ByteOrderedPartitioner tests | test.skip.ordered | test.skip.byteorderedpartitioner |
-| Skip SSL (murmur) | test.skip.ssl=true | test.skip.murmur-ssl=true |
-
-#### TinkerPop Tests
-
-TinkerPop Thrift tests:
-
-```bash
-CASSANDRA_VERSION=3.11.0 CASSANDRA_ENABLE_BOP=true docker-compose -f janusgraph-cassandra/src/test/resources/docker-compose.yml up -d
-# wait for instance to start (see above)
-mvn clean install -Dtest.skip.tp=false -DskipTests=true -pl janusgraph-cassandra -fn -Dstorage.hostname=$STORAGE_HOSTNAME
-```
-
-#### Hadoop Tests
-
-Hadoop tests with Cassandra 2:
-
-```bash
-CASSANDRA_VERSION=2.2.10 docker-compose -f janusgraph-cassandra/src/test/resources/docker-compose.yml up -d
-# wait for instance to start (see above)
-mvn clean install -pl :janusgraph-hadoop -DskipHBase -Dstorage.hostname=$STORAGE_HOSTNAME
-```
-
-Hadoop tests with Cassandra 3 (note that default Cassandra 2 tests must be skipped):
-
-```bash
-CASSANDRA_VERSION=3.11.0 docker-compose -f janusgraph-cassandra/src/test/resources/docker-compose.yml up -d
-# wait for instance to start (see above)
-mvn clean install -pl :janusgraph-hadoop -DskipHBase -DskipCassandra -DskipCassandra3=false -Dstorage.hostname=$STORAGE_HOSTNAME
-```
+Check CQL steps to generate new configurations files.

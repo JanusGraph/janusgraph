@@ -91,4 +91,12 @@ public interface StoreManager {
      */
     List<KeyRange> getLocalKeyPartition() throws BackendException;
 
+    /**
+     * Returns {@code org.janusgraph.hadoop.HadoopStoreManager}
+     *
+     * @return A {@code HadoopStoreManager} if supported.
+     */
+    default Object getHadoopManager() throws BackendException {
+        throw new UnsupportedOperationException("This Manager doesn't support hadoop");
+    }
 }

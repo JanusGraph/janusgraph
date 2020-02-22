@@ -47,7 +47,7 @@ import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.predicate.ConnectiveJanusPredicate;
-import org.janusgraph.graphdb.query.JanusGraphPredicate.Converter;
+import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
 import org.janusgraph.graphdb.tinkerpop.optimize.HasStepFolder;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphLocalQueryOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphMultiQueryStep;
@@ -173,8 +173,8 @@ public class JanusGraphStepStrategyTest {
                 final RangeGlobalStep range = (RangeGlobalStep) ((DefaultGraphTraversal) hasKeyValues[i]).getStartStep();
                 graphStep.setLimit((int) range.getLowRange(), (int) range.getHighRange());
             }  else if (i < hasKeyValues.length -1 && hasKeyValues[i + 1] instanceof ConnectiveP) {
-                final ConnectiveJanusPredicate connectivePredicate = Converter.instanceConnectiveJanusPredicate((ConnectiveP) hasKeyValues[i + 1] );
-                graphStep.addHasContainer(new HasContainer((String) hasKeyValues[i], new P<>(connectivePredicate, Converter.convert(((ConnectiveP<?>) hasKeyValues[i + 1]), connectivePredicate))));
+                final ConnectiveJanusPredicate connectivePredicate = JanusGraphPredicateUtils.instanceConnectiveJanusPredicate((ConnectiveP) hasKeyValues[i + 1] );
+                graphStep.addHasContainer(new HasContainer((String) hasKeyValues[i], new P<>(connectivePredicate, JanusGraphPredicateUtils.convert(((ConnectiveP<?>) hasKeyValues[i + 1]), connectivePredicate))));
                 i++;
             } else {
                 graphStep.addHasContainer(new HasContainer((String) hasKeyValues[i], (P) hasKeyValues[i + 1]));
@@ -269,10 +269,12 @@ public class JanusGraphStepStrategyTest {
             arguments(g.V().or(has("name", "marko"), has("lang", "java").order().by("name", Order.desc)).order().by(
                 "lang", Order.asc),
                 g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), new HasStepFolder.OrderEntry("name",
-                    Order.desc))), new HasStepFolder.OrderEntry("lang", Order.asc)), Collections.emptyList())
+                    Order.desc))), new HasStepFolder.OrderEntry("lang", Order.asc)), Collections.emptyList()),
+            arguments(g.V().or(__.has("name", "marko").has("age", 29), __.has("name", "vadas").has("age", 27)).as("x").select("x"),
+                g_V(__.or(g_V("name", eq("marko"), "age", eq(29)), g_V("name", eq("vadas"), "age", eq(27)))).as("x").select("x"), Collections.emptyList()),
         });
     }
-    
+
     private static Stream<Arguments> generateMultiQueryTestParameters() {
         final StandardJanusGraph graph = (StandardJanusGraph) StorageSetup.getInMemoryGraphWithMultiQuery();
         final GraphTraversalSource g = graph.traversal();

@@ -32,6 +32,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
+import org.janusgraph.graphdb.transaction.TransactionConfiguration;
 import org.janusgraph.util.system.IOUtils;
 
 import org.slf4j.Logger;
@@ -94,6 +95,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
                     .scanTxConfig(GraphDatabaseConfiguration.buildGraphConfiguration()
                             .set(ISOLATION_LEVEL, IsolationLevel.READ_UNCOMMITTED.toString()))
                     .supportsInterruption(false)
+                    .cellTTL(true)
                     .optimisticLocking(false)
                     .build();
     }
@@ -142,6 +144,13 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
                 TransactionConfig txnConfig = new TransactionConfig();
                 ConfigOption.getEnumValue(effectiveCfg.get(ISOLATION_LEVEL),IsolationLevel.class).configure(txnConfig);
                 tx = environment.beginTransaction(null, txnConfig);
+            } else {
+                if (txCfg instanceof TransactionConfiguration) {
+                    if (!((TransactionConfiguration) txCfg).isSingleThreaded()) {
+                        // Non-transactional cursors can't shared between threads, more info ThreadLocker.checkState
+                        throw new PermanentBackendException("BerkeleyJE does not support non-transactional for multi threaded tx");
+                    }
+                }
             }
             BerkeleyJETx btx = new BerkeleyJETx(tx, ConfigOption.getEnumValue(effectiveCfg.get(LOCK_MODE),LockMode.class), txCfg);
 
@@ -199,7 +208,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
             if (mutationValue.hasAdditions()) {
                 for (KeyValueEntry entry : mutationValue.getAdditions()) {
-                    store.insert(entry.getKey(),entry.getValue(),txh);
+                    store.insert(entry.getKey(),entry.getValue(),txh, entry.getTtl());
                     log.trace("Insertion on {}: {}", mutation.getKey(), entry);
                 }
             }
@@ -214,7 +223,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
     void removeDatabase(BerkeleyJEKeyValueStore db) {
         if (!stores.containsKey(db.getName())) {
-            throw new IllegalArgumentException("Tried to remove an unkown database from the storage manager");
+            throw new IllegalArgumentException("Tried to remove an unknown database from the storage manager");
         }
         String name = db.getName();
         stores.remove(name);

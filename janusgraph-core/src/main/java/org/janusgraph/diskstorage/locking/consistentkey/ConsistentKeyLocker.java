@@ -100,7 +100,7 @@ import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
  * between the timestamp on our successful write and the current time.</li>
  * <li>Read all columns for the key we wrote in the first step.</li>
  * <li>Discard any columns with timestamps older than {@code lockExpire}.</li>
- * <li>If our column is either the first column read or is preceeded only by
+ * <li>If our column is either the first column read or is preceded only by
  * columns containing our own {@code rid}, then we hold the lock.  Otherwise,
  * another process holds the lock and we have failed to acquire it.</li>
  * <li>To release the lock, we delete from the store the column that we

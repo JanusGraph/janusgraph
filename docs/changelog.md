@@ -27,7 +27,7 @@ use the latest versions of the software.
 
 ## Release Notes
 
-### Version 0.5.0 (Release Date: July ?, 2019)
+### Version 0.5.0 (Release Date: January ?, 2020)
 
 ```xml tab='Maven'
 <dependency>
@@ -47,10 +47,10 @@ compile "org.janusgraph:janusgraph-core:0.5.0"
 * Apache HBase 1.2.6, 1.3.1, 1.4.10, 2.1.5
 * Google Bigtable 1.3.0, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.10.0, 1.11.0
 * Oracle BerkeleyJE 7.5.11
-* Elasticsearch 6.0.1, 6.6.0, 7.3.1
+* Elasticsearch 6.0.1, 6.6.0, 7.6.0
 * Apache Lucene 7.0.0
 * Apache Solr 7.0.0
-* Apache TinkerPop 3.4.1
+* Apache TinkerPop 3.4.5
 * Java 1.8
 
 For more information on features and bug fixes in 0.5.0, see the GitHub milestone:
@@ -63,8 +63,27 @@ For more information on features and bug fixes in 0.5.0, see the GitHub mileston
 
 The distribution has no longer the suffix `-hadoop2`.
 
-##### ElasticSearch: Upgrade from 6.6.0 to 7.3.1 and drop support for 5.x version
-The ElasticSearch version has been changed to 7.3.1 which removes support for `max-retry-timeout` option. 
+##### Reorder dependency of Hadoop
+
+Hadoop is now a dependency of supported backends. Therefore, `MapReduceIndexJobs` is now split up into different classes:
+
+| Old Function | New Function |
+| ------------ | ------------ |
+|`MapReduceIndexJobs.cassandraRepair`|`CassandraMapReduceIndexJobsUtils.repair`| 
+|`MapReduceIndexJobs.cassandraRemove`|`CassandraMapReduceIndexJobsUtils.remove`| 
+|`MapReduceIndexJobs.cqlRepair`|`CqlMapReduceIndexJobsUtils.repair`| 
+|`MapReduceIndexJobs.cqlRemove`|`CqlMapReduceIndexJobsUtils.remove`| 
+|`MapReduceIndexJobs.hbaseRepair`|`HBaseMapReduceIndexJobsUtils.repair`| 
+|`MapReduceIndexJobs.hbaseRemove`|`HBaseMapReduceIndexJobsUtils.remove`| 
+
+!!! note
+    Now, you can easily support for any backend.
+
+!!! warning
+    `Cassandra3InputFormat` is replaced by `CqlInputFormat`
+
+##### ElasticSearch: Upgrade from 6.6.0 to 7.6.0 and drop support for 5.x version
+The ElasticSearch version has been changed to 7.6.0 which removes support for `max-retry-timeout` option. 
 That is why this option no longer available in JanusGraph.
 Users should be aware that by default JanusGraph setups maximum open scroll contexts to maximum value of `2147483647` with the parameter `setup-max-open-scroll-contexts` for ElasticSearch 7.y. 
 This option can be disabled and updated manually in ElasticSearch
@@ -81,6 +100,45 @@ Parameter `use-deprecated-multitype-index` is no more supported by JanusGraph.
 ##### BerkeleyDB
 
 BerkeleyDB storage configured with [SHARED_CACHE](https://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/EnvironmentConfig.html#SHARED_CACHE) for better memory usage.
+
+### Version 0.4.1 (Release Date: January 14, 2020)
+
+```xml tab='Maven'
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.4.1</version>
+</dependency>
+```
+
+```groovy tab='Gradle'
+compile "org.janusgraph:janusgraph-core:0.4.1"
+```
+
+**Tested Compatibility:**
+
+-   Apache Cassandra 2.2.10, 3.0.14, 3.11.0
+-   Apache HBase 1.2.6, 1.3.1, 1.4.10, 2.1.5
+-   Google Bigtable 1.3.0, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.10.0, 1.11.0
+-   Oracle BerkeleyJE 7.5.11
+-   Elasticsearch 5.6.14, 6.0.1, 6.6.0
+-   Apache Lucene 7.0.0
+-   Apache Solr 7.0.0
+-   Apache TinkerPop 3.4.4
+-   Java 1.8
+
+For more information on features and bug fixes in 0.4.1, see the GitHub milestone:
+
+-   <https://github.com/JanusGraph/janusgraph/milestone/15?closed=1>
+
+#### Upgrade Instructions
+
+##### TinkerPop: Upgrade from 3.4.1 to 3.4.4
+
+Adding multiple values in the same query to a new vertex property without explicitly defined type 
+(i.e. using `Automatic Schema Maker` to create a property type) requires explicit usage of `VertexProperty.Cardinality` 
+for each call (only for the first query which defines a property) if the `VertexProperty.Cardinality` is different than 
+`VertexProperty.Cardinality.single`.
 
 ### Version 0.4.0 (Release Date: July 1, 2019)
 Legacy documentation: <https://old-docs.janusgraph.org/0.4.0/index.html>
@@ -139,6 +197,36 @@ The JanusGraph distribution contains a `solrconfig.xml` file that can be used to
 The value `luceneMatchVersion` in this config that tells Solr to behave according to that Lucene version was changed from 5.0.0 to 7.0.0 as that is the default version currently used by JanusGraph.
 Users should generally set this value to the version of their Solr installation.
 If the config distributed by JanusGraph is used for an existing Solr installation that used a lower version before (like 5.0.0 from a previous versions of this file), it is highly recommended that a re-indexing is performed.
+
+### Version 0.3.3 (Release Date: January 11, 2020)
+
+```xml tab='Maven'
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.3.3</version>
+</dependency>
+```
+
+```groovy tab='Gradle'
+compile "org.janusgraph:janusgraph-core:0.3.3"
+```
+
+**Tested Compatibility:**
+
+-   Apache Cassandra 2.1.20, 2.2.10, 3.0.14, 3.11.0
+-   Apache HBase 1.2.6, 1.3.1, 1.4.4
+-   Google Bigtable 1.0.0, 1.1.2, 1.2.0, 1.3.0, 1.4.0
+-   Oracle BerkeleyJE 7.4.5
+-   Elasticsearch 1.7.6, 2.4.6, 5.6.5, 6.0.1
+-   Apache Lucene 7.0.0
+-   Apache Solr 5.5.4, 6.6.1, 7.0.0
+-   Apache TinkerPop 3.3.3
+-   Java 1.8
+
+For more information on features and bug fixes in 0.3.3, see the GitHub milestone:
+
+-   <https://github.com/JanusGraph/janusgraph/milestone/14?closed=1>
 
 ### Version 0.3.2 (Release Date: June 16, 2019)
 Legacy documentation: <https://old-docs.janusgraph.org/0.3.2/index.html>
@@ -242,7 +330,7 @@ For more information on features and bug fixes in 0.3.0, see the GitHub mileston
 JanusGraph 0.3.0 implements [Schema Constraints](./basics/schema.md#schema-constraints) which made it necessary to also introduce the concept of a schema version. There is a check to prevent client connections that either expect a different schema version or have no concept of a schema version. To perform an upgrade, the configuration option `graph.allow-upgrade=true` must be set on each graph you wish to upgrade. The graph must be opened with a 0.3.0 or greater version of JanusGraph since older versions have no concept of `graph.storage-version` and will not allow for it to be set.
 
 Example excerpt from `janusgraph.properties` file
-```conf
+```properties
 # JanusGraph configuration sample: Cassandra over a socket
 #
 # This file connects to a Cassandra daemon running on localhost via
@@ -436,7 +524,7 @@ offers only a single configuration option using the REST client.
 The `TRANSPORT_CLIENT` interface has been replaced with `REST_CLIENT`.
 When migrating an existing graph to JanusGraph 0.2.0, the `interface`
 property must be set when connecting to the graph:
-```conf
+```properties
 index.search.backend=elasticsearch
 index.search.elasticsearch.interface=REST_CLIENT
 index.search.hostname=127.0.0.1

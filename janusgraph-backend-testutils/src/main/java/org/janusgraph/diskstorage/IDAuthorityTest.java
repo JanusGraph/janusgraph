@@ -368,6 +368,12 @@ public abstract class IDAuthorityTest {
     @MethodSource("configs")
     public void testMultiIDAcquisition(WriteConfiguration baseConfig) throws Throwable {
         setUp(baseConfig);
+        boolean localStore = Arrays.stream(manager).noneMatch(m -> m.getFeatures().isDistributed());
+        // On local mode ids acquired sequentially
+        if (localStore) {
+            return;
+        }
+
         final int numPartitions = MAX_NUM_PARTITIONS;
         final int numAcquisitionsPerThreadPartition = 100;
         final IDBlockSizer blockSizer = new InnerIDBlockSizer();

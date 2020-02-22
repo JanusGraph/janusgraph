@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
@@ -31,7 +30,6 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.JanusGraphConstants;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -39,18 +37,13 @@ import org.junit.jupiter.api.Test;
  */
 public abstract class CassandraGraphTest extends JanusGraphTest {
 
-    @BeforeAll
-    public static void startCassandra() {
-        CassandraStorageSetup.startCleanEmbedded();
-    }
-
     @Test
     public void testHasTTL() {
         assertTrue(features.hasCellTTL());
     }
 
     @Test
-    public void testStorageVerisonSet() {
+    public void testStorageVersionSet() {
         close();
         WriteConfiguration wc = getConfiguration();
         assertNull(wc.get(ConfigElement.getPath(GraphDatabaseConfiguration.INITIAL_STORAGE_VERSION), 

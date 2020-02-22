@@ -86,7 +86,7 @@ cleanZNode() {
 }
 
 check_before_start(){
-    #ckeck if the process is not running
+    #check if the process is not running
     mkdir -p "$HBASE_PID_DIR"
     if [ -f $pid ]; then
       if kill -0 `cat $pid` > /dev/null 2>&1; then

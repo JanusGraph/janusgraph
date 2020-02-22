@@ -78,11 +78,11 @@ public abstract class AbstractGremlinServerIntegrationTest {
         if (null == settings) {
             startServer();
         } else {
-            final Settings overridenSettings = overrideSettings(settings);
+            final Settings overriddenSettings = overrideSettings(settings);
             if (GREMLIN_SERVER_EPOLL) {
-                overridenSettings.useEpollEventLoop = true;
+                overriddenSettings.useEpollEventLoop = true;
             }
-            this.server = new GremlinServer(overridenSettings);
+            this.server = new GremlinServer(overriddenSettings);
             server.start().join();
 
         }
@@ -91,12 +91,12 @@ public abstract class AbstractGremlinServerIntegrationTest {
     public void startServer() throws Exception {
         final InputStream stream = getSettingsInputStream();
         final Settings settings = Settings.read(stream);
-        final Settings overridenSettings = overrideSettings(settings);
+        final Settings overriddenSettings = overrideSettings(settings);
         if (GREMLIN_SERVER_EPOLL) {
-            overridenSettings.useEpollEventLoop = true;
+            overriddenSettings.useEpollEventLoop = true;
         }
 
-        this.server = new GremlinServer(overridenSettings);
+        this.server = new GremlinServer(overriddenSettings);
 
         server.start().join();
     }

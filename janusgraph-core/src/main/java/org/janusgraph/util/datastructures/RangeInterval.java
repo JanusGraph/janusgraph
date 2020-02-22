@@ -115,9 +115,13 @@ public class RangeInterval<T> implements Interval<T> {
             final RangeInterval<T> rint = (RangeInterval)other;
             final Map.Entry<T,Boolean> newStart = comparePoints(start,startInclusive,rint.start,rint.startInclusive,true);
             final Map.Entry<T,Boolean> newEnd = comparePoints(end,endInclusive,rint.end,rint.endInclusive,false);
-            final RangeInterval<T> result = new RangeInterval<>(newStart.getKey(), newEnd.getKey());
-            result.setStartInclusive(newStart.getValue());
-            result.setEndInclusive(newEnd.getValue());
+            final RangeInterval<T> result = new RangeInterval<>();
+            if (newStart.getKey() != null) {
+                result.setStart(newStart.getKey(), newStart.getValue());
+            }
+            if (newEnd.getKey() != null) {
+                result.setEnd(newEnd.getKey(), newEnd.getValue());
+            }
             return result;
         } else throw new AssertionError("Unexpected interval: " + other);
     }

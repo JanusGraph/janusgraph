@@ -29,7 +29,6 @@ import org.apache.tinkerpop.gremlin.structure.*;
 
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 
 public class EmptyVertex implements InternalVertex {
 
@@ -46,7 +45,7 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
-    public List<InternalRelation> getAddedRelations(Predicate<InternalRelation> query) {
+    public Iterable<InternalRelation> getAddedRelations(Predicate<InternalRelation> query) {
         throw new UnsupportedOperationException(errorName + " do not support incident edges");
     }
 

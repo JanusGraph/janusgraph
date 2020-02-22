@@ -96,7 +96,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
         if (!additions.isEmpty()) {
             for (Entry entry : additions) {
                 StaticBuffer newKey = concatenate(key, entry.getColumnAs(StaticBuffer.STATIC_FACTORY));
-                store.insert(newKey, entry.getValueAs(StaticBuffer.STATIC_FACTORY), txh);
+                store.insert(newKey, entry.getValueAs(StaticBuffer.STATIC_FACTORY), txh, (Integer) entry.getMetaData().get(EntryMetaData.TTL));
             }
         }
     }
@@ -290,7 +290,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
             while (iterator.hasNext()) {
                 current = iterator.next();
                 StaticBuffer key = getKey(current.getKey());
-                if (currentKey == null || !key.equals(currentKey)) {
+                if (!key.equals(currentKey)) {
                     return key;
                 }
             }

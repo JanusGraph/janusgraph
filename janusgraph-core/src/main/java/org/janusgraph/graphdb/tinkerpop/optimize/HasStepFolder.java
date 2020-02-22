@@ -24,8 +24,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
 import org.janusgraph.graphdb.query.QueryUtil;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -77,7 +77,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             final List<? extends P<?>> predicates = ((ConnectiveP<?>) has.getPredicate()).getPredicates();
             return predicates.stream().allMatch(p-> validJanusGraphHas(new HasContainer(has.getKey(), p)));
         } else {
-            return JanusGraphPredicate.Converter.supports(has.getBiPredicate());
+            return JanusGraphPredicateUtils.supports(has.getBiPredicate());
         }
     }
 
@@ -142,9 +142,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                     traversal.removeStep(currentStep);
                 }
             }
-            else if (currentStep instanceof IdentityStep) {
-                // do nothing, has no impact
-            } else if (currentStep instanceof NoOpBarrierStep) {
+            else if (currentStep instanceof IdentityStep || currentStep instanceof NoOpBarrierStep) {
                 // do nothing, has no impact
             } else {
                 break;
@@ -164,9 +162,10 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                     }
                 }
                 ((OrStep<?>) currentStep).getLocalChildren().forEach(t ->localFoldInHasContainer(janusgraphStep, t.getStartStep(), t, rootTraversal));
+                currentStep.getLabels().forEach(janusgraphStep::addLabel);
                 traversal.removeStep(currentStep);
             } else if (currentStep instanceof HasContainerHolder){
-                final Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers().stream().map(c -> JanusGraphPredicate.Converter.convert(c)).collect(Collectors.toList());
+                final Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers().stream().map(c -> JanusGraphPredicateUtils.convert(c)).collect(Collectors.toList());
                 if  (validFoldInHasContainer(currentStep, true)) {
                     janusgraphStep.addAll(containers);
                     currentStep.getLabels().forEach(janusgraphStep::addLabel);
@@ -184,7 +183,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         Step<?, ?> currentStep = tinkerpopStep;
         while (true) {
             if (currentStep instanceof HasContainerHolder) {
-                final Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers().stream().map(c -> JanusGraphPredicate.Converter.convert(c)).collect(Collectors.toList());
+                final Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers().stream().map(c -> JanusGraphPredicateUtils.convert(c)).collect(Collectors.toList());
                 final List<HasContainer> hasContainers = janusgraphStep.addLocalAll(containers);
                 currentStep.getLabels().forEach(janusgraphStep::addLabel);
                 traversal.removeStep(currentStep);

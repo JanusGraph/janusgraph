@@ -14,22 +14,20 @@
 
 package org.janusgraph.diskstorage.cassandra.astyanax;
 
+import org.janusgraph.JanusGraphCassandraThriftContainer;
 import org.janusgraph.diskstorage.BackendException;
-import org.junit.jupiter.api.BeforeAll;
-
-import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.MultiWriteKeyColumnValueStoreTest;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 public class AstyanaxMultiWriteStoreTest extends MultiWriteKeyColumnValueStoreTest {
-
-    @BeforeAll
-    public static void startCassandra() {
-        CassandraStorageSetup.startCleanEmbedded();
-    }
+    @Container
+    public static final JanusGraphCassandraThriftContainer thriftContainer = new JanusGraphCassandraThriftContainer();
 
     @Override
     public KeyColumnValueStoreManager openStorageManager() throws BackendException {
-        return new AstyanaxStoreManager(CassandraStorageSetup.getAstyanaxConfiguration(getClass().getSimpleName()));
+        return new AstyanaxStoreManager(thriftContainer.getAstyanaxConfiguration(getClass().getSimpleName()));
     }
 }
