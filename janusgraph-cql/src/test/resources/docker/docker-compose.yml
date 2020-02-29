@@ -23,11 +23,13 @@ services:
     environment:
       - CASSANDRA_START_RPC=true
       - CASSANDRA_ENABLE_SSL=true
+      - CASSANDRA_ENABLE_CLIENT_AUTH=false
       - CASSANDRA_ENABLE_BOP=false
     volumes:
       - ./update_config.py:/update_config.py
       - ./janusgraph_docker_entrypoint.sh:/janusgraph_docker_entrypoint.sh
-      - ../cert/test.keystore:/etc/ssl/test.keystore
-      - ../cert/test.crt:/etc/ssl/test.crt
+      - ../cert/node.keystore:/etc/ssl/node.keystore
+      - ../cert/node.truststore:/etc/ssl/node.truststore
+      - ../cert/node.crt:/etc/ssl/node.crt
       - ../cqlshrc:/root/.cassandra/cqlshrc
     entrypoint: /janusgraph_docker_entrypoint.sh
