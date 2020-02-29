@@ -103,7 +103,7 @@ public class StandardPropertyKeyMaker extends StandardRelationTypeMaker implemen
     public PropertyKey make() {
         Preconditions.checkArgument(dataType != null, "Need to specify a datatype");
         Preconditions.checkArgument(tx.validDataType(dataType), "Not a supported data type: %s",dataType);
-        Preconditions.checkArgument(!dataType.isPrimitive(), "Primitive types are not supported. Use the corresponding object type, e.g. Integer.class instead of int.class [%s]", dataType);
+        Preconditions.checkArgument(!dataType.isPrimitive(), "Primitive types are not supported. Use the corresponding wrapper class, e.g. Integer.class instead of int.class [%s]", dataType);
         Preconditions.checkArgument(!dataType.isInterface(), "Datatype must be a class and not an interface: %s", dataType);
         Preconditions.checkArgument(dataType.isArray() || !Modifier.isAbstract(dataType.getModifiers()), "Datatype cannot be an abstract class: %s", dataType);
 
