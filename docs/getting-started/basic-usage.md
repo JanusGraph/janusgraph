@@ -28,14 +28,18 @@ The example below will open a JanusGraph graph instance and load *The
 Graph of the Gods* dataset diagrammed above. `JanusGraphFactory`
 provides a set of static `open` methods, each of which takes a
 configuration as its argument and returns a graph instance. This
-tutorial calls one of these `open` methods on a configuration that uses
-the [BerkeleyDB](../storage-backend/bdb.md) storage backend and the
-[Elasticsearch](../index-backend/elasticsearch.md) index backend, then loads *The Graph of
-the Gods* using the helper class `GraphOfTheGodsFactory`. This section
+tutorial demonstrates loading *The Graph of the Gods* using the
+helper class `GraphOfTheGodsFactory` with different configurations. This section
 skips over the configuration details, but additional information about
 storage backends, index backends, and their configuration are available
 in [Storage Backends](../storage-backend/index.md), [Index Backends](../index-backend/search-predicates.md), and
 [Configuration Reference](../basics/configuration-reference.md).
+
+#### Loading with an index backend
+
+The below example calls one of these `open` methods on a configuration that uses
+the [BerkeleyDB](../storage-backend/bdb.md) storage backend and the
+[Elasticsearch](../index-backend/elasticsearch.md) index backend:
 
 ```groovy
 gremlin> graph = JanusGraphFactory.open('conf/janusgraph-berkeleyje-es.properties')
@@ -70,9 +74,11 @@ gremlin> g = graph.traversal()
 ==>graphtraversalsource[standardjanusgraph[cql:[127.0.0.1]], standard]
 ```
 
+#### Loading without an index backend
+
 You may also use the `conf/janusgraph-cql.properties`,
-`conf/janusgraph-berkeleyje.properties`, or
-`conf/janusgraph-hbase.properties` configuration files to open a graph
+`conf/janusgraph-berkeleyje.properties`, `conf/janusgraph-hbase.properties`,
+or `conf/janusgraph-inmemory.properties` configuration files to open a graph
 without an indexing backend configured. In such cases, you will need to
 use the `GraphOfTheGodsFactory.loadWithoutMixedIndex()` method to load
 the *Graph of the Gods* so that it doesn’t attempt to make use of an
@@ -85,6 +91,14 @@ gremlin> GraphOfTheGodsFactory.loadWithoutMixedIndex(graph, true)
 gremlin> g = graph.traversal()
 ==>graphtraversalsource[standardjanusgraph[cql:[127.0.0.1]], standard]
 ```
+
+!!! info
+    Using any configuration file other than `conf/janusgraph-inmemory.properties`
+    requires that you have a dedicated backend configured and running. If you just
+    want to quickly open a graph instance and explore some of the JanusGraph features,
+    you could simply choose `conf/janusgraph-inmemory.properties` to open an
+    [in-memory backend](../storage-backend/inmemorybackend.md).
+
 ### Global Graph Indices
 
 
