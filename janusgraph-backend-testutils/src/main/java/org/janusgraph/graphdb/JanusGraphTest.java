@@ -2822,7 +2822,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         JanusGraphVertex u = tx.addVertex("name", "u");
         assertEquals(0, (noVertices - 1) % 3);
         JanusGraphVertex[] vs = new JanusGraphVertex[noVertices];
-        for (int i = 1; i < noVertices; i++) {
+        for (int i = 0; i < noVertices; i++) {
             vs[i] = tx.addVertex("name", "v" + i);
         }
         EdgeLabel[] labelsV = {tx.getEdgeLabel("connect"), tx.getEdgeLabel("friend"), tx.getEdgeLabel("knows")};
@@ -2939,6 +2939,15 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).has("weight", 3.5).edgeCount());
         assertEquals(2, v.query().labels("connect").adjacent(vs[6]).has("time", 6).edgeCount());
         assertEquals(0, v.query().labels("connect").adjacent(vs[8]).has("time", 8).edgeCount());
+        assertEquals(2, v.query().labels().direction(BOTH).adjacent(vs[11]).edgeCount());
+        assertEquals(2, v.query().direction(BOTH).adjacent(vs[11]).edgeCount());
+        assertEquals(2, v.query().adjacent(vs[11]).edgeCount());
+
+        // v and vs[0] are not adjacent
+        assertEquals(0, v.query().adjacent(vs[0]).edgeCount());
+        assertEquals(0, v.query().labels().adjacent(vs[0]).edgeCount());
+        assertEquals(0, v.query().direction(BOTH).adjacent(vs[0]).edgeCount());
+        assertEquals(0, v.query().labels().direction(BOTH).adjacent(vs[0]).edgeCount());
 
         assertEquals(edgesPerLabel, v.query().labels("connect").direction(OUT).edgeCount());
         assertEquals(edgesPerLabel, v.query().labels("connect").direction(IN).edgeCount());
@@ -3053,6 +3062,15 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).has("weight", 3.5).edgeCount());
         assertEquals(2, v.query().labels("connect").adjacent(vs[6]).has("time", 6).edgeCount());
         assertEquals(0, v.query().labels("connect").adjacent(vs[8]).has("time", 8).edgeCount());
+        assertEquals(2, v.query().labels().direction(BOTH).adjacent(vs[11]).edgeCount());
+        assertEquals(2, v.query().direction(BOTH).adjacent(vs[11]).edgeCount());
+        assertEquals(2, v.query().adjacent(vs[11]).edgeCount());
+
+        // v and vs[0] are not adjacent
+        assertEquals(0, v.query().adjacent(vs[0]).edgeCount());
+        assertEquals(0, v.query().labels().adjacent(vs[0]).edgeCount());
+        assertEquals(0, v.query().direction(BOTH).adjacent(vs[0]).edgeCount());
+        assertEquals(0, v.query().labels().direction(BOTH).adjacent(vs[0]).edgeCount());
 
         assertEquals(edgesPerLabel, v.query().labels("connect").direction(OUT).edgeCount());
         assertEquals(edgesPerLabel, v.query().labels("connect").direction(IN).edgeCount());
