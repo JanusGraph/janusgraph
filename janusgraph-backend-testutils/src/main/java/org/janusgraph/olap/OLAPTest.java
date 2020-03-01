@@ -73,6 +73,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -137,6 +138,37 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         }
         assertEquals(numV*(numV+1),numE*2);
         return numE;
+    }
+
+    @Test
+    public void scannerShouldSeeAllVertices() throws Exception {
+        GraphTraversalSource g = graph.traversal();
+        Vertex v1 = g.addV().next();
+        Vertex v2 = g.addV().next();
+        g.V(v1).addE("connect").to(v2).iterate();
+        g.addV().addV().addV().property("p", "v").iterate();
+        g.tx().commit();
+
+        AtomicInteger vertexNum = new AtomicInteger();
+        executeScanJob(new VertexScanJob() {
+            @Override
+            public void process(final JanusGraphVertex vertex, final ScanMetrics metrics) {
+                vertexNum.incrementAndGet();
+            }
+
+            @Override
+            public void getQueries(final QueryContainer queries) {
+                queries.addQuery().properties();
+                queries.addQuery().edges();
+            }
+
+            @Override
+            public VertexScanJob clone() {
+                return this;
+            }
+        });
+
+        assertEquals(g.V().count().next(), vertexNum.get());
     }
 
     @Test
