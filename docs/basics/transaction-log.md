@@ -1,5 +1,4 @@
-Transaction Log
-===============
+# Transaction Log
 
 JanusGraph can automatically log transactional changes for additional
 processing or as a record of change. To enable logging for a particular
@@ -143,8 +142,7 @@ transaction handle passed into the change processor is a normal
 `JanusGraphTransaction` which query the JanusGraph graph and make
 changes to it.
 
-Transaction Log Use Cases
--------------------------
+## Transaction Log Use Cases
 
 ### Record of Change
 
@@ -179,8 +177,7 @@ slight delay through the log processor framework. The second example
 shows how changes to the graph can be evaluated and trigger additional
 modifications.
 
-Log Configuration
------------------
+## Log Configuration
 
 There are a number of configuration options to fine tune how the log
 processor reads from the log. Refer to the complete list of

@@ -1,5 +1,4 @@
-Example Graph Configuration
-===========================
+# Example Graph Configuration
 
 This page illustrates a number of common graph configurations. Please
 refer to [Configuration Reference](configuration-reference.md) and the pages of the respective [storage backend](../storage-backend/index.md), [index backend](../index-backend/index.md) for more
@@ -8,8 +7,8 @@ information.
 Also, note that the JanusGraph distribution includes local configuration
 files in the `conf/` directory.
 
-BerkeleyDB
-----------
+## BerkeleyDB
+
 ```properties
 storage.backend=berkeleyje
 storage.directory=/tmp/graph
@@ -31,8 +30,7 @@ Elasticsearch internally and it will not be externally accessible since
 `local-mode` is enabled. Elasticsearch stores all data for the `search`
 index in `/tmp/searchindex`. Configuring an index backend is optional.
 
-Cassandra
----------
+## Cassandra
 
 ### Cassandra Remote
 
@@ -78,8 +76,7 @@ cluster as configured in the yaml file.
 The optional index backend configuration is identical to embedded index
 configuration described above.
 
-HBase
------
+## HBase
 
 ```properties
 storage.backend=hbase

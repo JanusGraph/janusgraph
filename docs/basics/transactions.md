@@ -1,5 +1,4 @@
-Transactions
-============
+# Transactions
 
 Almost all interaction with JanusGraph is associated with a transaction.
 JanusGraph transactions are safe for concurrent use by multiple threads.
@@ -19,8 +18,7 @@ properties would be substantial.
 
 This section describes JanusGraph’s transactional semantics and API.
 
-Transaction Handling
---------------------
+## Transaction Handling
 
 Every graph operation in JanusGraph occurs within the context of a
 transaction. According to the TinkerPop’s transactional specification,
@@ -45,8 +43,7 @@ but the thread-bound transaction belonging to the thread that invoked
 shutdown will first be committed. Note, that both read and write
 operations occur within the context of a transaction.
 
-Transactional Scope
--------------------
+## Transactional Scope
 
 All graph elements (vertices, edges, and types) are associated with the
 transactional scope in which they were retrieved or created. Under
@@ -74,8 +71,7 @@ e = g.E(e).next() //Need to refresh edge
 e.property("time", 99)
 ```
 
-Transaction Failures
---------------------
+## Transaction Failures
 
 When committing a transaction, JanusGraph will attempt to persist all
 changes to the storage backend. This might not always be successful due
@@ -134,8 +130,7 @@ Permanent exceptions that can fail a transaction include:
     applying for the lock failed. In other words, another transaction
     modified the value after it had been read and modified.
 
-Multi-Threaded Transactions
----------------------------
+## Multi-Threaded Transactions
 
 JanusGraph supports multi-threaded transactions through TinkerPop’s threaded transactions.
  Hence, to speed up transaction processing and utilize multi-core architectures multiple threads can run concurrently in a single transaction.
@@ -168,8 +163,7 @@ JanusGraph relies on optimized concurrent data structures to support
 hundreds of concurrent threads running efficiently in a single
 transaction.
 
-Concurrent Algorithms
----------------------
+## Concurrent Algorithms
 
 Thread independent transactions started through `createThreadedTx()` are
 particularly useful when implementing concurrent graph algorithms. Most
@@ -180,8 +174,7 @@ with little effort. Each of these threads can operate on a single
 `Graph` object returned by `createThreadedTx()` without blocking each
 other.
 
-Nested Transactions
--------------------
+## Nested Transactions
 
 Another use case for thread independent transactions is nested
 transactions that ought to be independent from the surrounding
@@ -216,8 +209,7 @@ v1.addEdge("related", g.V(v2).next()) // Need to load v2 into outer transaction
 graph.tx().commit() // Can't fail due to uniqueName write lock contention involving v2
 ```
 
-Common Transaction Handling Problems
-------------------------------------
+## Common Transaction Handling Problems
 
 Transactions are started automatically with the first operation executed
 against the graph. One does NOT have to start a transaction manually.
@@ -265,8 +257,7 @@ exception. As demonstrated in the example above, such elements have to
 be explicitly refreshed in the new transaction using
 `g.V(existingVertex)` or `g.E(existingEdge)`.
 
-Transaction Configuration
--------------------------
+## Transaction Configuration
 
 JanusGraph’s `JanusGraph.buildTransaction()` method gives the user the
 ability to configure and start a new [multi-threaded transaction](#multi-threaded-transactions) 

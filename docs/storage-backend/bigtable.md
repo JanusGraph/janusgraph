@@ -1,5 +1,4 @@
-Google Cloud Bigtable
-=====================
+# Google Cloud Bigtable
 
 ![](cloud-bigtable.svg)
 
@@ -15,8 +14,7 @@ Google Cloud Bigtable
 > —  [Google Cloud Bigtable
 > Homepage](https://cloud.google.com/bigtable/)
 
-Bigtable Setup
---------------
+## Bigtable Setup
 
 Bigtable implements the HBase interface for all data access operations,
 and requires a few configuration options to connect.

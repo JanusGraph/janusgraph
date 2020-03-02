@@ -1,5 +1,4 @@
-Direct Index Query
-==================
+# Direct Index Query
 
 JanusGraph’s standard global graph querying mechanism supports boolean
 queries for vertices or edges. In other words, an element either matches
@@ -49,8 +48,7 @@ for (Result<Vertex> result : graph.indexQuery("vertexByText", "v.text:(farm uncl
 }
 ```
 
-Query String
-------------
+## Query String
 
 The query string is handed directly to the indexing backend for
 processing and hence the query string syntax depends on what is
@@ -79,8 +77,7 @@ In addition [Elasticsearch](elasticsearch.md) supports wildcard queries,
 use "v.\*" or "e.\*" in the query string to query if any of the
 properties on the element match.
 
-Query Totals
-------------
+## Query Totals
 
 It is sometimes useful to know how many total results were returned from
 a query without having to retrieve all results. Fortunately,
@@ -94,8 +91,7 @@ indexQuery builder, but size is overwritten to be 0.
 graph.indexQuery("vertexByText", "v.text:(farm uncle berry)").vertexTotals()
 ```
 
-Gotchas
--------
+## Gotchas
 
 ### Property Key Names
 

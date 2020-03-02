@@ -1,8 +1,6 @@
-Monitoring JanusGraph
-=====================
+# Monitoring JanusGraph
 
-Metrics in JanusGraph
----------------------
+## Metrics in JanusGraph
 
 JanusGraph supports [Metrics](https://dropwizard.io/). JanusGraph can
 measure the following:
@@ -67,8 +65,7 @@ whether they come from the ID store, edge store, etc. When
 file, the "stores" string in metric names is replaced by "idStore",
 "edgeStore", "vertexIndexStore", or "edgeIndexStore".
 
-Configuring Metrics Reporting
------------------------------
+## Configuring Metrics Reporting
 
 JanusGraph supports the following Metrics reporters:
 

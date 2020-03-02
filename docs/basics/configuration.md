@@ -1,5 +1,4 @@
-Configuration
-=============
+# Configuration
 
 A JanusGraph graph database cluster consists of one or multiple
 JanusGraph instances. To open a JanusGraph instance, a configuration has
@@ -20,8 +19,7 @@ additional indexing backend must be configured. See
 then caching should be enabled. Cache configuration and tuning is
 described in [JanusGraph Cache](#caching).
 
-Example Configurations
-----------------------
+## Example Configurations
 
 Below are some example configuration files to demonstrate how to
 configure the most commonly used storage backends, indexing systems, and
@@ -89,8 +87,7 @@ graph = JanusGraphFactory.open("conf/janusgraph-cql.properties")
 graph = JanusGraphFactory.open("conf/janusgraph-hbase.properties")
 ```
 
-Using Configuration
--------------------
+## Using Configuration
 
 How the configuration is provided to JanusGraph depends on the
 instantiation mode.
@@ -183,8 +180,7 @@ and Elasticsearch.
     For security reasons Elasticsearch and therefore `janusgraph.sh` must
     be run under a non-root account
 
-Global Configuration
---------------------
+## Global Configuration
 
 JanusGraph distinguishes between local and global configuration options.
 Local configuration options apply to an individual JanusGraph instance.

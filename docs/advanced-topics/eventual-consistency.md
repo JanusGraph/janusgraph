@@ -1,5 +1,4 @@
-Eventually-Consistent Storage Backends
-======================================
+# Eventually-Consistent Storage Backends
 
 When running JanusGraph against an eventually consistent storage backend
 special JanusGraph features must be used to ensure data consistency and
@@ -9,8 +8,7 @@ This page summarizes some of the aspects to consider when running
 JanusGraph on top of an eventually consistent storage backend like
 Apache Cassandra or Apache HBase.
 
-Data Consistency
-----------------
+## Data Consistency
 
 On eventually consistent storage backends, JanusGraph must obtain locks
 in order to ensure consistency because the underlying storage backend
@@ -129,8 +127,7 @@ properties to facilitate resolution at read time.
 See [multi-properties](../basics/schema.md#property-key-cardinality) to learn how to define
 those.
 
-Data Inconsistency
-------------------
+## Data Inconsistency
 
 ### Temporary Inconsistency
 

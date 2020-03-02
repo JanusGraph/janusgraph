@@ -1,12 +1,10 @@
-Failure & Recovery
-==================
+# Failure & Recovery
 
 JanusGraph is a highly available and robust graph database. In large
 scale JanusGraph deployments failure is inevitable. This page describes
 some failure situations and how JanusGraph can handle them.
 
-Transaction Failure
--------------------
+## Transaction Failure
 
 Transactions can fail for a number of reasons. If the transaction fails
 before the commit the changes will be discarded and the application can
@@ -61,8 +59,7 @@ which means that log entries expire after that time to keep the storage
 overhead small. Refer to [Configuration Reference](../basics/configuration-reference.md) for a complete list of all
 log related configuration options to fine tune logging behavior.
 
-JanusGraph Instance Failure
----------------------------
+## JanusGraph Instance Failure
 
 JanusGraph is robust against individual instance failure in that other
 instances of the JanusGraph cluster are not impacted by such failure and

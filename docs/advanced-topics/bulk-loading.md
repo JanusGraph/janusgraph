@@ -1,5 +1,4 @@
-Bulk Loading
-============
+# Bulk Loading
 
 There are a number of configuration options and tools that make
 ingesting large amounts of graph data into JanusGraph more efficient.
@@ -34,8 +33,7 @@ addition, consider improving the chosen storage backend and (optional)
 index backend for high write performance. Please refer to the
 documentation of the respective backend for more information.
 
-Configuration Options
----------------------
+## Configuration Options
 
 ### Batch Loading
 
@@ -156,8 +154,7 @@ JanusGraph will wait before re-attempting a failed backend operation. A
 higher value can ensure that operation re-tries do not further increase
 the load on the backend.
 
-Strategies
-----------
+## Strategies
 
 ### Parallelizing the Load
 
@@ -194,8 +191,7 @@ loading process:
     4.  Add all the edges using the map to look-up JanusGraph’s vertex
         id and retrieving the vertices using that id.
 
-Q&A
----
+## Q&A
 
 -   **What should I do to avoid the following exception during
     batch-loading:**

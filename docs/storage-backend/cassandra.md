@@ -1,5 +1,4 @@
-Apache Cassandra
-================
+# Apache Cassandra
 
 > The Apache Cassandra database is the right choice when you need
 > scalability and high availability without compromising performance.
@@ -15,8 +14,7 @@ Apache Cassandra
 The following sections outline the various ways in which JanusGraph can
 be used in concert with Apache Cassandra.
 
-Cassandra Storage Backend
--------------------------
+## Cassandra Storage Backend
 
 JanusGraph provides the following backends for use with Cassandra:
 
@@ -55,8 +53,7 @@ JanusGraph users are recommended to use the `cql` storage backend.
     `conf/cassandra/cassandraTables.cql`. Please define your keyspace
     before executing it.
 
-Local Server Mode
------------------
+## Local Server Mode
 
 ![](modes-local.png)
 
@@ -90,8 +87,7 @@ open();
 In the Gremlin Console, you can not define the type of the variables
 `conf` and `g`. Therefore, simply leave off the type declaration.
 
-Local Container Mode
---------------------
+## Local Container Mode
 
 Cassandra does not have a native install for Windows or OSX. One of the
 easiest ways to run Cassandra on OSX, Windows, or Linux is to use a
@@ -116,8 +112,7 @@ docker run --name jg-cassandra -d -e CASSANDRA_START_RPC=true -p 9160:9160 \
   -p 9042:9042 -p 7199:7199 -p 7001:7001 -p 7000:7000 cassandra:3.11
 ```
 
-Remote Server Mode
-------------------
+## Remote Server Mode
 
 ![](modes-distributed.png)
 
@@ -143,8 +138,7 @@ JanusGraph graph = JanusGraphFactory.build().
 In the Gremlin Console, you can not define the type of the variables
 `conf` and `g`. Therefore, simply leave off the type declaration.
 
-Remote Server Mode with Gremlin Server
---------------------------------------
+## Remote Server Mode with Gremlin Server
 
 ![](modes-rexster.png)
 
@@ -187,8 +181,7 @@ scriptEngines: {
 For more information about Gremlin Server see the [Apache TinkerPop
 documentation](https://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/reference#gremlin-server)
 
-JanusGraph Embedded Mode
-------------------------
+## JanusGraph Embedded Mode
 
 ![](modes-embedded.png)
 
@@ -220,8 +213,7 @@ Note, that running JanusGraph with Cassandra embedded requires GC
 tuning. While embedded Cassandra can provide lower latency query
 answering, its GC behavior under load is less predictable.
 
-Cassandra Specific Configuration
---------------------------------
+## Cassandra Specific Configuration
 
 Refer to [Configuration Reference](../../basics/configuration-reference/) for a complete listing of all Cassandra
 specific configuration options in addition to the general JanusGraph
@@ -254,16 +246,14 @@ values, please refer to the [Cassandra Thrift
 API](http://wiki.apache.org/cassandra/API10). In general, higher levels
 are more consistent and robust but have higher latency.
 
-Global Graph Operations
------------------------
+## Global Graph Operations
 
 JanusGraph over Cassandra supports global vertex and edge iteration.
 However, note that all these vertices and/or edges will be loaded into
 memory which can cause `OutOfMemoryException`. Use [JanusGraph with TinkerPop’s Hadoop-Gremlin](../advanced-topics/hadoop.md) to
 iterate over all vertices or edges in large graphs effectively.
 
-Deploying on Amazon EC2
------------------------
+## Deploying on Amazon EC2
 
 > Amazon Elastic Compute Cloud (Amazon EC2) is a web service that
 > provides resizable compute capacity in the cloud. It is designed to

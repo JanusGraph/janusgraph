@@ -1,6 +1,5 @@
 # Connecting from Java
 
-
 While it is possible to embed JanusGraph as a library inside a Java
 application and then directly connect to the backend, this section
 assumes that the application connects to JanusGraph Server. For

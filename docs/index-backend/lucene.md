@@ -32,8 +32,7 @@ index.search.directory=/data/searchindex
 In the above configuration, the index backend is named `search`. Replace
 `search` by a different name to change the name of the index.
 
-Feature Support
----------------
+## Feature Support
 
 -   **Full-Text**: Supports all `Text` predicates to search for text
     properties that matches a given word, prefix or regular expression.

@@ -1,5 +1,4 @@
-Apache Solr
-===========
+# Apache Solr
 
 > Solr is the popular, blazing fast open source enterprise search
 > platform from the Apache Lucene project. Solr is a standalone
@@ -29,8 +28,7 @@ JanusGraph:
 Please see [Version Compatibility](../appendices.md#version-compatibility) 
 for details on what versions of Solr will work with JanusGraph.
 
-Solr Configuration Overview
----------------------------
+## Solr Configuration Overview
 
 JanusGraph supports Solr running in either a SolrCloud or Solr
 Standalone (HTTP) configuration for use with a **mixed index** 
@@ -55,8 +53,7 @@ These are some key Solr terms:
 -   **Configset**: A shared *configuration* that can be reused by
     multiple cores.
 
-Connecting to SolrCloud
------------------------
+## Connecting to SolrCloud
 
 When connecting to a SolrCloud cluster by setting the `mode` equal to
 `cloud`, the Zookeeper URL (and optionally port) must be specified so
@@ -288,8 +285,7 @@ Note, however, that schemaless mode is recommended only for prototyping
 and initial application development and NOT recommended for production
 use.
 
-Troubleshooting
----------------
+## Troubleshooting
 
 ### Collection Does Not Exist
 
@@ -433,8 +429,7 @@ Spatial4j declares its target JTS version in the [pom for the `com.spatial4j:spa
 Copy the JTS jar to the server/solr-webapp/webapp/WEB-INF/lib directory
 in your solr installation.
 
-Advanced Solr Configuration
----------------------------
+## Advanced Solr Configuration
 
 ### DSE Search
 

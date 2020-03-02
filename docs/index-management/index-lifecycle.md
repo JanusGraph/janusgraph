@@ -1,6 +1,4 @@
-
-Index Lifecycle
-======================
+# Index Lifecycle
 
 JanusGraph uses only indexes which have status `ENABLED`. 
 When the index is created it will not be used by JanusGraph until it is enabled. 
@@ -26,8 +24,7 @@ mgmt.updateIndex(mgmt.getGraphIndex("myAnotherIndex"), SchemaAction.ENABLE_INDEX
 mgmt.commit();
 ```
 
-Index states and transitions
------------
+## Index states and transitions
 
 ![States and transitions](index-lifecycle.png)
 

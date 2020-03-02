@@ -1,8 +1,6 @@
-janusgraph-dist
-==========
+# janusgraph-dist
 
-Building zip archives
------------------------------
+## Building zip archives
 
 Run `mvn clean install -Pjanusgraph-release -Dgpg.skip=true
 -DskipTests=true`.  This command can be run from either the root of
@@ -24,8 +22,7 @@ zipfiles and the script files they contain.  These tests require unzip
 and expect, and they'll start and stop Cassandra, ES, and HBase in the
 course of their execution.
 
-Building documentation
-----------------------
+## Building documentation
 
 To convert the markdown sources in $JANUSGRAPH_REPO_ROOT/docs/ to chunked, 
 run `mvn install -DskipTests=true -pl janusgraph-doc -am` and `mkdocs build`.
@@ -34,8 +31,7 @@ The documentation output appears in:
 
 * site/
 
-Building deb/rpm packages
--------------------------
+## Building deb/rpm packages
 
 Requires:
 

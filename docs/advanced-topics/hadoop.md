@@ -1,5 +1,4 @@
-JanusGraph with TinkerPop’s Hadoop-Gremlin
-==========================================
+# JanusGraph with TinkerPop’s Hadoop-Gremlin
 
 This chapter describes how to leverage [Apache Hadoop](https://hadoop.apache.org/) 
 and [Apache Spark](https://spark.apache.org/) to configure JanusGraph for
@@ -21,8 +20,7 @@ configuration properties.
     or standalone cluster mode. Additional configuration is required when
     using Spark on YARN or Mesos.
 
-Configuring Hadoop for Running OLAP
------------------------------------
+## Configuring Hadoop for Running OLAP
 
 For running OLAP queries from the Gremlin Console, a few prerequisites
 need to be fulfilled. You will need to add the Hadoop configuration
@@ -63,8 +61,7 @@ gremlin> hdfs
 ==>storage[DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_1229457199_1, ugi=user (auth:SIMPLE)]]] // GOOD
 ```
 
-OLAP Traversals
----------------
+## OLAP Traversals
 
 JanusGraph-Hadoop works with TinkerPop’s hadoop-gremlin package for
 general-purpose OLAP to traverse over the graph, and parallelize queries
@@ -87,22 +84,22 @@ JanusGraph directly supports following graphReader classes:
 The following `.properties` files can be used to connect a JanusGraph
 instance such that it can be used with HadoopGraph to run OLAP queries.
 
-```properties tab='CqlInputFormat'
+```properties tab='read-cql.properties'
 {!../janusgraph-dist/src/assembly/static/conf/hadoop-graph/read-cql.properties!}
 ```
 
-```properties tab='CassandraInputFormat'
+```properties tab='read-cassandra.properties'
 {!../janusgraph-dist/src/assembly/static/conf/hadoop-graph/read-cassandra.properties!}
 ```
 
-```properties tab='HBaseInputFormat'
+```properties tab='read-hbase.properties'
 {!../janusgraph-dist/src/assembly/static/conf/hadoop-graph/read-hbase.properties!}
 ```
 
 First create a properties file with above configurations, and load the
 same on the Gremlin Console to run OLAP queries as follows:
 
-```bash tab='CqlInputFormat'
+```bash tab='read-cql.properties'
 bin/gremlin.sh
 
          \,,,/
@@ -128,7 +125,7 @@ gremlin> g.E().count()
 ==> 8046
 ```
 
-```bash tab='CassandraInputFormat'
+```bash tab='read-cassandra.properties'
 bin/gremlin.sh
 
          \,,,/
@@ -154,7 +151,7 @@ gremlin> g.E().count()
 ==> 8046
 ```
 
-```bash tab='HBaseInputFormat'
+```bash tab='read-hbase.properties'
 bin/gremlin.sh
 
          \,,,/
@@ -201,21 +198,21 @@ standalone cluster with only minor changes:
 
 The final properties file used for OLAP traversal is as follows:
 
-```properties tab='CqlInputFormat'
+```properties tab='read-cql-standalone-cluster.properties'
 {!../janusgraph-dist/src/assembly/static/conf/hadoop-graph/read-cql-standalone-cluster.properties!}
 ```
 
-```properties tab='CassandraInputFormat'
+```properties tab='read-cassandra-standalone-cluster.properties'
 {!../janusgraph-dist/src/assembly/static/conf/hadoop-graph/read-cassandra-standalone-cluster.properties!}
 ```
 
-```properties tab='HBaseInputFormat'
+```properties tab='read-hbase-standalone-cluster.properties'
 {!../janusgraph-dist/src/assembly/static/conf/hadoop-graph/read-hbase-standalone-cluster.properties!}
 ```
 
 Then use the properties file as follows from the Gremlin Console:
 
-```bash tab='CqlInputFormat'
+```bash tab='read-cql-standalone-cluster.properties'
 bin/gremlin.sh
 
          \,,,/
@@ -241,7 +238,7 @@ gremlin> g.E().count()
 ==> 8046
 ```
 
-```bash tab='CassandraInputFormat'
+```bash tab='read-cassandra-standalone-cluster.properties'
 bin/gremlin.sh
 
          \,,,/
@@ -267,7 +264,7 @@ gremlin> g.E().count()
 ==> 8046
 ```
 
-```bash tab='HBaseInputFormat'
+```bash tab='read-hbase-standalone-cluster.properties'
 bin/gremlin.sh
 
          \,,,/
@@ -293,8 +290,7 @@ gremlin> g.E().count()
 ==> 8046
 ```
 
-Other Vertex Programs
----------------------
+## Other Vertex Programs
 
 Apache TinkerPop provides various vertex programs. A vertex program runs
 on each vertex until either a termination criteria is attained or a
