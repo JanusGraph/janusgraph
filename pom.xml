@@ -82,7 +82,7 @@
         <httpcomponents.httpcore.version>4.4.12</httpcomponents.httpcore.version>
         <hadoop2.version>2.7.7</hadoop2.version>
         <hbase1.version>1.4.10</hbase1.version>
-        <hbase2.version>2.1.5</hbase2.version>
+        <hbase2.version>2.2.3</hbase2.version>
         <hbase.server.version>1.4.10</hbase.server.version>
         <bigtable.version>1.11.0</bigtable.version>
         <scylladb.version>1.7.1</scylladb.version>
