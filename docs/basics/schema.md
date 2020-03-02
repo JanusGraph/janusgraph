@@ -105,7 +105,8 @@ Use `dataType(Class)` to define the data type of a property key.
 JanusGraph will enforce that all values associated with the key have the
 configured data type and thereby ensures that data added to the graph is
 valid. For instance, one can define that the `name` key has a String
-data type.
+data type. Note that primitive types are not supported. Use the corresponding
+wrapper class, e.g. `Integer` instead of `int`.
 
 Define the data type as `Object.class` in order to allow any
 (serializable) value to be associated with a key. However, it is
