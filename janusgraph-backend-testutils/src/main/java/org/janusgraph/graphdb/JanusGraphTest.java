@@ -5034,6 +5034,16 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testTinkerPropInfinityLimit() {
+        // TinkerPop uses -1 to represent unlimited
+        initializeGraphWithVerticesHavingNames("marko", "ark", "arko", "park", "stephen");
+        GraphTraversalSource g = graph.traversal();
+
+        assertEquals(5, g.V().limit(-1).count().next());
+        assertEquals(4, g.V().skip(1).count().next());
+    }
+
+    @Test
     public void testTinkerPopTextContainingFindsCorrectValue() {
         initializeGraphWithVerticesHavingNames("marko", "stephen");
         GraphTraversalSource g = graph.traversal();
