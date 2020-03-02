@@ -1,6 +1,4 @@
-
-Indexing for Better Performance
-===============================
+# Indexing for Better Performance
 
 JanusGraph supports two different kinds of indexing to speed up query
 processing: **graph indexes** and **vertex-centric indexes**. Most graph
@@ -10,8 +8,7 @@ retrieval operations efficient on large graphs. Vertex-centric indexes
 speed up the actual traversal through the graph, in particular when
 traversing through vertices with many incident edges.
 
-Graph Index
------------
+## Graph Index
 
 Graph indexes are global index structures over the entire graph which
 allow efficient retrieval of vertices or edges by their properties for
@@ -336,8 +333,7 @@ specified label.
     indexing. Also, using a mixed index can speed up the order().by()
     queries.
 
-Vertex-centric Indexes
-----------------------
+## Vertex-centric Indexes
 
 Vertex-centric indexes are local index structures built individually per
 vertex. In large graphs vertices can have thousands of incident edges.

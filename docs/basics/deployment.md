@@ -1,5 +1,4 @@
-Deployment Scenarios
-====================
+# Deployment Scenarios
 
 JanusGraph offers a wide choice of storage and index backends which
 results in great flexibility of how it can be deployed. This chapter
@@ -24,8 +23,7 @@ process more traversals.
     JanusGraph can be deployed. Each deployment needs to take into account
     the concrete use cases and production needs.
 
-Getting Started Scenario
-------------------------
+## Getting Started Scenario
 
 This scenario is the scenario most users probably want to choose when
 they are just getting started with JanusGraph. It offers scalability and
@@ -47,8 +45,7 @@ services](http://docs.scylladb.com/getting-started/scylla_in_a_shared_environmen
 like in this scenario. When an index backend should be used in this
 scenario then it also needs to be one that is scalable.
 
-Advanced Scenario
------------------
+## Advanced Scenario
 
 The advanced scenario is an evolution of the [Getting Started Scenario](#getting-started-scenario).
  Instead of hosting the JanusGraph
@@ -64,8 +61,7 @@ flexibility at the cost of having to maintain more servers.
 Since this scenario offers independent scalability of the different
 components, it of course makes most sense to also use scalable backends.
 
-Minimalist Scenario
--------------------
+## Minimalist Scenario
 
 It is also possible to host JanusGraph Server together with the
 backend(s) on just one server. This is especially attractive for testing
@@ -79,8 +75,7 @@ for this scenario that are not scalable. The in-memory backend can be
 used for testing purposes or Berkeley DB for production and Lucene as
 the optional index backend.
 
-Embedded JanusGraph
--------------------
+## Embedded JanusGraph
 
 Instead of connecting to the JanusGraph Server from an application it is
 also possible to embed JanusGraph as a library inside a JVM based

@@ -1,5 +1,4 @@
-InMemory Storage Backend
-========================
+# InMemory Storage Backend
 
 JanusGraph ships with an in-memory storage backend which can be used
 through the following configuration:
@@ -24,8 +23,7 @@ JanusGraph graph will irrevocably delete all data from the graph. This
 backend is local to a particular JanusGraph graph instance and cannot be
 shared across multiple JanusGraph graphs.
 
-Ideal Use Case
---------------
+## Ideal Use Case
 ### Rapid testing
 
 The in-memory storage backend was initially developed to simplify

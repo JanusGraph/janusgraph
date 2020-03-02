@@ -130,8 +130,7 @@ mgmt.commit()
 Note that the data will be stored in the index twice, once for exact
 matching and once for fuzzy matching.
 
-TinkerPop Text Predicates
-------------------------
+## TinkerPop Text Predicates
 
 It is also possible to use the TinkerPop text predicates with JanusGraph, but these predicates do not make use of
 indices which means that they require filtering in memory which can be very costly.
@@ -143,8 +142,7 @@ g.V().has('bookname', endingWith('corn'))
 g.V().has('bookname', containing('nico'))
 ```
 
-Geo Mapping
------------
+## Geo Mapping
 
 By default, JanusGraph supports indexing geo properties with point type
 and querying geo properties by circle or box. To index a non-point geo

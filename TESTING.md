@@ -1,22 +1,23 @@
-Testing JanusGraph
-==================
+# Testing JanusGraph
 
-### Audience of this Document
+## Audience of this Document
 
 This page is written for developers familiar with Java, JanusGraph, and Maven who want information on how to run JanusGraph's test suite.
 
-### Overview
+## Overview
 
 JanusGraph runs all tests using JUnit.  To compile, package, and run the default test suite for JanusGraph, use the standard `mvn clean install` command.
 
 JanusGraph has a specialty tests, disabled by default, intended to generate basic performance metrics or stress its cache structures under memory pressure.  The next section describes how JanusGraph's tests are internally categorized and the Maven options that enabled/disable test categories.
 
-### Continuous Integration
+## Continuous Integration
 
 JanusGraph runs continuous integration via Travis; see the [dashboard](https://travis-ci.org/JanusGraph/janusgraph) for current status.
 
 Travis sends emails on test failures and status transitions (to/from failure) to
 [janusgraph-ci@googlegroups.com](https://groups.google.com/forum/#!forum/janusgraph-ci) mailing list.
+
+## JUnit
 
 ### JUnit Test Tags
 
@@ -59,7 +60,7 @@ public void testRequiresUnorderedScanOnDatabase(){}
 | OrderedScan   | `StoreFeatures.hasOrderedScan()`   |
 | CellTtl       | `StoreFeatures.hasCellTtl()`       |
 
-### Running a Single Test via Maven
+## Running a Single Test via Maven
 
 The standard maven-surefire-plugin option applies for most tests:
 
@@ -78,7 +79,7 @@ mvn test -Dtest=BerkeleyJEGraphPerformanceMemoryTest
 mvn test -Dtest=BerkeleyJEGraphPerformanceMemoryTest -Dtest.skip.mem=false
 ```
 
-### Running Tests with an External Solr
+## Running Tests with an External Solr
 
 Solr tests can be run against an external Solr instance. For convenience the `docker` Maven profile is provided to manage a Solr Docker container through the Maven Failsafe Plugin. The default test version will be the same as the Solr client version.
 
@@ -99,7 +100,7 @@ Finally the `solr.test.version` property can be used to test against arbitrary S
 mvn clean install -pl janusgraph-solr -Pdocker -Dsolr.test.version=7.0.0
 ```
 
-### Running Elasticsearch Tests
+## Running Elasticsearch Tests
 
 **Note** Running Elasticsearch tests require Docker.
 
@@ -123,7 +124,7 @@ mvn clean install -pl janusgraph-es -Delasticsearch.docker.image=elasticsearch
 mvn clean install -pl janusgraph-es -Delasticsearch.docker.version=6.0.0 -Delasticsearch.docker.image=elasticsearch
 ```
 
-### Running CQL Tests
+## Running CQL Tests
 
 **Note** Running CQL tests require Docker.
 
@@ -137,7 +138,7 @@ mvn clean install -pl janusgraph-cql -Pcassandra3-murmur
 mvn clean install -pl janusgraph-cql -Pscylladb
 ```
 
-#### Special versions of Cassandra
+### Special versions of Cassandra
 
 System properties to configure CQL test executions:
 
@@ -157,7 +158,7 @@ mvn clean install -pl janusgraph-cql -Dcassandra.docker.image=cassandra
 mvn clean install -pl janusgraph-cql -Dcassandra.docker.image=cassandra -Dcassandra.docker.version=3.11.2
 ```
 
-#### TinkerPop tests
+### TinkerPop tests
 
 The CQL backend is tested with TinkerPop tests using following command. 
 
@@ -170,13 +171,13 @@ mvn clean install -Dtest.skip.tp=false -DskipTests=true -pl janusgraph-cql \
   -Dcassandra.docker.partitioner=murmur -Dcassandra.docker.version=2.2.14
 ```
 
-#### Create new configuration files for new Versions of Cassandra
+### Create new configuration files for new Versions of Cassandra
 
 The file `janusgraph-cql/src/test/resources/docker/docker-compose.yml` can be used to generate new configuration files. 
 Therefore, you have to start a Cassandra instance using `docker-compose up`. 
 Afterward, you can extract the configuration which is located in the following file `/etc/cassandra/cassandra.yaml`.
 
-### Running Cassandra Tests
+## Running Cassandra Tests
 
 **Note** Running Cassandra tests require Docker with the exclusion of Cassandra embedded.
 
@@ -190,7 +191,7 @@ mvn clean install -pl janusgraph-cassandra -Pcassandra3-murmur
 mvn clean install -pl janusgraph-cassandra -Pscylladb
 ```
 
-#### Special versions of Cassandra
+### Special versions of Cassandra
 
 System properties to configure Cassandra test executions:
 
@@ -210,7 +211,7 @@ mvn clean install -pl janusgraph-cassandra -Dcassandra.docker.image=cassandra
 mvn clean install -pl janusgraph-cassandra -Dcassandra.docker.image=cassandra -Dcassandra.docker.version=3.11.2
 ```
 
-#### TinkerPop tests
+### TinkerPop tests
 
 The Cassandra backend is tested with TinkerPop tests using following command. 
 
@@ -223,6 +224,6 @@ mvn clean install -Dtest.skip.tp=false -DskipTests=true -pl janusgraph-cassandra
   -Dcassandra.docker.partitioner=murmur -Dcassandra.docker.version=2.2.14
 ```
 
-#### Create new configuration files for new Versions of Cassandra
+### Create new configuration files for new Versions of Cassandra
 
 Check CQL steps to generate new configurations files.

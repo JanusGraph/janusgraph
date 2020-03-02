@@ -1,8 +1,5 @@
-Common Questions
-================
-
-Accidental type creation
-------------------------
+# Common Questions
+## Accidental type creation
 
 By default, JanusGraph will automatically create property keys and edge
 labels when a new type is encountered. It is strongly encouraged that
@@ -16,8 +13,7 @@ or other exceptions. It is generally recommended to create all needed
 types up front or in one batch when new property keys and edge labels
 are needed.
 
-Custom Class Datatype
----------------------
+## Custom Class Datatype
 
 JanusGraph supports arbitrary objects as attribute values on properties.
 To use a custom class as data type in JanusGraph, either register a
@@ -26,14 +22,12 @@ and implements the `equals` method because JanusGraph will verify that
 it can successfully de-/serialize objects of that class. Please see
 [Datatype and Attribute Serializer Configuration](../advanced-topics/serializer.md) for more information.
 
-Transactional Scope for Edges
------------------------------
+## Transactional Scope for Edges
 
 Edges should not be accessed outside the scope in which they were
 originally created or retrieved.
 
-Locking Exceptions
-------------------
+## Locking Exceptions
 
 When defining unique types with [locking enabled](../advanced-topics/eventual-consistency.md)
 (i.e. requesting that JanusGraph ensures uniqueness) it is likely to
@@ -47,8 +41,7 @@ the transaction. In most cases it is sufficient to simply re-run the
 transaction. If locking exceptions are very frequent, try to analyze and
 remove the source of congestion.
 
-Ghost Vertices
---------------
+## Ghost Vertices
 
 When the same vertex is concurrently removed in one transaction and
 modified in another, both transactions will successfully commit on
@@ -63,8 +56,7 @@ time intervals.
 Another option is to detect them at read-time using the option
 `checkInternalVertexExistence()` documented in [Transaction Configuration](#tx-config).
 
-Debug-level Logging Slows Execution
------------------------------------
+## Debug-level Logging Slows Execution
 
 When the log level is set to `DEBUG` JanusGraph produces **a lot** of
 logging output which is useful to understand how particular queries get
@@ -72,8 +64,7 @@ compiled, optimized, and executed. However, the output is so large that
 it will impact the query performance noticeably. Hence, use `INFO`
 severity or higher for production systems or benchmarking.
 
-JanusGraph OutOfMemoryException or excessive Garbage Collection
----------------------------------------------------------------
+## JanusGraph OutOfMemoryException or excessive Garbage Collection
 
 If you experience memory issues or excessive garbage collection while
 running JanusGraph it is likely that the caches are configured
@@ -83,8 +74,7 @@ before tuning the database level cache, in particular if you have many
 concurrent transactions. See [JanusGraph Cache](cache.md) for more
 information.
 
-JAMM Warning Messages
----------------------
+## JAMM Warning Messages
 
 When launching JanusGraph with embedded Cassandra, the following
 warnings may be displayed:
@@ -101,8 +91,7 @@ javaagent parameter when launching the JVM (e.g.
 
     export JANUSGRAPH_JAVA_OPTS=-javaagent:$JANUSGRAPH_HOME/lib/jamm-{{ jamm_version }}.jar
 
-Cassandra Connection Problem
-----------------------------
+## Cassandra Connection Problem
 
 By default, JanusGraph uses the Astyanax library to connect to Cassandra
 clusters. On EC2 and Rackspace, it has been reported that Astyanax was
@@ -110,8 +99,7 @@ unable to establish a connection to the cluster. In those cases,
 changing the backend to `storage.backend=cassandrathrift` solved the
 problem.
 
-Elasticsearch OutOfMemoryException
-----------------------------------
+## Elasticsearch OutOfMemoryException
 
 When numerous clients are connecting to Elasticsearch, it is likely that
 an `OutOfMemoryException` occurs. This is not due to a memory issue, but
@@ -120,8 +108,7 @@ running Elasticsearch). To circumvent this issue, increase the number of
 allowed processes to the user running Elasticsearch. For example,
 increase the `ulimit -u` from the default 1024 to 10024.
 
-Dropping a Database
--------------------
+## Dropping a Database
 
 To drop a database using the Gremlin Console you can call
 `JanusGraphFactory.drop(graph)`. The graph you want to drop needs to be

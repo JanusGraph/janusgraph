@@ -1,5 +1,4 @@
-Gremlin Query Language
-======================
+# Gremlin Query Language
 
 ![gremlin](https://tinkerpop.apache.org/docs/3.2.9/images/gremlin-logo.png)
 
@@ -44,8 +43,7 @@ In addition to these resources, [Connecting to JanusGraph](../connecting/index.m
 can be used in different programming languages to query a JanusGraph
 Server.
 
-Introductory Traversals
------------------------
+## Introductory Traversals
 
 A Gremlin query is a chain of operations/functions that are evaluated
 from left to right. A simple grandfather query is provided below over
@@ -169,8 +167,7 @@ traversal above is correct.
     JanusGraph with other languages than Groovy and independent of the
     Gremlin Console.
 
-Iterating the Traversal
------------------------
+## Iterating the Traversal
 
 One convenient feature of the Gremlin Console is that it automatically iterates all results from a query executed from the gremlin> prompt. This works well within the [REPL](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) environment as it shows you the results as a String. As you transition towards writing a Gremlin application, it is important to understand how to iterate a traversal explicitly because your application’s traversals will not iterate automatically. These are some of the common ways to iterate the [Traversal](https://tinkerpop.apache.org/javadocs/{{ tinkerpop_version }}/full/org/apache/tinkerpop/gremlin/process/traversal/Traversal.html):
 
