@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.tinkerpop.optimize;
 
 import static java.time.Duration.ofSeconds;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.inV;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -58,5 +59,20 @@ class AdjacentVertexFilterOptimizerStrategyTest {
 
         assertTrue(g.V(v1).bothE("E").filter(__.otherV().is(v2)).hasNext());
         assertTrue(g.V(v1).bothE("E").filter(__.otherV().hasId(v2.id())).hasNext());
+    }
+
+    @Test
+    void shouldReturnOnlyOneEdge() {
+        final Graph graph = StorageSetup.getInMemoryGraph();
+        GraphTraversalSource g = graph.traversal();
+        Vertex v1 = g.addV().next();
+        Vertex v2 = g.addV().next();
+        Vertex v3 = g.addV().next();
+        g.addE("E").from(v1).to(v2)
+         .addE("E").from(v1).to(v3)
+         .iterate();
+        g.tx().commit();
+
+        assertEquals(1, g.V(v1).bothE().filter(__.otherV().is(v2)).toList().size());
     }
 }
