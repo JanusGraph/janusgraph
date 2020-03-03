@@ -31,8 +31,6 @@ import org.janusgraph.graphdb.database.serialize.StandardSerializer;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.types.system.*;
 import org.janusgraph.testutil.RandomGenerator;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -268,27 +266,27 @@ public class IDManagementTest {
     public void partitionIDRangeTest() {
 
         List<PartitionIDRange> result = PartitionIDRange.getIDRanges(16, ImmutableList.of(getKeyRange(120<<16, 6, 140<<16, 8)));
-        assertTrue(result.size()==1);
+        assertEquals(1, result.size());
         PartitionIDRange r = result.get(0);
         assertEquals(121,r.getLowerID());
         assertEquals(140,r.getUpperID());
         assertEquals(1<<16,r.getIdUpperBound());
 
         result = PartitionIDRange.getIDRanges(16, ImmutableList.of(getKeyRange(120<<16, 0, 140<<16, 0)));
-        assertTrue(result.size()==1);
+        assertEquals(1, result.size());
         r = result.get(0);
         assertEquals(120,r.getLowerID());
         assertEquals(140,r.getUpperID());
 
         result = PartitionIDRange.getIDRanges(8, ImmutableList.of(getKeyRange(250<<24, 0, 0, 0)));
-        assertTrue(result.size()==1);
+        assertEquals(1, result.size());
         r = result.get(0);
         assertEquals(250,r.getLowerID());
         assertEquals(0,r.getUpperID());
 
         for (int i=0;i<255;i=i+5) {
             result = PartitionIDRange.getIDRanges(8, ImmutableList.of(getKeyRange(i<<24, 0, i<<24, 0)));
-            assertTrue(result.size()==1);
+            assertEquals(1, result.size());
             r = result.get(0);
             for (int j=0;j<255;j++) assertTrue(r.contains(j));
         }

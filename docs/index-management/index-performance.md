@@ -344,7 +344,7 @@ can speed up such traversals by using localized index structures to
 retrieve only those edges that need to be traversed.
 
 Suppose that Hercules battled hundreds of monsters in addition to the
-three captured in the introductory [Graph of the Gods](../index.md#getting-started). Without a vertex-centric index, a query asking
+three captured in the introductory [Graph of the Gods](../getting-started/basic-usage.md). Without a vertex-centric index, a query asking
 for those monsters battled between time point `10` and `20` would
 require retrieving all `battled` edges even though there are only a
 handful of matching edges.

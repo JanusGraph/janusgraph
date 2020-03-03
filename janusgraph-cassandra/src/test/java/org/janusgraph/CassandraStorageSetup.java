@@ -19,10 +19,8 @@ import static org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
-import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
 
 import org.janusgraph.diskstorage.cassandra.utils.CassandraDaemonWrapper;
-import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 

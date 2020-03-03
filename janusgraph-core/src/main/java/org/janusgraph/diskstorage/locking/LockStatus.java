@@ -16,8 +16,6 @@ package org.janusgraph.diskstorage.locking;
 
 import java.time.Instant;
 
-import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
-
 /**
  * A single held lock's expiration time. This is used by {@link AbstractLocker}.
  *

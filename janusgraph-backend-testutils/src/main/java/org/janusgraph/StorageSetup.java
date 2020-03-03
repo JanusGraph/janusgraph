@@ -23,7 +23,7 @@ import org.janusgraph.diskstorage.configuration.ReadConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
-import org.janusgraph.util.system.IOUtils;
+
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;

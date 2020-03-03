@@ -215,7 +215,7 @@ answering, its GC behavior under load is less predictable.
 
 ## Cassandra Specific Configuration
 
-Refer to [Configuration Reference](../../basics/configuration-reference/) for a complete listing of all Cassandra
+Refer to [Configuration Reference](../basics/configuration-reference.md) for a complete listing of all Cassandra
 specific configuration options in addition to the general JanusGraph
 configuration options.
 
@@ -361,7 +361,7 @@ configuration depends on your use case.
     locally to the home directory. Start the Gremlin Console to verify
     that JanusGraph runs successfully. For more information on how to
     unpack JanusGraph and start the Gremlin Console, please refer to the
-    [Getting Started guide](../index.md#getting-started)
+    [Getting Started guide](../getting-started/installation.md)
 -   Create a configuration file with `vi janusgraph.properties` and add
     the following lines::
 ```properties

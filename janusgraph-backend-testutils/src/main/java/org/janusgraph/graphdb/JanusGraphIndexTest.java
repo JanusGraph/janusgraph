@@ -208,9 +208,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     private static void assertStorageExists(Backend backend, boolean exists) throws Exception {
         final String suffix = exists ? "should exist before clearing" : "should not exist after clearing";
-        assertTrue(backend.getStoreManager().exists() == exists, "graph " + suffix);
+        assertEquals(backend.getStoreManager().exists(), exists, "graph " + suffix);
         for (final IndexInformation index : backend.getIndexInformation().values()) {
-            assertTrue(((IndexProvider) index).exists() == exists, "index " + suffix);
+            assertEquals(((IndexProvider) index).exists(), exists, "index " + suffix);
         }
     }
 
@@ -252,9 +252,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             return;
         }
         final PropertyKey name = makeKey("name", String.class);
-        if (!indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) {
-
-        }
+        indexFeatures.supportsStringMapping(Mapping.TEXTSTRING);
         final PropertyKey alias = mgmt.makePropertyKey("alias") .dataType(String.class).cardinality(Cardinality.LIST).make();
         mgmt.buildIndex("namev", Vertex.class).addKey(name).addKey(alias, indexFeatures.supportsStringMapping(Mapping.TEXTSTRING) ?Mapping.TEXTSTRING.asParameter(): Mapping.DEFAULT.asParameter()).buildMixedIndex(INDEX);
         finishSchema();
@@ -785,7 +783,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         final String[] stringsTwo = new String[strings.length];
         for (int i = 0; i < strings.length; i++) stringsTwo[i] = strings[i] + " " + strings[i];
         final int modulo = 5;
-        assertTrue(numV % (modulo * strings.length * 2) == 0);
+        assertEquals(0, numV % (modulo * strings.length * 2));
 
         for (int i = 0; i < numV; i++) {
             final JanusGraphVertex v = tx.addVertex(i % 2 == 0 ? "person" : "org");
@@ -1812,7 +1810,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         // The vertex must not exist after deletion
         graph.tx().rollback();
-        assertEquals(null, getV(graph, id));
+        assertNull(getV(graph, id));
         assertEmpty(graph.query().has(propName).vertices());
         if (null != updatedValue)
             assertEmpty(graph.query().has(propName, updatedValue).vertices());

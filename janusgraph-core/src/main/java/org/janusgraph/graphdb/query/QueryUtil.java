@@ -21,7 +21,6 @@ import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.predicate.AndJanusPredicate;
-import org.janusgraph.graphdb.predicate.ConnectiveJanusPredicate;
 import org.janusgraph.graphdb.predicate.OrJanusPredicate;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;

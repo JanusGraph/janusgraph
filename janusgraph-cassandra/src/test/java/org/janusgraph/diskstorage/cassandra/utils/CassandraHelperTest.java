@@ -18,7 +18,7 @@ import org.apache.cassandra.dht.ByteOrderedPartitioner.BytesToken;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
 import org.junit.jupiter.api.Test;
 
-import org.junit.Assert;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 public class CassandraHelperTest {
 
@@ -28,15 +28,15 @@ public class CassandraHelperTest {
     public void testTransformRange() {
         BytesToken token2 = new BytesToken(new byte[] {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,0,-1});
         KeyRange keyRange = CassandraHelper.transformRange(ZERO, token2);
-        Assert.assertArrayEquals(new byte[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}, keyRange.getStart().asByteBuffer().array());
-        Assert.assertArrayEquals(new byte[] {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,1,0}, keyRange.getEnd().asByteBuffer().array());
+        assertArrayEquals(new byte[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}, keyRange.getStart().asByteBuffer().array());
+        assertArrayEquals(new byte[] {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,1,0}, keyRange.getEnd().asByteBuffer().array());
     }
 
     @Test
     public void testTransformRangeWithRollingCarry() {
         BytesToken token2 = new BytesToken(new byte[] {0,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1});
         KeyRange keyRange = CassandraHelper.transformRange(ZERO, token2);
-        Assert.assertArrayEquals(new byte[] {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, keyRange.getEnd().asByteBuffer().array());
+        assertArrayEquals(new byte[] {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, keyRange.getEnd().asByteBuffer().array());
     }
     
 }

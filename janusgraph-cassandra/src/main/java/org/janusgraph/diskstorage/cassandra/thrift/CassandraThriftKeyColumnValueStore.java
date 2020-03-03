@@ -29,7 +29,6 @@ import org.apache.cassandra.dht.*;
 import org.apache.cassandra.thrift.*;
 import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

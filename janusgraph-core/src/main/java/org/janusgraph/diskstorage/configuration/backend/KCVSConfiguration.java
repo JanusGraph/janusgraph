@@ -40,7 +40,6 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.lang.StringUtils;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;

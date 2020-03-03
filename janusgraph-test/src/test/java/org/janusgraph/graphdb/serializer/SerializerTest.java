@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.serializer;
 
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -32,10 +31,6 @@ import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.context.SpatialContextFactory;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.io.BinaryCodec;
-import org.locationtech.spatial4j.io.jts.JtsBinaryCodec;
-import org.locationtech.spatial4j.shape.Circle;
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
