@@ -487,8 +487,3 @@ and `battlesByRatingAndTime` applies to the second. Note, that the
 `battlesByRatingAndTime` index cannot be used to answer the first query
 because an equality constraint on `rating` must be present for the
 second key in the index to be effective.
-
-!!! note
-    Ordered vertex queries are a JanusGraph extension to Gremlin which
-    causes the verbose syntax and requires the `_()` step to convert the
-    JanusGraph result back into a Gremlin pipeline.
