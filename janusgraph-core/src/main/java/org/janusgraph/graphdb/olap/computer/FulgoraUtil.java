@@ -89,21 +89,4 @@ public class FulgoraUtil {
             throw new IllegalArgumentException("Encountered unsupported step in incident traversal: " + step);
         });
     }
-
-    public static<M> MessageCombiner<M> getMessageCombiner(VertexProgram<M> program) {
-        return program.getMessageCombiner().orElse(DEFAULT_COMBINER);
-    }
-
-
-    private static final MessageCombiner DEFAULT_COMBINER = new ThrowingCombiner<>();
-
-    private static class ThrowingCombiner<M> implements MessageCombiner<M> {
-
-        @Override
-        public M combine(M messageA, M messageB) {
-            throw new IllegalArgumentException("The VertexProgram needs to define a message combiner in order " +
-                    "to preserve memory and handle partitioned vertices");
-        }
-    }
-
 }

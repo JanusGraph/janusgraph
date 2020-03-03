@@ -718,7 +718,12 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         GraphTraversalSource g = graph.traversal();
         Vertex v1 = g.addV().next();
         Vertex v2 = g.addV().next();
-        g.V(v1).addE("connect").to(v2).iterate();
+        Vertex v3 = g.addV().next();
+        Vertex v4 = g.addV().next();
+        g.V(v1).addE("E").to(v2).iterate();
+        g.V(v1).addE("E").to(v3).iterate();
+        g.V(v2).addE("E").to(v4).iterate();
+        g.V(v3).addE("E").to(v4).iterate();
         g.tx().commit();
 
         g = graph.traversal().withComputer();

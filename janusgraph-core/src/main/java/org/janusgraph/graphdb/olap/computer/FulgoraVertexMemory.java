@@ -28,6 +28,7 @@ import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -54,7 +55,7 @@ public class FulgoraVertexMemory<M> {
         vertexStates = new NonBlockingHashMapLong<>(numVertices);
         partitionVertices = new NonBlockingHashMapLong<>(64);
         this.idManager = idManager;
-        this.combiner = FulgoraUtil.getMessageCombiner(vertexProgram);
+        this.combiner = vertexProgram.getMessageCombiner().orElse(null);
         this.computeKeys = vertexProgram.getVertexComputeKeys();
         this.elementKeyMap = getIdMap(vertexProgram.getVertexComputeKeys().stream().map(VertexComputeKey::getKey).collect(Collectors.toCollection(HashSet::new)));
         this.previousScopes = ImmutableMap.of();
@@ -94,7 +95,7 @@ public class FulgoraVertexMemory<M> {
         else state.setMessage(message,scope,currentScopes);
     }
 
-    M getMessage(long vertexId, MessageScope scope) {
+    Stream<M> getMessage(long vertexId, MessageScope scope) {
         return get(vertexId,false).getMessage(normalizeScope(scope),previousScopes);
     }
 
@@ -157,7 +158,7 @@ public class FulgoraVertexMemory<M> {
         getPartitioned(vertexId).addMessage(message,normalizeScope(scope),previousScopes,combiner);
     }
 
-    M getAggregateMessage(long vertexId, MessageScope scope) {
+    Stream<M> getAggregateMessage(long vertexId, MessageScope scope) {
         return getPartitioned(vertexId).getMessage(normalizeScope(scope),previousScopes);
     }
 
