@@ -129,7 +129,7 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     protected Iterator<E> flatMap(final Traverser.Admin<Element> traverser) {
         if (useMultiQuery) { //it is guaranteed that all elements are vertices
             if (multiQueryResults == null || !multiQueryResults.containsKey(traverser.get())) {
-                initializeMultiQuery(Arrays.asList(traverser));
+                initializeMultiQuery(Collections.singletonList(traverser));
             }
             return convertIterator(multiQueryResults.get(traverser.get()));
         } else if (traverser.get() instanceof JanusGraphVertex || traverser.get() instanceof WrappedVertex) {

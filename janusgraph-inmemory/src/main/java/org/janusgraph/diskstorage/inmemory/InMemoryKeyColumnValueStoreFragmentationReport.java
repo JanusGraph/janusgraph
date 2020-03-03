@@ -215,11 +215,12 @@ public class InMemoryKeyColumnValueStoreFragmentationReport {
         int i;
         for (i = 0; i < levels.length; i++) {
             if (counts[i] > 0) {
-                sb.append("<=" + levels[i] + ": " + counts[i] + "; ");
+                sb.append("<=").append(levels[i]).append(": ").append(counts[i]).append("; ");
             }
         }
         if (counts[i] > 0) {
-            sb.append(">" + levels[i - 1] + ": " + counts[i] + "; ").append(System.lineSeparator());
+            sb.append(">").append(levels[i - 1]).append(": ").append(counts[i]).append("; ")
+                .append(System.lineSeparator());
         }
     }
 

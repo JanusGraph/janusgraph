@@ -80,20 +80,15 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.OptionalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.UnionStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.IsStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalExplanation;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -174,14 +169,10 @@ import org.janusgraph.graphdb.schema.SchemaContainer;
 import org.janusgraph.graphdb.schema.VertexLabelDefinition;
 import org.janusgraph.graphdb.serializer.SpecialInt;
 import org.janusgraph.graphdb.serializer.SpecialIntSerializer;
-import org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexFilterOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexHasIdOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexIsOptimizerStrategy;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphIoRegistrationStrategy;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphLocalQueryOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphPropertiesStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStep;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStepStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphVertexStep;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
@@ -189,7 +180,6 @@ import org.janusgraph.graphdb.types.StandardPropertyKeyMaker;
 import org.janusgraph.graphdb.types.system.BaseVertexLabel;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.janusgraph.testutil.FeatureFlag;
-import org.janusgraph.testutil.FlakyTest;
 import org.janusgraph.testutil.JanusGraphFeature;
 import org.janusgraph.testutil.TestGraphConfigs;
 import org.junit.jupiter.api.Tag;
@@ -200,6 +190,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -253,8 +245,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         clopen();
         long nid = n1.longId();
         uid = tx.getPropertyKey("name");
-        assertTrue(getV(tx, nid) != null);
-        assertTrue(getV(tx, uid.longId()) != null);
+        assertNotNull(getV(tx, nid));
+        assertNotNull(getV(tx, uid.longId()));
         assertMissing(tx, nid + 64);
         uid = tx.getPropertyKey(uid.name());
         n1 = getV(tx, nid);
@@ -1030,7 +1022,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             if (value instanceof String) assertEquals("Hello", value);
             else if (value instanceof Long) assertEquals(10L, value);
             else if (value.getClass().isArray()) {
-                assertTrue(Arrays.equals(testArray, (int[]) value));
+                assertArrayEquals(testArray, (int[]) value);
             } else fail();
         }
 
@@ -1044,7 +1036,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             if (value instanceof String) assertEquals("Hello", value);
             else if (value instanceof Long) assertEquals(10L, value);
             else if (value.getClass().isArray()) {
-                assertTrue(Arrays.equals(testArray, (int[]) value));
+                assertArrayEquals(testArray, (int[]) value);
             } else fail();
         }
     }
@@ -1756,11 +1748,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         tx.commit();
 
         finishSchema();
-        try {
-            mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
-            fail(); //Open tx2 should not make this possible
-        } catch (IllegalArgumentException e) {
-        }
+        assertThrows(IllegalArgumentException.class, () ->
+            mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX));
         finishSchema();
 
         //close second graph instance, so index can move to REGISTERED
@@ -1768,11 +1757,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(2, openInstances.size());
         assertTrue(openInstances.contains(graph.getConfiguration().getUniqueGraphId() + "(current)"));
         assertTrue(openInstances.contains(graph2.getConfiguration().getUniqueGraphId()));
-        try {
-            mgmt.forceCloseInstance(graph.getConfiguration().getUniqueGraphId());
-            fail(); //Cannot close current instance
-        } catch (IllegalArgumentException e) {
-        }
+
+        assertThrows(IllegalArgumentException.class, () ->
+            mgmt.forceCloseInstance(graph.getConfiguration().getUniqueGraphId()));
         mgmt.forceCloseInstance(graph2.getConfiguration().getUniqueGraphId());
 
         mgmt.commit();
@@ -2294,7 +2281,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 assertTrue(values.contains(p.value()));
                 int weightAsInteger = p.value(weight);
                 sum += weightAsInteger;
-                if (prop == foo) assertEquals(index, weightAsInteger);
+                if (prop.equals(foo)) assertEquals(index, weightAsInteger);
                 index--;
             }
             assertEquals(values.size() * (values.size() + 1) / 2, sum);
@@ -5364,7 +5351,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             }
         }
         if (indexQueries > 0) assertFalse(fullScan);
-        if (fullScan) assertTrue(intersectingIndexes.length == 0);
+        if (fullScan) assertEquals(0, intersectingIndexes.length);
         assertEquals(intersectingIndexes.length, indexQueries);
         assertEquals(Sets.newHashSet(intersectingIndexes), indexNames);
     }

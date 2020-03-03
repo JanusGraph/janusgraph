@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.cassandra.utils.CassandraHelper;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
@@ -45,7 +44,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
 import org.janusgraph.diskstorage.cassandra.thrift.thriftpool.CTConnection;
 import org.janusgraph.diskstorage.cassandra.thrift.thriftpool.CTConnectionFactory;

@@ -18,7 +18,7 @@ import org.easymock.EasyMockSupport;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.util.datastructures.Retriever;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.isA;

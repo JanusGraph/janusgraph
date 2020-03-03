@@ -47,7 +47,7 @@ Server.
 
 A Gremlin query is a chain of operations/functions that are evaluated
 from left to right. A simple grandfather query is provided below over
-the *Graph of the Gods* dataset discussed in [Getting Started](../index.md#getting-started).
+the *Graph of the Gods* dataset discussed in [Getting Started](../getting-started/installation.md).
 ```groovy
 gremlin> g.V().has('name', 'hercules').out('father').out('father').values('name')
 ==>saturn

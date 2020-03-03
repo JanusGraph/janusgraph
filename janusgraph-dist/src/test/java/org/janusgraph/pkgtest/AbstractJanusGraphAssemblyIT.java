@@ -183,7 +183,7 @@ public abstract class AbstractJanusGraphAssemblyIT {
 
         private void runUnsafe() throws IOException, InterruptedException {
 
-            String line = null;
+            String line;
 
             while (null != (line = source.readLine())) {
                 synchronized (sink) {

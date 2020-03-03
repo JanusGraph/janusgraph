@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import org.janusgraph.core.JanusGraphManagerUtility;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
@@ -166,7 +165,7 @@ public class ManagementLogger implements MessageReader {
             this.updatedTypeTriggers = updatedTypeTriggers;
             final JanusGraphManagement mgmt = graph.openManagement();
             this.instancesToBeAcknowledged = ConcurrentHashMap.newKeySet();
-            ((ManagementSystem) mgmt).getOpenInstancesInternal().forEach(instancesToBeAcknowledged::add);
+            instancesToBeAcknowledged.addAll(((ManagementSystem) mgmt).getOpenInstancesInternal());
             mgmt.rollback();
         }
 

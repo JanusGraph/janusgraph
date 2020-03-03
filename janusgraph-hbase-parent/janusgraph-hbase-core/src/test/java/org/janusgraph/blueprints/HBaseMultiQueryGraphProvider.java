@@ -16,8 +16,6 @@ package org.janusgraph.blueprints;
 
 import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
 import java.io.IOException;

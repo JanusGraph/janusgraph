@@ -81,8 +81,7 @@ public class BufferUtilTest {
         StaticBuffer b = BufferUtil.getLongBuffer(-1);
         StaticBuffer bn = BufferUtil.nextBiggerBufferAllowOverflow(b);
         assertEquals(8,bn.length());
-        assertTrue(BufferUtil.zeroBuffer(8).equals(bn));
-
+        assertEquals(BufferUtil.zeroBuffer(8), bn);
     }
 
     @Test

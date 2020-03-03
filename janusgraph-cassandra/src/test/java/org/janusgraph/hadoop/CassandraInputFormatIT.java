@@ -16,7 +16,6 @@ package org.janusgraph.hadoop;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.JanusGraphCassandraThriftContainer;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Graph;

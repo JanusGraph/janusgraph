@@ -18,15 +18,9 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.Connection;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.VertexLabel;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.types.SchemaSource;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
-import org.janusgraph.graphdb.types.TypeDefinitionDescription;
-import org.janusgraph.graphdb.types.system.BaseKey;
-import org.janusgraph.graphdb.types.system.BaseLabel;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;

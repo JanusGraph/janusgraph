@@ -14,12 +14,10 @@
 
 package org.janusgraph.diskstorage.cassandra.thrift;
 
-import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.JanusGraphCassandraThriftContainer;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.IDAuthorityTest;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 

@@ -104,7 +104,7 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
 
         // COMPACT STORAGE is allowed on Cassandra 2 or earlier
         // when COMPACT STORAGE is allowed, the default is to enable it
-        assertTrue(cqlStoreManager.isCompactStorageAllowed() == cqlStoreManager.getTableMetadata(cf).getOptions().isCompactStorage());
+        assertEquals(cqlStoreManager.isCompactStorageAllowed(), cqlStoreManager.getTableMetadata(cf).getOptions().isCompactStorage());
     }
 
     @Test

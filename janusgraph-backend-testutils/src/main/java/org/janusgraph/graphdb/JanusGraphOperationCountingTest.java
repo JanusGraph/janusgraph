@@ -457,7 +457,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
                 System.out.println("-- Operation: " + operation);
                 System.out.print("\t"); System.out.println(metric.getCounter(prefix, store, operation, MetricInstrumentedStore.M_CALLS).getCount());
                 System.out.print("\t"); System.out.println(metric.getTimer(prefix, store, operation, MetricInstrumentedStore.M_TIME).getMeanRate());
-                if (operation==MetricInstrumentedStore.M_GET_SLICE) {
+                if (operation.equals(M_GET_SLICE)) {
                     System.out.print("\t"); System.out.println(metric.getCounter(prefix, store, operation, MetricInstrumentedStore.M_ENTRIES_COUNT).getCount());
                 }
             }

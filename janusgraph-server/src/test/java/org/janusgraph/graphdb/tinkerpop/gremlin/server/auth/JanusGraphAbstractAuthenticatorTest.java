@@ -113,7 +113,7 @@ public abstract class JanusGraphAbstractAuthenticatorTest extends EasyMockSuppor
         assertTrue(mgmt.containsGraphIndex(JanusGraphSimpleAuthenticator.USERNAME_INDEX_NAME));
         final JanusGraphIndex index = mgmt.getGraphIndex(JanusGraphSimpleAuthenticator.USERNAME_INDEX_NAME);
         final PropertyKey username = mgmt.getPropertyKey(CredentialGraphTokens.PROPERTY_USERNAME);
-        assertTrue(index.getIndexStatus(username).equals(SchemaStatus.ENABLED));
+        assertEquals(index.getIndexStatus(username), SchemaStatus.ENABLED);
     }
 
     @Test

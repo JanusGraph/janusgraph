@@ -15,13 +15,14 @@
 package org.janusgraph.graphdb.predicate;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Text;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ConnectiveJanusGraphPTest {
 
@@ -30,22 +31,22 @@ public class ConnectiveJanusGraphPTest {
         final AndJanusPredicate biPredicate = new AndJanusPredicate(Arrays.asList(Text.PREFIX, Cmp.EQUAL, new OrJanusPredicate(Arrays.asList(Text.PREFIX, Cmp.EQUAL))));
         final List<Object> values = Arrays.asList("john", "jo", Arrays.asList("mike","mi"));
         final ConnectiveJanusGraphP predicate = new ConnectiveJanusGraphP(biPredicate, values);
-        Assert.assertEquals("and(textPrefix(john), =(jo), or(textPrefix(mike), =(mi)))", predicate.toString());
+        assertEquals("and(textPrefix(john), =(jo), or(textPrefix(mike), =(mi)))", predicate.toString());
     }
 
     @Test
     public void testToStringOneElement() {
-        final AndJanusPredicate biPredicate = new AndJanusPredicate(Arrays.asList(Text.PREFIX));
-        final List<Object> values = Arrays.asList("john");
+        final AndJanusPredicate biPredicate = new AndJanusPredicate(Collections.singletonList(Text.PREFIX));
+        final List<Object> values = Collections.singletonList("john");
         final ConnectiveJanusGraphP predicate = new ConnectiveJanusGraphP(biPredicate, values);
-        Assert.assertEquals("textPrefix(john)", predicate.toString());
+        assertEquals("textPrefix(john)", predicate.toString());
     }
 
     @Test
     public void testToStringEmpty() {
         final AndJanusPredicate biPredicate = new AndJanusPredicate();
-        final List<Object> values = Arrays.asList();
+        final List<Object> values = Collections.emptyList();
         final ConnectiveJanusGraphP predicate = new ConnectiveJanusGraphP(biPredicate, values);
-        Assert.assertEquals("and()", predicate.toString());
+        assertEquals("and()", predicate.toString());
     }
 }

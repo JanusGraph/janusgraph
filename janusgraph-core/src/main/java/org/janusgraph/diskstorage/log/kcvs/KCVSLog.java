@@ -20,7 +20,6 @@ import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.util.time.*;
 
-import org.janusgraph.graphdb.database.management.ManagementLogger;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.*;

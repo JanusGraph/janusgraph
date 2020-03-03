@@ -17,9 +17,7 @@ package org.janusgraph.diskstorage.cassandra.thrift;
 import org.janusgraph.JanusGraphCassandraThriftContainer;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
-import org.junit.jupiter.api.BeforeAll;
 
-import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.LockKeyColumnValueStoreTest;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.testcontainers.junit.jupiter.Container;

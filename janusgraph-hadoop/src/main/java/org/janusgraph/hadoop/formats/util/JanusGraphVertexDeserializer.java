@@ -16,7 +16,6 @@ package org.janusgraph.hadoop.formats.util;
 
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Preconditions;
-import org.apache.hadoop.conf.Configuration;
 import org.janusgraph.core.*;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;

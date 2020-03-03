@@ -199,7 +199,7 @@ bin/gremlin-server.sh ./conf/gremlin-server/socket-gremlin-server.yaml
 ```
  
 6.  The JanusGraph Server should now be running in WebSocket mode and
-    can be tested by following the instructions in [Connecting to Gremlin Server](#first-example-connecting-gremlin-server)
+    can be tested by following the instructions in [Connecting to Gremlin Server](../getting-started/installation.md)
 
 !!! Important
     Do not use `bin/janusgraph.sh`. That starts the default

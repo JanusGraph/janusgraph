@@ -330,14 +330,11 @@ public class SolrIndex implements IndexProvider {
 
             SolrHttpClientBuilder kb = krbBuild.getBuilder();
             HttpClientUtil.setHttpClientBuilder(kb);
-            HttpRequestInterceptor bufferedEntityInterceptor = new HttpRequestInterceptor() {
-                @Override
-                public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
-                    if(request instanceof HttpEntityEnclosingRequest) {
-                        HttpEntityEnclosingRequest enclosingRequest = ((HttpEntityEnclosingRequest) request);
-                        HttpEntity requestEntity = enclosingRequest.getEntity();
-                        enclosingRequest.setEntity(new BufferedHttpEntity(requestEntity));
-                    }
+            HttpRequestInterceptor bufferedEntityInterceptor = (request, context) -> {
+                if(request instanceof HttpEntityEnclosingRequest) {
+                    HttpEntityEnclosingRequest enclosingRequest = ((HttpEntityEnclosingRequest) request);
+                    HttpEntity requestEntity = enclosingRequest.getEntity();
+                    enclosingRequest.setEntity(new BufferedHttpEntity(requestEntity));
                 }
             };
             HttpClientUtil.addRequestInterceptor(bufferedEntityInterceptor);

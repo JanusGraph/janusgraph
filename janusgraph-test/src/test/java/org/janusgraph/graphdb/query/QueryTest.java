@@ -124,7 +124,7 @@ public class QueryTest {
         assertTrue(ol2.compare(v2,v3)<0);
         assertTrue(ol2.compare(v1,v3)>0);
 
-        assertTrue(ol3.compare(v1,v2)==0);
+        assertEquals(0, ol3.compare(v1, v2));
         assertTrue(ol3.compare(v2,v3)>0);
         assertTrue(ol3.compare(v1,v3)>0);
 

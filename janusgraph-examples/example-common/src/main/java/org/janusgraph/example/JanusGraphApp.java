@@ -219,10 +219,10 @@ public class JanusGraphApp extends GraphApp {
 
         // mixed indexes
         if (useMixedIndex) {
-            s.append("management.buildIndex(\"vAge\", Vertex.class).addKey(age).buildMixedIndex(\"" + mixedIndexConfigName
-                    + "\"); ");
-            s.append("management.buildIndex(\"eReasonPlace\", Edge.class).addKey(reason).addKey(place).buildMixedIndex(\""
-                    + mixedIndexConfigName + "\"); ");
+            s.append("management.buildIndex(\"vAge\", Vertex.class).addKey(age).buildMixedIndex(\"")
+                .append(mixedIndexConfigName).append("\"); ");
+            s.append("management.buildIndex(\"eReasonPlace\", Edge.class).addKey(reason).addKey(place).buildMixedIndex(\"")
+                .append(mixedIndexConfigName).append("\"); ");
         }
 
         s.append("management.commit(); created = true; }");

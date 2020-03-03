@@ -157,7 +157,7 @@ public class JanusGraphStepStrategyTest {
         final JanusGraphStep<Vertex, Vertex> graphStep = new JanusGraphStep<>(new GraphStep<>(traversal, Vertex.class, true));
         for (int i = 0; i < hasKeyValues.length; i++) {
             if(hasKeyValues[i].equals(T.id)) {
-                graphStep.addIds(Arrays.asList(hasKeyValues[i + 1]));
+                graphStep.addIds(Collections.singletonList(hasKeyValues[i + 1]));
                 i++;
             } else if (hasKeyValues[i] instanceof HasStepFolder.OrderEntry) {
                 final HasStepFolder.OrderEntry orderEntry = (HasStepFolder.OrderEntry) hasKeyValues[i];
@@ -294,7 +294,7 @@ public class JanusGraphStepStrategyTest {
         final String MQ_FILTER = "TraversalFilterStep";
         final String MQ_REPEAT = "RepeatEndStep";
 
-        List<JanusGraphLocalQueryOptimizerStrategy> otherStrategies = Arrays.asList(JanusGraphLocalQueryOptimizerStrategy.instance());
+        List<JanusGraphLocalQueryOptimizerStrategy> otherStrategies = Collections.singletonList(JanusGraphLocalQueryOptimizerStrategy.instance());
 
         return Arrays.stream(new Arguments[]{
             arguments(g.V().choose(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)),

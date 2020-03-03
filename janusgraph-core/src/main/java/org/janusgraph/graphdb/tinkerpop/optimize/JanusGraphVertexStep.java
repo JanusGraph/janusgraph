@@ -44,12 +44,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
@@ -189,7 +184,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
 
         if (useMultiQuery) {
             if (multiQueryResults == null || !multiQueryResults.containsKey(traverser.get())) {
-                initializeMultiQuery(Arrays.asList(traverser));
+                initializeMultiQuery(Collections.singletonList(traverser));
             }
             result = multiQueryResults.get(traverser.get());
         } else {

@@ -228,7 +228,7 @@ public abstract class IDAuthorityTest {
         final String uidErrorMessage = "Uniqueness failure detected for config option " + UNIQUE_INSTANCE_ID.getName();
         for (int i = 0; i < CONCURRENCY; i++) {
             String uid = idAuthorities[i].getUniqueID();
-            assertTrue(!uniqueIds.contains(uid), uidErrorMessage);
+            assertFalse(uniqueIds.contains(uid), uidErrorMessage);
             uniqueIds.add(uid);
         }
         assertEquals(CONCURRENCY, uniqueIds.size(), uidErrorMessage);

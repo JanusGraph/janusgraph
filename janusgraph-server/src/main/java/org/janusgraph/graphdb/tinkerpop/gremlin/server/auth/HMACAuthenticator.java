@@ -22,7 +22,6 @@ import static org.janusgraph.graphdb.tinkerpop.gremlin.server.handler.HttpHMACAu
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
@@ -158,6 +157,7 @@ public class HMACAuthenticator extends JanusGraphAbstractAuthenticator {
             for (int i = 0; i < expected.length(); i++) {
                 if (base64Token.charAt(i) != expected.charAt(i)) {
                     isValid = false;
+                    break;
                 }
             }
             return isValid;

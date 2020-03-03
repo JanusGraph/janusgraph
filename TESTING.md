@@ -30,7 +30,7 @@ All of JanusGraph's tests are written for JUnit.  JanusGraph's JUnit tests are a
 | PERFORMANCE_TESTS | test.skip.perf | true (disabled) | Tests written as simple speed tests using JUnitBenchmarks|
 | (No&nbsp;tag) | test.skip.default | false (enabled) | Tests without any Tag annotations |
 
-**Tag Name** above is a Java interface defined in the package [org.janusgraph.testcategory](janusgraph-test/src/main/org/janusgraph/testcategory).  These interfaces appear as arguments to the JUnit `@Tag(...)` annotation, e.g. `@Tag(TestCategory.MEMORY_TESTS)`.
+**Tag Name** above is a Java interface defined in the package [org.janusgraph.testcategory](janusgraph-backend-testutils/src/main/java/org/janusgraph/TestCategory.java).  These interfaces appear as arguments to the JUnit `@Tag(...)` annotation, e.g. `@Tag(TestCategory.MEMORY_TESTS)`.
 
 **Maven Property** above is a boolean-valued pom.xml property that skips the associated test tag when true and executes the associated test tag when false.  The default values defined in pom.xml can be overridden on the command-line in the ordinary Maven way, e.g. `mvn -Dtest.skip.mem=false test`.
 

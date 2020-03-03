@@ -249,7 +249,7 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
     @Override
     public List<HasContainer> getHasContainers() {
         final List<HasContainer> toReturn = new ArrayList<>(this.hasContainers);
-        this.hasLocalContainers.keySet().stream().forEach(l -> l.stream().forEach(toReturn::add));
+        this.hasLocalContainers.keySet().forEach(toReturn::addAll);
         return toReturn;
     }
 

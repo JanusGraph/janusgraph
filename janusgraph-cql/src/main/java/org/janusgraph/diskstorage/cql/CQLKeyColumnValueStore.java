@@ -54,7 +54,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.datastax.driver.core.PagingState;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;

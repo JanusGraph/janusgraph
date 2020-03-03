@@ -28,7 +28,6 @@ import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.OrderList;
-import org.janusgraph.graphdb.predicate.OrJanusPredicate;
 import org.janusgraph.graphdb.query.*;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;

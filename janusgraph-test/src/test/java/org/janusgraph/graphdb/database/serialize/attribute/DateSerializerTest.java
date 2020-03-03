@@ -18,10 +18,11 @@ import org.janusgraph.graphdb.database.serialize.StandardSerializer;
 
 import java.util.Date;
 import java.util.stream.Stream;
-import org.junit.Assert;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DateSerializerTest {
     private StandardSerializer serializer = new StandardSerializer();
@@ -42,6 +43,6 @@ public class DateSerializerTest {
     @MethodSource("params")
     public void dateSerializerConvertString(Date expected, Object value) {
         Date actual = serializer.convert(Date.class, value);
-        Assert.assertEquals(expected, actual);
+        assertEquals(expected, actual);
     }
 }

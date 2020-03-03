@@ -24,9 +24,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.janusgraph.diskstorage.*;
-import org.janusgraph.diskstorage.common.LocalStoreManager;
 import org.janusgraph.diskstorage.util.*;
-import org.janusgraph.diskstorage.util.time.Timer;
 import org.janusgraph.util.stats.NumberUtil;
 import org.janusgraph.diskstorage.util.time.*;
 import org.slf4j.Logger;
