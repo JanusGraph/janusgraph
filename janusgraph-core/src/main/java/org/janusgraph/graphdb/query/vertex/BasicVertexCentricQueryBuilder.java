@@ -446,8 +446,8 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         if (!hasTypes()) {
             final BackendQueryHolder<SliceQuery> query= new BackendQueryHolder<>(
                 serializer.getQuery(returnType, querySystem),
-                ((dir == Direction.BOTH || (returnType == RelationCategory.PROPERTY && dir == Direction.OUT))
-                        && !conditions.hasChildren()),
+                (adjacentVertex == null && dir == Direction.BOTH || returnType == RelationCategory.PROPERTY && dir == Direction.OUT)
+                        && !conditions.hasChildren(),
                 orders.isEmpty());
             if (sliceLimit!=Query.NO_LIMIT && sliceLimit<Integer.MAX_VALUE/3) {
                 //If only one direction is queried, ask for twice the limit from backend since approximately
