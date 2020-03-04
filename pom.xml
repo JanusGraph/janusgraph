@@ -128,7 +128,6 @@
         <easymock.version>3.4</easymock.version>
     </properties>
     <modules>
-        <module>janusgraph-codepipelines-ci</module>
         <module>janusgraph-driver</module>
         <module>janusgraph-core</module>
         <module>janusgraph-server</module>
