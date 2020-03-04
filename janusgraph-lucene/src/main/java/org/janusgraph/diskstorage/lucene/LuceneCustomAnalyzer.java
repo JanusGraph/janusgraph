@@ -59,6 +59,9 @@ public class LuceneCustomAnalyzer extends DelegatingAnalyzerWrapper {
 
     @Override
     final protected Analyzer getWrappedAnalyzer(String fieldName) {
+        if (LuceneIndex.DOCID.equals(fieldName)) {
+            return analyzerFor(KEYWORD_ANALYZER);
+        }
         final KeyInformation keyInformation = informations.get(store, LuceneIndex.getOrigFieldName(fieldName));
         if (keyInformation != null && keyInformation.getDataType().equals(UUID.class)) {
             return analyzerFor(KEYWORD_ANALYZER);

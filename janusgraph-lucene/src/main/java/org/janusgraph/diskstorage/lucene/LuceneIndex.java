@@ -84,8 +84,8 @@ import java.util.stream.Stream;
 public class LuceneIndex implements IndexProvider {
     private static final Logger log = LoggerFactory.getLogger(LuceneIndex.class);
 
+    static final String DOCID = "_____elementid";
     private static final String STRING_SUFFIX = "_____s";
-    private static final String DOCID = "_____elementid";
     private static final String GEOID = "_____geo";
     private static final Set<String> FIELDS_TO_LOAD = Sets.newHashSet(DOCID);
 
