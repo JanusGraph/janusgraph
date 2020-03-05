@@ -152,7 +152,7 @@ start() {
         CASSANDRA_INCLUDE="$BIN"/cassandra.in.sh "$BIN"/cassandra >/dev/null 2>&1 || exit 1
     fi
     wait_for_cassandra || {
-        echo "See $BIN/../log/cassandra.log for Cassandra log output."    >&2
+        echo "See $BIN/../logs/cassandra.log for Cassandra log output."    >&2
         return 1
     }
 
@@ -164,7 +164,7 @@ start() {
         "$BIN"/../elasticsearch/bin/elasticsearch -d >/dev/null 2>&1
     fi
     wait_for_startup Elasticsearch $ELASTICSEARCH_IP $ELASTICSEARCH_PORT $ELASTICSEARCH_STARTUP_TIMEOUT_S || {
-        echo "See $BIN/../log/elasticsearch.log for Elasticsearch log output."  >&2
+        echo "See $BIN/../logs/elasticsearch.log for Elasticsearch log output."  >&2
         return 1
     }
 
@@ -176,7 +176,7 @@ start() {
         "$BIN"/gremlin-server.sh conf/gremlin-server/gremlin-server.yaml >/dev/null 2>&1 &
     fi
     wait_for_startup 'Gremlin-Server' $GSRV_IP $GSRV_PORT $GSRV_STARTUP_TIMEOUT_S || {
-        echo "See $BIN/../log/gremlin-server.log for Gremlin-Server log output."  >&2
+        echo "See $BIN/../logs/gremlin-server.log for Gremlin-Server log output."  >&2
         return 1
     }
     disown
@@ -239,7 +239,7 @@ clean() {
         echo 'Data directory does not exist.' >&2
     fi
 
-    if cd "$BIN"/../log; then
+    if cd "$BIN"/../logs; then
         rm -f cassandra*.log
         rm -f elasticsearch*.log
         rm -f gremlin-server.log
