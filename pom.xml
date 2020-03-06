@@ -124,7 +124,7 @@
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <cassandra-driver.version>3.8.0</cassandra-driver.version>
-        <testcontainers.version>1.12.4</testcontainers.version>
+        <testcontainers.version>1.13.0</testcontainers.version>
         <easymock.version>3.4</easymock.version>
     </properties>
     <modules>
