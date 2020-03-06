@@ -25,10 +25,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import org.janusgraph.diskstorage.util.time.Timer;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
-import org.reflections.Reflections;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.scanners.TypeAnnotationsScanner;
-import org.reflections.vfs.Vfs;
+import org.reflections8.Reflections;
+import org.reflections8.scanners.SubTypesScanner;
+import org.reflections8.scanners.TypeAnnotationsScanner;
+import org.reflections8.vfs.Vfs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -227,7 +227,7 @@ public enum ReflectiveConfigOptionLoader {
             URL u = i.next();
             File f;
             try {
-                f = Vfs.getFile(u);
+                f = Vfs.getFile(u).orElse(null);
             } catch (Throwable t) {
                 log.debug("Error invoking Vfs.getFile on URL {}", u, t);
                 f = new File(u.getPath());
@@ -239,7 +239,7 @@ public enum ReflectiveConfigOptionLoader {
             log.trace("Retaining classpath element {}", f);
         }
 
-        org.reflections.Configuration rc = new org.reflections.util.ConfigurationBuilder()
+        org.reflections8.Configuration rc = new org.reflections8.util.ConfigurationBuilder()
             .setUrls(scanUrls)
             .setScanners(new TypeAnnotationsScanner(), new SubTypesScanner());
         Reflections reflections = new Reflections(rc);

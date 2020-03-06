@@ -60,8 +60,8 @@
             <artifactId>metrics-graphite</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
+            <groupId>net.oneandone.reflections8</groupId>
+            <artifactId>reflections8</artifactId>
         </dependency>
         <dependency>
             <groupId>commons-collections</groupId>
