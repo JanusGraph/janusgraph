@@ -90,7 +90,7 @@
         <jackson1.version>1.9.13</jackson1.version>
         <jackson2.version>2.10.3</jackson2.version>
         <lucene-solr.version>7.7.2</lucene-solr.version>
-        <elasticsearch.version>7.6.0</elasticsearch.version>
+        <elasticsearch.version>7.6.1</elasticsearch.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <joda.version>2.8.2</joda.version>
