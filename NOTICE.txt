@@ -46,7 +46,7 @@ It also includes software from other open source projects including, but not lim
  * OpenRDF [http://rdf4j.org/]
  * Oracle BerkeleyDB Java Edition [https://www.oracle.com/technetwork/products/berkeleydb/] (see license below)
  * Project Lombok [https://projectlombok.org/]
- * Reflections [https://github.com/ronmamo/reflections]
+ * Reflections8 [https://github.com/aschoerk/reflections8]
  * SLF4J [https://www.slf4j.org/]
  * Spatial4j [https://github.com/locationtech/spatial4j]
  * Vavr [https://www.vavr.io/]
