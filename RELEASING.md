@@ -150,6 +150,12 @@ Any outstanding pull requests that will need to be re-targeted at future milesto
 
 Before any artifacts can be generated and vote can be made the version number will need to be updated in the pom.xml files.
 
+#### Update configuration reference documentation
+
+```Shell
+mvn --quiet clean install -DskipTests=true -pl janusgraph-doc -am
+```
+
 #### Update release version
 
 This command will remove `SNAPSHOT` from all versions in `pom` files.
@@ -212,13 +218,18 @@ git clean -fdx
 mvn clean javadoc:jar deploy -Pjanusgraph-release -DskipTests=true
 ```
 
+* Install MkDocs if not installed. It is needed to build documentation.
+1. Install `python3` and `pip3` (newest version of pip) 
+    * You can also checkout the installation guide of [material-mkdocs](https://squidfunk.github.io/mkdocs-material/getting-started/)
+2. Install requirements using `pip3 install -r requirements.txt`
+
 *   Prepare files for GitHub release
 ```Shell
 export JG_VER="janusgraph-0.5.0"
 mkdir -p ~/jg-staging
 cp janusgraph-dist/target/${JG_VER}.zip* ~/jg-staging/
-cd janusgraph-doc/target/docs/
-mv chunk ${JG_VER}-doc
+mkdocs build
+mv site ${JG_VER}-doc
 zip -r ${JG_VER}-doc.zip ${JG_VER}-doc
 gpg --armor --detach-sign ${JG_VER}-doc.zip
 cp ${JG_VER}-doc.zip* ~/jg-staging/
@@ -245,12 +256,6 @@ All of the artifacts that were created and moved to `~/jg-staging/` in the previ
 Be sure to mark it as `pre-release`.
 It is recommended and keep the release in draft until you're ready to start a vote.
 In addition to the artifacts in `~/jg-staging/` a `KEYS` file must also be added to the release.
-
-#### Include documentation of this version into the GitHub release
-
-1. For building documentation: see `building.md`
-2. Zip documentation: `$ zip janusgraph-${JANUSGRAPH_VERSION}-doc.zip site`
-3. Add documentation to artifacts
 
 ### Close the staging repository
 
