@@ -453,13 +453,17 @@ public abstract class JanusGraphBaseTest implements JanusGraphBaseStoreFeaturesT
         return StreamSupport.stream(iterable.spliterator(),false);
     }
 
-    public JanusGraph getForceIndexGraph() throws BackendException {
-        final ModifiableConfiguration adjustedConfig = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, getConfiguration(), BasicConfiguration.Restriction.NONE);
+    public JanusGraph getForceIndexGraph() {
+        return getForceIndexGraph(getConfiguration());
+    }
+
+    public JanusGraph getForceIndexGraph(WriteConfiguration writeConfiguration) {
+        final ModifiableConfiguration adjustedConfig = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, writeConfiguration, BasicConfiguration.Restriction.NONE);
         adjustedConfig.set(GraphDatabaseConfiguration.FORCE_INDEX_USAGE, true);
-        final WriteConfiguration writeConfig = adjustedConfig.getConfiguration();
-        TestGraphConfigs.applyOverrides(writeConfig);
-        Preconditions.checkNotNull(writeConfig);
-        return JanusGraphFactory.open(writeConfig);
+        final WriteConfiguration adjustedWriteConfig = adjustedConfig.getConfiguration();
+        TestGraphConfigs.applyOverrides(adjustedWriteConfig);
+        Preconditions.checkNotNull(adjustedWriteConfig);
+        return JanusGraphFactory.open(adjustedWriteConfig);
     }
 
 }

@@ -1112,13 +1112,17 @@ public class ElasticSearchIndex implements IndexProvider {
                 compat.createRequestBody(sr, useScroll? NULL_PARAMETERS : TRACK_TOTAL_HITS_DISABLED_PARAMETERS),
                 useScroll);
             log.debug("First Executed query [{}] in {} ms", query.getCondition(), response.getTook());
-            final ElasticSearchScroll resultIterator = new ElasticSearchScroll(client, response, sr.getSize());
+            final Iterator<RawQuery.Result<String>> resultIterator = getResultsIterator(useScroll, response, sr.getSize());
             final Stream<RawQuery.Result<String>> toReturn
                     = StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, Spliterator.ORDERED), false);
             return (query.hasLimit() ? toReturn.limit(query.getLimit()) : toReturn).map(RawQuery.Result::getResult);
         } catch (final IOException | UncheckedIOException e) {
             throw new PermanentBackendException(e);
         }
+    }
+
+    private Iterator<RawQuery.Result<String>> getResultsIterator(boolean useScroll, ElasticSearchResponse response, int windowSize){
+        return (useScroll)? new ElasticSearchScroll(client, response, windowSize) : response.getResults().iterator();
     }
 
     private String convertToEsDataType(Class<?> dataType, Mapping mapping) {
@@ -1206,9 +1210,10 @@ public class ElasticSearchIndex implements IndexProvider {
     public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever information,
                                                  BaseTransaction tx) throws BackendException {
         final int size = query.hasLimit() ? Math.min(query.getLimit() + query.getOffset(), batchSize) : batchSize;
-        final ElasticSearchResponse response = runCommonQuery(query, information, tx, size, size >= batchSize );
+        final boolean useScroll = size >= batchSize;
+        final ElasticSearchResponse response = runCommonQuery(query, information, tx, size, useScroll);
         log.debug("First Executed query [{}] in {} ms", query.getQuery(), response.getTook());
-        final ElasticSearchScroll resultIterator = new ElasticSearchScroll(client, response, size);
+        final Iterator<RawQuery.Result<String>> resultIterator = getResultsIterator(useScroll, response, size);
         final Stream<RawQuery.Result<String>> toReturn
                 = StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, Spliterator.ORDERED),
                 false).skip(query.getOffset());
