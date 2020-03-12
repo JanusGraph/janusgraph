@@ -2225,6 +2225,24 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testIndexDataRetrievalWithLimitLessThenBatch() throws Exception {
+        WriteConfiguration config = getConfiguration();
+        config.set("index.search.max-result-set-size", 10);
+        JanusGraph customGraph = getForceIndexGraph(config);
+        final JanusGraphManagement management = customGraph.openManagement();
+        final PropertyKey num = management.makePropertyKey("num").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        management.buildIndex("oridx", Vertex.class).addKey(num).buildMixedIndex(INDEX);
+        management.commit();
+        customGraph.tx().commit();
+        final GraphTraversalSource g = customGraph.traversal();
+        g.addV().property("num", 1).next();
+        g.addV().property("num", 2).next();
+        customGraph.tx().commit();
+        assertEquals(2, customGraph.traversal().V().has("num", P.lt(3)).limit(4).toList().size());
+        JanusGraphFactory.close(customGraph);
+    }
+
+    @Test
     public void testOrForceIndexComposite() throws Exception {
         JanusGraph customGraph = null;
         try {
