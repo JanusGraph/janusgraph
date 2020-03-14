@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.query;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.*;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Contain;
@@ -24,6 +23,7 @@ import org.janusgraph.graphdb.predicate.AndJanusPredicate;
 import org.janusgraph.graphdb.predicate.OrJanusPredicate;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+
 import java.util.*;
 
 /**
@@ -291,46 +291,6 @@ public class QueryUtil {
         assert !values.isEmpty();
         return new AbstractMap.SimpleImmutableEntry(masterType,values);
     }
-
-
-    public static <R> List<R> processIntersectingRetrievals(List<IndexCall<R>> retrievals, final int limit) {
-        Preconditions.checkArgument(!retrievals.isEmpty());
-        Preconditions.checkArgument(limit >= 0, "Invalid limit: %s", limit);
-        List<R> results;
-        /*
-         * Iterate over the clauses in the and collection
-         * query.getCondition().getChildren(), taking the intersection
-         * of current results with cumulative results on each iteration.
-         */
-        //TODO: smarter limit estimation
-        final int multiplier = Math.min(16, (int) Math.pow(2, retrievals.size() - 1));
-        int subLimit = Integer.MAX_VALUE;
-        if (Integer.MAX_VALUE / multiplier >= limit) subLimit = limit * multiplier;
-        boolean exhaustedResults;
-        do {
-            exhaustedResults = true;
-            results = null;
-            for (final IndexCall<R> call : retrievals) {
-                Collection<R> subResult;
-                try {
-                    subResult = call.call(subLimit);
-                } catch (final Exception e) {
-                    throw new JanusGraphException("Could not process individual retrieval call ", e);
-                }
-
-                if (subResult.size() >= subLimit) exhaustedResults = false;
-                if (results == null) {
-                    results = Lists.newArrayList(subResult);
-                } else {
-                    final Set<R> subResultSet = ImmutableSet.copyOf(subResult);
-                    results.removeIf(o -> !subResultSet.contains(o));
-                }
-            }
-            subLimit = (int) Math.min(Integer.MAX_VALUE - 1, Math.max(Math.pow(subLimit, 1.5),(subLimit+1)*2));
-        } while (results != null && results.size() < limit && !exhaustedResults);
-        return results;
-    }
-
 
     public interface IndexCall<R> {
 

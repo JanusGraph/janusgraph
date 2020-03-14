@@ -66,6 +66,10 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
         return queries.size();
     }
 
+    public List<Subquery> getQueries() {
+        return queries;
+    }
+
     public Subquery getQuery(int pos) {
         return queries.get(pos);
     }
