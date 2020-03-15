@@ -79,12 +79,21 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
      * The profiler observing this query
      */
     private QueryProfiler profiler = QueryProfiler.NO_OP;
+    /**
+     * Whether smart limit adjustment is enabled
+     */
+    private boolean useSmartLimit;
 
     public GraphCentricQueryBuilder(StandardJanusGraphTx tx, IndexSerializer serializer) {
         Preconditions.checkNotNull(tx);
         Preconditions.checkNotNull(serializer);
+        useSmartLimit = tx.getGraph().getConfiguration().adjustQueryLimit();
         this.tx = tx;
         this.serializer = serializer;
+    }
+
+    public void disableSmartLimit() {
+        useSmartLimit = false;
     }
 
     /* ---------------------------------------------------------------
@@ -353,7 +362,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         BackendQueryHolder<JointIndexQuery> query;
         if (!coveredClauses.isEmpty()) {
             int indexLimit = limit == Query.NO_LIMIT ? HARD_MAX_LIMIT : limit;
-            if (tx.getGraph().getConfiguration().adjustQueryLimit()) {
+            if (useSmartLimit) {
                 indexLimit = limit == Query.NO_LIMIT ? DEFAULT_NO_LIMIT : Math.min(MAX_BASE_LIMIT, limit);
             }
             indexLimit = Math.min(HARD_MAX_LIMIT,
