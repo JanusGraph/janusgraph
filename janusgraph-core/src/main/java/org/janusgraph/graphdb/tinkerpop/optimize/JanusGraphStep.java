@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.CountGlobalStep;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphElement;
@@ -119,11 +120,7 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
         }
         for (final OrderEntry order : orders) query.orderBy(order.key, order.order);
         if (highLimit != BaseQuery.NO_LIMIT || limit != BaseQuery.NO_LIMIT) query.limit(Math.min(limit, highLimit));
-        Preconditions.checkArgument(query instanceof GraphCentricQueryBuilder);
-        final GraphCentricQueryBuilder centricQueryBuilder = ((GraphCentricQueryBuilder) query);
-        centricQueryBuilder.profiler(queryProfiler);
-        final GraphCentricQuery graphCentricQuery = centricQueryBuilder.constructQuery(Vertex.class.isAssignableFrom(this.returnClass) ? ElementCategory.VERTEX: ElementCategory.EDGE);
-        return graphCentricQuery;
+        return buildGraphCentricQuery(query);
     }
 
     private void addConstraint(final JanusGraphQuery query, final List<HasContainer> localContainers) {
@@ -142,8 +139,15 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
         final List<OrderEntry> realOrders = orders.isEmpty() ? containers.getValue().getOrders() : orders;
         for (final OrderEntry order : realOrders) query.orderBy(order.key, order.order);
         if (highLimit != BaseQuery.NO_LIMIT || containers.getValue().getHighLimit() != BaseQuery.NO_LIMIT) query.limit(Math.min(containers.getValue().getHighLimit(), highLimit));
+        return buildGraphCentricQuery(query);
+    }
+
+    private GraphCentricQuery buildGraphCentricQuery(JanusGraphQuery query) {
         Preconditions.checkArgument(query instanceof GraphCentricQueryBuilder);
         final GraphCentricQueryBuilder centricQueryBuilder = ((GraphCentricQueryBuilder) query);
+        if (traversal.getEndStep() instanceof CountGlobalStep) {
+            centricQueryBuilder.disableSmartLimit();
+        }
         centricQueryBuilder.profiler(queryProfiler);
         final GraphCentricQuery graphCentricQuery = centricQueryBuilder.constructQuery(Vertex.class.isAssignableFrom(this.returnClass) ? ElementCategory.VERTEX: ElementCategory.EDGE);
         return graphCentricQuery;
