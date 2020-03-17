@@ -103,7 +103,7 @@ Configuration options for the individual indexing backends
 | index.[X].directory | Directory to store index data locally | String | (no default value) | MASKABLE |
 | index.[X].hostname | The hostname or comma-separated list of hostnames of index backend servers.  This is only applicable to some index backends, such as elasticsearch and solr. | String[] | 127.0.0.1 | MASKABLE |
 | index.[X].index-name | Name of the index if required by the indexing backend | String | janusgraph | GLOBAL_OFFLINE |
-| index.[X].map-name | Whether to use the name of the property key as the field name in the index. It must be ensured, that theindexed property key names are valid field names. Renaming the property key will NOT rename the field and its the developers responsibility to avoid field collisions. | Boolean | true | GLOBAL |
+| index.[X].map-name | Whether to use the name of the property key as the field name in the index. It must be ensured, that the indexed property key names are valid field names. Renaming the property key will NOT rename the field and its the developers responsibility to avoid field collisions. | Boolean | true | GLOBAL |
 | index.[X].max-result-set-size | Maximum number of results to return if no limit is specified. For index backends that support scrolling, it represents the number of results in each batch | Integer | 50 | MASKABLE |
 | index.[X].port | The port on which to connect to index backend servers | Integer | (no default value) | MASKABLE |
 
@@ -131,6 +131,16 @@ Settings related to index creation
 | index.[X].elasticsearch.create.allow-mapping-update | Whether JanusGraph should allow a mapping update when registering an index. Only applicable when use-external-mappings is true. | Boolean | false | MASKABLE |
 | index.[X].elasticsearch.create.sleep | How long to sleep, in milliseconds, between the successful completion of a (blocking) index creation request and the first use of that index.  This only applies when creating an index in ES, which typically only happens the first time JanusGraph is started on top of ES. If the index JanusGraph is configured to use already exists, then this setting has no effect. | Long | 200 | MASKABLE |
 | index.[X].elasticsearch.create.use-external-mappings | Whether JanusGraph should make use of an external mapping when registering an index. | Boolean | false | MASKABLE |
+
+### index.[X].elasticsearch.create.ext
+Overrides for arbitrary settings applied at index creation.
+See [Elasticsearch](../index-backend/elasticsearch.md#index-creation-options), The full list of possible setting is available at [Elasticsearch index settings](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings).
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| index.[X].elasticsearch.create.ext.number_of_replicas | The number of replicas each primary shard has | Integer | 1 | MASKABLE |
+| index.[X].elasticsearch.create.ext.number_of_shards | The number of primary shards that an index should have.Default value is 5 on ES 6 and 1 on ES 7 | Integer | (no default value) | MASKABLE |
 
 ### index.[X].elasticsearch.http.auth
 Configuration options for HTTP(S) authentication.

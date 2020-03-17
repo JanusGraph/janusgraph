@@ -48,13 +48,13 @@ modified in another, both transactions will successfully commit on
 eventually consistent storage backends and the vertex will still exist
 with only the modified properties or edges. This is referred to as a
 ghost vertex. It is possible to guard against ghost vertices on
-eventually consistent backends using key [uniqueness](#index-unique) but
+eventually consistent backends using key [uniqueness](../index-management/index-performance.md#index-uniqueness) but
 this is prohibitively expensive in most cases. A more scalable approach
 is to allow ghost vertices temporarily and clearing them out in regular
 time intervals.
 
 Another option is to detect them at read-time using the option
-`checkInternalVertexExistence()` documented in [Transaction Configuration](#tx-config).
+`checkInternalVertexExistence()` documented in [Transaction Configuration](transactions.md#transaction-configuration).
 
 ## Debug-level Logging Slows Execution
 
