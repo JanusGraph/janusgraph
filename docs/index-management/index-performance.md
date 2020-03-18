@@ -194,7 +194,7 @@ The mgmt.buildIndex example specified above uses text search as its
 default behavior. An index statement that explicitly defines the index
 as a text index can be written as follows:
 ```groovy
-mgmt.buildIndex('nameAndAge',Vertex.class).addKey(name,Mapping.TEXT.getParameter()).addKey(age,Mapping.TEXT.getParameter()).buildMixedIndex("search")
+mgmt.buildIndex('nameAndAge',Vertex.class).addKey(name,Mapping.TEXT.asParameter()).addKey(age,Mapping.TEXT.asParameter()).buildMixedIndex("search")
 ```
 
 See [Index Parameters and Full-Text Search](../index-backend/text-search.md) for more information on text and string
