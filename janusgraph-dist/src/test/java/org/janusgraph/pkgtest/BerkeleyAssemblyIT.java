@@ -17,9 +17,13 @@ package org.janusgraph.pkgtest;
 import org.junit.jupiter.api.Test;
 
 public class BerkeleyAssemblyIT extends AbstractJanusGraphAssemblyIT {
-    
+
     @Test
     public void testBerkeleySimpleSession() throws Exception {
-        testSimpleGremlinSession("conf/janusgraph-berkeleyje.properties", "berkeleyje");
+        testSimpleGremlinSession("conf/janusgraph-berkeleyje.properties", "berkeleyje", false);
+    }
+    @Test
+    public void testBerkeleySimpleSessionFull() throws Exception {
+        testSimpleGremlinSession("conf/janusgraph-berkeleyje.properties", "berkeleyje", true);
     }
 }

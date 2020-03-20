@@ -123,7 +123,7 @@ $ ./bin/gremlin-server.sh /conf/gremlin-server/[...].yaml
     For further information about storage backends, visit the [corresponding section](../storage-backend/index.md) of the documentation.
     
     You are also encouraged to look into `janusgraph.sh`, which by defaults starts a more sophisticated server than `gremlin-server.sh`.
-    Further documentation on server configuration can be found in the [JanusGraph Server](../basics/server.md) section.
+    Further documentation on server configuration can be found in the [JanusGraph Server](../basics/server.md#using-the-pre-packaged-distribution) section. (This requires to download `janusgraph-full-{{ latest_version }}.zip` instead of the default `janusgraph-{{ latest_version }}.zip`.)
 
 A Gremlin server is now running on your local machine and waiting for clients to connect on the default port `8182`.
 To instantiate a client -- as done before -- run the `gremlin.sh` script.
