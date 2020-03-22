@@ -315,6 +315,7 @@ Configuration options for query processing
 | query.fast-property | Whether to pre-fetch all properties on first singular vertex property access. This can eliminate backend calls on subsequentproperty access for the same vertex at the expense of retrieving all properties at once. This can be expensive for vertices with many properties | Boolean | true | MASKABLE |
 | query.force-index | Whether JanusGraph should throw an exception if a graph query cannot be answered using an index. Doing solimits the functionality of JanusGraph's graph queries but ensures that slow graph queries are avoided on large graphs. Recommended for production use of JanusGraph. | Boolean | false | MASKABLE |
 | query.ignore-unknown-index-key | Whether to ignore undefined types encountered in user-provided index queries | Boolean | false | MASKABLE |
+| query.index-select-threshold | Threshold of deciding whether to use brute force enumeration algorithm or fast approximation algorithm for selecting suitable indexes. Selecting optimal indexes for a query is a NP-complete set cover problem. When number of suitable index candidates is no larger than threshold, JanusGraph uses brute force search with exponential time complexity to ensure the best combination of indexes is selected. | Integer | 10 | MASKABLE |
 | query.smart-limit | Whether the query optimizer should try to guess a smart limit for the query to ensure responsiveness in light of possibly large result sets. Those will be loaded incrementally if this option is enabled. | Boolean | true | MASKABLE |
 
 ### schema

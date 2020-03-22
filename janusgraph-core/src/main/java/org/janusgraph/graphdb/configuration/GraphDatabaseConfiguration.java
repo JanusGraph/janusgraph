@@ -265,6 +265,13 @@ public class GraphDatabaseConfiguration {
                     "performance improvement if there is a non-trivial latency to the backend.",
             ConfigOption.Type.MASKABLE, false);
 
+    public static final ConfigOption<Integer> INDEX_SELECT_BRUTE_FORCE_THRESHOLD = new ConfigOption<>(QUERY_NS, "index-select-threshold",
+            "Threshold of deciding whether to use brute force enumeration algorithm or fast approximation algorithm " +
+                    "for selecting suitable indexes. Selecting optimal indexes for a query is a NP-complete set cover problem. " +
+                    "When number of suitable index candidates is no larger than threshold, JanusGraph uses brute force search " +
+                    "with exponential time complexity to ensure the best combination of indexes is selected.",
+            ConfigOption.Type.MASKABLE, 10);
+
     public static final ConfigOption<Boolean> BATCH_PROPERTY_PREFETCHING = new ConfigOption<>(QUERY_NS,"batch-property-prefetch",
             "Whether to do a batched pre-fetch of all properties on adjacent vertices against the storage backend prior to evaluating a has condition against those vertices. " +
                     "Because these vertex properties will be loaded into the transaction-level cache of recently-used vertices when the condition is evaluated this can " +
@@ -1227,6 +1234,7 @@ public class GraphDatabaseConfiguration {
     private Boolean propertyPrefetching;
     private boolean adjustQueryLimit;
     private Boolean useMultiQuery;
+    private int indexSelectThreshold;
     private Boolean batchPropertyPrefetching;
     private boolean allowVertexIdSetting;
     private boolean logTransactions;
@@ -1312,6 +1320,10 @@ public class GraphDatabaseConfiguration {
 
     public boolean useMultiQuery() {
         return useMultiQuery;
+    }
+
+    public int getIndexSelectThreshold() {
+        return indexSelectThreshold;
     }
 
     public boolean batchPropertyPrefetching() {
@@ -1428,6 +1440,7 @@ public class GraphDatabaseConfiguration {
 
         propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
         useMultiQuery = configuration.get(USE_MULTIQUERY);
+        indexSelectThreshold = configuration.get(INDEX_SELECT_BRUTE_FORCE_THRESHOLD);
         batchPropertyPrefetching = configuration.get(BATCH_PROPERTY_PREFETCHING);
         adjustQueryLimit = configuration.get(ADJUST_LIMIT);
         allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);

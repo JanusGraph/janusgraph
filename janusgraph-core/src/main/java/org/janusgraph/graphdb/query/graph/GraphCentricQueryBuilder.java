@@ -18,11 +18,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Contain;
-import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.core.schema.JanusGraphSchemaType;
+import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelationType;
@@ -34,6 +35,8 @@ import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.*;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
+import org.janusgraph.graphdb.util.IndexCandidate;
+import org.janusgraph.graphdb.util.IndexCandidateGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +52,6 @@ import java.util.stream.StreamSupport;
 public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQueryBuilder> {
 
     private static final Logger log = LoggerFactory.getLogger(GraphCentricQueryBuilder.class);
-
     /**
      * Transaction in which this query is executed.
      */
@@ -263,92 +265,9 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             return true;
         });
 
-        /*
-        Determine the best join index query to answer this query:
-        Iterate over all potential indexes (as compiled above) and compute a score based on how many clauses
-        this index covers. The index with the highest score (as long as it covers at least one additional clause)
-        is picked and added to the joint query for as long as such exist.
-         */
-        final JointIndexQuery jointQuery = new JointIndexQuery();
-        boolean isSorted = orders.isEmpty();
         final Set<Condition> coveredClauses = Sets.newHashSet();
-        while (true) {
-            IndexType bestCandidate = null;
-            double candidateScore = 0.0;
-            Set<Condition> candidateSubcover = null;
-            boolean candidateSupportsSort = false;
-            Object candidateSubCondition = null;
-
-            for (final IndexType index : indexCandidates) {
-                final Set<Condition> subcover = Sets.newHashSet();
-                Object subCondition;
-                boolean supportsSort = orders.isEmpty();
-                //Check that this index actually applies in case of a schema constraint
-                if (index.hasSchemaTypeConstraint()) {
-                    final JanusGraphSchemaType type = index.getSchemaTypeConstraint();
-                    final Map.Entry<Condition,Collection<Object>> equalCon
-                            = getEqualityConditionValues(conditions,ImplicitKey.LABEL);
-                    if (equalCon==null) continue;
-                    final Collection<Object> labels = equalCon.getValue();
-                    assert labels.size() >= 1;
-                    if (labels.size()>1) {
-                        log.warn("The query optimizer currently does not support multiple label constraints in query: {}",this);
-                        continue;
-                    }
-                    if (!type.name().equals(Iterables.getOnlyElement(labels))) {
-                        continue;
-                    }
-                    subcover.add(equalCon.getKey());
-                }
-
-                if (index.isCompositeIndex()) {
-                    subCondition = indexCover((CompositeIndexType) index,conditions,subcover);
-                } else {
-                    subCondition = indexCover((MixedIndexType) index,conditions,serializer,subcover);
-                    if (coveredClauses.isEmpty() && !supportsSort
-                            && indexCoversOrder((MixedIndexType)index,orders)) supportsSort=true;
-                }
-                if (subCondition==null || subcover.isEmpty()) continue;
-                double score = 0.0;
-                boolean coversAdditionalClause = false;
-                for (final Condition c : subcover) {
-                    double s = (c instanceof PredicateCondition && ((PredicateCondition)c).getPredicate()==Cmp.EQUAL)?
-                            EQUAL_CONDITION_SCORE:OTHER_CONDITION_SCORE;
-                    if (coveredClauses.contains(c)) s=s*ALREADY_MATCHED_ADJUSTOR;
-                    else coversAdditionalClause = true;
-                    score+=s;
-                    if (index.isCompositeIndex())
-                        score+=((CompositeIndexType)index).getCardinality()==Cardinality.SINGLE?
-                                CARDINALITY_SINGE_SCORE:CARDINALITY_OTHER_SCORE;
-                }
-                if (supportsSort) score+=ORDER_MATCH;
-                if (coversAdditionalClause && score>candidateScore) {
-                    candidateScore=score;
-                    bestCandidate=index;
-                    candidateSubcover = subcover;
-                    candidateSubCondition = subCondition;
-                    candidateSupportsSort = supportsSort;
-                }
-            }
-            if (bestCandidate!=null) {
-                if (coveredClauses.isEmpty()) isSorted=candidateSupportsSort;
-                coveredClauses.addAll(candidateSubcover);
-                if (bestCandidate.isCompositeIndex()) {
-                    jointQuery.add((CompositeIndexType)bestCandidate,
-                            serializer.getQuery((CompositeIndexType)bestCandidate,(List<Object[]>)candidateSubCondition));
-                } else {
-                    jointQuery.add((MixedIndexType)bestCandidate,
-                            serializer.getQuery((MixedIndexType)bestCandidate,(Condition)candidateSubCondition,orders));
-                }
-            } else {
-                break;
-            }
-            /* TODO: smarter optimization:
-            - use in-memory histograms to estimate selectivity of PredicateConditions and filter out low-selectivity ones
-                    if they would result in an individual index call (better to filter afterwards in memory)
-            - move OR's up and extend GraphCentricQuery to allow multiple JointIndexQuery for proper or'ing of queries
-            */
-        }
+        final MutableBoolean isSorted = new MutableBoolean(orders.isEmpty());
+        final JointIndexQuery jointQuery = selectIndices(indexCandidates, conditions, coveredClauses, isSorted);
 
         BackendQueryHolder<JointIndexQuery> query;
         if (!coveredClauses.isEmpty()) {
@@ -359,9 +278,9 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             indexLimit = Math.min(HARD_MAX_LIMIT,
                 QueryUtil.adjustLimitForTxModifications(tx, coveredClauses.size(), indexLimit));
             query = new BackendQueryHolder<>(jointQuery.updateLimit(indexLimit),
-                    coveredClauses.size() == conditions.numChildren(), isSorted);
+                    coveredClauses.size() == conditions.numChildren(), isSorted.getValue());
         } else {
-            query = new BackendQueryHolder<>(new JointIndexQuery(), false, isSorted);
+            query = new BackendQueryHolder<>(new JointIndexQuery(), false, isSorted.getValue());
         }
         return new GraphCentricQuery(resultType, conditions, orders, query, limit);
     }
@@ -490,5 +409,189 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         return match != null && indexInfo.supports(index, match, atom.getPredicate());
     }
 
+    private JointIndexQuery selectIndices(final Set<IndexType> indexCandidates, final MultiCondition<JanusGraphElement> conditions,
+                                          final Set<Condition> coveredClauses, final MutableBoolean isSorted) {
+        /* TODO: smarter optimization:
+        - use in-memory histograms to estimate selectivity of PredicateConditions and filter out low-selectivity ones
+                if they would result in an individual index call (better to filter afterwards in memory)
+        */
+        if (indexCandidates.size() <= tx.getGraph().getConfiguration().getIndexSelectThreshold()) {
+            return selectIndicesByBruteForce(indexCandidates, conditions, coveredClauses, isSorted);
+        } else {
+            return selectIndicesByApprox(indexCandidates, conditions, coveredClauses, isSorted);
+        }
+    }
 
+    /**
+     * Determine the best jointIndexQuery by enumerating all possibilities with exponential time complexity.
+     * Similar to Weighted Set Cover problem, to find the best choice is NP-Complete, so we should be careful
+     * that the problem size MUST be small, otherwise it is more recommended to use an approximation algorithm.
+     *
+     * @param rawCandidates
+     * @param conditions
+     * @param coveredClauses
+     * @param isSorted
+     * @return
+     */
+    private JointIndexQuery selectIndicesByBruteForce(final Set<IndexType> rawCandidates, final MultiCondition<JanusGraphElement> conditions,
+                                                      final Set<Condition> coveredClauses, final MutableBoolean isSorted) {
+        final JointIndexQuery jointQuery = new JointIndexQuery();
+        final Set<IndexCandidate> indexCandidates = new HashSet<>();
+        // validate, enrich index candidates and calculate scores
+        for (final IndexType index : rawCandidates) {
+            final IndexCandidate indexCandidate = enrichIndex(index, conditions);
+            if (indexCandidate == null) continue;
+            double score = 0.0;
+            for (final Condition c : indexCandidate.getSubcover()) {
+                score += getConditionBasicScore(c) + getIndexTypeScore(index);
+            }
+            indexCandidate.setScore(score);
+            indexCandidates.add(indexCandidate);
+        }
+
+        IndexCandidateGroup bestGroup = null;
+        for (Set<IndexCandidate> subset : Sets.powerSet(indexCandidates)) {
+            if (subset.isEmpty()) continue;
+            final IndexCandidateGroup group = new IndexCandidateGroup();
+            double score = 0.0;
+            for (IndexCandidate c : subset) {
+                group.getCoveredClauses().addAll(c.getSubcover());
+                score += c.getScore();
+            }
+            group.setTotalScore(score);
+            group.setIndexCandidates(subset);
+            if (group.compareTo(bestGroup) > 0) {
+                bestGroup = group;
+            }
+        }
+        if (bestGroup != null) {
+            coveredClauses.addAll(bestGroup.getCoveredClauses());
+            List<IndexCandidate> bestIndexes = new ArrayList<>(bestGroup.getIndexCandidates());
+            // sort indexes by score descending order
+            bestIndexes.sort((a, b) -> Double.compare(b.getScore(), a.getScore()));
+            // isSorted depends on the first index subquery
+            isSorted.setValue(orders.isEmpty() || bestIndexes.get(0).getIndex().isMixedIndex()
+                && indexCoversOrder((MixedIndexType) bestIndexes.get(0).getIndex(), orders));
+            for (IndexCandidate c : bestIndexes) {
+                addToJointQuery(c, jointQuery);
+            }
+        }
+        return jointQuery;
+    }
+
+    /**
+     * Iterate over all potential indexes and compute a score based on how many clauses
+     * this index covers. The index with the highest score (as long as it covers at least one additional clause)
+     * is picked and added to the joint query for as long as such exist.
+     * @param rawCandidates
+     * @param conditions
+     * @param coveredClauses
+     * @param isSorted
+     * @return
+     */
+    private JointIndexQuery selectIndicesByApprox(final Set<IndexType> rawCandidates, final MultiCondition<JanusGraphElement> conditions,
+                                                  final Set<Condition> coveredClauses, final MutableBoolean isSorted) {
+        final JointIndexQuery jointQuery = new JointIndexQuery();
+        while (true) {
+            IndexCandidate bestCandidate = null;
+            boolean candidateSupportsSort = false;
+
+            for (final IndexType index : rawCandidates) {
+                final IndexCandidate indexCandidate = enrichIndex(index, conditions);
+                if (indexCandidate == null) continue;
+
+                // start calculating score
+                double score = 0.0;
+                boolean coversAdditionalClause = false;
+                for (final Condition c : indexCandidate.getSubcover()) {
+                    double s = getConditionBasicScore(c);
+                    if (coveredClauses.contains(c)) s=s*ALREADY_MATCHED_ADJUSTOR;
+                    else coversAdditionalClause = true;
+                    score += s + getIndexTypeScore(index);
+                }
+                boolean supportsSort = orders.isEmpty() ||
+                    coveredClauses.isEmpty() && index.isMixedIndex() && indexCoversOrder((MixedIndexType) index, orders);
+                if (supportsSort) score+=ORDER_MATCH;
+                indexCandidate.setScore(score);
+                if (coversAdditionalClause && (bestCandidate == null || score > bestCandidate.getScore())) {
+                    bestCandidate = indexCandidate;
+                    candidateSupportsSort = supportsSort;
+                }
+            }
+            if (bestCandidate!=null) {
+                if (coveredClauses.isEmpty()) isSorted.setValue(candidateSupportsSort);
+                coveredClauses.addAll(bestCandidate.getSubcover());
+                addToJointQuery(bestCandidate, jointQuery);
+            } else {
+                break;
+            }
+        }
+        return jointQuery;
+    }
+
+    /**
+     * Validate given index candidate and enrich it
+     * @param index
+     * @param conditions
+     * @return
+     */
+    private IndexCandidate enrichIndex(final IndexType index, final MultiCondition<JanusGraphElement> conditions) {
+        final Set<Condition> subcover = Sets.newHashSet();
+        Object subCondition = null;
+        //Check that this index actually applies in case of a schema constraint
+        if (index.hasSchemaTypeConstraint()) {
+            final JanusGraphSchemaType type = index.getSchemaTypeConstraint();
+            final Map.Entry<Condition,Collection<Object>> equalCon
+                = getEqualityConditionValues(conditions,ImplicitKey.LABEL);
+            if (equalCon==null) return null;
+            final Collection<Object> labels = equalCon.getValue();
+            assert labels.size() >= 1;
+            if (labels.size()>1) {
+                log.warn("The query optimizer currently does not support multiple label constraints in query: {}",this);
+                return null;
+            }
+            if (!type.name().equals(Iterables.getOnlyElement(labels))) {
+                return null;
+            }
+            subcover.add(equalCon.getKey());
+        }
+
+        if (index.isCompositeIndex()) {
+            subCondition = indexCover((CompositeIndexType) index,conditions,subcover);
+        } else {
+            subCondition = indexCover((MixedIndexType) index,conditions,serializer,subcover);
+        }
+        if (subCondition == null || subcover.isEmpty()) return null;
+        return new IndexCandidate(index, subcover, subCondition, 0);
+    }
+
+    private void addToJointQuery(final IndexCandidate indexCandidate, final JointIndexQuery jointQuery) {
+        if (indexCandidate.getIndex().isCompositeIndex()) {
+            jointQuery.add((CompositeIndexType) indexCandidate.getIndex(), serializer.getQuery(
+                (CompositeIndexType) indexCandidate.getIndex(), (List<Object[]>) indexCandidate.getSubCondition()));
+        } else {
+            jointQuery.add((MixedIndexType) indexCandidate.getIndex(), serializer.getQuery(
+                (MixedIndexType) indexCandidate.getIndex(), (Condition) indexCandidate.getSubCondition(), orders));
+        }
+    }
+
+    private double getConditionBasicScore(final Condition c) {
+        if (c instanceof PredicateCondition && ((PredicateCondition) c).getPredicate() == Cmp.EQUAL) {
+            return EQUAL_CONDITION_SCORE;
+        } else {
+            return OTHER_CONDITION_SCORE;
+        }
+    }
+
+    private double getIndexTypeScore(final IndexType index) {
+        double score = 0.0;
+        if (index.isCompositeIndex()) {
+            if (((CompositeIndexType)index).getCardinality() == Cardinality.SINGLE) {
+                score = CARDINALITY_SINGE_SCORE;
+            } else {
+                score = CARDINALITY_OTHER_SCORE;
+            }
+        }
+        return score;
+    }
 }
