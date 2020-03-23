@@ -761,7 +761,7 @@
                 <!-- align with org.apache.hbase:hbase -->
                 <groupId>org.mortbay.jetty</groupId>
                 <artifactId>jetty</artifactId>
-                <version>6.1.26</version>
+                <version>7.0.0.pre5</version>
             </dependency>
 
             <dependency>
