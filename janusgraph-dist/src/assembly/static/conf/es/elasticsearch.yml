@@ -14,3 +14,4 @@
 
 path.data: ../db/es/data
 path.logs: ../logs
+xpack.ml.enabled: false

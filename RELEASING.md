@@ -226,8 +226,10 @@ mvn clean javadoc:jar deploy -Pjanusgraph-release -DskipTests=true
 *   Prepare files for GitHub release
 ```Shell
 export JG_VER="janusgraph-0.5.0"
+export JG_FULL_VER="janusgraph-full-0.5.0"
 mkdir -p ~/jg-staging
 cp janusgraph-dist/target/${JG_VER}.zip* ~/jg-staging/
+cp janusgraph-dist/target/${JG_FULL_VER}.zip* ~/jg-staging/
 mkdocs build
 mv site ${JG_VER}-doc
 zip -r ${JG_VER}-doc.zip ${JG_VER}-doc
@@ -244,6 +246,7 @@ export GPG_TTY=$(tty)
 ```Shell
 cd ~/jg-staging
 gpg --verify ${JG_VER}.zip.asc ${JG_VER}.zip
+gpg --verify ${JG_FULL_VER}.zip.asc ${JG_FULL_VER}.zip
 gpg --verify ${JG_VER}-doc.zip.asc ${JG_VER}-doc.zip
 ```
 

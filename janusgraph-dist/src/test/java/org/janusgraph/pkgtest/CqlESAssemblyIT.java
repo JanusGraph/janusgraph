@@ -31,6 +31,10 @@ public class CqlESAssemblyIT extends AbstractJanusGraphAssemblyIT {
 
     @Test
     public void testCassandraGettingStarted() throws Exception {
-        testGettingStartedGremlinSession("conf/janusgraph-cql-es.properties", "cql");
+        testGettingStartedGremlinSession("conf/janusgraph-cql-es.properties", "cql", false);
+    }
+    @Test
+    public void testCassandraGettingStartedFull() throws Exception {
+        testGettingStartedGremlinSession("conf/janusgraph-cql-es.properties", "cql", true);
     }
 }

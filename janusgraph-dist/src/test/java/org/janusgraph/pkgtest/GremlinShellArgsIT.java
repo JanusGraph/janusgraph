@@ -20,6 +20,11 @@ public class GremlinShellArgsIT extends AbstractJanusGraphAssemblyIT {
 
     @Test
     public void testScriptFileArgument() throws Exception {
-        unzipAndRunExpect("gremlin-shell-args.expect.vm");
+        unzipAndRunExpect("gremlin-shell-args.expect.vm", false);
+    }
+
+    @Test
+    public void testScriptFileFullArgument() throws Exception {
+        unzipAndRunExpect("gremlin-shell-args.expect.vm", true);
     }
 }

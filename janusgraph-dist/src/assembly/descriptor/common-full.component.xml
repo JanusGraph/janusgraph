@@ -9,11 +9,6 @@
             <excludes>
                 <exclude>README.txt</exclude>
                 <exclude>**/es/**</exclude>
-                <exclude>**/cassandra/**</exclude>
-                <exclude>**/bin/cassandra*</exclude>
-                <exclude>**/bin/nodetool</exclude>
-                <exclude>**/bin/check*</exclude>
-                <exclude>**/bin/janusgraph.sh</exclude>
             </excludes>
         </fileSet>
         <fileSet>
@@ -25,9 +20,22 @@
             <directory>${assembly.cfilter.out.dir}</directory>
             <outputDirectory>/</outputDirectory>
             <filtered>false</filtered>
+        </fileSet>
+        <fileSet>
+            <directory>${assembly.es.dir}</directory>
+            <outputDirectory>/elasticsearch</outputDirectory>
+            <filtered>false</filtered>
             <excludes>
-                <exclude>**/janusgraph-cassandra-embedded*</exclude>
+              <exclude>**/elasticsearch.yml</exclude>
+              <exclude>**/jvm.options</exclude>
+              <exclude>**/data/**</exclude>
+              <exclude>**/logs/**</exclude>
             </excludes>
+        </fileSet>
+        <fileSet>
+            <directory>${assembly.static.dir}/conf/es</directory>
+            <outputDirectory>/elasticsearch/config</outputDirectory>
+            <filtered>true</filtered>
         </fileSet>
     </fileSets>
 

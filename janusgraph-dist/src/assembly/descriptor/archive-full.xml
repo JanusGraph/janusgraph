@@ -1,0 +1,26 @@
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
+
+    <id>archive</id>
+
+    <formats>
+        <format>zip</format>
+    </formats>
+
+    <componentDescriptors>
+        <componentDescriptor>${assembly.descriptor.dir}/common-full.component.xml</componentDescriptor>
+        <componentDescriptor>${assembly.descriptor.dir}/htmldocs.component.xml</componentDescriptor>
+        <componentDescriptor>${assembly.descriptor.dir}/readmes.component.xml</componentDescriptor>
+    </componentDescriptors>
+
+    <fileSets>
+        <fileSet>
+            <directory>${top.level.basedir}/janusgraph-examples</directory>
+            <outputDirectory>/examples</outputDirectory>
+            <excludes>
+                <exclude>**/target/**</exclude>
+            </excludes>
+        </fileSet>
+    </fileSets>
+
+</assembly>
