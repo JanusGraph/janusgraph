@@ -180,6 +180,9 @@ and Elasticsearch.
     For security reasons Elasticsearch and therefore `janusgraph.sh` must
     be run under a non-root account
 
+!!! note
+    Starting with 0.5.1, this is just included in the full package version.
+
 ## Global Configuration
 
 JanusGraph distinguishes between local and global configuration options.

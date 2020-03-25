@@ -15,6 +15,9 @@ Server from different languages refer to [Connecting to JanusGraph](../connectin
 
 ### Using the Pre-Packaged Distribution
 
+!!! note
+    Starting with 0.5.1, this is just included in the full package version.
+
 The JanusGraph
 [release](https://github.com/JanusGraph/janusgraph/releases) comes
 pre-configured to run JanusGraph Server out of the box leveraging a

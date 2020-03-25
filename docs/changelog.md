@@ -27,6 +27,44 @@ use the latest versions of the software.
 
 ## Release Notes
 
+### Version 0.5.1 (Release Date: X, 2020)
+
+```xml tab='Maven'
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.5.1</version>
+</dependency>
+```
+
+```groovy tab='Gradle'
+compile "org.janusgraph:janusgraph-core:0.5.1"
+```
+
+**Tested Compatibility:**
+
+* Apache Cassandra 2.2.10, 3.0.14, 3.11.0
+* Apache HBase 1.2.6, 1.3.1, 1.4.10, 2.1.5
+* Google Bigtable 1.3.0, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.10.0, 1.11.0
+* Oracle BerkeleyJE 7.5.11
+* Elasticsearch 6.0.1, 6.6.0, 7.6.1
+* Apache Lucene 7.0.0
+* Apache Solr 7.0.0
+* Apache TinkerPop 3.4.6
+* Java 1.8
+
+For more information on features and bug fixes in 0.5.1, see the GitHub milestone:
+
+-   <https://github.com/JanusGraph/janusgraph/milestone/18?closed=1>
+
+#### Upgrade Instructions
+
+##### Two Distributed package is splitted into two version
+
+The default version of the distribution package does no longer contain the `janusgraph.sh`. 
+This includes a packaged version of cassandra and elasticsearch. If you want to have `janusgraph.sh`, 
+you have to download distribution with the suffix `-full`.
+
 ### Version 0.5.0 (Release Date: March 10, 2020)
 
 ```xml tab='Maven'
