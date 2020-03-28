@@ -20,6 +20,12 @@
             <artifactId>hbase-server</artifactId>
             <version>${hbase.server.version}</version>
             <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-compress</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
     
