@@ -76,8 +76,8 @@
         <mockito.version>2.23.0</mockito.version>
         <cassandra.version>2.2.13</cassandra.version>
         <jamm.version>0.3.0</jamm.version>
-        <metrics.version>3.2.2</metrics.version>
-        <slf4j.version>1.7.12</slf4j.version>
+        <metrics.version>3.2.6</metrics.version>
+        <slf4j.version>1.7.29</slf4j.version>
         <httpcomponents.httpclient.version>4.5.10</httpcomponents.httpclient.version>
         <httpcomponents.httpcore.version>4.4.12</httpcomponents.httpcore.version>
         <hadoop2.version>2.7.7</hadoop2.version>
@@ -93,13 +93,13 @@
         <elasticsearch.version>7.6.1</elasticsearch.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
-        <joda.version>2.8.2</joda.version>
-        <concurrentlinkedhashmap.version>1.3</concurrentlinkedhashmap.version>
+        <joda.version>2.9.9</joda.version>
+        <concurrentlinkedhashmap.version>1.4</concurrentlinkedhashmap.version>
         <antlr2.version>2.7.7</antlr2.version>
-        <antlr.version>3.2</antlr.version>
+        <antlr.version>3.5.2</antlr.version>
         <asm3.version>3.1</asm3.version>
         <asm4.version>4.0</asm4.version>
-        <zookeeper.version>3.4.6</zookeeper.version>
+        <zookeeper.version>3.4.14</zookeeper.version>
         <!-- align with org.apache.tinkerpop:tinkerpop -->
         <netty4.version>4.1.45.Final</netty4.version>
         <jna.version>4.0.0</jna.version>
@@ -196,6 +196,11 @@
                         </goals>
                         <configuration>
                             <rules>
+                                <requireUpperBoundDeps>
+                                    <excludes>
+                                        <exclude>com.google.guava:guava</exclude>
+                                    </excludes>
+                                </requireUpperBoundDeps>
                                 <DependencyConvergence />
                             </rules>
                         </configuration>
@@ -665,7 +670,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
-                <version>3.3.1</version>
+                <version>3.8.1</version>
             </dependency>
             <dependency>
                 <groupId>commons-configuration</groupId>
@@ -680,7 +685,7 @@
             <dependency>
                 <groupId>commons-net</groupId>
                 <artifactId>commons-net</artifactId>
-                <version>1.4.1</version>
+                <version>3.1</version>
             </dependency>
             <dependency>
                 <groupId>commons-beanutils</groupId>
@@ -695,7 +700,7 @@
             <dependency>
                 <groupId>commons-logging</groupId>
                 <artifactId>commons-logging</artifactId>
-                <version>1.1.1</version>
+                <version>1.2</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
@@ -705,12 +710,12 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-math3</artifactId>
-                <version>3.2</version>
+                <version>3.6.1</version>
             </dependency>
             <dependency>
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
-                <version>1.11</version>
+                <version>1.15</version>
             </dependency>
             <dependency>
                 <groupId>net.oneandone.reflections8</groupId>
@@ -730,7 +735,7 @@
             <dependency>
                 <groupId>org.apache.avro</groupId>
                 <artifactId>avro</artifactId>
-                <version>1.7.4</version>
+                <version>1.8.2</version>
             </dependency>
             <dependency>
                 <artifactId>jboss-logging</artifactId>
@@ -750,7 +755,7 @@
             <dependency>
                 <groupId>log4j</groupId>
                 <artifactId>log4j</artifactId>
-                <version>1.2.16</version>
+                <version>1.2.17</version>
             </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>
@@ -785,7 +790,7 @@
             <dependency>
                 <groupId>org.objenesis</groupId>
                 <artifactId>objenesis</artifactId>
-                <version>2.1</version>
+                <version>2.6</version>
             </dependency>
 
             <dependency>
@@ -837,7 +842,7 @@
             <dependency>
                 <groupId>org.xerial.snappy</groupId>
                 <artifactId>snappy-java</artifactId>
-                <version>1.0.5-M3</version>
+                <version>1.1.2.6</version>
             </dependency>
             <dependency>
                 <!-- Run the full test suite when changing the Guava version.
@@ -855,7 +860,7 @@
             <dependency>
                 <groupId>commons-lang</groupId>
                 <artifactId>commons-lang</artifactId>
-                <version>2.5</version>
+                <version>2.6</version>
             </dependency>
             <dependency>
                 <groupId>commons-codec</groupId>
@@ -875,7 +880,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty</artifactId>
-                <version>3.10.5.Final</version>
+                <version>3.10.6.Final</version>
             </dependency>
 
             <!-- Spatial4j -->
@@ -925,12 +930,12 @@
             <dependency>
                 <groupId>javax.xml.bind</groupId>
                 <artifactId>jaxb-api</artifactId>
-                <version>2.2.2</version>
+                <version>2.3.1</version>
             </dependency>
             <dependency>
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
-                <version>2.3</version>
+                <version>2.6</version>
             </dependency>
             <dependency>
                 <groupId>org.jacoco</groupId>
@@ -1004,7 +1009,7 @@
             <dependency>
                 <groupId>org.javassist</groupId>
                 <artifactId>javassist</artifactId>
-                <version>3.18.0-GA</version>
+                <version>3.22.0-GA</version>
             </dependency>
             <dependency>
                 <groupId>com.carrotsearch</groupId>
@@ -1014,7 +1019,7 @@
             <dependency>
                 <groupId>com.carrotsearch</groupId>
                 <artifactId>hppc</artifactId>
-                <version>0.7.1</version>
+                <version>0.8.1</version>
             </dependency>
             <dependency>
                 <groupId>com.carrotsearch.randomizedtesting</groupId>
@@ -1024,7 +1029,7 @@
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java</artifactId>
-                <version>2.5.0</version>
+                <version>3.1.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.velocity</groupId>
@@ -1214,6 +1219,10 @@
                             <exclusion>
                                 <groupId>javax.servlet</groupId>
                                 <artifactId>servlet-api</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>org.apache.commons</groupId>
+                                <artifactId>commons-compress</artifactId>
                             </exclusion>
                         </exclusions>
                     </dependency>
