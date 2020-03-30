@@ -14,14 +14,15 @@
 
 package org.janusgraph.diskstorage.es;
 
+import org.janusgraph.diskstorage.indexing.RawQuery;
+import org.janusgraph.diskstorage.indexing.RawQuery.Result;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-
-import org.janusgraph.diskstorage.indexing.RawQuery;
-import org.janusgraph.diskstorage.indexing.RawQuery.Result;
 
 /**
  * @author David Clement (david.clement90@laposte.net)
@@ -39,8 +40,17 @@ public class ElasticSearchScroll implements Iterator<RawQuery.Result<String>> {
         this.client = client;
         this.scrollId = initialResponse.getScrollId();
         this.batchSize = nbDocByQuery;
-        initialResponse.getResults().forEach(queue::add);
-        this.isFinished = initialResponse.numResults() < nbDocByQuery;
+        update(initialResponse);
+    }
+
+    private void update(ElasticSearchResponse response) {
+        response.getResults().forEach(queue::add);
+        this.isFinished = response.numResults() < this.batchSize;
+        try {
+            if (isFinished) client.deleteScroll(scrollId);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e.getMessage(), e);
+        }
     }
 
     @Override
@@ -53,9 +63,7 @@ public class ElasticSearchScroll implements Iterator<RawQuery.Result<String>> {
                 return false;
             }
             final ElasticSearchResponse res = client.search(scrollId);
-            res.getResults().forEach(queue::add);
-            isFinished = res.numResults() < batchSize;
-            if (isFinished) client.deleteScroll(scrollId);
+            update(res);
             return res.numResults() > 0;
         } catch (final IOException e) {
              throw new UncheckedIOException(e.getMessage(), e);
@@ -64,10 +72,9 @@ public class ElasticSearchScroll implements Iterator<RawQuery.Result<String>> {
 
     @Override
     public Result<String> next() {
-         try {
-             return queue.take();
-         } catch (final InterruptedException e) {
-              throw new UncheckedIOException(new IOException("Interrupted waiting on queue", e));
-         }
+        if (hasNext()) {
+            return queue.remove();
+        }
+        throw new NoSuchElementException();
     }
 }

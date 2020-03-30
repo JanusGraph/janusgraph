@@ -34,8 +34,10 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HBaseStoreManagerMutationTest {
 
@@ -91,7 +93,7 @@ public class HBaseStoreManagerMutationTest {
             = manager.convertToCommands(storeMutationMap, 0, 0);
 
         // 2 rows
-        Assert.assertEquals(commandsPerRowKey.size(), 2);
+        assertEquals(commandsPerRowKey.size(), 2);
 
         // Verify puts
         final List<Long> putColumnsWithTTL = new ArrayList<>();
@@ -113,8 +115,8 @@ public class HBaseStoreManagerMutationTest {
         }
         Collections.sort(putColumnsWithoutTTL);
         Collections.sort(putColumnsWithTTL);
-        Assert.assertArrayEquals(expectedColumnsWithoutTTL.toArray(), putColumnsWithoutTTL.toArray());
-        Assert.assertArrayEquals(expectedColumnsWithTTL.toArray(), putColumnsWithTTL.toArray());
+        assertArrayEquals(expectedColumnsWithoutTTL.toArray(), putColumnsWithoutTTL.toArray());
+        assertArrayEquals(expectedColumnsWithTTL.toArray(), putColumnsWithTTL.toArray());
 
         // Verify deletes
         final List<Long> deleteColumns = new ArrayList<>();
@@ -126,7 +128,7 @@ public class HBaseStoreManagerMutationTest {
             }
         }
         Collections.sort(deleteColumns);
-        Assert.assertArrayEquals(expectedColumnDelete.toArray(), deleteColumns.toArray());
+        assertArrayEquals(expectedColumnDelete.toArray(), deleteColumns.toArray());
     }
 
     @Test
@@ -162,6 +164,6 @@ public class HBaseStoreManagerMutationTest {
         //Verify Put TTL
         Put put = commands.getFirst().get(0);
         putColumnsWithTTL.add(put.getTTL());
-        Assert.assertArrayEquals(expectedColumnsWithTTL.toArray(), putColumnsWithTTL.toArray());
+        assertArrayEquals(expectedColumnsWithTTL.toArray(), putColumnsWithTTL.toArray());
     }
 }

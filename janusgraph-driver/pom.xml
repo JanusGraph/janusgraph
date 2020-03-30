@@ -3,12 +3,12 @@
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.5.0-SNAPSHOT</version>
+        <version>0.6.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-driver</artifactId>
     <name>JanusGraph-Driver: Gremlin-Driver Library for JanusGraph</name>
-    <url>http://janusgraph.org</url>
+    <url>https://janusgraph.org</url>
 
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
@@ -19,10 +19,20 @@
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <artifactId>gossip</artifactId>
+                    <groupId>org.sonatype.gossip</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-driver</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tinkerpop</groupId>
+            <artifactId>gremlin-groovy</artifactId>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -90,18 +100,128 @@
             <id>janusgraph-release</id>
             <build>
                 <plugins>
+                    <!-- Forces gpg-plugin to run after shade-plugin.
+                     Otherwise, Maven will sign the unshaded jar, then shade the jar
+                     (giving it completely different contents and breaking the sig) -->
+                    <plugin>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>shade-gremlin-groovy</id>
+                            </execution>
+                        </executions>
+                    </plugin>
                     <!-- Redeclare gpg-plugin after jar-plugin to force the test jar to be signed.
-                         gpg-plugin runs in the package phase, same as jar-plugin, so the only
-                         constraint that guarantees the jar will exist when gpg-plugin is
-                         invoked is declaration order in the pom. -->
+                      gpg-plugin runs in the package phase, same as jar-plugin, so the only
+                      constraint that guarantees the jar will exist when gpg-plugin is
+                      invoked is declaration order in the pom. -->
                     <plugin>
                         <artifactId>maven-jar-plugin</artifactId>
                     </plugin>
                     <plugin>
                         <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
         </profile>
     </profiles>
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>shade-gremlin-groovy</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <artifactSet>
+                                <includes>
+                                    <include>com.esotericsoftware.kryo:*</include>
+                                    <include>com.esotericsoftware.minlog:*</include>
+                                    <include>com.esotericsoftware.reflectasm:*</include>
+                                    <include>org.objenesis:*</include>
+                                </includes>
+                            </artifactSet>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <relocations>
+                                <relocation>
+                                    <pattern>com.esotericsoftware.kryo</pattern>
+                                    <shadedPattern>org.janusgraph.shaded.kryo_2_24_0</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.esotericsoftware.minlog</pattern>
+                                    <shadedPattern>org.janusgraph.shaded.minlog_1_2</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.esotericsoftware.reflectasm</pattern>
+                                    <shadedPattern>org.janusgraph.shaded.kryo_2_24_0_reflectasm</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.objenesis</pattern>
+                                    <shadedPattern>org.janusgraph.shaded.objenesis_2_1</shadedPattern>
+                                </relocation>
+                            </relocations>
+                            <!-- false below means the shade plugin overwrites the main project artifact (the one with no classifier).
+                                 false does *not* actually detach the main artifact, despite what the option name suggests. -->
+                            <shadedArtifactAttached>false</shadedArtifactAttached>
+                            <minimizeJar>false</minimizeJar>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.gmavenplus</groupId>
+                <artifactId>gmavenplus-plugin</artifactId>
+                <version>${gmavenplus.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generateStubs</goal>
+                            <goal>compile</goal>
+                            <goal>testGenerateStubs</goal>
+                            <goal>testCompile</goal>
+                        </goals>
+                        <configuration>
+                            <providerSelection>1.8</providerSelection>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <windowtitle>JanusGraph ${project.version} API</windowtitle>
+                            <doctitle>JanusGraph ${project.version} API</doctitle>
+                            <!-- Quiet mode still shows warnings and errors -->
+                            <quiet>true</quiet>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

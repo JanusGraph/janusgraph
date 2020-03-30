@@ -46,8 +46,12 @@ public abstract class AbstractConfiguration implements Configuration {
     }
 
     protected String getPath(ConfigElement option, String... umbrellaElements) {
+        return getPath(option, false, umbrellaElements);
+    }
+
+    protected String getPath(ConfigElement option, boolean includeRoot, String... umbrellaElements) {
         verifyElement(option);
-        return ConfigElement.getPath(option,umbrellaElements);
+        return ConfigElement.getPath(option, includeRoot, umbrellaElements);
     }
 
     protected Set<String> getContainedNamespaces(ReadConfiguration config, ConfigNamespace umbrella, String... umbrellaElements) {
@@ -102,19 +106,19 @@ public abstract class AbstractConfiguration implements Configuration {
             }
 
             @Override
-            public boolean has(ConfigOption option, String... umbrellaElements) {
+            public boolean has(ConfigOption option, boolean includeRoot, String... umbrellaElements) {
                 if (option.getNamespace().hasUmbrella())
-                    return config.has(option,concat(umbrellaElements));
+                    return config.has(option, includeRoot, concat(umbrellaElements));
                 else
-                    return config.has(option);
+                    return config.has(option, includeRoot);
             }
 
             @Override
-            public <O> O get(ConfigOption<O> option, String... umbrellaElements) {
+            public <O> O get(ConfigOption<O> option, boolean includeRoot, String... umbrellaElements) {
                 if (option.getNamespace().hasUmbrella())
-                    return config.get(option,concat(umbrellaElements));
+                    return config.get(option, includeRoot, concat(umbrellaElements));
                 else
-                    return config.get(option);
+                    return config.get(option, includeRoot);
             }
 
             @Override

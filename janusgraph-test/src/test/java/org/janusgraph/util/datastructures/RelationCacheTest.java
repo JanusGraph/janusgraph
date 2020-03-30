@@ -83,8 +83,6 @@ public class RelationCacheTest {
                     assertEquals("TestValue " + i, map.get(i * 1000));
                 }
                 assertEquals(len, map.size());
-                for (LongObjectCursor<Object> entry : map) {
-                }
             }
         }
     }

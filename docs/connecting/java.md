@@ -1,6 +1,5 @@
 # Connecting from Java
 
-
 While it is possible to embed JanusGraph as a library inside a Java
 application and then directly connect to the backend, this section
 assumes that the application connects to JanusGraph Server. For
@@ -45,7 +44,7 @@ compile "org.apache.tinkerpop:gremlin-driver:{{ tinkerpop_version }}"
 3.  Add two configuration files, `conf/remote-graph.properties` and
     `conf/remote-objects.yaml`:
 
-```conf tab='conf/remote-graph.properties'
+```properties tab='conf/remote-graph.properties'
 gremlin.remote.remoteConnectionClass=org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection
 gremlin.remote.driver.clusterFile=conf/remote-objects.yaml
 gremlin.remote.driver.sourceName=g

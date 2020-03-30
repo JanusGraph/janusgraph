@@ -1,5 +1,4 @@
-Datatype and Attribute Serializer Configuration
-===============================================
+# Datatype and Attribute Serializer Configuration
 
 JanusGraph supports a number of classes for attribute values on
 properties. JanusGraph efficiently serializes primitives, primitive
@@ -26,13 +25,12 @@ class called `SpecialInt` and have implemented a custom serializer
 `SpecialIntSerializer` that implements `AttributeSerializer`. We already
 have 9 custom attributes configured in the configuration file, so we
 would add the following lines 
-```conf
+```properties
 attributes.custom.attribute10.attribute-class = com.example.SpecialInt
 attributes.custom.attribute10.serializer-class = com.example.SpecialIntSerializer
 ```
 
-Custom Object Serialization
----------------------------
+## Custom Object Serialization
 
 JanusGraph supports arbitrary objects as property attributes and can
 serialize such objects to disk. For this default serializer to work for

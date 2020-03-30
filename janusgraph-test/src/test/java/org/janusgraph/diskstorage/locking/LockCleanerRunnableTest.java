@@ -19,6 +19,7 @@ import static org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLock
 import static org.easymock.EasyMock.anyObject;
 import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
@@ -133,7 +134,7 @@ public class LockCleanerRunnableTest {
 
         EntryList locks = StaticArrayEntryList.of(locksBuilder.build());
         EntryList deletions  = StaticArrayEntryList.of(deletionBuilder.build());
-        assertTrue(expiredCount == deletions.size());
+        assertEquals(expiredCount, deletions.size());
 
         del = new StandardLockCleanerRunnable(store, kc, tx, codec, timeCutoff, TimestampProviders.MILLI);
 

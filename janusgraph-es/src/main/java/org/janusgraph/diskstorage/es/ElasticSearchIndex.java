@@ -122,12 +122,24 @@ public class ElasticSearchIndex implements IndexProvider {
             "configured to use already exists, then this setting has no effect.", ConfigOption.Type.MASKABLE, 200L);
 
     public static final ConfigNamespace ES_CREATE_EXTRAS_NS =
-            new ConfigNamespace(ES_CREATE_NS, "ext", "Overrides for arbitrary settings applied at index creation", true);
+            new ConfigNamespace(ES_CREATE_NS, "ext", "Overrides for arbitrary settings applied at index creation.\n" +
+            		"See [Elasticsearch](../index-backend/elasticsearch.md#index-creation-options), The full list of possible setting is available at " + 
+            		"[Elasticsearch index settings](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings).");
 
     public static final ConfigOption<Boolean> USE_EXTERNAL_MAPPINGS =
             new ConfigOption<>(ES_CREATE_NS, "use-external-mappings",
             "Whether JanusGraph should make use of an external mapping when registering an index.", ConfigOption.Type.MASKABLE, false);
 
+    public static final ConfigOption<Integer> NUMBER_OF_REPLICAS =
+            new ConfigOption<>(ES_CREATE_EXTRAS_NS, "number_of_replicas",
+            "The number of replicas each primary shard has", ConfigOption.Type.MASKABLE, 1);
+
+    public static final ConfigOption<Integer> NUMBER_OF_SHARDS =
+            new ConfigOption<>(ES_CREATE_EXTRAS_NS, "number_of_shards",
+            "The number of primary shards that an index should have." +
+            "Default value is 5 on ES 6 and 1 on ES 7", ConfigOption.Type.MASKABLE, Integer.class);
+
+    
     public static final ConfigOption<Boolean> ALLOW_MAPPING_UPDATE =
             new ConfigOption<>(ES_CREATE_NS, "allow-mapping-update",
             "Whether JanusGraph should allow a mapping update when registering an index. " +
@@ -1112,13 +1124,17 @@ public class ElasticSearchIndex implements IndexProvider {
                 compat.createRequestBody(sr, useScroll? NULL_PARAMETERS : TRACK_TOTAL_HITS_DISABLED_PARAMETERS),
                 useScroll);
             log.debug("First Executed query [{}] in {} ms", query.getCondition(), response.getTook());
-            final ElasticSearchScroll resultIterator = new ElasticSearchScroll(client, response, sr.getSize());
+            final Iterator<RawQuery.Result<String>> resultIterator = getResultsIterator(useScroll, response, sr.getSize());
             final Stream<RawQuery.Result<String>> toReturn
                     = StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, Spliterator.ORDERED), false);
             return (query.hasLimit() ? toReturn.limit(query.getLimit()) : toReturn).map(RawQuery.Result::getResult);
         } catch (final IOException | UncheckedIOException e) {
             throw new PermanentBackendException(e);
         }
+    }
+
+    private Iterator<RawQuery.Result<String>> getResultsIterator(boolean useScroll, ElasticSearchResponse response, int windowSize){
+        return (useScroll)? new ElasticSearchScroll(client, response, windowSize) : response.getResults().iterator();
     }
 
     private String convertToEsDataType(Class<?> dataType, Mapping mapping) {
@@ -1206,9 +1222,10 @@ public class ElasticSearchIndex implements IndexProvider {
     public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever information,
                                                  BaseTransaction tx) throws BackendException {
         final int size = query.hasLimit() ? Math.min(query.getLimit() + query.getOffset(), batchSize) : batchSize;
-        final ElasticSearchResponse response = runCommonQuery(query, information, tx, size, size >= batchSize );
+        final boolean useScroll = size >= batchSize;
+        final ElasticSearchResponse response = runCommonQuery(query, information, tx, size, useScroll);
         log.debug("First Executed query [{}] in {} ms", query.getQuery(), response.getTook());
-        final ElasticSearchScroll resultIterator = new ElasticSearchScroll(client, response, size);
+        final Iterator<RawQuery.Result<String>> resultIterator = getResultsIterator(useScroll, response, size);
         final Stream<RawQuery.Result<String>> toReturn
                 = StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, Spliterator.ORDERED),
                 false).skip(query.getOffset());

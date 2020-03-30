@@ -39,15 +39,15 @@ public class MixedConfiguration extends AbstractConfiguration {
     }
 
     @Override
-    public boolean has(ConfigOption option, String... umbrellaElements) {
-        final String key = super.getPath(option, umbrellaElements);
+    public boolean has(ConfigOption option, boolean includeRoot, String... umbrellaElements) {
+        final String key = super.getPath(option, includeRoot, umbrellaElements);
         return option.isLocal() && local.get(key, option.getDatatype()) != null
               || option.isGlobal() && global.get(key, option.getDatatype()) != null;
     }
 
     @Override
-    public<O> O get(ConfigOption<O> option, String... umbrellaElements) {
-        final String key = super.getPath(option,umbrellaElements);
+    public<O> O get(ConfigOption<O> option, boolean includeRoot, String... umbrellaElements) {
+        final String key = super.getPath(option, includeRoot, umbrellaElements);
         Object result = null;
         if (option.isLocal()) {
             result = local.get(key,option.getDatatype());

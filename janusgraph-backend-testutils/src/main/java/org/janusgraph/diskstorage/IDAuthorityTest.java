@@ -228,7 +228,7 @@ public abstract class IDAuthorityTest {
         final String uidErrorMessage = "Uniqueness failure detected for config option " + UNIQUE_INSTANCE_ID.getName();
         for (int i = 0; i < CONCURRENCY; i++) {
             String uid = idAuthorities[i].getUniqueID();
-            assertTrue(!uniqueIds.contains(uid), uidErrorMessage);
+            assertFalse(uniqueIds.contains(uid), uidErrorMessage);
             uniqueIds.add(uid);
         }
         assertEquals(CONCURRENCY, uniqueIds.size(), uidErrorMessage);
@@ -368,6 +368,12 @@ public abstract class IDAuthorityTest {
     @MethodSource("configs")
     public void testMultiIDAcquisition(WriteConfiguration baseConfig) throws Throwable {
         setUp(baseConfig);
+        boolean localStore = Arrays.stream(manager).noneMatch(m -> m.getFeatures().isDistributed());
+        // On local mode ids acquired sequentially
+        if (localStore) {
+            return;
+        }
+
         final int numPartitions = MAX_NUM_PARTITIONS;
         final int numAcquisitionsPerThreadPartition = 100;
         final IDBlockSizer blockSizer = new InnerIDBlockSizer();

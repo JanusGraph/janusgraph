@@ -12,6 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License
+
+set timeout 30
+
 spawn bin/gremlin.sh
 expect_after {
     timeout {
@@ -27,15 +30,16 @@ send "v = g.addVertex()\r"
 expect -re {v\[(\d+)\]} { set vertexid $expect_out(1,string) }
 expect gremlin>
 send "v.property('test', 42)\r"
-expect "==>vp\[test->42\]"
+expect "vp\[test->42\]"
 expect gremlin>
 send "g.tx().commit()\r"
-expect ==>null
+sleep 10
+# expect null
 expect gremlin>
 send "g.traversal().V(v.longId()).values('test')\r"
-expect ==>42
+expect "42"
 expect gremlin>
 send "g.close()\r"
-expect ==>null
+# expect "null"
 expect gremlin>
 exit 0

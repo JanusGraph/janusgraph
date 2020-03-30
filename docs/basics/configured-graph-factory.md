@@ -113,7 +113,7 @@ configured using the properties stored inside
 `conf/JanusGraph-configurationmanagement.properties`, which for example,
 look like:
 
-```conf
+```properties
 gremlin.graph=org.janusgraph.core.ConfiguredGraphFactory
 storage.backend=cql
 graph.graphname=ConfigurationManagementGraph

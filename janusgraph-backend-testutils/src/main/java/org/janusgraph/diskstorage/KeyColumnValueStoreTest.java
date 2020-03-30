@@ -804,8 +804,8 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest implement
 
     @Test
     public void getNonExistentKeyReturnsNull() throws Exception {
-        assertEquals(null, KeyColumnValueStoreUtil.get(store, tx, 0, "col0"));
-        assertEquals(null, KeyColumnValueStoreUtil.get(store, tx, 0, "col1"));
+        assertNull(KeyColumnValueStoreUtil.get(store, tx, 0, "col0"));
+        assertNull(KeyColumnValueStoreUtil.get(store, tx, 0, "col1"));
     }
 
     @Test
@@ -822,8 +822,8 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest implement
         tx.commit();
 
         tx = startTx();
-        assertEquals(null, KeyColumnValueStoreUtil.get(store, tx, 0, "col0"));
-        assertEquals(null, KeyColumnValueStoreUtil.get(store, tx, 0, "col1"));
+        assertNull(KeyColumnValueStoreUtil.get(store, tx, 0, "col0"));
+        assertNull(KeyColumnValueStoreUtil.get(store, tx, 0, "col1"));
     }
 
     @Test

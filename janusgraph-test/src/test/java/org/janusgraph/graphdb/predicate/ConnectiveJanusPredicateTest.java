@@ -27,8 +27,13 @@ import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.attribute.Text;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author David Clement (david.clement90@laposte.net)
@@ -42,72 +47,71 @@ public abstract class ConnectiveJanusPredicateTest {
 
     @Test
     public void testIsValidConditionNotAList() {
-        Assert.assertFalse(getPredicate(Arrays.asList()).isValidCondition(3));
+        assertFalse(getPredicate(emptyList()).isValidCondition(3));
     }
 
     @Test
     public void testIsValidConditionDifferentSize() {
-        Assert.assertFalse(getPredicate(Arrays.asList()).isValidCondition(Arrays.asList(3)));
+        assertFalse(getPredicate(emptyList()).isValidCondition(singletonList(3)));
     }
 
     @Test
     public void testIsValidConditionOk() {
-        Assert.assertTrue(getPredicate(Arrays.asList(Text.CONTAINS, Cmp.EQUAL, Geo.WITHIN)).isValidCondition(Arrays.asList("john", 3, Geoshape.point(2.0, 4.0))));
+        assertTrue(getPredicate(Arrays.asList(Text.CONTAINS, Cmp.EQUAL, Geo.WITHIN)).isValidCondition(Arrays.asList("john", 3, Geoshape.point(2.0, 4.0))));
     }
 
     @Test
     public void testIsValidConditionKoFirst() {
-        Assert.assertFalse(getPredicate(Arrays.asList(Text.CONTAINS, Cmp.EQUAL, Geo.WITHIN)).isValidCondition(Arrays.asList(1L, 3, Geoshape.point(2.0, 4.0))));
+        assertFalse(getPredicate(Arrays.asList(Text.CONTAINS, Cmp.EQUAL, Geo.WITHIN)).isValidCondition(Arrays.asList(1L, 3, Geoshape.point(2.0, 4.0))));
     }
 
     @Test
     public void testIsValidConditionKo() {
-        Assert.assertFalse(getPredicate(Arrays.asList(Text.CONTAINS, Cmp.EQUAL, Geo.WITHIN)).isValidCondition(Arrays.asList("john", 3, 1L)));
+        assertFalse(getPredicate(Arrays.asList(Text.CONTAINS, Cmp.EQUAL, Geo.WITHIN)).isValidCondition(Arrays.asList("john", 3, 1L)));
     }
 
     @Test
     public void testIsValidTypeOk() {
-        Assert.assertTrue(getPredicate(Arrays.asList(Text.CONTAINS, Cmp.EQUAL)).isValidValueType(String.class));
+        assertTrue(getPredicate(Arrays.asList(Text.CONTAINS, Cmp.EQUAL)).isValidValueType(String.class));
     }
 
     @Test
     public void testIsValidKo() {
-        Assert.assertFalse(getPredicate(Arrays.asList(Text.CONTAINS, Cmp.EQUAL)).isValidValueType(Integer.class));
+        assertFalse(getPredicate(Arrays.asList(Text.CONTAINS, Cmp.EQUAL)).isValidValueType(Integer.class));
     }
 
     @Test
     public void testHasNegationOk() {
-        Assert.assertTrue(getPredicate(Arrays.asList(Geo.INTERSECT, Cmp.EQUAL)).hasNegation());
+        assertTrue(getPredicate(Arrays.asList(Geo.INTERSECT, Cmp.EQUAL)).hasNegation());
     }
 
     @Test
     public void testHasNegationKo() {
-        Assert.assertFalse(getPredicate(Arrays.asList(Text.CONTAINS, Cmp.EQUAL)).hasNegation());
+        assertFalse(getPredicate(Arrays.asList(Text.CONTAINS, Cmp.EQUAL)).hasNegation());
     }
 
     @Test
     public void testNegate() {
-        Assert.assertEquals(getNegatePredicate(Arrays.asList(Geo.DISJOINT, Cmp.NOT_EQUAL)), getPredicate(Arrays.asList(Geo.INTERSECT, Cmp.EQUAL)).negate());
+        assertEquals(getNegatePredicate(Arrays.asList(Geo.DISJOINT, Cmp.NOT_EQUAL)), getPredicate(Arrays.asList(Geo.INTERSECT, Cmp.EQUAL)).negate());
     }
 
     @Test
     public void testTestNotAList() {
-        Assert.assertFalse(getPredicate(Arrays.asList()).test("john","jo"));
+        assertFalse(getPredicate(emptyList()).test("john","jo"));
     }
 
     @Test
     public void testTestDifferentSize() {
-        Assert.assertFalse(getPredicate(Arrays.asList()).test("john",Arrays.asList("jo")));
+        assertFalse(getPredicate(emptyList()).test("john", singletonList("jo")));
     }
 
 
     @Test
     public void testTest() {
         final ConnectiveJanusPredicate predicate = getPredicate(Arrays.asList(Text.PREFIX, Cmp.EQUAL));
-        Assert.assertTrue(predicate.test("john",Arrays.asList("jo", "john")));
-        Assert.assertEquals(predicate.isOr(), predicate.test("john",Arrays.asList("jo", "mike")));
-        Assert.assertEquals(predicate.isOr(), predicate.test("john",Arrays.asList("mi", "john")));
-        Assert.assertFalse(predicate.test("john",Arrays.asList("mi", "mike")));
+        assertTrue(predicate.test("john",Arrays.asList("jo", "john")));
+        assertEquals(predicate.isOr(), predicate.test("john",Arrays.asList("jo", "mike")));
+        assertEquals(predicate.isOr(), predicate.test("john",Arrays.asList("mi", "john")));
+        assertFalse(predicate.test("john",Arrays.asList("mi", "mike")));
     }
-
 }

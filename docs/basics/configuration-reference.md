@@ -1,5 +1,4 @@
-Configuration Reference
-=======================
+# Configuration Reference
 
 This section is the authoritative reference for JanusGraph configuration
 options. It includes all options for storage and indexing backends that
@@ -13,8 +12,7 @@ in other parts of this documentation is in conflict with its
 representation on this page, assume the version listed here to be
 correct.
 
-Mutability Levels
------------------
+## Mutability Levels
 
 Each configuration option has a certain mutability level that governs
 whether and how it can be modified after the database is opened for the
@@ -42,8 +40,7 @@ first time. The following listing describes the mutability levels.
 Refer to [Global Configuration](#configuration-global) for information
 on how to change non-local configuration options.
 
-Umbrella Namespace
-------------------
+## Umbrella Namespace
 
 Namespaces marked with an asterisk are **umbrella namespaces** which
 means that they can accommodate an arbitrary number of sub-namespaces -
@@ -58,10 +55,9 @@ JanusGraph can interface with multiple logging backends, such as the
 options. To configure the send batch size of the `user` log to 100
 transaction changes, one would have to set the following option in the
 configuration
-```conf
+```properties
 log.user.send-batch-size = 100
 ```
 
-Configuration Namespaces and Options
-------------------------------------
+## Configuration Namespaces and Options
 {!basics/janusgraph-cfg.md!}

@@ -1,3 +1,3 @@
-This keypair is just for testing.  Under no circumstances should it be
-used on any system that matters.  It's been public on github and
-compromised since the day it was generated.
+These keystores are just for testing.  Under no circumstances should they be
+used on any system that matters.  They've been public on github and
+compromised since they were generated.

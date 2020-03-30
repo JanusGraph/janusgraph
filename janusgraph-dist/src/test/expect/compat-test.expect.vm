@@ -12,6 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License
+
+set timeout 30
+
 spawn bin/gremlin.sh
 expect_after {
     timeout {
@@ -162,6 +165,6 @@ if { -1 != [string first "WARN"  $expect_out(buffer)] } { exit 1 }
 if { -1 != [string first "ERROR" $expect_out(buffer)] } { exit 1 }
 
 send "g.shutdown()\r"
-expect ==>null
+# expect ==>null
 expect gremlin>
 exit 0

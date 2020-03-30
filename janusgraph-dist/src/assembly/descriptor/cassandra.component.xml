@@ -20,8 +20,8 @@
 
     <files>
         <file>
-            <source>${assembly.static.dir}/log/cassandra.log</source>
-            <outputDirectory>/log</outputDirectory>
+            <source>${assembly.static.dir}/logs/cassandra.log</source>
+            <outputDirectory>/logs</outputDirectory>
         </file>
     </files>
 

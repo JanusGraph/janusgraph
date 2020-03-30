@@ -1,8 +1,5 @@
-Field Mapping
-=============
-
-Individual Field Mapping
-------------------------
+# Field Mapping
+## Individual Field Mapping
 
 By default, JanusGraph will encode property keys to generate a unique
 field name for the property key in the mixed index. If one wants to
@@ -21,8 +18,7 @@ same name for the field in the `booksBySummary` index created in the
 external index system as for the property key. Note, that it must be
 ensured that the given field name is unique in the index.
 
-Global Field Mapping
---------------------
+## Global Field Mapping
 
 Instead of individually adjusting the field mapping for every key added
 to a mixed index, one can instruct JanusGraph to always set the field

@@ -25,8 +25,9 @@ import java.util.List;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Text;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author David Clement (david.clement90@laposte.net)
@@ -45,8 +46,8 @@ public class AndJanusPredicateTest extends ConnectiveJanusPredicateTest{
 
     @Test
     public void testIsQNF() {
-        Assert.assertTrue(getPredicate(Arrays.asList(Text.PREFIX, Cmp.EQUAL)).isQNF());
-        Assert.assertTrue(getPredicate(Arrays.asList(Text.PREFIX, Cmp.EQUAL, new OrJanusPredicate(Arrays.asList(Text.PREFIX, Cmp.EQUAL)))).isQNF());
-        Assert.assertTrue(getPredicate(Arrays.asList(Text.PREFIX, Cmp.EQUAL, new AndJanusPredicate(Arrays.asList(Text.PREFIX, Cmp.EQUAL)))).isQNF());
+        assertTrue(getPredicate(Arrays.asList(Text.PREFIX, Cmp.EQUAL)).isQNF());
+        assertTrue(getPredicate(Arrays.asList(Text.PREFIX, Cmp.EQUAL, new OrJanusPredicate(Arrays.asList(Text.PREFIX, Cmp.EQUAL)))).isQNF());
+        assertTrue(getPredicate(Arrays.asList(Text.PREFIX, Cmp.EQUAL, new AndJanusPredicate(Arrays.asList(Text.PREFIX, Cmp.EQUAL)))).isQNF());
     }
 }

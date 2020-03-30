@@ -1,5 +1,4 @@
-Gremlin Query Language
-======================
+# Gremlin Query Language
 
 ![gremlin](https://tinkerpop.apache.org/docs/3.2.9/images/gremlin-logo.png)
 
@@ -22,11 +21,13 @@ other graph databases supporting Gremlin.
 This section is a brief overview of the Gremlin query language. For more
 information on Gremlin, refer to the following resources:
 
+- [Practical Gremlin](https://kelvinlawrence.net/book/Gremlin-Graph-Guide.html): An online book by Kelvin R. Lawrence providing an in-depth overview of Gremlin and it's interaction with JanusGraph.
+
 - [Complete Gremlin Manual](https://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/reference/): Reference manual for all of the Gremlin steps.
 
 - [Gremlin Console Tutorial](https://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/tutorials/the-gremlin-console/): Learn how to use the Gremlin Console effectively to traverse and analyze a graph interactively.
 
-- [Gremlin Recipes](tinkerpop.apache.org/docs/{{ tinkerpop_version }}/recipes/): A collection of best practices and common traversal patterns for Gremlin.
+- [Gremlin Recipes](https://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/recipes/): A collection of best practices and common traversal patterns for Gremlin.
 
 - [Gremlin Language Drivers](https://tinkerpop.apache.org/index.html#language-drivers):
     Connect to a Gremlin Server with different programming languages,
@@ -42,12 +43,11 @@ In addition to these resources, [Connecting to JanusGraph](../connecting/index.m
 can be used in different programming languages to query a JanusGraph
 Server.
 
-Introductory Traversals
------------------------
+## Introductory Traversals
 
 A Gremlin query is a chain of operations/functions that are evaluated
 from left to right. A simple grandfather query is provided below over
-the *Graph of the Gods* dataset discussed in [Getting Started](../index.md#getting-started).
+the *Graph of the Gods* dataset discussed in [Getting Started](../getting-started/installation.md).
 ```groovy
 gremlin> g.V().has('name', 'hercules').out('father').out('father').values('name')
 ==>saturn
@@ -167,8 +167,7 @@ traversal above is correct.
     JanusGraph with other languages than Groovy and independent of the
     Gremlin Console.
 
-Iterating the Traversal
------------------------
+## Iterating the Traversal
 
 One convenient feature of the Gremlin Console is that it automatically iterates all results from a query executed from the gremlin> prompt. This works well within the [REPL](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) environment as it shows you the results as a String. As you transition towards writing a Gremlin application, it is important to understand how to iterate a traversal explicitly because your application’s traversals will not iterate automatically. These are some of the common ways to iterate the [Traversal](https://tinkerpop.apache.org/javadocs/{{ tinkerpop_version }}/full/org/apache/tinkerpop/gremlin/process/traversal/Traversal.html):
 

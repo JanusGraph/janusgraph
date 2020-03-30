@@ -29,7 +29,6 @@ It also includes software from other open source projects including, but not lim
  * Apache Solr [https://lucene.apache.org/solr/]
  * Apache TinkerPop [https://tinkerpop.apache.org/]
  * Astyanax [https://github.com/Netflix/astyanax]
- * AWS SDK for Java [https://aws.amazon.com/sdkforjava]
  * DataStax Driver for Apache Cassandra  [https://github.com/datastax/java-driver]
  * EasyMock [http://easymock.org/]
  * Elasticsearch [https://www.elastic.co/]
@@ -46,7 +45,7 @@ It also includes software from other open source projects including, but not lim
  * OpenRDF [http://rdf4j.org/]
  * Oracle BerkeleyDB Java Edition [https://www.oracle.com/technetwork/products/berkeleydb/] (see license below)
  * Project Lombok [https://projectlombok.org/]
- * Reflections [https://github.com/ronmamo/reflections]
+ * Reflections8 [https://github.com/aschoerk/reflections8]
  * SLF4J [https://www.slf4j.org/]
  * Spatial4j [https://github.com/locationtech/spatial4j]
  * Vavr [https://www.vavr.io/]

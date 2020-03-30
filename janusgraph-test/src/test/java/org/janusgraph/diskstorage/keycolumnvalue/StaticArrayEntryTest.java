@@ -24,7 +24,6 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -88,21 +87,21 @@ public class StaticArrayEntryTest {
 
         ReadBuffer r = b.getStaticBuffer().asReadBuffer();
         assertEquals(1,r.getByte());
-        assertTrue(Arrays.equals(new byte[]{2,3},r.getBytes(2)));
+        assertArrayEquals(new byte[]{2, 3}, r.getBytes(2));
         assertEquals(1,r.getShort());
-        assertTrue(Arrays.equals(new short[]{2,3},r.getShorts(2)));
+        assertArrayEquals(new short[]{2, 3}, r.getShorts(2));
         assertEquals(1,r.getInt());
         assertEquals(2,r.getInt());
-        assertTrue(Arrays.equals(new int[]{3},r.getInts(1)));
+        assertArrayEquals(new int[]{3}, r.getInts(1));
         assertEquals(1,r.getLong());
-        assertTrue(Arrays.equals(new long[]{2,3},r.getLongs(2)));
+        assertArrayEquals(new long[]{2, 3}, r.getLongs(2));
         assertEquals(1.0,r.getFloat(),0.00001);
-        assertTrue(Arrays.equals(new float[]{2.0f,3.0f},r.getFloats(2)));
+        assertArrayEquals(new float[]{2.0f, 3.0f}, r.getFloats(2));
         assertEquals(1,r.getDouble(),0.0001);
-        assertTrue(Arrays.equals(new double[]{2.0,3.0},r.getDoubles(2)));
+        assertArrayEquals(new double[]{2.0, 3.0}, r.getDoubles(2));
         assertEquals((char)101,r.getChar());
         assertEquals((char)102,r.getChar());
-        assertTrue(Arrays.equals(new char[]{(char)103},r.getChars(1)));
+        assertArrayEquals(new char[]{(char) 103}, r.getChars(1));
 
     }
 

@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
@@ -31,18 +30,12 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.JanusGraphConstants;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)
  */
 public abstract class CassandraGraphTest extends JanusGraphTest {
-
-    @BeforeAll
-    public static void startCassandra() {
-        CassandraStorageSetup.startCleanEmbedded();
-    }
 
     @Test
     public void testHasTTL() {
@@ -143,10 +136,10 @@ public abstract class CassandraGraphTest extends JanusGraphTest {
                 ));
         
         wc.set(ConfigElement.getPath(GraphDatabaseConfiguration.IDS_STORE_NAME), JanusGraphConstants.TITAN_ID_STORE_NAME);
-        assertTrue(JanusGraphConstants.TITAN_ID_STORE_NAME.equals(
-                            wc.get(ConfigElement.getPath(GraphDatabaseConfiguration.IDS_STORE_NAME), 
-                                        GraphDatabaseConfiguration.IDS_STORE_NAME.getDatatype())
-                ));
+        assertEquals(
+            JanusGraphConstants.TITAN_ID_STORE_NAME,
+            wc.get(ConfigElement.getPath(GraphDatabaseConfiguration.IDS_STORE_NAME),
+            GraphDatabaseConfiguration.IDS_STORE_NAME.getDatatype()));
         graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
     }
 }

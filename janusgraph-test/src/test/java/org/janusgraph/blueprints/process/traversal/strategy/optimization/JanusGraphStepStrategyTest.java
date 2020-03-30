@@ -157,7 +157,7 @@ public class JanusGraphStepStrategyTest {
         final JanusGraphStep<Vertex, Vertex> graphStep = new JanusGraphStep<>(new GraphStep<>(traversal, Vertex.class, true));
         for (int i = 0; i < hasKeyValues.length; i++) {
             if(hasKeyValues[i].equals(T.id)) {
-                graphStep.addIds(Arrays.asList(hasKeyValues[i + 1]));
+                graphStep.addIds(Collections.singletonList(hasKeyValues[i + 1]));
                 i++;
             } else if (hasKeyValues[i] instanceof HasStepFolder.OrderEntry) {
                 final HasStepFolder.OrderEntry orderEntry = (HasStepFolder.OrderEntry) hasKeyValues[i];
@@ -269,10 +269,12 @@ public class JanusGraphStepStrategyTest {
             arguments(g.V().or(has("name", "marko"), has("lang", "java").order().by("name", Order.desc)).order().by(
                 "lang", Order.asc),
                 g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), new HasStepFolder.OrderEntry("name",
-                    Order.desc))), new HasStepFolder.OrderEntry("lang", Order.asc)), Collections.emptyList())
+                    Order.desc))), new HasStepFolder.OrderEntry("lang", Order.asc)), Collections.emptyList()),
+            arguments(g.V().or(__.has("name", "marko").has("age", 29), __.has("name", "vadas").has("age", 27)).as("x").select("x"),
+                g_V(__.or(g_V("name", eq("marko"), "age", eq(29)), g_V("name", eq("vadas"), "age", eq(27)))).as("x").select("x"), Collections.emptyList()),
         });
     }
-    
+
     private static Stream<Arguments> generateMultiQueryTestParameters() {
         final StandardJanusGraph graph = (StandardJanusGraph) StorageSetup.getInMemoryGraphWithMultiQuery();
         final GraphTraversalSource g = graph.traversal();
@@ -292,7 +294,7 @@ public class JanusGraphStepStrategyTest {
         final String MQ_FILTER = "TraversalFilterStep";
         final String MQ_REPEAT = "RepeatEndStep";
 
-        List<JanusGraphLocalQueryOptimizerStrategy> otherStrategies = Arrays.asList(JanusGraphLocalQueryOptimizerStrategy.instance());
+        List<JanusGraphLocalQueryOptimizerStrategy> otherStrategies = Collections.singletonList(JanusGraphLocalQueryOptimizerStrategy.instance());
 
         return Arrays.stream(new Arguments[]{
             arguments(g.V().choose(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)),

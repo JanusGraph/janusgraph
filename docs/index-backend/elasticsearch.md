@@ -1,5 +1,4 @@
-Elasticsearch
-=============
+# Elasticsearch
 
 > Elasticsearch is a distributed, RESTful search and analytics engine
 > capable of solving a growing number of use cases. As the heart of the
@@ -34,8 +33,7 @@ Elasticsearch will work with JanusGraph.
 !!! important
     JanusGraph uses sandboxed https://www.elastic.co/guide/en/elasticsearch/reference/master/modules-scripting-painless.html[Painless scripts] for inline updates, which are enabled by default in Elasticsearch.
 
-Running Elasticsearch
----------------------
+## Running Elasticsearch
 
 JanusGraph supports connections to a running Elasticsearch cluster.
 JanusGraph provides two options for running local Elasticsearch
@@ -55,8 +53,7 @@ $ elasticsearch/bin/elasticsearch
     For security reasons Elasticsearch must be run under a non-root
     account
 
-Elasticsearch Configuration Overview
-------------------------------------
+## Elasticsearch Configuration Overview
 
 JanusGraph supports HTTP(S) client connections to a running
 Elasticsearch cluster. Please see [Version Compatibility](../appendices.md#version-compatibility) for details on
@@ -82,14 +79,14 @@ in JanusGraph.
 ### Connecting to Elasticsearch
 
 The Elasticsearch client is specified as follows:
-```conf
+```properties
 index.search.backend=elasticsearch
 ```
 
 When connecting to Elasticsearch a single or list of hostnames for the
 Elasticsearch instances must be provided. These are supplied via
 JanusGraph’s `index.[X].hostname` key.
-```conf
+```properties
 index.search.backend=elasticsearch
 index.search.hostname=10.0.0.10:9200
 ```
@@ -98,7 +95,7 @@ Each host or host:port pair specified here will be added to the HTTP
 client’s round-robin list of request targets. Here’s a minimal
 configuration that will round-robin over 10.0.0.10 on the default
 Elasticsearch HTTP port (9200) and 10.0.0.20 on port 7777:
-```conf
+```properties
 index.search.backend=elasticsearch
 index.search.hostname=10.0.0.10, 10.0.0.20:7777
 ```
@@ -246,8 +243,7 @@ See [ingest documentation](https://www.elastic.co/guide/en/elasticsearch/referen
 for more information about ingest pipelines and [processors documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest-processors.html)
 for more information about ingest processors.
 
-Secure Elasticsearch
---------------------
+## Secure Elasticsearch
 
 Elasticsearch does not perform authentication or authorization. A client
 that can connect to Elasticsearch is trusted by Elasticsearch. When
@@ -316,7 +312,7 @@ Elasticsearch’s assumption, implemented server-side, that unqualified
 to spell out the index prefix explicitly. Here’s a JanusGraph config
 file functionally equivalent to the one listed above, except that the
 `index.` prefix before the index creation settings is explicit:
-```conf
+```properties
 index.search.backend=elasticsearch
 index.search.elasticsearch.create.ext.index.number_of_shards=15
 index.search.elasticsearch.create.ext.index.number_of_replicas=3
@@ -327,8 +323,7 @@ index.search.elasticsearch.create.ext.index.shard.check_on_startup=false
     The `create.ext` mechanism for specifying index creation settings is
     compatible with JanusGraph’s Elasticsearch configuration.
 
-Troubleshooting
----------------
+## Troubleshooting
 
 ### Connection Issues to remote Elasticsearch cluster
 
@@ -337,8 +332,7 @@ protocol port from the JanusGraph nodes. Check the node listen port by
 examining the Elasticsearch node configuration logs or using a general
 diagnostic utility like `netstat`. Check the JanusGraph configuration.
 
-Optimizing Elasticsearch
-------------------------
+## Optimizing Elasticsearch
 
 ### Write Optimization
 

@@ -14,15 +14,28 @@
 
 package org.janusgraph.graphdb.database;
 
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
+
 import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.*;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
@@ -57,9 +70,11 @@ import org.janusgraph.graphdb.relations.EdgeDirection;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphBlueprintsGraph;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphFeatures;
 import org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexFilterOptimizerStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexIsOptimizerStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexHasIdOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphIoRegistrationStrategy;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStepStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphLocalQueryOptimizerStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStepStrategy;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
 import org.janusgraph.graphdb.transaction.TransactionConfiguration;
@@ -71,24 +86,8 @@ import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.graphdb.util.ExceptionFactory;
 import org.janusgraph.util.system.IOUtils;
 import org.janusgraph.util.system.TXUtils;
-
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
-
-import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicLong;
-
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
 
 public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
@@ -97,10 +96,15 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
 
     static {
-        TraversalStrategies graphStrategies = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone()
+        TraversalStrategies graphStrategies =
+            TraversalStrategies.GlobalCache.getStrategies(Graph.class)
+                .clone()
                 .addStrategies(AdjacentVertexFilterOptimizerStrategy.instance(),
-                    JanusGraphLocalQueryOptimizerStrategy.instance(), JanusGraphStepStrategy.instance(),
-                    JanusGraphIoRegistrationStrategy.instance());
+                               AdjacentVertexHasIdOptimizerStrategy.instance(),
+                               AdjacentVertexIsOptimizerStrategy.instance(),
+                               JanusGraphLocalQueryOptimizerStrategy.instance(),
+                               JanusGraphStepStrategy.instance(),
+                               JanusGraphIoRegistrationStrategy.instance());
 
         //Register with cache
         TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraph.class, graphStrategies);

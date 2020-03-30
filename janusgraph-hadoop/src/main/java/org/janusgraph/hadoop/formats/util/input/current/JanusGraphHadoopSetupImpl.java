@@ -126,6 +126,6 @@ public class JanusGraphHadoopSetupImpl implements JanusGraphHadoopSetup {
 
     @Override
     public boolean getFilterPartitionedVertices() {
-        return scanConf.get(JanusGraphHadoopConfiguration.FILTER_PARTITIONED_VERTICES);
+        return scanConf.get(JanusGraphHadoopConfiguration.FILTER_PARTITIONED_VERTICES, true);
     }
 }

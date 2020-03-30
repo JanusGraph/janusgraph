@@ -14,9 +14,12 @@
 
 package org.janusgraph.graphdb.inmemory;
 
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
+
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.olap.OLAPTest;
 
@@ -29,6 +32,7 @@ public class InMemoryOLAPTest extends OLAPTest {
     public WriteConfiguration getConfiguration() {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND,"inmemory");
+        config.set(TIMESTAMP_PROVIDER, TimestampProviders.NANO);
         return config.getConfiguration();
     }
 

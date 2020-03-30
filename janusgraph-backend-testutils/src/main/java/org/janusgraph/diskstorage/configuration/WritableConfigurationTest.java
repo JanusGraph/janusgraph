@@ -22,7 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.util.Arrays;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -62,7 +62,7 @@ public abstract class WritableConfigurationTest {
         // assertEquals(1,config.get("test.baz",Integer.class).intValue());
         assertEquals(true, config.get("storage.xyz", Boolean.class));
         assertEquals(false, config.get("storage.abc", Boolean.class));
-        assertTrue(Arrays.equals(new String[]{"x", "y"},config.get("storage.duba",String[].class)));
+        assertArrayEquals(new String[]{"x", "y"}, config.get("storage.duba", String[].class));
         assertEquals(Duration.ofMinutes(60), config.get("times.60m", Duration.class));
         assertTrue(Object.class.isAssignableFrom(config.get("obj", Object.class).getClass()));
     }

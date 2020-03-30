@@ -79,7 +79,7 @@ public class JanusGraphAppTest {
 
         final JanusGraphIndex nameIndex = management.getGraphIndex("nameIndex");
         assertTrue(nameIndex.isCompositeIndex());
-        assertTrue(nameIndex.getIndexedElement().equals(JanusGraphVertex.class));
+        assertEquals(nameIndex.getIndexedElement(), JanusGraphVertex.class);
         final PropertyKey[] nameIndexKeys = nameIndex.getFieldKeys();
         assertEquals(1, nameIndexKeys.length);
         assertEquals("name", nameIndexKeys[0].name());

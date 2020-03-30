@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.janusgraph</groupId>
     <artifactId>janusgraph</artifactId>
-    <version>0.5.0-SNAPSHOT</version>
+    <version>0.6.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <prerequisites>
         <maven>2.2.1</maven>
@@ -69,16 +69,17 @@
     </distributionManagement>
     <properties>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
-        <tinkerpop.version>3.4.1</tinkerpop.version>
-        <junit-platform.version>1.5.1</junit-platform.version>
-        <junit.version>5.5.1</junit.version>
+        <tinkerpop.version>3.4.6</tinkerpop.version>
+        <junit-platform.version>1.5.2</junit-platform.version>
+        <junit.version>5.5.2</junit.version>
         <mrunit.version>1.1.0</mrunit.version>
         <mockito.version>2.23.0</mockito.version>
         <cassandra.version>2.2.13</cassandra.version>
         <jamm.version>0.3.0</jamm.version>
         <metrics.version>3.2.2</metrics.version>
         <slf4j.version>1.7.12</slf4j.version>
-        <httpcomponents.version>4.4.1</httpcomponents.version>
+        <httpcomponents.httpclient.version>4.5.10</httpcomponents.httpclient.version>
+        <httpcomponents.httpcore.version>4.4.12</httpcomponents.httpcore.version>
         <hadoop2.version>2.7.7</hadoop2.version>
         <hbase1.version>1.4.10</hbase1.version>
         <hbase2.version>2.1.5</hbase2.version>
@@ -87,10 +88,9 @@
         <scylladb.version>1.7.1</scylladb.version>
         <!-- align with org.apache.hbase:hbase -->
         <jackson1.version>1.9.13</jackson1.version>
-        <jackson2.version>2.6.6</jackson2.version>
-        <lucene-solr.version>7.0.0</lucene-solr.version>
-        <elasticsearch-driver.version>7.3.1</elasticsearch-driver.version>
-        <elasticsearch-server.version>6.2.4</elasticsearch-server.version>
+        <jackson2.version>2.10.3</jackson2.version>
+        <lucene-solr.version>7.7.2</lucene-solr.version>
+        <elasticsearch.version>7.6.1</elasticsearch.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <joda.version>2.8.2</joda.version>
@@ -101,7 +101,7 @@
         <asm4.version>4.0</asm4.version>
         <zookeeper.version>3.4.6</zookeeper.version>
         <!-- align with org.apache.tinkerpop:tinkerpop -->
-        <netty4.version>4.1.25.Final</netty4.version>
+        <netty4.version>4.1.45.Final</netty4.version>
         <jna.version>4.0.0</jna.version>
         <kuali.s3.wagon.version>1.1.20</kuali.s3.wagon.version>
         <jasper.version>5.5.23</jasper.version>
@@ -110,7 +110,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <janusgraph.testdir>${project.build.directory}/janusgraph-test</janusgraph.testdir>
         <gpg.skip>false</gpg.skip>
-        <maven.gpg.version>1.4</maven.gpg.version>
+        <maven.gpg.version>1.6</maven.gpg.version>
         <perf.jvm.opts />
         <default.test.jvm.opts>-Xms256m -Xmx768m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
         <mem.jvm.opts>-Xms256m -Xmx256m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
@@ -123,11 +123,11 @@
         <compiler.target>1.8</compiler.target>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
-        <cassandra-driver.version>3.7.2</cassandra-driver.version>
-        <testcontainers.version>1.11.4</testcontainers.version>
+        <cassandra-driver.version>3.8.0</cassandra-driver.version>
+        <testcontainers.version>1.12.4</testcontainers.version>
+        <easymock.version>3.4</easymock.version>
     </properties>
     <modules>
-        <module>janusgraph-codepipelines-ci</module>
         <module>janusgraph-driver</module>
         <module>janusgraph-core</module>
         <module>janusgraph-server</module>
@@ -165,7 +165,7 @@
             <!-- for com.sleepycat:je:jar -->
             <id>oracleReleases</id>
             <name>Oracle Released Java Packages</name>
-            <url>http://download.oracle.com/maven</url>
+            <url>https://download.oracle.com/maven</url>
             <layout>default</layout>
             <snapshots>
                 <enabled>false</enabled>
@@ -305,7 +305,7 @@
             <plugins>
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.1</version>
+                    <version>3.8.1</version>
                     <configuration>
                         <source>${compiler.source}</source>
                         <target>${compiler.target}</target>
@@ -442,7 +442,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-clean-plugin</artifactId>
-                    <version>2.5</version>
+                    <version>3.1.0</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-dependency-plugin</artifactId>
@@ -510,7 +510,7 @@
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>0.7.9</version>
+                    <version>0.8.5</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -566,6 +566,10 @@
                     <exclusion>
                         <groupId>org.eclipse.jetty.orbit</groupId>
                         <artifactId>javax.servlet</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.thoughtworks.paranamer</groupId>
+                        <artifactId>paranamer</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -709,9 +713,9 @@
                 <version>1.11</version>
             </dependency>
             <dependency>
-                <groupId>org.reflections</groupId>
-                <artifactId>reflections</artifactId>
-                <version>0.9.9-RC1</version>
+                <groupId>net.oneandone.reflections8</groupId>
+                <artifactId>reflections8</artifactId>
+                <version>0.11.7</version>
             </dependency>
             <dependency>
                 <groupId>xml-apis</groupId>
@@ -856,7 +860,7 @@
             <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
-                <version>1.7</version>
+                <version>1.14</version>
             </dependency>
             <dependency>
                 <groupId>commons-cli</groupId>
@@ -885,7 +889,7 @@
             <dependency>
                 <groupId>org.locationtech.jts</groupId>
                 <artifactId>jts-core</artifactId>
-                <version>1.15.0</version>
+                <version>1.16.1</version>
             </dependency>
 
             <!-- Package prefix is org.apache.commons.httpclient -->
@@ -899,12 +903,17 @@
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
-                <version>${httpcomponents.version}</version>
+                <version>${httpcomponents.httpclient.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpcore</artifactId>
-                <version>${httpcomponents.version}</version>
+                <version>${httpcomponents.httpcore.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore-nio</artifactId>
+                <version>${httpcomponents.httpcore.version}</version>
             </dependency>
 
             <dependency>
@@ -926,7 +935,7 @@
             <dependency>
                 <groupId>org.jacoco</groupId>
                 <artifactId>org.jacoco.ant</artifactId>
-                <version>0.7.9</version>
+                <version>0.8.5</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
@@ -1041,7 +1050,7 @@
             <dependency>
                 <groupId>org.elasticsearch.client</groupId>
                 <artifactId>elasticsearch-rest-client</artifactId>
-                <version>${elasticsearch-driver.version}</version>
+                <version>${elasticsearch.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.testcontainers</groupId>
@@ -1074,6 +1083,11 @@
                 <groupId>org.testcontainers</groupId>
                 <artifactId>junit-jupiter</artifactId>
                 <version>${testcontainers.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.easymock</groupId>
+                <artifactId>easymock</artifactId>
+                <version>${easymock.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -1401,7 +1415,7 @@
                             <dependency>
                                 <groupId>org.jacoco</groupId>
                                 <artifactId>org.jacoco.ant</artifactId>
-                                <version>0.7.9</version>
+                                <version>0.8.5</version>
                             </dependency>
                         </dependencies>
                     </plugin>

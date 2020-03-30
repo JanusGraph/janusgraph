@@ -305,6 +305,11 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     private Iterable<JanusGraphRelation> executeIndividualRelations(InternalVertex vertex,
                                                                     BaseVertexCentricQuery baseQuery) {
         VertexCentricQuery query = constructQuery(vertex, baseQuery);
+        return executeIndividualRelations(vertex, query);
+    }
+
+    private Iterable<JanusGraphRelation> executeIndividualRelations(InternalVertex vertex,
+                                                                    VertexCentricQuery query) {
         if (useSimpleQueryProcessor(query,vertex)) return new SimpleVertexQueryProcessor(query,tx).relations();
         else return new QueryProcessor<>(query, tx.edgeProcessor);
     }
@@ -334,7 +339,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                                                                  BaseVertexCentricQuery baseQuery) {
         VertexCentricQuery query = constructQuery(vertex, baseQuery);
         if (useSimpleQueryProcessor(query, vertex)) return new SimpleVertexQueryProcessor(query,tx).vertexIds();
-        else return edges2Vertices((Iterable) executeIndividualRelations(vertex,baseQuery), query.getVertex());
+        else return edges2Vertices((Iterable) executeIndividualRelations(vertex, query), query.getVertex());
     }
 
     public VertexList executeVertexIds(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
@@ -364,7 +369,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     private VertexList executeIndividualVertexIds(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
         VertexCentricQuery query = constructQuery(vertex, baseQuery);
         if (useSimpleQueryProcessor(query, vertex)) return new SimpleVertexQueryProcessor(query,tx).vertexIds();
-        return edges2VertexIds((Iterable) executeIndividualRelations(vertex,baseQuery), vertex);
+        return edges2VertexIds((Iterable) executeIndividualRelations(vertex, query), vertex);
     }
 
 
@@ -446,8 +451,8 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         if (!hasTypes()) {
             final BackendQueryHolder<SliceQuery> query= new BackendQueryHolder<>(
                 serializer.getQuery(returnType, querySystem),
-                ((dir == Direction.BOTH || (returnType == RelationCategory.PROPERTY && dir == Direction.OUT))
-                        && !conditions.hasChildren()),
+                (adjacentVertex == null && dir == Direction.BOTH || returnType == RelationCategory.PROPERTY && dir == Direction.OUT)
+                        && !conditions.hasChildren(),
                 orders.isEmpty());
             if (sliceLimit!=Query.NO_LIMIT && sliceLimit<Integer.MAX_VALUE/3) {
                 //If only one direction is queried, ask for twice the limit from backend since approximately

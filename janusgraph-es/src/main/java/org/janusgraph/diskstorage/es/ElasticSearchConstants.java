@@ -14,9 +14,6 @@
 
 package org.janusgraph.diskstorage.es;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ElasticSearchConstants {
 
     public static final String ES_DOC_KEY = "doc";

@@ -14,7 +14,7 @@
 
 package org.janusgraph.blueprints.thrift;
 
-import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.JanusGraphCassandraThriftContainer;
 import org.janusgraph.blueprints.AbstractJanusGraphProvider;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
@@ -23,11 +23,12 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
  * @author Ted Wilmes (twilmes@gmail.com)
  */
 public class ThriftMultiQueryGraphProvider extends AbstractJanusGraphProvider {
+    public static final JanusGraphCassandraThriftContainer thriftContainer = new JanusGraphCassandraThriftContainer();
 
     @Override
     public ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test, String testMethodName) {
-        CassandraStorageSetup.startCleanEmbedded();
-        return CassandraStorageSetup.getCassandraThriftConfiguration(graphName)
+        thriftContainer.start();
+        return thriftContainer.getThriftConfiguration(graphName)
             .set(GraphDatabaseConfiguration.USE_MULTIQUERY, true);
     }
 

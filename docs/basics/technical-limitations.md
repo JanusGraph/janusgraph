@@ -1,5 +1,4 @@
-Technical Limitations
-=====================
+# Technical Limitations
 
 There are various limitations and "gotchas" that one should be aware of
 when using JanusGraph. Some of these limitations are necessary design
@@ -7,8 +6,7 @@ choices and others are issues that will be rectified as JanusGraph
 development continues. Finally, the last section provides solutions to
 common issues.
 
-Design Limitations
-------------------
+## Design Limitations
 
 These limitations reflect long-term tradeoffs design tradeoffs which are
 either difficult or impractical to change. These limitations are
@@ -73,8 +71,7 @@ For example, if you attempt to create a vertex with the label of
 `property`, you will receive an exception regarding protected system
 types.
 
-Temporary Limitations
----------------------
+## Temporary Limitations
 
 These are limitations in JanusGraph’s current implementation. These
 limitations could reasonably be removed in upcoming versions of

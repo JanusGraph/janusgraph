@@ -1,6 +1,7 @@
 /janusgraph/
 /janusgraph-berkeleyje/
 /janusgraph-cassandra/
+/janusgraph-cql/
 /janusgraph-es/
 /janusgraph-hbase/
 /janusgraph-lucene/
@@ -8,6 +9,7 @@
 /files
 /janusgraph-berkeleyje.substvars
 /janusgraph-cassandra.substvars
+/janusgraph-cql.substvars
 /janusgraph-es.substvars
 /janusgraph-hbase.substvars
 /janusgraph-lucene.substvars

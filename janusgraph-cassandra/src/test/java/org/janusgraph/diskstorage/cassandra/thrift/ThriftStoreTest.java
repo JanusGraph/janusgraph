@@ -14,21 +14,19 @@
 
 package org.janusgraph.diskstorage.cassandra.thrift;
 
+import org.janusgraph.JanusGraphCassandraThriftContainer;
 import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
+import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreTest;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
-import org.janusgraph.CassandraStorageSetup;
-import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreTest;
-import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
-import org.junit.jupiter.api.BeforeAll;
-
+@Testcontainers
 public class ThriftStoreTest extends AbstractCassandraStoreTest {
-
-    @BeforeAll
-    public static void startCassandra() {
-        CassandraStorageSetup.startCleanEmbedded();
-    }
+    @Container
+    public static final JanusGraphCassandraThriftContainer thriftContainer = new JanusGraphCassandraThriftContainer();
 
     @Override
     public ModifiableConfiguration getBaseStorageConfiguration() {
@@ -37,7 +35,7 @@ public class ThriftStoreTest extends AbstractCassandraStoreTest {
 
     @Override
     public ModifiableConfiguration getBaseStorageConfiguration(String keyspace) {
-        return CassandraStorageSetup.getCassandraThriftConfiguration(keyspace);
+        return thriftContainer.getThriftConfiguration(keyspace);
     }
 
     @Override

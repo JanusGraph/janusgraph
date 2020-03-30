@@ -28,7 +28,6 @@ import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.OrderList;
-import org.janusgraph.graphdb.predicate.OrJanusPredicate;
 import org.janusgraph.graphdb.query.*;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
@@ -359,8 +358,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             }
             indexLimit = Math.min(HARD_MAX_LIMIT,
                 QueryUtil.adjustLimitForTxModifications(tx, coveredClauses.size(), indexLimit));
-            jointQuery.setLimit(indexLimit);
-            query = new BackendQueryHolder<>(jointQuery,
+            query = new BackendQueryHolder<>(jointQuery.updateLimit(indexLimit),
                     coveredClauses.size() == conditions.numChildren(), isSorted);
         } else {
             query = new BackendQueryHolder<>(new JointIndexQuery(), false, isSorted);

@@ -1,5 +1,4 @@
-Oracle Berkeley DB Java Edition
-===============================
+# Oracle Berkeley DB Java Edition
 
 > Oracle Berkeley DB Java Edition is an open source, embeddable,
 > transactional storage engine written entirely in Java. It takes full
@@ -22,8 +21,7 @@ on commodity hardware. However, for graphs of that size the BerkeleyDB
 storage backend exhibits high performance because all data can be
 accessed locally within the same JVM.
 
-BerkeleyDB JE Setup
--------------------
+## BerkeleyDB JE Setup
 
 Since BerkeleyDB runs in the same JVM as JanusGraph, connecting the two
 only requires a simple configuration and no additional setup:
@@ -37,8 +35,7 @@ open();
 In the Gremlin Console, you can not define the type of the variables
 `conf` and `g`. Therefore, simply leave off the type declaration.
 
-BerkeleyDB Specific Configuration
----------------------------------
+## BerkeleyDB Specific Configuration
 
 Refer to [Configuration Reference](../basics/configuration-reference.md) for a complete listing of all BerkeleyDB
 specific configuration options in addition to the general JanusGraph
@@ -61,8 +58,7 @@ BerkeleyDB specific configuration options:
     for JanusGraph. For instance, if JanusGraph only runs short
     transactions, use a value of 80 or higher.
 
-Ideal Use Case
---------------
+## Ideal Use Case
 
 The BerkeleyDB storage backend is best suited for small to medium size
 graphs with up to 100 million vertices on commodity hardware. For graphs
@@ -77,8 +73,7 @@ Since BerkeleyDB runs in the same JVM as JanusGraph, this storage
 backend is ideally suited for unit testing of application code using
 JanusGraph.
 
-Global Graph Operations
------------------------
+## Global Graph Operations
 
 JanusGraph backed by BerkeleyDB supports global graph operations such as
 iterating over all vertices or edges. However, note that such operations

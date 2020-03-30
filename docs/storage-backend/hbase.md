@@ -1,5 +1,4 @@
-Apache HBase
-============
+# Apache HBase
 
 ![](https://hbase.apache.org/images/hbase_logo.png)
 
@@ -13,8 +12,7 @@ Apache HBase
 >
 > —  [Apache HBase Homepage](https://hbase.apache.org/)
 
-HBase Setup
------------
+## HBase Setup
 
 The following sections outline the various ways in which JanusGraph can
 be used in concert with Apache HBase.
@@ -114,8 +112,7 @@ scriptEngines: {
 ...
 ```
 
-HBase Specific Configuration
-----------------------------
+## HBase Specific Configuration
 
 Refer to [Configuration Reference](../basics/configuration-reference.md) for a complete listing of all HBase specific
 configuration options in addition to the general JanusGraph
@@ -145,16 +142,14 @@ through JanusGraph.
     be explicitly set to `MILLI`. Do not set the `graph.timestamps`
     property to another value in any cases.
 
-Global Graph Operations
------------------------
+## Global Graph Operations
 
 JanusGraph over HBase supports global vertex and edge iteration.
 However, note that all these vertices and/or edges will be loaded into
 memory which can cause `OutOfMemoryException`. Use [JanusGraph with TinkerPop’s Hadoop-Gremlin](../advanced-topics/hadoop.md) to
 iterate over all vertices or edges in large graphs effectively.
 
-Tips and Tricks for Managing an HBase Cluster
----------------------------------------------
+## Tips and Tricks for Managing an HBase Cluster
 
 The [HBase shell](https://wiki.apache.org/hadoop/Hbase/Shell) on the
 master server can be used to get an overall status check of the cluster.

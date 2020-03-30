@@ -57,5 +57,6 @@ class AdjacentVertexFilterOptimizerStrategyTest {
         v2 = DetachedFactory.detach(v2, false);
 
         assertTrue(g.V(v1).bothE("E").filter(__.otherV().is(v2)).hasNext());
+        assertTrue(g.V(v1).bothE("E").filter(__.otherV().hasId(v2.id())).hasNext());
     }
 }

@@ -58,7 +58,7 @@ for jar in "$CASSANDRA_HOME"/lib/*.jar; do
 done
 
 # This system property is referenced in log4j-server.properties
-logdir="$CASSANDRA_HOME/log"
+logdir="$CASSANDRA_HOME/logs"
 
 # Special-case path variables.
 case "`uname`" in

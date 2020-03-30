@@ -105,7 +105,8 @@ Use `dataType(Class)` to define the data type of a property key.
 JanusGraph will enforce that all values associated with the key have the
 configured data type and thereby ensures that data added to the graph is
 valid. For instance, one can define that the `name` key has a String
-data type.
+data type. Note that primitive types are not supported. Use the corresponding
+wrapper class, e.g. `Integer` instead of `int`.
 
 Define the data type as `Object.class` in order to allow any
 (serializable) value to be associated with a key. However, it is
@@ -220,6 +221,10 @@ By default, implicitly created edge labels have multiplicity MULTI and
 implicitly created property keys have cardinality SINGLE and data type
 `Object.class`. Users can control automatic schema element creation by
 implementing and registering their own `DefaultSchemaMaker`.
+
+When defining a cardinality for a vertex property which differs from SINGLE, 
+the cardinality should be used for all values of the vertex property in the 
+first query (i.e. the query which defines a new vertex property key).
 
 It is strongly encouraged to explicitly define all schema elements and
 to disable automatic schema creation by setting `schema.default=none` in

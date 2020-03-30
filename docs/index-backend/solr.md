@@ -1,5 +1,4 @@
-Apache Solr
-===========
+# Apache Solr
 
 > Solr is the popular, blazing fast open source enterprise search
 > platform from the Apache Lucene project. Solr is a standalone
@@ -29,8 +28,7 @@ JanusGraph:
 Please see [Version Compatibility](../appendices.md#version-compatibility) 
 for details on what versions of Solr will work with JanusGraph.
 
-Solr Configuration Overview
----------------------------
+## Solr Configuration Overview
 
 JanusGraph supports Solr running in either a SolrCloud or Solr
 Standalone (HTTP) configuration for use with a **mixed index** 
@@ -55,8 +53,7 @@ These are some key Solr terms:
 -   **Configset**: A shared *configuration* that can be reused by
     multiple cores.
 
-Connecting to SolrCloud
------------------------
+## Connecting to SolrCloud
 
 When connecting to a SolrCloud cluster by setting the `mode` equal to
 `cloud`, the Zookeeper URL (and optionally port) must be specified so
@@ -288,8 +285,7 @@ Note, however, that schemaless mode is recommended only for prototyping
 and initial application development and NOT recommended for production
 use.
 
-Troubleshooting
----------------
+## Troubleshooting
 
 ### Collection Does Not Exist
 
@@ -433,8 +429,7 @@ Spatial4j declares its target JTS version in the [pom for the `com.spatial4j:spa
 Copy the JTS jar to the server/solr-webapp/webapp/WEB-INF/lib directory
 in your solr installation.
 
-Advanced Solr Configuration
----------------------------
+## Advanced Solr Configuration
 
 ### DSE Search
 
@@ -556,7 +551,7 @@ curl "http://localhost:8983/solr/admin/cores?action=STATUS&core=$CORE_NAME"
 ```
 
 Now the JanusGraph database and backing Solr core are ready for use. We
-can test it out with the [Graph of the Gods](../index.md#getting-started) dataset.
+can test it out with the [Graph of the Gods](../getting-started/basic-usage.md) dataset.
 Picking up the Gremlin Console session started above:
 ```groovy
 // Assuming graph = JanusGraphFactory.open('conf/janusgraph-cql-solr.properties')...
@@ -564,7 +559,7 @@ gremlin> GraphOfTheGodsFactory.load(graph)
 ==>null
 ```
 
-Now we can run any of the queries described in [Getting started](../index.md#getting-started).
+Now we can run any of the queries described in [Getting started](../getting-started/basic-usage.md).
 Queries involving text and geo predicates will be served by Solr. For
 more verbose reporting from JanusGraph and the Solr client, run
 `gremlin.sh -l DEBUG` and issue some index-backed queries.

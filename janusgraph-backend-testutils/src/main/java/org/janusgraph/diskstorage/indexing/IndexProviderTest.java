@@ -854,7 +854,7 @@ public abstract class IndexProviderTest {
 
 
     private final String defStore = "store1";
-    private final String defDoc = "docx1";
+    private final String defDoc = "docx1-id";
     private final String defTextValue = "the quick brown fox jumps over the lazy dog";
 
     private interface TxJob {

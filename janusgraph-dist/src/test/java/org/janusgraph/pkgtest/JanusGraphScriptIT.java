@@ -23,6 +23,6 @@ public class JanusGraphScriptIT extends AbstractJanusGraphAssemblyIT {
 
     @Test
     public void testGraphOfTheGodsGraphSON() throws Exception {
-        unzipAndRunExpect("janusgraph-sh.expect.vm");
+        unzipAndRunExpect("janusgraph-sh.expect.vm", true);
     }
 }

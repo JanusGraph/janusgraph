@@ -286,7 +286,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
             this.iterator = iterator;
         }
 
-        private StaticBuffer nextKey() throws BackendException {
+        private StaticBuffer nextKey() {
             while (iterator.hasNext()) {
                 current = iterator.next();
                 StaticBuffer key = getKey(current.getKey());
@@ -295,6 +295,14 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
                 }
             }
             return null;
+        }
+
+        private void resetKey(StaticBuffer nextKey) {
+            currentKey = nextKey;
+            currentKeyReturned = false;
+            if (currentIterator != null)
+                currentIterator.close();
+            currentIterator = new EntryIterator();
         }
 
         @Override
@@ -306,17 +314,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
         @Override
         public boolean hasNext() {
             if (currentKeyReturned) {
-                try {
-                    currentKey = nextKey();
-                } catch (BackendException e) {
-                    throw new RuntimeException(e);
-                }
-                currentKeyReturned = false;
-
-                if (currentIterator != null)
-                    currentIterator.close();
-
-                currentIterator = new EntryIterator();
+                resetKey(nextKey());
             }
 
             return currentKey != null;
@@ -344,19 +342,18 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
             public boolean hasNext() {
                 Preconditions.checkState(open);
 
-                if (current == null || count >= query.getLimit())
+                if (current == null)
                     return false;
 
                 // We need to check what is "current" right now and notify parent iterator
                 // about change of main key otherwise we would be missing portion of the results
                 StaticBuffer nextKey = getKey(current.getKey());
                 if (!nextKey.equals(currentKey)) {
-                    currentKey = nextKey;
-                    currentKeyReturned = false;
+                    resetKey(nextKey);
                     return false;
                 }
 
-                return true;
+                return count < query.getLimit();
             }
 
             @Override

@@ -65,7 +65,7 @@ public class UncaughtExceptionLogger implements UncaughtExceptionHandler {
 
     @Override
     public void uncaughtException(Thread t, Throwable e) {
-        level.dispatch(String.format("Uncaught exception in thread " + t), e);
+        level.dispatch("Uncaught exception in thread " + t, e);
     }
 }
 

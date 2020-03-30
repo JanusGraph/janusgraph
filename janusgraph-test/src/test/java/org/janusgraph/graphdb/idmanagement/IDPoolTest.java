@@ -14,15 +14,16 @@
 
 package org.janusgraph.graphdb.idmanagement;
 
+import static org.easymock.EasyMock.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.Assert.fail;
-import static org.easymock.EasyMock.*;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Random;
+
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.IDAuthority;
 import org.janusgraph.diskstorage.IDBlock;
@@ -110,13 +111,8 @@ public class IDPoolTest {
     public void testAllocationTimeout() {
         final MockIDAuthority idAuthority = new MockIDAuthority(10000, Integer.MAX_VALUE, 5000);
         StandardIDPool pool = new StandardIDPool(idAuthority, 1, 1, Integer.MAX_VALUE, Duration.ofMillis(4000), 0.1);
-        try {
-            pool.nextID();
-            fail();
-        } catch (JanusGraphException ignored) {
 
-        }
-
+        assertThrows(JanusGraphException.class, pool::nextID);
     }
 
     @Test
@@ -134,11 +130,7 @@ public class IDPoolTest {
         expect(mockAuthority.getIDBlock(partition, idNamespace, timeout)).andDelegateTo(new IDAuthority() {
             @Override
             public IDBlock getIDBlock(int partition, int idNamespace, Duration timeout) throws BackendException {
-                try {
-                    Thread.sleep(2000L);
-                } catch (InterruptedException e) {
-                    fail();
-                }
+                assertThrows(InterruptedException.class, () -> Thread.sleep(2000L));
                 throw new TemporaryBackendException("slow backend");
             }
 
@@ -183,12 +175,8 @@ public class IDPoolTest {
 
         ctrl.replay();
         StandardIDPool pool = new StandardIDPool(mockAuthority, partition, idNamespace, Integer.MAX_VALUE, timeout, 0.1);
-        try {
-            pool.nextID();
-            fail();
-        } catch (JanusGraphException ignored) {
 
-        }
+        assertThrows(JanusGraphException.class, pool::nextID);
 
         long nextID = pool.nextID();
         assertEquals(200, nextID);

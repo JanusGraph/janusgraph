@@ -1,5 +1,4 @@
-Configuration
-=============
+# Configuration
 
 A JanusGraph graph database cluster consists of one or multiple
 JanusGraph instances. To open a JanusGraph instance, a configuration has
@@ -20,8 +19,7 @@ additional indexing backend must be configured. See
 then caching should be enabled. Cache configuration and tuning is
 described in [JanusGraph Cache](#caching).
 
-Example Configurations
-----------------------
+## Example Configurations
 
 Below are some example configuration files to demonstrate how to
 configure the most commonly used storage backends, indexing systems, and
@@ -34,7 +32,7 @@ for the complete list of all options.
 Sets up JanusGraph to use the Cassandra persistence engine running
 locally and a remote Elastic search indexing system:
 
-```conf
+```properties
 storage.backend=cql
 storage.hostname=localhost
 
@@ -47,7 +45,7 @@ index.search.elasticsearch.client-only=true
 
 Sets up JanusGraph to use the HBase persistence engine running remotely
 and uses JanusGraph’s caching component for better performance.
-```conf
+```properties
 storage.backend=hbase
 storage.hostname=100.100.101.1
 storage.port=2181
@@ -62,7 +60,7 @@ cache.db-cache-size = 0.5
 
 Sets up JanusGraph to use BerkeleyDB as an embedded persistence engine
 with Elasticsearch as an embedded indexing system.
-```conf
+```properties
 storage.backend=berkeleyje
 storage.directory=/tmp/graph
 
@@ -89,8 +87,7 @@ graph = JanusGraphFactory.open("conf/janusgraph-cql.properties")
 graph = JanusGraphFactory.open("conf/janusgraph-hbase.properties")
 ```
 
-Using Configuration
--------------------
+## Using Configuration
 
 How the configuration is provided to JanusGraph depends on the
 instantiation mode.
@@ -183,8 +180,10 @@ and Elasticsearch.
     For security reasons Elasticsearch and therefore `janusgraph.sh` must
     be run under a non-root account
 
-Global Configuration
---------------------
+!!! note
+    Starting with 0.5.1, this is just included in the full package version.
+
+## Global Configuration
 
 JanusGraph distinguishes between local and global configuration options.
 Local configuration options apply to an individual JanusGraph instance.

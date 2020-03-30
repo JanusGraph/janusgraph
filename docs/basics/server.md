@@ -15,6 +15,9 @@ Server from different languages refer to [Connecting to JanusGraph](../connectin
 
 ### Using the Pre-Packaged Distribution
 
+!!! note
+    Starting with 0.5.1, this is just included in the full package version.
+
 The JanusGraph
 [release](https://github.com/JanusGraph/janusgraph/releases) comes
 pre-configured to run JanusGraph Server out of the box leveraging a
@@ -155,7 +158,7 @@ environment, follow these steps:
     JanusGraph for various storage backends, see
     [Storage Backends](../storage-backend/index.md). Make sure the properties file contains the
     following line:
-```conf
+```properties
 gremlin.graph=org.janusgraph.core.JanusGraphFactory
 ```
 
@@ -199,7 +202,7 @@ bin/gremlin-server.sh ./conf/gremlin-server/socket-gremlin-server.yaml
 ```
  
 6.  The JanusGraph Server should now be running in WebSocket mode and
-    can be tested by following the instructions in [Connecting to Gremlin Server](#first-example-connecting-gremlin-server)
+    can be tested by following the instructions in [Connecting to Gremlin Server](../getting-started/installation.md)
 
 !!! Important
     Do not use `bin/janusgraph.sh`. That starts the default
@@ -223,7 +226,7 @@ steps:
     JanusGraph for various storage backends, see
     [Storage Backends](../storage-backend/index.md). Make sure the properties file contains the
     following line:
-```conf
+```properties
 gremlin.graph=org.janusgraph.core.JanusGraphFactory
 ```
 
@@ -433,7 +436,7 @@ instantiate `JanusGraph` objects.
 
 Create a file called `GREMLIN_SERVER_HOME/conf/janusgraph.properties`
 with the following contents:
-```conf
+```properties
 gremlin.graph=org.janusgraph.core.JanusGraphFactory
 storage.backend=berkeleyje
 storage.directory=db/berkeley
