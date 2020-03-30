@@ -14,12 +14,34 @@
 
 package org.janusgraph;
 
+import org.janusgraph.diskstorage.berkeleyje.BerkeleyJEKeyValueStore;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
+import java.time.Instant;
+
+import com.sleepycat.je.dbi.TTL;
+import com.sleepycat.je.utilint.TestHookAdapter;
+
 public class BerkeleyStorageSetup extends StorageSetup {
+    static {
+        // BerkeleyDB support only hour-discrete ttl. For compatibility
+        // with testing framework we speed up time and change ttl converter function
+        // Addition option that can be impact to ttl timing EnvironmentConfig.ENV_TTL_CLOCK_TOLERANCE
+        BerkeleyJEKeyValueStore.ttlConverter = ttl -> ttl;
+        TTL.setTimeTestHook(new TestHookAdapter<Long>() {
+            private static final long SECONDS_PER_HOUR = 60 * 60;
+            private final long initial = Instant.now().toEpochMilli();
+
+            @Override
+            public synchronized Long getHookValue() {
+                long delta = Instant.now().toEpochMilli() - initial;
+                return initial + delta * SECONDS_PER_HOUR;
+            }
+        });
+    }
 
     public static ModifiableConfiguration getBerkeleyJEConfiguration(String dir) {
         return buildGraphConfiguration()

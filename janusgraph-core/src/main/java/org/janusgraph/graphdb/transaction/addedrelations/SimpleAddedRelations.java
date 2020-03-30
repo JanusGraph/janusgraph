@@ -14,46 +14,74 @@
 
 package org.janusgraph.graphdb.transaction.addedrelations;
 
-import com.google.common.base.Predicate;
 import org.janusgraph.graphdb.internal.InternalRelation;
 
-import java.util.ArrayList;
+import com.carrotsearch.hppc.ObjectHashSet;
+import com.carrotsearch.hppc.ObjectSet;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import javax.annotation.Nonnull;
+
+import java.util.AbstractCollection;
 import java.util.Collection;
-import java.util.List;
+import java.util.Collections;
+import java.util.Iterator;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class SimpleAddedRelations extends ArrayList<InternalRelation> implements AddedRelationsContainer {
-
+public class SimpleAddedRelations implements AddedRelationsContainer {
     private static final int INITIAL_ADDED_SIZE = 10;
+    private final ObjectSet<InternalRelation> container;
 
     public SimpleAddedRelations() {
-        super(INITIAL_ADDED_SIZE);
+        this.container = new ObjectHashSet<>(INITIAL_ADDED_SIZE);
     }
 
     @Override
     public boolean add(InternalRelation relation) {
-        return super.add(relation);
+        container.add(relation);
+        return true;
     }
 
     @Override
     public boolean remove(InternalRelation relation) {
-        return super.remove(relation);
+        container.removeAll(relation);
+        return true;
     }
 
     @Override
-    public List<InternalRelation> getView(Predicate<InternalRelation> filter) {
-        final List<InternalRelation> result = new ArrayList<>();
-        for (InternalRelation r : this) {
-            if (filter.apply(r)) result.add(r);
-        }
-        return result;
+    public Iterable<InternalRelation> getView(Predicate<InternalRelation> filter) {
+        return Iterables.filter(this::iterator, filter);
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return container.isEmpty();
     }
 
     @Override
     public Collection<InternalRelation> getAll() {
-        return this;
+        return Collections.unmodifiableCollection(new AbstractCollection<InternalRelation>() {
+            @Override
+            @Nonnull
+            public Iterator<InternalRelation> iterator() {
+                return SimpleAddedRelations.this.iterator();
+            }
+
+            @Override
+            public int size() {
+                return container.size();
+            }
+        });
+    }
+
+    private Iterator<InternalRelation> iterator() {
+        return Iterators.transform(container.iterator(), e -> {
+            assert e != null;
+            return e.value;
+        });
     }
 }

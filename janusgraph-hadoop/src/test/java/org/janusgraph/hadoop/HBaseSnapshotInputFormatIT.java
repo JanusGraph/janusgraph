@@ -196,6 +196,37 @@ public class HBaseSnapshotInputFormatIT extends AbstractInputFormatIT {
         assertEquals(14L, (long) t.E().count().next());
     }
 
+    @Test
+    @Override
+    public void testGraphWithIsolatedVertices() throws Exception {
+        String key = "vertexKey";
+        graph.addVertex(key);
+        graph.tx().commit();
+        // Take a snapshot of the graph table
+        HBaseStorageSetup.createSnapshot(snapshotName, table);
+
+        // Read graph using the inputformat.
+        Graph g = getGraph();
+        GraphTraversalSource t = g.traversal().withComputer(SparkGraphComputer.class);
+        assertEquals(1L, (long) t.V().count().next());
+    }
+
+    @Test
+    @Override
+    public void testSchemaVerticesAreSkipped() throws Exception {
+        mgmt.makePropertyKey("p").dataType(Integer.class).make();
+        mgmt.makeVertexLabel("v").make();
+        mgmt.makeEdgeLabel("e").make();
+        finishSchema();
+        // Take a snapshot of the graph table
+        HBaseStorageSetup.createSnapshot(snapshotName, table);
+
+        // Read graph using the inputformat.
+        Graph g = getGraph();
+        GraphTraversalSource t = g.traversal().withComputer(SparkGraphComputer.class);
+        assertEquals(0L, (long) t.V().count().next());
+    }
+
     protected Graph getGraph() throws IOException, ConfigurationException {
         final PropertiesConfiguration config =
                 new PropertiesConfiguration("target/test-classes/hbase-read-snapshot.properties");

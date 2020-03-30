@@ -15,6 +15,11 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-driver</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <!-- TinkerPop -->
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
@@ -69,14 +74,6 @@
             <artifactId>reflections</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.locationtech.spatial4j</groupId>
-            <artifactId>spatial4j</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.locationtech.jts</groupId>
-            <artifactId>jts-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>commons-collections</groupId>
             <artifactId>commons-collections</artifactId>
         </dependency>
@@ -93,10 +90,6 @@
             <artifactId>commons-codec</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.carrotsearch</groupId>
             <artifactId>hppc</artifactId>
         </dependency>
@@ -107,24 +100,6 @@
        <dependency>
            <groupId>com.google.code.findbugs</groupId>
            <artifactId>jsr305</artifactId>
-       </dependency>
-       <!-- The Noggit JSON parsing library is needed for GeoJSON parsing -->
-       <dependency>
-           <groupId>org.noggit</groupId>
-           <artifactId>noggit</artifactId>
-           <version>0.6</version>
-       </dependency>
-       <!-- We keep the gremlin version of org.apache.commons commons-lang3 -->
-       <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-text</artifactId>
-            <version>1.0</version>
-            <exclusions>
-                 <exclusion>
-                      <groupId>org.apache.commons</groupId>
-                      <artifactId>commons-lang3</artifactId>
-                  </exclusion>
-             </exclusions>
        </dependency>
     </dependencies>
     <build>
