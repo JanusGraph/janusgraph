@@ -171,9 +171,9 @@ start() {
     status_class $GREMLIN_FRIENDLY_NAME $GREMLIN_CLASS_NAME >/dev/null && status && echo "Stop services before starting" && exit 1
     echo "Forking Gremlin-Server..."
     if [ -n "$VERBOSE" ]; then
-        "$BIN"/gremlin-server.sh conf/gremlin-server/gremlin-server.yaml &
+        "$BIN"/gremlin-server.sh conf/gremlin-server/gremlin-server-cql-es.yaml &
     else
-        "$BIN"/gremlin-server.sh conf/gremlin-server/gremlin-server.yaml >/dev/null 2>&1 &
+        "$BIN"/gremlin-server.sh conf/gremlin-server/gremlin-server-cql-es.yaml >/dev/null 2>&1 &
     fi
     wait_for_startup 'Gremlin-Server' $GSRV_IP $GSRV_PORT $GSRV_STARTUP_TIMEOUT_S || {
         echo "See $BIN/../logs/gremlin-server.log for Gremlin-Server log output."  >&2

@@ -65,6 +65,13 @@ The default version of the distribution package does no longer contain the `janu
 This includes a packaged version of cassandra and elasticsearch. If you want to have `janusgraph.sh`, 
 you have to download distribution with the suffix `-full`.
 
+##### Gremlin Server distributed with the release uses inmemory storage backend and no search backend by default
+
+Gremlin Server is by default configured for the inmemory storage backend and no search backend when started with 
+`bin/gremlin-server.sh`.  
+You can provide configuration for another storage backend and/or search backend by providing a path to the appropriate 
+configuration as a second parameter (`./bin/gremlin-server.sh ./conf/gremlin-server/[...].yaml`).
+
 ### Version 0.5.0 (Release Date: March 10, 2020)
 
 ```xml tab='Maven'

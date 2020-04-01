@@ -115,11 +115,13 @@ $ ./bin/gremlin-server.sh start
 ```
 or
 ```bash
-$ ./bin/gremlin-server.sh /conf/gremlin-server/[...].yaml
+$ ./bin/gremlin-server.sh ./conf/gremlin-server/[...].yaml
 ```
 
 !!! info
-    By default, this will instruct JanusGraph to use it's own inmemory backend instead of a dedicated database server.
+    The default configuration (`gremlin-server.yaml`) uses it's own inmemory backend instead of a dedicated database server.
+    No search backend is used by default, so mixed indices aren't supported as search backend isn't specified 
+    (Make sure you are using `GraphOfTheGodsFactory.loadWithoutMixedIndex(graph, true)` instead of `GraphOfTheGodsFactory.load(graph)` if you follow [Basic Usage example](./basic-usage.md)).
     For further information about storage backends, visit the [corresponding section](../storage-backend/index.md) of the documentation.
     
     You are also encouraged to look into `janusgraph.sh`, which by defaults starts a more sophisticated server than `gremlin-server.sh`.
