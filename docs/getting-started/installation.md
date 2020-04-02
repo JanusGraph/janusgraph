@@ -119,9 +119,16 @@ $ ./bin/gremlin-server.sh /conf/gremlin-server/[...].yaml
 ```
 
 !!! info
-    By default, this will instruct JanusGraph to use it's own inmemory backend instead of a dedicated database server.
+    By default, JanusGraph will try to use a CQL-compatible storage backend.
+    To use another backend, the following line within the earlier mentioned default configuration must be altered:
+    ```yaml
+    graphs: {
+        graph: conf/gremlin-server/janusgraph-cql-es-server.properties
+    }
+    ```
+    To get started, the non-persistent `inmemory` backend provided by `conf/janusgraph-inmemory.properties` is the easiest option to use.
     For further information about storage backends, visit the [corresponding section](../storage-backend/index.md) of the documentation.
-    
+
     You are also encouraged to look into `janusgraph.sh`, which by defaults starts a more sophisticated server than `gremlin-server.sh`.
     Further documentation on server configuration can be found in the [JanusGraph Server](../basics/server.md) section.
 
