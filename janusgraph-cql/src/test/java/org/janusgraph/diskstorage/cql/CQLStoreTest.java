@@ -24,9 +24,9 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.testutil.FeatureFlag;
 import org.janusgraph.testutil.JanusGraphFeature;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -108,7 +108,7 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
     }
 
     @Test
-    @EnabledIf("org.janusgraph.JanusGraphCassandraContainer.isCompactStorageSupported()")
+    @Disabled("junit 5.6 removed support for EnabledIf and we will remove cassandra 2 support soon.")
     public void testUseCompactStorage() throws BackendException {
         final String cf = TEST_CF_NAME + "_usecompact";
         final ModifiableConfiguration config = getBaseStorageConfiguration();
