@@ -90,13 +90,6 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
         return DEFAULT_ENABLE_CLIENT_AUTH;
     }
 
-    /**
-     * This function is used as a condition to executed tests if compacted storage is supported.
-     */
-    public static boolean isCompactStorageSupported() {
-        return !getVersion().startsWith("3.") && getCassandraImage().equals(DEFAULT_IMAGE);
-    }
-
     private String getConfigPrefix() {
         if (getVersion().startsWith("3.")) {
             return "cassandra3";

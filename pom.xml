@@ -70,14 +70,14 @@
     <properties>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
         <tinkerpop.version>3.4.6</tinkerpop.version>
-        <junit-platform.version>1.5.2</junit-platform.version>
-        <junit.version>5.5.2</junit.version>
+        <junit-platform.version>1.6.1</junit-platform.version>
+        <junit.version>5.6.1</junit.version>
         <mrunit.version>1.1.0</mrunit.version>
         <mockito.version>2.23.0</mockito.version>
         <cassandra.version>2.2.13</cassandra.version>
         <jamm.version>0.3.0</jamm.version>
         <metrics.version>3.2.6</metrics.version>
-        <slf4j.version>1.7.29</slf4j.version>
+        <slf4j.version>1.7.30</slf4j.version>
         <httpcomponents.httpclient.version>4.5.10</httpcomponents.httpclient.version>
         <httpcomponents.httpcore.version>4.4.12</httpcomponents.httpcore.version>
         <hadoop2.version>2.7.7</hadoop2.version>
@@ -124,7 +124,7 @@
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <cassandra-driver.version>3.8.0</cassandra-driver.version>
-        <testcontainers.version>1.12.4</testcontainers.version>
+        <testcontainers.version>1.13.0</testcontainers.version>
         <easymock.version>3.4</easymock.version>
     </properties>
     <modules>
@@ -552,6 +552,12 @@
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>gremlin-test</artifactId>
                 <version>${tinkerpop.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
@@ -1025,6 +1031,17 @@
                 <groupId>com.carrotsearch.randomizedtesting</groupId>
                 <artifactId>randomizedtesting-runner</artifactId>
                 <version>2.7.2</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>1.20</version>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
@@ -1065,6 +1082,10 @@
                     <exclusion>
                         <groupId>net.java.dev.jna</groupId>
                         <artifactId>jna</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
