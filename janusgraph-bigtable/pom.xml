@@ -17,7 +17,7 @@
     <dependencies>
         <dependency>
             <groupId>com.google.cloud.bigtable</groupId>
-            <artifactId>bigtable-hbase-1.x-shaded</artifactId>
+            <artifactId>bigtable-hbase-2.x-shaded</artifactId>
             <version>${bigtable.version}</version>
             <exclusions>
                   <exclusion>
