@@ -30,7 +30,7 @@ import org.janusgraph.graphdb.olap.VertexJobConverter;
 import org.janusgraph.graphdb.olap.VertexScanJob;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphVertexStep;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
-import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
+
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.clustering.connected.ConnectedComponentVertexProgram;
@@ -40,7 +40,6 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.io.Closeable;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -55,15 +54,12 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
     private final FulgoraVertexMemory<M> vertexMemory;
     private final VertexProgram<M> vertexProgram;
 
-    private final MessageCombiner<M> combiner;
-
     private VertexProgramScanJob(IDManager idManager, FulgoraMemory memory,
                                 FulgoraVertexMemory vertexMemory, VertexProgram<M> vertexProgram) {
         this.idManager = idManager;
         this.memory = memory;
         this.vertexMemory = vertexMemory;
         this.vertexProgram = vertexProgram;
-        this.combiner = FulgoraUtil.getMessageCombiner(vertexProgram);
     }
 
     @Override
@@ -97,13 +93,9 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
             }
             for (MessageScope scope : vertexMemory.getPreviousScopes()) {
                 if (scope instanceof MessageScope.Local) {
-                    M combinedMsg = null;
-                    for (Iterator<M> messageIterator = vh.receiveMessages(scope).iterator(); messageIterator.hasNext(); ) {
-                        M msg = messageIterator.next();
-                        if (combinedMsg==null) combinedMsg=msg;
-                        else combinedMsg = combiner.combine(combinedMsg,msg);
-                    }
-                    if (combinedMsg!=null) vertexMemory.aggregateMessage(vertexId,combinedMsg,scope);
+                    vh.receiveMessages(scope)
+                      .iterator()
+                      .forEachRemaining(m -> vertexMemory.aggregateMessage(vertexId, m, scope));
                 }
             }
         } else {
@@ -141,7 +133,6 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
             }
         }
     }
-
 
     public static<M> Executor getVertexProgramScanJob(StandardJanusGraph graph, FulgoraMemory memory,
                                                   FulgoraVertexMemory vertexMemory, VertexProgram<M> vertexProgram) {
@@ -192,11 +183,6 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
         }
 
     }
-
-
-
-
-
 }
 
 

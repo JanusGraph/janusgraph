@@ -14,23 +14,30 @@
 
 package org.janusgraph.graphdb.olap.computer;
 
-import com.google.common.base.Preconditions;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.process.computer.traversal.TraversalVertexProgram;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
-import java.util.*;
+import com.google.common.base.Preconditions;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
@@ -113,9 +120,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
 
     public Stream<M> receiveMessages(MessageScope messageScope) {
         if (messageScope instanceof MessageScope.Global) {
-            M message = vertexMemory.getMessage(vertexId,messageScope);
-            if (message == null) return Stream.empty();
-            else return Stream.of(message);
+            return vertexMemory.getMessage(vertexId, messageScope);
         } else {
             final MessageScope.Local<M> localMessageScope = (MessageScope.Local) messageScope;
             final BiFunction<M,Edge,M> edgeFct = localMessageScope.getEdgeFunction();
@@ -127,11 +132,12 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
             }
 
             return edges.stream()
-                    .map(e -> {
-                        M msg = vertexMemory.getMessage(vertexMemory.getCanonicalId(((JanusGraphEdge) e).otherVertex(vertex).longId()), localMessageScope);
-                        return msg == null ? null : edgeFct.apply(msg, e);
-                    })
-                    .filter(Objects::nonNull);
+                        .flatMap(e -> {
+                            long canonicalId = vertexMemory.getCanonicalId(((JanusGraphEdge) e).otherVertex(vertex).longId());
+                            return vertexMemory.getMessage(canonicalId, localMessageScope)
+                                               .map(msg -> msg == null ? null : edgeFct.apply(msg, e));
+                        })
+                        .filter(Objects::nonNull);
         }
     }
 
@@ -170,12 +176,8 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
                 return super.receiveMessages(messageScope);
             } else {
                 final MessageScope.Local<M> localMessageScope = (MessageScope.Local) messageScope;
-                M aggregateMsg = vertexMemory.getAggregateMessage(vertexId,localMessageScope);
-                if (aggregateMsg==null) return Stream.empty();
-                else return Stream.of(aggregateMsg);
+                return vertexMemory.getAggregateMessage(vertexId,localMessageScope);
             }
         }
-
     }
-
 }

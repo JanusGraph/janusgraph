@@ -14,13 +14,21 @@
 
 package org.janusgraph.graphdb.olap.computer;
 
-import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 
+import com.carrotsearch.hppc.ObjectArrayList;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterators;
+
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -74,27 +82,54 @@ public class VertexState<M> {
         else ((Object[])currentMessages)[scopeMap.get(scope)]=message;
     }
 
-    public synchronized void addMessage(M message, MessageScope scope, Map<MessageScope,Integer> scopeMap,
+    public synchronized void addMessage(M message, MessageScope scope, Map<MessageScope, Integer> scopeMap,
                                         MessageCombiner<M> combiner) {
-        assert message!=null && scope!=null && combiner!=null;
-        Preconditions.checkArgument(scopeMap.containsKey(scope),"Provided scope was not declared in the VertexProgram: %s",scope);
-        assert scopeMap.containsKey(scope);
+        assert message != null && scope != null;
+        Preconditions.checkArgument(scopeMap.containsKey(scope), "Provided scope was not declared in the VertexProgram: %s", scope);
         initializeCurrentMessages(scopeMap);
-        if (scopeMap.size()==1) {
-            if (currentMessages==null) currentMessages = message;
-            else currentMessages = combiner.combine(message,(M)currentMessages);
+        if (scopeMap.size() == 1) {
+            currentMessages = currentMessages == null ? message : combineMessages(combiner, message, currentMessages);
         } else {
             int pos = scopeMap.get(scope);
-            Object[] messages =  (Object[])currentMessages;
-            if (messages[pos]==null) messages[pos]=message;
-            else messages[pos] = combiner.combine(message,(M)messages[pos]);
+            Object[] messages = (Object[]) currentMessages;
+            messages[pos] = messages[pos] == null ? message : combineMessages(combiner, message, messages[pos]);
         }
     }
 
-    public M getMessage(MessageScope scope, Map<MessageScope,Integer> scopeMap) {
-        assert scope!=null && isValidIdMap(scopeMap) && scopeMap.containsKey(scope);
-        if (scopeMap.size()==1 || (previousMessages==null && currentMessages==null)) return (M)previousMessages;
-        else return (M)((Object[])previousMessages)[scopeMap.get(scope)];
+    private Object combineMessages(MessageCombiner<M> combiner, M messageA, Object messageB) {
+        Object combinedMessage;
+        if (combiner != null) {
+            combinedMessage = combiner.combine(messageA, (M) messageB);
+        } else {
+            if (messageB instanceof ObjectArrayList) {
+                ((ObjectArrayList) messageB).add(messageA);
+                combinedMessage = messageB;
+            } else {
+                ObjectArrayList<Object> arrayList = new ObjectArrayList<>();
+                arrayList.add(messageA, messageB);
+                combinedMessage = arrayList;
+            }
+        }
+        return combinedMessage;
+    }
+
+    public Stream<M> getMessage(MessageScope scope, Map<MessageScope, Integer> scopeMap) {
+        assert scope != null && isValidIdMap(scopeMap) && scopeMap.containsKey(scope);
+        Object message;
+        if (scopeMap.size() == 1) {
+            message = previousMessages;
+        } else if (previousMessages != null) {
+            message = ((Object[]) previousMessages)[scopeMap.get(scope)];
+        } else {
+            message = null;
+        }
+        if (message instanceof ObjectArrayList) {
+            Iterator<M> transform = Iterators.transform(((ObjectArrayList<M>) message).iterator(), e -> e.value);
+            return StreamSupport.stream(
+                Spliterators.spliteratorUnknownSize(transform, Spliterator.IMMUTABLE | Spliterator.SIZED), false);
+        } else {
+            return message == null ? Stream.empty() : Stream.of((M) message);
+        }
     }
 
     public synchronized void completeIteration() {
@@ -129,8 +164,8 @@ public class VertexState<M> {
         }
 
         @Override
-        public M getMessage(MessageScope scope, Map<MessageScope,Integer> scopeMap) {
-            return null;
+        public Stream<M> getMessage(MessageScope scope, Map<MessageScope,Integer> scopeMap) {
+            return Stream.empty();
         }
 
         @Override
@@ -148,8 +183,5 @@ public class VertexState<M> {
         public synchronized void completeIteration() {
             throw new UnsupportedOperationException();
         }
-
-
     }
-
 }

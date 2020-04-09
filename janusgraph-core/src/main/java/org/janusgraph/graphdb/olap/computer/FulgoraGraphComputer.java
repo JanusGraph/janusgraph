@@ -28,6 +28,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScanner;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.util.WorkerPool;
+
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.GraphFilter;
@@ -36,21 +37,25 @@ import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.search.path.ShortestPathVertexProgram;
+import org.apache.tinkerpop.gremlin.process.computer.traversal.TraversalVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.util.DefaultComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.util.GraphComputerHelper;
 import org.apache.tinkerpop.gremlin.process.computer.util.VertexProgramHelper;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.HaltedTraverserStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -373,13 +378,21 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
             }
 
             //TODO: Filter based on VertexProgram
+            HaltedTraverserStrategy haltedTraverserStrategy = HaltedTraverserStrategy.reference();
             Map<Long, Map<String, Object>> mutatedProperties = Maps.transformValues(vertexMemory.getMutableVertexProperties(),
-                new Function<Map<String, Object>, Map<String, Object>>() {
-                    @Nullable
-                    @Override
-                    public Map<String, Object> apply(final Map<String, Object> o) {
-                        return Maps.filterKeys(o, s -> !VertexProgramHelper.isTransientVertexComputeKey(s, vertexProgram.getVertexComputeKeys()));
-                    }
+                (Function<Map<String, Object>, Map<String, Object>>) o -> {
+                    Map<String, Object> nonTransientKeys =
+                        Maps.filterKeys(o, s -> !VertexProgramHelper.isTransientVertexComputeKey(s, vertexProgram.getVertexComputeKeys()));
+                    return Maps.transformEntries(nonTransientKeys, (k, v) -> {
+                        if (k != null && k.equals(TraversalVertexProgram.HALTED_TRAVERSERS) && v instanceof TraverserSet) {
+                            TraverserSet<Object> halted = new TraverserSet<>();
+                            for (Traverser.Admin<Object> t : (TraverserSet<Object>) v) {
+                                halted.add(haltedTraverserStrategy.halt(t));
+                            }
+                            return halted;
+                        }
+                        return v;
+                    });
                 });
 
             if (resultGraphMode == ResultGraph.ORIGINAL) {
@@ -456,7 +469,6 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
             }
         }
     }
-
 
     @Override
     public String toString() {
