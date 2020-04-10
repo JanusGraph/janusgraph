@@ -34,6 +34,12 @@ public class EntryArrayList extends ArrayList<Entry> implements EntryList {
         super(c);
     }
 
+    public static EntryArrayList of(Iterator<? extends Entry> i) {
+        EntryArrayList result = new EntryArrayList();
+        Iterators.addAll(result, i);
+        return result;
+    }
+
     public static EntryArrayList of(Iterable<? extends Entry> i) {
         // This is adapted from Guava's Lists.newArrayList implementation
         EntryArrayList result;
