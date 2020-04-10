@@ -18,7 +18,7 @@ import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.util.BufferUtil;
-import org.janusgraph.diskstorage.util.StaticArrayEntryList;
+import org.janusgraph.diskstorage.util.EntryArrayList;
 import org.janusgraph.graphdb.query.BackendQuery;
 import org.janusgraph.graphdb.query.BaseQuery;
 
@@ -114,7 +114,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
             if (e.getColumnAs(StaticBuffer.STATIC_FACTORY).compareTo(sliceEnd) < 0) result.add(e);
             else break;
         }
-        return StaticArrayEntryList.of(result);
+        return EntryArrayList.of(result);
     }
 
     public boolean contains(StaticBuffer buffer) {

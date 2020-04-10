@@ -21,9 +21,8 @@ import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.*;
 import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.EntryArrayList;
 import org.janusgraph.diskstorage.util.RecordIterator;
-import org.janusgraph.diskstorage.util.StaticArrayEntry;
-import org.janusgraph.diskstorage.util.StaticArrayEntryList;
 import org.janusgraph.util.system.Threads;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +68,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
                             final StoreFeatures storeFeatures,
                             final int numProcessors, final int workBlockSize,
                             final Configuration jobConfiguration,
-                            final Configuration graphConfiguration) throws BackendException {
+                            final Configuration graphConfiguration) {
         this.job = job;
         this.finishJob = finishJob;
         this.store = store;
@@ -81,7 +80,6 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
         this.graphConfiguration = graphConfiguration;
 
         metrics = new StandardScanMetrics();
-
     }
 
     private DataPuller addDataPuller(SliceQuery sq, StoreTransaction stx) throws BackendException {
@@ -336,7 +334,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
                     StaticBuffer key = keyIterator.next();
                     RecordIterator<Entry> entries = keyIterator.getEntries();
                     if (!keyFilter.test(key)) continue;
-                    EntryList entryList = StaticArrayEntryList.ofStaticBuffer(entries, StaticArrayEntry.ENTRY_GETTER);
+                    EntryList entryList = EntryArrayList.of(entries);
                     queue.put(new SliceResult(query, key, entryList));
                 }
                 finished = true;
