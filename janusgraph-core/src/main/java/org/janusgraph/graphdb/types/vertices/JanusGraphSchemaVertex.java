@@ -55,10 +55,10 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
                 p = Iterables.getOnlyElement(query().type(BaseKey.SchemaName).properties(), null);
             }
             Preconditions.checkNotNull(p,"Could not find type for id: %s", longId());
-            name = p.value();
+            name = JanusGraphSchemaCategory.getName(p.value());
         }
         assert name != null;
-        return JanusGraphSchemaCategory.getName(name);
+        return name;
     }
 
     @Override
