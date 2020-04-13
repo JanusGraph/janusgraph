@@ -71,7 +71,7 @@
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
         <tinkerpop.version>3.4.6</tinkerpop.version>
         <junit-platform.version>1.6.1</junit-platform.version>
-        <junit.version>5.6.1</junit.version>
+        <junit.version>5.6.2</junit.version>
         <mrunit.version>1.1.0</mrunit.version>
         <mockito.version>2.23.0</mockito.version>
         <cassandra.version>2.2.13</cassandra.version>
