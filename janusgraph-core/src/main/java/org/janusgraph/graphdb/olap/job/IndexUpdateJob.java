@@ -23,6 +23,7 @@ import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics.Metric;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
@@ -112,7 +113,7 @@ public abstract class IndexUpdateJob {
                 index = managementSystem.getRelationIndex(indexRelationType,indexName);
             }
             Preconditions.checkArgument(index!=null,"Could not find index: %s [%s]",indexName,indexRelationTypeName);
-            log.info("Found index {}", indexName);
+            log.debug("Found index {}", indexName);
             validateIndexStatus();
 
             StandardTransactionBuilder txb = this.graph.buildTransaction();
@@ -139,6 +140,10 @@ public abstract class IndexUpdateJob {
             log.error("Transaction commit threw runtime exception:", e);
             metrics.incrementCustom(FAILED_TX);
             throw e;
+        } finally {
+            log.info("Index {} metrics: success-tx: {} doc-updates: {} succeeded: {}", indexName,
+                    metrics.getCustom(SUCCESS_TX), metrics.getCustom(IndexRepairJob.DOCUMENT_UPDATES_COUNT),
+                    metrics.get(Metric.SUCCESS));
         }
     }
 
