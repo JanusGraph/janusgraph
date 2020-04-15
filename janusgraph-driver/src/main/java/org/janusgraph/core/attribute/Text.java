@@ -22,8 +22,8 @@ import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.text.similarity.LevenshteinDistance;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -322,25 +322,25 @@ public enum Text implements JanusGraphPredicate {
     public final static Set<Text> HAS_CONTAINS = Collections
             .unmodifiableSet(EnumSet.of(CONTAINS, CONTAINS_PREFIX, CONTAINS_REGEX, CONTAINS_FUZZY));
 
-    public static <V> P<V> textContains(final V value) {
-        return new P(Text.CONTAINS, value);
+    public static <V> JanusGraphP textContains(final V value) {
+        return new JanusGraphP(Text.CONTAINS, value);
     }
-    public static <V> P<V> textContainsPrefix(final V value) {
-        return new P(Text.CONTAINS_PREFIX, value);
+    public static <V> JanusGraphP textContainsPrefix(final V value) {
+        return new JanusGraphP(Text.CONTAINS_PREFIX, value);
     }
-    public static <V> P<V> textContainsRegex(final V value) {
-        return new P(Text.CONTAINS_REGEX, value);
+    public static <V> JanusGraphP textContainsRegex(final V value) {
+        return new JanusGraphP(Text.CONTAINS_REGEX, value);
     }
-    public static <V> P<V> textPrefix(final V value) {
-        return new P(Text.PREFIX, value);
+    public static <V> JanusGraphP textPrefix(final V value) {
+        return new JanusGraphP(Text.PREFIX, value);
     }
-    public static <V> P<V> textRegex(final V value) {
-        return new P(Text.REGEX, value);
+    public static <V> JanusGraphP textRegex(final V value) {
+        return new JanusGraphP(Text.REGEX, value);
     }
-    public static <V> P<V> textContainsFuzzy(final V value) {
-        return new P(Text.CONTAINS_FUZZY, value);
+    public static <V> JanusGraphP textContainsFuzzy(final V value) {
+        return new JanusGraphP(Text.CONTAINS_FUZZY, value);
     }
-    public static <V> P<V> textFuzzy(final V value) {
-        return new P(Text.FUZZY, value);
+    public static <V> JanusGraphP textFuzzy(final V value) {
+        return new JanusGraphP(Text.FUZZY, value);
     }
 }

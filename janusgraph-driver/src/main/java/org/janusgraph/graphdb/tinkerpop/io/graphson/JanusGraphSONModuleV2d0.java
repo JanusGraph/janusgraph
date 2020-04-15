@@ -14,8 +14,8 @@
 
 package org.janusgraph.graphdb.tinkerpop.io.graphson;
 
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 
 /**
@@ -27,10 +27,11 @@ public class JanusGraphSONModuleV2d0 extends JanusGraphSONModule {
         super();
         addSerializer(RelationIdentifier.class, new RelationIdentifierSerializerV2d0());
         addSerializer(Geoshape.class, new Geoshape.GeoshapeGsonSerializerV2d0());
+        addSerializer(JanusGraphP.class, new JanusGraphPSerializerV2d0());
 
         addDeserializer(RelationIdentifier.class, new RelationIdentifierDeserializerV2d0());
         addDeserializer(Geoshape.class, new Geoshape.GeoshapeGsonDeserializerV2d0());
-        addDeserializer(P.class, new JanusGraphPDeserializerV2d0());
+        addDeserializer(JanusGraphP.class, new JanusGraphPDeserializerV2d0());
     }
 
     private static final JanusGraphSONModuleV2d0 INSTANCE = new JanusGraphSONModuleV2d0();
