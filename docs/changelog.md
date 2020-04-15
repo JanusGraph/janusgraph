@@ -24,8 +24,69 @@ use the latest versions of the software.
 | 0.3.z | 2 | 1.2.z, 2.0.z, 2.1.z, 2.2.z, 3.0.z, 3.11.z | 1.0.z, 1.1.z, 1.2.z, 1.3.z, 1.4.z | 1.0.0, 1.1.0, 1.1.2, 1.2.0, 1.3.0, 1.4.0 | 1.5-1.7.z, 2.3-2.4.z, 5.y, 6.y |  5.2-5.5.z, 6.2-6.6.z, 7.y | 3.3.z | 2.2.z | 2.11.z |
 | 0.4.z | 2 | 2.1.z, 2.2.z, 3.0.z, 3.11.z | 1.2.z, 1.3.z, 1.4.z, 2.1.z | N/A | 5.y, 6.y | 7.y | 3.4.z | 2.2.z | 2.11.z |
 | 0.5.z | 2 | 2.1.z, 2.2.z, 3.0.z, 3.11.z | 1.2.z, 1.3.z, 1.4.z, 2.1.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y, 7.y | 7.y | 3.4.z | 2.2.z | 2.11.z | 
+| 0.6.z | 2 | 2.1.z, 2.2.z, 3.0.z, 3.11.z | 1.2.z, 1.3.z, 1.4.z, 2.1.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y, 7.y | 7.y | 3.4.z | 2.2.z | 2.11.z | 
 
 ## Release Notes
+
+### Version 0.6.0 (Release Date: X, 2020)
+
+```xml tab='Maven'
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.6.0</version>
+</dependency>
+```
+
+```groovy tab='Gradle'
+compile "org.janusgraph:janusgraph-core:0.6.0"
+```
+
+**Tested Compatibility:**
+
+* Apache Cassandra 2.2.10, 3.0.14, 3.11.0
+* Apache HBase 1.2.6, 1.3.1, 1.4.10, 2.1.5
+* Google Bigtable 1.3.0, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.10.0, 1.11.0, 1.14.0
+* Oracle BerkeleyJE 7.5.11
+* Elasticsearch 6.0.1, 6.6.0, 7.6.1
+* Apache Lucene 7.0.0
+* Apache Solr 7.0.0
+* Apache TinkerPop 3.4.6
+* Java 1.8
+
+For more information on features and bug fixes in 0.6.0, see the GitHub milestone:
+
+-   <https://github.com/JanusGraph/janusgraph/milestone/17?closed=1>
+
+#### Upgrade Instructions
+
+##### Serialization of JanusGraph predicates has changed
+
+The serialization of JanusGraph predicates has changed in this version for both 
+GraphSON and Gryo. It is therefore necessary to update both the client and 
+the server to this version in parallel as the server will not be able to 
+deserialize a JanusGraph predicate that was serialized by a client prior 
+to version 0.6.0 once it was updated to version 0.6.0.
+
+##### GraphBinary is now supported
+
+[GraphBinary](http://tinkerpop.apache.org/docs/current/dev/io/#graphbinary) is a 
+new binary serialization format from TinkerPop that supersedes Gryo and it will 
+eventually also replace GraphSON. GraphBinary is language independent and has a 
+low serialization overhead which results in an improved performance.
+
+If you want to use GraphBinary, you have to add following to the `gremlin-server.yaml` 
+after the keyword `serializers`. This will add the support on the server site. 
+
+```yaml
+    - { className: org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1, 
+        config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
+    - { className: org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1, 
+        config: { serializeResultToString: true }}
+```
+!!! note 
+    The java driver is the only driver that currently supports GraphBinary, 
+    see [Connecting to JanusGraph using Java](connecting/java.md).
 
 ### Version 0.5.1 (Release Date: March 25, 2020)
 

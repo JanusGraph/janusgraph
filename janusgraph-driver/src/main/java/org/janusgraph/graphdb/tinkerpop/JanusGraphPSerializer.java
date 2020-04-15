@@ -14,98 +14,43 @@
 
 package org.janusgraph.graphdb.tinkerpop;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
-import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
-import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.apache.tinkerpop.shaded.kryo.Kryo;
 import org.apache.tinkerpop.shaded.kryo.Serializer;
 import org.apache.tinkerpop.shaded.kryo.io.Input;
 import org.apache.tinkerpop.shaded.kryo.io.Output;
 import org.janusgraph.core.attribute.Geo;
+import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
 import org.janusgraph.core.attribute.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Serialize Janus Graph Predicates.
- * 
+ * <p>
  * Since all predicates end up being an instance of P and the TinkerPop P
  * serializer is not extensible, it is copied here and the JanusGraph predicates
  * are added.
- *
  */
-public class JanusGraphPSerializer extends Serializer<P> {
+public class JanusGraphPSerializer extends Serializer<JanusGraphP> {
 
     private static final Logger log = LoggerFactory.getLogger(JanusGraphPSerializer.class);
 
     @Override
-    public void write(Kryo kryo, Output output, P p) {
-        output.writeString(
-                p instanceof ConnectiveP ? (p instanceof AndP ? "and" : "or") : p.getBiPredicate().toString());
-        if (p instanceof ConnectiveP || p.getValue() instanceof Collection) {
-            output.writeByte((byte) 0);
-            final Collection<?> coll = p instanceof ConnectiveP ? ((ConnectiveP<?>) p).getPredicates()
-                    : (Collection) p.getValue();
-            output.writeInt(coll.size());
-            coll.forEach(v -> kryo.writeClassAndObject(output, v));
-        } else {
-            output.writeByte((byte) 1);
-            kryo.writeClassAndObject(output, p.getValue());
-        }
+    public void write(Kryo kryo, Output output, JanusGraphP p) {
+        output.writeString(p.getBiPredicate().toString());
+        kryo.writeClassAndObject(output, p.getValue());
     }
 
     @Override
-    public P read(Kryo kryo, Input input, Class<P> aClass) {
+    public JanusGraphP read(Kryo kryo, Input input, Class<JanusGraphP> aClass) {
         final String predicate = input.readString();
-        final boolean isCollection = input.readByte() == (byte) 0;
-        final Object value;
-        if (isCollection) {
-            value = new ArrayList();
-            final int size = input.readInt();
-            for (int ix = 0; ix < size; ix++) {
-                ((List) value).add(kryo.readClassAndObject(input));
-            }
-        } else {
-            value = kryo.readClassAndObject(input);
-        }
+        final Object value = kryo.readClassAndObject(input);
 
-        try {
-            return createPredicateWithValue(predicate, value);
-        } catch (final Exception e) {
-            log.info("Couldn't deserialize class: " + aClass + ", predicate: " + predicate + ", isCollection: "
-                    + isCollection + ",value: " + value, e);
-            throw new IllegalStateException(e.getMessage(), e);
-        }
+        return createPredicateWithValue(predicate, value);
     }
 
-    public static P createPredicateWithValue(String predicate, Object value) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        if (value instanceof Collection) {
-            switch (predicate) {
-            case "and":
-                return new AndP((List<P>) value);
-            case "or":
-                return new OrP((List<P>) value);
-            case "between":
-                return P.between(((List) value).get(0), ((List) value).get(1));
-            case "inside":
-                return P.inside(((List) value).get(0), ((List) value).get(1));
-            case "outside":
-                return P.outside(((List) value).get(0), ((List) value).get(1));
-            case "within":
-                return P.within((Collection) value);
-            case "without":
-                return P.without((Collection) value);
-            default:
-                return (P) P.class.getMethod(predicate, Collection.class).invoke(null, value);
-            }
-        } else {
-            switch (predicate) {
+    public static JanusGraphP createPredicateWithValue(String predicateName, Object value) {
+        switch (predicateName) {
             case "geoIntersect":
                 return Geo.geoIntersect(value);
             case "geoDisjoint":
@@ -129,9 +74,7 @@ public class JanusGraphPSerializer extends Serializer<P> {
             case "textRegex":
                 return Text.textRegex(value);
             default:
-                return (P) P.class.getMethod(predicate, Object.class).invoke(null, value);
-            }
+                throw new UnsupportedOperationException("Matched predicate {" + predicateName + "} is not support by JanusGraphPSerializer");
         }
     }
-
 }

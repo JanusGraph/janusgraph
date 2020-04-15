@@ -14,12 +14,16 @@
 
 package org.janusgraph.graphdb.tinkerpop;
 
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.io.AbstractIoRegistry;
+import org.apache.tinkerpop.gremlin.structure.io.binary.GraphBinaryIo;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.janusgraph.graphdb.tinkerpop.io.binary.GeoshapeGraphBinarySerializer;
+import org.janusgraph.graphdb.tinkerpop.io.binary.JanusGraphPBinarySerializer;
+import org.janusgraph.graphdb.tinkerpop.io.binary.RelationIdentifierGraphBinarySerializer;
 import org.janusgraph.graphdb.tinkerpop.io.graphson.JanusGraphSONModuleV2d0;
 
 /**
@@ -32,9 +36,12 @@ public class JanusGraphIoRegistry extends AbstractIoRegistry {
 
     private JanusGraphIoRegistry() {
         register(GraphSONIo.class, null, JanusGraphSONModuleV2d0.getInstance());
+        register(GraphBinaryIo.class, RelationIdentifier.class, new RelationIdentifierGraphBinarySerializer());
+        register(GraphBinaryIo.class, Geoshape.class, new GeoshapeGraphBinarySerializer());
+        register(GraphBinaryIo.class, JanusGraphP.class, new JanusGraphPBinarySerializer());
         register(GryoIo.class, RelationIdentifier.class, null);
         register(GryoIo.class, Geoshape.class, new Geoshape.GeoShapeGryoSerializer());
-        register(GryoIo.class, P.class, new JanusGraphPSerializer());
+        register(GryoIo.class, JanusGraphP.class, new JanusGraphPSerializer());
     }
 
     public static JanusGraphIoRegistry instance() {

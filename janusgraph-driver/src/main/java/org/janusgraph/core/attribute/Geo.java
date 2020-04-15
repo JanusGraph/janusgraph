@@ -16,7 +16,7 @@ package org.janusgraph.core.attribute;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
 
 /**
  * Comparison relations for geographic shapes.
@@ -156,16 +156,16 @@ public enum Geo implements JanusGraphPredicate {
 
     //////////////// statics
 
-    public static <V> P<V> geoIntersect(final V value) {
-        return new P(Geo.INTERSECT, value);
+    public static <V> JanusGraphP geoIntersect(final V value) {
+        return new JanusGraphP(Geo.INTERSECT, value);
     }
-    public static <V> P<V> geoDisjoint(final V value) {
-        return new P(Geo.DISJOINT, value);
+    public static <V> JanusGraphP geoDisjoint(final V value) {
+        return new JanusGraphP(Geo.DISJOINT, value);
     }
-    public static <V> P<V> geoWithin(final V value) {
-        return new P(Geo.WITHIN, value);
+    public static <V> JanusGraphP geoWithin(final V value) {
+        return new JanusGraphP(Geo.WITHIN, value);
     }
-    public static <V> P<V> geoContains(final V value) {
-        return new P(Geo.CONTAINS, value);
+    public static <V> JanusGraphP geoContains(final V value) {
+        return new JanusGraphP(Geo.CONTAINS, value);
     }
 }
