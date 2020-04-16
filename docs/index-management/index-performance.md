@@ -472,10 +472,11 @@ In some cases it is relevant to find an edge based on properties of the adjacent
 Let's say we want to find out whether or not Hercules has battled Cerberus.
 ```groovy
 h = g.V().has('name', 'hercules').next()
-g.V(h).out('battled').has('name', 'cerberus').limit(1).hasNext()
+g.V(h).out('battled').has('name', 'cerberus').hasNext()
 ```
 
-A query like this can not use a vertex centric index because it filters on vertex properties rather than edge properties.
+A query like this can not use a vertex centric index because it filters
+on vertex properties rather than edge properties.
 But by restructuring the query, we can achieve exactly this.
 As both vertices are known, the vertex ids can be used to select the edge.
 ```groovy
@@ -483,10 +484,11 @@ h = g.V().has('name', 'hercules').next()
 c = g.V().has('name', 'cerberus').next()
 ```
 
-In contrast to the name "Cebereus", which is a property of the adjacent vertex, the id of this vertex is already saved within the connecting edge itself.
+In contrast to the name "Cebereus", which is a property of the adjacent vertex,
+the id of this vertex is already saved within the connecting edge itself.
 Therefore, this query runs much faster if hercules has battled many opponents:
 ```groovy
-g.V(h).outE('battled').where(inV().is(c)).limit(1).hasNext()
+g.V(h).outE('battled').where(inV().is(c)).hasNext()
 ```
 
 ... or even shorter:
@@ -494,9 +496,12 @@ g.V(h).outE('battled').where(inV().is(c)).limit(1).hasNext()
 g.V(h).out('battled').is(c).limit(1).hasNext()
 ```
 
-Assuming there is a global index on the 'name' property, this improves the performance a lot, because it's not necessary to fetch every adjacent vertex anymore.
-In addition, a vertex-centric index on adjacent vertex ids does not need to be constructed and maintained explicitly.
-Due to the [data model](../advanced-topics/data-model.md), efficient access to edges by their adjacent vertex id is already provided by the storage backend.
+Assuming there is a global index on the `name` property, this improves the performance
+a lot, because it's not necessary to fetch every adjacent vertex anymore.
+In addition, a vertex-centric index on adjacent vertex ids does not need to
+be constructed and maintained explicitly.
+Due to the [data model](../advanced-topics/data-model.md), efficient access to
+edges by their adjacent vertex id is already provided by the storage backend.
 
 
 ### Ordered Traversals
