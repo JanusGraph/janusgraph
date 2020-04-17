@@ -8,7 +8,6 @@
             <filtered>false</filtered>
             <excludes>
                 <exclude>README.txt</exclude>
-                <exclude>**/es/**</exclude>
             </excludes>
         </fileSet>
         <fileSet>
@@ -22,6 +21,23 @@
             <filtered>false</filtered>
         </fileSet>
         <fileSet>
+            <directory>${assembly.cassandra.dir}</directory>
+            <outputDirectory>/cassandra</outputDirectory>
+            <filtered>false</filtered>
+            <excludes>
+              <exclude>**/bin/cassandra</exclude>
+              <exclude>**/bin/*.bat</exclude>
+              <exclude>**/bin/*.ps1</exclude>
+              <exclude>**/conf/cassandra.yaml</exclude>
+              <exclude>**/conf/cassandra-env.sh</exclude>
+              <exclude>**/conf/logback.xml</exclude>
+              <exclude>**/data/**</exclude>
+              <exclude>**/logs/**</exclude>
+              <exclude>**/doc/**</exclude>
+              <exclude>**/javadoc/**</exclude>
+            </excludes>
+        </fileSet>
+        <fileSet>
             <directory>${assembly.es.dir}</directory>
             <outputDirectory>/elasticsearch</outputDirectory>
             <filtered>false</filtered>
@@ -31,11 +47,6 @@
               <exclude>**/data/**</exclude>
               <exclude>**/logs/**</exclude>
             </excludes>
-        </fileSet>
-        <fileSet>
-            <directory>${assembly.static.dir}/conf/es</directory>
-            <outputDirectory>/elasticsearch/config</outputDirectory>
-            <filtered>true</filtered>
         </fileSet>
     </fileSets>
 

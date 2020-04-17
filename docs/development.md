@@ -151,11 +151,10 @@ To build JanusGraph you need [git](http://git-scm.com/) and
 3.  For comprehensive test coverage, execute
     `mvn clean test -P comprehensive`. This will run additional test
     covering communication to external storage backends, performance
-    tests and concurrency tests. The comprehensive test suite uses
-    Cassandra and HBase as external databases and requires that
-    Cassandra and HBase are installed. Note, that running the
-    comprehensive test suite requires a significant amount of of time
-    (&gt; 1 hour).
+    tests and concurrency tests. The comprehensive test suite uses 
+    HBase as external database and requires that HBase is installed. 
+    Note, that running the comprehensive test suite requires a 
+    significant amount of of time (&gt; 1 hour).
 
 ### Depending on JanusGraph Snapshots
 

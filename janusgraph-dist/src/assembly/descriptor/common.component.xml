@@ -8,10 +8,8 @@
             <filtered>false</filtered>
             <excludes>
                 <exclude>README.txt</exclude>
-                <exclude>**/es/**</exclude>
+                <exclude>**/elasticsearch/**</exclude>
                 <exclude>**/cassandra/**</exclude>
-                <exclude>**/bin/cassandra*</exclude>
-                <exclude>**/bin/nodetool</exclude>
                 <exclude>**/bin/check*</exclude>
                 <exclude>**/bin/janusgraph.sh</exclude>
             </excludes>
@@ -25,9 +23,6 @@
             <directory>${assembly.cfilter.out.dir}</directory>
             <outputDirectory>/</outputDirectory>
             <filtered>false</filtered>
-            <excludes>
-                <exclude>**/janusgraph-cassandra-embedded*</exclude>
-            </excludes>
         </fileSet>
     </fileSets>
 

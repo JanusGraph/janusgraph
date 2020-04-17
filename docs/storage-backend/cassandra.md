@@ -16,32 +16,9 @@ be used in concert with Apache Cassandra.
 
 ## Cassandra Storage Backend
 
-JanusGraph provides the following backends for use with Cassandra:
-
--   `cql` - CQL based driver. This is the recommended driver.
--   `cassandrathrift` - JanusGraph’s Thrift connection pool driver
--   `cassandra` - [Astyanax](https://github.com/Netflix/astyanax)
-    driver. The Astyanax project is
-    [retired](https://medium.com/netflix-techblog/astyanax-retiring-an-old-friend-6cca1de9ac4).
--   `embeddedcassandra` - Embedded driver for running Cassandra and
-    JanusGraph within the same JVM
-
-Cassandra has two protocols for clients to use: CQL and Thrift. Thrift
-was the original interface, however it was deprecated starting with
-Cassandra 2.1. The core of JanusGraph was originally written before the
-deprecation of Thrift, and it has several classes that support Thrift.
+Cassandra has two protocols for clients to use: CQL and Thrift. 
 With Cassandra 4.0, Thrift support will be removed in Cassandra.
-JanusGraph users are recommended to use the `cql` storage backend.
-
-!!! warning
-    Starting with JanusGraph 0.4.1, all non CQL-backends are deprecated, 
-    including `cassandrathrift`, `cassandra` and `embeddedcassandra`.
-
-!!! note
-    If you plan to use a Thrift-based driver and you are using Cassandra
-    2.2 or higher, you need to explicitly enable Thrift so that JanusGraph
-    can connect to the cluster. Do so by running
-    `./bin/nodetool enablethrift` on every Cassandra node.
+JanusGraph just supports the CQL storage backend.
 
 !!! note
     If security is enabled on Cassandra, the user must have
@@ -66,12 +43,7 @@ JanusGraph over Cassandra requires the following setup steps:
     it, and set filesystem paths in `conf/cassandra.yaml` and
     `conf/log4j-server.properties`
 2.  Connecting Gremlin Server to Cassandra using the default
-    configuration files provided in the pre-packaged distribution
-    requires that Cassandra Thrift is enabled. To enable Cassandra
-    Thrift open `conf/cassandra.yaml` and update `start_rpc: false` to
-    `start_rpc: true`. If Cassandra is already running Thrift can be
-    started manually with `bin/nodetool enablethrift`. the Thrift status
-    can be verified with `bin/nodetool` statusthrift.
+    configuration files provided in the pre-packaged distribution.
 3.  Start Cassandra by invoking `bin/cassandra -f` on the command line
     in the directory where Cassandra was unpacked. Read output to check
     that Cassandra started successfully.
@@ -98,9 +70,7 @@ use. The compatible versions can be found under the Tested Compatibility
 section of the specific release on the [Releases
 page](https://github.com/JanusGraph/janusgraph/releases). The [Cassandra
 Docker Hub page](https://hub.docker.com/_/cassandra/) can be referenced
-for the available versions and useful commands. In the command below an
-environment variable is being set to enable Cassandra Thrift with
-`-e CASSANDRA_START_RPC=true`. A description of the ports can be found
+for the available versions and useful commands. A description of the ports can be found
 [here](https://docs.datastax.com/en/cassandra/latest/cassandra/configuration/secureFireWall.html).
 Port 9160 is used for the Thrift client API. Port 9042 is for CQL native
 clients. Ports 7000, 7001 and 7099 are for inter-node communication.
@@ -181,46 +151,14 @@ scriptEngines: {
 For more information about Gremlin Server see the [Apache TinkerPop
 documentation](https://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/reference#gremlin-server)
 
-## JanusGraph Embedded Mode
-
-![](modes-embedded.png)
-
-Finally, Cassandra can be embedded in JanusGraph, which means, that
-JanusGraph and Cassandra run in the same JVM and communicate via in
-process calls rather than over the network. This removes the
-(de)serialization and network protocol overhead and can therefore lead
-to considerable performance improvements. In this deployment mode,
-JanusGraph internally starts a cassandra daemon and JanusGraph no longer
-connects to an existing cluster but is its own cluster.
-
-To use JanusGraph in embedded mode, simply configure `embeddedcassandra`
-as the storage backend. The configuration options listed below also
-apply to embedded Cassandra. In creating a JanusGraph cluster, ensure
-that the individual nodes can discover each other via the Gossip
-protocol, so setup a JanusGraph-with-Cassandra-embedded cluster much
-like you would a stand alone Cassandra cluster. When running JanusGraph
-in embedded mode, the Cassandra yaml file is configured using the
-additional configuration option `storage.conf-file`, which specifies the
-yaml file as a full url, e.g.
-`storage.conf-file = file:///home/cassandra.yaml`.
-
-When running a cluster with JanusGraph and Cassandra embedded, it is
-advisable to expose JanusGraph through the Gremlin Server so that
-applications can remotely connect to the JanusGraph graph database and
-execute queries.
-
-Note, that running JanusGraph with Cassandra embedded requires GC
-tuning. While embedded Cassandra can provide lower latency query
-answering, its GC behavior under load is less predictable.
-
-## Cassandra Specific Configuration
+## CQL Specific Configuration
 
 Refer to [Configuration Reference](../basics/configuration-reference.md) for a complete listing of all Cassandra
 specific configuration options in addition to the general JanusGraph
 configuration options.
 
-When configuring Cassandra it is recommended to consider the following
-Cassandra specific configuration options:
+When configuring CQL it is recommended to consider the following
+CQL specific configuration options:
 
 -   **read-consistency-level**: Cassandra consistency level for read
     operations
@@ -233,10 +171,6 @@ Cassandra specific configuration options:
     robustness. A value of 3 is recommended.** This replication factor
     can only be set when the keyspace is initially created. **On an
     existing keyspace, this value is ignored.**
--   **thrift.frame\_size\_mb**: The maximum frame size to be used by
-    thrift for transport. Increase this value when retrieving very large
-    result sets. **Only applicable when
-    storage.backend=cassandrathrift**
 -   **keyspace**: The name of the keyspace to store the JanusGraph graph
     in. Allows multiple JanusGraph graphs to co-exist in the same
     Cassandra cluster.
@@ -384,12 +318,12 @@ gremlin> graph = JanusGraphFactory.open('janusgraph.properties')
 
 ### Connect to Cassandra cluster in EC2 from outside EC2
 
-Opening the usual Cassandra ports (9160, 7000, 7199) in the security
+Opening the usual Cassandra ports (9042, 7000, 7199) in the security
 group is not enough, because the Cassandra nodes by default broadcast
 their ec2-internal IPs, and not their public-facing IPs.
 
 The resulting behavior is that you can open a JanusGraph graph on the
-cluster by connecting to port 9160 on any Cassandra node, but all
+cluster by connecting to port 9042 on any Cassandra node, but all
 requests to that graph time out. This is because Cassandra is telling
 the client to connect to an unreachable IP.
 

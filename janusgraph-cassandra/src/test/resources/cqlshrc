@@ -1,3 +1,0 @@
-[ssl]
-certfile = /etc/ssl/test.crt
-validate = false

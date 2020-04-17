@@ -122,10 +122,9 @@ Note, that the cache size refers to the amount of heap space that is
 exclusively occupied by the cache. JanusGraph’s other data structures
 and each open transaction will occupy additional heap space. If
 additional software layers are running in the same JVM, those may occupy
-a significant amount of heap space as well (e.g. Gremlin Server,
-embedded Cassandra, etc). Be conservative in your heap memory
-estimation. Configuring a cache that is too large can lead to
-out-of-memory exceptions and excessive GC.
+a significant amount of heap space as well (e.g. Gremlin Server, etc). 
+Be conservative in your heap memory estimation. Configuring a cache 
+that is too large can lead to out-of-memory exceptions and excessive GC.
 
 ### Clean Up Wait Time
 

@@ -22,6 +22,7 @@
         <assembly.static.dir>${project.basedir}/src/assembly/static</assembly.static.dir>
         <assembly.resources.dir>${project.basedir}/src/assembly/resources</assembly.resources.dir>
         <assembly.es.dir>${project.build.directory}/elasticsearch-${elasticsearch.version}</assembly.es.dir>
+        <assembly.cassandra.dir>${project.build.directory}/apache-cassandra-${cassandra.version}</assembly.cassandra.dir>
 
         <!-- Variables for integration testing on release-candidate archive files -->
         <test.expect.dir>${project.build.directory}/test-classes</test.expect.dir>
@@ -47,13 +48,6 @@
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
             <version>${jna.version}</version>
-        </dependency>
-        <!-- C*2.1 uses airline for command line parsing (incl. nodetool).
-             This dep is not provided through cassandra-all/janusgraph-cassandra. -->
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>airline</artifactId>
-            <version>0.6</version>
         </dependency>
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
@@ -101,6 +95,11 @@
                     <groupId>org.apache.solr</groupId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.github.jbellis</groupId>
+            <artifactId>jamm</artifactId>
+            <version>${jamm.version}</version>
         </dependency>
         
         <!-- Test dependencies -->
@@ -192,6 +191,18 @@
                             <outputDirectory>${project.build.directory}</outputDirectory>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>get-cassandra</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>http://ftp.halifax.rwth-aachen.de/apache/cassandra/${cassandra.version}/apache-cassandra-${cassandra.version}-bin.tar.gz</url>
+                            <outputFileName>apache-cassandra.tar.gz</outputFileName>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -199,6 +210,7 @@
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>extract-elasticsearch</id>
                         <phase>generate-test-resources</phase>
                         <goals>
                             <goal>run</goal>
@@ -208,6 +220,23 @@
                                 <exec executable="tar">
                                     <arg value="-xzf"/>
                                     <arg value="${project.build.directory}/elasticsearch.tar.gz"/>
+                                    <arg value="-C"/>
+                                    <arg value="${project.build.directory}"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>extract-cassandra</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <exec executable="tar">
+                                    <arg value="-xzf"/>
+                                    <arg value="${project.build.directory}/apache-cassandra.tar.gz"/>
                                     <arg value="-C"/>
                                     <arg value="${project.build.directory}"/>
                                 </exec>

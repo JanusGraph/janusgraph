@@ -76,8 +76,7 @@
              to slf4j and removes its hard dependency on log4j.
 
              Note, logback-classic is added explicitly to ensure slf4j-log4j12
-             binding appears on the classpath before logback-classic. See
-             comments in janusgraph-cassandra/pom.xml for more information.
+             binding appears on the classpath before logback-classic.
         -->
         <dependency>
             <groupId>org.slf4j</groupId>

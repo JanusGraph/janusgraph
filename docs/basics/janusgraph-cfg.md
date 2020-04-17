@@ -342,7 +342,7 @@ Configuration options for the storage backend.  Some options are applicable only
 
 | Name | Description | Datatype | Default Value | Mutability |
 | ---- | ---- | ---- | ---- | ---- |
-| storage.backend | The primary persistence provider used by JanusGraph.  This is required.  It should be set one of JanusGraph's built-in shorthand names for its standard storage backends (shorthands: berkeleyje, cassandrathrift, cassandra, astyanax, embeddedcassandra, cql, hbase, inmemory) or to the full package and classname of a custom/third-party StoreManager implementation. | String | (no default value) | LOCAL |
+| storage.backend | The primary persistence provider used by JanusGraph.  This is required.  It should be set one of JanusGraph's built-in shorthand names for its standard storage backends (shorthands: berkeleyje, cql, hbase, inmemory) or to the full package and classname of a custom/third-party StoreManager implementation. | String | (no default value) | LOCAL |
 | storage.batch-loading | Whether to enable batch loading into the storage backend | Boolean | false | LOCAL |
 | storage.buffer-size | Size of the batch in which mutations are persisted | Integer | 1024 | MASKABLE |
 | storage.conf-file | Path to a configuration file for those storage backends which require/support a single separate config file. | String | (no default value) | LOCAL |
@@ -372,83 +372,6 @@ BerkeleyDB JE configuration options
 | storage.berkeleyje.isolation-level | The isolation level used by transactions | String | REPEATABLE_READ | MASKABLE |
 | storage.berkeleyje.lock-mode | The BDB record lock mode used for read operations | String | LockMode.DEFAULT | MASKABLE |
 | storage.berkeleyje.shared-cache | If true, the shared cache is used for all graph instances | Boolean | true | MASKABLE |
-
-### storage.cassandra
-Cassandra storage backend options
-
-
-| Name | Description | Datatype | Default Value | Mutability |
-| ---- | ---- | ---- | ---- | ---- |
-| storage.cassandra.atomic-batch-mutate | True to use Cassandra atomic batch mutation, false to use non-atomic batches | Boolean | true | MASKABLE |
-| storage.cassandra.compaction-strategy-class | The compaction strategy to use for JanusGraph tables | String | (no default value) | FIXED |
-| storage.cassandra.compaction-strategy-options | Compaction strategy options.  This list is interpreted as a map.  It must have an even number of elements in [key,val,key,val,...] form. | String[] | (no default value) | FIXED |
-| storage.cassandra.compression | Whether the storage backend should use compression when storing the data | Boolean | true | FIXED |
-| storage.cassandra.compression-block-size | The size of the compression blocks in kilobytes | Integer | 64 | FIXED |
-| storage.cassandra.compression-type | The sstable_compression value JanusGraph uses when creating column families. This accepts any value allowed by Cassandra's sstable_compression option. Leave this unset to disable sstable_compression on JanusGraph-created CFs. | String | LZ4Compressor | MASKABLE |
-| storage.cassandra.frame-size-mb | The thrift frame size in megabytes | Integer | 15 | MASKABLE |
-| storage.cassandra.keyspace | The name of JanusGraph's keyspace.  It will be created if it does not exist. If it is not supplied, but graph.graphname is, then the the keyspace will be set to that. | String | janusgraph | LOCAL |
-| storage.cassandra.read-consistency-level | The consistency level of read operations against Cassandra | String | QUORUM | MASKABLE |
-| storage.cassandra.replication-factor | The number of data replicas (including the original copy) that should be kept. This is only meaningful for storage backends that natively support data replication. | Integer | 1 | GLOBAL_OFFLINE |
-| storage.cassandra.replication-strategy-class | The replication strategy to use for JanusGraph keyspace | String | org.apache.cassandra.locator.SimpleStrategy | FIXED |
-| storage.cassandra.replication-strategy-options | Replication strategy options, e.g. factor or replicas per datacenter.  This list is interpreted as a map.  It must have an even number of elements in [key,val,key,val,...] form.  A replication_factor set here takes precedence over one set with storage.cassandra.replication-factor | String[] | (no default value) | FIXED |
-| storage.cassandra.write-consistency-level | The consistency level of write operations against Cassandra | String | QUORUM | MASKABLE |
-
-### storage.cassandra.astyanax
-Astyanax-specific Cassandra options
-
-
-| Name | Description | Datatype | Default Value | Mutability |
-| ---- | ---- | ---- | ---- | ---- |
-| storage.cassandra.astyanax.cluster-name | Default name for the Cassandra cluster | String | JanusGraph Cluster | MASKABLE |
-| storage.cassandra.astyanax.connection-pool-type | Astyanax's connection pooler implementation | String | TOKEN_AWARE | MASKABLE |
-| storage.cassandra.astyanax.frame-size | The thrift frame size in mega bytes | Integer | 15 | MASKABLE |
-| storage.cassandra.astyanax.host-supplier | Host supplier to use when discovery type is set to DISCOVERY_SERVICE or TOKEN_AWARE | String | (no default value) | MASKABLE |
-| storage.cassandra.astyanax.local-datacenter | The name of the local or closest Cassandra datacenter.  When set and not whitespace, this value will be passed into ConnectionPoolConfigurationImpl.setLocalDatacenter. When unset or set to whitespace, setLocalDatacenter will not be invoked. | String | (no default value) | MASKABLE |
-| storage.cassandra.astyanax.max-cluster-connections-per-host | Maximum pooled "cluster" connections per host | Integer | 3 | MASKABLE |
-| storage.cassandra.astyanax.max-connections | Maximum open connections allowed in the pool (counting all hosts) | Integer | -1 | MASKABLE |
-| storage.cassandra.astyanax.max-connections-per-host | Maximum pooled connections per host | Integer | 32 | MASKABLE |
-| storage.cassandra.astyanax.max-operations-per-connection | Maximum number of operations allowed per connection before the connection is closed | Integer | 100000 | MASKABLE |
-| storage.cassandra.astyanax.node-discovery-type | How Astyanax discovers Cassandra cluster nodes | String | RING_DESCRIBE | MASKABLE |
-| storage.cassandra.astyanax.read-page-size | The page size for Cassandra read operations | Integer | 4096 | MASKABLE |
-| storage.cassandra.astyanax.retry-backoff-strategy | Astyanax's retry backoff strategy with configuration parameters | String | com.netflix.astyanax.connectionpool.impl.FixedRetryBackoffStrategy,1000,5000 | MASKABLE |
-| storage.cassandra.astyanax.retry-delay-slice | Astyanax's connection pool "retryDelaySlice" parameter | Integer | 10000 | MASKABLE |
-| storage.cassandra.astyanax.retry-max-delay-slice | Astyanax's connection pool "retryMaxDelaySlice" parameter | Integer | 10 | MASKABLE |
-| storage.cassandra.astyanax.retry-policy | Astyanax's retry policy implementation with configuration parameters | String | com.netflix.astyanax.retry.BoundedExponentialBackoff,100,25000,8 | MASKABLE |
-| storage.cassandra.astyanax.retry-suspend-window | Astyanax's connection pool "retryMaxDelaySlice" parameter | Integer | 20000 | MASKABLE |
-
-### storage.cassandra.ssl
-Configuration options for SSL
-
-
-| Name | Description | Datatype | Default Value | Mutability |
-| ---- | ---- | ---- | ---- | ---- |
-| storage.cassandra.ssl.enabled | Controls use of the SSL connection to Cassandra | Boolean | false | LOCAL |
-
-### storage.cassandra.ssl.truststore
-Configuration options for SSL Truststore.
-
-
-| Name | Description | Datatype | Default Value | Mutability |
-| ---- | ---- | ---- | ---- | ---- |
-| storage.cassandra.ssl.truststore.location | Marks the location of the SSL Truststore. | String |  | LOCAL |
-| storage.cassandra.ssl.truststore.password | The password to access SSL Truststore. | String |  | LOCAL |
-
-### storage.cassandra.thrift.cpool
-Options for the Apache commons-pool connection manager
-
-
-| Name | Description | Datatype | Default Value | Mutability |
-| ---- | ---- | ---- | ---- | ---- |
-| storage.cassandra.thrift.cpool.evictor-period | Approximate number of milliseconds between runs of the idle connection evictor.  Set to -1 to never run the idle connection evictor. | Long | 30000 | MASKABLE |
-| storage.cassandra.thrift.cpool.idle-test | Whether the idle connection evictor validates idle connections and drops those that fail to validate | Boolean | false | MASKABLE |
-| storage.cassandra.thrift.cpool.idle-tests-per-eviction-run | When the value is negative, e.g. -n, roughly one nth of the idle connections are tested per run.  When the value is positive, e.g. n, the min(idle-count, n) connections are tested per run. | Integer | 0 | MASKABLE |
-| storage.cassandra.thrift.cpool.max-active | Maximum number of concurrently in-use connections (-1 to leave undefined) | Integer | 16 | MASKABLE |
-| storage.cassandra.thrift.cpool.max-idle | Maximum number of concurrently idle connections (-1 to leave undefined) | Integer | 4 | MASKABLE |
-| storage.cassandra.thrift.cpool.max-total | Max number of allowed Thrift connections, idle or active (-1 to leave undefined) | Integer | -1 | MASKABLE |
-| storage.cassandra.thrift.cpool.max-wait | Maximum number of milliseconds to block when storage.cassandra.thrift.cpool.when-exhausted is set to BLOCK.  Has no effect when set to actions besides BLOCK.  Set to -1 to wait indefinitely. | Long | -1 | MASKABLE |
-| storage.cassandra.thrift.cpool.min-evictable-idle-time | Minimum number of milliseconds a connection must be idle before it is eligible for eviction.  See also storage.cassandra.thrift.cpool.evictor-period.  Set to -1 to never evict idle connections. | Long | 60000 | MASKABLE |
-| storage.cassandra.thrift.cpool.min-idle | Minimum number of idle connections the pool attempts to maintain | Integer | 0 | MASKABLE |
-| storage.cassandra.thrift.cpool.when-exhausted | What to do when clients concurrently request more active connections than are allowed by the pool.  The value must be one of BLOCK, FAIL, or GROW. | String | BLOCK | MASKABLE |
 
 ### storage.cql
 CQL storage backend options

@@ -575,9 +575,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         final Map<StandardStoreManager, ConfigOption<?>> m = new HashMap<>();
 
         m.put(StandardStoreManager.BDB_JE, STORAGE_DIRECTORY);
-        m.put(StandardStoreManager.CASSANDRA_ASTYANAX, STORAGE_HOSTS);
-        m.put(StandardStoreManager.CASSANDRA_EMBEDDED, STORAGE_CONF_FILE);
-        m.put(StandardStoreManager.CASSANDRA_THRIFT, STORAGE_HOSTS);
+        m.put(StandardStoreManager.CQL, STORAGE_HOSTS);
         m.put(StandardStoreManager.HBASE, STORAGE_HOSTS);
         //m.put(StandardStorageBackend.IN_MEMORY, null);
 
@@ -616,38 +614,10 @@ public class Backend implements LockerProvider, AutoCloseable {
         }
     };
 
-    private final Function<String, Locker> ASTYANAX_RECIPE_LOCKER_CREATOR = new Function<String, Locker>() {
-
-        @Override
-        public Locker apply(String lockerName) {
-
-            String expectedManagerName = "org.janusgraph.diskstorage.cassandra.astyanax.AstyanaxStoreManager";
-            String actualManagerName = storeManager.getClass().getCanonicalName();
-            // Require AstyanaxStoreManager
-            Preconditions.checkArgument(expectedManagerName.equals(actualManagerName),
-                    "Astyanax Recipe locker is only supported with the Astyanax storage backend (configured:"
-                            + actualManagerName + " != required:" + expectedManagerName + ")");
-
-            try {
-                Class<?> c = storeManager.getClass();
-                Method method = c.getMethod("openLocker", String.class);
-                Object o = method.invoke(storeManager, lockerName);
-                return (Locker) o;
-            } catch (NoSuchMethodException e) {
-                throw new IllegalArgumentException("Could not find method when configuring locking with Astyanax Recipes");
-            } catch (IllegalAccessException e) {
-                throw new IllegalArgumentException("Could not access method when configuring locking with Astyanax Recipes", e);
-            } catch (InvocationTargetException e) {
-                throw new IllegalArgumentException("Could not invoke method when configuring locking with Astyanax Recipes", e);
-            }
-        }
-    };
-
     private static final Function<String, Locker> TEST_LOCKER_CREATOR = lockerName -> openManagedLocker("org.janusgraph.diskstorage.util.TestLockerManager",lockerName);
 
     private final Map<String, Function<String, Locker>> REGISTERED_LOCKERS = ImmutableMap.of(
             "consistentkey", CONSISTENT_KEY_LOCKER_CREATOR,
-            "astyanaxrecipe", ASTYANAX_RECIPE_LOCKER_CREATOR,
             "test", TEST_LOCKER_CREATOR
     );
 

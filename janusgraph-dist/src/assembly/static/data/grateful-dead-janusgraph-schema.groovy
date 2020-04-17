@@ -23,7 +23,7 @@
  * gremlin> :load data/janusgraph-schema-grateful-dead.groovy
  * ==>true
  * ==>true
- * gremlin> t = JanusGraphFactory.open('conf/janusgraph-cassandra.properties')
+ * gremlin> t = JanusGraphFactory.open('conf/janusgraph-cql.properties')
  * ==>standardjanusgraph[cassandrathrift:[127.0.0.1]]
  * gremlin> defineGratefulDeadSchema(t)
  * ==>null
