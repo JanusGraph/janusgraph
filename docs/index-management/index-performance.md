@@ -365,7 +365,7 @@ battled = mgmt.getEdgeLabel('battled')
 mgmt.buildEdgeIndex(battled, 'battlesByTime', Direction.BOTH, Order.desc, time)
 mgmt.commit()
 //Wait for the index to become available
-ManagementSystem.awaitRelationIndexStatus(graph, 'battlesByTime').call()
+ManagementSystem.awaitRelationIndexStatus(graph, 'battlesByTime', 'battled').call()
 //Reindex the existing data
 mgmt = graph.openManagement()
 mgmt.updateIndex(mgmt.getRelationIndex(battled, "battlesByTime"), SchemaAction.REINDEX).get()
@@ -462,13 +462,51 @@ increases. Often, such traversals can be rewritten as constrained
 traversals that can utilize a vertex-centric index to ensure acceptable
 performance at scale.
 
+### Using vertex-centric indexes on adjacent vertex ids
+
+In some cases it is relevant to find an edge based on properties of the adjacent vertex.
+Let's say we want to find out whether or not Hercules has battled Cerberus.
+```groovy
+h = g.V().has('name', 'hercules').next()
+g.V(h).out('battled').has('name', 'cerberus').hasNext()
+```
+
+A query like this can not use a vertex centric index because it filters
+on vertex properties rather than edge properties.
+But by restructuring the query, we can achieve exactly this.
+As both vertices are known, the vertex ids can be used to select the edge.
+```groovy
+h = g.V().has('name', 'hercules').next()
+c = g.V().has('name', 'cerberus').next()
+```
+
+In contrast to the name "Cebereus", which is a property of the adjacent vertex,
+the id of this vertex is already saved within the connecting edge itself.
+Therefore, this query runs much faster if hercules has battled many opponents:
+```groovy
+g.V(h).outE('battled').where(inV().is(c)).hasNext()
+```
+
+... or even shorter:
+```groovy
+g.V(h).out('battled').is(c).limit(1).hasNext()
+```
+
+Assuming there is a global index on the `name` property, this improves the performance
+a lot, because it's not necessary to fetch every adjacent vertex anymore.
+In addition, a vertex-centric index on adjacent vertex ids does not need to
+be constructed and maintained explicitly.
+Due to the [data model](../advanced-topics/data-model.md), efficient access to
+edges by their adjacent vertex id is already provided by the storage backend.
+
+
 ### Ordered Traversals
 
 The following queries specify an order in which the incident edges are
 to be traversed. Use the `localLimit` command to retrieve a subset of
 the edges (in a given order) for EACH vertex that is traversed.
 ```groovy
-h = g..V().has('name', 'hercules').next()
+h = g.V().has('name', 'hercules').next()
 g.V(h).local(outE('battled').order().by('time', desc).limit(10)).inV().values('name')
 g.V(h).local(outE('battled').has('rating', 5.0).order().by('time', desc).limit(10)).values('place')
 ```
