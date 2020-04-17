@@ -46,6 +46,7 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_OPTIONS
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_STRATEGY;
 import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -69,6 +70,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.util.RecordIterator;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry.GetColVal;
 import org.janusgraph.diskstorage.util.StaticArrayEntryList;
@@ -315,17 +317,35 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     private static EntryList fromResultSet(final ResultSet resultSet, final GetColVal<Tuple3<StaticBuffer, StaticBuffer, Row>, StaticBuffer> getter) {
-        final Lazy<ArrayList<Row>> lazyList = Lazy.of(() -> Lists.newArrayList(resultSet));
-        // Use the Iterable overload of ofByteBuffer as it's able to allocate
-        // the byte array up front.
-        // To ensure that the Iterator instance is recreated, it is created
-        // within the closure otherwise
-        // the same iterator would be reused and would be exhausted.
-        return StaticArrayEntryList.ofStaticBuffer(() -> Iterator.ofAll(lazyList.get()).map(row -> Tuple.of(
-                        StaticArrayBuffer.of(row.getBytes(COLUMN_COLUMN_NAME)),
-                        StaticArrayBuffer.of(row.getBytes(VALUE_COLUMN_NAME)),
-                        row)),
-                getter);
+        return StaticArrayEntryList.ofStaticBuffer(new CQLResultSetIterator(resultSet), getter);
+    }
+
+    private static class CQLResultSetIterator implements RecordIterator<Tuple3<StaticBuffer, StaticBuffer, Row>> {
+
+        private java.util.Iterator<Row> resultSetIterator;
+
+        public CQLResultSetIterator(ResultSet rs) {
+            resultSetIterator = rs.iterator();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return resultSetIterator.hasNext();
+        }
+
+        @Override
+        public Tuple3<StaticBuffer, StaticBuffer, Row> next() {
+            Row nextRow = resultSetIterator.next();
+            return nextRow == null
+                ? null
+                : Tuple.of(StaticArrayBuffer.of(nextRow.getBytes(COLUMN_COLUMN_NAME)),
+                           StaticArrayBuffer.of(nextRow.getBytes(VALUE_COLUMN_NAME)), nextRow);
+        }
+
+        @Override
+        public void close() throws IOException {
+            // NOP
+        }
     }
 
     /*
