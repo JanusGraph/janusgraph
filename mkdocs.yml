@@ -113,7 +113,8 @@ nav:
         - Datatype and Attribute Serializer Configuration: advanced-topics/serializer.md
         - JanusGraph with TinkerPop’s Hadoop-Gremlin: advanced-topics/hadoop.md
         - Monitoring JanusGraph: advanced-topics/monitoring.md
-        - Migrating from Titan: advanced-topics/migrating.md
+        - Migrating from Titan: advanced-topics/migrating-titan.md
+        - Migrating from Thrift: advanced-topics/migrating-thrift.md
         - JanusGraph Data model: advanced-topics/data-model.md
         - JanusGraph Bus: advanced-topics/janusgraph-bus.md
     - Connecting to JanusGraph:

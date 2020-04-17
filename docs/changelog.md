@@ -100,6 +100,26 @@ after the keyword `serializers`. This will add the support on the server site.
 !!! note 
     The java driver is the only driver that currently supports GraphBinary, 
     see [Connecting to JanusGraph using Java](connecting/java.md).
+    
+##### Removal of Cassandra Thrift support
+
+Thrift will be completely removed in Cassandra 4.
+All deprecated Cassandra Thrift backends were removed in JanusGraph 0.6.0.
+We already added support for CQL in JanusGraph 0.2.0 and we have been 
+encouraging users to switch from Thrift to CQL since version 0.2.1.
+
+This means that the following backends were removed: 
+`cassandrathrift`, `cassandra`, `astyanax`, and `embeddedcassandra`.
+Users who still use one of these Thrift backends should migrate to CQL.
+[Our migration guide](advanced-topics/migrating-thrift.md) explains the 
+necessary steps for this. The option to run Cassandra embedded 
+in the same JVM as JanusGraph is however no longer supported with CQL.
+
+!!! note 
+    The source code for the Thrift backends will be moved into a 
+    [dedicated repository](https://github.com/JanusGraph/janusgraph-cassandra).
+    While we do not support them any more, users can still use them 
+    if they for some reason cannot migrate to CQL.
 
 ### Version 0.5.1 (Release Date: March 25, 2020)
 
@@ -189,7 +209,7 @@ Hadoop is now a dependency of supported backends. Therefore, `MapReduceIndexJobs
 | Old Function | New Function |
 | ------------ | ------------ |
 |`MapReduceIndexJobs.cassandraRepair`|`CassandraMapReduceIndexJobsUtils.repair`| 
-|`MapReduceIndexJobs.cassandraRemove`|`CassandraMapReduceIndexJobsUtils.remove`| 
+|`MapReduceIndexJobs.cassandraRemove`|`CassandraMapReduceIndexJobsUtils.remove`|
 |`MapReduceIndexJobs.cqlRepair`|`CqlMapReduceIndexJobsUtils.repair`| 
 |`MapReduceIndexJobs.cqlRemove`|`CqlMapReduceIndexJobsUtils.remove`| 
 |`MapReduceIndexJobs.hbaseRepair`|`HBaseMapReduceIndexJobsUtils.repair`| 
@@ -805,4 +825,4 @@ adjust your code and configuration accordingly:
     `JanusGraph` rather than `JanusGraphGraph`
 
 For more information on how to configure JanusGraph to read data which
-had previously been written by Titan refer to [Migration from titan](advanced-topics/migrating.md).
+had previously been written by Titan refer to [Migration from titan](advanced-topics/migrating-titan.md).

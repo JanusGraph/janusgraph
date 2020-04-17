@@ -52,12 +52,6 @@ mvn exec:java -pl :example-common
 mvn exec:java -pl :example-berkeleyje
 ```
 
-### [Cassandra Thrift and Elasticsearch](example-cassandra/README.md)
-
-```
-mvn exec:java -pl :example-cassandra
-```
-
 ### [Cassandra CQL and Elasticsearch](example-cql/README.md)
 
 ```
@@ -100,12 +94,6 @@ for clean up.
 
 ```
 mvn exec:java -pl :example-berkeleyje -Dcmd=drop
-```
-
-### [Cassandra Thrift and Elasticsearch](example-cassandra/README.md)
-
-```
-mvn exec:java -pl :example-cassandra -Dcmd=drop
 ```
 
 ### [Cassandra CQL and Elasticsearch](example-cql/README.md)

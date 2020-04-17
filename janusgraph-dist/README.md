@@ -58,3 +58,17 @@ To build the .deb and .rpm packages:
 
 To delete the packaging scripts from the root of the repository, run
 `mvn -N -Ppkg-tools clean` from the janusgraph-dist module.
+
+## Upgrade cassandra-server version 
+
+Following files have to be updated, if you update Cassandra server version 
+in the default JanusGraph distribution:
+
+  * src/assembly/static/cassandra/bin/cassandra
+  * src/assembly/static/cassandra/conf/cassandra-env.sh
+  * src/assembly/static/cassandra/conf/cassandra.yaml
+  * src/assembly/static/cassandra/conf/logback.xml
+
+These files contains just small changes which allows us to include Cassandra 
+into our distribution. Changed locations are marked using 
+`JanusGraph change:`.

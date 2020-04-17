@@ -50,12 +50,12 @@ Elasticsearch, and Gremlin Server.
 
 ## Dependencies
 
-The required Maven dependency for Cassandra:
+The required Maven dependency for Cql:
 
 ```
         <dependency>
             <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-cassandra</artifactId>
+            <artifactId>janusgraph-cql</artifactId>
             <version>${janusgraph.version}</version>
             <scope>runtime</scope>
         </dependency>
@@ -77,7 +77,7 @@ The required Maven dependency for Elasticsearch:
 This command can be run from the `examples` or the project's directory.
 
 ```
-mvn exec:java -pl :example-cassandra
+mvn exec:java -pl :example-cql
 ```
 
 ## Drop the graph
@@ -87,5 +87,5 @@ sure to stop the application before dropping the graph. This command can be
 run from the `examples` or the project's directory.
 
 ```
-mvn exec:java -pl :example-cassandra -Dcmd=drop
+mvn exec:java -pl :example-cql -Dcmd=drop
 ```

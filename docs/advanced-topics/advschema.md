@@ -34,17 +34,15 @@ processing.
 
 The following storage backends support edge and vertex TTL.
 
--   Cassandra
-
+-   CQL compatible storage backends
 -   HBase
-
 -   BerkeleyDB - supports only hour-discrete TTL, thus the minimal TTL is one hour.
 
 ### Edge TTL
 
 Edge TTL is defined on a per-edge label basis, meaning that all edges of
 that label have the same time-to-live. Note that the backend must
-support cell level TTL. Currently only Cassandra, HBase and BerkeleyDB support this.
+support cell level TTL. Currently only CQL, HBase and BerkeleyDB support this.
 ```groovy
 mgmt = graph.openManagement()
 visits = mgmt.makeEdgeLabel('visits').make()
@@ -63,7 +61,7 @@ same label.
 Property TTL is very similar to edge TTL and defined on a per-property
 key basis, meaning that all properties of that key have the same
 time-to-live. Note that the backend must support cell level TTL.
-Currently only Cassandra, HBase and BerkeleyDB support this.
+Currently only CQL, HBase and BerkeleyDB support this.
 ```groovy
 mgmt = graph.openManagement()
 sensor = mgmt.makePropertyKey('sensor').cardinality(Cardinality.LIST).dataType(Double.class).make()
@@ -84,7 +82,7 @@ that the entire vertex is removed from the graph. For this reason, a
 vertex label must be defined as *static* before a TTL can be set to rule
 out any modifications that would invalidate the vertex TTL. Vertex TTL
 only applies to static vertex labels. Note that the backend must support
-store level TTL. Currently only Cassandra, HBase and BerkeleyDB support this.
+store level TTL. Currently only CQL, HBase and BerkeleyDB support this.
 ```groovy
 mgmt = graph.openManagement()
 tweet = mgmt.makeVertexLabel('tweet').setStatic().make()

@@ -420,11 +420,11 @@ gremlin> :remote connect tinkerpop.server conf/remote.yaml
 gremlin> :remote console
 ==>All scripts will now be sent to Gremlin Server - [localhost/127.0.0.1:8182] - type ':remote console' to return to local mode
 gremlin> ConfiguredGraphFactory.open("graph1")
-==>standardjanusgraph[cassandrathrift:[127.0.0.1]]
+==>standardjanusgraph[cql:[127.0.0.1]]
 gremlin> graph1
-==>standardjanusgraph[cassandrathrift:[127.0.0.1]]
+==>standardjanusgraph[cql:[127.0.0.1]]
 gremlin> graph1_traversal
-==>graphtraversalsource[standardjanusgraph[cassandrathrift:[127.0.0.1]], standard]
+==>graphtraversalsource[standardjanusgraph[cql:[127.0.0.1]], standard]
 ```
 
 ## Examples

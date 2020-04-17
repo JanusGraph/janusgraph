@@ -74,7 +74,7 @@
         <junit.version>5.6.1</junit.version>
         <mrunit.version>1.1.0</mrunit.version>
         <mockito.version>2.23.0</mockito.version>
-        <cassandra.version>2.2.13</cassandra.version>
+        <cassandra.version>2.2.16</cassandra.version>
         <jamm.version>0.3.0</jamm.version>
         <metrics.version>3.2.6</metrics.version>
         <slf4j.version>1.7.30</slf4j.version>
@@ -136,7 +136,6 @@
         <module>janusgraph-inmemory</module>
         <module>janusgraph-berkeleyje</module>
         <module>janusgraph-cql</module>
-        <module>janusgraph-cassandra</module>
         <module>janusgraph-hadoop</module>
         <module>janusgraph-hbase-parent</module>
         <module>janusgraph-bigtable</module>
@@ -435,7 +434,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-assembly-plugin</artifactId>
-                    <version>2.4</version>
+                    <version>3.2.0</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-install-plugin</artifactId>
@@ -984,32 +983,8 @@
                 <version>6.5.7</version>
             </dependency>
             <dependency>
-                <!-- align with org.apache.cassandra:cassandra-all -->
-                <groupId>org.apache.thrift</groupId>
-                <artifactId>libthrift</artifactId>
-                <version>0.9.2</version>
-            </dependency>
-            <dependency>
                 <groupId>org.apache.cassandra</groupId>
                 <artifactId>cassandra-all</artifactId>
-                <version>${cassandra.version}</version>
-                <!-- Using avro-ipc 1.5.3 caused the following when opening the graphdb:
-                     java.lang.NoSuchMethodError: org.apache.avro.io.DecoderFactory.configureDirectDecoder(Z)Lorg/apache/avro/io/DecoderFactory
-
-                     Stock avro 1.4.0 or 1.4.1 might work, but I'd like to see
-                     what customizations were made in the cassandra copy of avro
-                     before trying to drop it for the stock artifact...
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.cassandra.deps</groupId>
-                        <artifactId>avro</artifactId>
-                    </exclusion>
-                </exclusions>
-                -->
-            </dependency>
-            <dependency>
-                <groupId>org.apache.cassandra</groupId>
-                <artifactId>cassandra-thrift</artifactId>
                 <version>${cassandra.version}</version>
             </dependency>
             <dependency>

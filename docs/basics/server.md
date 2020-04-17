@@ -43,7 +43,6 @@ together. To use this default configuration:
     reasons Elasticsearch and therefore `janusgraph.sh` must be run
     under a non-root account.
 
-<!-- -->
 ```bash
 $ bin/janusgraph.sh start
 Forking Cassandra...

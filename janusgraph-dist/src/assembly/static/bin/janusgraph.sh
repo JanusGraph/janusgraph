@@ -27,7 +27,13 @@ abs_path() {
 }
 
 BIN=`abs_path`
-GSRV_CONFIG_TAG=cassandra-es
+GSRV_CONFIG_TAG=cql-es
+
+if [ -z "$JANUSGRAPH_HOME" ]; then
+    JANUSGRAPH_HOME="`dirname "$0"`/.."
+fi
+
+
 : ${CASSANDRA_STARTUP_TIMEOUT_S:=60}
 : ${CASSANDRA_SHUTDOWN_TIMEOUT_S:=60}
 
@@ -71,14 +77,14 @@ CASSANDRA_CLASS_NAME=org.apache.cassandra.service.CassandraDaemon
 wait_for_cassandra() {
     local now_s=`date '+%s'`
     local stop_s=$(( $now_s + $CASSANDRA_STARTUP_TIMEOUT_S ))
-    local status_thrift=
+    local statusbinary=
 
-    echo -n 'Running `nodetool statusthrift`'
+    echo -n 'Running `nodetool statusbinary`'
     while [ $now_s -le $stop_s ]; do
         echo -n .
         # The \r\n deletion bit is necessary for Cygwin compatibility
-        status_thrift="`$BIN/nodetool statusthrift 2>/dev/null | tr -d '\n\r'`"
-        if [ $? -eq 0 -a 'running' = "$status_thrift" ]; then
+        statusbinary="`$BIN/../cassandra/bin/nodetool statusbinary 2>/dev/null | tr -d '\n\r'`"
+        if [ $? -eq 0 -a 'running' = "$statusbinary" ]; then
             echo ' OK (returned exit status 0 and printed string "running").'
             return 0
         fi
@@ -147,9 +153,9 @@ start() {
     status_class $CASSANDRA_FRIENDLY_NAME $CASSANDRA_CLASS_NAME >/dev/null && status && echo "Stop services before starting" && exit 1
     echo "Forking Cassandra..."
     if [ -n "$VERBOSE" ]; then
-        CASSANDRA_INCLUDE="$BIN"/cassandra.in.sh "$BIN"/cassandra || exit 1
+        "$BIN"/../cassandra/bin/cassandra || exit 1
     else
-        CASSANDRA_INCLUDE="$BIN"/cassandra.in.sh "$BIN"/cassandra >/dev/null 2>&1 || exit 1
+        "$BIN"/../cassandra/bin/cassandra >/dev/null 2>&1 || exit 1
     fi
     wait_for_cassandra || {
         echo "See $BIN/../logs/cassandra.log for Cassandra log output."    >&2

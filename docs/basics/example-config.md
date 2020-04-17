@@ -8,7 +8,6 @@ Also, note that the JanusGraph distribution includes local configuration
 files in the `conf/` directory.
 
 ## BerkeleyDB
-
 ```properties
 storage.backend=berkeleyje
 storage.directory=/tmp/graph
@@ -33,7 +32,6 @@ index in `/tmp/searchindex`. Configuring an index backend is optional.
 ## Cassandra
 
 ### Cassandra Remote
-
 ```properties
 storage.backend=cql
 storage.hostname=100.100.100.1, 100.100.100.2
@@ -55,29 +53,7 @@ cluster is running and accessible at the given IP addresses. Enabling
 Elasticsearch cluster as another node but only connects to it.
 Configuring an index backend is optional.
 
-### Embedded Cassandra
-
-```properties
-storage.backend=embeddedcassandra
-storage.conf-file=config/cassandra.yaml
-
-index.search.backend=elasticsearch
-index.search.directory=/tmp/searchindex
-index.search.elasticsearch.client-only=false
-index.search.elasticsearch.local-mode=true
-```
-
-This configuration file configures JanusGraph to start
-[Cassandra](../storage-backend/cassandra.md) internally embedded in JanusGraph and specifies
-the yaml configuration file for Cassandra. Cassandra is still accessible
-externally and can connect to other available Cassandra nodes to form a
-cluster as configured in the yaml file.
-
-The optional index backend configuration is identical to embedded index
-configuration described above.
-
 ## HBase
-
 ```properties
 storage.backend=hbase
 storage.hostname=127.0.0.1

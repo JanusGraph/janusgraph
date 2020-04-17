@@ -67,9 +67,8 @@
             <artifactId>elasticsearch-rest-client</artifactId>
         </dependency>
 
-        <!-- Logging backends.
-             Enforce a classpath ordering constraint to ensure log4j is used for logging.
-             See comment in janusgraph-cassandra POM for more information. -->
+        <!-- Logging backends. -->
+        <!-- Enforce a classpath ordering constraint to ensure log4j is used for logging. -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
@@ -86,13 +85,6 @@
             <artifactId>mockito-inline</artifactId>
 			<scope>test</scope>
 		</dependency>
-        <!-- JNA is needed by Cassandra, but janusgraph-cassandra only defines it as an optional dependency. -->
-        <dependency>
-            <groupId>net.java.dev.jna</groupId>
-            <artifactId>jna</artifactId>
-            <version>${jna.version}</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>

@@ -118,9 +118,6 @@ public enum ReflectiveConfigOptionLoader {
          */
         List<String> classnames = ImmutableList.of(
             "org.janusgraph.diskstorage.hbase.HBaseStoreManager",
-            "org.janusgraph.diskstorage.cassandra.astyanax.AstyanaxStoreManager",
-            "org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager",
-            "org.janusgraph.diskstorage.cassandra.thrift.CassandraThriftStoreManager",
             "org.janusgraph.diskstorage.cql.CQLConfigOptions",
             "org.janusgraph.diskstorage.es.ElasticSearchIndex",
             "org.janusgraph.diskstorage.solr.SolrIndex",

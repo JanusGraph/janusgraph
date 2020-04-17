@@ -72,6 +72,12 @@ jobs:
       if: commit_message !~ /\[doc only\]/
 
     - <<: *STANDARD_TEST_JOB
+      env: MODULE='driver'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='test'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='inmemory' ARGS='-Dtest.skip.tp=false'
+    - <<: *STANDARD_TEST_JOB
       env: MODULE='lucene'
     - <<: *STANDARD_TEST_JOB
       env: MODULE='solr' ARGS='-Pdocker,solr7'
@@ -83,39 +89,6 @@ jobs:
       env: MODULE='es' ARGS='-Pelasticsearch60'
     - <<: *STANDARD_TEST_JOB
       env: MODULE='berkeleyje'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='driver'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='test'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='inmemory' ARGS='-Dtest.skip.tp=false'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra2-byteordered -Dtest=**/diskstorage/cassandra/thrift/*'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra2-murmur -Dtest=**/diskstorage/cassandra/thrift/*'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra2-murmur-ssl -Dtest=**/diskstorage/cassandra/thrift/ThriftStoreTest.java'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra2-byteordered -Dtest=**/graphdb/thrift/*'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra2-murmur -Dtest=**/graphdb/thrift/*'
-
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra2-byteordered -Dtest=**/diskstorage/cassandra/astyanax/*'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra2-murmur -Dtest=**/diskstorage/cassandra/astyanax/*'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra2-murmur-ssl -Dtest=**/diskstorage/cassandra/astyanax/AstyanaxStoreTest.java'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra2-byteordered -Dtest=**/graphdb/astyanax/*'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra2-murmur -Dtest=**/graphdb/astyanax/*'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cassandra' ARGS='-Dtest=**/diskstorage/cassandra/embedded/*'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cassandra' ARGS='-Dtest=***/cassandra/*,*/graphdb/embedded/*'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra2-murmur -Dtest=**/hadoop/*'
 
     - <<: *STANDARD_TEST_JOB
       env: MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/diskstorage/hbase/*'
@@ -144,20 +117,7 @@ jobs:
 
     - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-byteordered -Dtest=**/graphdb/thrift/* -Dcassandra.docker.version=3.11.4'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-murmur -Dtest=**/graphdb/thrift/* -Dcassandra.docker.version=3.11.4'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-byteordered -Dtest=**/diskstorage/cassandra/astyanax/* -Dcassandra.docker.version=3.11.4'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-murmur -Dtest=**/diskstorage/cassandra/astyanax/* -Dcassandra.docker.version=3.11.4'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-murmur-ssl -Dtest=**/diskstorage/cassandra/astyanax/AstyanaxStoreTest.java -Dcassandra.docker.version=3.11.4'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-byteordered -Dtest=**/graphdb/astyanax/* -Dcassandra.docker.version=3.11.4'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-murmur -Dtest=**/graphdb/astyanax/* -Dcassandra.docker.version=3.11.4'
+
     - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra3-byteordered -Dcassandra.docker.version=3.11.4'
     - <<: *FULL_BUILD_JOB
@@ -167,20 +127,6 @@ jobs:
     - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra3-murmur-client-auth -Dcassandra.docker.version=3.11.4 -Dtest=**/diskstorage/cql/CQLStoreTest.java'
     
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-byteordered -Dtest=**/graphdb/thrift/* -Dcassandra.docker.version=3.0.18'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-murmur -Dtest=**/graphdb/thrift/* -Dcassandra.docker.version=3.0.18'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-byteordered -Dtest=**/diskstorage/cassandra/astyanax/* -Dcassandra.docker.version=3.0.18'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-murmur -Dtest=**/diskstorage/cassandra/astyanax/* -Dcassandra.docker.version=3.0.18'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-murmur-ssl -Dtest=**/diskstorage/cassandra/astyanax/AstyanaxStoreTest.java -Dcassandra.docker.version=3.0.18'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-byteordered -Dtest=**/graphdb/astyanax/* -Dcassandra.docker.version=3.0.18'
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cassandra' ARGS='-Pcassandra3-murmur -Dtest=**/graphdb/astyanax/* -Dcassandra.docker.version=3.0.18'
     - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra3-byteordered -Dcassandra.docker.version=3.0.18'
     - <<: *FULL_BUILD_JOB
@@ -213,7 +159,7 @@ jobs:
         - echo "Check for changes in configuration";
           git diff  --exit-code docs/basics/janusgraph-cfg.md;
         - docker run --rm -v $PWD:/mkdocs doc-site:mkdocs mkdocs build
-    
+
     - stage: deploy
       install: skip
       script: skip

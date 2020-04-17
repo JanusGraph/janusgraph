@@ -74,31 +74,6 @@ before tuning the database level cache, in particular if you have many
 concurrent transactions. See [JanusGraph Cache](cache.md) for more
 information.
 
-## JAMM Warning Messages
-
-When launching JanusGraph with embedded Cassandra, the following
-warnings may be displayed:
-
-`958 [MutationStage:25] WARN  org.apache.cassandra.db.Memtable  - MemoryMeter uninitialized (jamm not specified as java agent); assuming liveRatio of 10.0.  Usually this means cassandra-env.sh disabled jamm because you are using a buggy JRE; upgrade to the Sun JRE instead`
-
-Cassandra uses a Java agent called `MemoryMeter` which allows it to
-measure the actual memory use of an object, including JVM overhead. To
-use [JAMM](https://github.com/jbellis/jamm) (Java Agent for Memory
-Measurements), the path to the JAMM jar must be specific in the Java
-javaagent parameter when launching the JVM (e.g.
-`-javaagent:path/to/jamm.jar`) through either `janusgraph.sh`,
-`gremlin.sh`, or Gremlin Server:
-
-    export JANUSGRAPH_JAVA_OPTS=-javaagent:$JANUSGRAPH_HOME/lib/jamm-{{ jamm_version }}.jar
-
-## Cassandra Connection Problem
-
-By default, JanusGraph uses the Astyanax library to connect to Cassandra
-clusters. On EC2 and Rackspace, it has been reported that Astyanax was
-unable to establish a connection to the cluster. In those cases,
-changing the backend to `storage.backend=cassandrathrift` solved the
-problem.
-
 ## Elasticsearch OutOfMemoryException
 
 When numerous clients are connecting to Elasticsearch, it is likely that
