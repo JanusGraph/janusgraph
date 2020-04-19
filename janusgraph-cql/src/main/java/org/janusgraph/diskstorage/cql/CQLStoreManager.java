@@ -56,6 +56,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ME
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.buildGraphConfiguration;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -293,6 +294,10 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             } catch (UnrecoverableKeyException | NoSuchAlgorithmException | CertificateException | IOException | KeyStoreException | KeyManagementException e) {
                 throw new PermanentBackendException("Error initialising SSL connection properties", e);
             }
+        }
+
+        if (!configuration.get(BASIC_METRICS)) {
+            builder.withoutMetrics();
         }
 
         // Build the PoolingOptions based on the configurations
