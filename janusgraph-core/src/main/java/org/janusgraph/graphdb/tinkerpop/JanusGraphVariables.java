@@ -14,12 +14,12 @@
 
 package org.janusgraph.graphdb.tinkerpop;
 
-import com.google.common.collect.Sets;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -36,7 +36,9 @@ public class JanusGraphVariables implements Graph.Variables {
 
     @Override
     public Set<String> keys() {
-        return Sets.newHashSet(config.getKeys(""));
+        Set<String> set = new HashSet<>();
+        config.getKeys("").forEach(set::add);
+        return set;
     }
 
     @Override

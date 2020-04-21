@@ -14,7 +14,6 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue.cache;
 
-import com.google.common.collect.ImmutableList;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
@@ -23,6 +22,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.*;
 import org.janusgraph.diskstorage.util.CacheMetricsAction;
 import org.janusgraph.util.stats.MetricManager;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -31,7 +31,7 @@ import java.util.Map;
  */
 public abstract class KCVSCache extends KCVSProxy {
 
-    public static final List<Entry> NO_DELETIONS = ImmutableList.of();
+    public static final List<Entry> NO_DELETIONS = Collections.emptyList();
 
     private final String metricsName;
 

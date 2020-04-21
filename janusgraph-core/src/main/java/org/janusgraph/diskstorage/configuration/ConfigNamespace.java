@@ -15,9 +15,9 @@
 package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 import org.janusgraph.core.util.ReflectiveConfigOptionLoader;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -26,7 +26,7 @@ import java.util.Map;
 public class ConfigNamespace extends ConfigElement {
 
     private final boolean isUmbrella;
-    private final Map<String,ConfigElement> children = Maps.newHashMap();
+    private final Map<String,ConfigElement> children = new HashMap<>();
 
     public ConfigNamespace(ConfigNamespace parent, String name, String description, boolean isUmbrella) {
         super(parent,name,description);

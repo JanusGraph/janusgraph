@@ -16,7 +16,6 @@ package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 
 import org.apache.commons.configuration.BaseConfiguration;
@@ -338,7 +337,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
     }
 
     public static Stream<String> cardinalityTestCollectionNameParams() {
-        return ImmutableList.of(PHONE_SET, PHONE_LIST).stream();
+        return Stream.of(PHONE_SET, PHONE_LIST);
     }
 
     @ParameterizedTest

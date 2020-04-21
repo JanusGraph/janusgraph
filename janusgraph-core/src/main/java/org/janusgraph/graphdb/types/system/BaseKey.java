@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
@@ -103,7 +102,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
     @Override
     public Iterable<IndexType> getKeyIndexes() {
         if (index==Index.NONE) return Collections.EMPTY_LIST;
-        return ImmutableList.of(indexDef);
+        return Collections.singletonList(indexDef);
     }
 
     private final CompositeIndexType indexDef = new CompositeIndexType() {

@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.query;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.*;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Contain;
@@ -320,9 +319,14 @@ public class QueryUtil {
 
                 if (subResult.size() >= subLimit) exhaustedResults = false;
                 if (results == null) {
-                    results = Lists.newArrayList(subResult);
+                    results = new ArrayList<>(subResult);
                 } else {
-                    final Set<R> subResultSet = ImmutableSet.copyOf(subResult);
+                    final Set<R> subResultSet;
+                    if(subResult instanceof Set){
+                        subResultSet = (Set<R>) subResult;
+                    } else {
+                        subResultSet = new HashSet<>(subResult);
+                    }
                     results.removeIf(o -> !subResultSet.contains(o));
                 }
             }

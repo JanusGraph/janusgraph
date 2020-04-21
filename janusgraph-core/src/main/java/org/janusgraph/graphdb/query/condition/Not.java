@@ -17,8 +17,8 @@ package org.janusgraph.graphdb.query.condition;
 import org.janusgraph.core.JanusGraphElement;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 
+import java.util.Collections;
 import java.util.Objects;
 
 /**
@@ -61,7 +61,7 @@ public class Not<E extends JanusGraphElement> implements Condition<E> {
 
     @Override
     public Iterable<Condition<E>> getChildren() {
-        return ImmutableList.of(condition);
+        return Collections.singletonList(condition);
     }
 
     @Override

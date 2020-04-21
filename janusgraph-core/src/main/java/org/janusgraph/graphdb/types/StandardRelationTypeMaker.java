@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.RelationTypeMaker;
 import org.janusgraph.core.schema.SchemaStatus;
@@ -79,8 +78,10 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
         checkSortKey(sortKey);
         Preconditions.checkArgument(sortOrder==Order.ASC || hasSortKey(),"Must define a sort key to use ordering");
         checkSignature(signature);
-        Preconditions.checkArgument(Sets.intersection(Sets.newHashSet(sortKey), Sets.newHashSet(signature)).isEmpty(),
-                "Signature and sort key must be disjoined");
+        HashSet<PropertyKey> sortKeyHashSet = new HashSet<>(sortKey);
+        if(signature.stream().anyMatch(sortKeyHashSet::contains)){
+            throw new IllegalArgumentException("Signature and sort key must be disjoined");
+        }
         Preconditions.checkArgument(!hasSortKey() || !multiplicity.isConstrained(),"Cannot define a sort-key on constrained edge labels");
     }
 
@@ -93,7 +94,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     }
 
     private static long[] checkSignature(List<PropertyKey> sig) {
-        Preconditions.checkArgument(sig.size() == (Sets.newHashSet(sig)).size(), "Signature and sort key cannot contain duplicate types");
+        Preconditions.checkArgument(sig.size() == (new HashSet<>(sig)).size(), "Signature and sort key cannot contain duplicate types");
         long[] signature = new long[sig.size()];
         for (int i = 0; i < sig.size(); i++) {
             PropertyKey key = sig.get(i);

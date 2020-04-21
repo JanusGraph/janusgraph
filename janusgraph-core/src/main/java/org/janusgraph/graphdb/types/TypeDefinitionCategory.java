@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.graphdb.internal.Order;
@@ -27,7 +26,12 @@ import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -73,19 +77,11 @@ public enum TypeDefinitionCategory {
     CONNECTION_EDGE(RelationCategory.EDGE, String.class),
     UPDATE_CONNECTION_EDGE();
 
-    public static final Set<TypeDefinitionCategory> PROPERTYKEY_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, INVISIBLE, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE);
-    public static final Set<TypeDefinitionCategory> EDGELABEL_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, INVISIBLE, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL);
-    public static final Set<TypeDefinitionCategory> INDEX_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, ELEMENT_CATEGORY,INDEX_CARDINALITY,INTERNAL_INDEX, BACKING_INDEX,INDEXSTORE_NAME);
-    public static final Set<TypeDefinitionCategory> VERTEXLABEL_DEFINITION_CATEGORIES = ImmutableSet.of(PARTITIONED, STATIC);
-    public static final Set<TypeDefinitionCategory> TYPE_MODIFIER_DEFINITION_CATEGORIES;
-
-    static {
-        ImmutableSet.Builder<TypeDefinitionCategory> builder = ImmutableSet.builder();
-        for (ModifierType type : ModifierType.values()) {
-            builder.add(type.getCategory());
-        }
-        TYPE_MODIFIER_DEFINITION_CATEGORIES = builder.build();
-    }
+    public static final Set<TypeDefinitionCategory> PROPERTYKEY_DEFINITION_CATEGORIES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(STATUS, INVISIBLE, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE)));
+    public static final Set<TypeDefinitionCategory> EDGELABEL_DEFINITION_CATEGORIES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(STATUS, INVISIBLE, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL)));
+    public static final Set<TypeDefinitionCategory> INDEX_DEFINITION_CATEGORIES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(STATUS, ELEMENT_CATEGORY,INDEX_CARDINALITY,INTERNAL_INDEX, BACKING_INDEX,INDEXSTORE_NAME)));
+    public static final Set<TypeDefinitionCategory> VERTEXLABEL_DEFINITION_CATEGORIES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(PARTITIONED, STATIC)));
+    public static final Set<TypeDefinitionCategory> TYPE_MODIFIER_DEFINITION_CATEGORIES = Collections.unmodifiableSet(Stream.of(ModifierType.values()).map(ModifierType::getCategory).collect(Collectors.toSet()));
 
     private final RelationCategory relationCategory;
     private final Class dataType;

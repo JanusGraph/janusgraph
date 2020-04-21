@@ -14,7 +14,6 @@
 
 package org.janusgraph.diskstorage.indexing;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.diskstorage.EntryMetaData;
@@ -22,6 +21,7 @@ import org.janusgraph.diskstorage.Mutation;
 
 import java.util.AbstractMap;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * An index mutation contains the field updates (additions and deletions) for a particular index entry.

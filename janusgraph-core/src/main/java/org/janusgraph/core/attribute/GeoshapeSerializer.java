@@ -15,7 +15,6 @@
 package org.janusgraph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import com.google.common.primitives.Doubles;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.janusgraph.diskstorage.ScanBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
@@ -32,7 +31,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Geoshape attribute serializer for JanusGraph.
@@ -90,16 +88,17 @@ public class GeoshapeSerializer implements AttributeSerializer<Geoshape> {
         } else return null;
     }
 
-
     private double[] convertCollection(Collection<Object> c) {
-
-        List<Double> numbers = c.stream().map(o -> {
-            if (!(o instanceof Number)) {
+        Object[] boxedElements = c.toArray(new Object[0]);
+        double[] unboxedElements = new double[boxedElements.length];
+        for(int i=0; i<boxedElements.length;i++){
+            Object element = boxedElements[i];
+            if (!(element instanceof Number)) {
                 throw new IllegalArgumentException("Collections may only contain numbers to create a Geoshape");
             }
-            return ((Number) o).doubleValue();
-        }).collect(Collectors.toList());
-        return Doubles.toArray(numbers);
+            unboxedElements[i] = ((Number) element).doubleValue();
+        }
+        return unboxedElements;
     }
 
     private Geoshape convertGeoJson(Object value) {

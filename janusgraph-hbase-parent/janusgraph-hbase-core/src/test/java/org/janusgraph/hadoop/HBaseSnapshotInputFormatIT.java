@@ -36,9 +36,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,10 +44,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * This test suite contains the same tests as in HBaseInputFormatIT and AbstractInputFormatIT, but
@@ -124,10 +118,10 @@ public class HBaseSnapshotInputFormatIT extends AbstractInputFormatIT {
         GraphTraversalSource t = g.traversal().withComputer(SparkGraphComputer.class);
         assertEquals(numV, (long) t.V().count().next());
         propertiesOnVertex = t.V().valueMap().next();
-        final Set<?> observedValuesOnP = ImmutableSet.copyOf((List) propertiesOnVertex.values().iterator().next());
+        final Set<?> observedValuesOnP = Collections.unmodifiableSet(new HashSet<>((List) propertiesOnVertex.values().iterator().next()));
         assertEquals(numProps, observedValuesOnP.size());
         // order may not be preserved in multi-value properties
-        assertEquals(ImmutableSet.copyOf(valuesOnP), observedValuesOnP, "Unexpected values");
+        assertEquals(Collections.unmodifiableSet(new HashSet<>(valuesOnP)), observedValuesOnP, "Unexpected values");
     }
 
     @Test
@@ -159,7 +153,8 @@ public class HBaseSnapshotInputFormatIT extends AbstractInputFormatIT {
         Iterator<Object> edgeIdIter = t.V().has("name", "sky").bothE().id();
         assertNotNull(edgeIdIter);
         assertTrue(edgeIdIter.hasNext());
-        Set<Object> edges = Sets.newHashSet(edgeIdIter);
+        Set<Object> edges = new HashSet<>();
+        edgeIdIter.forEachRemaining(edges::add);
         assertEquals(2, edges.size());
     }
 
@@ -176,7 +171,8 @@ public class HBaseSnapshotInputFormatIT extends AbstractInputFormatIT {
         Iterator<Object> geoIter = t.E().values("place");
         assertNotNull(geoIter);
         assertTrue(geoIter.hasNext());
-        Set<Object> geos = Sets.newHashSet(geoIter);
+        Set<Object> geos = new HashSet<>();
+        geoIter.forEachRemaining(geos::add);
         assertEquals(3, geos.size());
     }
 

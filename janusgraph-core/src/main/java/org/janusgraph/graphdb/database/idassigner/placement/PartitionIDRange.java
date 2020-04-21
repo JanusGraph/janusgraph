@@ -15,13 +15,13 @@
 package org.janusgraph.graphdb.database.idassigner.placement;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -134,7 +134,7 @@ public class PartitionIDRange {
     public static List<PartitionIDRange> getGlobalRange(final int partitionBits) {
         Preconditions.checkArgument(partitionBits>=0 && partitionBits<(Integer.SIZE-1),"Invalid partition bits: %s",partitionBits);
         final int partitionIdBound = (1 << (partitionBits));
-        return ImmutableList.of(new PartitionIDRange(0, partitionIdBound, partitionIdBound));
+        return Collections.singletonList(new PartitionIDRange(0, partitionIdBound, partitionIdBound));
     }
 
     public static List<PartitionIDRange> getIDRanges(final int partitionBits, final List<KeyRange> locals) {
@@ -142,7 +142,7 @@ public class PartitionIDRange {
         Preconditions.checkArgument(locals!=null && !locals.isEmpty(),"KeyRanges are empty");
         final int partitionIdBound = (1 << (partitionBits));
         final int backShift = Integer.SIZE-partitionBits;
-        List<PartitionIDRange> partitionRanges = Lists.newArrayList();
+        List<PartitionIDRange> partitionRanges = new ArrayList<>();
         for (KeyRange local : locals) {
             Preconditions.checkArgument(local.getStart().length() >= 4);
             Preconditions.checkArgument(local.getEnd().length() >= 4);

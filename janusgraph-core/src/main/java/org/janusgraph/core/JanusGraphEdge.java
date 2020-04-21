@@ -15,13 +15,12 @@
 
 package org.janusgraph.core;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * A JanusGraphEdge connects two {@link JanusGraphVertex}. It extends the functionality provided by Blueprint's {@link Edge} and
@@ -76,13 +75,10 @@ public interface JanusGraphEdge extends JanusGraphRelation, Edge {
 
     @Override
     default Iterator<Vertex> vertices(Direction direction) {
-        final List<Vertex> vertices;
         if (direction==Direction.BOTH) {
-            vertices = ImmutableList.of(vertex(Direction.OUT), vertex(Direction.IN));
-        } else {
-            vertices = ImmutableList.of(vertex(direction));
+            return Stream.of((Vertex) vertex(Direction.OUT), vertex(Direction.IN)).iterator();
         }
-        return vertices.iterator();
+        return Stream.of((Vertex) vertex(direction)).iterator();
     }
 
 }

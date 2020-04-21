@@ -15,9 +15,9 @@
 package org.janusgraph.diskstorage;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import org.janusgraph.util.encoding.StringEncoding;
 
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.function.Function;
 
@@ -31,16 +31,17 @@ public enum EntryMetaData {
     VISIBILITY(String.class, true, data -> data instanceof String && StringEncoding.isAsciiString((String) data)),
     TIMESTAMP(Long.class, false, data -> data instanceof Long);
 
+    public static final java.util.Map<EntryMetaData,Object> EMPTY_METADATA = Collections.emptyMap();
+
+    private final Class<?> dataType;
+    private final boolean identifying;
+    private final Function<Object, Boolean> validator;
+
     EntryMetaData(final Class<?> dataType, final boolean identifying, final Function<Object, Boolean> validator) {
         this.dataType = dataType;
         this.identifying = identifying;
         this.validator = validator;
     }
-    public static final java.util.Map<EntryMetaData,Object> EMPTY_METADATA = ImmutableMap.of();
-
-    private final Class<?> dataType;
-    private final boolean identifying;
-    private final Function<Object, Boolean> validator;
 
     public Class<?> getDataType() {
         return dataType;

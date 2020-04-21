@@ -14,13 +14,15 @@
 
 package org.janusgraph.diskstorage.log.kcvs;
 
-import com.google.common.collect.Lists;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -38,7 +40,9 @@ public class ExternalCachePersistor implements ExternalPersistor {
     @Override
     public void add(StaticBuffer key, Entry cell) {
         try {
-            kcvs.mutateEntries(key, Lists.newArrayList(cell), KCVSCache.NO_DELETIONS,tx);
+            List<Entry> list = new ArrayList<>(1);
+            list.add(cell);
+            kcvs.mutateEntries(key, list, KCVSCache.NO_DELETIONS,tx);
         } catch (BackendException e) {
             throw new JanusGraphException("Unexpected storage exception in log persistence against cache",e);
         }

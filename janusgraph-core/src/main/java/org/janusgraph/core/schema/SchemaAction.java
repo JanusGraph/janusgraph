@@ -14,9 +14,7 @@
 
 package org.janusgraph.core.schema;
 
-import com.google.common.collect.ImmutableSet;
-
-import java.util.Set;
+import java.util.*;
 
 /**
  * Update actions to be executed through {@link JanusGraphManagement} in {@link JanusGraphManagement#updateIndex(Index, SchemaAction)}.
@@ -29,55 +27,48 @@ public enum SchemaAction {
      * Registers the index with all instances in the graph cluster. After an index is installed, it must be registered
      * with all graph instances.
      */
-    REGISTER_INDEX,
+    REGISTER_INDEX(Collections.singleton(SchemaStatus.INSTALLED), Collections.singleton(SchemaStatus.DISABLED)),
 
     /**
      * Re-builds the index from the graph
      */
-    REINDEX,
+    REINDEX(Arrays.asList(SchemaStatus.REGISTERED, SchemaStatus.ENABLED), Arrays.asList(SchemaStatus.INSTALLED, SchemaStatus.DISABLED)),
 
     /**
      * Enables the index so that it can be used by the query processing engine. An index must be registered before it
      * can be enabled.
      */
-    ENABLE_INDEX,
+    ENABLE_INDEX(Collections.singleton(SchemaStatus.REGISTERED), Arrays.asList(SchemaStatus.INSTALLED, SchemaStatus.DISABLED)),
 
     /**
      * Disables the index in the graph so that it is no longer used.
      */
-    DISABLE_INDEX,
+    DISABLE_INDEX(Arrays.asList(SchemaStatus.REGISTERED, SchemaStatus.INSTALLED, SchemaStatus.ENABLED), Collections.emptySet()),
 
     /**
      * Removes the index from the graph (optional operation)
      */
-    REMOVE_INDEX;
+    REMOVE_INDEX(Collections.singleton(SchemaStatus.DISABLED), Arrays.asList(SchemaStatus.REGISTERED,SchemaStatus.INSTALLED,SchemaStatus.ENABLED));
+
+    private final Set<SchemaStatus> applicableStatuses;
+    private final Set<SchemaStatus> failureStatuses;
+
+    SchemaAction(Collection<SchemaStatus> applicableStatuses, Collection<SchemaStatus> failureStatuses){
+        this.applicableStatuses = Collections.unmodifiableSet(new HashSet<>(applicableStatuses));
+        this.failureStatuses = Collections.unmodifiableSet(new HashSet<>(failureStatuses));
+    }
 
     public Set<SchemaStatus> getApplicableStatus() {
-        switch(this) {
-            case REGISTER_INDEX: return ImmutableSet.of(SchemaStatus.INSTALLED);
-            case REINDEX: return ImmutableSet.of(SchemaStatus.REGISTERED,SchemaStatus.ENABLED);
-            case ENABLE_INDEX: return ImmutableSet.of(SchemaStatus.REGISTERED);
-            case DISABLE_INDEX: return ImmutableSet.of(SchemaStatus.REGISTERED,SchemaStatus.INSTALLED,SchemaStatus.ENABLED);
-            case REMOVE_INDEX: return ImmutableSet.of(SchemaStatus.DISABLED);
-            default: throw new IllegalArgumentException("Action is invalid: " + this);
-        }
+        return applicableStatuses;
     }
 
     public Set<SchemaStatus> getFailureStatus() {
-        switch(this) {
-            case REGISTER_INDEX: return ImmutableSet.of(SchemaStatus.DISABLED);
-            case REINDEX: return ImmutableSet.of(SchemaStatus.INSTALLED, SchemaStatus.DISABLED);
-            case ENABLE_INDEX: return ImmutableSet.of(SchemaStatus.INSTALLED, SchemaStatus.DISABLED);
-            case DISABLE_INDEX: return ImmutableSet.of();
-            case REMOVE_INDEX: return ImmutableSet.of(SchemaStatus.REGISTERED,SchemaStatus.INSTALLED,SchemaStatus.ENABLED);
-            default: throw new IllegalArgumentException("Action is invalid: " + this);
-        }
+        return failureStatuses;
     }
 
     public boolean isApplicableStatus(SchemaStatus status) {
-        if (getFailureStatus().contains(status))
+        if (failureStatuses.contains(status))
             throw new IllegalArgumentException(String.format("Update action [%s] cannot be invoked for index with status [%s]",this,status));
-        return getApplicableStatus().contains(status);
+        return applicableStatuses.contains(status);
     }
-
 }

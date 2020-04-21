@@ -16,7 +16,6 @@ package org.janusgraph.graphdb.types;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.graphdb.database.management.ModifierType;
@@ -29,6 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -86,8 +86,9 @@ public class TypeUtil {
     }
 
     public static Set<PropertyKey> getIndexedKeys(IndexType index) {
-        Set<PropertyKey> s = Sets.newHashSet();
-        for (IndexField f : index.getFieldKeys()) {
+        IndexField[] fieldKeys = index.getFieldKeys();
+        Set<PropertyKey> s = new HashSet<>(fieldKeys.length);
+        for (IndexField f : fieldKeys) {
             s.add(f.getFieldKey());
         }
         return s;

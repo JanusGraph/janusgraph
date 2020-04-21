@@ -14,11 +14,7 @@
 
 package org.janusgraph.diskstorage.configuration;
 
-import java.util.Map;
-import java.util.Set;
-
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
+import java.util.*;
 
 public class MergedConfiguration implements Configuration {
 
@@ -48,27 +44,25 @@ public class MergedConfiguration implements Configuration {
     @Override
     public Set<String> getContainedNamespaces(ConfigNamespace umbrella,
             String... umbrellaElements) {
-        ImmutableSet.Builder<String> b = ImmutableSet.builder();
-        b.addAll(first.getContainedNamespaces(umbrella, umbrellaElements));
-        b.addAll(second.getContainedNamespaces(umbrella, umbrellaElements));
-        return b.build();
+        Set<String> firstContainedNamespaces = first.getContainedNamespaces(umbrella, umbrellaElements);
+        Set<String> secondContainedNamespaces = second.getContainedNamespaces(umbrella, umbrellaElements);
+        Set<String> b = new HashSet<>(firstContainedNamespaces.size()+secondContainedNamespaces.size());
+        b.addAll(firstContainedNamespaces);
+        b.addAll(secondContainedNamespaces);
+        return Collections.unmodifiableSet(b);
     }
     @Override
     public Map<String, Object> getSubset(ConfigNamespace umbrella,
             String... umbrellaElements) {
-        ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
         Map<String, Object> fm = first.getSubset(umbrella, umbrellaElements);
         Map<String, Object> sm = second.getSubset(umbrella, umbrellaElements);
-
-        b.putAll(first.getSubset(umbrella, umbrellaElements));
-
-        for (Map.Entry<String, Object> secondEntry : sm.entrySet()) {
-            if (!fm.containsKey(secondEntry.getKey())) {
-                b.put(secondEntry);
-            }
-        }
-
-        return b.build();
+        Map<String, Object> b = new HashMap<>(fm.size()+sm.size());
+        // Order of insertions matter. We should have all elements from first subset and all elements
+        // from second subset which don't have same key in first subset. Thus we are adding all elements from  the
+        // second subset and then adding elements from first subset (which replaces elements with the same key from second subset)
+        b.putAll(sm);
+        b.putAll(fm);
+        return Collections.unmodifiableMap(b);
     }
     @Override
     public Configuration restrictTo(String... umbrellaElements) {

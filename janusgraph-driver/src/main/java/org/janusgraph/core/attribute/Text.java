@@ -14,21 +14,15 @@
 
 package org.janusgraph.core.attribute;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 
 /**
  * Comparison relations for text objects. These comparisons are based on a tokenized representation
@@ -52,7 +46,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean evaluateRaw(String value, String terms) {
-            Set<String> tokens = Sets.newHashSet(tokenize(value.toLowerCase()));
+            Set<String> tokens = new HashSet<>(tokenize(value.toLowerCase()));
             terms = terms.trim();
             List<String> tokenTerms = tokenize(terms.toLowerCase());
             if (!terms.isEmpty() && tokenTerms.isEmpty()) return false;

@@ -15,8 +15,6 @@
 package org.janusgraph.graphdb.olap.job;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.schema.RelationTypeIndex;
@@ -45,6 +43,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -121,8 +120,9 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
         try {
             BackendTransaction mutator = writeTx.getTxHandle();
             final List<Entry> deletions;
-            if (entries.size()==1) deletions = Iterables.getOnlyElement(entries.values());
-            else {
+            if (entries.size()==1) {
+                deletions = entries.values().iterator().next();
+            } else {
                 final int size = IteratorUtils.stream(entries.values().iterator()).map(List::size).reduce(0, (x,y) -> x+y);
                 deletions = new ArrayList<>(size);
                 entries.values().forEach(deletions::addAll);
@@ -145,7 +145,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
     public List<SliceQuery> getQueries() {
         if (isGlobalGraphIndex()) {
             //Everything
-            return ImmutableList.of(new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(128)));
+            return Collections.singletonList(new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(128)));
         } else {
             RelationTypeIndexWrapper wrapper = (RelationTypeIndexWrapper)index;
             InternalRelationType wrappedType = wrapper.getWrappedType();

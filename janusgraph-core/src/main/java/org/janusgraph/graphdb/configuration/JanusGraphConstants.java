@@ -16,17 +16,13 @@ package org.janusgraph.graphdb.configuration;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
-import java.util.Set;
-import java.util.Properties;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.janusgraph.core.JanusGraphFactory;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
 /**
  * Collection of constants used throughput the JanusGraph codebase.
@@ -99,14 +95,14 @@ public class JanusGraphConstants {
     }
 
     static List<String> getCompatibleVersions(Properties props, String key) {
-        ImmutableList.Builder<String> b = ImmutableList.builder();
-        b.addAll(Stream.of(props.getProperty(key, "").split(",")).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList()));
-        return b.build();
+        List<String> b = Stream.of(props.getProperty(key, "").split(",")).map(String::trim)
+            .filter(s -> !s.isEmpty()).collect(Collectors.toList());
+        return Collections.unmodifiableList(b);
     }
 
-    static final Set<String> getPropertySet(Properties props, String key) {
-        ImmutableSet.Builder<String> buildSet = ImmutableSet.builder();
-        buildSet.addAll(Stream.of(props.getProperty(key, "").split(",")).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList()));
-        return buildSet.build();
+    static Set<String> getPropertySet(Properties props, String key) {
+        Set<String> buildSet = Stream.of(props.getProperty(key, "").split(","))
+            .map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
+        return Collections.unmodifiableSet(buildSet);
     }
 }

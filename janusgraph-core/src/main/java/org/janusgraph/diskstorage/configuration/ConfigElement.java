@@ -15,9 +15,9 @@
 package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -164,7 +164,7 @@ public abstract class ConfigElement {
         if (StringUtils.isBlank(path)) return new PathIdentifier(root,new String[]{},false);
         String[] components = getComponents(path);
         Preconditions.checkArgument(components.length>0,"Empty path provided: %s",path);
-        List<String> umbrellaElements = Lists.newArrayList();
+        List<String> umbrellaElements = new ArrayList<>();
         ConfigNamespace parent = root;
         ConfigElement last = root;
         boolean lastIsUmbrella = false;

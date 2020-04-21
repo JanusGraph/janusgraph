@@ -14,12 +14,12 @@
 
 package org.janusgraph.diskstorage.locking;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.diskstorage.util.KeyColumn;
 
+import org.janusgraph.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -140,7 +140,7 @@ public class LocalLockMediator<T> {
             if (log.isTraceEnabled()) {
                 log.trace("Local lock failed: {} namespace={} txn={} (already owned by {})",
                     kc, name, requester, inMap);
-                log.trace("Owner stacktrace:\n        {}", Joiner.on("\n        ").join(inMap.acquiredAt));
+                log.trace("Owner stacktrace:\n        {}", StringUtils.join(inMap.acquiredAt,"\n        "));
             }
         }
 

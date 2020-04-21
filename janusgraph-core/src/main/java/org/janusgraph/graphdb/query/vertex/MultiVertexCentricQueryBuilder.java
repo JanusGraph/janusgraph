@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.query.vertex;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 import org.janusgraph.core.*;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.internal.InternalVertex;
@@ -45,7 +44,7 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
 
     public MultiVertexCentricQueryBuilder(final StandardJanusGraphTx tx) {
         super(tx);
-        vertices = Sets.newHashSet();
+        vertices = new HashSet<>();
     }
 
     @Override
@@ -100,7 +99,7 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
         profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,vertices.size());
         if (!bq.isEmpty()) {
             for (BackendQueryHolder<SliceQuery> sq : bq.getQueries()) {
-                Set<InternalVertex> adjVertices = Sets.newHashSet(vertices);
+                Set<InternalVertex> adjVertices = new HashSet<>(vertices);
                 for (InternalVertex v : vertices) {
                     if (isPartitionedVertex(v)) {
                         profiler.setAnnotation(QueryProfiler.PARTITIONED_VERTEX_ANNOTATION,true);

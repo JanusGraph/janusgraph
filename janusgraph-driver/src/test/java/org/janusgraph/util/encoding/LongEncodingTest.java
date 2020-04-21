@@ -14,9 +14,9 @@
 
 package org.janusgraph.util.encoding;
 
-import com.google.common.collect.Sets;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
@@ -43,12 +43,11 @@ public class LongEncodingTest {
 
     @Test
     public void testCaseInsensitivity() {
-        Set<String> codes = Sets.newHashSet();
-        for (int i = 0; i < 500000; i++) {
+        int codesAmount = 500000;
+        Set<String> codes = new HashSet<>(codesAmount);
+        for (int i = 0; i < codesAmount; i++) {
             assertTrue(codes.add(LongEncoding.encode(i).toLowerCase()));
         }
     }
-
-
 
 }

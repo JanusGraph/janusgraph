@@ -16,8 +16,6 @@ package org.janusgraph.graphdb.database.idassigner;
 
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.janusgraph.core.*;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.janusgraph.graphdb.internal.InternalRelationType;
@@ -58,10 +56,7 @@ public class VertexIDAssigner implements AutoCloseable {
     public static final ConfigOption<String> PLACEMENT_STRATEGY = new ConfigOption<>(IDS_NS, "placement",
             "Name of the vertex placement strategy or full class name", ConfigOption.Type.MASKABLE, "simple");
 
-    private static final Map<String,String> REGISTERED_PLACEMENT_STRATEGIES = ImmutableMap.of(
-            "simple", SimpleBulkPlacementStrategy.class.getName()
-    );
-
+    private static final Map<String,String> REGISTERED_PLACEMENT_STRATEGIES = Collections.singletonMap("simple", SimpleBulkPlacementStrategy.class.getName());
 
     final ConcurrentMap<Integer,PartitionIDPool> idPools;
     final StandardIDPool schemaIdPool;
@@ -116,7 +111,7 @@ public class VertexIDAssigner implements AutoCloseable {
         if (!hasLocalPartitions) {
             setLocalPartitionsToGlobal(partitionBits);
         } else {
-            List<PartitionIDRange> partitionRanges = ImmutableList.of();
+            List<PartitionIDRange> partitionRanges = Collections.emptyList();
             try {
                 partitionRanges = PartitionIDRange.getIDRanges(partitionBits,idAuthority.getLocalIDPartition());
             } catch (Throwable e) {

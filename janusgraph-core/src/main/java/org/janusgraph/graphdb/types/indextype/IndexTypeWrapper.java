@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.types.indextype;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.JanusGraphSchemaType;
@@ -26,6 +25,8 @@ import org.janusgraph.graphdb.types.SchemaSource;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -78,9 +79,12 @@ public abstract class IndexTypeWrapper implements IndexType {
     public IndexField getField(PropertyKey key) {
         Map<PropertyKey,IndexField> result = fieldMap;
         if (result==null) {
-            ImmutableMap.Builder<PropertyKey,IndexField> b = ImmutableMap.builder();
-            for (IndexField f : getFieldKeys()) b.put(f.getFieldKey(),f);
-            result=b.build();
+            IndexField[] fieldKeys = getFieldKeys();
+            result = new HashMap<>(fieldKeys.length);
+            for (IndexField f : fieldKeys) {
+                result.put(f.getFieldKey(),f);
+            }
+            result= Collections.unmodifiableMap(result);
             fieldMap=result;
         }
         assert result!=null;

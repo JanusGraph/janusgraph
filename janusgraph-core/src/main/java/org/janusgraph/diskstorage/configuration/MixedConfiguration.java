@@ -15,9 +15,9 @@
 package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -67,10 +67,9 @@ public class MixedConfiguration extends AbstractConfiguration {
     }
 
     public Map<String,Object> getSubset(ConfigNamespace umbrella, String... umbrellaElements) {
-        Map<String,Object> result = Maps.newHashMap();
-        for (ReadConfiguration config : new ReadConfiguration[]{global,local}) {
-            result.putAll(super.getSubset(config,umbrella,umbrellaElements));
-        }
+        Map<String,Object> result = new HashMap<>();
+        result.putAll(super.getSubset(global,umbrella,umbrellaElements));
+        result.putAll(super.getSubset(local,umbrella,umbrellaElements));
         return result;
     }
 

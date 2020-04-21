@@ -14,12 +14,12 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue;
 
-import com.google.common.collect.ImmutableList;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -38,8 +38,8 @@ import java.util.Map;
  */
 public interface KeyColumnValueStore {
 
-    List<Entry> NO_ADDITIONS = ImmutableList.of();
-    List<StaticBuffer> NO_DELETIONS = ImmutableList.of();
+    List<Entry> NO_ADDITIONS = Collections.emptyList();
+    List<StaticBuffer> NO_DELETIONS = Collections.emptyList();
 
     /**
      * Retrieves the list of entries (i.e. column-value pairs) for a specified query.

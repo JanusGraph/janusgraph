@@ -15,7 +15,6 @@
 package org.janusgraph.core;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterators;
 
 import org.janusgraph.core.log.LogProcessorFramework;
 import org.janusgraph.core.log.TransactionRecovery;
@@ -49,6 +48,7 @@ import java.io.File;
 import java.time.Instant;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.StreamSupport;
 
 /**
  * JanusGraphFactory is used to open or instantiate a JanusGraph graph database.
@@ -373,7 +373,9 @@ public class JanusGraphFactory {
                                   Pattern.quote(INDEX_CONF_FILE.getName()) +  ")"
             + ")");
 
-            final Iterator<String> keysToMangle = Iterators.filter(configuration.getKeys(), key -> null != key && p.matcher(key).matches());
+            final Iterator<String> keysToMangle = StreamSupport.stream(
+                Spliterators.spliteratorUnknownSize(configuration.getKeys(), 0), false)
+                .filter(key -> null != key && p.matcher(key).matches()).iterator();
 
             while (keysToMangle.hasNext()) {
                 String k = keysToMangle.next();

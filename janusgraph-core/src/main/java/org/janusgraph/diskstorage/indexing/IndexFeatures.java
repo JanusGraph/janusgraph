@@ -15,12 +15,12 @@
 package org.janusgraph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.schema.Mapping;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -32,16 +32,16 @@ public class IndexFeatures {
 
     private final boolean supportsDocumentTTL;
     private final Mapping defaultStringMapping;
-    private final ImmutableSet<Mapping> supportedStringMappings;
+    private final Set<Mapping> supportedStringMappings;
     private final String wildcardField;
     private final boolean supportsNanoseconds;
     private final boolean supportsCustomAnalyzer;
     private final boolean supportsGeoContains;
     private final boolean supportsNotQueryNormalForm;
-    private final ImmutableSet<Cardinality> supportedCardinalities;
+    private final Set<Cardinality> supportedCardinalities;
 
-    public IndexFeatures(boolean supportsDocumentTTL, Mapping defaultMap, ImmutableSet<Mapping> supportedMap,
-                         String wildcardField, ImmutableSet<Cardinality> supportedCardinalities, boolean supportsNanoseconds,
+    public IndexFeatures(boolean supportsDocumentTTL, Mapping defaultMap, Set<Mapping> supportedMap,
+                         String wildcardField, Set<Cardinality> supportedCardinalities, boolean supportsNanoseconds,
                          boolean supportCustomAnalyzer, boolean supportsGeoContains, boolean supportsNotQueryNormalForm) {
 
         Preconditions.checkArgument(defaultMap!=null && defaultMap!=Mapping.DEFAULT);
@@ -98,8 +98,8 @@ public class IndexFeatures {
 
         private boolean supportsDocumentTTL = false;
         private Mapping defaultStringMapping = Mapping.TEXT;
-        private final Set<Mapping> supportedMappings = Sets.newHashSet();
-        private final Set<Cardinality> supportedCardinalities = Sets.newHashSet();
+        private final Set<Mapping> supportedMappings = new HashSet<>();
+        private final Set<Cardinality> supportedCardinalities = new HashSet<>();
         private String wildcardField = "*";
         private boolean supportsNanoseconds;
         private boolean supportsCustomAnalyzer;
@@ -152,8 +152,8 @@ public class IndexFeatures {
         }
 
         public IndexFeatures build() {
-            return new IndexFeatures(supportsDocumentTTL, defaultStringMapping, ImmutableSet.copyOf(supportedMappings),
-                wildcardField,  ImmutableSet.copyOf(supportedCardinalities), supportsNanoseconds, supportsCustomAnalyzer,
+            return new IndexFeatures(supportsDocumentTTL, defaultStringMapping, Collections.unmodifiableSet(new HashSet<>(supportedMappings)),
+                wildcardField,  Collections.unmodifiableSet(new HashSet<>(supportedCardinalities)), supportsNanoseconds, supportsCustomAnalyzer,
                 supportsGeoContains, supportNotQueryNormalForm);
         }
     }

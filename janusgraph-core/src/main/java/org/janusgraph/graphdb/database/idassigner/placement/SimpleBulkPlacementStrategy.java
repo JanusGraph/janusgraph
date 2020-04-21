@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.database.idassigner.placement;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
@@ -109,7 +108,7 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
     @Override
     public void setLocalPartitionBounds(List<PartitionIDRange> localPartitionIdRanges) {
         Preconditions.checkArgument(localPartitionIdRanges!=null && !localPartitionIdRanges.isEmpty());
-        this.localPartitionIdRanges = Lists.newArrayList(localPartitionIdRanges); //copy
+        this.localPartitionIdRanges = new ArrayList<>(localPartitionIdRanges); //copy
         for (int i = 0; i < currentPartitions.length; i++) {
             updateElement(i);
         }

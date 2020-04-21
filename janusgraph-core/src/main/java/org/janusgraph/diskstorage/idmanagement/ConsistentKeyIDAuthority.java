@@ -25,12 +25,12 @@ import java.util.Random;
 
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.util.*;
+import org.janusgraph.util.StringUtils;
 import org.janusgraph.util.stats.NumberUtil;
 import org.janusgraph.diskstorage.util.time.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 
 import org.janusgraph.diskstorage.configuration.Configuration;
@@ -236,7 +236,8 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                         exhaustedUniquePIDs.add(uniquePID);
                         if (exhaustedUniquePIDs.size() == randomUniqueIDLimit)
                             throw new IDPoolExhaustedException(String.format("Exhausted %d uniqueid(s) on partition(%d)-namespace(%d): %s",
-                                    exhaustedUniquePIDs.size(), partition, idNamespace, Joiner.on(",").join(exhaustedUniquePIDs)));
+                                exhaustedUniquePIDs.size(), partition, idNamespace,
+                                StringUtils.join(exhaustedUniquePIDs, ",")));
                         else
                             throw new UniqueIDExhaustedException(
                                     String.format("Exhausted ID partition(%d)-namespace(%d) with uniqueid %d (uniqueid attempt %d/%d)",
