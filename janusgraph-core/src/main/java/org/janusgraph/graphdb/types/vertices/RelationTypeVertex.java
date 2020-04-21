@@ -14,8 +14,6 @@
 
 package org.janusgraph.graphdb.types.vertices;
 
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.Multiplicity;
@@ -28,8 +26,11 @@ import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.janusgraph.graphdb.types.TypeUtil;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -92,14 +93,13 @@ public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implemen
     }
 
     public Iterable<InternalRelationType> getRelationIndexes() {
-        return Iterables.concat(ImmutableList.of(this),Iterables.transform(getRelated(TypeDefinitionCategory.RELATIONTYPE_INDEX,Direction.OUT),new Function<Entry, InternalRelationType>() {
-            @Nullable
-            @Override
-            public InternalRelationType apply(@Nullable Entry entry) {
-                assert entry.getSchemaType() instanceof InternalRelationType;
-                return (InternalRelationType)entry.getSchemaType();
-            }
-        }));
+        return Stream.concat(
+            Stream.of(this),
+            StreamSupport.stream(getRelated(TypeDefinitionCategory.RELATIONTYPE_INDEX, Direction.OUT).spliterator(), false)
+                .map(entry -> {
+                    assert entry.getSchemaType() instanceof InternalRelationType;
+                    return (InternalRelationType) entry.getSchemaType();
+                }))::iterator;
     }
 
     private List<IndexType> indexes = null;
@@ -107,12 +107,12 @@ public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implemen
     public Iterable<IndexType> getKeyIndexes() {
         List<IndexType> result = indexes;
         if (result==null) {
-            ImmutableList.Builder<IndexType> b = ImmutableList.builder();
+            result = new LinkedList<>();
             for (Entry entry : getRelated(TypeDefinitionCategory.INDEX_FIELD,Direction.IN)) {
                 SchemaSource index = entry.getSchemaType();
-                b.add(index.asIndexType());
+                result.add(index.asIndexType());
             }
-            result = b.build();
+            result = Collections.unmodifiableList(result);
             indexes=result;
         }
         assert result!=null;

@@ -16,7 +16,6 @@ package org.janusgraph.graphdb.log;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import org.janusgraph.core.*;
 import org.janusgraph.core.log.Change;
 import org.janusgraph.core.log.ChangeState;
@@ -25,6 +24,7 @@ import org.janusgraph.graphdb.internal.InternalVertex;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -72,8 +72,8 @@ class StandardChangeState implements ChangeState {
     }
 
     private<T> Set<T> toSet(T... types) {
-        if (types==null || types.length==0) return Sets.newHashSet();
-        return Sets.newHashSet(types);
+        if (types==null || types.length==0) return new HashSet<>();
+        return new HashSet<>(Arrays.asList(types));
     }
 
     private Iterable<JanusGraphRelation> getRelations(final Change change, final Predicate<JanusGraphRelation> filter) {

@@ -14,14 +14,13 @@
 
 package org.janusgraph.diskstorage.common;
 
-
-import com.google.common.collect.Lists;
 import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -54,7 +53,7 @@ public abstract class AbstractStoreManager implements StoreManager {
     }
 
     public EntryMetaData[] getMetaDataSchema(String storeName) {
-        List<EntryMetaData> schemaBuilder = Lists.newArrayList();
+        List<EntryMetaData> schemaBuilder = new ArrayList<>(3);
         StoreFeatures features = getFeatures();
         if (features.hasTimestamps() && storageConfig.get(STORE_META_TIMESTAMPS,storeName))
             schemaBuilder.add(EntryMetaData.TIMESTAMP);

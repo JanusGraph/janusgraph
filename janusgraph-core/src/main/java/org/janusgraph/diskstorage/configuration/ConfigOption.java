@@ -14,10 +14,8 @@
 
 package org.janusgraph.diskstorage.configuration;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableSet;
 import org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode;
 
 
@@ -30,10 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Array;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -76,27 +71,25 @@ public class ConfigOption<O> extends ConfigElement {
      * This is a subset of types accepted by StandardSerializer.
      * Inclusion is enforced in the static initializer block further down this file.
      */
-    private static final Set<Class<?>> ACCEPTED_DATATYPES;
+    private static final Set<Class<?>> ACCEPTED_DATATYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+        ConflictAvoidanceMode.class,
+        Duration.class,
+        TimestampProviders.class,
+        Instant.class,
+        Boolean.class,
+        Short.class,
+        Integer.class,
+        Byte.class,
+        Long.class,
+        Float.class,
+        Double.class,
+        String.class,
+        String[].class
+    )));
 
     private static final String ACCEPTED_DATATYPES_STRING;
 
     static {
-        ACCEPTED_DATATYPES = ImmutableSet.of(
-                ConflictAvoidanceMode.class,
-                Duration.class,
-                TimestampProviders.class,
-                Instant.class,
-                Boolean.class,
-                Short.class,
-                Integer.class,
-                Byte.class,
-                Long.class,
-                Float.class,
-                Double.class,
-                String.class,
-                String[].class
-        );
-
         StandardSerializer ss = new StandardSerializer();
         for (Class<?> c : ACCEPTED_DATATYPES) {
             if (!ss.validDataType(c)) {
@@ -106,8 +99,7 @@ public class ConfigOption<O> extends ConfigElement {
                 throw new IllegalStateException(msg);
             }
         }
-
-        ACCEPTED_DATATYPES_STRING = Joiner.on(", ").join(ACCEPTED_DATATYPES);
+        ACCEPTED_DATATYPES_STRING = org.janusgraph.util.StringUtils.join(ACCEPTED_DATATYPES, ", ");
     }
 
     private final Type type;

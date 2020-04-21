@@ -21,8 +21,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 import org.janusgraph.diskstorage.util.time.Timer;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.reflections8.Reflections;
@@ -70,7 +68,7 @@ public enum ReflectiveConfigOptionLoader {
     }
 
     public ReflectiveConfigOptionLoader setPreferredClassLoaders(List<ClassLoader> loaders) {
-        cfg = cfg.setPreferredClassLoaders(ImmutableList.copyOf(loaders));
+        cfg = cfg.setPreferredClassLoaders(Collections.unmodifiableList(new ArrayList<>(loaders)));
         return this;
     }
 
@@ -116,7 +114,7 @@ public enum ReflectiveConfigOptionLoader {
          * We could probably hard-code the initialization of the janusgraph-core classes,
          * but the benefit isn't substantial.
          */
-        List<String> classnames = ImmutableList.of(
+        List<String> classnames = Collections.unmodifiableList(Arrays.asList(
             "org.janusgraph.diskstorage.hbase.HBaseStoreManager",
             "org.janusgraph.diskstorage.cql.CQLConfigOptions",
             "org.janusgraph.diskstorage.es.ElasticSearchIndex",
@@ -128,7 +126,7 @@ public enum ReflectiveConfigOptionLoader {
             "org.janusgraph.graphdb.database.idassigner.VertexIDAssigner",
             //"org.janusgraph.graphdb.TestMockIndexProvider",
             //"org.janusgraph.graphdb.TestMockLog",
-            "org.janusgraph.diskstorage.berkeleyje.BerkeleyJEStoreManager");
+            "org.janusgraph.diskstorage.berkeleyje.BerkeleyJEStoreManager"));
 
         Timer t = new Timer(TimestampProviders.MILLI);
         t.start();
@@ -175,9 +173,8 @@ public enum ReflectiveConfigOptionLoader {
 
     private List<ClassLoader> getClassLoaders(LoaderConfiguration cfg, Class<?> caller) {
 
-        final ImmutableList.Builder<ClassLoader> builder = ImmutableList.builder();
+        final List<ClassLoader> builder = new ArrayList<>(cfg.preferredLoaders);
 
-        builder.addAll(cfg.preferredLoaders);
         for (ClassLoader c : cfg.preferredLoaders)
             log.debug("Added preferred classloader to config option loader chain: {}", c);
 
@@ -193,7 +190,7 @@ public enum ReflectiveConfigOptionLoader {
             log.debug("Added caller classloader to config option loader chain: {}", c);
         }
 
-        return builder.build();
+        return Collections.unmodifiableList(builder);
     }
 
     /**
@@ -265,14 +262,14 @@ public enum ReflectiveConfigOptionLoader {
      */
     private Set<URL> forClassLoaders(List<ClassLoader> loaders) {
 
-        final Set<URL> result = Sets.newHashSet();
+        final Set<URL> result = new HashSet<>();
 
         for (ClassLoader classLoader : loaders) {
             while (classLoader != null) {
                 if (classLoader instanceof URLClassLoader) {
                     URL[] urls = ((URLClassLoader) classLoader).getURLs();
                     if (urls != null) {
-                        result.addAll(Sets.newHashSet(urls));
+                        result.addAll(Arrays.asList(urls));
                     }
                 }
                 classLoader = classLoader.getParent();
@@ -330,7 +327,7 @@ public enum ReflectiveConfigOptionLoader {
 
         private LoaderConfiguration() {
             enabled = getEnabledByDefault();
-            preferredLoaders = ImmutableList.of(ReflectiveConfigOptionLoader.class.getClassLoader());
+            preferredLoaders = Collections.singletonList(ReflectiveConfigOptionLoader.class.getClassLoader());
             useCallerLoader = true;
             useThreadContextLoader = true;
         }

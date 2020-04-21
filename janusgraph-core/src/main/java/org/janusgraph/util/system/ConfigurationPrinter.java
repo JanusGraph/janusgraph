@@ -21,10 +21,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.collect.Iterables;
+import java.util.function.Function;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.janusgraph.core.util.ReflectiveConfigOptionLoader;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ConfigNamespace;
@@ -114,10 +113,11 @@ public class ConfigurationPrinter {
         if (n.isRoot()) newPrefix = ""; //Override for root namespace
 
         //Only print namespace if it contains (visible) options
-        if (!Iterables.isEmpty(getSortedChildOptions(n))) {
+        List<ConfigOption<?>> sortedChildOptions = getSortedChildOptions(n);
+        if (CollectionUtils.isNotEmpty(sortedChildOptions)) {
             stream.println(getNamespaceSectionHeader(n, prefix));
             stream.println(getTableHeader());
-            for (ConfigOption<?> o : getSortedChildOptions(n)) {
+            for (ConfigOption<?> o : sortedChildOptions) {
                 stream.println(getTableLineForOption(o, newPrefix));
             }
         }
@@ -161,7 +161,7 @@ public class ConfigurationPrinter {
 
         colData.add(o.getType().toString());
 
-        String line = Joiner.on(DELIM_PADDING + DELIM + DELIM_PADDING).join(colData);
+        String line = String.join(DELIM_PADDING + DELIM + DELIM_PADDING, colData);
 
         if (DELIM_AT_LINE_START) {
             line = DELIM + DELIM_PADDING + line;
@@ -206,7 +206,7 @@ public class ConfigurationPrinter {
             Duration d = (Duration)o;
             return d.toMillis() + " ms";
         } else if (o instanceof String[]) {
-            return Joiner.on(",").join((String[])o);
+            return String.join(",", (String[])o);
         }
 
         return o.toString();

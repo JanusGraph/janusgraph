@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.configuration.backend;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import org.janusgraph.diskstorage.util.time.Durations;
 
 import org.janusgraph.diskstorage.configuration.ReadConfiguration;
@@ -141,11 +140,14 @@ public class CommonsConfiguration implements WriteConfiguration {
 
     @Override
     public Iterable<String> getKeys(String prefix) {
-        List<String> result = Lists.newArrayList();
         Iterator<String> keys;
-        if (StringUtils.isNotBlank(prefix)) keys = config.getKeys(prefix);
-        else keys = config.getKeys();
-        while (keys.hasNext()) result.add(keys.next());
+        if (StringUtils.isNotBlank(prefix)) {
+            keys = config.getKeys(prefix);
+        } else {
+            keys = config.getKeys();
+        }
+        List<String> result = new ArrayList<>();
+        keys.forEachRemaining(result::add);
         return result;
     }
 

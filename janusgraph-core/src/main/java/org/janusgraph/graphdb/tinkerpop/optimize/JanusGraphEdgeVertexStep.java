@@ -18,9 +18,6 @@ import org.janusgraph.core.JanusGraphMultiVertexQuery;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
-
-import com.google.common.collect.Sets;
-
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
@@ -31,6 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -60,7 +58,7 @@ public class JanusGraphEdgeVertexStep extends EdgeVertexStep implements Profilin
             throw FastNoSuchElementException.instance();
         }
         List<Traverser.Admin<Edge>> edges = new ArrayList<>();
-        Set<Vertex> vertices = Sets.newHashSet();
+        Set<Vertex> vertices = new HashSet<>();
         starts.forEachRemaining(e -> {
             edges.add(e);
 

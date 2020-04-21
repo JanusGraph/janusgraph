@@ -14,9 +14,8 @@
 
 package org.janusgraph.diskstorage.configuration;
 
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -59,12 +58,12 @@ public interface Configuration {
 
         @Override
         public Set<String> getContainedNamespaces(ConfigNamespace umbrella, String... umbrellaElements) {
-            return Sets.newHashSet();
+            return new HashSet<>();
         }
 
         @Override
         public Map<String, Object> getSubset(ConfigNamespace umbrella, String... umbrellaElements) {
-            return Maps.newHashMap();
+            return new HashMap<>();
         }
 
         @Override

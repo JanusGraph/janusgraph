@@ -14,7 +14,6 @@
 
 package org.janusgraph.diskstorage.util;
 
-import com.google.common.collect.Iterators;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 
@@ -36,7 +35,7 @@ public class EntryArrayList extends ArrayList<Entry> implements EntryList {
 
     public static EntryArrayList of(Iterator<? extends Entry> i) {
         EntryArrayList result = new EntryArrayList();
-        Iterators.addAll(result, i);
+        i.forEachRemaining(result::add);
         return result;
     }
 
@@ -49,7 +48,7 @@ public class EntryArrayList extends ArrayList<Entry> implements EntryList {
         } else {
             // Unknown size
             result = new EntryArrayList();
-            Iterators.addAll(result, i.iterator());
+            i.forEach(result::add);
         }
         return result;
     }

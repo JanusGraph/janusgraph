@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.database.idassigner.placement;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
@@ -28,6 +27,7 @@ import org.janusgraph.graphdb.internal.InternalElement;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -89,8 +89,11 @@ public class PropertyPlacementStrategy extends SimpleBulkPlacementStrategy {
                 "PropertyPlacementStrategy has not been initialized correctly");
         assert idManager.getPartitionBound()<=Integer.MAX_VALUE;
         int partitionBound = (int)idManager.getPartitionBound();
-        final JanusGraphVertexProperty p = Iterables.getFirst(vertex.query().keys(key).properties(), null);
-        if (p==null) return -1;
+        Iterator<JanusGraphVertexProperty> it = vertex.query().keys(key).properties().iterator();
+        final JanusGraphVertexProperty p = it.hasNext()? it.next() : null;
+        if (p==null){
+            return -1;
+        }
         int hashPid = Math.abs(p.value().hashCode())%partitionBound;
         assert hashPid>=0 && hashPid<partitionBound;
         if (isExhaustedPartition(hashPid)) {

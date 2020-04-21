@@ -14,10 +14,7 @@
 
 package org.janusgraph;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.janusgraph.diskstorage.StandardStoreManager;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.cql.CachingCQLStoreManager;
@@ -30,6 +27,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.time.Duration;
+import java.util.Collections;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.*;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -159,13 +157,13 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
             if(useSSL()) {
                 config.set(SSL_ENABLED, true);
                 config.set(SSL_TRUSTSTORE_LOCATION,
-                    Joiner.on(File.separator).join("target", "test-classes", "cert", "client.truststore"));
+                    String.join(File.separator, "target", "test-classes", "cert", "client.truststore"));
                 config.set(SSL_TRUSTSTORE_PASSWORD, "client");
             }
             if (enableClientAuth()) {
                 config.set(SSL_CLIENT_AUTHENTICATION_ENABLED, true);
-                config.set(SSL_KEYSTORE_LOCATION, 
-                    Joiner.on(File.separator).join("target", "test-classes", "cert", "client.keystore"));
+                config.set(SSL_KEYSTORE_LOCATION,
+                    String.join(File.separator, "target", "test-classes", "cert", "client.keystore"));
                 config.set(SSL_KEYSTORE_STORE_PASSWORD, "client");
                 config.set(SSL_KEYSTORE_KEY_PASSWORD, "client");
             }
@@ -189,12 +187,12 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
             field = StandardStoreManager.class.getDeclaredField("ALL_SHORTHANDS");
             field.setAccessible(true);
             modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-            field.set(null, ImmutableList.copyOf(StandardStoreManager.CQL.getShorthands()));
+            field.set(null, Collections.unmodifiableSet(StandardStoreManager.CQL.getShorthands()));
 
             field = StandardStoreManager.class.getDeclaredField("ALL_MANAGER_CLASSES");
             field.setAccessible(true);
             modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-            field.set(null, ImmutableMap.of(StandardStoreManager.CQL.getShorthands().get(0), StandardStoreManager.CQL.getManagerClass()));
+            field.set(null, Collections.singletonMap(StandardStoreManager.CQL.getFirstStoreShorthand(), StandardStoreManager.CQL.getManagerClass()));
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException("Unable to set wrapper CQL store manager", e);
         }

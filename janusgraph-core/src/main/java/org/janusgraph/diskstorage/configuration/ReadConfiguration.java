@@ -14,9 +14,8 @@
 
 package org.janusgraph.diskstorage.configuration;
 
-import com.google.common.collect.ImmutableList;
-
 import java.io.Closeable;
+import java.util.Collections;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -31,7 +30,7 @@ public interface ReadConfiguration extends Closeable {
 
         @Override
         public Iterable<String> getKeys(String prefix) {
-            return ImmutableList.of();
+            return Collections.emptyList();
         }
 
         @Override

@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.query.vertex;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import org.janusgraph.core.BaseVertexQuery;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
@@ -38,6 +37,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -49,7 +49,7 @@ import java.util.List;
 public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>> implements BaseVertexQuery<Q> {
 
     private static final String[] NO_TYPES = new String[0];
-    private static final List<PredicateCondition<String, JanusGraphRelation>> NO_CONSTRAINTS = ImmutableList.of();
+    private static final List<PredicateCondition<String, JanusGraphRelation>> NO_CONSTRAINTS = Collections.emptyList();
 
     /**
      * The direction of this query. BOTH by default

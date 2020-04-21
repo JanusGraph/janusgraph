@@ -15,10 +15,7 @@
 package org.janusgraph.graphdb.query;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.janusgraph.core.QueryException;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
@@ -46,7 +43,6 @@ import java.util.*;
 public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphElement, B extends BackendQuery<B>> implements Iterable<R> {
 
     private static final int MAX_SORT_ITERATION = 1000000;
-
 
     private final Q query;
     private final QueryExecutor<Q, R, B> executor;
@@ -87,16 +83,18 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
             Preconditions.checkArgument(iterator != null);
 
             if (newElements.hasNext()) {
-                final List<R> allNew = Lists.newArrayList(newElements);
+                final List<R> allNew = new ArrayList<>();
+                newElements.forEachRemaining(allNew::add);
                 allNew.sort(query.getSortOrder());
                 iterator = new ResultMergeSortIterator<>(allNew.iterator(), iterator, query.getSortOrder(), query.hasDuplicateResults());
             }
         } else {
             final Set<R> allNew;
             if (newElements.hasNext()) {
-                allNew = Sets.newHashSet(newElements);
+                allNew = new HashSet<>();
+                newElements.forEachRemaining(allNew::add);
             } else {
-                allNew = ImmutableSet.of();
+                allNew = Collections.emptySet();
             }
 
             final List<Iterator<R>> iterators = new ArrayList<>(query.numSubQueries());
@@ -141,9 +139,11 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
         private final Iterator<R> iterator;
 
         private PreSortingIterator(BackendQueryHolder<B> backendQueryHolder) {
-            List<R> all = Lists.newArrayList(executor.execute(query,
-                    backendQueryHolder.getBackendQuery().updateLimit(MAX_SORT_ITERATION),
-                    backendQueryHolder.getExecutionInfo(),backendQueryHolder.getProfiler()));
+            List<R> all = new ArrayList<>();
+            executor.execute(query,
+                backendQueryHolder.getBackendQuery().updateLimit(MAX_SORT_ITERATION),
+                backendQueryHolder.getExecutionInfo(),backendQueryHolder.getProfiler())
+                .forEachRemaining(all::add);
             if (all.size() >= MAX_SORT_ITERATION)
                 throw new QueryException("Could not execute query since pre-sorting requires fetching more than " +
                         MAX_SORT_ITERATION + " elements. Consider rewriting the query to exploit sort orders");

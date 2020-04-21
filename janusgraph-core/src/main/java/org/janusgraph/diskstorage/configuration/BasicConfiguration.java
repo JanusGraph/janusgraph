@@ -15,11 +15,11 @@
 package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -85,7 +85,7 @@ public class BasicConfiguration extends AbstractConfiguration {
     }
 
     public Map<ConfigElement.PathIdentifier,Object> getAll() {
-        Map<ConfigElement.PathIdentifier,Object> result = Maps.newHashMap();
+        Map<ConfigElement.PathIdentifier,Object> result = new HashMap<>();
 
         for (String key : config.getKeys("")) {
             Preconditions.checkArgument(StringUtils.isNotBlank(key));

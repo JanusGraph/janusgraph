@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.olap.job;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertex;
@@ -34,6 +33,7 @@ import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
 import org.janusgraph.graphdb.vertices.CacheVertex;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -124,7 +124,7 @@ public class GhostVertexRemover extends VertexJobConverter {
 
     @Override
     public List<SliceQuery> getQueries() {
-        return ImmutableList.of(everythingQueryLimit);
+        return Collections.singletonList(everythingQueryLimit);
     }
 
     private static class NoOpJob implements VertexScanJob {

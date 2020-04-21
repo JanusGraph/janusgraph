@@ -27,8 +27,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
-import com.google.common.collect.Lists;
-
 /**
  * This step can be injected before a traversal parent, such as a union, and will cache the
  * starts sent to the parent. The traversal parent will drip feed those starts into its
@@ -69,7 +67,7 @@ public final class JanusGraphMultiQueryStep extends AbstractStep<Vertex, Vertex>
 
     public List<Traverser.Admin<Vertex>> getCachedStarts() {
         cachedStartsAccessed = true;
-        return Lists.newArrayList(cachedStarts);
+        return new ArrayList<>(cachedStarts);
     }
 
     @Override

@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.keycolumnvalue.ttl;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryMetaData;
@@ -32,6 +31,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Turns a store with fine-grained cell-level TTL support into a store
@@ -47,7 +47,7 @@ import java.util.Map;
 public class TTLKCVSManager extends KCVSManagerProxy {
 
     private final StoreFeatures features;
-    private final Map<String, Integer> ttlEnabledStores = Maps.newConcurrentMap();
+    private final Map<String, Integer> ttlEnabledStores = new ConcurrentHashMap<>();
 
     public TTLKCVSManager(KeyColumnValueStoreManager manager) {
         super(manager);

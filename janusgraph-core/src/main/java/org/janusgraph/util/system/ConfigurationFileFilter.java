@@ -14,12 +14,12 @@
 
 package org.janusgraph.util.system;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.lang.WordUtils;
+import org.janusgraph.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -168,7 +168,7 @@ public class ConfigurationFileFilter {
                             for (int i = 0; i < names.length; i++)
                                 names[i] = enums[i].name();
                             dt += opt.getDatatype().getSimpleName() + " enum:";
-                            String s = "\n#             " + "{ " + Joiner.on(", ").join(names) + " }";
+                            String s = "\n#             " + "{ " + String.join(", ", names) + " }";
                             dt += WordUtils.wrap(s, WRAP_COLUMNS, "\n#               ", false);
                         } else {
                             dt += opt.getDatatype().getSimpleName();
@@ -177,7 +177,7 @@ public class ConfigurationFileFilter {
                         if (null == opt.getDefaultValue()) {
                             defaultValue += "(no default value)";
                         } else if (opt.getDatatype().isArray()) {
-                            defaultValue += Joiner.on(", ").join((Object[]) opt.getDefaultValue());
+                            defaultValue += StringUtils.join((Object[]) opt.getDefaultValue(), ", ");
                         } else if (opt.getDatatype().isEnum()) {
                             defaultValue += ((Enum)opt.getDefaultValue()).name();
                         } else {

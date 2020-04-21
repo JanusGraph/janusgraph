@@ -15,10 +15,10 @@
 package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -59,7 +59,7 @@ public abstract class AbstractConfiguration implements Configuration {
         Preconditions.checkArgument(umbrella.isUmbrella());
 
         String prefix = ConfigElement.getPath(umbrella,umbrellaElements);
-        Set<String> result = Sets.newHashSet();
+        Set<String> result = new HashSet<>();
 
         for (String key : config.getKeys(prefix)) {
             Preconditions.checkArgument(key.startsWith(prefix));
@@ -77,7 +77,7 @@ public abstract class AbstractConfiguration implements Configuration {
         verifyElement(umbrella);
 
         String prefix = umbrella.isRoot() ? "" : ConfigElement.getPath(umbrella, umbrellaElements);
-        Map<String,Object> result = Maps.newHashMap();
+        Map<String,Object> result = new HashMap<>();
 
         for (String key : config.getKeys(prefix)) {
             Preconditions.checkArgument(key.startsWith(prefix));

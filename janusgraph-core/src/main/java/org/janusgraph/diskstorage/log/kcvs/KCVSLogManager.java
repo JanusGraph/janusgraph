@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.log.kcvs;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.StoreMetaData;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
@@ -236,8 +235,9 @@ public class KCVSLogManager implements LogManager {
          * The path to ConcurrentModificationException in the absence of a copy is
          * log.close() -> manager.closedLog(log) -> openLogs.remove(log.getName()).
          */
-        for (KCVSLog log : ImmutableMap.copyOf(openLogs).values()) log.close();
-
+        for (KCVSLog log : new ArrayList<>(openLogs.values())) {
+            log.close();
+        }
         IOUtils.closeQuietly(serializer);
     }
 

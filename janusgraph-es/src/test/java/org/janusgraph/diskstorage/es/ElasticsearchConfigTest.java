@@ -14,8 +14,6 @@
 
 package org.janusgraph.diskstorage.es;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.apache.http.client.utils.URIBuilder;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraph;
@@ -65,6 +63,7 @@ import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
@@ -99,7 +98,7 @@ public class ElasticsearchConfigTest {
     private ObjectMapper objectMapper;
 
     public static Stream<Boolean> useMappingsForES7Configuration() {
-        return ImmutableList.of(true, false).stream();
+        return Stream.of(true, false);
     }
 
     @BeforeEach
@@ -257,14 +256,13 @@ public class ElasticsearchConfigTest {
 
         final IndexProvider idx = open(indexConfig);
 
-        final Map<String, Object> content;
+        final Map<String, Object> content = new HashMap<>(2);
+        content.put("template", "janusgraph_test_mapping*");
 
         if(isMappingUsed(idx)){
-            content = ImmutableMap.of("template", "janusgraph_test_mapping*",
-                "mappings", readTypesMapping("/strict_mapping.json").getMappings());
+            content.put("mappings", readTypesMapping("/strict_mapping.json").getMappings());
         } else {
-            content = ImmutableMap.of("template", "janusgraph_test_mapping*",
-                "mappings", readTypelessMapping("/typeless_strict_mapping.json").getMappings());
+            content.put("mappings", readTypelessMapping("/typeless_strict_mapping.json").getMappings());
         }
 
         executeRequestWithStringEntity(idx, "_template/template_1", content);

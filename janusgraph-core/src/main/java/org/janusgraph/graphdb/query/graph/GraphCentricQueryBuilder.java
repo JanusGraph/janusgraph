@@ -15,9 +15,7 @@
 package org.janusgraph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Contain;
@@ -280,7 +278,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
          */
         final JointIndexQuery jointQuery = new JointIndexQuery();
         boolean isSorted = orders.isEmpty();
-        final Set<Condition> coveredClauses = Sets.newHashSet();
+        final Set<Condition> coveredClauses = new HashSet<>();
         while (true) {
             IndexType bestCandidate = null;
             double candidateScore = 0.0;
@@ -289,7 +287,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             Object candidateSubCondition = null;
 
             for (final IndexType index : indexCandidates) {
-                final Set<Condition> subcover = Sets.newHashSet();
+                final Set<Condition> subcover = new HashSet<>();
                 Object subCondition;
                 boolean supportsSort = orders.isEmpty();
                 //Check that this index actually applies in case of a schema constraint
@@ -432,7 +430,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             } else if (c instanceof PredicateCondition) {
                 final PredicateCondition<RelationType, JanusGraphRelation> atom = (PredicateCondition)c;
                 if (atom.getKey().equals(type) && atom.getPredicate()==Cmp.EQUAL && atom.getValue()!=null) {
-                    return new AbstractMap.SimpleImmutableEntry(c,ImmutableList.of(atom.getValue()));
+                    return new AbstractMap.SimpleImmutableEntry(c,Collections.singletonList(atom.getValue()));
                 }
             }
 

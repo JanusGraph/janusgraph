@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.types.system;
 
-import com.google.common.collect.ImmutableSet;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.types.IndexType;
@@ -54,7 +53,7 @@ public abstract class EmptyRelationType extends EmptyVertex implements InternalR
 
     @Override
     public Iterable<InternalRelationType> getRelationIndexes() {
-        return ImmutableSet.of(this);
+        return Collections.singleton(this);
     }
 
     @Override

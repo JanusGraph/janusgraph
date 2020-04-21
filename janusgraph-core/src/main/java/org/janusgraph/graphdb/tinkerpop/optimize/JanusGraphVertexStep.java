@@ -47,7 +47,6 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import java.util.*;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -193,7 +192,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
         }
 
         if (batchPropertyPrefetching) {
-            Set<Vertex> vertices = Sets.newHashSet();
+            Set<Vertex> vertices = new HashSet<>();
             result.forEach(v -> {
                 if (vertices.size() < txVertexCacheSize ) {
                     vertices.add((Vertex) v);

@@ -14,13 +14,7 @@
 
 package org.janusgraph.diskstorage;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This enum is only intended for use by JanusGraph internals.
@@ -28,25 +22,25 @@ import java.util.Map;
  */
 public enum StandardIndexProvider {
     LUCENE("org.janusgraph.diskstorage.lucene.LuceneIndex", "lucene"),
-    ELASTICSEARCH("org.janusgraph.diskstorage.es.ElasticSearchIndex", ImmutableList.of("elasticsearch", "es")),
+    ELASTICSEARCH("org.janusgraph.diskstorage.es.ElasticSearchIndex", Arrays.asList("elasticsearch", "es")),
     SOLR("org.janusgraph.diskstorage.solr.SolrIndex", "solr");
 
+    private static final Set<String> ALL_SHORTHANDS;
+    private static final Map<String, String> ALL_MANAGER_CLASSES;
+
     private final String providerName;
-    private final ImmutableList<String> shorthands;
+    private final Set<String> shorthands;
 
     StandardIndexProvider(String providerName, String shorthand) {
-        this(providerName, ImmutableList.of(shorthand));
+        this(providerName, Collections.singleton(shorthand));
     }
 
-    StandardIndexProvider(String providerName, ImmutableList<String> shorthands) {
+    StandardIndexProvider(String providerName, Collection<String> shorthands) {
         this.providerName = providerName;
-        this.shorthands = shorthands;
+        this.shorthands = Collections.unmodifiableSet(new LinkedHashSet<>(shorthands));
     }
 
-    private static final ImmutableList<String> ALL_SHORTHANDS;
-    private static final ImmutableMap<String, String> ALL_MANAGER_CLASSES;
-
-    public List<String> getShorthands() {
+    public Set<String> getShorthands() {
         return shorthands;
     }
 
@@ -56,19 +50,19 @@ public enum StandardIndexProvider {
 
     static {
         StandardIndexProvider[] backends = values();
-        final List<String> tempShorthands = new ArrayList<>();
-        final Map<String, String> tempClassMap = new HashMap<>();
+        final Set<String> tempShorthands = new LinkedHashSet<>(backends.length);
+        final Map<String, String> tempClassMap = new HashMap<>(backends.length);
         for (final StandardIndexProvider backend : backends) {
-            tempShorthands.addAll(backend.getShorthands());
-            for (final String shorthand : backend.getShorthands()) {
+            backend.getShorthands().forEach(shorthand -> {
+                tempShorthands.add(shorthand);
                 tempClassMap.put(shorthand, backend.getProviderName());
-            }
+            });
         }
-        ALL_SHORTHANDS = ImmutableList.copyOf(tempShorthands);
-        ALL_MANAGER_CLASSES = ImmutableMap.copyOf(tempClassMap);
+        ALL_SHORTHANDS = Collections.unmodifiableSet(tempShorthands);
+        ALL_MANAGER_CLASSES = Collections.unmodifiableMap(tempClassMap);
     }
 
-    public static List<String> getAllShorthands() {
+    public static Set<String> getAllShorthands() {
         return ALL_SHORTHANDS;
     }
 

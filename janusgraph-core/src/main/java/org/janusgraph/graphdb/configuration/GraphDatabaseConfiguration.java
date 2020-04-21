@@ -14,8 +14,6 @@
 
 package org.janusgraph.graphdb.configuration;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableMap;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.DefaultSchemaMaker;
 import org.janusgraph.core.schema.LoggingSchemaMaker;
@@ -27,6 +25,7 @@ import org.janusgraph.graphdb.configuration.converter.RegisteredAttributeClasses
 import org.janusgraph.graphdb.tinkerpop.JanusGraphDefaultSchemaMaker;
 import org.janusgraph.graphdb.tinkerpop.Tp3DefaultSchemaMaker;
 import org.janusgraph.graphdb.types.typemaker.DisableDefaultSchemaMaker;
+import org.janusgraph.util.StringUtils;
 import org.janusgraph.util.stats.NumberUtil;
 import org.janusgraph.diskstorage.util.time.*;
 import org.janusgraph.diskstorage.configuration.*;
@@ -170,7 +169,7 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<Boolean> ALLOW_STALE_CONFIG = new ConfigOption<>(GRAPH_NS,"allow-stale-config",
             "Whether to allow the local and storage-backend-hosted copies of the configuration to contain conflicting values for " +
-            "options with any of the following types: " + Joiner.on(", ").join(ConfigOption.getManagedTypes()) + ".  " +
+            "options with any of the following types: " + StringUtils.join(ConfigOption.getManagedTypes(), ", ") + ".  " +
             "These types are managed globally through the storage backend and cannot be overridden by changing the " +
             "local configuration.  This type of conflict usually indicates misconfiguration.  When this option is true, " +
             "JanusGraph will log these option conflicts, but continue normal operation using the storage-backend-hosted value " +
@@ -299,11 +298,14 @@ public class GraphDatabaseConfiguration {
         }
     });
 
-    private static final Map<String, DefaultSchemaMaker> PREREGISTERED_AUTO_TYPE =
-            ImmutableMap.of("none", DisableDefaultSchemaMaker.INSTANCE,
-                    "default", JanusGraphDefaultSchemaMaker.INSTANCE,
-                    "tp3", Tp3DefaultSchemaMaker.INSTANCE,
-                    "logging", LoggingSchemaMaker.DEFAULT_INSTANCE);
+    private static final Map<String, DefaultSchemaMaker> PREREGISTERED_AUTO_TYPE = Collections.unmodifiableMap(
+        new HashMap<String, DefaultSchemaMaker>(4){{
+            put("none", DisableDefaultSchemaMaker.INSTANCE);
+            put("default", JanusGraphDefaultSchemaMaker.INSTANCE);
+            put("tp3", Tp3DefaultSchemaMaker.INSTANCE);
+            put("logging", LoggingSchemaMaker.DEFAULT_INSTANCE);
+        }}
+    );
 
     public static final ConfigOption<Boolean> SCHEMA_CONSTRAINTS = new ConfigOption<>(SCHEMA_NS, "constraints",
             "Configures the schema constraints to be used by this graph. If config 'schema.constraints' " +
@@ -438,7 +440,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> STORAGE_BACKEND = new ConfigOption<>(STORAGE_NS,"backend",
             "The primary persistence provider used by JanusGraph.  This is required.  It should be set one of " +
             "JanusGraph's built-in shorthand names for its standard storage backends " +
-            "(shorthands: " + Joiner.on(", ").join(StandardStoreManager.getAllShorthands()) + ") " +
+            "(shorthands: " + String.join(", ", StandardStoreManager.getAllShorthands()) + ") " +
             "or to the full package and classname of a custom/third-party StoreManager implementation.",
             ConfigOption.Type.LOCAL, String.class);
 
@@ -833,7 +835,7 @@ public class GraphDatabaseConfiguration {
             "\"" + INDEX_NS.getName() + "\" and \"backend\" is unique among appearances." +
             "Similar to the storage backend, this should be set to one of " +
             "JanusGraph's built-in shorthand names for its standard index backends " +
-            "(shorthands: " + Joiner.on(", ").join(StandardIndexProvider.getAllShorthands()) + ") " +
+            "(shorthands: " + String.join(", ", StandardIndexProvider.getAllShorthands()) + ") " +
             "or to the full package and classname of a custom/third-party IndexProvider implementation.",
             ConfigOption.Type.GLOBAL_OFFLINE, "elasticsearch");
 

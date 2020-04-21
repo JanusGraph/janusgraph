@@ -14,13 +14,10 @@
 
 package org.janusgraph.diskstorage;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
 
 /**
  * Container for collection mutations against a data store.
@@ -39,9 +36,9 @@ public abstract class Mutation<E,K> {
         Preconditions.checkNotNull(additions);
         Preconditions.checkNotNull(deletions);
         if (additions.isEmpty()) this.additions=null;
-        else this.additions = Lists.newArrayList(additions);
+        else this.additions = new ArrayList<>(additions);
         if (deletions.isEmpty()) this.deletions=null;
-        else this.deletions = Lists.newArrayList(deletions);
+        else this.deletions = new ArrayList<>(deletions);
     }
 
     public Mutation() {
@@ -70,7 +67,7 @@ public abstract class Mutation<E,K> {
      * @return
      */
     public List<E> getAdditions() {
-        if (additions==null) return ImmutableList.of();
+        if (additions==null) return Collections.emptyList();
         return additions;
     }
 
@@ -80,7 +77,7 @@ public abstract class Mutation<E,K> {
      * @return
      */
     public List<K> getDeletions() {
-        if (deletions==null) return ImmutableList.of();
+        if (deletions==null) return Collections.emptyList();
         return deletions;
     }
 
@@ -149,7 +146,10 @@ public abstract class Mutation<E,K> {
      */
     public<V> void consolidate(Function<E,V> convertAdditions, Function<K,V> convertDeletions) {
         if (hasDeletions() && hasAdditions()) {
-            Set<V> adds = Sets.newHashSet(Iterables.transform(additions,convertAdditions));
+            Set<V> adds = new HashSet<>(additions.size());
+            for (final E add : additions) {
+                adds.add(convertAdditions.apply(add));
+            }
             deletions.removeIf(k -> adds.contains(convertDeletions.apply(k)));
         }
     }
@@ -157,7 +157,7 @@ public abstract class Mutation<E,K> {
     public abstract void consolidate();
 
     /**
-     * Checks whether this mutation is consolidated in the sense of {@link #consolidate(com.google.common.base.Function, com.google.common.base.Function)}.
+     * Checks whether this mutation is consolidated in the sense of {@link #consolidate(Function, Function)}.
      * This should only be used in assertions and tests due to the performance penalty.
      *
      * @param convertAdditions

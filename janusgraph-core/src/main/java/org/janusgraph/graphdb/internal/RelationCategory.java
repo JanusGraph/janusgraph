@@ -14,10 +14,11 @@
 
 package org.janusgraph.graphdb.internal;
 
-import com.google.common.collect.ImmutableList;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertexQuery;
 import org.janusgraph.graphdb.query.condition.Condition;
+
+import java.util.Collections;
 
 /**
 * @author Matthias Broecheler (me@matthiasb.com)
@@ -57,7 +58,7 @@ public enum RelationCategory implements Condition<JanusGraphRelation> {
 
     @Override
     public Iterable getChildren() {
-        return ImmutableList.of();
+        return Collections.emptyList();
     }
 
     @Override

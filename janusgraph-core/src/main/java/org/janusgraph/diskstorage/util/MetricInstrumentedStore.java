@@ -15,6 +15,8 @@
 package org.janusgraph.diskstorage.util;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +24,6 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.*;
-import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,8 +77,8 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     public static final String M_GET_PART = "getLocalKeyPartition";
     public static final String M_CLOSE = "close";
 
-    public static final List<String> OPERATION_NAMES =
-            ImmutableList.of(M_CONTAINS_KEY,M_GET_SLICE,M_MUTATE,M_ACQUIRE_LOCK,M_GET_KEYS);
+    public static final List<String> OPERATION_NAMES = Collections.unmodifiableList(
+        Arrays.asList(M_CONTAINS_KEY,M_GET_SLICE,M_MUTATE,M_ACQUIRE_LOCK,M_GET_KEYS));
 
     public static final String M_CALLS = "calls";
     public static final String M_TIME = "time";
@@ -85,8 +86,8 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     public static final String M_ENTRIES_COUNT = "entries-returned";
     public static final String M_ENTRIES_HISTO = "entries-histogram";
 
-    public static final List<String> EVENT_NAMES =
-            ImmutableList.of(M_CALLS,M_TIME,M_EXCEPTIONS,M_ENTRIES_COUNT,M_ENTRIES_HISTO);
+    public static final List<String> EVENT_NAMES = Collections.unmodifiableList(
+        Arrays.asList(M_CALLS,M_TIME,M_EXCEPTIONS,M_ENTRIES_COUNT,M_ENTRIES_HISTO));
 
     public static final String M_ITERATOR = "iterator";
 

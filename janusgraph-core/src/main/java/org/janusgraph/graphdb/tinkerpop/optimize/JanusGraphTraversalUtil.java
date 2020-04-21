@@ -19,9 +19,6 @@ import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.graphdb.olap.computer.FulgoraElementTraversal;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphBlueprintsGraph;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-
-import com.google.common.collect.Lists;
-
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
@@ -42,11 +39,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedVertex;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -134,7 +127,7 @@ public class JanusGraphTraversalUtil {
                 }
             }
         }
-        return Lists.newArrayList(multiQueryCompatibleSteps);
+        return new ArrayList<>(multiQueryCompatibleSteps);
     }
     private static void getMultiQueryCompatibleStepsFromChildTraversal(Traversal.Admin<?,?> childTraversal, Step parentStep, Set<Step> multiQueryCompatibleSteps) {
         Step firstStep = childTraversal.getStartStep();
