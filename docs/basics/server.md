@@ -82,18 +82,18 @@ The `:remote` command tells the console to configure a remote connection
 to Gremlin Server using the `conf/remote.yaml` file to connect. That
 file points to a Gremlin Server instance running on `localhost`. The
 `:>` is the "submit" command which sends the Gremlin on that line to the
-currently active remote. By default remote conenctions are sessionless,
+currently active remote.
+Instead of prefixing every single script with `:>`, the command `:remote console` can
+be executed once to implicitly send all subsequent scripts to the current remote connection.
+By default remote conenctions are sessionless,
 meaning that each line sent in the console is interpreted as a single
 request. Multiple statements can be sent on a single line using a
-semicolon as the delimiter. Alternately, you can establish a console
-with a session by specifying
-[session](https://tinkerpop.apache.org/docs/current/reference/#sessions)
-when creating the connection. A [console
-session](https://tinkerpop.apache.org/docs/current/reference/#console-sessions)
-allows you to reuse variables across several lines of input.
+semicolon as the delimiter.
 ```groovy
 gremlin> :remote connect tinkerpop.server conf/remote.yaml
 ==>Configured localhost/127.0.0.1:8182
+gremlin> :remote console
+==>All scripts will now be sent to Gremlin Server - [localhost/127.0.0.1:8182] - type ':remote console' to return to local mode
 gremlin> graph
 ==>standardjanusgraph[cql:[127.0.0.1]]
 gremlin> g
@@ -105,8 +105,18 @@ gremlin> graph.addVertex("name", user)
 No such property: user for class: Script21
 Type ':help' or ':h' for help.
 Display stack trace? [yN]
+```
+
+Alternatively, you can establish a console with a session by specifying
+[session](https://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/reference/#sessions)
+when creating the connection. A [console
+session](https://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/reference/#console-sessions)
+allows you to reuse variables across several lines of input.
+```groovy
 gremlin> :remote connect tinkerpop.server conf/remote.yaml session
 ==>Configured localhost/127.0.0.1:8182-[9acf239e-a3ed-4301-b33f-55c911e04052]
+gremlin> :remote console
+==>All scripts will now be sent to Gremlin Server - [localhost/127.0.0.1:8182]-[9acf239e-a3ed-4301-b33f-55c911e04052] - type ':remote console' to return to local mode
 gremlin> g.V()
 gremlin> user = "Chris"
 ==>Chris
