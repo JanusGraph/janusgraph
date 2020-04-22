@@ -382,7 +382,6 @@ CQL storage backend options
 | storage.cql.atomic-batch-mutate | True to use Cassandra atomic batch mutation, false to use non-atomic batches | Boolean | false | MASKABLE |
 | storage.cql.batch-statement-size | The number of statements in each batch | Integer | 20 | MASKABLE |
 | storage.cql.cluster-name | Default name for the Cassandra cluster | String | JanusGraph Cluster | MASKABLE |
-| storage.cql.compact-storage | Whether the storage backend should use compact storage on tables. This option is only available for Cassandra 2 and earlier and defaults to true. | Boolean | true | FIXED |
 | storage.cql.compaction-strategy-class | The compaction strategy to use for JanusGraph tables | String | (no default value) | FIXED |
 | storage.cql.compaction-strategy-options | Compaction strategy options.  This list is interpreted as a map.  It must have an even number of elements in [key,val,key,val,...] form. | String[] | (no default value) | FIXED |
 | storage.cql.compression | Whether the storage backend should use compression when storing the data | Boolean | true | FIXED |

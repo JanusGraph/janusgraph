@@ -145,7 +145,6 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     private final String keyspace;
     private final int batchSize;
     private final boolean atomicBatch;
-    private final boolean allowCompactStorage;
 
     final ExecutorService executorService;
 
@@ -180,7 +179,6 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
         this.cluster = initializeCluster();
         this.session = initializeSession(this.keyspace);
-        this.allowCompactStorage = initializeCompactStorage();
 
         final Configuration global = buildGraphConfiguration()
                 .set(READ_CONSISTENCY, CONSISTENCY_QUORUM)
@@ -342,23 +340,6 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         return s;
     }
 
-    boolean initializeCompactStorage() throws PermanentBackendException {
-        try {
-            final ResultSet versionResultSet = this.session.execute(
-                select().column("release_version").from("system", "local") );
-            final String version = versionResultSet.one().getString(0);
-            final int major = Integer.parseInt(version.substring(0, version.indexOf(".")));
-            // starting with Cassandra 3 COMPACT STORAGE is deprecated and has no impact
-            return (major < 3);
-        } catch (NumberFormatException | NoHostAvailableException | QueryExecutionException | QueryValidationException e) {
-            throw new PermanentBackendException("Error determining Cassandra version", e);
-        }
-    }
-
-    boolean isCompactStorageAllowed() {
-        return this.allowCompactStorage;
-    }
-
     ExecutorService getExecutorService() {
         return this.executorService;
     }
@@ -417,7 +398,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     @Override
     public KeyColumnValueStore openDatabase(final String name, final Container metaData) throws BackendException {
         Supplier<Boolean> initializeTable = () -> Optional.ofNullable(this.cluster.getMetadata().getKeyspace(this.keyspace)).map(k -> k.getTable(name) == null).orElse(true);
-        return this.openStores.computeIfAbsent(name, n -> new CQLKeyColumnValueStore(this, n, getStorageConfig(), () -> this.openStores.remove(n), allowCompactStorage, initializeTable));
+        return this.openStores.computeIfAbsent(name, n -> new CQLKeyColumnValueStore(this, n, getStorageConfig(), () -> this.openStores.remove(n), initializeTable));
     }
 
     @Override

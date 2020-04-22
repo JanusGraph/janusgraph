@@ -25,16 +25,16 @@
             <outputDirectory>/cassandra</outputDirectory>
             <filtered>false</filtered>
             <excludes>
-              <exclude>**/bin/cassandra</exclude>
-              <exclude>**/bin/*.bat</exclude>
-              <exclude>**/bin/*.ps1</exclude>
-              <exclude>**/conf/cassandra.yaml</exclude>
-              <exclude>**/conf/cassandra-env.sh</exclude>
-              <exclude>**/conf/logback.xml</exclude>
-              <exclude>**/data/**</exclude>
-              <exclude>**/logs/**</exclude>
-              <exclude>**/doc/**</exclude>
-              <exclude>**/javadoc/**</exclude>
+                <exclude>**/bin/cassandra</exclude>
+                <exclude>**/bin/*.bat</exclude>
+                <exclude>**/bin/*.ps1</exclude>
+                <exclude>**/conf/cassandra.yaml</exclude>
+                <exclude>**/conf/jvm.options</exclude>
+                <exclude>**/conf/logback.xml</exclude>
+                <exclude>**/data/**</exclude>
+                <exclude>**/logs/**</exclude>
+                <exclude>**/doc/**</exclude>
+                <exclude>**/javadoc/**</exclude>
             </excludes>
         </fileSet>
         <fileSet>

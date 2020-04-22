@@ -37,7 +37,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphCassandraContainer> {
     private static final Logger LOGGER = LoggerFactory.getLogger(JanusGraphCassandraContainer.class);
 
-    private static final String DEFAULT_VERSION = "2.2.14";
+    private static final String DEFAULT_VERSION = "3.11.6";
     private static final String DEFAULT_IMAGE = "cassandra";
     private static final String DEFAULT_PARTITIONER = "murmur";
     private static final boolean DEFAULT_USE_SSL = false;
@@ -91,10 +91,7 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
     }
 
     private String getConfigPrefix() {
-        if (getVersion().startsWith("3.")) {
-            return "cassandra3";
-        }
-        return "cassandra2";
+        return "cassandra3";
     }
 
     public JanusGraphCassandraContainer() {
@@ -108,11 +105,12 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
         }
         withEnv("MAX_HEAP_SIZE", "2G");
         withEnv("HEAP_NEWSIZE", "1G");
+
         if (useDynamicConfig()) {
-            withCommand("-Dcassandra.config=/opt/cassandra.yaml -Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false");
+            withCommand("-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false");
             switch (getPartitioner()){
                 case "byteordered":
-                    withClasspathResourceMapping(getConfigPrefix() + "-byteordered.yaml", "/opt/cassandra.yaml", BindMode.READ_WRITE);
+                    withClasspathResourceMapping(getConfigPrefix() + "-byteordered.yaml", "/etc/cassandra/cassandra.yaml", BindMode.READ_WRITE);
                     break;
                 case "murmur":
                     if (useSSL()) {
@@ -121,12 +119,12 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
                         withClasspathResourceMapping("cqlshrc", "/root/.cassandra/cqlshrc", BindMode.READ_WRITE);
                         if(enableClientAuth()) {
                             withClasspathResourceMapping("cert/node.truststore", "/etc/ssl/node.truststore", BindMode.READ_WRITE);
-                            withClasspathResourceMapping(getConfigPrefix() + "-murmur-client-auth.yaml", "/opt/cassandra.yaml", BindMode.READ_WRITE);
+                            withClasspathResourceMapping(getConfigPrefix() + "-murmur-client-auth.yaml", "/etc/cassandra/cassandra.yaml", BindMode.READ_WRITE);
                         } else {
-                            withClasspathResourceMapping(getConfigPrefix() + "-murmur-ssl.yaml", "/opt/cassandra.yaml", BindMode.READ_WRITE);
+                            withClasspathResourceMapping(getConfigPrefix() + "-murmur-ssl.yaml", "/etc/cassandra/cassandra.yaml", BindMode.READ_WRITE);
                         }
                     } else {
-                        withClasspathResourceMapping(getConfigPrefix() + "-murmur.yaml", "/opt/cassandra.yaml", BindMode.READ_WRITE);
+                        withClasspathResourceMapping(getConfigPrefix() + "-murmur.yaml", "/etc/cassandra/cassandra.yaml", BindMode.READ_WRITE);
                     }
                     break;
                 default:

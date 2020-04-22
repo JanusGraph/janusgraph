@@ -38,7 +38,6 @@ import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
 import static io.vavr.Predicates.instanceOf;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPACT_STORAGE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_BLOCK_SIZE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_TYPE;
@@ -148,10 +147,9 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
      * @param tableName the name of the database table for storing the key/column/values
      * @param configuration data used in creating this store
      * @param closer callback used to clean up references to this store in the store manager
-     * @param allowCompactStorage whether to use compact storage is allowed (true only for Cassandra 2 and earlier)
      * @param shouldInitializeTable if true is provided the table gets initialized
      */
-    public CQLKeyColumnValueStore(final CQLStoreManager storeManager, final String tableName, final Configuration configuration, final Runnable closer, final boolean allowCompactStorage, final Supplier<Boolean> shouldInitializeTable) {
+    public CQLKeyColumnValueStore(final CQLStoreManager storeManager, final String tableName, final Configuration configuration, final Runnable closer, final Supplier<Boolean> shouldInitializeTable) {
         this.storeManager = storeManager;
         this.executorService = this.storeManager.getExecutorService();
         this.tableName = tableName;
@@ -160,7 +158,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         this.getter = new CQLColValGetter(storeManager.getMetaDataSchema(this.tableName));
 
         if(shouldInitializeTable.get()) {
-            initializeTable(this.session, this.storeManager.getKeyspaceName(), tableName, configuration, allowCompactStorage);
+            initializeTable(this.session, this.storeManager.getKeyspaceName(), tableName, configuration);
         }
 
         // @formatter:off
@@ -220,7 +218,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         // @formatter:on
     }
 
-    private static void initializeTable(final Session session, final String keyspaceName, final String tableName, final Configuration configuration, final boolean allowCompactStorage) {
+    private static void initializeTable(final Session session, final String keyspaceName, final String tableName, final Configuration configuration) {
         final Options createTable = createTable(keyspaceName, tableName)
                 .ifNotExists()
                 .addPartitionKey(KEY_COLUMN_NAME, DataType.blob())
@@ -229,13 +227,8 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                 .withOptions()
                 .compressionOptions(compressionOptions(configuration))
                 .compactionOptions(compactionOptions(configuration));
-        // COMPACT STORAGE is allowed on Cassandra 2 or earlier
-        // when COMPACT STORAGE is allowed, the default is to enable it
-        final boolean useCompactStorage =
-            (allowCompactStorage && configuration.has(CF_COMPACT_STORAGE))
-            ? configuration.get(CF_COMPACT_STORAGE)
-            : allowCompactStorage;
-        session.execute(useCompactStorage ? createTable.compactStorage() : createTable);
+
+        session.execute(createTable);
     }
 
     private static CompressionOptions compressionOptions(final Configuration configuration) {
