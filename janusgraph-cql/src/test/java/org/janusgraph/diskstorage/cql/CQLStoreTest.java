@@ -96,47 +96,6 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
     }
 
     @Test
-    public void testDefaultCompactStorage() throws BackendException {
-        final String cf = TEST_CF_NAME + "_defaultcompact";
-
-        final CQLStoreManager cqlStoreManager = openStorageManager();
-        cqlStoreManager.openDatabase(cf);
-
-        // COMPACT STORAGE is allowed on Cassandra 2 or earlier
-        // when COMPACT STORAGE is allowed, the default is to enable it
-        assertEquals(cqlStoreManager.isCompactStorageAllowed(), cqlStoreManager.getTableMetadata(cf).getOptions().isCompactStorage());
-    }
-
-    @Test
-    @Disabled("junit 5.6 removed support for EnabledIf and we will remove cassandra 2 support soon.")
-    public void testUseCompactStorage() throws BackendException {
-        final String cf = TEST_CF_NAME + "_usecompact";
-        final ModifiableConfiguration config = getBaseStorageConfiguration();
-        config.set(CF_COMPACT_STORAGE, true);
-
-        final CQLStoreManager cqlStoreManager = openStorageManager(config);
-        cqlStoreManager.openDatabase(cf);
-
-        if (cqlStoreManager.isCompactStorageAllowed()) {
-            assertTrue(cqlStoreManager.getTableMetadata(cf).getOptions().isCompactStorage());
-        } else {
-            assertFalse(cqlStoreManager.getTableMetadata(cf).getOptions().isCompactStorage());
-        }
-    }
-
-    @Test
-    public void testNoCompactStorage() throws BackendException {
-        final String cf = TEST_CF_NAME + "_nocompact";
-        final ModifiableConfiguration config = getBaseStorageConfiguration();
-        config.set(CF_COMPACT_STORAGE, false);
-
-        final CQLStoreManager cqlStoreManager = openStorageManager(config);
-        cqlStoreManager.openDatabase(cf);
-
-        assertFalse(cqlStoreManager.getTableMetadata(cf).getOptions().isCompactStorage());
-    }
-
-    @Test
     public void testDefaultCFCompressor() throws BackendException {
         final String cf = TEST_CF_NAME + "_snappy";
 

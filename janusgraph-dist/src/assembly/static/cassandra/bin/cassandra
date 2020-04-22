@@ -11,7 +11,7 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
-# limitations under the License
+# limitations under the License.
 
 
 # OPTIONS:
@@ -28,10 +28,11 @@
 #   JVM_OPTS -- Additional arguments to the JVM for heap size, etc
 #   JVM_ON_OUT_OF_MEMORY_ERROR_OPT -- The OnOutOfMemoryError JVM option if specified
 #   CASSANDRA_CONF -- Directory containing Cassandra configuration files.
+#   CASSANDRA_LOG_DIR -- Directory containing logs(default: $CASSANDRA_HOME/../logs) (JanusGraph change of the default behaviour).
 #
 # As a convenience, a fragment of shell is sourced in order to set one or
 # more of these variables. This so-called `include' can be placed in a 
-# number of locations and will be searched for in order. The lowest 
+# number of locations and will be searched for in order. The highest 
 # priority search path is the same directory as the startup script, and
 # since this is the location of the sample in the project tree, it should
 # almost work Out Of The Box.
@@ -106,7 +107,7 @@ fi
 # avoid disk I/O. Even for the purpose of CPU efficiency, we don't
 # really have CPU<->data affinity anyway. Also, empirically test that numactl
 # works before trying to use it (CASSANDRA-3245).
-NUMACTL_ARGS="--interleave=all"
+NUMACTL_ARGS=${NUMACTL_ARGS:-"--interleave=all"}
 if which numactl >/dev/null 2>/dev/null && numactl $NUMACTL_ARGS ls / >/dev/null 2>/dev/null
 then
     NUMACTL="numactl $NUMACTL_ARGS"
@@ -123,9 +124,14 @@ if [ -f "$CASSANDRA_CONF/cassandra-env.sh" ]; then
     . "$CASSANDRA_CONF/cassandra-env.sh"
 fi
 
+if [ -z "$CASSANDRA_LOG_DIR" ]; then
+  # JanusGraph change: All logs in single directory are collected in single directory
+  CASSANDRA_LOG_DIR=$CASSANDRA_HOME/../logs
+fi
+
 # Special-case path variables.
 case "`uname`" in
-    CYGWIN*) 
+    CYGWIN*|MINGW*) 
         CLASSPATH=`cygpath -p -w "$CLASSPATH"`
         CASSANDRA_CONF=`cygpath -p -w "$CASSANDRA_CONF"`
     ;;
@@ -187,8 +193,7 @@ launch_service()
     props="$3"
     class="$4"
     cassandra_parms="-Dlogback.configurationFile=logback.xml"
-    # JanusGraph change: All logs in single directory are collected in single directory
-    cassandra_parms="$cassandra_parms -Dcassandra.logdir=$CASSANDRA_HOME/../logs"
+    cassandra_parms="$cassandra_parms -Dcassandra.logdir=$CASSANDRA_LOG_DIR"
     cassandra_parms="$cassandra_parms -Dcassandra.storagedir=$cassandra_storagedir"
 
     if [ "x$pidpath" != "x" ]; then
@@ -221,7 +226,7 @@ launch_service()
 }
 
 # Parse any command line options.
-args=`getopt vfhp:bD:H:E: "$@"`
+args=`getopt vRfhp:bD:H:E: "$@"`
 eval set -- "$args"
 
 classname="org.apache.cassandra.service.CassandraDaemon"
@@ -244,6 +249,10 @@ while true; do
             "$JAVA" -cp "$CLASSPATH" "-Dlogback.configurationFile=logback-tools.xml" org.apache.cassandra.tools.GetVersion
             exit 0
         ;;
+        -R)
+            allow_root="yes"
+            shift
+        ;;
         -D)
             properties="$properties -D$2"
             shift 2
@@ -258,20 +267,25 @@ while true; do
         ;;
         --)
             shift
+            if [ "x$*" != "x" ] ; then
+                echo "Error parsing arguments! Unknown argument \"$*\"" >&2
+                exit 1
+            fi
             break
         ;;
         *)
-            echo "Error parsing arguments!" >&2
+            echo "Error parsing arguments! Unknown argument \"$1\"" >&2
             exit 1
         ;;
     esac
 done
 
-# see CASSANDRA-7254
-"$JAVA" -cp "$CLASSPATH" $JVM_OPTS 2>&1 | grep -q 'Error: Exception thrown by the agent : java.lang.NullPointerException'
-if [ $? -ne "1" ]; then 
-    echo Unable to bind JMX, is Cassandra already running?
-    exit 1;
+if [ "x$allow_root" != "xyes" ] ; then
+    if [ "`id -u`" = "0" ] || [ "`id -g`" = "0" ] ; then
+        echo "Running Cassandra as root user or group is not recommended - please start Cassandra using a different system user."
+        echo "If you really want to force running Cassandra as root, use -R command line option."
+        exit 1
+    fi
 fi
 
 # Start up the service

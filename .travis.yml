@@ -67,7 +67,7 @@ jobs:
     - stage: test
       env: MODULE='release'
       before_install: sudo apt-get -y install expect
-      install: mvn clean install -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true
+      install: mvn clean install --batch-mode -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true
       script: mvn install -pl janusgraph-dist -Pjanusgraph-release -Dgpg.skip=true
       if: commit_message !~ /\[doc only\]/
 
@@ -103,20 +103,19 @@ jobs:
     - <<: *STANDARD_TEST_JOB
       env: MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dtest=**/hadoop/* -Dhbase.profile -Phbase2'
     - <<: *STANDARD_TEST_JOB
-      env: MODULE='cql' ARGS='-Pcassandra2-byteordered -Dtest=**/diskstorage/cql/*'
+      env: MODULE='cql' ARGS='-Pcassandra3-byteordered -Dtest=**/diskstorage/cql/*'
     - <<: *STANDARD_TEST_JOB
-      env: MODULE='cql' ARGS='-Pcassandra2-murmur -Dtest=**/diskstorage/cql/*'
+      env: MODULE='cql' ARGS='-Pcassandra3-murmur -Dtest=**/diskstorage/cql/*'
     - <<: *STANDARD_TEST_JOB
-      env: MODULE='cql' ARGS='-Pcassandra2-murmur-ssl -Dtest=**/diskstorage/cql/CQLStoreTest.java'
+      env: MODULE='cql' ARGS='-Pcassandra3-murmur-ssl -Dtest=**/diskstorage/cql/CQLStoreTest.java'
     - <<: *STANDARD_TEST_JOB
-      env: MODULE='cql' ARGS='-Pcassandra2-byteordered -Dtest=**/graphdb/cql/*'
+      env: MODULE='cql' ARGS=' -Pcassandra3-murmur-client-auth -Dtest=**/diskstorage/cql/CQLStoreTest.java'
     - <<: *STANDARD_TEST_JOB
-      env: MODULE='cql' ARGS='-Pcassandra2-murmur -Dtest=**/graphdb/cql/*'
+      env: MODULE='cql' ARGS='-Pcassandra3-byteordered -Dtest=**/graphdb/cql/*'
     - <<: *STANDARD_TEST_JOB
-      env: MODULE='cql' ARGS='-Pcassandra2-murmur -Dtest=**/hadoop/*'
-
-    - <<: *FULL_BUILD_JOB
-      env: MODULE='cql' ARGS='-Dtest=**/graphdb/cql/* -Dtest.skip.byteorderedpartitioner=true -Dtest.skip.murmur-serial=true -Dtest.skip.murmur-ssl=true'
+      env: MODULE='cql' ARGS='-Pcassandra3-murmur -Dtest=**/graphdb/cql/*'
+    - <<: *STANDARD_TEST_JOB
+      env: MODULE='cql' ARGS='-Pcassandra3-murmur -Dtest=**/hadoop/*'
 
     - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra3-byteordered -Dcassandra.docker.version=3.11.4'
