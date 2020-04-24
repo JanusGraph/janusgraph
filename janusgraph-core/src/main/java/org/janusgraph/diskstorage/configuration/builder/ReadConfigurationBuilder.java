@@ -248,7 +248,12 @@ public class ReadConfigurationBuilder {
             Object localValue = entry.getValue();
 
             // Get the storage backend's setting and compare with localValue
-            Object storeValue = globalWrite.get(configOption, pathId.umbrellaElements);
+            Object storeValue;
+            if (globalWrite.has(configOption, pathId.umbrellaElements)) {
+                storeValue = globalWrite.get(configOption, pathId.umbrellaElements);
+            } else {
+                storeValue = configOption.getDefaultValue();
+            }
 
             // Check if the value is to be overwritten
             if (overwrite.has(configOption, pathId.umbrellaElements))

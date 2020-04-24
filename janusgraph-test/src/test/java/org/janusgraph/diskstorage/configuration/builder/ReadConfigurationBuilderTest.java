@@ -350,7 +350,7 @@ public class ReadConfigurationBuilderTest {
             if(INITIAL_JANUSGRAPH_VERSION.equals(argument)){
                 return "";
             }
-            return null;
+            return ((ConfigOption) argument).get(null);
         });
     }
 
