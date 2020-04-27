@@ -20,7 +20,6 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Contain;
-import org.janusgraph.core.schema.JanusGraphSchemaType;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.internal.ElementCategory;
@@ -32,9 +31,9 @@ import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.*;
-import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.janusgraph.graphdb.util.IndexCandidate;
 import org.janusgraph.graphdb.util.IndexCandidateGroup;
+import org.janusgraph.util.datastructures.PowerSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -217,14 +216,6 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     private static final int MAX_BASE_LIMIT = 20000;
     private static final int HARD_MAX_LIMIT = 100000;
 
-    private static final double EQUAL_CONDITION_SCORE = 4;
-    private static final double OTHER_CONDITION_SCORE = 1;
-    private static final double ORDER_MATCH = 2;
-    private static final double ALREADY_MATCHED_ADJUSTOR = 0.1;
-    private static final double CARDINALITY_SINGE_SCORE = 1000;
-    private static final double CARDINALITY_OTHER_SCORE = 1000;
-
-
     public GraphCentricQuery constructQuery(final ElementCategory resultType) {
         final QueryProfiler optProfiler = profiler.addNested(QueryProfiler.OPTIMIZATION);
         optProfiler.startTimer();
@@ -272,7 +263,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             return true;
         });
 
-        final Set<Condition> coveredClauses = Sets.newHashSet();
+        final Set<Condition> coveredClauses = new HashSet<>();
         final MutableBoolean isSorted = new MutableBoolean(orders.isEmpty());
         final JointIndexQuery jointQuery = selectIndices(indexCandidates, conditions, coveredClauses, isSorted);
 
@@ -338,7 +329,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         }
     }
 
-    private static Map.Entry<Condition,Collection<Object>> getEqualityConditionValues(
+    public static Map.Entry<Condition,Collection<Object>> getEqualityConditionValues(
             Condition<JanusGraphElement> condition, RelationType type) {
         for (final Condition c : condition.getChildren()) {
             if (c instanceof Or) {
@@ -444,33 +435,27 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
                                                       final Set<Condition> coveredClauses, final MutableBoolean isSorted) {
         final JointIndexQuery jointQuery = new JointIndexQuery();
         final Set<IndexCandidate> indexCandidates = new HashSet<>();
+
         // validate, enrich index candidates and calculate scores
         for (final IndexType index : rawCandidates) {
-            final IndexCandidate indexCandidate = enrichIndex(index, conditions);
-            if (indexCandidate == null) continue;
-            double score = 0.0;
-            for (final Condition c : indexCandidate.getSubcover()) {
-                score += getConditionBasicScore(c) + getIndexTypeScore(index);
+            try {
+                IndexCandidate ic = new IndexCandidate(index, conditions, serializer);
+                ic.calculateScoreBruteForce();
+                indexCandidates.add(ic);
+            } catch (IllegalArgumentException ignored) {
+                // ignore invalid index candidates
             }
-            indexCandidate.setScore(score);
-            indexCandidates.add(indexCandidate);
         }
 
         IndexCandidateGroup bestGroup = null;
-        for (Set<IndexCandidate> subset : Sets.powerSet(indexCandidates)) {
+        for (Set<IndexCandidate> subset : new PowerSet<IndexCandidate>(indexCandidates)) {
             if (subset.isEmpty()) continue;
-            final IndexCandidateGroup group = new IndexCandidateGroup();
-            double score = 0.0;
-            for (IndexCandidate c : subset) {
-                group.getCoveredClauses().addAll(c.getSubcover());
-                score += c.getScore();
-            }
-            group.setTotalScore(score);
-            group.setIndexCandidates(subset);
+            final IndexCandidateGroup group = new IndexCandidateGroup(subset);
             if (group.compareTo(bestGroup) > 0) {
                 bestGroup = group;
             }
         }
+
         if (bestGroup != null) {
             coveredClauses.addAll(bestGroup.getCoveredClauses());
             List<IndexCandidate> bestIndexes = new ArrayList<>(bestGroup.getIndexCandidates());
@@ -483,6 +468,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
                 addToJointQuery(c, jointQuery);
             }
         }
+
         return jointQuery;
     }
 
@@ -504,72 +490,30 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             boolean candidateSupportsSort = false;
 
             for (final IndexType index : rawCandidates) {
-                final IndexCandidate indexCandidate = enrichIndex(index, conditions);
-                if (indexCandidate == null) continue;
+                try {
+                    final IndexCandidate indexCandidate = new IndexCandidate(index, conditions, serializer);
 
-                // start calculating score
-                double score = 0.0;
-                boolean coversAdditionalClause = false;
-                for (final Condition c : indexCandidate.getSubcover()) {
-                    double s = getConditionBasicScore(c);
-                    if (coveredClauses.contains(c)) s=s*ALREADY_MATCHED_ADJUSTOR;
-                    else coversAdditionalClause = true;
-                    score += s + getIndexTypeScore(index);
-                }
-                boolean supportsSort = orders.isEmpty() ||
-                    coveredClauses.isEmpty() && index.isMixedIndex() && indexCoversOrder((MixedIndexType) index, orders);
-                if (supportsSort) score+=ORDER_MATCH;
-                indexCandidate.setScore(score);
-                if (coversAdditionalClause && (bestCandidate == null || score > bestCandidate.getScore())) {
-                    bestCandidate = indexCandidate;
-                    candidateSupportsSort = supportsSort;
+                    boolean supportsSort = orders.isEmpty() ||
+                        coveredClauses.isEmpty() && index.isMixedIndex() && indexCoversOrder((MixedIndexType) index, orders);
+                    indexCandidate.calculateScoreApproximation(coveredClauses, supportsSort);
+
+                    if (!indexCandidate.isCoveredBy(coveredClauses) && (bestCandidate == null || indexCandidate.getScore() > bestCandidate.getScore())) {
+                        bestCandidate = indexCandidate;
+                        candidateSupportsSort = supportsSort;
+                    }
+                } catch (IllegalArgumentException ignored) {
+                    // ignore invalid index candidates
                 }
             }
             if (bestCandidate!=null) {
                 if (coveredClauses.isEmpty()) isSorted.setValue(candidateSupportsSort);
-                coveredClauses.addAll(bestCandidate.getSubcover());
+                coveredClauses.addAll(bestCandidate.getSubCover());
                 addToJointQuery(bestCandidate, jointQuery);
             } else {
                 break;
             }
         }
         return jointQuery;
-    }
-
-    /**
-     * Validate given index candidate and enrich it
-     * @param index
-     * @param conditions
-     * @return
-     */
-    private IndexCandidate enrichIndex(final IndexType index, final MultiCondition<JanusGraphElement> conditions) {
-        final Set<Condition> subcover = Sets.newHashSet();
-        Object subCondition = null;
-        //Check that this index actually applies in case of a schema constraint
-        if (index.hasSchemaTypeConstraint()) {
-            final JanusGraphSchemaType type = index.getSchemaTypeConstraint();
-            final Map.Entry<Condition,Collection<Object>> equalCon
-                = getEqualityConditionValues(conditions,ImplicitKey.LABEL);
-            if (equalCon==null) return null;
-            final Collection<Object> labels = equalCon.getValue();
-            assert labels.size() >= 1;
-            if (labels.size()>1) {
-                log.warn("The query optimizer currently does not support multiple label constraints in query: {}",this);
-                return null;
-            }
-            if (!type.name().equals(Iterables.getOnlyElement(labels))) {
-                return null;
-            }
-            subcover.add(equalCon.getKey());
-        }
-
-        if (index.isCompositeIndex()) {
-            subCondition = indexCover((CompositeIndexType) index,conditions,subcover);
-        } else {
-            subCondition = indexCover((MixedIndexType) index,conditions,serializer,subcover);
-        }
-        if (subCondition == null || subcover.isEmpty()) return null;
-        return new IndexCandidate(index, subcover, subCondition, 0);
     }
 
     private void addToJointQuery(final IndexCandidate indexCandidate, final JointIndexQuery jointQuery) {
@@ -580,25 +524,5 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             jointQuery.add((MixedIndexType) indexCandidate.getIndex(), serializer.getQuery(
                 (MixedIndexType) indexCandidate.getIndex(), (Condition) indexCandidate.getSubCondition(), orders));
         }
-    }
-
-    private double getConditionBasicScore(final Condition c) {
-        if (c instanceof PredicateCondition && ((PredicateCondition) c).getPredicate() == Cmp.EQUAL) {
-            return EQUAL_CONDITION_SCORE;
-        } else {
-            return OTHER_CONDITION_SCORE;
-        }
-    }
-
-    private double getIndexTypeScore(final IndexType index) {
-        double score = 0.0;
-        if (index.isCompositeIndex()) {
-            if (((CompositeIndexType)index).getCardinality() == Cardinality.SINGLE) {
-                score = CARDINALITY_SINGE_SCORE;
-            } else {
-                score = CARDINALITY_OTHER_SCORE;
-            }
-        }
-        return score;
     }
 }

@@ -24,34 +24,33 @@ import java.util.Set;
  */
 public class IndexCandidateGroup implements Comparable<IndexCandidateGroup> {
 
-    private Set<IndexCandidate> indexCandidates = new HashSet<>();
+    private Set<IndexCandidate> indexCandidates;
+    private Set<Condition> coveredClauses;
 
-    private Set<Condition> coveredClauses = new HashSet<>();
+    // initialize with the worst possible score
+    private double score = Double.NEGATIVE_INFINITY;
 
-    private double totalScore;
+    public IndexCandidateGroup(Set<IndexCandidate> indexCandidates) {
+        this.indexCandidates = indexCandidates;
+        this.coveredClauses = new HashSet<>();
+
+        indexCandidates.forEach(c -> coveredClauses.addAll(c.getSubCover()));
+    }
 
     public Set<IndexCandidate> getIndexCandidates() {
         return indexCandidates;
-    }
-
-    public void setIndexCandidates(Set<IndexCandidate> indexCandidates) {
-        this.indexCandidates = indexCandidates;
     }
 
     public Set<Condition> getCoveredClauses() {
         return coveredClauses;
     }
 
-    public void setCoveredClauses(Set<Condition> coveredClauses) {
-        this.coveredClauses = coveredClauses;
-    }
-
     public double getTotalScore() {
-        return totalScore;
-    }
+        if (score == Double.NEGATIVE_INFINITY) {
+            score = indexCandidates.stream().mapToDouble(IndexCandidate::getScore).sum();
+        }
 
-    public void setTotalScore(double totalScore) {
-        this.totalScore = totalScore;
+        return score;
     }
 
     /**
@@ -67,6 +66,6 @@ public class IndexCandidateGroup implements Comparable<IndexCandidateGroup> {
         if (coveredClauses.size() < that.getCoveredClauses().size()) return -1;
         if (indexCandidates.size() < that.getIndexCandidates().size()) return 1;
         if (indexCandidates.size() > that.getIndexCandidates().size()) return -1;
-        return Double.compare(totalScore, that.totalScore);
+        return Double.compare(getTotalScore(), that.getTotalScore());
     }
 }
