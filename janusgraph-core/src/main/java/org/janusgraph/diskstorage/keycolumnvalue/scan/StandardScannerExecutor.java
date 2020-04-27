@@ -177,7 +177,12 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
                 pullThreads[i].join(10);
                 if (pullThreads[i].isAlive()) {
                     log.warn("Data pulling thread [{}] did not terminate. Forcing termination",i);
-                    pullThreads[i].interrupt();
+                    if (storeFeatures.supportsInterruption()) {
+                        pullThreads[i].interrupt();
+                    } else {
+                        log.warn("Store does not support interruption, so data pulling thread [{}] cannot be interrupted", i);
+                        pullThreads[i].finished = true;
+                    }
                 }
             }
 
@@ -201,7 +206,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
                 set(metrics);
             }
         } catch (Throwable e) {
-            log.error("Exception occurred during job execution: {}",e);
+            log.error("Exception occurred during job execution:", e);
             job.workerIterationEnd(metrics);
             setException(e);
         } finally {
@@ -221,7 +226,12 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
             if (pullThreads!=null) {
                 for (DataPuller pullThread : pullThreads) {
                     if (pullThread.isAlive()) {
-                        pullThread.interrupt();
+                        if (storeFeatures.supportsInterruption()) {
+                            pullThread.interrupt();
+                        } else {
+                            log.warn("Store does not support interruption, so data pulling thread cannot be interrupted");
+                            pullThread.finished = true;
+                        }
                     }
                 }
             }

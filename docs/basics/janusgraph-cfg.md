@@ -368,6 +368,7 @@ BerkeleyDB JE configuration options
 
 | Name | Description | Datatype | Default Value | Mutability |
 | ---- | ---- | ---- | ---- | ---- |
+| storage.berkeleyje.cache-mode | Modes that can be specified for control over caching of records in the JE in-memory cache | String | DEFAULT | MASKABLE |
 | storage.berkeleyje.cache-percentage | Percentage of JVM heap reserved for BerkeleyJE's cache | Integer | 65 | MASKABLE |
 | storage.berkeleyje.isolation-level | The isolation level used by transactions | String | REPEATABLE_READ | MASKABLE |
 | storage.berkeleyje.lock-mode | The BDB record lock mode used for read operations | String | LockMode.DEFAULT | MASKABLE |

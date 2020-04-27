@@ -15,6 +15,7 @@
 package org.janusgraph.diskstorage.berkeleyje;
 
 import com.google.common.base.Preconditions;
+import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseException;
@@ -38,15 +39,17 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
     private volatile Transaction tx;
     private volatile boolean isOpen;
     private final List<Cursor> openCursors = new ArrayList<>();
-    private final LockMode lm;
+    private final LockMode lockMode;
+    private final CacheMode cacheMode;
 
-    public BerkeleyJETx(Transaction t, LockMode lockMode, BaseTransactionConfig config) {
+    public BerkeleyJETx(Transaction t, LockMode lockMode, CacheMode cacheMode, BaseTransactionConfig config) {
         super(config);
         tx = t;
-        lm = lockMode;
+        this.lockMode = lockMode;
+        this.cacheMode = cacheMode;
         isOpen = true;
         // tx may be null
-        Preconditions.checkNotNull(lm);
+        Preconditions.checkNotNull(this.lockMode);
     }
 
     public Transaction getTransaction() {
@@ -77,8 +80,12 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
         }
     }
 
+    CacheMode getCacheMode() {
+        return cacheMode;
+    }
+
     LockMode getLockMode() {
-        return lm;
+        return lockMode;
     }
 
     @Override
