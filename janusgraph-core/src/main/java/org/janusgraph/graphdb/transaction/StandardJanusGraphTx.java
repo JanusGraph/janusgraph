@@ -89,7 +89,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -1321,24 +1320,13 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         public Iterator<JanusGraphElement> execute(final GraphCentricQuery query, final JointIndexQuery indexQuery, final Object exeInfo, final QueryProfiler profiler) {
             Iterator<JanusGraphElement> iterator;
             if (!indexQuery.isEmpty()) {
-                final List<QueryUtil.IndexCall<Object>> retrievals = new ArrayList<>();
-                // Leave first index for streaming, and prepare the rest for intersecting and lookup
-                for (int i = 1; i < indexQuery.size(); i++) {
-                    final JointIndexQuery.Subquery subquery = indexQuery.getQuery(i);
-                    retrievals.add(limit -> {
-                        final JointIndexQuery.Subquery adjustedQuery = subquery.updateLimit(limit);
-                        try {
-                            return indexCache.get(adjustedQuery,
-                                () -> QueryProfiler.profile(subquery.getProfiler(), adjustedQuery, q -> indexSerializer.query(q, txHandle).collect(Collectors.toList())));
-                        } catch (Exception e) {
-                            throw new JanusGraphException("Could not call index", e.getCause());
-                        }
-                    });
-                }
-                // Constructs an iterator which lazily streams results from 1st index, and filters by looking up in the intersection of results from all other indices (if any)
-                // NOTE NO_LIMIT is passed to processIntersectingRetrievals to prevent incomplete intersections, which could lead to missed results
-                iterator = new SubqueryIterator(indexQuery.getQuery(0), indexSerializer, txHandle, indexCache, indexQuery.getLimit(), getConversionFunction(query.getResultType()),
-                        retrievals.isEmpty() ? null: QueryUtil.processIntersectingRetrievals(retrievals, Query.NO_LIMIT));
+                // Constructs an iterator which lazily streams results if only one query is given, otherwise filters results
+                // by doing an intersection from all subQueries. When there is more than one query and adjustQuery is
+                // enabled, we must use NO_LIMIT to ensure result orders remain unchanged among executions.
+                final int limit = getGraph().getConfiguration().adjustQueryLimit() && indexQuery.getQueries().size() > 1
+                    ? Query.NO_LIMIT : indexQuery.getLimit();
+                iterator = new SubqueryIterator(indexQuery.getQueries(), indexSerializer, txHandle, indexCache,
+                    limit, getConversionFunction(query.getResultType()));
             } else {
                 if (config.hasForceIndexUsage()) throw new JanusGraphException("Could not find a suitable index to answer graph query and graph scans are disabled: " + query);
                 log.warn("Query requires iterating over all vertices [{}]. For better performance, use indexes", query.getCondition());
