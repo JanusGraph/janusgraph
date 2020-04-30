@@ -40,6 +40,46 @@ The versions of JanusGraph listed below are outdated and will no longer receive 
 
 ## Release Notes
 
+### Version 0.5.2 (Release Date: x, 2020)
+
+```xml tab='Maven'
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.5.2</version>
+</dependency>
+```
+
+```groovy tab='Gradle'
+compile "org.janusgraph:janusgraph-core:0.5.2"
+```
+
+**Tested Compatibility:**
+
+* Apache Cassandra 2.2.10, 3.0.14, 3.11.0
+* Apache HBase 1.2.6, 1.3.1, 1.4.10, 2.1.5
+* Google Bigtable 1.3.0, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.10.0, 1.11.0, 1.14.0
+* Oracle BerkeleyJE 7.5.11
+* Elasticsearch 6.0.1, 6.6.0, 7.6.1
+* Apache Lucene 7.0.0
+* Apache Solr 7.0.0
+* Apache TinkerPop 3.4.6
+* Java 1.8
+
+For more information on features and bug fixes in 0.5.2, see the GitHub milestone:
+
+-   <https://github.com/JanusGraph/janusgraph/milestone/19?closed=1>
+
+#### Upgrade Instructions
+
+##### ElasticSearch index store names cache now enabled for any amount of indexes per store
+
+In JanusGraph version `0.5.0` and `0.5.1` all ElasticSearch index store names are cached for efficient index store name 
+retrieval and the cache is disabled if there are more than `50000` indexes available per index store. 
+From JanusGraph version `0.5.2` index store names cache isn't limited to `50000` but instead can be disabled by using 
+a new added parameter `enable_index_names_cache`. It is still recommended to disable index store names cache if more 
+than `50000` indexes are used per index store.
+
 ### Version 0.5.1 (Release Date: March 25, 2020)
 
 ```xml tab='Maven'

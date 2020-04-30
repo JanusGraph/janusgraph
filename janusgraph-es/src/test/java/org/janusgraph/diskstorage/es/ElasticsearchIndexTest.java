@@ -22,6 +22,7 @@ import com.google.common.collect.Multimap;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.client.methods.*;
@@ -57,13 +58,17 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -122,6 +127,10 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         final String index = "es";
         final CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
         cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
+        return makeESTestConfig(index, cc);
+    }
+
+    public Configuration makeESTestConfig(String index, CommonsConfiguration cc) {
         return esr.setConfiguration(new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,cc, BasicConfiguration.Restriction.NONE), index)
             .set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index)
             .restrictTo(index);
@@ -395,6 +404,72 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertEquals(1, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Cmp.EQUAL, "John"))).count());
         assertEquals(1, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Cmp.EQUAL, "John Doe"))).count());
         assertEquals(2, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Text.CONTAINS, "John"))).count());
+    }
+
+    @Test
+    public void testShouldNotShareIndexStoreNameCacheBetweenElasticSearchIndexInstances() throws BackendException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+        final String index1 = "es1";
+        final String index2 = "es2";
+
+        final CommonsConfiguration cc1 = new CommonsConfiguration(new BaseConfiguration());
+        cc1.set("index." + index1 + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
+        cc1.set("index." + index1 + ".elasticsearch.enable_index_names_cache", true);
+
+        final CommonsConfiguration cc2 = new CommonsConfiguration(new BaseConfiguration());
+        cc1.set("index." + index2 + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
+        cc1.set("index." + index2 + ".elasticsearch.enable_index_names_cache", true);
+
+        Configuration configuration1 = makeESTestConfig(index1, cc1);
+        Configuration configuration2 = makeESTestConfig(index2, cc2);
+
+        ElasticSearchIndex instance1 = new ElasticSearchIndex(configuration1);
+        ElasticSearchIndex instance2 = new ElasticSearchIndex(configuration2);
+
+        String indexName1 = configuration1.get(INDEX_NAME);
+        String indexName2 = configuration2.get(INDEX_NAME);
+
+        Map<String, String> indexStoreNamesCache1 = (Map<String, String>) FieldUtils.readField(instance1, "indexStoreNamesCache", true);
+        Map<String, String> indexStoreNamesCache2 = (Map<String, String>) FieldUtils.readField(instance2, "indexStoreNamesCache", true);
+
+        Method method1 = instance1.getClass().getDeclaredMethod("getIndexStoreName", String.class);
+        method1.setAccessible(true);
+
+        Method method2 = instance1.getClass().getDeclaredMethod("getIndexStoreName", String.class);
+        method2.setAccessible(true);
+
+        String store = "Test_store";
+
+        method1.invoke(instance1, store);
+        assertEquals(1, indexStoreNamesCache1.size());
+        assertEquals(0, indexStoreNamesCache2.size());
+
+        method2.invoke(instance2, store);
+        assertEquals(1, indexStoreNamesCache1.size());
+        assertEquals(1, indexStoreNamesCache2.size());
+
+        assertEquals(indexName1 + ElasticSearchIndex.INDEX_NAME_SEPARATOR + store.toLowerCase(), indexStoreNamesCache1.get(store));
+        assertEquals(indexName2 + ElasticSearchIndex.INDEX_NAME_SEPARATOR + store.toLowerCase(), indexStoreNamesCache2.get(store));
+    }
+
+    @Test
+    public void testShouldNotUseIndexStoreNameCache() throws BackendException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+        final String index = "es1";
+
+        final CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
+        cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
+        cc.set("index." + index + ".elasticsearch.enable_index_names_cache", false);
+
+        ElasticSearchIndex instance = new ElasticSearchIndex(makeESTestConfig(index, cc));
+
+        Map<String, String> indexStoreNamesCache = (Map<String, String>) FieldUtils.readField(instance, "indexStoreNamesCache", true);
+
+        Method method = instance.getClass().getDeclaredMethod("getIndexStoreName", String.class);
+        method.setAccessible(true);
+
+        String store = "Test_store";
+
+        method.invoke(instance, store);
+        assertEquals(0, indexStoreNamesCache.size());
     }
 
     private CloseableHttpResponse getESMapping(String indexName, String mappingTypeName) throws IOException, URISyntaxException {
