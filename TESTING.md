@@ -129,11 +129,9 @@ mvn clean install -pl janusgraph-es -Delasticsearch.docker.version=6.0.0 -Delast
 **Note** Running CQL tests require Docker.
 
 CQL tests are executed using [testcontainers-java](https://www.testcontainers.org/). 
-CQL tests can be executed against a Cassandra 2 using the profile `cassandra2`, 
-a Cassandra 3 using the profile `cassandra3`, or a Scylla 3 using the profile `scylladb`.
+CQL tests can be executed against a Cassandra 3 using the profile `cassandra3`, or a Scylla 3 using the profile `scylladb`.
 
 ```bash
-mvn clean install -pl janusgraph-cql -Pcassandra2-murmur
 mvn clean install -pl janusgraph-cql -Pcassandra3-murmur
 mvn clean install -pl janusgraph-cql -Pscylladb
 ```

@@ -20,7 +20,6 @@
         <test.jvm.opts>-Xms256m -Xmx1280m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</test.jvm.opts>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <top.level.basedir>${basedir}/..</top.level.basedir>
-        <test.docker.version.cassandra2>2.2.14</test.docker.version.cassandra2>
         <test.docker.version.cassandra3>3.11.4</test.docker.version.cassandra3>
     </properties>
 
@@ -258,44 +257,6 @@
 	        <properties>
 	            <test.extra.jvm.opts>${jacoco.opts} ${test.javaagent.opts}</test.extra.jvm.opts>
 	        </properties>
-        </profile>
-
-        <profile>
-            <id>cassandra2-byteordered</id>
-	        <activation>
-	            <activeByDefault>false</activeByDefault>
-	        </activation>
-            <properties>
-                <cassandra.docker.version>${test.docker.version.cassandra2}</cassandra.docker.version>
-                <cassandra.docker.partitioner>${test.byteordered}</cassandra.docker.partitioner>
-                <test.skip.murmur-serial>true</test.skip.murmur-serial>
-                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
-            </properties>
-        </profile>
-        <profile>
-            <id>cassandra2-murmur</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <cassandra.docker.version>${test.docker.version.cassandra2}</cassandra.docker.version>
-                <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
-                <test.skip.murmur-serial>false</test.skip.murmur-serial>
-                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
-            </properties>
-        </profile>
-        <profile>
-            <id>cassandra2-murmur-ssl</id>
-	        <activation>
-	            <activeByDefault>false</activeByDefault>
-	        </activation>
-            <properties>
-                <cassandra.docker.version>${test.docker.version.cassandra2}</cassandra.docker.version>
-                <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
-                <cassandra.docker.useSSL>true</cassandra.docker.useSSL>
-                <test.skip.murmur-serial>false</test.skip.murmur-serial>
-                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
-            </properties>
         </profile>
 
         <profile>
