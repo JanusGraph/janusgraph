@@ -21,6 +21,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVEntryMutation;
 
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * {@link Mutation} type for {@link KeyColumnValueStore}.
@@ -32,6 +33,10 @@ public class KCVMutation extends Mutation<Entry,StaticBuffer> {
 
     public KCVMutation(List<Entry> additions, List<StaticBuffer> deletions) {
         super(additions, deletions);
+    }
+
+    public KCVMutation(Supplier<List<Entry>> additionsCopySupplier, Supplier<List<StaticBuffer>> deletionsCopySupplier) {
+        super(additionsCopySupplier, deletionsCopySupplier);
     }
 
     @Override
