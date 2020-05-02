@@ -18,6 +18,7 @@ import com.google.common.base.Preconditions;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Container for collection mutations against a data store.
@@ -33,12 +34,23 @@ public abstract class Mutation<E,K> {
     private List<K> deletions;
 
     public Mutation(List<E> additions, List<K> deletions) {
-        Preconditions.checkNotNull(additions);
-        Preconditions.checkNotNull(deletions);
-        if (additions.isEmpty()) this.additions=null;
-        else this.additions = new ArrayList<>(additions);
-        if (deletions.isEmpty()) this.deletions=null;
-        else this.deletions = new ArrayList<>(deletions);
+        assert additions!=null;
+        assert deletions!=null;
+        this.additions = additions.isEmpty()? null : new ArrayList<>(additions);
+        this.deletions = deletions.isEmpty()? null : new ArrayList<>(deletions);
+    }
+
+    public Mutation(Supplier<List<E>> additionsCopySupplier, Supplier<List<K>> deletionsCopySupplier) {
+        additions = additionsCopySupplier.get();
+        deletions = deletionsCopySupplier.get();
+        assert additions!=null;
+        assert deletions!=null;
+        if (additions.isEmpty()){
+            additions=null;
+        }
+        if (deletions.isEmpty()){
+            deletions=null;
+        }
     }
 
     public Mutation() {
