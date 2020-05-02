@@ -72,6 +72,7 @@ import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -255,6 +256,12 @@ public class ElasticSearchIndex implements IndexProvider {
         new ConfigOption<>(ELASTICSEARCH_NS, "retry_on_conflict",
             "Specify how many times should the operation be retried when a conflict occurs.", ConfigOption.Type.MASKABLE, 0);
 
+    public static final ConfigOption<Boolean> ENABLE_INDEX_STORE_NAMES_CACHE =
+        new ConfigOption<>(ELASTICSEARCH_NS, "enable_index_names_cache",
+            "Enables cache for generated index store names. " +
+                "It is recommended to always enable index store names cache unless you have more then 50000 indexes " +
+                "per index store.", ConfigOption.Type.MASKABLE, true);
+
     public static final int HOST_PORT_DEFAULT = 9200;
 
     /**
@@ -289,7 +296,7 @@ public class ElasticSearchIndex implements IndexProvider {
             "    }",
             "}");
 
-    private static final String INDEX_NAME_SEPARATOR = "_";
+    static final String INDEX_NAME_SEPARATOR = "_";
     private static final String SCRIPT_ID_SEPARATOR = "-";
 
     private static final String MAX_OPEN_SCROLL_CONTEXT_PARAMETER = "search.max_open_scroll_context";
@@ -301,9 +308,9 @@ public class ElasticSearchIndex implements IndexProvider {
     private static final Parameter[] TRACK_TOTAL_HITS_DISABLED_PARAMETERS = new Parameter[]{new Parameter<>(TRACK_TOTAL_HITS_PARAMETER, false)};
     private static final Map<String, Object> TRACK_TOTAL_HITS_DISABLED_REQUEST_BODY = ImmutableMap.of(TRACK_TOTAL_HITS_PARAMETER, false);
 
-    private static final Map<String, String> INDEX_STORE_NAMES_CACHE = new ConcurrentHashMap<>();
-    private static final int CACHE_LIMIT_TO_DISABLE = 50000;
-    private static volatile boolean indexStoreNameCacheEnabled = true;
+    private final Function<String, String> generateIndexStoreNameFunction = this::generateIndexStoreName;
+    private final Map<String, String> indexStoreNamesCache = new ConcurrentHashMap<>();
+    private final boolean indexStoreNameCacheEnabled;
 
     private final AbstractESCompat compat;
     private final ElasticSearchClient client;
@@ -330,6 +337,7 @@ public class ElasticSearchIndex implements IndexProvider {
         createSleep = config.get(CREATE_SLEEP);
         ingestPipelines = config.getSubset(ES_INGEST_PIPELINES);
         useMappingForES7 = config.get(USE_MAPPING_FOR_ES7);
+        indexStoreNameCacheEnabled = config.get(ENABLE_INDEX_STORE_NAMES_CACHE);
         batchSize = config.get(INDEX_MAX_RESULT_SET_SIZE);
         log.debug("Configured ES query nb result by query to {}", batchSize);
 
@@ -475,23 +483,7 @@ public class ElasticSearchIndex implements IndexProvider {
     private String getIndexStoreName(String store) {
 
         if(indexStoreNameCacheEnabled){
-
-            String cachedName = INDEX_STORE_NAMES_CACHE.get(store);
-
-            if(cachedName != null){
-                return cachedName;
-            }
-
-            cachedName = generateIndexStoreName(store);
-
-            if(INDEX_STORE_NAMES_CACHE.size() < CACHE_LIMIT_TO_DISABLE){
-                INDEX_STORE_NAMES_CACHE.put(store, cachedName);
-            } else {
-                indexStoreNameCacheEnabled = false;
-                INDEX_STORE_NAMES_CACHE.clear();
-            }
-
-            return cachedName;
+            return indexStoreNamesCache.computeIfAbsent(store, generateIndexStoreNameFunction);
         }
 
         return generateIndexStoreName(store);
