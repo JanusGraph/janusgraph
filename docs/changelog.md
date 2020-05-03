@@ -40,7 +40,7 @@ The versions of JanusGraph listed below are outdated and will no longer receive 
 
 ## Release Notes
 
-### Version 0.5.2 (Release Date: x, 2020)
+### Version 0.5.2 (Release Date: May 3, 2020)
 
 ```xml tab='Maven'
 <dependency>
