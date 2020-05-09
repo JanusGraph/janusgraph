@@ -39,7 +39,7 @@ while [ ! -z "$1" ]; do
   esac
 done
 
-JANUSGRAPH_BUILD_OPTIONS=""
+JANUSGRAPH_BUILD_OPTIONS="-pl janusgraph-cql -am"
 
 [ -z "${RUN_TESTS}" ] && JANUSGRAPH_BUILD_OPTIONS="${JANUSGRAPH_BUILD_OPTIONS} -DskipTests"
 [ -z "${RUN_TINKERPOP_TESTS}" ] || JANUSGRAPH_BUILD_OPTIONS="${JANUSGRAPH_BUILD_OPTIONS} -Dtest.skip.tp=false"
