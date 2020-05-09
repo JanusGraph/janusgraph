@@ -25,11 +25,6 @@
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>tinkergraph-gremlin</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.apache.tinkerpop</groupId>
-            <artifactId>gremlin-server</artifactId>
-            <optional>true</optional>
-        </dependency>
         <!-- Utility -->
         <dependency>
             <groupId>org.glassfish</groupId>

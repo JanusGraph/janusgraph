@@ -15,7 +15,12 @@
 package org.janusgraph.core;
 
 import com.google.common.base.Preconditions;
-
+import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.core.log.LogProcessorFramework;
 import org.janusgraph.core.log.TransactionRecovery;
 import org.janusgraph.diskstorage.Backend;
@@ -23,32 +28,24 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.StandardStoreManager;
 import org.janusgraph.diskstorage.configuration.*;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
-import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
-import org.janusgraph.graphdb.management.JanusGraphManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
-import static org.janusgraph.util.system.LoggerUtil.sanitizeAndLaunder;
-import static org.janusgraph.graphdb.management.JanusGraphManager.JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG;
-
+import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.log.StandardLogProcessorFramework;
 import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.commons.lang.StringUtils;
 import org.janusgraph.util.system.IOUtils;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.time.Instant;
-import java.util.*;
+import java.util.Iterator;
+import java.util.Spliterators;
 import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
+
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.util.system.LoggerUtil.sanitizeAndLaunder;
 
 /**
  * JanusGraphFactory is used to open or instantiate a JanusGraph graph database.
@@ -144,53 +141,21 @@ public class JanusGraphFactory {
     public static JanusGraph open(ReadConfiguration configuration, String backupName) {
         final ModifiableConfiguration config = new ModifiableConfiguration(ROOT_NS, (WriteConfiguration) configuration, BasicConfiguration.Restriction.NONE);
         final String graphName = config.has(GRAPH_NAME) ? config.get(GRAPH_NAME) : backupName;
-        final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
-        if (null != graphName) {
-            Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
-            return (JanusGraph) jgm.openGraph(graphName, gName -> new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(configuration)));
-        } else {
-            if (jgm != null) {
-                log.warn("You should supply \"graph.graphname\" in your .properties file configuration if you are opening " +
-                         "a graph that has not already been opened at server start, i.e. it was " +
-                         "defined in your YAML file. This will ensure the graph is tracked by the JanusGraphManager, " +
-                         "which will enable autocommit and rollback functionality upon all gremlin script executions. " +
-                         "Note that JanusGraphFactory#open(String === shortcut notation) does not support consuming the property " +
-                         "\"graph.graphname\" so these graphs should be accessed dynamically by supplying a .properties file here " +
-                         "or by using the ConfiguredGraphFactory.");
-            }
-            return new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(configuration));
-        }
+        return new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(configuration));
     }
 
     /**
-     *  Return a Set of graph names stored in the {@link JanusGraphManager}
-     *
-     *  @return Set&lt;String&gt;
-     */
-    public static Set<String> getGraphNames() {
-       final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
-       Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
-       return jgm.getGraphNames();
-    }
-
-    /**
-     * Removes {@link Graph} from {@link JanusGraphManager} graph reference tracker, if exists
-     * there.
+     * Closes the graph.
      *
      * @param graph Graph
      */
     public static void close(Graph graph) throws Exception {
-        final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
-        if (jgm != null) {
-            jgm.removeGraph(((StandardJanusGraph) graph).getGraphName());
-        }
         graph.close();
     }
 
     /**
      * Drop graph database, deleting all data in storage and indexing backends. Graph can be open or closed (will be
-     * closed as part of the drop operation). The graph is also removed from the {@link JanusGraphManager}
-     * graph reference tracker, if there.
+     * closed as part of the drop operation).
      *
      * <p><b>WARNING: This is an irreversible operation that will delete all graph and index data.</b></p>
      * @param graph JanusGraph graph database. Can be open or closed.
@@ -200,10 +165,6 @@ public class JanusGraphFactory {
         Preconditions.checkNotNull(graph);
         Preconditions.checkArgument(graph instanceof StandardJanusGraph,"Invalid graph instance detected: %s",graph.getClass());
         final StandardJanusGraph g = (StandardJanusGraph) graph;
-        final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
-        if (jgm != null) {
-            jgm.removeGraph(g.getGraphName());
-        }
         if (graph.isOpen()) {
             graph.close();
         }

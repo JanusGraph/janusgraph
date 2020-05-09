@@ -91,7 +91,6 @@ public class ManagementSystem implements JanusGraphManagement {
     private final StandardJanusGraphTx transaction;
 
     private final Set<JanusGraphSchemaVertex> updatedTypes;
-    private boolean evictGraphFromCache;
     private final List<Callable<Boolean>> updatedTypeTriggers;
 
     private final Instant txStartTime;
@@ -114,7 +113,6 @@ public class ManagementSystem implements JanusGraphManagement {
         this.userConfig = new UserModifiableConfiguration(modifyConfig, configVerifier);
 
         this.updatedTypes = new HashSet<>();
-        this.evictGraphFromCache = false;
         this.updatedTypeTriggers = new ArrayList<>();
         this.graphShutdownRequired = false;
 
@@ -191,8 +189,8 @@ public class ManagementSystem implements JanusGraphManagement {
         transaction.commit();
 
         //Communicate schema changes
-        if (!updatedTypes.isEmpty() || evictGraphFromCache) {
-            managementLogger.sendCacheEviction(updatedTypes, evictGraphFromCache, updatedTypeTriggers, getOpenInstancesInternal());
+        if (!updatedTypes.isEmpty()) {
+            managementLogger.sendCacheEviction(updatedTypes, updatedTypeTriggers, getOpenInstancesInternal());
             for (JanusGraphSchemaVertex schemaVertex : updatedTypes) {
                 schemaCache.expireSchemaElement(schemaVertex.longId());
             }
@@ -872,30 +870,6 @@ public class ManagementSystem implements JanusGraphManagement {
         return future;
     }
 
-    /**
-     * Upon the open managementsystem's commit, this graph will be asynchronously evicted from the cache on all JanusGraph nodes in your
-     * cluster, once there are no open transactions on this graph on each respective JanusGraph node
-     * and assuming each node is correctly configured to use the {@link org.janusgraph.graphdb.management.JanusGraphManager}.
-     */
-    public void evictGraphFromCache() {
-        this.evictGraphFromCache = true;
-        setUpdateTrigger(new GraphCacheEvictionCompleteTrigger(this.graph.getGraphName()));
-    }
-
-    private static class GraphCacheEvictionCompleteTrigger implements Callable<Boolean> {
-        private static final Logger log = LoggerFactory.getLogger(GraphCacheEvictionCompleteTrigger.class);
-        private final String graphName;
-
-        private GraphCacheEvictionCompleteTrigger(String graphName) {
-            this.graphName = graphName;
-        }
-
-        @Override
-        public Boolean call() {
-            log.info("Graph {} has been removed from the graph cache on every JanusGraph node in the cluster.", graphName);
-            return true;
-        }
-    }
 
     private static class EmptyIndexJobFuture implements IndexJobFuture {
 

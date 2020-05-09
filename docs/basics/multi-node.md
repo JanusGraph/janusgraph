@@ -113,7 +113,6 @@ There are a few channelizers you can choose from:
 
 1.  org.janusgraph.channelizers.JanusGraphWebSocketChannelizer
 2.  org.janusgraph.channelizers.JanusGraphHttpChannelizer
-3.  org.janusgraph.channelizers.JanusGraphNioChannelizer
 4.  org.janusgraph.channelizers.JanusGraphWsAndHttpChannelizer
 
 All of the channelizers share the exact same functionality as their

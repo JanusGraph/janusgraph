@@ -1,4 +1,4 @@
-// Copyright 2017 JanusGraph Authors
+// Copyright 2018 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,19 +14,8 @@
 
 package org.janusgraph.graphdb.database.management;
 
-import org.janusgraph.diskstorage.log.MessageReader;
-import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
-
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Callable;
-
-/**
- * @author Matthias Broecheler (me@matthiasb.com)
- */
-public interface ManagementLogger extends MessageReader {
-
-    void sendCacheEviction(Set<JanusGraphSchemaVertex> updatedTypes,
-                                             List<Callable<Boolean>> updatedTypeTriggers,
-                                             Set<String> openInstances);
+public enum GraphCacheEvictionAction {
+    EVICT,
+    DO_NOT_EVICT
 }
+

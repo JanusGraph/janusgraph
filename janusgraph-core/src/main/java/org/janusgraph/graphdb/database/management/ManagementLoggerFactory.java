@@ -1,4 +1,4 @@
-// Copyright 2018 JanusGraph Authors
+// Copyright 2020 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,9 +14,13 @@
 
 package org.janusgraph.graphdb.database.management;
 
-public enum GraphCacheEvictionAction {
+import org.janusgraph.diskstorage.log.Log;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.database.cache.SchemaCache;
 
-    EVICT,
-    DO_NOT_EVICT
+public class ManagementLoggerFactory {
+    public ManagementLogger createManagementLogger(StandardJanusGraph graph, Log log, SchemaCache schemaCache, TimestampProvider times){
+        return new ManagementLoggerImpl(graph, log, schemaCache, times);
+    }
 }
-

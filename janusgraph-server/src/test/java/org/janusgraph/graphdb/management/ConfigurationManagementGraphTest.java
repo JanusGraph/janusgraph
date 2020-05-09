@@ -31,6 +31,7 @@ import org.apache.commons.configuration.MapConfiguration;
 import java.util.Map;
 import java.util.HashMap;
 
+import org.janusgraph.graphdb.database.management.CfgManagementLoggerFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -48,7 +49,7 @@ public class ConfigurationManagementGraphTest {
         final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         final MapConfiguration config = new MapConfiguration(map);
-        final StandardJanusGraph graph = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
+        final StandardJanusGraph graph = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)), new CfgManagementLoggerFactory());
 
         final String propertyKeyName = "Created_Using_Template";
         final Class dataType = Boolean.class;

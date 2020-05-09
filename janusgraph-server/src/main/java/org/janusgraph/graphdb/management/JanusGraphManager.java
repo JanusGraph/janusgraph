@@ -14,8 +14,8 @@
 
 package org.janusgraph.graphdb.management;
 
+import org.janusgraph.core.CfgJanusGraphFactory;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.ConfiguredGraphFactory;
 
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -23,7 +23,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalSource;
 import org.apache.tinkerpop.gremlin.server.GraphManager;
 import org.apache.tinkerpop.gremlin.server.Settings;
 import org.apache.tinkerpop.gremlin.groovy.engine.GremlinExecutor;
-import org.janusgraph.graphdb.management.utils.JanusGraphManagerException;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -34,6 +33,7 @@ import java.util.function.Function;
 import java.util.Set;
 import java.util.Map;
 
+import org.janusgraph.graphdb.management.utils.JanusGraphManagerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javax.script.SimpleBindings;
@@ -72,7 +72,7 @@ public class JanusGraphManager implements GraphManager {
         initialize();
         // Open graphs defined at server start in settings.graphs
         settings.graphs.forEach((key, value) -> {
-            final StandardJanusGraph graph = (StandardJanusGraph) JanusGraphFactory.open(value, key);
+            final StandardJanusGraph graph = (StandardJanusGraph) CfgJanusGraphFactory.open(value, key);
             if (key.toLowerCase().equals(CONFIGURATION_MANAGEMENT_GRAPH_KEY.toLowerCase())) {
                 new ConfigurationManagementGraph(graph);
             }

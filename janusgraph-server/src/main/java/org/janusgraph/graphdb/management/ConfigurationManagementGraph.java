@@ -17,8 +17,7 @@ package org.janusgraph.graphdb.management;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
-import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
-import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphAlreadyInstantiatedException;
+
 import static org.janusgraph.core.schema.SchemaAction.ENABLE_INDEX;
 import static org.janusgraph.core.schema.SchemaAction.REINDEX;
 import static org.janusgraph.core.schema.SchemaStatus.INSTALLED;
@@ -36,6 +35,8 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import com.google.common.base.Preconditions;
 
+import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphAlreadyInstantiatedException;
+import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -15,9 +15,10 @@
 package org.janusgraph.core;
 
 import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
+import org.janusgraph.graphdb.database.management.CfgManagementLoggerFactory;
+import org.janusgraph.graphdb.database.management.CfgManagementSystem;
 import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
 import org.janusgraph.graphdb.management.JanusGraphManager;
-import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
@@ -87,7 +88,7 @@ public class ConfiguredGraphFactory {
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
         final CommonsConfiguration config = new CommonsConfiguration(new MapConfiguration(templateConfigMap));
-        final JanusGraph g = (JanusGraph) jgm.openGraph(graphName, (String gName) -> new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(config)));
+        final JanusGraph g = (JanusGraph) jgm.openGraph(graphName, (String gName) -> new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(config), new CfgManagementLoggerFactory()));
         configManagementGraph.createConfiguration(new MapConfiguration(templateConfigMap));
         return g;
     }
@@ -157,7 +158,7 @@ public class ConfiguredGraphFactory {
      */
     public static void drop(String graphName) throws Exception {
         final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.close(graphName);
-        JanusGraphFactory.drop(graph);
+        CfgJanusGraphFactory.drop(graph);
         removeConfiguration(graphName);
     }
 
@@ -244,9 +245,8 @@ public class ConfiguredGraphFactory {
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
         jgm.removeGraph(((StandardJanusGraph) graph).getGraphName());
-        final ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
+        final CfgManagementSystem mgmt = new CfgManagementSystem((StandardJanusGraph) graph);
         mgmt.evictGraphFromCache();
-        mgmt.commit();
     }
 
     /**

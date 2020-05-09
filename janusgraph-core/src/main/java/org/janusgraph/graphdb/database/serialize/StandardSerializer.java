@@ -17,9 +17,19 @@ package org.janusgraph.graphdb.database.serialize;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import org.janusgraph.core.*;
-import org.janusgraph.core.attribute.*;
-import org.janusgraph.core.schema.*;
+import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.shaded.jackson.databind.node.ArrayNode;
+import org.apache.tinkerpop.shaded.jackson.databind.node.ObjectNode;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.attribute.AttributeSerializer;
+import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.core.attribute.GeoshapeSerializer;
+import org.janusgraph.core.schema.ConsistencyModifier;
+import org.janusgraph.core.schema.Mapping;
+import org.janusgraph.core.schema.Parameter;
+import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.ScanBuffer;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
@@ -28,27 +38,24 @@ import org.janusgraph.diskstorage.util.WriteByteBuffer;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.log.LogTxStatus;
-import org.janusgraph.graphdb.database.management.GraphCacheEvictionAction;
 import org.janusgraph.graphdb.database.management.MgmtLogType;
 import org.janusgraph.graphdb.database.serialize.attribute.*;
 import org.janusgraph.graphdb.internal.ElementCategory;
+import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.RelationCategory;
-import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
 import org.janusgraph.graphdb.log.StandardTransactionId;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.janusgraph.graphdb.types.TypeDefinitionDescription;
 
-import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.shaded.jackson.databind.node.ArrayNode;
-import org.apache.tinkerpop.shaded.jackson.databind.node.ObjectNode;
-
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -133,7 +140,6 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(66,StandardTransactionId.class, new StandardTransactionIdSerializer());
         registerClassInternal(67,TraverserSet.class, new SerializableSerializer());
         registerClassInternal(68,HashMap.class, new SerializableSerializer());
-        registerClassInternal(69,GraphCacheEvictionAction.class, new EnumSerializer<>(GraphCacheEvictionAction.class));
         registerClassInternal(70, ObjectNode.class, new JsonSerializer<>(ObjectNode.class));
         registerClassInternal(71, ArrayNode.class, new JsonSerializer<>(ArrayNode.class));
     }
@@ -189,6 +195,11 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         Preconditions.checkArgument(registrationNo!=null,"Datatype is not supported by database since no serializer has been registered: %s",datatype);
         assert registrationNo>0;
         return registrationNo;
+    }
+
+    public boolean checkIfRegistrationExists(int registrationNo) {
+        Class clazz = registrations.get(registrationNo);
+        return clazz != null;
     }
 
     private Class getDataType(int registrationNo) {
