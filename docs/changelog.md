@@ -131,7 +131,7 @@ Therefore, you should upgrade to Cassandra 3 or higher.
     or never changed the value of `storage.cql.storage-compact=true`, during the 
     upgrade process you have to ensure your data is correctly migrated.
 
-### Version 0.5.2 (Release Date: x, 2020)
+### Version 0.5.2 (Release Date: May 3, 2020)
 
 ```xml tab='Maven'
 <dependency>
