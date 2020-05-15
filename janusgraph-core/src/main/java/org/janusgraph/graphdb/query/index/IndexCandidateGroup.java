@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.graphdb.util;
+package org.janusgraph.graphdb.query.index;
 
 import org.janusgraph.graphdb.query.condition.Condition;
 
@@ -32,7 +32,7 @@ public class IndexCandidateGroup implements Comparable<IndexCandidateGroup> {
 
     public IndexCandidateGroup(Set<IndexCandidate> indexCandidates) {
         this.indexCandidates = indexCandidates;
-        this.coveredClauses = new HashSet<>();
+        this.coveredClauses = new HashSet<>(indexCandidates.size());
 
         indexCandidates.forEach(c -> coveredClauses.addAll(c.getSubCover()));
     }

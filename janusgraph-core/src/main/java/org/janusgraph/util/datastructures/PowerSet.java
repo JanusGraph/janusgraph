@@ -21,7 +21,7 @@ import java.util.*;
  */
 public class PowerSet<T> extends AbstractSet<Set<T>> {
     
-    private Set<T> originalSet;
+    private final Set<T> originalSet;
 
     public PowerSet(final Set<T> originalSet) {
         this.originalSet = originalSet;
@@ -37,9 +37,9 @@ public class PowerSet<T> extends AbstractSet<Set<T>> {
         return 1 << originalSet.size();
     }
 
-    private class PowerSetIterator<T> implements Iterator<Set<T>> {
+    private static class PowerSetIterator<T> implements Iterator<Set<T>> {
 
-        private List<T> originalElements;
+        private final List<T> originalElements;
         private int position;
         private final int resultSize;
 

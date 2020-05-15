@@ -29,6 +29,7 @@ import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.relations.RelationComparator;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
@@ -119,6 +120,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     private BackendTransaction txHandle;
     private final EdgeSerializer edgeSerializer;
     private final IndexSerializer indexSerializer;
+    private final IndexSelectionStrategy indexSelector;
 
     /* ###############################################
             Internal Data Structures
@@ -201,6 +203,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         this.attributeHandler = graph.getDataSerializer();
         this.edgeSerializer = graph.getEdgeSerializer();
         this.indexSerializer = graph.getIndexSerializer();
+        this.indexSelector = graph.getIndexSelector();
 
         temporaryIds = new IDPool() {
 
@@ -1401,7 +1404,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     @Override
     public GraphCentricQueryBuilder query() {
-        return new GraphCentricQueryBuilder(this, graph.getIndexSerializer());
+        return new GraphCentricQueryBuilder(this, graph.getIndexSerializer(), indexSelector);
     }
 
     @Override
