@@ -15,6 +15,8 @@
 package org.janusgraph.util.stats;
 
 import com.codahale.metrics.*;
+import com.codahale.metrics.jmx.JmxReporter;
+
 import com.codahale.metrics.ganglia.GangliaReporter;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;

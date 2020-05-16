@@ -111,10 +111,10 @@
                     <groupId>org.apache.commons</groupId>
                     <artifactId>commons-compress</artifactId>
                 </exclusion>
-                <exclusion>
+               <exclusion>
                     <groupId>javax.annotation</groupId>
                     <artifactId>javax.annotation-api</artifactId>
-                </exclusion>
+                </exclusion> 
             </exclusions>
         </dependency>
         <dependency>

@@ -76,7 +76,9 @@
         <mockito.version>2.23.0</mockito.version>
         <cassandra.version>2.2.13</cassandra.version>
         <jamm.version>0.3.0</jamm.version>
-        <metrics.version>3.2.2</metrics.version>
+        <metrics.version>4.1.7</metrics.version>
+        <metrics_old.version>3.2.2</metrics_old.version>
+        
         <slf4j.version>1.7.12</slf4j.version>
         <httpcomponents.httpclient.version>4.5.10</httpcomponents.httpclient.version>
         <httpcomponents.httpcore.version>4.4.12</httpcomponents.httpcore.version>
@@ -518,12 +520,22 @@
     </build>
     <dependencyManagement>
         <dependencies>
+                <dependency>
+                    <groupId>javax.annotation</groupId>
+                    <artifactId>javax.annotation-api</artifactId>
+                    <version>1.3.1</version>
+                </dependency>
             <!-- Tinkerpop 3.x -->
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>gremlin-core</artifactId>
                 <version>${tinkerpop.version}</version>
             </dependency>
+            <dependency>
+                <groupId>javax.annotation</groupId>
+                <artifactId>javax.annotation-api</artifactId>
+                <version>1.2</version>
+              </dependency>
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>gremlin-server</artifactId>
@@ -945,13 +957,18 @@
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-jmx</artifactId>
+                <version>${metrics.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-jvm</artifactId>
                 <version>${metrics.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-ganglia</artifactId>
-                <version>${metrics.version}</version>
+                <version>${metrics_old.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
