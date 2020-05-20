@@ -143,6 +143,11 @@ public class VertexIDAssigner implements AutoCloseable {
         assignID(relation, null);
     }
 
+    public void assignID(InternalRelation relation, long relationid){
+        assignID(relation, null);
+        relation.setId(relationid);
+    }
+
     public void assignID(InternalVertex vertex, VertexLabel label) {
         Preconditions.checkArgument(vertex!=null && label!=null);
         assignID(vertex,getVertexIDType(label));

@@ -73,6 +73,7 @@ import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.janusgraph.graphdb.vertices.StandardVertex;
 import org.janusgraph.util.datastructures.Retriever;
+import org.janusgraph.util.encoding.LongEncoding;
 import org.janusgraph.util.stats.MetricManager;
 import org.apache.tinkerpop.gremlin.structure.*;
 
@@ -110,6 +111,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
      */
     private static final long MIN_VERTEX_CACHE_SIZE = 100L;
 
+    private static final String TOSTRING_DELIMITER = "-";
 
     private final StandardJanusGraph graph;
     private final TransactionConfiguration config;
@@ -695,6 +697,65 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             if (connection.getEdgeLabel().equals(edgeLabel.name())) return;
         }
         config.getAutoSchemaMaker().makeConnectionConstraint(edgeLabel, outVertexLabel, inVertexLabel, this);
+    }
+
+    public JanusGraphEdge addEdge(String relationid, JanusGraphVertex outVertex, JanusGraphVertex inVertex, EdgeLabel label) {
+        verifyWriteAccess(outVertex, inVertex);
+        outVertex = ((InternalVertex) outVertex).it();
+        inVertex = ((InternalVertex) inVertex).it();
+        Preconditions.checkNotNull(label);
+        checkConnectionConstraintOrCreateConnectionConstraint(outVertex, inVertex, label);
+        Multiplicity multiplicity = label.multiplicity();
+        TransactionLock uniqueLock = getUniquenessLock(outVertex, (InternalRelationType) label,inVertex);
+        if (!graph.getConfiguration().allowEdgeIdSetting()) {
+            log.info("Provided relation id [{}] is ignored because edge id setting is not enabled", relationid);
+            relationid = null;
+        }
+        uniqueLock.lock(LOCK_TIMEOUT);
+        try {
+            //Check uniqueness
+            if (config.hasVerifyUniqueness()) {
+                if (multiplicity==Multiplicity.SIMPLE) {
+                    if (!Iterables.isEmpty(query(outVertex).type(label).direction(Direction.OUT).adjacent(inVertex).edges()))
+                            throw new SchemaViolationException("An edge with the given label already exists between the pair of vertices and the label [%s] is simple", label.name());
+                }
+                if (multiplicity.isUnique(Direction.OUT)) {
+                    if (!Iterables.isEmpty(query(outVertex).type(label).direction(Direction.OUT).edges()))
+                            throw new SchemaViolationException("An edge with the given label already exists on the out-vertex and the label [%s] is out-unique", label.name());
+                }
+                if (multiplicity.isUnique(Direction.IN)) {
+                    if (!Iterables.isEmpty(query(inVertex).type(label).direction(Direction.IN).edges()))
+                            throw new SchemaViolationException("An edge with the given label already exists on the in-vertex and the label [%s] is in-unique", label.name());
+                }
+            }
+            StandardEdge edge = new StandardEdge(IDManager.getTemporaryRelationID(temporaryIds.nextID()), label, (InternalVertex) outVertex, (InternalVertex) inVertex, ElementLifeCycle.New);
+            if (config.hasAssignIDsImmediately()) {
+                if(relationid!=null){
+                    long long_relationid = LongEncoding.decode(relationid);
+                    InternalRelation relationtype = (InternalRelation)edge;
+                    long relationtype_id = relationtype.getType().longId();
+                    StringBuilder s = new StringBuilder();
+                    s.append(LongEncoding.encode(long_relationid)).append(TOSTRING_DELIMITER).append(LongEncoding.encode(outVertex.longId()))
+                        .append(TOSTRING_DELIMITER).append(LongEncoding.encode(relationtype_id)).append(TOSTRING_DELIMITER)
+                        .append(LongEncoding.encode(inVertex.longId()));
+                    Iterable<JanusGraphEdge> result = query(outVertex).type(label).direction(Direction.OUT).adjacent(inVertex).edges();
+                    Iterator<JanusGraphEdge> iter = result.iterator();
+                    while(iter.hasNext()){
+                        JanusGraphEdge cur = iter.next();
+                        if(cur.id().toString().equals(s.toString())){
+                            throw new SchemaViolationException("An edge with the given edgeid [%s] already exists between the pair of vertices", cur.id());
+                        }
+                    }
+                    graph.assignID(edge, long_relationid);
+                }else{
+                    graph.assignID(edge);
+                }
+            }
+            connectRelation(edge);
+            return edge;
+        } finally {
+            uniqueLock.unlock();
+        }
     }
 
     public JanusGraphEdge addEdge(JanusGraphVertex outVertex, JanusGraphVertex inVertex, EdgeLabel label) {

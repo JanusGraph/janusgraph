@@ -69,6 +69,7 @@ import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.relations.EdgeDirection;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphBlueprintsGraph;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphFeatures;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphTraversalSource;
 import org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexFilterOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexIsOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexHasIdOptimizerStrategy;
@@ -470,6 +471,10 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         idAssigner.assignID(relation);
     }
 
+    public void assignID(InternalRelation relation, long relationid) {
+        idAssigner.assignID(relation, relationid);
+    }
+
     public void assignID(InternalVertex vertex, VertexLabel label) {
         idAssigner.assignID(vertex,label);
     }
@@ -831,6 +836,10 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
             graph.closeInternal();
         }
+    }
+
+    public JanusGraphTraversalSource JanusTraversal() {
+        return new JanusGraphTraversalSource(this);
     }
 
 

@@ -94,6 +94,12 @@ public class GraphDatabaseConfiguration {
             "of JanusGraph's advanced features which can lead to inconsistent data. EXPERT FEATURE - USE WITH GREAT CARE.",
             ConfigOption.Type.FIXED, false);
 
+    public static final ConfigOption<Boolean> ALLOW_SETTING_EDGE_ID = new ConfigOption<>(GRAPH_NS,"set-edge-id",
+            "Whether user provided relationid ids should be enabled and JanusGraph's automatic id allocation be disabled. " +
+            "Useful when operating JanusGraph in concert with another storage system that assigns string ids(suffix part of edgeid) but disables some " +
+            "of JanusGraph's advanced features which can lead to inconsistent data. EXPERT FEATURE - USE WITH GREAT CARE.",
+            ConfigOption.Type.FIXED, false);
+
     public static final ConfigOption<String> GRAPH_NAME = new ConfigOption<>(GRAPH_NS, "graphname",
             "This config option is an optional configuration setting that you may supply when opening a graph. " +
             "The String value you provide will be the name of your graph. If you use the ConfigurationManagement APIs, " +
@@ -1231,6 +1237,7 @@ public class GraphDatabaseConfiguration {
     private Boolean useMultiQuery;
     private Boolean batchPropertyPrefetching;
     private boolean allowVertexIdSetting;
+    private boolean allowEdgeIdSetting;
     private boolean logTransactions;
     private String metricsPrefix;
     private String unknownIndexKeyName;
@@ -1294,6 +1301,10 @@ public class GraphDatabaseConfiguration {
 
     public boolean allowVertexIdSetting() {
         return allowVertexIdSetting;
+    }
+
+    public boolean allowEdgeIdSetting() {
+        return allowEdgeIdSetting;
     }
 
     public Duration getMaxCommitTime() {
@@ -1433,6 +1444,7 @@ public class GraphDatabaseConfiguration {
         batchPropertyPrefetching = configuration.get(BATCH_PROPERTY_PREFETCHING);
         adjustQueryLimit = configuration.get(ADJUST_LIMIT);
         allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);
+        allowEdgeIdSetting = configuration.get(ALLOW_SETTING_EDGE_ID);
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
 
         unknownIndexKeyName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UNKNOWN_FIELD_NAME : null;
