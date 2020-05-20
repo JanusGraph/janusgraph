@@ -699,7 +699,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         config.getAutoSchemaMaker().makeConnectionConstraint(edgeLabel, outVertexLabel, inVertexLabel, this);
     }
 
-    public JanusGraphEdge addEdge(String relationId, JanusGraphVertex outVertex, JanusGraphVertex inVertex, EdgeLabel label) {
+    public JanusGraphEdge addEdge(String relationId, JanusGraphVertex outVertex, JanusGraphVertex inVertex, EdgeLabel label){
         verifyWriteAccess(outVertex, inVertex);
         outVertex = ((InternalVertex) outVertex).it();
         inVertex = ((InternalVertex) inVertex).it();
@@ -708,8 +708,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         Multiplicity multiplicity = label.multiplicity();
         TransactionLock uniqueLock = getUniquenessLock(outVertex, (InternalRelationType) label,inVertex);
         if (!graph.getConfiguration().allowEdgeIdSetting()) {
-            log.info("Provided relation id [{}] is ignored because edge id setting is not enabled", relationId);
-            relationId = null;
+            throw new UnsupportedOperationException(String.format("Provided relation id [%s] is ignored because edge id setting is not enabled", relationId));
+            // relationId = null;
         }
         uniqueLock.lock(LOCK_TIMEOUT);
         try {
