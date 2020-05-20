@@ -699,7 +699,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         config.getAutoSchemaMaker().makeConnectionConstraint(edgeLabel, outVertexLabel, inVertexLabel, this);
     }
 
-    public JanusGraphEdge addEdge(String relationid, JanusGraphVertex outVertex, JanusGraphVertex inVertex, EdgeLabel label) {
+    public JanusGraphEdge addEdge(String relationId, JanusGraphVertex outVertex, JanusGraphVertex inVertex, EdgeLabel label) {
         verifyWriteAccess(outVertex, inVertex);
         outVertex = ((InternalVertex) outVertex).it();
         inVertex = ((InternalVertex) inVertex).it();
@@ -708,8 +708,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         Multiplicity multiplicity = label.multiplicity();
         TransactionLock uniqueLock = getUniquenessLock(outVertex, (InternalRelationType) label,inVertex);
         if (!graph.getConfiguration().allowEdgeIdSetting()) {
-            log.info("Provided relation id [{}] is ignored because edge id setting is not enabled", relationid);
-            relationid = null;
+            log.info("Provided relation id [{}] is ignored because edge id setting is not enabled", relationId);
+            relationId = null;
         }
         uniqueLock.lock(LOCK_TIMEOUT);
         try {
@@ -730,8 +730,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             }
             StandardEdge edge = new StandardEdge(IDManager.getTemporaryRelationID(temporaryIds.nextID()), label, (InternalVertex) outVertex, (InternalVertex) inVertex, ElementLifeCycle.New);
             if (config.hasAssignIDsImmediately()) {
-                if(relationid!=null){
-                    long long_relationid = LongEncoding.decode(relationid);
+                if(relationId!=null){
+                    long long_relationid = LongEncoding.decode(relationId);
                     InternalRelation relationtype = (InternalRelation)edge;
                     long relationtype_id = relationtype.getType().longId();
                     StringBuilder s = new StringBuilder();

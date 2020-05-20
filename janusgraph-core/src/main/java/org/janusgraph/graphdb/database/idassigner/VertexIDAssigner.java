@@ -143,9 +143,9 @@ public class VertexIDAssigner implements AutoCloseable {
         assignID(relation, null);
     }
 
-    public void assignID(InternalRelation relation, long relationid){
+    public void assignID(InternalRelation relation, long relationId){
         assignID(relation, null);
-        relation.setId(relationid);
+        relation.setId(relationId);
     }
 
     public void assignID(InternalVertex vertex, VertexLabel label) {

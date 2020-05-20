@@ -169,10 +169,10 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         for (int i = 0; i < keyValues.length; i = i + 2) {
             if (keyValues[i].equals(T.id))
             {
-                String relationid = keyValues[i+1].toString();
+                String relationId = keyValues[i+1].toString();
                 keyValues = ArrayUtils.removeElement(keyValues, keyValues[i]);
                 keyValues = ArrayUtils.removeElement(keyValues, keyValues[i]);  
-                return addEdge(relationid, label, vertex, keyValues);
+                return addEdge(relationId, label, vertex, keyValues);
             }               
         }
         Preconditions.checkArgument(vertex instanceof JanusGraphVertex,"Invalid vertex provided: %s",vertex);
@@ -181,9 +181,9 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         return edge;
     }
 
-    public JanusGraphEdge addEdge(String relationid, String label, Vertex vertex, Object... keyValues) {
+    public JanusGraphEdge addEdge(String relationId, String label, Vertex vertex, Object... keyValues) {
         Preconditions.checkArgument(vertex instanceof JanusGraphVertex,"Invalid vertex provided: %s",vertex);
-        JanusGraphEdge edge = tx().addEdge(relationid, it(), (JanusGraphVertex) vertex, tx().getOrCreateEdgeLabel(label));
+        JanusGraphEdge edge = tx().addEdge(relationId, it(), (JanusGraphVertex) vertex, tx().getOrCreateEdgeLabel(label));
         ElementHelper.attachProperties(edge,keyValues);
         return edge;
     }

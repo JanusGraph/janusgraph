@@ -95,7 +95,7 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.FIXED, false);
 
     public static final ConfigOption<Boolean> ALLOW_SETTING_EDGE_ID = new ConfigOption<>(GRAPH_NS,"set-edge-id",
-            "Whether user provided relationid ids should be enabled and JanusGraph's automatic id allocation be disabled. " +
+            "Whether user provided relationId ids should be enabled and JanusGraph's automatic id allocation be disabled. " +
             "Useful when operating JanusGraph in concert with another storage system that assigns string ids(suffix part of edgeid) but disables some " +
             "of JanusGraph's advanced features which can lead to inconsistent data. EXPERT FEATURE - USE WITH GREAT CARE.",
             ConfigOption.Type.FIXED, false);

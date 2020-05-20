@@ -23,7 +23,7 @@ public class JanusGraphTraversalSource extends GraphTraversalSource{
         super(connection);
     }
 
-    public GraphTraversal<Edge, Edge> addE(final String relationid, final String label) {
-        return addE(label).property(T.id, relationid);
+    public GraphTraversal<Edge, Edge> addE(final String relationId, final String label) {
+        return addE(label).property(T.id, relationId);
     }
 }
