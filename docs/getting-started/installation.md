@@ -106,25 +106,25 @@ In most real-world use cases, queries to a database will not be run from the exa
 Instead, there will be some sort of client-server hierarchy in which the server runs the database and handles requests while multiple clients create these requests and thereby read and write entries within the database independently of one another.
 This behavior can also be achieved with JanusGraph.
 
-In order to start a server on your local machine, simply run the `gremlin-server.sh` script instead of the `gremlin.sh` script.
+In order to start a server on your local machine, simply run the `janusgraph-server.sh` script instead of the `gremlin.sh` script.
 You can optionally pass a configuration file as a parameter.
 The default configuration is located at `conf/gremlin-server/gremlin-server.yaml`.
 
 ```bash
-$ ./bin/gremlin-server.sh start
+$ ./bin/janusgraph-server.sh start
 ```
 or
 ```bash
-$ ./bin/gremlin-server.sh ./conf/gremlin-server/[...].yaml
+$ ./bin/janusgraph-server.sh ./conf/janusgraph-server-[...].yaml
 ```
 
 !!! info
-    The default configuration (`gremlin-server.yaml`) uses it's own inmemory backend instead of a dedicated database server.
+    The default configuration (`janusgraph-server.yaml`) uses it's own inmemory backend instead of a dedicated database server.
     No search backend is used by default, so mixed indices aren't supported as search backend isn't specified 
     (Make sure you are using `GraphOfTheGodsFactory.loadWithoutMixedIndex(graph, true)` instead of `GraphOfTheGodsFactory.load(graph)` if you follow [Basic Usage example](./basic-usage.md)).
     For further information about storage backends, visit the [corresponding section](../storage-backend/index.md) of the documentation.
     
-    You are also encouraged to look into `janusgraph.sh`, which by defaults starts a more sophisticated server than `gremlin-server.sh`.
+    You are also encouraged to look into `janusgraph.sh`, which by defaults starts a more sophisticated server than `janusgraph-server.sh`.
     Further documentation on server configuration can be found in the [JanusGraph Server](../basics/server.md#using-the-pre-packaged-distribution) section. (This requires to download `janusgraph-full-{{ latest_version }}.zip` instead of the default `janusgraph-{{ latest_version }}.zip`.)
 
 A Gremlin server is now running on your local machine and waiting for clients to connect on the default port `8182`.

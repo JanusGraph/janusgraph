@@ -17,12 +17,12 @@ uses the same client connection but enables you to compose queries as code.
 
 ## JanusGraph configuration
 
-### Gremlin Server configuration
+### JanusGraph Server configuration
 
 * Select a specific storage backend to use, then copy its configuration into
-the `$JANUSGRAPH_HOME/conf/gremlin-server/` directory
+the `$JANUSGRAPH_HOME/conf/` directory
 
-* Update the `$JANUSGRAPH_HOME/conf/gremlin-server/gremlin-server.yaml` to
+* Update the `$JANUSGRAPH_HOME/conf/janusgraph-server.yaml` to
 use the configuration file, for example:
 
     ```
@@ -31,7 +31,7 @@ use the configuration file, for example:
     }
     ```
 
-* Note the default `$JANUSGRAPH_HOME/conf/gremlin-server/gremlin-server.yaml`
+* Note the default `$JANUSGRAPH_HOME/conf/janusgraph-server.yaml`
 uses the script `scripts/empty-graph.groovy` to define the graph traversal source
 `g` for the graph `g: graph.traversal()`
 
@@ -69,14 +69,14 @@ The required Maven dependency for remote graph:
 
 ## Run the example
 
-### Start the Gremlin Server
+### Start the JanusGraph Server
 
-Start the Gremlin Server with the preferred storage configuration. The graph
+Start the JanusGraph Server with the preferred storage configuration. The graph
 instance will be created if it did not previously exist. Make sure to check
 the server logs for errors.
 
 ```
-$JANUSGRAPH_HOME/bin/gremlin-server.sh $JANUSGRAPH_HOME/conf/gremlin-server/gremlin-server.yaml
+$JANUSGRAPH_HOME/bin/janusgraph-server.sh $JANUSGRAPH_HOME/conf/janusgraph-server.yaml
 ```
 
 ### Run the example application

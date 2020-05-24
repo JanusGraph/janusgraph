@@ -119,7 +119,7 @@ a client. This type of deployment is great for polyglot architectures
 where various components written in different languages need to
 reference and compute on the graph.
 
-Start Gremlin Server using `bin/gremlin-server.sh` and then in an
+Start Gremlin Server using `bin/janusgraph-server.sh` and then in an
 external Gremlin Console session using `bin/gremlin.sh` you can send
 Gremlin commands over the wire:
 ```groovy

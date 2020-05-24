@@ -173,21 +173,21 @@ gremlin.graph=org.janusgraph.core.JanusGraphFactory
 
 2.  Once a local configuration is tested and you have a working
     properties file, copy the properties file from the `./conf`
-    directory to the `./conf/gremlin-server` directory.
+    directory.
 ```bash
 cp conf/janusgraph-hbase.properties
-conf/gremlin-server/socket-janusgraph-hbase-server.properties
+conf/socket-janusgraph-hbase-server.properties
 ```
 
-3.  Copy `./conf/gremlin-server/gremlin-server.yaml` to a new file
-    called `socket-gremlin-server.yaml`. Do this in case you need to
+3.  Copy `./conf/janusgraph-server.yaml` to a new file
+    called `socket-janusgraph-server.yaml`. Do this in case you need to
     refer to the original version of the file
 ```bash
-cp conf/gremlin-server/gremlin-server.yaml
-conf/gremlin-server/socket-gremlin-server.yaml
+cp conf/janusgraph-server.yaml
+conf/socket-janusgraph-server.yaml
 ```
 
-4.  Edit the `socket-gremlin-server.yaml` file and make the following
+4.  Edit the `socket-janusgraph-server.yaml` file and make the following
     updates:
 
     1.  If you are planning to connect to JanusGraph Server from
@@ -201,13 +201,13 @@ host: 10.10.10.100
         instance:
 ```yaml
 graphs: { graph:
-    conf/gremlin-server/socket-janusgraph-hbase-server.properties}
+    conf/socket-janusgraph-hbase-server.properties}
 ```
 
 5.  Start the JanusGraph Server, specifying the yaml file you just
     configured:
 ```bash
-bin/gremlin-server.sh ./conf/gremlin-server/socket-gremlin-server.yaml
+bin/janusgraph-server.sh ./conf/socket-janusgraph-server.yaml
 ```
  
 6.  The JanusGraph Server should now be running in WebSocket mode and
@@ -241,19 +241,19 @@ gremlin.graph=org.janusgraph.core.JanusGraphFactory
 
 2.  Once a local configuration is tested and you have a working
     properties file, copy the properties file from the `./conf`
-    directory to the `./conf/gremlin-server` directory.
+    directory.
 ```bash
-cp conf/janusgraph-hbase.properties conf/gremlin-server/http-janusgraph-hbase-server.properties
+cp conf/janusgraph-hbase.properties conf/http-janusgraph-hbase-server.properties
 ```
 
-3.  Copy `./conf/gremlin-server/gremlin-server.yaml` to a new file
-    called `http-gremlin-server.yaml`. Do this in case you need to refer
+3.  Copy `./conf/janusgraph-server.yaml` to a new file
+    called `http-janusgraph-server.yaml`. Do this in case you need to refer
     to the original version of the file
 ```bash
-cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/http-gremlin-server.yaml
+cp conf/janusgraph-server.yaml conf/http-janusgraph-server.yaml
 ```
 
-4.  Edit the `http-gremlin-server.yaml` file and make the following
+4.  Edit the `http-janusgraph-server.yaml` file and make the following
     updates:
 
     1.  If you are planning to connect to JanusGraph Server from
@@ -272,13 +272,13 @@ channelizer: org.apache.tinkerpop.gremlin.server.channel.HttpChannelizer
         instance:
 ```yaml
 graphs: { graph:
-    conf/gremlin-server/http-janusgraph-hbase-server.properties}
+    conf/http-janusgraph-hbase-server.properties}
 ```
 
 5.  Start the JanusGraph Server, specifying the yaml file you just
     configured:
 ```bash
-bin/gremlin-server.sh ./conf/gremlin-server/http-gremlin-server.yaml
+bin/janusgraph-server.sh ./conf/http-janusgraph-server.yaml
 ```
 
 6.  The JanusGraph Server should now be running in HTTP mode and
@@ -290,7 +290,7 @@ curl -XPOST -Hcontent-type:application/json -d *{"gremlin":"g.V().count()"}* [IP
 
 ## JanusGraph Server as Both a WebSocket and HTTP Endpoint
 
-As of JanusGraph 0.2.0, you can configure your `gremlin-server.yaml` to
+As of JanusGraph 0.2.0, you can configure your `janusgraph-server.yaml` to
 accept both WebSocket and HTTP connections over the same port. This can
 be achieved by changing the channelizer in any of the previous examples
 as follows.
@@ -305,7 +305,7 @@ channelizer: org.apache.tinkerpop.gremlin.server.channel.WsAndHttpChannelizer
 
 ### HTTP Basic authentication
 
-To enable Basic authentication in JanusGraph Server include the following configuration in your `gremlin-server.yaml`.
+To enable Basic authentication in JanusGraph Server include the following configuration in your `janusgraph-server.yaml`.
 
 ```yaml
  authentication: {
@@ -337,7 +337,7 @@ should return a 200 and the result of 4 if authentication is configured correctl
 Authentication over WebSocket occurs through a Simple Authentication and Security Layer (https://en.wikipedia.org/wiki/Simple_Authentication_and_Security_Layer[SASL]) mechanism.
 
 
-To enable SASL authentication include the following configuration in the `gremlin-server.yaml`
+To enable SASL authentication include the following configuration in the `janusgraph-server.yaml`
 
 ```yaml
 authentication: {
@@ -365,7 +365,7 @@ password: password
 
 If you are using the combined channelizer for both HTTP and WebSocket you can use the SaslAndHMACAuthenticator to authorize through either WebSocket through SASL, HTTP through basic auth, and HTTP through hash-based message authentication code (https://en.wikipedia.org/wiki/Hash-based_message_authentication_code[HMAC]) Auth. HMAC is a token based authentication designed to be used over HTTP. You first acquire a token via the `/session` endpoint and then use that to authenticate. It is used to amortize the time spent encrypting the password using basic auth.
 
-The `gremlin-server.yaml` should include the following configurations
+The `janusgraph-server.yaml` should include the following configurations
 
 ```yaml
 authentication: {

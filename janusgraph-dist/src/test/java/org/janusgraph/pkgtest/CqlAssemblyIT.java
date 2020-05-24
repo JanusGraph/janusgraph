@@ -26,12 +26,22 @@ public class CqlAssemblyIT extends AbstractJanusGraphAssemblyIT {
     private static JanusGraphCassandraContainer cql = new JanusGraphCassandraContainer(true);
 
     @Test
-    public void testCassandraThriftSimpleSession() throws Exception {
+    public void testSimpleGremlinSession() throws Exception {
         testSimpleGremlinSession("conf/janusgraph-cql.properties", "cql", false);
     }
 
     @Test
-    public void testCassandraThriftSimpleSessionFull() throws Exception {
+    public void testSimpleGremlinSessionFull() throws Exception {
         testSimpleGremlinSession("conf/janusgraph-cql.properties", "cql", true);
+    }
+
+    @Test
+    public void testJanusGraphServer() throws Exception {
+        testJanusGraphServer("conf/gremlin-server/gremlin-server-cql.yaml", false);
+    }
+
+    @Test
+    public void testJanusGraphServerFull() throws Exception {
+        testJanusGraphServer("conf/gremlin-server/gremlin-server-cql.yaml", true);
     }
 }

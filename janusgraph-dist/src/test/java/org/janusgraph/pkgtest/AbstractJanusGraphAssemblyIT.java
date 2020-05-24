@@ -25,17 +25,25 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.Writer;
+import java.net.Socket;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.tinkerpop.gremlin.driver.Cluster;
+import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection;
+import org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0;
+import org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 
 public abstract class AbstractJanusGraphAssemblyIT {
 
@@ -72,6 +80,50 @@ public abstract class AbstractJanusGraphAssemblyIT {
 
     protected void testSimpleGremlinSession(String graphConfig, String graphToString, boolean full) throws Exception {
         unzipAndRunExpect("single-vertex.expect.vm", graphConfig, graphToString, full, false);
+    }
+
+    private static boolean serverListening(String host, int port)
+    {
+        Socket s = null;
+        try
+        {
+            s = new Socket(host, port);
+            return true;
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
+        finally
+        {
+            if(s != null)
+                try {s.close();}
+                catch(Exception e){}
+        }
+    }
+
+    protected void testJanusGraphServer(String janusgraphServerConfig, boolean full) throws Exception {
+        final boolean debug = false;
+        ImmutableMap<String, String> contextVars = ImmutableMap.of("janusgraphServerConfig", janusgraphServerConfig);
+        unzipAndRunExpect("janusgraph-server-sh.before.expect.vm", contextVars, full, debug);
+
+        while (!serverListening("localhost",8182)) {
+            Thread.sleep(1000);
+        }
+        final GraphTraversalSource g = openTraversal();
+        Long next = g.V().count().next();
+        assertEquals(0, next);
+
+        parseTemplateAndRunExpect("janusgraph-server-sh.after.expect.vm", contextVars, full, debug);
+    }
+
+    private GraphTraversalSource openTraversal() {
+        Cluster cluster = Cluster.build("localhost")
+            .port(8182)
+            .serializer(new GraphSONMessageSerializerV3d0(GraphSONMapper.build().addRegistry(JanusGraphIoRegistry.instance())))
+            .create();
+        return AnonymousTraversalSource.traversal()
+            .withRemote(DriverRemoteConnection.using(cluster, "g"));
     }
 
     protected void testGettingStartedGremlinSession(String graphConfig, String graphToString, boolean full) throws Exception {

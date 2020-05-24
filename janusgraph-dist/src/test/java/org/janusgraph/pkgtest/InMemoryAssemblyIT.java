@@ -14,37 +14,37 @@
 
 package org.janusgraph.pkgtest;
 
-import org.janusgraph.JanusGraphCassandraContainer;
-import org.janusgraph.diskstorage.es.JanusGraphElasticsearchContainer;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.junit.jupiter.Container;
 
-@Testcontainers
-public class CqlESAssemblyIT extends AbstractJanusGraphAssemblyIT {
-
-    @Container
-    private static JanusGraphCassandraContainer cql = new JanusGraphCassandraContainer(true);
-
-    @Container
-    private static JanusGraphElasticsearchContainer esr = new JanusGraphElasticsearchContainer(true);
+public class InMemoryAssemblyIT extends AbstractJanusGraphAssemblyIT {
 
     @Test
     public void testSimpleGremlinSession() throws Exception {
-        testGettingStartedGremlinSession("conf/janusgraph-cql-es.properties", "cql", false);
+        testSimpleGremlinSession("conf/janusgraph-inmemory.properties", "inmemory", false);
     }
+
     @Test
     public void testSimpleGremlinSessionFull() throws Exception {
-        testGettingStartedGremlinSession("conf/janusgraph-cql-es.properties", "cql", true);
+        testSimpleGremlinSession("conf/janusgraph-inmemory.properties", "inmemory", true);
+    }
+
+    @Test
+    public void testJanusGraphServerGremlin() throws Exception {
+        testJanusGraphServer("conf/gremlin-server/gremlin-server.yaml", false);
+    }
+
+    @Test
+    public void testJanusGraphServerGremlinFull() throws Exception {
+        testJanusGraphServer("conf/gremlin-server/gremlin-server.yaml", true);
     }
 
     @Test
     public void testJanusGraphServer() throws Exception {
-        testJanusGraphServer("conf/gremlin-server/gremlin-server-cql-es.yaml", false);
+        testJanusGraphServer("conf/janusgraph-server.yaml", false);
     }
 
     @Test
     public void testJanusGraphServerFull() throws Exception {
-        testJanusGraphServer("conf/gremlin-server/gremlin-server-cql-es.yaml", true);
+        testJanusGraphServer("conf/janusgraph-server.yaml", true);
     }
 }

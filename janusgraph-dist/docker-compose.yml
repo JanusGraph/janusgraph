@@ -22,7 +22,7 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
-    command: ["./bin/gremlin-server.sh", "./conf/gremlin-server/gremlin-server-berkeleyje-es.yaml"]
+    command: ["./bin/janusgraph-server.sh", "./conf/gremlin-server/gremlin-server-berkeleyje-es.yaml"]
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:6.2.4

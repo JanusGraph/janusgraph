@@ -73,6 +73,11 @@ For more information on features and bug fixes in 0.6.0, see the GitHub mileston
 
 #### Upgrade Instructions
 
+#### Replacing the default gremlin startup with internal variant
+
+This tooling allows us to be future proofed to add new funcationality to a JanusGraph server more easily. 
+With the first version of this tooling, we introduce automatic configuration of JanusGraph supported serializiation.
+
 ##### Serialization of JanusGraph predicates has changed
 
 The serialization of JanusGraph predicates has changed in this version for both 
@@ -121,7 +126,7 @@ in the same JVM as JanusGraph is however no longer supported with CQL.
     While we do not support them any more, users can still use them 
     if they for some reason cannot migrate to CQL.
 
-#### Drop support for Cassandra 2
+##### Drop support for Cassandra 2
 
 With the release of Cassandra 4, the support of Cassandra 2 will be dropped. 
 Therefore, you should upgrade to Cassandra 3 or higher.

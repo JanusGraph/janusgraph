@@ -67,8 +67,8 @@ if [ -z "$JPS" ]; then
     exit 1
 fi
 
-GREMLIN_FRIENDLY_NAME='Gremlin-Server'
-GREMLIN_CLASS_NAME=org.apache.tinkerpop.gremlin.server.GremlinServer
+JANUSGRAPH_FRIENDLY_NAME='JanusGraph-Server'
+JANUSGRAPH_CLASS_NAME=org.janusgraph.graphdb.server.JanusGraphServer
 ES_FRIENDLY_NAME=Elasticsearch
 ES_CLASS_NAME=org.elasticsearch.bootstrap.Elasticsearch
 CASSANDRA_FRIENDLY_NAME=Cassandra
@@ -174,15 +174,16 @@ start() {
         return 1
     }
 
-    status_class $GREMLIN_FRIENDLY_NAME $GREMLIN_CLASS_NAME >/dev/null && status && echo "Stop services before starting" && exit 1
-    echo "Forking Gremlin-Server..."
+    status_class $JANUSGRAPH_FRIENDLY_NAME $JANUSGRAPH
+_CLASS_NAME >/dev/null && status && echo "Stop services before starting" && exit 1
+    echo "Forking JanusGraph-Server..."
     if [ -n "$VERBOSE" ]; then
-        "$BIN"/gremlin-server.sh conf/gremlin-server/gremlin-server-cql-es.yaml &
+        "$BIN"/janusgraph-server.sh conf/gremlin-server/gremlin-server-cql-es.yaml &
     else
-        "$BIN"/gremlin-server.sh conf/gremlin-server/gremlin-server-cql-es.yaml >/dev/null 2>&1 &
+        "$BIN"/janusgraph-server.sh conf/gremlin-server/gremlin-server-cql-es.yaml >/dev/null 2>&1 &
     fi
-    wait_for_startup 'Gremlin-Server' $GSRV_IP $GSRV_PORT $GSRV_STARTUP_TIMEOUT_S || {
-        echo "See $BIN/../logs/gremlin-server.log for Gremlin-Server log output."  >&2
+    wait_for_startup 'JanusGraph-Server' $GSRV_IP $GSRV_PORT $GSRV_STARTUP_TIMEOUT_S || {
+        echo "See $BIN/../logs/janusgraph.log for JanusGraph-Server log output."  >&2
         return 1
     }
     disown
@@ -191,8 +192,8 @@ start() {
 }
 
 stop() {
-    kill_class        $GREMLIN_FRIENDLY_NAME $GREMLIN_CLASS_NAME
-    wait_for_shutdown $GREMLIN_FRIENDLY_NAME $GREMLIN_CLASS_NAME $GSRV_SHUTDOWN_TIMEOUT_S
+    kill_class        $JANUSGRAPH_FRIENDLY_NAME $JANUSGRAPH_CLASS_NAME
+    wait_for_shutdown $JANUSGRAPH_FRIENDLY_NAME $JANUSGRAPH_CLASS_NAME $GSRV_SHUTDOWN_TIMEOUT_S
     kill_class        $ES_FRIENDLY_NAME $ES_CLASS_NAME
     wait_for_shutdown $ES_FRIENDLY_NAME $ES_CLASS_NAME $ELASTICSEARCH_SHUTDOWN_TIMEOUT_S
     kill_class        $CASSANDRA_FRIENDLY_NAME $CASSANDRA_CLASS_NAME
@@ -224,7 +225,7 @@ status_class() {
 }
 
 status() {
-    status_class $GREMLIN_FRIENDLY_NAME $GREMLIN_CLASS_NAME
+    status_class $JANUSGRAPH_FRIENDLY_NAME $JANUSGRAPH_CLASS_NAME
     status_class $ES_FRIENDLY_NAME $ES_CLASS_NAME
     status_class $CASSANDRA_FRIENDLY_NAME $CASSANDRA_CLASS_NAME
 }
