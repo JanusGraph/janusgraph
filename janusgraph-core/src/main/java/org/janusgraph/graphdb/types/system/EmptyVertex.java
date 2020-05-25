@@ -135,6 +135,11 @@ public class EmptyVertex implements InternalVertex {
         throw new UnsupportedOperationException(errorName + " do not support incident edges");
     }
 
+    @Override
+    public JanusGraphEdge addEdge(String relationId, String s, Vertex vertex, Object... keyValues) {
+        throw new UnsupportedOperationException(errorName + " do not support incident edges");
+    }
+
 	/* ---------------------------------------------------------------
 	 * In Memory JanusGraphElement
 	 * ---------------------------------------------------------------

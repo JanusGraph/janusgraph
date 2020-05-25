@@ -73,6 +73,7 @@ import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.janusgraph.graphdb.vertices.StandardVertex;
 import org.janusgraph.util.datastructures.Retriever;
+import org.janusgraph.util.encoding.LongEncoding;
 import org.janusgraph.util.stats.MetricManager;
 import org.apache.tinkerpop.gremlin.structure.*;
 
@@ -516,7 +517,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         addProperty(vertex, BaseKey.VertexExists, Boolean.TRUE);
         if (label!=BaseVertexLabel.DEFAULT_VERTEXLABEL) { //Add label
             Preconditions.checkArgument(label instanceof VertexLabelVertex);
-            addEdge(vertex, label, BaseLabel.VertexLabelEdge);
+            addEdge(null, vertex, label, BaseLabel.VertexLabelEdge);
         }
         vertexCache.add(vertex, vertex.longId());
         return vertex;
@@ -697,7 +698,22 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         config.getAutoSchemaMaker().makeConnectionConstraint(edgeLabel, outVertexLabel, inVertexLabel, this);
     }
 
-    public JanusGraphEdge addEdge(JanusGraphVertex outVertex, JanusGraphVertex inVertex, EdgeLabel label) {
+    public void checkUniqueness(Multiplicity multiplicity, JanusGraphVertex outVertex, JanusGraphVertex inVertex, EdgeLabel label){     
+        if (multiplicity==Multiplicity.SIMPLE) {
+            if (!Iterables.isEmpty(query(outVertex).type(label).direction(Direction.OUT).adjacent(inVertex).edges()))
+                    throw new SchemaViolationException("An edge with the given label already exists between the pair of vertices and the label [%s] is simple", label.name());
+        }
+        if (multiplicity.isUnique(Direction.OUT)) {
+            if (!Iterables.isEmpty(query(outVertex).type(label).direction(Direction.OUT).edges()))
+                    throw new SchemaViolationException("An edge with the given label already exists on the out-vertex and the label [%s] is out-unique", label.name());
+        }
+        if (multiplicity.isUnique(Direction.IN)) {
+            if (!Iterables.isEmpty(query(inVertex).type(label).direction(Direction.IN).edges()))
+                    throw new SchemaViolationException("An edge with the given label already exists on the in-vertex and the label [%s] is in-unique", label.name());
+        }
+    }
+
+    public JanusGraphEdge addEdge(String relationId, JanusGraphVertex outVertex, JanusGraphVertex inVertex, EdgeLabel label){
         verifyWriteAccess(outVertex, inVertex);
         outVertex = ((InternalVertex) outVertex).it();
         inVertex = ((InternalVertex) inVertex).it();
@@ -705,30 +721,43 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         checkConnectionConstraintOrCreateConnectionConstraint(outVertex, inVertex, label);
         Multiplicity multiplicity = label.multiplicity();
         TransactionLock uniqueLock = getUniquenessLock(outVertex, (InternalRelationType) label,inVertex);
+        if (relationId!= null &&!graph.getConfiguration().allowEdgeIdSetting()) {
+            throw new UnsupportedOperationException("Edge does not support user supplied identifiers");
+        }
         uniqueLock.lock(LOCK_TIMEOUT);
         try {
             //Check uniqueness
             if (config.hasVerifyUniqueness()) {
-                if (multiplicity==Multiplicity.SIMPLE) {
-                    if (!Iterables.isEmpty(query(outVertex).type(label).direction(Direction.OUT).adjacent(inVertex).edges()))
-                            throw new SchemaViolationException("An edge with the given label already exists between the pair of vertices and the label [%s] is simple", label.name());
-                }
-                if (multiplicity.isUnique(Direction.OUT)) {
-                    if (!Iterables.isEmpty(query(outVertex).type(label).direction(Direction.OUT).edges()))
-                            throw new SchemaViolationException("An edge with the given label already exists on the out-vertex and the label [%s] is out-unique", label.name());
-                }
-                if (multiplicity.isUnique(Direction.IN)) {
-                    if (!Iterables.isEmpty(query(inVertex).type(label).direction(Direction.IN).edges()))
-                            throw new SchemaViolationException("An edge with the given label already exists on the in-vertex and the label [%s] is in-unique", label.name());
-                }
+                checkUniqueness(multiplicity, outVertex, inVertex, label);
             }
             StandardEdge edge = new StandardEdge(IDManager.getTemporaryRelationID(temporaryIds.nextID()), label, (InternalVertex) outVertex, (InternalVertex) inVertex, ElementLifeCycle.New);
-            if (config.hasAssignIDsImmediately()) graph.assignID(edge);
+            if (config.hasAssignIDsImmediately()) {
+                if(relationId!=null){
+                    long long_relationId = LongEncoding.decode(relationId);
+                    long typeId = ((InternalRelation)edge).getType().longId();
+                    RelationIdentifier id = new RelationIdentifier(outVertex.longId(), typeId, long_relationId, inVertex.longId());
+                    Iterable<JanusGraphEdge> result = query(outVertex).type(label).direction(Direction.OUT).adjacent(inVertex).edges();
+                    Iterator<JanusGraphEdge> iter = result.iterator();
+                    while(iter.hasNext()){
+                        JanusGraphEdge cur = iter.next();
+                        if(cur.id().toString().equals(id.toString())){
+                            throw new IllegalArgumentException(String.format("Edge with given id already exists: [%s]", cur.id()));
+                        }
+                    }
+                    graph.assignID(edge, long_relationId);
+                }else{
+                    graph.assignID(edge);
+                }
+            }
             connectRelation(edge);
             return edge;
         } finally {
             uniqueLock.unlock();
         }
+    }
+
+    public JanusGraphEdge addEdge(JanusGraphVertex outVertex, JanusGraphVertex inVertex, EdgeLabel label) {
+        return addEdge(null, outVertex, inVertex, label);
     }
 
     private void connectRelation(InternalRelation r) {
@@ -900,7 +929,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     public JanusGraphEdge addSchemaEdge(JanusGraphVertex out, JanusGraphVertex in, TypeDefinitionCategory def, Object modifier) {
         assert def.isEdge();
-        JanusGraphEdge edge = addEdge(out, in, BaseLabel.SchemaDefinitionEdge);
+        JanusGraphEdge edge = addEdge(null, out, in, BaseLabel.SchemaDefinitionEdge);
         TypeDefinitionDescription desc = new TypeDefinitionDescription(def, modifier);
         edge.property(BaseKey.SchemaDefinitionDesc.name(), desc);
         return edge;

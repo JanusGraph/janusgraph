@@ -470,6 +470,10 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         idAssigner.assignID(relation);
     }
 
+    public void assignID(InternalRelation relation, long relationId) {
+        idAssigner.assignID(relation, relationId);
+    }
+
     public void assignID(InternalVertex vertex, VertexLabel label) {
         idAssigner.assignID(vertex,label);
     }
