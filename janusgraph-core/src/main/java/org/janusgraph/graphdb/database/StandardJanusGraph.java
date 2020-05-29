@@ -66,6 +66,10 @@ import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
 import org.janusgraph.graphdb.query.QueryUtil;
+import org.janusgraph.graphdb.query.index.ApproximateIndexSelectionStrategy;
+import org.janusgraph.graphdb.query.index.BruteForceIndexSelectionStrategy;
+import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
+import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
 import org.janusgraph.graphdb.relations.EdgeDirection;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphBlueprintsGraph;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphFeatures;
@@ -133,6 +137,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     //Shutdown hook
     private volatile ShutdownThread shutdownHook;
 
+    //Index selection
+    private final IndexSelectionStrategy indexSelector;
+
     private volatile boolean isOpen;
     private final AtomicLong txCounter;
 
@@ -159,6 +166,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         this.queryCache = new RelationQueryCache(this.edgeSerializer);
         this.schemaCache = configuration.getTypeCache(typeCacheRetrieval);
         this.times = configuration.getTimestampProvider();
+        this.indexSelector = new ThresholdBasedIndexSelectionStrategy(getConfiguration().getIndexSelectThreshold(),
+            new BruteForceIndexSelectionStrategy(),
+            new ApproximateIndexSelectionStrategy());
 
         isOpen = true;
         txCounter = new AtomicLong(0);
@@ -289,6 +299,10 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     public IndexSerializer getIndexSerializer() {
         return indexSerializer;
+    }
+
+    public IndexSelectionStrategy getIndexSelector() {
+        return indexSelector;
     }
 
     public Backend getBackend() {

@@ -100,6 +100,14 @@ after the keyword `serializers`. This will add the support on the server site.
 !!! note 
     The java driver is the only driver that currently supports GraphBinary, 
     see [Connecting to JanusGraph using Java](connecting/java.md).
+
+##### New index selection algorithm
+In version 0.6.0, the index selection algorithm has changed. If the number of possible
+indexes for a query is small enough, the new algorithm will perform an exhaustive search
+to minimize the number of indexes which need to be queried. The default limit is set to 10.
+In order to maintain the old selection algorithm regardless of the available indexes, set
+the key `query.index-select-threshold` to `0`.
+For more information, see [Configuration Reference](basics/configuration-reference.md#query)
     
 ##### Removal of Cassandra Thrift support
 
