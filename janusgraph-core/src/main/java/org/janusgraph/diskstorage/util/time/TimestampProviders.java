@@ -70,7 +70,7 @@ public enum TimestampProviders implements TimestampProvider {
     MICRO {
         @Override
         public Instant getTime() {
-            return Instant.now();
+            return Instant.now().truncatedTo(getUnit());
         }
 
         @Override
@@ -93,7 +93,7 @@ public enum TimestampProviders implements TimestampProvider {
     MILLI {
         @Override
         public Instant getTime() {
-            return Instant.now();
+            return Instant.now().truncatedTo(getUnit());
         }
 
         @Override
