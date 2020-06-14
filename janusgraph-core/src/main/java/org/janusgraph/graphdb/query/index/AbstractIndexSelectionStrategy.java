@@ -20,6 +20,7 @@ import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.schema.JanusGraphSchemaType;
 import org.janusgraph.core.schema.SchemaStatus;
+import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.QueryUtil;
@@ -36,6 +37,10 @@ public abstract class AbstractIndexSelectionStrategy implements IndexSelectionSt
     private static final double OTHER_CONDITION_SCORE = 1;
     private static final double CARDINALITY_SINGE_SCORE = 1000;
     private static final double CARDINALITY_OTHER_SCORE = 1000;
+
+    public AbstractIndexSelectionStrategy(Configuration config) {
+
+    }
 
     /**
      * Creates an <code>IndexCandidate</code> from a <code>MultiCondition</code> which it covers.

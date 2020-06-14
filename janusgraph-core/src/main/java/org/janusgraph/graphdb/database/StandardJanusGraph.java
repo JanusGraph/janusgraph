@@ -166,9 +166,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         this.queryCache = new RelationQueryCache(this.edgeSerializer);
         this.schemaCache = configuration.getTypeCache(typeCacheRetrieval);
         this.times = configuration.getTimestampProvider();
-        this.indexSelector = new ThresholdBasedIndexSelectionStrategy(getConfiguration().getIndexSelectThreshold(),
-            new BruteForceIndexSelectionStrategy(),
-            new ApproximateIndexSelectionStrategy());
+        this.indexSelector = getConfiguration().getIndexSelectionStrategy();
 
         isOpen = true;
         txCounter = new AtomicLong(0);
