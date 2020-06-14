@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.janusgraph.core.JanusGraphElement;
+import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
@@ -33,6 +34,12 @@ import org.janusgraph.util.datastructures.PowerSet;
  */
 public class BruteForceIndexSelectionStrategy
     extends AbstractIndexSelectionStrategy {
+
+    public static final String NAME = "brute-force";
+
+    public BruteForceIndexSelectionStrategy(Configuration config) {
+       super(config);
+    }
 
     /**
      * Determine the best jointIndexQuery by enumerating all possibilities with exponential time

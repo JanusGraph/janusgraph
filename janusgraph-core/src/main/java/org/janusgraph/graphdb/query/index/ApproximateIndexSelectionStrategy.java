@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.query.index;
 
 import java.util.Set;
 import org.janusgraph.core.JanusGraphElement;
+import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
@@ -30,8 +31,14 @@ import org.janusgraph.graphdb.types.MixedIndexType;
 public class ApproximateIndexSelectionStrategy
     extends AbstractIndexSelectionStrategy {
 
+    public static final String NAME = "approximate";
+
     private static final double ORDER_MATCH = 1;
     private static final double ALREADY_MATCHED_ADJUSTOR = -1.1;
+
+    public ApproximateIndexSelectionStrategy(Configuration config) {
+        super(config);
+    }
 
     /**
      * Iterate over all potential indexes and compute a score based on how many clauses

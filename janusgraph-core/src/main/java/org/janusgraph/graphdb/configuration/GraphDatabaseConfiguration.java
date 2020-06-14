@@ -22,6 +22,10 @@ import org.janusgraph.diskstorage.StandardIndexProvider;
 import org.janusgraph.diskstorage.StandardStoreManager;
 import org.janusgraph.diskstorage.configuration.converter.ReadConfigurationConverter;
 import org.janusgraph.graphdb.configuration.converter.RegisteredAttributeClassesConverter;
+import org.janusgraph.graphdb.query.index.ApproximateIndexSelectionStrategy;
+import org.janusgraph.graphdb.query.index.BruteForceIndexSelectionStrategy;
+import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
+import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphDefaultSchemaMaker;
 import org.janusgraph.graphdb.tinkerpop.Tp3DefaultSchemaMaker;
 import org.janusgraph.graphdb.types.typemaker.DisableDefaultSchemaMaker;
@@ -264,12 +268,14 @@ public class GraphDatabaseConfiguration {
                     "performance improvement if there is a non-trivial latency to the backend.",
             ConfigOption.Type.MASKABLE, false);
 
-    public static final ConfigOption<Integer> INDEX_SELECT_BRUTE_FORCE_THRESHOLD = new ConfigOption<>(QUERY_NS, "index-select-threshold",
-            "Threshold of deciding whether to use brute force enumeration algorithm or fast approximation algorithm " +
-                    "for selecting suitable indexes. Selecting optimal indexes for a query is a NP-complete set cover problem. " +
-                    "When number of suitable index candidates is no larger than threshold, JanusGraph uses brute force search " +
-                    "with exponential time complexity to ensure the best combination of indexes is selected.",
-            ConfigOption.Type.MASKABLE, 10);
+    public static final ConfigOption<String> INDEX_SELECT_STRATEGY = new ConfigOption<>(QUERY_NS, "index-select-strategy",
+            String.format("Name of the index selection strategy or full class name. Following shorthands can be used: <br>" +
+                    "- `%s` (Try all combinations of index candidates and pick up optimal one)<br>" +
+                    "- `%s` (Use greedy algorithm to pick up approximately optimal index candidate)<br>" +
+                    "- `%s` (Use index-select-threshold to pick up either `%s` or `%s` strategy on runtime)",
+                    BruteForceIndexSelectionStrategy.NAME, ApproximateIndexSelectionStrategy.NAME, ThresholdBasedIndexSelectionStrategy.NAME,
+                    ApproximateIndexSelectionStrategy.NAME, ThresholdBasedIndexSelectionStrategy.NAME),
+            ConfigOption.Type.MASKABLE, ThresholdBasedIndexSelectionStrategy.NAME);
 
     public static final ConfigOption<Boolean> BATCH_PROPERTY_PREFETCHING = new ConfigOption<>(QUERY_NS,"batch-property-prefetch",
             "Whether to do a batched pre-fetch of all properties on adjacent vertices against the storage backend prior to evaluating a has condition against those vertices. " +
@@ -1220,6 +1226,12 @@ public class GraphDatabaseConfiguration {
     public static final String SYSTEM_CONFIGURATION_IDENTIFIER = "configuration";
     public static final String USER_CONFIGURATION_IDENTIFIER = "userconfig";
 
+    private static final Map<String, String> REGISTERED_INDEX_SELECTION_STRATEGIES = new HashMap() {{
+        put(ThresholdBasedIndexSelectionStrategy.NAME, ThresholdBasedIndexSelectionStrategy.class.getName());
+        put(BruteForceIndexSelectionStrategy.NAME, BruteForceIndexSelectionStrategy.class.getName());
+        put(ApproximateIndexSelectionStrategy.NAME, ApproximateIndexSelectionStrategy.class.getName());
+    }};
+
     private final Configuration configuration;
     private final ReadConfiguration configurationAtOpen;
     private String uniqueGraphId;
@@ -1236,7 +1248,7 @@ public class GraphDatabaseConfiguration {
     private Boolean propertyPrefetching;
     private boolean adjustQueryLimit;
     private Boolean useMultiQuery;
-    private int indexSelectThreshold;
+    private IndexSelectionStrategy indexSelectionStrategy;
     private Boolean batchPropertyPrefetching;
     private boolean allowVertexIdSetting;
     private boolean logTransactions;
@@ -1324,8 +1336,8 @@ public class GraphDatabaseConfiguration {
         return useMultiQuery;
     }
 
-    public int getIndexSelectThreshold() {
-        return indexSelectThreshold;
+    public IndexSelectionStrategy getIndexSelectionStrategy() {
+        return indexSelectionStrategy;
     }
 
     public boolean batchPropertyPrefetching() {
@@ -1442,7 +1454,8 @@ public class GraphDatabaseConfiguration {
 
         propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
         useMultiQuery = configuration.get(USE_MULTIQUERY);
-        indexSelectThreshold = configuration.get(INDEX_SELECT_BRUTE_FORCE_THRESHOLD);
+        indexSelectionStrategy = Backend.getImplementationClass(configuration, configuration.get(INDEX_SELECT_STRATEGY),
+            REGISTERED_INDEX_SELECTION_STRATEGIES);
         batchPropertyPrefetching = configuration.get(BATCH_PROPERTY_PREFETCHING);
         adjustQueryLimit = configuration.get(ADJUST_LIMIT);
         allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);

@@ -18,6 +18,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.janusgraph.TestCategory;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
@@ -58,6 +59,9 @@ import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
+import org.janusgraph.graphdb.query.index.ApproximateIndexSelectionStrategy;
+import org.janusgraph.graphdb.query.index.BruteForceIndexSelectionStrategy;
+import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.testutil.TestGraphConfigs;
@@ -80,14 +84,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -95,6 +92,7 @@ import java.util.stream.Collectors;
 
 import static org.janusgraph.graphdb.JanusGraphTest.evaluateQuery;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy.INDEX_SELECT_BRUTE_FORCE_THRESHOLD;
 import static org.janusgraph.testutil.JanusGraphAssert.*;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
@@ -848,6 +846,48 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 numV / strings.length, new boolean[]{false, true});
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strings[0]).orderBy("weight", asc), ElementCategory.VERTEX,
                 numV / strings.length, new boolean[]{false, false}, weight, Order.ASC);
+    }
+
+    @Test
+    public void testIndexSelectStrategy() {
+        final PropertyKey name = makeKey("name", String.class);
+        final JanusGraphIndex compositeNameIndex = mgmt.buildIndex("composite", Vertex.class).addKey(name).buildCompositeIndex();
+        compositeNameIndex.name();
+
+        final PropertyKey prop = makeKey("prop", String.class);
+        final JanusGraphIndex mixedIndex = mgmt.buildIndex("mixed", Vertex.class)
+            .addKey(name, Mapping.STRING.asParameter())
+            .addKey(prop, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
+        mixedIndex.name();
+        finishSchema();
+
+        // best combination is to pick up only 1 index (mixed index), however, greedy based approximate algorithm
+        // picks up 2 indexes (composite index + mixed index)
+
+        // use default config
+        assertEquals(1, getIndexSelectResultNum());
+
+        // use full class name
+        assertEquals(1, getIndexSelectResultNum(option(INDEX_SELECT_STRATEGY),
+            ThresholdBasedIndexSelectionStrategy.class.getName()));
+
+        assertEquals(1, getIndexSelectResultNum(option(INDEX_SELECT_BRUTE_FORCE_THRESHOLD), 10,
+            option(INDEX_SELECT_STRATEGY), ThresholdBasedIndexSelectionStrategy.NAME));
+
+        assertEquals(2, getIndexSelectResultNum(option(INDEX_SELECT_BRUTE_FORCE_THRESHOLD), 0,
+            option(INDEX_SELECT_STRATEGY), ThresholdBasedIndexSelectionStrategy.NAME));
+
+        assertEquals(1, getIndexSelectResultNum(option(INDEX_SELECT_STRATEGY), BruteForceIndexSelectionStrategy.NAME));
+
+        assertEquals(2, getIndexSelectResultNum(option(INDEX_SELECT_STRATEGY), ApproximateIndexSelectionStrategy.NAME));
+    }
+
+    private long getIndexSelectResultNum(Object... settings) {
+        clopen(settings);
+        GraphTraversalSource g = graph.traversal();
+        TraversalMetrics profile = g.V().has("name", "value")
+            .has("prop", "value").profile().next();
+        return profile.getMetrics().stream().findFirst().get().getNested().stream().filter(m -> m.getName().equals("backend-query")).count();
     }
 
     @Test
