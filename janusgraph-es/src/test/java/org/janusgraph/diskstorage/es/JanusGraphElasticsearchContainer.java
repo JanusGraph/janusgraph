@@ -58,7 +58,7 @@ public class JanusGraphElasticsearchContainer extends ElasticsearchContainer {
         this(false);
     }
 
-    public JanusGraphElasticsearchContainer(boolean bindToDefaultPort) {
+    public JanusGraphElasticsearchContainer(boolean bindDefaultPort) {
         super(getElasticImage() + ":" + getVersion());
         withEnv("transport.host", "0.0.0.0");
         withEnv("xpack.security.enabled", "false");
@@ -67,7 +67,7 @@ public class JanusGraphElasticsearchContainer extends ElasticsearchContainer {
             withEnv("script.max_compilations_per_minute", "30");
         }
 
-        if(bindToDefaultPort){
+        if(bindDefaultPort){
             addFixedExposedPort(ELASTIC_PORT, ELASTIC_PORT);
         }
     }

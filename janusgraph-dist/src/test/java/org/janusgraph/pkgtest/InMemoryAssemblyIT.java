@@ -14,34 +14,27 @@
 
 package org.janusgraph.pkgtest;
 
-import org.janusgraph.JanusGraphCassandraContainer;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
-public class CqlAssemblyIT extends AbstractJanusGraphAssemblyIT {
-
-    @Container
-    private static JanusGraphCassandraContainer cql = new JanusGraphCassandraContainer(true);
+public class InMemoryAssemblyIT extends AbstractJanusGraphAssemblyIT {
 
     @Test
     public void testSimpleGremlinSession() throws Exception {
-        testSimpleGremlinSession("conf/janusgraph-cql.properties", "cql", false);
+        testSimpleGremlinSession("conf/janusgraph-inmemory.properties", "inmemory", false);
     }
 
     @Test
     public void testSimpleGremlinSessionFull() throws Exception {
-        testSimpleGremlinSession("conf/janusgraph-cql.properties", "cql", true);
+        testSimpleGremlinSession("conf/janusgraph-inmemory.properties", "inmemory", true);
     }
 
     @Test
-    public void testGremlinServer() throws Exception {
-        testGremlinServer("conf/gremlin-server/gremlin-server-cql.yaml", false);
+    public void testJanusGraphServerGremlin() throws Exception {
+        testGremlinServer("conf/gremlin-server/gremlin-server.yaml", false);
     }
 
     @Test
-    public void testJanusGraphServerFull() throws Exception {
-        testGremlinServer("conf/gremlin-server/gremlin-server-cql.yaml", true);
+    public void testJanusGraphServerGremlinFull() throws Exception {
+        testGremlinServer("conf/gremlin-server/gremlin-server.yaml", true);
     }
 }
