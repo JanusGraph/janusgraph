@@ -26,11 +26,21 @@ public class BerkeleyESAssemblyIT extends AbstractJanusGraphAssemblyIT {
     private static JanusGraphElasticsearchContainer esr = new JanusGraphElasticsearchContainer(true);
 
     @Test
-    public void testBerkeleyGettingStarted() throws Exception {
+    public void testSimpleGremlinSession() throws Exception {
         testGettingStartedGremlinSession("conf/janusgraph-berkeleyje-es.properties", "berkeleyje", false);
     }
     @Test
-    public void testBerkeleyGettingStartedFull() throws Exception {
+    public void testSimpleGremlinSessionFull() throws Exception {
         testGettingStartedGremlinSession("conf/janusgraph-berkeleyje-es.properties", "berkeleyje", true);
+    }
+
+    @Test
+    public void testGremlinServer() throws Exception {
+        testGremlinServer("conf/gremlin-server/gremlin-server-berkeleyje-es.yaml", false);
+    }
+
+    @Test
+    public void testJanusGraphServerFull() throws Exception {
+        testGremlinServer("conf/gremlin-server/gremlin-server-berkeleyje-es.yaml", true);
     }
 }

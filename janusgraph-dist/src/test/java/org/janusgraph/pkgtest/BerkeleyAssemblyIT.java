@@ -19,11 +19,22 @@ import org.junit.jupiter.api.Test;
 public class BerkeleyAssemblyIT extends AbstractJanusGraphAssemblyIT {
 
     @Test
-    public void testBerkeleySimpleSession() throws Exception {
+    public void testSimpleGremlinSession() throws Exception {
         testSimpleGremlinSession("conf/janusgraph-berkeleyje.properties", "berkeleyje", false);
     }
+
     @Test
-    public void testBerkeleySimpleSessionFull() throws Exception {
+    public void testSimpleGremlinSessionFull() throws Exception {
         testSimpleGremlinSession("conf/janusgraph-berkeleyje.properties", "berkeleyje", true);
+    }
+
+    @Test
+    public void testGremlinServer() throws Exception {
+        testGremlinServer("conf/gremlin-server/gremlin-server-berkeleyje.yaml", false);
+    }
+
+    @Test
+    public void testJanusGraphServerFull() throws Exception {
+        testGremlinServer("conf/gremlin-server/gremlin-server-berkeleyje.yaml", true);
     }
 }

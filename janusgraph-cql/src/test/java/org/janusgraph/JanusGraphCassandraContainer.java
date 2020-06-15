@@ -96,9 +96,9 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
         this(false);
     }
 
-    public JanusGraphCassandraContainer(boolean fixedExposedPortOfCQL) {
+    public JanusGraphCassandraContainer(boolean bindDefaultPort) {
         super(getCassandraImage() + ":" + getVersion());
-        if (fixedExposedPortOfCQL) {
+        if (bindDefaultPort) {
             addFixedExposedPort(CQL_PORT, CQL_PORT);
         }
         withEnv("MAX_HEAP_SIZE", "2G");
