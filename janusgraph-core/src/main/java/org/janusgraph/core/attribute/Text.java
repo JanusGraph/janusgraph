@@ -281,7 +281,7 @@ public enum Text implements JanusGraphPredicate {
 
     abstract boolean evaluateRaw(String value, String condition);
 
-    private static final int MIN_TOKEN_LENGTH = 1;
+    private static final int MIN_TOKEN_LENGTH = 0;
 
     public static List<String> tokenize(String str) {
         final ArrayList<String> tokens = new ArrayList<>();
