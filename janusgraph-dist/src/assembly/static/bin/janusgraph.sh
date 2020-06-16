@@ -68,7 +68,7 @@ if [ -z "$JPS" ]; then
 fi
 
 GREMLIN_FRIENDLY_NAME='Gremlin-Server'
-GREMLIN_CLASS_NAME=org.apache.tinkerpop.gremlin.server.GremlinServer
+GREMLIN_CLASS_NAME=org.janusgraph.graphdb.server.JanusGraphServer
 ES_FRIENDLY_NAME=Elasticsearch
 ES_CLASS_NAME=org.elasticsearch.bootstrap.Elasticsearch
 CASSANDRA_FRIENDLY_NAME=Cassandra

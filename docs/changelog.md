@@ -129,7 +129,7 @@ in the same JVM as JanusGraph is however no longer supported with CQL.
     While we do not support them any more, users can still use them 
     if they for some reason cannot migrate to CQL.
 
-#### Drop support for Cassandra 2
+##### Drop support for Cassandra 2
 
 With the release of Cassandra 4, the support of Cassandra 2 will be dropped. 
 Therefore, you should upgrade to Cassandra 3 or higher.
@@ -138,6 +138,19 @@ Therefore, you should upgrade to Cassandra 3 or higher.
     Cassandra 3 and higher doesn't support compact storage. If you have activated 
     or never changed the value of `storage.cql.storage-compact=true`, during the 
     upgrade process you have to ensure your data is correctly migrated.
+
+##### Introduction of a JanusGraph Server startup class as a replacement for Gremlin Server startup
+
+The `gremlin-server.sh` and the `janusgraph.sh` are configured to use the new JanusGraph startup class. 
+This new class introduces a default set of TinkerPop Serializers if no serializers are configured in 
+the `gremlin-server.yaml`. Furthermore, JanusGraph will log the version of JanusGraph and TinkerPop 
+after a shiny new JanusGraph header.
+
+!!! note
+    If you have a custom script to startup JanusGraph, you propably would like to replace the Gremlin Server 
+    class with JanusGraph Server class: 
+    
+    `org.apache.tinkerpop.gremlin.server.GremlinServer` => `org.janusgraph.graphdb.server.JanusGraphServer`
 
 ### Version 0.5.2 (Release Date: May 3, 2020)
 
