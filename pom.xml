@@ -418,7 +418,15 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>2.5</version>
+                    <version>3.0.2</version>
+                    <configuration>
+                        <archive>
+                            <manifestEntries>
+                                <janusgraphVersion>${project.version}</janusgraphVersion>
+                                <tinkerpopVersion>${tinkerpop.version}</tinkerpopVersion>
+                            </manifestEntries>
+                        </archive>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <artifactId>maven-resources-plugin</artifactId>
