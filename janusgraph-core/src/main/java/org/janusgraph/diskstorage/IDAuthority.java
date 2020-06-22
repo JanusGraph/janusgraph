@@ -16,6 +16,7 @@ package org.janusgraph.diskstorage;
 
 
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
+import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.idassigner.IDBlockSizer;
 
@@ -30,6 +31,7 @@ import java.util.List;
  */
 
 public interface IDAuthority {
+    public static final StaticBuffer ID_COLUMN = BufferUtil.getIntBuffer(0);
 
     /**
      * Returns a block of new ids in the form of {@link IDBlock}. It is guaranteed that

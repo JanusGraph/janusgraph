@@ -188,5 +188,7 @@ public interface KeyColumnValueStore {
      */
     void close() throws BackendException;
 
-
+    default boolean casUpdate(StaticBuffer key, Entry entry, StaticBuffer newValue, StoreTransaction txh) throws BackendException {
+        return false;
+    }
 }

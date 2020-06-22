@@ -60,18 +60,18 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
     private static final Logger logger = LoggerFactory.getLogger(HBaseKeyColumnValueStore.class);
 
-    private final String tableName;
-    private final HBaseStoreManager storeManager;
+    protected final String tableName;
+    protected final HBaseStoreManager storeManager;
 
     // When using shortened CF names, columnFamily is the shortname and storeName is the longname
     // When not using shortened CF names, they are the same
     //private final String columnFamily;
     private final String storeName;
     // This is columnFamily.getBytes()
-    private final byte[] columnFamilyBytes;
+    protected final byte[] columnFamilyBytes;
     private final HBaseGetter entryGetter;
 
-    private final ConnectionMask cnx;
+    protected final ConnectionMask cnx;
 
     HBaseKeyColumnValueStore(HBaseStoreManager storeManager, ConnectionMask cnx, String tableName, String columnFamily, String storeName) {
         this.storeManager = storeManager;
@@ -148,19 +148,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     private Map<StaticBuffer,EntryList> getHelper(List<StaticBuffer> keys, Filter getFilter) throws BackendException {
-        List<Get> requests = new ArrayList<>(keys.size());
-        {
-            for (StaticBuffer key : keys) {
-                Get g = new Get(key.as(StaticBuffer.ARRAY_FACTORY)).addFamily(columnFamilyBytes).setFilter(getFilter);
-                try {
-                    g.setTimeRange(0, Long.MAX_VALUE);
-                } catch (IOException e) {
-                    throw new PermanentBackendException(e);
-                }
-                requests.add(g);
-            }
-        }
-
+        List<Get> requests = buildGets(keys, getFilter);
         final Map<StaticBuffer,EntryList> resultMap = new HashMap<>(keys.size());
 
         try {
@@ -205,7 +193,21 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         }
     }
 
-    private void mutateMany(Map<StaticBuffer, KCVMutation> mutations, StoreTransaction txh) throws BackendException {
+    protected List<Get> buildGets(List<StaticBuffer> keys, Filter getFilter) throws BackendException {
+        List<Get> gets = new ArrayList<>(keys.size());
+        for (StaticBuffer key : keys) {
+            Get g = new Get(key.as(StaticBuffer.ARRAY_FACTORY)).addFamily(columnFamilyBytes).setFilter(getFilter);
+            try {
+                g.setTimeRange(0, Long.MAX_VALUE);
+            } catch (IOException e) {
+                throw new PermanentBackendException(e);
+            }
+            gets.add(g);
+        }
+        return gets;
+	}
+
+	private void mutateMany(Map<StaticBuffer, KCVMutation> mutations, StoreTransaction txh) throws BackendException {
         storeManager.mutateMany(ImmutableMap.of(storeName, mutations), txh);
     }
 

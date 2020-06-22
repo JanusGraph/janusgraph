@@ -26,6 +26,7 @@ import org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode;
 import org.janusgraph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import org.janusgraph.diskstorage.keycolumnvalue.*;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.configuration.JanusGraphConstants;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -97,6 +98,7 @@ public abstract class IDAuthorityTest {
         ModifiableConfiguration c = GraphDatabaseConfiguration.buildGraphConfiguration();
         c.set(IDAUTHORITY_WAIT, Duration.ofMillis(100L));
         c.set(IDS_BLOCK_SIZE,400);
+        c.set(IDS_CAS,true);
         return c;
     }
 
@@ -146,7 +148,7 @@ public abstract class IDAuthorityTest {
 
             manager[i] = openStorageManager();
             StoreFeatures storeFeatures = manager[i].getFeatures();
-            KeyColumnValueStore idStore = manager[i].openDatabase("ids");
+            KeyColumnValueStore idStore = manager[i].openDatabase(JanusGraphConstants.JANUSGRAPH_ID_STORE_NAME);
             if (storeFeatures.isKeyConsistent())
                 idAuthorities[i] = new ConsistentKeyIDAuthority(idStore, manager[i], sc);
             else throw new IllegalArgumentException("Cannot open id store");

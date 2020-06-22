@@ -413,7 +413,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 .orderedScan(true).unorderedScan(true).batchMutation(true)
                 .multiQuery(true).distributed(true).keyOrdered(true).storeTTL(true)
                 .cellTTL(true).timestamps(true).preferredTimestamps(PREFERRED_TIMESTAMPS)
-                .optimisticLocking(true).keyConsistent(c);
+                .optimisticLocking(true).keyConsistent(c).supportsCASUpdate(true);
 
         try {
             fb.localKeyPartition(getDeployment() == Deployment.LOCAL);
@@ -474,7 +474,13 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         if (store == null) {
             final String cfName = getCfNameForStoreName(longName);
 
-            HBaseKeyColumnValueStore newStore = new HBaseKeyColumnValueStore(this, cnx, tableName, cfName, longName);
+            HBaseKeyColumnValueStore newStore;
+            if (getStorageConfig().get(IDS_STORE_NAME).equals(longName)) { // ID Store
+                newStore = new HBaseIDStore(this, cnx, tableName, cfName, longName);
+                logger.debug("instance HBaseIDStore for {}.", longName);
+            } else {
+                newStore = new HBaseKeyColumnValueStore(this, cnx, tableName, cfName, longName);
+            }
 
             store = openStores.putIfAbsent(longName, newStore); // nothing bad happens if we loose to other thread
 

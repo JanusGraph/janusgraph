@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Row;
@@ -42,4 +43,6 @@ public interface TableMask extends Closeable
 
     void batch(List<Row> writes, Object[] results) throws IOException, InterruptedException;
 
+    boolean checkAndPut(byte[] row, byte[] family, byte[] qualifier,
+        byte[] value, Put put) throws IOException;
 }
