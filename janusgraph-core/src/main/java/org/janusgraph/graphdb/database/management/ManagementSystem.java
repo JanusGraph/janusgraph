@@ -878,8 +878,22 @@ public class ManagementSystem implements JanusGraphManagement {
      * and assuming each node is correctly configured to use the {@link org.janusgraph.graphdb.management.JanusGraphManager}.
      */
     public void evictGraphFromCache() {
+        evictGraphFromCache(null);
+    }
+
+    /**
+     * Upon the open managementsystem's commit, this graph will be asynchronously evicted from the cache on all JanusGraph nodes in your
+     * cluster, once there are no open transactions on this graph on each respective JanusGraph node
+     * and assuming each node is correctly configured to use the {@link org.janusgraph.graphdb.management.JanusGraphManager}.
+     * @param trigger A Callable that will be called once the eviction is complete in the cluster. Return
+     *                boolean value indicating trigger status.
+     */
+    public void evictGraphFromCache(Callable<Boolean> trigger) {
         this.evictGraphFromCache = true;
-        setUpdateTrigger(new GraphCacheEvictionCompleteTrigger(this.graph.getGraphName()));
+        if (trigger != null)
+            setUpdateTrigger(trigger);
+        else
+            setUpdateTrigger(new GraphCacheEvictionCompleteTrigger(this.graph.getGraphName()));
     }
 
     private static class GraphCacheEvictionCompleteTrigger implements Callable<Boolean> {

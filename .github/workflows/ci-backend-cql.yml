@@ -71,6 +71,10 @@ jobs:
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/hadoop/*\""
           - module: cql
+            args: "-Pcassandra3-byteordered -Dtest=\"**/core/cql/*\""
+          - module: cql
+            args: "-Pcassandra3-murmur -Dtest=\"**/core/cql/*\""
+          - module: cql
             args: "-Pcassandra3-murmur-ssl -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
           - module: cql
             args: "-Pcassandra3-murmur-client-auth -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
