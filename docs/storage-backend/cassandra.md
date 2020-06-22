@@ -7,7 +7,7 @@
 > data. Cassandra’s support for replicating across multiple datacenters
 > is best-in-class, providing lower latency for your users and the peace
 > of mind of knowing that you can survive regional outages. The largest
-> known Cassandra cluster has over 300 TB of data in over 400 machines.
+> known Cassandra cluster has over 75,000 nodes storing over 10 PB of data.
 >
 > —  [Apache Cassandra Homepage](http://cassandra.apache.org/)
 
