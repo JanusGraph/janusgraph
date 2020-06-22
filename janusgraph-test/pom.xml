@@ -30,6 +30,13 @@
     </repositories>
 
     <dependencies>
+        <!-- Enforce a classpath ordering constraint to ensure log4j is used for logging. -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- End logging backends. -->
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-core</artifactId>

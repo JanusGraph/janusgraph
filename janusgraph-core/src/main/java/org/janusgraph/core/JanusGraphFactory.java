@@ -203,6 +203,7 @@ public class JanusGraphFactory {
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         if (jgm != null) {
             jgm.removeGraph(g.getGraphName());
+            jgm.removeTraversalSource(ConfiguredGraphFactory.toTraversalSourceName(g.getGraphName()));
         }
         if (graph.isOpen()) {
             graph.close();

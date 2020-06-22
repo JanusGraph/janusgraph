@@ -14,40 +14,65 @@
 
 package org.janusgraph.core;
 
+import org.apache.commons.configuration.MapConfiguration;
 import org.apache.tinkerpop.gremlin.groovy.engine.GremlinExecutor;
 import org.apache.tinkerpop.gremlin.jsr223.GremlinScriptEngineManager;
-import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
-import org.janusgraph.graphdb.management.JanusGraphManager;
-import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
-import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
-import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
-
 import org.apache.tinkerpop.gremlin.server.Settings;
-import org.apache.commons.configuration.MapConfiguration;
-
-import java.util.Map;
-import java.util.HashMap;
-
-import org.junit.jupiter.api.Test;
+import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
+import org.janusgraph.graphdb.management.JanusGraphManager;
+import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
+import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 
-public class ConfiguredGraphFactoryTest {
-    private static final JanusGraphManager gm;
-    static {
+public abstract class AbstractConfiguredGraphFactoryTest {
+
+    private static JanusGraphManager gm;
+
+    /**
+     * Getter for the settings to use to instantiate the graph supporting the
+     * ConfigurationManagementGraph instance.
+     * @return a MapConfiguration instance
+     */
+    protected abstract MapConfiguration getManagementConfig();
+
+    /**
+     * Getter for the settings to use to create the template configurations
+     * (createTemplateConfiguration)
+     * @return a MapConfiguration instance
+     */
+    protected abstract MapConfiguration getTemplateConfig();
+
+    /**
+     * Getter for the settings to use to create the graph configurations (create)
+     * @return a MapConfiguration instance
+     */
+    protected abstract MapConfiguration getGraphConfig();
+
+    @BeforeEach
+    public void setup() {
+        if (gm != null)
+            return;
         gm = new JanusGraphManager(new Settings());
-        final Map<String, Object> map = new HashMap<>();
-        map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
-        final MapConfiguration config = new MapConfiguration(map);
+        final MapConfiguration config = getManagementConfig();
         final StandardJanusGraph graph = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
         // Instantiate the ConfigurationManagementGraph Singleton
         new ConfigurationManagementGraph(graph);
@@ -66,42 +91,43 @@ public class ConfiguredGraphFactoryTest {
 
     @Test
     public void shouldOpenGraphUsingConfiguration() throws Exception {
+        final MapConfiguration graphConfig = getGraphConfig();
+        final String graphName = graphConfig.getString(GRAPH_NAME.toStringWithoutRoot());
+
         try {
-            final Map<String, Object> map = new HashMap<>();
-            map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
-            map.put(GRAPH_NAME.toStringWithoutRoot(), "graph1");
-            ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
-            final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.open("graph1");
+            ConfiguredGraphFactory.createConfiguration(graphConfig);
+            final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.open(graphName);
             assertNotNull(graph);
         } finally {
-            ConfiguredGraphFactory.removeConfiguration("graph1");
-            ConfiguredGraphFactory.close("graph1");
+            ConfiguredGraphFactory.removeConfiguration(graphName);
+            ConfiguredGraphFactory.close(graphName);
         }
     }
 
     @Test
     public void graphConfigurationShouldBeWhatWeExpect() throws Exception {
+        final MapConfiguration graphConfig = getGraphConfig();
+        final String graphName = graphConfig.getString(GRAPH_NAME.toStringWithoutRoot());
+
         try {
-            final Map<String, Object> map = new HashMap<>();
-            map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
-            map.put(GRAPH_NAME.toStringWithoutRoot(), "graph1");
-            ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
-            final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.open("graph1");
+            ConfiguredGraphFactory.createConfiguration(getGraphConfig());
+
+            final String backend = graphConfig.getString(STORAGE_BACKEND.toStringWithoutRoot());
+            final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.open(graphName);
+
             assertNotNull(graph);
-            assertEquals("graph1", graph.getConfiguration().getConfiguration().get(GRAPH_NAME));
-            assertEquals("inmemory", graph.getConfiguration().getConfiguration().get(STORAGE_BACKEND));
+            assertEquals(graphName, graph.getConfiguration().getConfiguration().get(GRAPH_NAME));
+            assertEquals(backend, graph.getConfiguration().getConfiguration().get(STORAGE_BACKEND));
         } finally {
-            ConfiguredGraphFactory.removeConfiguration("graph1");
-            ConfiguredGraphFactory.close("graph1");
+            ConfiguredGraphFactory.removeConfiguration(graphName);
+            ConfiguredGraphFactory.close(graphName);
         }
     }
 
     @Test
     public void shouldCreateAndGetGraphUsingTemplateConfiguration() throws Exception {
         try {
-            final Map<String, Object> map = new HashMap<>();
-            map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
-            ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
+            ConfiguredGraphFactory.createTemplateConfiguration(getTemplateConfig());
             final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.create("graph1");
             final StandardJanusGraph graph1 = (StandardJanusGraph) ConfiguredGraphFactory.open("graph1");
 
@@ -118,16 +144,17 @@ public class ConfiguredGraphFactoryTest {
         throws Exception {
 
         try {
-            final Map<String, Object> map = new HashMap<>();
-            map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
-            ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
+            final MapConfiguration templateConfig = getTemplateConfig();
+            ConfiguredGraphFactory.createTemplateConfiguration(templateConfig);
+
+            final String backend = templateConfig.getString(STORAGE_BACKEND.toStringWithoutRoot());
             final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.create("graph1");
             final StandardJanusGraph graph1 = (StandardJanusGraph) ConfiguredGraphFactory.open("graph1");
 
             assertNotNull(graph);
             assertEquals(graph, graph1);
             assertEquals("graph1", graph.getConfiguration().getConfiguration().get(GRAPH_NAME));
-            assertEquals("inmemory", graph.getConfiguration().getConfiguration().get(STORAGE_BACKEND));
+            assertEquals(backend, graph.getConfiguration().getConfiguration().get(STORAGE_BACKEND));
 
         } finally {
             ConfiguredGraphFactory.removeConfiguration("graph1");
@@ -151,22 +178,20 @@ public class ConfiguredGraphFactoryTest {
 
     @Test
     public void shouldFailToOpenNewGraphAfterRemoveConfiguration() {
-        final Map<String, Object> map = new HashMap<>();
-        map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
-        map.put(GRAPH_NAME.toStringWithoutRoot(), "graph1");
-        ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
-        ConfiguredGraphFactory.removeConfiguration("graph1");
+        final MapConfiguration graphConfig = getGraphConfig();
+        final String graphName = graphConfig.getString(GRAPH_NAME.toStringWithoutRoot());
 
-        RuntimeException graph1 = assertThrows(RuntimeException.class, () -> ConfiguredGraphFactory.open("graph1"));
+        ConfiguredGraphFactory.createConfiguration(graphConfig);
+        ConfiguredGraphFactory.removeConfiguration(graphName);
+
+        RuntimeException graph1 = assertThrows(RuntimeException.class, () -> ConfiguredGraphFactory.open(graphName));
         assertEquals("Please create configuration for this graph using the " +
             "ConfigurationManagementGraph#createConfiguration API.", graph1.getMessage());
     }
 
     @Test
     public void shouldFailToCreateGraphAfterRemoveTemplateConfiguration() {
-        final Map<String, Object> map = new HashMap<>();
-        map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
-        ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
+        ConfiguredGraphFactory.createTemplateConfiguration(getTemplateConfig());
         ConfiguredGraphFactory.removeTemplateConfiguration();
 
         RuntimeException graph1 = assertThrows(RuntimeException.class, () -> ConfiguredGraphFactory.create("graph1"));
@@ -176,80 +201,98 @@ public class ConfiguredGraphFactoryTest {
 
     @Test
     public void shouldFailToOpenGraphAfterRemoveConfiguration() {
-        final Map<String, Object> map = new HashMap<>();
-        map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
-        map.put(GRAPH_NAME.toStringWithoutRoot(), "graph1");
-        ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
-        ConfiguredGraphFactory.removeConfiguration("graph1");
+        final MapConfiguration graphConfig = getGraphConfig();
+        final String graphName = graphConfig.getString(GRAPH_NAME.toStringWithoutRoot());
 
-        RuntimeException graph1 = assertThrows(RuntimeException.class, () -> ConfiguredGraphFactory.create("graph1"));
+        ConfiguredGraphFactory.createConfiguration(graphConfig);
+        ConfiguredGraphFactory.removeConfiguration(graphName);
+
+        RuntimeException graph1 = assertThrows(RuntimeException.class, () -> ConfiguredGraphFactory.create(graphName));
         assertEquals("Please create a template Configuration using the " +
             "ConfigurationManagementGraph#createTemplateConfiguration API.", graph1.getMessage());
     }
 
     @Test
     public void updateConfigurationShouldRemoveGraphFromCache() throws Exception {
+        final MapConfiguration graphConfig = getGraphConfig();
+        final String graphName = graphConfig.getString(GRAPH_NAME.toStringWithoutRoot());
+
         try {
-            final Map<String, Object> map = new HashMap<>();
-            map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
-            map.put(GRAPH_NAME.toStringWithoutRoot(), "graph1");
-            ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
-            final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.open("graph1");
+            ConfiguredGraphFactory.createConfiguration(graphConfig);
+            final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.open(graphName);
             assertNotNull(graph);
 
+            final Map<String, Object> map = graphConfig.getMap();
             map.put(STORAGE_BACKEND.toStringWithoutRoot(), "bogusBackend");
-            ConfiguredGraphFactory.updateConfiguration("graph1", new MapConfiguration(map));
-            assertNull(gm.getGraph("graph1"));
+            ConfiguredGraphFactory.updateConfiguration(graphName, new MapConfiguration(map));
+            assertNull(gm.getGraph(graphName));
             // we should throw an error since the config has been updated and we are attempting
             // to open a bogus backend
-            IllegalArgumentException graph1 = assertThrows(IllegalArgumentException.class, () -> {
-                final StandardJanusGraph graph2 = (StandardJanusGraph) ConfiguredGraphFactory.open("graph1");
-            });
-            assertEquals("Could not find implementation class: bogusBackend", graph1.getMessage());
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                ConfiguredGraphFactory.open(graphName));
+            assertEquals("Could not find implementation class: bogusBackend", exception.getMessage());
         } finally {
-            ConfiguredGraphFactory.removeConfiguration("graph1");
-            ConfiguredGraphFactory.close("graph1");
+            ConfiguredGraphFactory.removeConfiguration(graphName);
+            ConfiguredGraphFactory.close(graphName);
         }
     }
 
     @Test
     public void removeConfigurationShouldRemoveGraphFromCache() throws Exception {
+        final MapConfiguration graphConfig = getGraphConfig();
+        final String graphName = graphConfig.getString(GRAPH_NAME.toStringWithoutRoot());
+
         try {
-            final Map<String, Object> map = new HashMap<>();
-            map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
-            map.put(GRAPH_NAME.toStringWithoutRoot(), "graph1");
-            ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
-            final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.open("graph1");
+            ConfiguredGraphFactory.createConfiguration(graphConfig);
+            final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.open(graphName);
             assertNotNull(graph);
 
-            ConfiguredGraphFactory.removeConfiguration("graph1");
-            assertNull(gm.getGraph("graph1"));
+            ConfiguredGraphFactory.removeConfiguration(graphName);
+            assertNull(gm.getGraph(graphName));
         } finally {
-            ConfiguredGraphFactory.removeConfiguration("graph1");
-            ConfiguredGraphFactory.close("graph1");
+            ConfiguredGraphFactory.removeConfiguration(graphName);
+            ConfiguredGraphFactory.close(graphName);
+        }
+    }
+
+    @Test
+    public void dropGraphShouldRemoveGraphFromCache() throws Exception {
+        final MapConfiguration graphConfig = getGraphConfig();
+        final String graphName = graphConfig.getString(GRAPH_NAME.toStringWithoutRoot());
+
+        try {
+            ConfiguredGraphFactory.createConfiguration(graphConfig);
+
+            final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.open(graphName);
+            assertNotNull(graph);
+
+            ConfiguredGraphFactory.drop(graphName);
+            assertNull(gm.getGraph(graphName));
+            assertTrue(graph.isClosed());
+        } finally {
+            ConfiguredGraphFactory.removeConfiguration(graphName);
+            ConfiguredGraphFactory.close(graphName);
         }
     }
 
     @Test
     public void shouldBeAbleToRemoveBogusConfiguration() throws Exception {
+        final MapConfiguration graphConfig = getGraphConfig();
+        final String graphName = graphConfig.getString(GRAPH_NAME.toStringWithoutRoot());
+
         try {
-            final Map<String, Object> map = new HashMap<>();
-            map.put(STORAGE_BACKEND.toStringWithoutRoot(), "bogusBackend");
-            map.put(GRAPH_NAME.toStringWithoutRoot(), "graph1");
-            ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
-            ConfiguredGraphFactory.removeConfiguration("graph1");
+            ConfiguredGraphFactory.createConfiguration(graphConfig);
+            ConfiguredGraphFactory.removeConfiguration(graphName);
         } finally {
-            ConfiguredGraphFactory.removeConfiguration("graph1");
-            ConfiguredGraphFactory.close("graph1");
+            ConfiguredGraphFactory.removeConfiguration(graphName);
+            ConfiguredGraphFactory.close(graphName);
         }
     }
 
     @Test
     public void shouldCreateTwoGraphsUsingSameTemplateConfiguration() throws Exception {
         try {
-            final Map<String, Object> map = new HashMap<>();
-            map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
-            ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
+            ConfiguredGraphFactory.createTemplateConfiguration(getTemplateConfig());
             final StandardJanusGraph graph1 = (StandardJanusGraph) ConfiguredGraphFactory.create("graph1");
             final StandardJanusGraph graph2 = (StandardJanusGraph) ConfiguredGraphFactory.create("graph2");
 
@@ -269,9 +312,7 @@ public class ConfiguredGraphFactoryTest {
     @Test
     public void ensureCallingGraphCloseResultsInNewGraphReferenceOnNextCallToOpen() throws Exception {
         try {
-            final Map<String, Object> map = new HashMap<>();
-            map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
-            ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));
+            ConfiguredGraphFactory.createTemplateConfiguration(getTemplateConfig());
             final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.create("graph1");
             assertNotNull(graph);
             assertEquals("graph1", graph.getConfiguration().getConfiguration().get(GRAPH_NAME));
@@ -289,12 +330,12 @@ public class ConfiguredGraphFactoryTest {
 
     @Test
     public void dropShouldCleanUpTraversalSourceAndBindings() throws Exception {
+        final MapConfiguration graphConfig = getGraphConfig();
+        final String graphName = graphConfig.getString(GRAPH_NAME.toStringWithoutRoot());
+        final String graphNameTraversal = graphName + "_traversal";
+
         try {
-            final String graphName = "graph1";
-            final Map<String, Object> map = new HashMap<>();
-            map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
-            map.put(GRAPH_NAME.toStringWithoutRoot(), graphName);
-            ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
+            ConfiguredGraphFactory.createConfiguration(graphConfig);
             final JanusGraphManager jgm = JanusGraphManager.getInstance();
             final Bindings bindings = new SimpleBindings();
             jgm.configureGremlinExecutor(mockGremlinExecutor(bindings));
@@ -304,17 +345,18 @@ public class ConfiguredGraphFactoryTest {
             assertEquals(ConfiguredGraphFactory.toTraversalSourceName(graphName),
                 jgm.getTraversalSourceNames().iterator().next());
             // Confirm the graph and traversal source were added to the Gremlin Script Engine bindings
-            assertTrue(bindings.containsKey("graph1"));
-            assertTrue(bindings.containsKey("graph1_traversal"));
+            assertTrue(bindings.containsKey(graphName));
+            assertTrue(bindings.containsKey(graphNameTraversal));
             // Drop the graph and confirm that the graph and traversal source
             ConfiguredGraphFactory.drop(graphName);
             assertNull(jgm.getGraph(graphName));
             assertTrue(jgm.getTraversalSourceNames().isEmpty());
             // Confirm the graph and traversal source were removed from the Gremlin Script Engine bindings
-            assertFalse(bindings.containsKey("graph1"));
-            assertFalse(bindings.containsKey("graph1_traversal"));
+            assertFalse(bindings.containsKey(graphName));
+            assertFalse(bindings.containsKey(graphNameTraversal));
         } finally {
-            ConfiguredGraphFactory.removeConfiguration("graph1");
+            ConfiguredGraphFactory.removeConfiguration(graphName);
+            ConfiguredGraphFactory.close(graphName);
         }
     }
 

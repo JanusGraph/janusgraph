@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.List;
 import java.util.Set;
 import java.util.Objects;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,13 +155,59 @@ public class ConfiguredGraphFactory {
      *
      * <p><b>WARNING: This is an irreversible operation that will delete all graph and index data.</b></p>
      * @param graphName String graphName. Corresponding graph can be open or closed.
-     * @throws BackendException If an error occurs during deletion
-     * @throws ConfigurationManagementGraphNotEnabledException If ConfigurationManagementGraph not
      */
-    public static void drop(String graphName) throws Exception {
-        final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.close(graphName);
-        JanusGraphFactory.drop(graph);
-        removeConfiguration(graphName);
+    public static void drop(String graphName) {
+        final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
+        Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
+
+        final StandardJanusGraph graph = (StandardJanusGraph) jgm.getGraph(graphName);
+        // Evict the graph from the cache in all nodes in the cluster
+        DropGraphOnEvictionTrigger dropTrigger = new DropGraphOnEvictionTrigger(graphName, graph, getConfigGraphManagementInstance());
+        removeGraphFromCache(graph, dropTrigger);
+        // Block the current thread until the drop operation finish
+        dropTrigger.waitUntilDropFinish();
+    }
+
+    /**
+     * This trigger will fire when the give graph was evicted from all the nodes in the cluster.
+     */
+    private static class DropGraphOnEvictionTrigger implements Callable<Boolean> {
+        private static final Logger log = LoggerFactory.getLogger(DropGraphOnEvictionTrigger.class);
+        private final String graphName;
+        private final JanusGraph graph;
+        private final ConfigurationManagementGraph configManagementGraph;
+        private final CountDownLatch latch;
+
+        private DropGraphOnEvictionTrigger(String graphName, JanusGraph graph, ConfigurationManagementGraph configManagementGraph) {
+            this.graphName = graphName;
+            this.graph = graph;
+            this.configManagementGraph = configManagementGraph;
+            this.latch = new CountDownLatch(1);
+        }
+
+        @Override
+        public Boolean call() throws BackendException {
+            try {
+                log.info("Graph {} has been removed from the graph cache on every JanusGraph node in the cluster.", graphName);
+                log.warn("Attempting to drop the graph {}.", graphName);
+                configManagementGraph.removeConfiguration(graphName);
+                JanusGraphFactory.drop(graph);
+                log.warn("Graph {} has been dropped.", graphName);
+                return true;
+            } finally {
+                latch.countDown();
+            }
+        }
+
+        public void waitUntilDropFinish() {
+            log.debug("Waiting for graph {} to be evicted from the cache in all JanusGraph nodes...", graphName);
+            try {
+                latch.await();
+            } catch (InterruptedException e)  {
+                Thread.currentThread().interrupt();
+                log.error("Thread interrupted while waiting for graph to be dropped.", e);
+            }
+        }
     }
 
     private static ConfigurationManagementGraph getConfigGraphManagementInstance() {
@@ -233,7 +281,7 @@ public class ConfiguredGraphFactory {
 
         try {
             final JanusGraph graph = open(graphName);
-            removeGraphFromCache(graph);
+            removeGraphFromCache(graph, null);
         } catch (Exception e) {
             // cannot open graph, do nothing
             log.error(String.format("Failed to open graph %s with the following error:\n %s.\n" +
@@ -241,14 +289,14 @@ public class ConfiguredGraphFactory {
         }
     }
 
-    private static void removeGraphFromCache(final JanusGraph graph) {
+    private static void removeGraphFromCache(final JanusGraph graph, Callable<Boolean> evictionTrigger) {
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
         final String graphName = ((StandardJanusGraph) graph).getGraphName();
         jgm.removeGraph(graphName);
         jgm.removeTraversalSource(toTraversalSourceName(graphName));
         final ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
-        mgmt.evictGraphFromCache();
+        mgmt.evictGraphFromCache(evictionTrigger);
         mgmt.commit();
     }
 

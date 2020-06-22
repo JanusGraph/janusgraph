@@ -42,10 +42,6 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
     private static final boolean DEFAULT_ENABLE_CLIENT_AUTH = false;
     private static final boolean DEFAULT_USE_DEFAULT_CONFIG_FROM_IMAGE = false;
 
-    static {
-        setWrapperStoreManager();
-    }
-
     private static String getVersion() {
         String property = System.getProperty("cassandra.docker.version");
         if (property != null && !property.isEmpty())
@@ -173,28 +169,5 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
 
     public int getMappedCQLPort() {
         return getMappedPort(CQL_PORT);
-    }
-
-    private static void setWrapperStoreManager() {
-        try {
-            final Field modifiersField = Field.class.getDeclaredField("modifiers");
-            modifiersField.setAccessible(true);
-
-            Field field = StandardStoreManager.class.getDeclaredField("managerClass");
-            field.setAccessible(true);
-            field.set(StandardStoreManager.CQL, CachingCQLStoreManager.class.getCanonicalName());
-
-            field = StandardStoreManager.class.getDeclaredField("ALL_SHORTHANDS");
-            field.setAccessible(true);
-            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-            field.set(null, Collections.unmodifiableSet(StandardStoreManager.CQL.getShorthands()));
-
-            field = StandardStoreManager.class.getDeclaredField("ALL_MANAGER_CLASSES");
-            field.setAccessible(true);
-            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-            field.set(null, Collections.singletonMap(StandardStoreManager.CQL.getFirstStoreShorthand(), StandardStoreManager.CQL.getManagerClass()));
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException("Unable to set wrapper CQL store manager", e);
-        }
     }
 }
