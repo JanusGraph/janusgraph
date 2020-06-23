@@ -29,12 +29,12 @@ public class BerkeleyAssemblyIT extends AbstractJanusGraphAssemblyIT {
     }
 
     @Test
-    public void testGremlinServer() throws Exception {
-        testGremlinServer("conf/gremlin-server/gremlin-server-berkeleyje.yaml", false);
+    public void testJanusGraphServer() throws Exception {
+        testJanusGraphServer("conf/gremlin-server/gremlin-server-berkeleyje.yaml", false);
     }
 
     @Test
     public void testJanusGraphServerFull() throws Exception {
-        testGremlinServer("conf/gremlin-server/gremlin-server-berkeleyje.yaml", true);
+        testJanusGraphServer("conf/gremlin-server/gremlin-server-berkeleyje.yaml", true);
     }
 }

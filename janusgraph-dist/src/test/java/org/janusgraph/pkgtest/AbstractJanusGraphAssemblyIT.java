@@ -17,6 +17,7 @@ package org.janusgraph.pkgtest;
 import static org.apache.tinkerpop.gremlin.driver.ser.AbstractMessageSerializer.TOKEN_IO_REGISTRIES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -28,6 +29,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.Writer;
 import java.net.Socket;
+import java.time.Duration;
 import java.util.*;
 
 import org.apache.commons.io.FileUtils;
@@ -108,20 +110,21 @@ public abstract class AbstractJanusGraphAssemblyIT {
         }
     }
 
-    protected void testGremlinServer(String janusgraphServerConfig, boolean full) throws Exception {
+    protected void testJanusGraphServer(String janusgraphServerConfig, boolean full) throws Exception {
         final boolean debug = false;
         ImmutableMap<String, String> contextVars = ImmutableMap.of("janusgraphServerConfig", janusgraphServerConfig);
-        unzipAndRunExpect("gremlin-server-sh.before.expect.vm", contextVars, full, debug);
-
-        while (!serverListening("localhost",8182)) {
-            Thread.sleep(1000);
-        }
+        unzipAndRunExpect("janusgraph-server-sh.before.expect.vm", contextVars, full, debug);
+        assertTimeout(Duration.ofSeconds(30), () -> {
+            while (!serverListening("localhost",8182)) {
+                Thread.sleep(1000);
+            }
+        });
 
         runTraversalAgainstServer(createGraphSONMessageSerializer());
         runTraversalAgainstServer(createGraphBinaryMessageSerializerV1());
         runTraversalAgainstServer(createGryoMessageSerializer());
 
-        parseTemplateAndRunExpect("gremlin-server-sh.after.expect.vm", contextVars, full, debug);
+        parseTemplateAndRunExpect("janusgraph-server-sh.after.expect.vm", contextVars, full, debug);
     }
 
     @NotNull

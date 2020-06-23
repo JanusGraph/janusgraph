@@ -15,23 +15,23 @@
 
 set timeout 30
 
-spawn bin/gremlin-server.sh usage
+spawn bin/janusgraph-server.sh usage
 expect_after {
     timeout {
         # Default timeout handler
         exit 1
     }
 }
-expect "Usage: ./bin/gremlin-server.sh {start|stop|restart|status|install|usage <group> <artifact> <version>|<conf file>}"
+expect "Usage: ./bin/janusgraph-server.sh {start|stop|restart|status|console|usage <group> <artifact> <version>|<conf file>}"
 
-spawn bin/gremlin-server.sh status
+spawn bin/janusgraph-server.sh status
 expect "Server not running"
 catch wait result
 
-system bin/gremlin-server.sh start ${janusgraphServerConfig}
+system bin/janusgraph-server.sh start ${janusgraphServerConfig}
 expect -re "Server started *"
 catch wait result
 
-spawn bin/gremlin-server.sh status
+spawn bin/janusgraph-server.sh status
 expect -re "Server running with PID *"
 catch wait result
