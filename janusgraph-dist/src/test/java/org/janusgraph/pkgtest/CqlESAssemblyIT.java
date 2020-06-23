@@ -39,12 +39,12 @@ public class CqlESAssemblyIT extends AbstractJanusGraphAssemblyIT {
     }
 
     @Test
-    public void testGremlinServer() throws Exception {
-        testGremlinServer("conf/gremlin-server/gremlin-server-cql-es.yaml", false);
+    public void testJanusGraphServer() throws Exception {
+        testJanusGraphServer("conf/gremlin-server/gremlin-server-cql-es.yaml", false);
     }
 
     @Test
     public void testJanusGraphServerFull() throws Exception {
-        testGremlinServer("conf/gremlin-server/gremlin-server-cql-es.yaml", true);
+        testJanusGraphServer("conf/gremlin-server/gremlin-server-cql-es.yaml", true);
     }
 }

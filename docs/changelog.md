@@ -73,6 +73,15 @@ For more information on features and bug fixes in 0.6.0, see the GitHub mileston
 
 #### Upgrade Instructions
 
+##### Replacing the server startup script is replaced
+
+The `gremlin-server.sh` is placed by `janusgraph-server.sh`. The 
+`janusgraph-server.sh` brings some new functionality such as easy 
+configuration of Java options using the `jvm.options` file.
+
+The `jvm.options` file contains some default configurations for JVM based 
+on Cassandra's JVM configurations, Elasticsearch and the old gremlin-server.sh.
+
 ##### Serialization of JanusGraph predicates has changed
 
 The serialization of JanusGraph predicates has changed in this version for both 

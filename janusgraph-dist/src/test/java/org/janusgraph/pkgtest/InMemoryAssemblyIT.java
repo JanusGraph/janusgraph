@@ -30,11 +30,11 @@ public class InMemoryAssemblyIT extends AbstractJanusGraphAssemblyIT {
 
     @Test
     public void testJanusGraphServerGremlin() throws Exception {
-        testGremlinServer("conf/gremlin-server/gremlin-server.yaml", false);
+        testJanusGraphServer("conf/gremlin-server/gremlin-server.yaml", false);
     }
 
     @Test
     public void testJanusGraphServerGremlinFull() throws Exception {
-        testGremlinServer("conf/gremlin-server/gremlin-server.yaml", true);
+        testJanusGraphServer("conf/gremlin-server/gremlin-server.yaml", true);
     }
 }

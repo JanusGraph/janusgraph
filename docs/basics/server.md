@@ -207,7 +207,7 @@ graphs: { graph:
 5.  Start the JanusGraph Server, specifying the yaml file you just
     configured:
 ```bash
-bin/gremlin-server.sh ./conf/gremlin-server/socket-gremlin-server.yaml
+bin/janusgraph-server.sh console ./conf/gremlin-server/socket-gremlin-server.yaml
 ```
  
 6.  The JanusGraph Server should now be running in WebSocket mode and
@@ -278,7 +278,7 @@ graphs: { graph:
 5.  Start the JanusGraph Server, specifying the yaml file you just
     configured:
 ```bash
-bin/gremlin-server.sh ./conf/gremlin-server/http-gremlin-server.yaml
+bin/janusgraph-server.sh console ./conf/gremlin-server/http-gremlin-server.yaml
 ```
 
 6.  The JanusGraph Server should now be running in HTTP mode and
