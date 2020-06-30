@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM alpine:3.9
+FROM alpine:3.12
 
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.local/bin
 
@@ -21,5 +21,5 @@ COPY requirements.txt /mkdocs/
 WORKDIR /mkdocs
 VOLUME /mkdocs
 
-RUN apk --no-cache --no-progress add py3-pip \
+RUN apk --no-cache --no-progress add py3-regex py3-pip \
   && pip3 install --user -r requirements.txt
