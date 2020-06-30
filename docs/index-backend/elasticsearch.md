@@ -231,9 +231,7 @@ Different ingest pipelines can be set for each mixed index.
 Ingest pipeline can be use to pre-process documents before indexing. 
 A pipeline is composed by a series of processors.
 Each processor transforms the document in some way.
-Ingest pipeline can be used to pre-process documents before indexing.
-A pipeline is composed by a series of processors. Each processor transforms the document in some way. For
-example [date processor](https://www.elastic.co/guide/en/elasticsearch/reference/current/date-processor.html)
+For example [date processor](https://www.elastic.co/guide/en/elasticsearch/reference/current/date-processor.html)
 can extract a date from a text to a date field. So you can query this
 date with JanusGraph without it being physically in the primary storage.
 
