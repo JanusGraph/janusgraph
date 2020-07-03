@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.management;
 
+import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import static org.janusgraph.core.schema.SchemaStatus.ENABLED;
@@ -23,7 +24,9 @@ import org.janusgraph.core.PropertyKey;
 
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
+import static org.janusgraph.graphdb.management.ConfigurationManagementGraph.PROPERTY_GRAPH_NAME;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.configuration.MapConfiguration;
@@ -84,5 +87,33 @@ public class ConfigurationManagementGraphTest {
         new ConfigurationManagementGraph(graph);
 
         assertEquals(0, graph.getOpenTransactions().size());
+    }
+
+    @Test
+    public void shouldAlwaysUseACleanTx() throws ConfigurationManagementGraphNotEnabledException {
+        final StandardJanusGraph graph = (StandardJanusGraph) JanusGraphFactory.open("inmemory");
+        new ConfigurationManagementGraph(graph);
+        final ConfigurationManagementGraph configurationManagementGraph = ConfigurationManagementGraph.getInstance();
+
+        // Create a configuration
+        final Map<String, Object> map = new HashMap<>();
+        map.put(PROPERTY_GRAPH_NAME, "tx_test_graph");
+        configurationManagementGraph.createConfiguration(new MapConfiguration(map));
+
+        // Get the vertex id from the new configuration
+        long vertexId = (Long) graph.traversal().V().limit(1).next().id();
+
+        // These will use a traversal to read the configurations creating a new transaction automatically
+        assertEquals(1, configurationManagementGraph.getConfigurations().size());
+
+        // Remove the configuration from outside the ConfigurationManagementGraph, this
+        // could happen from another node in a cluster.
+        JanusGraphTransaction tx = graph.newTransaction();
+        tx.getVertex(vertexId).remove();
+        tx.commit();
+
+        // If the same transaction is being reused the traversal will be resolved without hitting
+        // the store returning the wrong value.
+        assertEquals(0, configurationManagementGraph.getConfigurations().size());
     }
 }

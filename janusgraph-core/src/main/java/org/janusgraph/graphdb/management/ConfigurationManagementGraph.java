@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.management;
 
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
@@ -219,7 +220,7 @@ public class ConfigurationManagementGraph {
      * @return Map&lt;String, Object&gt;
      */
     public Map<String, Object> getConfiguration(final String configName) {
-        final List<Map<Object, Object>> graphConfiguration = graph.traversal().V().has(PROPERTY_GRAPH_NAME, configName).valueMap().toList();
+        final List<Map<Object, Object>> graphConfiguration = getTraversal().V().has(PROPERTY_GRAPH_NAME, configName).valueMap().toList();
         if (graphConfiguration.isEmpty()) return null;
         else if (graphConfiguration.size() > 1) { // this case shouldn't happen because our index has a unique constraint
             log.warn("Your configuration management graph is an a bad state. Please " +
@@ -236,7 +237,7 @@ public class ConfigurationManagementGraph {
      * @return List&lt;Map&lt;String, Object&gt;&gt;
      */
     public List<Map<String, Object>> getConfigurations() {
-        final List<Map<Object, Object>> graphConfigurations = graph.traversal().V().has(PROPERTY_TEMPLATE, false).valueMap().toList();
+        final List<Map<Object, Object>> graphConfigurations = getTraversal().V().has(PROPERTY_TEMPLATE, false).valueMap().toList();
         return graphConfigurations.stream().map(this::deserializeVertexProperties).collect(Collectors.toList());
     }
 
@@ -246,7 +247,7 @@ public class ConfigurationManagementGraph {
      * @return Map&lt;String, Object&gt;
      */
     public Map<String, Object> getTemplateConfiguration() {
-        final List<Map<Object, Object>> templateConfigurations = graph.traversal().V().has(PROPERTY_TEMPLATE, true).valueMap().toList();
+        final List<Map<Object, Object>> templateConfigurations = getTraversal().V().has(PROPERTY_TEMPLATE, true).valueMap().toList();
         if (templateConfigurations.size() == 0) return null;
 
         if (templateConfigurations.size() > 1) {
@@ -260,7 +261,7 @@ public class ConfigurationManagementGraph {
     }
 
     private void removeVertex(String property, Object value) {
-        final GraphTraversal<Vertex, Vertex> traversal = graph.traversal().V().has(property, value);
+        final GraphTraversal<Vertex, Vertex> traversal = getTraversal().V().has(property, value);
         if (traversal.hasNext()) {
             traversal.next().remove();
             graph.tx().commit();
@@ -317,8 +318,9 @@ public class ConfigurationManagementGraph {
     }
 
     private void updateVertexWithProperties(String propertyKey, Object propertyValue, Map<Object, Object> map) {
-        if (graph.traversal().V().has(propertyKey, propertyValue).hasNext()) {
-            final Vertex v = graph.traversal().V().has(propertyKey, propertyValue).next();
+        final GraphTraversalSource g = getTraversal();
+        if (g.V().has(propertyKey, propertyValue).hasNext()) {
+            final Vertex v = g.V().has(propertyKey, propertyValue).next();
             map.forEach((key, value) -> v.property((String) key, value));
             graph.tx().commit();
         }
@@ -337,5 +339,12 @@ public class ConfigurationManagementGraph {
             }
         });
         return deserializedProperties;
+    }
+
+    private GraphTraversalSource getTraversal() {
+        final GraphTraversalSource g = graph.traversal();
+        // Return a clean transaction
+        g.tx().rollback();
+        return g;
     }
 }
