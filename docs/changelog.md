@@ -42,17 +42,19 @@ The versions of JanusGraph listed below are outdated and will no longer receive 
 
 ### Version 0.5.2 (Release Date: May 3, 2020)
 
-```xml tab='Maven'
-<dependency>
-    <groupId>org.janusgraph</groupId>
-    <artifactId>janusgraph-core</artifactId>
-    <version>0.5.2</version>
-</dependency>
-```
+=== "Maven"
+    ```xml
+    <dependency>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph-core</artifactId>
+        <version>0.5.2</version>
+    </dependency>
+    ```
 
-```groovy tab='Gradle'
-compile "org.janusgraph:janusgraph-core:0.5.2"
-```
+=== "Gradle"
+    ```groovy
+    compile "org.janusgraph:janusgraph-core:0.5.2"
+    ```
 
 **Tested Compatibility:**
 
@@ -82,17 +84,19 @@ than `50000` indexes are used per index store.
 
 ### Version 0.5.1 (Release Date: March 25, 2020)
 
-```xml tab='Maven'
-<dependency>
-    <groupId>org.janusgraph</groupId>
-    <artifactId>janusgraph-core</artifactId>
-    <version>0.5.1</version>
-</dependency>
-```
+=== "Maven"
+    ```xml
+    <dependency>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph-core</artifactId>
+        <version>0.5.1</version>
+    </dependency>
+    ```
 
-```groovy tab='Gradle'
-compile "org.janusgraph:janusgraph-core:0.5.1"
-```
+=== "Gradle"
+    ```groovy
+    compile "org.janusgraph:janusgraph-core:0.5.1"
+    ```
 
 **Tested Compatibility:**
 
@@ -127,17 +131,19 @@ configuration as a second parameter (`./bin/gremlin-server.sh ./conf/gremlin-ser
 
 ### Version 0.5.0 (Release Date: March 10, 2020)
 
-```xml tab='Maven'
-<dependency>
-    <groupId>org.janusgraph</groupId>
-    <artifactId>janusgraph-core</artifactId>
-    <version>0.5.0</version>
-</dependency>
-```
+=== "Maven"
+    ```xml
+    <dependency>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph-core</artifactId>
+        <version>0.5.0</version>
+    </dependency>
+    ```
 
-```groovy tab='Gradle'
-compile "org.janusgraph:janusgraph-core:0.5.0"
-```
+=== "Gradle"
+    ```groovy
+    compile "org.janusgraph:janusgraph-core:0.5.0"
+    ```
 
 **Tested Compatibility:**
 
