@@ -94,57 +94,59 @@ instance such that it can be used with HadoopGraph to run OLAP queries.
 First create a properties file with above configurations, and load the
 same on the Gremlin Console to run OLAP queries as follows:
 
-```bash tab='read-cql.properties'
-bin/gremlin.sh
+=== "read-cql.properties"
+    ```bash
+    bin/gremlin.sh
 
-         \,,,/
-         (o o)
------oOOo-(3)-oOOo-----
-plugin activated: janusgraph.imports
-gremlin> :plugin use tinkerpop.hadoop
-==>tinkerpop.hadoop activated
-gremlin> :plugin use tinkerpop.spark
-==>tinkerpop.spark activated
-gremlin> // 1. Open a the graph for OLAP processing reading in from Cassandra 3
-gremlin> graph = GraphFactory.open('conf/hadoop-graph/read-cql.properties')
-==>hadoopgraph[cqlinputformat->gryooutputformat]
-gremlin> // 2. Configure the traversal to run with Spark
-gremlin> g = graph.traversal().withComputer(SparkGraphComputer)
-==>graphtraversalsource[hadoopgraph[cqlinputformat->gryooutputformat], sparkgraphcomputer]
-gremlin> // 3. Run some OLAP traversals
-gremlin> g.V().count()
-......
-==>808
-gremlin> g.E().count()
-......
-==> 8046
-```
+            \,,,/
+            (o o)
+    -----oOOo-(3)-oOOo-----
+    plugin activated: janusgraph.imports
+    gremlin> :plugin use tinkerpop.hadoop
+    ==>tinkerpop.hadoop activated
+    gremlin> :plugin use tinkerpop.spark
+    ==>tinkerpop.spark activated
+    gremlin> // 1. Open a the graph for OLAP processing reading in from Cassandra 3
+    gremlin> graph = GraphFactory.open('conf/hadoop-graph/read-cql.properties')
+    ==>hadoopgraph[cqlinputformat->gryooutputformat]
+    gremlin> // 2. Configure the traversal to run with Spark
+    gremlin> g = graph.traversal().withComputer(SparkGraphComputer)
+    ==>graphtraversalsource[hadoopgraph[cqlinputformat->gryooutputformat], sparkgraphcomputer]
+    gremlin> // 3. Run some OLAP traversals
+    gremlin> g.V().count()
+    ......
+    ==>808
+    gremlin> g.E().count()
+    ......
+    ==> 8046
+    ```
 
-```bash tab='read-hbase.properties'
-bin/gremlin.sh
+=== "read-hbase.properties"
+    ```bash
+    bin/gremlin.sh
 
-         \,,,/
-         (o o)
------oOOo-(3)-oOOo-----
-plugin activated: janusgraph.imports
-gremlin> :plugin use tinkerpop.hadoop
-==>tinkerpop.hadoop activated
-gremlin> :plugin use tinkerpop.spark
-==>tinkerpop.spark activated
-gremlin> // 1. Open a the graph for OLAP processing reading in from HBase
-gremlin> graph = GraphFactory.open('conf/hadoop-graph/read-hbase.properties')
-==>hadoopgraph[hbaseinputformat->gryooutputformat]
-gremlin> // 2. Configure the traversal to run with Spark
-gremlin> g = graph.traversal().withComputer(SparkGraphComputer)
-==>graphtraversalsource[hadoopgraph[hbaseinputformat->gryooutputformat], sparkgraphcomputer]
-gremlin> // 3. Run some OLAP traversals
-gremlin> g.V().count()
-......
-==>808
-gremlin> g.E().count()
-......
-==> 8046
-```
+            \,,,/
+            (o o)
+    -----oOOo-(3)-oOOo-----
+    plugin activated: janusgraph.imports
+    gremlin> :plugin use tinkerpop.hadoop
+    ==>tinkerpop.hadoop activated
+    gremlin> :plugin use tinkerpop.spark
+    ==>tinkerpop.spark activated
+    gremlin> // 1. Open a the graph for OLAP processing reading in from HBase
+    gremlin> graph = GraphFactory.open('conf/hadoop-graph/read-hbase.properties')
+    ==>hadoopgraph[hbaseinputformat->gryooutputformat]
+    gremlin> // 2. Configure the traversal to run with Spark
+    gremlin> g = graph.traversal().withComputer(SparkGraphComputer)
+    ==>graphtraversalsource[hadoopgraph[hbaseinputformat->gryooutputformat], sparkgraphcomputer]
+    gremlin> // 3. Run some OLAP traversals
+    gremlin> g.V().count()
+    ......
+    ==>808
+    gremlin> g.E().count()
+    ......
+    ==> 8046
+    ```
 
 ### OLAP Traversals with Spark Standalone Cluster
 
@@ -177,57 +179,59 @@ The final properties file used for OLAP traversal is as follows:
 
 Then use the properties file as follows from the Gremlin Console:
 
-```bash tab='read-cql-standalone-cluster.properties'
-bin/gremlin.sh
+=== "read-cql-standalone-cluster.properties"
+    ```bash
+    bin/gremlin.sh
 
-         \,,,/
-         (o o)
------oOOo-(3)-oOOo-----
-plugin activated: janusgraph.imports
-gremlin> :plugin use tinkerpop.hadoop
-==>tinkerpop.hadoop activated
-gremlin> :plugin use tinkerpop.spark
-==>tinkerpop.spark activated
-gremlin> // 1. Open a the graph for OLAP processing reading in from Cassandra 3
-gremlin> graph = GraphFactory.open('conf/hadoop-graph/read-cql-standalone-cluster.properties')
-==>hadoopgraph[cqlinputformat->gryooutputformat]
-gremlin> // 2. Configure the traversal to run with Spark
-gremlin> g = graph.traversal().withComputer(SparkGraphComputer)
-==>graphtraversalsource[hadoopgraph[cqlinputformat->gryooutputformat], sparkgraphcomputer]
-gremlin> // 3. Run some OLAP traversals
-gremlin> g.V().count()
-......
-==>808
-gremlin> g.E().count()
-......
-==> 8046
-```
+            \,,,/
+            (o o)
+    -----oOOo-(3)-oOOo-----
+    plugin activated: janusgraph.imports
+    gremlin> :plugin use tinkerpop.hadoop
+    ==>tinkerpop.hadoop activated
+    gremlin> :plugin use tinkerpop.spark
+    ==>tinkerpop.spark activated
+    gremlin> // 1. Open a the graph for OLAP processing reading in from Cassandra 3
+    gremlin> graph = GraphFactory.open('conf/hadoop-graph/read-cql-standalone-cluster.properties')
+    ==>hadoopgraph[cqlinputformat->gryooutputformat]
+    gremlin> // 2. Configure the traversal to run with Spark
+    gremlin> g = graph.traversal().withComputer(SparkGraphComputer)
+    ==>graphtraversalsource[hadoopgraph[cqlinputformat->gryooutputformat], sparkgraphcomputer]
+    gremlin> // 3. Run some OLAP traversals
+    gremlin> g.V().count()
+    ......
+    ==>808
+    gremlin> g.E().count()
+    ......
+    ==> 8046
+    ```
 
-```bash tab='read-hbase-standalone-cluster.properties'
-bin/gremlin.sh
+=== "read-hbase-standalone-cluster.properties"
+    ```bash
+    bin/gremlin.sh
 
-         \,,,/
-         (o o)
------oOOo-(3)-oOOo-----
-plugin activated: janusgraph.imports
-gremlin> :plugin use tinkerpop.hadoop
-==>tinkerpop.hadoop activated
-gremlin> :plugin use tinkerpop.spark
-==>tinkerpop.spark activated
-gremlin> // 1. Open a the graph for OLAP processing reading in from HBase
-gremlin> graph = GraphFactory.open('conf/hadoop-graph/read-hbase-standalone-cluster.properties')
-==>hadoopgraph[hbaseinputformat->gryooutputformat]
-gremlin> // 2. Configure the traversal to run with Spark
-gremlin> g = graph.traversal().withComputer(SparkGraphComputer)
-==>graphtraversalsource[hadoopgraph[hbaseinputformat->gryooutputformat], sparkgraphcomputer]
-gremlin> // 3. Run some OLAP traversals
-gremlin> g.V().count()
-......
-==>808
-gremlin> g.E().count()
-......
-==> 8046
-```
+            \,,,/
+            (o o)
+    -----oOOo-(3)-oOOo-----
+    plugin activated: janusgraph.imports
+    gremlin> :plugin use tinkerpop.hadoop
+    ==>tinkerpop.hadoop activated
+    gremlin> :plugin use tinkerpop.spark
+    ==>tinkerpop.spark activated
+    gremlin> // 1. Open a the graph for OLAP processing reading in from HBase
+    gremlin> graph = GraphFactory.open('conf/hadoop-graph/read-hbase-standalone-cluster.properties')
+    ==>hadoopgraph[hbaseinputformat->gryooutputformat]
+    gremlin> // 2. Configure the traversal to run with Spark
+    gremlin> g = graph.traversal().withComputer(SparkGraphComputer)
+    ==>graphtraversalsource[hadoopgraph[hbaseinputformat->gryooutputformat], sparkgraphcomputer]
+    gremlin> // 3. Run some OLAP traversals
+    gremlin> g.V().count()
+    ......
+    ==>808
+    gremlin> g.E().count()
+    ......
+    ==> 8046
+    ```
 
 ## Other Vertex Programs
 

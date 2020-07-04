@@ -164,17 +164,19 @@ releases and therefore unstable and likely to change. Unless one is
 interested in the most recent development status of JanusGraph, we
 recommend to use the stable JanusGraph release instead.
 
-```xml tab='Maven'
-<dependency>
-    <groupId>org.janusgraph</groupId>
-    <artifactId>janusgraph-core</artifactId>
-    <version>{{ snapshot_version }}</version>
-</dependency>
-```
+=== "Maven"
+    ```xml
+    <dependency>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph-core</artifactId>
+        <version>{{ snapshot_version }}</version>
+    </dependency>
+    ```
 
-```groovy tab='Gradle'
-compile "org.janusgraph:janusgraph-core:{{ snapshot_version }}"
-```
+=== "Gradle"
+    ```groovy
+    compile "org.janusgraph:janusgraph-core:{{ snapshot_version }}"
+    ```
 
 Check the [master branch](https://github.com/JanusGraph/janusgraph/tree/master) for the
 most current release version. SNAPSHOTs will be available through the
@@ -182,28 +184,30 @@ most current release version. SNAPSHOTs will be available through the
 
 When adding this dependency, be sure to add the following repository to build file:
 
-```xml tab='Maven'
-<repository>
-  <id>ossrh</id>
-  <name>Sonatype Nexus Snapshots</name>
-  <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-  <releases>
-    <enabled>false</enabled>
-  </releases>
-  <snapshots>
-    <enabled>true</enabled>
-  </snapshots>
-</repository>
-```
+=== "Maven"
+    ```xml
+    <repository>
+      <id>ossrh</id>
+      <name>Sonatype Nexus Snapshots</name>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+    ```
 
-```groovy tab='Gradle'
-maven {
-  url "https://oss.sonatype.org/content/repositories/snapshots"
-  mavenContent {
-    snapshotsOnly()
-  }
-}
-```
+=== "Gradle"
+    ```groovy
+    maven {
+      url "https://oss.sonatype.org/content/repositories/snapshots"
+      mavenContent {
+        snapshotsOnly()
+      }
+    }
+    ```
 
 ### FAQs
 
