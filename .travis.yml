@@ -74,6 +74,8 @@ jobs:
     - <<: *STANDARD_TEST_JOB
       env: MODULE='driver'
     - <<: *STANDARD_TEST_JOB
+      env: MODULE='server'
+    - <<: *STANDARD_TEST_JOB
       env: MODULE='test'
     - <<: *STANDARD_TEST_JOB
       env: MODULE='inmemory' ARGS='-Dtest.skip.tp=false'
