@@ -213,3 +213,9 @@ for all of the commits in your PR.
 
 If you are not sure what's wrong, reach out to
 janusgraph-cla@googlegroups.com with further questions.
+
+### Code Review
+
+JanusGraph uses [Codacy](https://www.codacy.com) for static analysis pull requests to ensure code
+quality. Codacy creates in-line comments for items which require attention, and can generate a large
+number of potentially unwanted emails. Adding codacy-bot to your [blocked users](https://github.com/settings/blocked_users) will stop the notifications.
