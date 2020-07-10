@@ -67,8 +67,9 @@ To get started with JanusGraph in Java:
 4.  Create a `GraphTraversalSource` which is the basis for all Gremlin traversals:
 
     ```java
-    Graph graph = EmptyGraph.instance();
-    GraphTraversalSource g = graph.traversal().withRemote("conf/remote-graph.properties");
+    import static org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource.traversal;
+
+    GraphTraversalSource g = traversal().withRemote("conf/remote-graph.properties");
     // Reuse 'g' across the application
     // and close it on shut-down to close open connections with g.close()
     ```

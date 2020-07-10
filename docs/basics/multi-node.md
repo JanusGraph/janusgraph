@@ -145,9 +145,7 @@ local reference to a remote graph:
 ```groovy
 gremlin> cluster = Cluster.open('conf/remote-objects.yaml')
 ==>localhost/127.0.0.1:8182
-gremlin> graph = EmptyGraph.instance()
-==>emptygraph[empty]
-gremlin> g = graph.traversal().withRemote(DriverRemoteConnection.using(cluster, "graph1_traversal"))
+gremlin> g = traversal().withRemote(DriverRemoteConnection.using(cluster, "graph1_traversal"))
 ==>graphtraversalsource[emptygraph[empty], standard]
 ```
 

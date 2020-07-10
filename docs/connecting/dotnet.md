@@ -23,11 +23,12 @@ dotnet add package Gremlin.Net -v {{ tinkerpop_version }}
 1.  Create a `GraphTraversalSource` which is the basis for all Gremlin
     traversals:
 ```csharp
-var graph = new Graph();
+using static Gremlin.Net.Process.Traversal.AnonymousTraversalSource;
+
 var client = new GremlinClient(new GremlinServer("localhost", 8182));
 // The client should be disposed on shut down to release resources
 // and to close open connections with client.Dispose()
-var g = graph.Traversal().WithRemote(new DriverRemoteConnection(client));
+var g = Traversal().WithRemote(new DriverRemoteConnection(client));
         // Reuse 'g' across the application
 ```
 
