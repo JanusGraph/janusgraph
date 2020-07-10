@@ -31,10 +31,11 @@ from gremlin_python.driver.driver_remote_connection import DriverRemoteConnectio
 2.  Create a `GraphTraversalSource` which is the basis for all Gremlin
     traversals:
 ```python
-graph = Graph()
+from gremlin_python.process.anonymous_traversal_source import traversal
+
 connection = DriverRemoteConnection('ws://localhost:8182/gremlin', 'g')
 # The connection should be closed on shut down to close open connections with connection.close()
-g = graph.traversal().withRemote(connection)
+g = traversal().withRemote(connection)
 # Reuse 'g' across the application
 ```
 

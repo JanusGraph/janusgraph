@@ -26,11 +26,12 @@ import org.apache.tinkerpop.gremlin.driver.ResultSet;
 import org.apache.tinkerpop.gremlin.process.traversal.Bindings;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.attribute.Geoshape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource.traversal;
 
 public class RemoteGraphApp extends JanusGraphApp {
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoteGraphApp.class);
@@ -75,9 +76,7 @@ public class RemoteGraphApp extends JanusGraphApp {
         }
 
         // using the remote graph for queries
-        graph = EmptyGraph.instance();
-        g = graph.traversal().withRemote(conf);
-        return g;
+        return traversal().withRemote(conf);
     }
 
     @Override
