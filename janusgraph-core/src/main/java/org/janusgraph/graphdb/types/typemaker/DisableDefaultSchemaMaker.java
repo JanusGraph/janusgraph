@@ -29,9 +29,6 @@ public class DisableDefaultSchemaMaker implements DefaultSchemaMaker {
 
     public static final DefaultSchemaMaker INSTANCE = new DisableDefaultSchemaMaker();
 
-    private DisableDefaultSchemaMaker() {
-    }
-
     @Override
     public EdgeLabel makeEdgeLabel(EdgeLabelMaker factory) {
         throw new IllegalArgumentException("Edge Label with given name does not exist: " + factory.getName());

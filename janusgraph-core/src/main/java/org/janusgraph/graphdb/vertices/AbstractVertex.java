@@ -149,14 +149,22 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 	 */
 
     public<V> JanusGraphVertexProperty<V> property(final String key, final V value, final Object... keyValues) {
-        JanusGraphVertexProperty<V> p = tx().addProperty(it(), tx().getOrCreatePropertyKey(key, value), value);
+        PropertyKey propertyKey = tx().getOrCreatePropertyKey(key, value);
+        if (propertyKey == null) {
+            return JanusGraphVertexProperty.empty();
+        }
+        JanusGraphVertexProperty<V> p = tx().addProperty(it(), propertyKey, value);
         ElementHelper.attachProperties(p,keyValues);
         return p;
     }
 
     @Override
     public <V> JanusGraphVertexProperty<V> property(final VertexProperty.Cardinality cardinality, final String key, final V value, final Object... keyValues) {
-        JanusGraphVertexProperty<V> p = tx().addProperty(cardinality, it(), tx().getOrCreatePropertyKey(key, value, cardinality), value);
+        PropertyKey propertyKey = tx().getOrCreatePropertyKey(key, value, cardinality);
+        if (propertyKey == null) {
+            return JanusGraphVertexProperty.empty();
+        }
+        JanusGraphVertexProperty<V> p = tx().addProperty(cardinality, it(), propertyKey, value);
         ElementHelper.attachProperties(p,keyValues);
         return p;
     }

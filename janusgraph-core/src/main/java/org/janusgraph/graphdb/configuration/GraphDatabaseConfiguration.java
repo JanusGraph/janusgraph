@@ -29,6 +29,7 @@ import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphDefaultSchemaMaker;
 import org.janusgraph.graphdb.tinkerpop.Tp3DefaultSchemaMaker;
 import org.janusgraph.graphdb.types.typemaker.DisableDefaultSchemaMaker;
+import org.janusgraph.graphdb.types.typemaker.IgnorePropertySchemaMaker;
 import org.janusgraph.util.StringUtils;
 import org.janusgraph.util.stats.NumberUtil;
 import org.janusgraph.diskstorage.util.time.*;
@@ -293,6 +294,7 @@ public class GraphDatabaseConfiguration {
             + " Either one of the following shorthands can be used: <br>"
             + " - `default` (a blueprints compatible schema maker with MULTI edge labels and SINGLE property keys),<br>"
             + " - `none` (automatic schema creation is disabled)<br>"
+            + " - `ignore-prop` (same as none, but simply ignore unknown properties rather than throw exceptions)<br>"
             + " - `logging` (same as default, but with a log done when an automatic schema creation is done)<br>"
             + " - or to the full package and classname of a custom/third-party implementing the"
             + " interface `org.janusgraph.core.schema.DefaultSchemaMaker`",
@@ -313,6 +315,7 @@ public class GraphDatabaseConfiguration {
     private static final Map<String, DefaultSchemaMaker> PREREGISTERED_AUTO_TYPE = Collections.unmodifiableMap(
         new HashMap<String, DefaultSchemaMaker>(4){{
             put("none", DisableDefaultSchemaMaker.INSTANCE);
+            put("ignore-prop", IgnorePropertySchemaMaker.INSTANCE);
             put("default", JanusGraphDefaultSchemaMaker.INSTANCE);
             put("tp3", Tp3DefaultSchemaMaker.INSTANCE);
             put("logging", LoggingSchemaMaker.DEFAULT_INSTANCE);

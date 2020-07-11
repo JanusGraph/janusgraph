@@ -85,7 +85,7 @@ public class InMemoryGraphTest extends JanusGraphTest {
     public void testForceIndexUsage() {}
 
     @Override @Test @Disabled
-    public void testAutomaticTypeCreation() {}
+    public void testDisableDefaultSchemaMaker () {}
 
     @Override @Test @Disabled
     public void simpleLogTest() {}
