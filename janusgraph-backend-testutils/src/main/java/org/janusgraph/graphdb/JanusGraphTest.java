@@ -1140,11 +1140,11 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     /**
-     * Tests the automatic creation of types
+     * Tests the automatic creation of types for default schema maker
+     * {@link org.janusgraph.graphdb.tinkerpop.JanusGraphDefaultSchemaMaker}
      */
     @Test
-    public void testAutomaticTypeCreation() {
-        assertFalse(tx.containsVertexLabel("person"));
+    public void testDefaultSchemaMaker() {
         assertFalse(tx.containsVertexLabel("person"));
         assertFalse(tx.containsRelationType("value"));
         assertNull(tx.getPropertyKey("value"));
@@ -1158,19 +1158,101 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         Edge e = v.addEdge("knows", v);
         assertTrue(tx.containsRelationType("knows"));
         assertNotNull(tx.getEdgeLabel(e.label()));
+    }
 
+    /**
+     * Tests {@link org.janusgraph.graphdb.types.typemaker.DisableDefaultSchemaMaker} which throws Exceptions for
+     * unknown labels and properties
+     */
+    @Test
+    public void testDisableDefaultSchemaMaker() {
         clopen(option(AUTO_TYPE), "none");
+        EdgeLabel has = mgmt.makeEdgeLabel("has").make();
+        mgmt.makePropertyKey("prop").dataType(Integer.class).make();
+        mgmt.commit();
 
-        assertTrue(tx.containsRelationType("value"));
-        assertTrue(tx.containsVertexLabel("person"));
-        assertTrue(tx.containsRelationType("knows"));
+        JanusGraphVertex v = tx.addVertex();
+        JanusGraphEdge e = v.addEdge("has", v);
+        Exception exception;
 
-        final Vertex v1 = getV(tx, v);
+        // Cannot create new labels
+        exception = assertThrows(IllegalArgumentException.class, () -> tx.addVertex("org"));
+        assertEquals("Vertex Label with given name does not exist: org", exception.getMessage());
 
-        //Cannot create new labels
-        assertThrows(IllegalArgumentException.class, () -> tx.addVertex("org"));
-        assertThrows(IllegalArgumentException.class, () -> v1.property("bla", 5));
-        assertThrows(IllegalArgumentException.class, () -> v1.addEdge("blub", v1));
+        exception = assertThrows(IllegalArgumentException.class, () -> v.addEdge("blub", v));
+        assertEquals("Edge Label with given name does not exist: blub", exception.getMessage());
+
+        v.property("prop", 6);
+        e.property("prop", 6);
+        // Cannot create new property
+        String errorMsg = "Property Key with given name does not exist: bla";
+        exception = assertThrows(IllegalArgumentException.class, () -> v.property("bla", 5));
+        assertEquals(errorMsg, exception.getMessage());
+        exception = assertThrows(IllegalArgumentException.class, () -> v.property("bla", 5).element().property("prop", 6));
+        assertEquals(errorMsg, exception.getMessage());
+        exception = assertThrows(IllegalArgumentException.class, () -> v.property("prop", 6).element().property("bla", 5));
+        assertEquals(errorMsg, exception.getMessage());
+        exception = assertThrows(IllegalArgumentException.class, () -> e.property("bla", 5));
+        assertEquals(errorMsg, exception.getMessage());
+        exception = assertThrows(IllegalArgumentException.class, () -> e.property("bla", 5).element().property("prop", 6));
+        assertEquals(errorMsg, exception.getMessage());
+        exception = assertThrows(IllegalArgumentException.class, () -> e.property("prop", 6).element().property("bla", 5));
+        assertEquals(errorMsg, exception.getMessage());
+    }
+
+    /**
+     * Tests {@link org.janusgraph.graphdb.types.typemaker.IgnorePropertySchemaMaker} which ignores unknown properties
+     * without throwing exceptions
+     */
+    @Test
+    public void testIgnorePropertySchemaMaker() {
+        clopen(option(AUTO_TYPE), "ignore-prop");
+        EdgeLabel has = mgmt.makeEdgeLabel("has").make();
+        mgmt.makePropertyKey("prop").dataType(Integer.class).make();
+        mgmt.makePropertyKey("beta").dataType(Boolean.class).make();
+        mgmt.commit();
+
+        GraphTraversalSource g = graph.traversal();
+        JanusGraphVertex v = graph.addVertex();
+        JanusGraphEdge e = v.addEdge("has", v);
+
+        // Cannot create new labels
+        assertThrows(IllegalArgumentException.class, () -> graph.addVertex("org"));
+        assertThrows(IllegalArgumentException.class, () -> v.addEdge("blub", v));
+
+        graph.tx().commit();
+
+        // unknown vertex properties are ignored
+        Vertex v1 = g.V().next();
+        g.V(v1).property("prop", 6).property("bla", 1).property("unknown", "value").next();
+        Vertex v2 = graph.addVertex("bla", 1, "prop", 2, "unknown", "value");
+        Vertex v3 = g.addV().property("bla", 1).property("prop", 1).property("unknown", "value").next();
+        assertEquals(1, g.V(v1).valueMap().next().size());
+        assertEquals(1, g.V(v2).valueMap().next().size());
+        assertEquals(1, g.V(v3).valueMap().next().size());
+
+        // unknown edge properties are ignored
+        g.E(e).property("bla", 5).property("prop", 1).property("unknown", "value").next();
+        assertEquals(1, g.E(e).valueMap().next().size());
+
+        // unknown meta-properties (properties of properties) are ignored
+        v2.property("prop").property("meta-prop", "val");
+        v3.property("prop").property("beta", true);
+        assertEquals(0, g.V(v2).properties("prop").valueMap().next().size());
+        assertEquals(1, g.V(v3).properties("prop").valueMap().next().size());
+
+        graph.tx().commit();
+
+        tx = graph.newTransaction();
+        assertNotNull(tx.getOrCreatePropertyKey("prop"));
+        assertTrue(tx.containsRelationType("prop"));
+        assertNotNull(tx.getOrCreatePropertyKey("beta"));
+        assertTrue(tx.containsRelationType("beta"));
+
+        assertNull(tx.getOrCreatePropertyKey("bla"));
+        assertFalse(tx.containsRelationType("bla"));
+        assertNull(tx.getOrCreatePropertyKey("meta-prop"));
+        assertFalse(tx.containsRelationType("meta-prop"));
     }
 
     @Test

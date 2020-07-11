@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.relations;
 
 import org.janusgraph.core.InvalidElementException;
+import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
 import org.janusgraph.graphdb.internal.AbstractElement;
@@ -126,6 +127,9 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
         verifyAccess();
 
         PropertyKey propertyKey = tx().getOrCreatePropertyKey(key, value);
+        if (propertyKey == null) {
+            return JanusGraphVertexProperty.empty();
+        }
         Object normalizedValue = tx().verifyAttribute(propertyKey,value);
         it().setPropertyDirect(propertyKey,normalizedValue);
         return new SimpleJanusGraphProperty<>(this, propertyKey, value);
