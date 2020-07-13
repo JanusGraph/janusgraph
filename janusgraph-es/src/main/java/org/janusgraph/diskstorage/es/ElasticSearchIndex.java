@@ -252,6 +252,11 @@ public class ElasticSearchIndex implements IndexProvider {
                 "this parameter to true but we do recommend to reindex your indexes and don't use this parameter.",
             ConfigOption.Type.MASKABLE, false);
 
+    public static final ConfigOption<Long> CLIENT_KEEP_ALIVE =
+        new ConfigOption<>(ELASTICSEARCH_NS, "client-keep-alive",
+            "Set a keep-alive timeout (in milliseconds)",
+            ConfigOption.Type.GLOBAL_OFFLINE, Long.class);
+
     public static final ConfigOption<Integer> RETRY_ON_CONFLICT =
         new ConfigOption<>(ELASTICSEARCH_NS, "retry_on_conflict",
             "Specify how many times should the operation be retried when a conflict occurs.", ConfigOption.Type.MASKABLE, 0);

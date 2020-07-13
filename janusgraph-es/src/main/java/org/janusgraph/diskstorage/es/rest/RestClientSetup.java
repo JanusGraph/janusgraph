@@ -40,6 +40,7 @@ import org.janusgraph.diskstorage.es.rest.util.HttpAuthTypes;
 import org.janusgraph.diskstorage.es.rest.util.RestClientAuthenticator;
 import org.janusgraph.diskstorage.es.rest.util.SSLConfigurationCallback;
 import org.janusgraph.diskstorage.es.rest.util.SSLConfigurationCallback.Builder;
+import org.janusgraph.diskstorage.es.rest.util.ConnectionKeepAliveConfigCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -162,6 +163,10 @@ public class RestClientSetup {
         default:
             // not expected
             throw new IllegalArgumentException("Authentication type \"" + authType + "\" is not implemented");
+        }
+
+        if (config.has(ElasticSearchIndex.CLIENT_KEEP_ALIVE )) {
+            callbackList.add(new ConnectionKeepAliveConfigCallback(config.get(ElasticSearchIndex.CLIENT_KEEP_ALIVE)));
         }
 
         if (config.get(ElasticSearchIndex.SSL_ENABLED)) {
