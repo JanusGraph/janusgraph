@@ -61,3 +61,5 @@ cov-int.tar.gz
 cov-int/
 
 /site/
+
+*.hprof

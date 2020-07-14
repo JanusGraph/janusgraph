@@ -24,7 +24,7 @@ import org.janusgraph.diskstorage.util.RecordIterator;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
 
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.google.common.collect.AbstractIterator;
 
 import io.vavr.Tuple;
@@ -53,7 +53,7 @@ class CQLResultSetKeyIterator extends AbstractIterator<StaticBuffer> implements 
         this.iterator = Iterator.ofAll(resultSet)
                 .peek(row -> {
                     this.currentRow = row;
-                    this.currentKey = StaticArrayBuffer.of(row.getBytes(CQLKeyColumnValueStore.KEY_COLUMN_NAME));
+                    this.currentKey = StaticArrayBuffer.of(row.getByteBuffer(CQLKeyColumnValueStore.KEY_COLUMN_NAME));
                 });
     }
 
@@ -94,10 +94,10 @@ class CQLResultSetKeyIterator extends AbstractIterator<StaticBuffer> implements 
             final StaticBuffer sliceEnd = sliceQuery.getSliceEnd();
             this.iterator = iterator
                     .<Tuple3<StaticBuffer, StaticBuffer, Row>> map(row -> Tuple.of(
-                            StaticArrayBuffer.of(row.getBytes(CQLKeyColumnValueStore.COLUMN_COLUMN_NAME)),
-                            StaticArrayBuffer.of(row.getBytes(CQLKeyColumnValueStore.VALUE_COLUMN_NAME)),
+                            StaticArrayBuffer.of(row.getByteBuffer(CQLKeyColumnValueStore.COLUMN_COLUMN_NAME)),
+                            StaticArrayBuffer.of(row.getByteBuffer(CQLKeyColumnValueStore.VALUE_COLUMN_NAME)),
                             row))
-                    .takeWhile(tuple -> key.equals(StaticArrayBuffer.of(tuple._3.getBytes(CQLKeyColumnValueStore.KEY_COLUMN_NAME))) && !sliceEnd.equals(tuple._1))
+                    .takeWhile(tuple -> key.equals(StaticArrayBuffer.of(tuple._3.getByteBuffer(CQLKeyColumnValueStore.KEY_COLUMN_NAME))) && !sliceEnd.equals(tuple._1))
                     .take(sliceQuery.getLimit());
         }
 
