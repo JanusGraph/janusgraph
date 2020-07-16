@@ -16,7 +16,6 @@ package org.janusgraph.diskstorage.cql;
 
 import static com.datastax.driver.core.schemabuilder.SchemaBuilder.createKeyspace;
 import static com.datastax.driver.core.schemabuilder.SchemaBuilder.dropKeyspace;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.select;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.truncate;
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
@@ -52,6 +51,7 @@ import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_PASSWORD;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_USERNAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_JMX_ENABLED;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_PREFIX;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.buildGraphConfiguration;
@@ -99,6 +99,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.hadoop.CqlHadoopStoreManager;
+import org.janusgraph.util.stats.MetricManager;
 import org.janusgraph.util.system.NetworkUtil;
 
 import com.datastax.driver.core.BatchStatement;
@@ -114,9 +115,6 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.TableMetadata;
-import com.datastax.driver.core.exceptions.NoHostAvailableException;
-import com.datastax.driver.core.exceptions.QueryExecutionException;
-import com.datastax.driver.core.exceptions.QueryValidationException;
 import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -179,6 +177,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                         .build());
 
         this.cluster = initializeCluster();
+        initializeJmxMetrics();
         this.session = initializeSession(this.keyspace);
 
         final Configuration global = buildGraphConfiguration()
@@ -228,6 +227,13 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         this.openStores = new ConcurrentHashMap<>();
     }
 
+    private void initializeJmxMetrics() {
+        final Configuration configuration = getStorageConfig();
+        if (configuration.get(METRICS_JMX_ENABLED) && configuration.get(BASIC_METRICS)) {
+            MetricManager.INSTANCE.getRegistry().registerAll(cluster.getMetrics().getRegistry());
+        }
+    }
+
     Cluster initializeCluster() throws PermanentBackendException {
         final Configuration configuration = getStorageConfig();
 
@@ -243,8 +249,9 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         }
 
         final Builder builder = Cluster.builder()
-                .addContactPointsWithPorts(contactPoints)
-                .withClusterName(configuration.get(CLUSTER_NAME));
+            .withoutJMXReporting()
+            .addContactPointsWithPorts(contactPoints)
+            .withClusterName(configuration.get(CLUSTER_NAME));
 
         if (configuration.get(PROTOCOL_VERSION) != 0) {
             builder.withProtocolVersion(ProtocolVersion.fromInt(configuration.get(PROTOCOL_VERSION)));

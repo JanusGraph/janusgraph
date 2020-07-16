@@ -67,7 +67,7 @@ public abstract class SolrJanusGraphIndexTest extends JanusGraphIndexTest {
     }
 
     @Override
-    @FlakyTest(minSuccess = 1, invocationCount = 6)
+    @FlakyTest(minSuccess = 1, invocationCount = 8)
     public void testIndexReplay() throws Exception {
         super.testIndexReplay();
     }

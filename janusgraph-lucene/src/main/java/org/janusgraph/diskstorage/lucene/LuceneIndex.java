@@ -879,7 +879,7 @@ public class LuceneIndex implements IndexProvider {
             // We ignore offset and limit for totals
             final TopDocs docs = searcher.search(q, 1);
             log.debug("Executed query [{}] in {} ms", q, System.currentTimeMillis() - time);
-            return docs.totalHits;
+            return docs.totalHits.value;
         } catch (final IOException e) {
             throw new TemporaryBackendException("Could not execute Lucene query", e);
         }

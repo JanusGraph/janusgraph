@@ -11,8 +11,9 @@
     <url>https://janusgraph.org</url>
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
-        <solr7.test.version>7.0.0</solr7.test.version>
-        <solr.test.version>${solr7.test.version}</solr.test.version>
+        <solr7.test.version>7.7.2</solr7.test.version>
+        <solr8.test.version>8.5.2</solr8.test.version>
+        <solr.test.version>${solr8.test.version}</solr.test.version>
         <skip.solr.test>${skipTests}</skip.solr.test>
     </properties>
     <dependencies>
@@ -20,6 +21,13 @@
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-core</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <!-- Use noggit from janusgraph-core -->
+                <exclusion>
+                    <groupId>org.noggit</groupId>
+                    <artifactId>noggit</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
@@ -77,11 +85,6 @@
                     <groupId>org.slf4j</groupId>
                     <artifactId>jcl-over-slf4j</artifactId>
                 </exclusion>
-                <!-- Use noggit from janusgraph-core -->
-                <exclusion>
-                    <groupId>org.noggit</groupId>
-                    <artifactId>noggit</artifactId>
-                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -96,8 +99,32 @@
             <scope>test</scope>
             <exclusions>
                 <exclusion>
-                    <groupId>info.ganglia.gmetric4j</groupId>
-                    <artifactId>gmetric4j</artifactId>
+                    <groupId>org.apache.kerby</groupId>
+                    <artifactId>kerb-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.kerby</groupId>
+                    <artifactId>kerb-util</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.kerby</groupId>
+                    <artifactId>kerby-pkix</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.kerby</groupId>
+                    <artifactId>kerby-asn1</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-common</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-annotations</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-auth</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
@@ -106,10 +133,6 @@
                 <exclusion>
                     <groupId>com.github.ben-manes.caffeine</groupId>
                     <artifactId>caffeine</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.noggit</groupId>
-                    <artifactId>noggit</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>junit</groupId>
@@ -147,13 +170,11 @@
             <groupId>org.locationtech.spatial4j</groupId>
             <artifactId>spatial4j</artifactId>
         </dependency>
-        <!-- This is here for solr testing -->
         <dependency>
-            <groupId>com.vividsolutions</groupId>
-            <artifactId>jts</artifactId>
-            <version>1.13</version>
-            <optional>true</optional>
+            <groupId>org.locationtech.jts</groupId>
+            <artifactId>jts-core</artifactId>
         </dependency>
+        <!-- This is here for solr testing -->
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
@@ -207,6 +228,12 @@
             </properties>
         </profile>
         <profile>
+            <id>solr8</id>
+            <properties>
+                <solr.test.version>${solr8.test.version}</solr.test.version>
+            </properties>
+        </profile>
+        <profile>
             <!-- Run tests with Solr Docker container -->
             <id>docker</id>
             <properties>
@@ -226,9 +253,14 @@
                                 <configuration>
                                     <artifactItems>
                                         <artifactItem>
-                                            <groupId>com.vividsolutions</groupId>
-                                            <artifactId>jts</artifactId>
-                                            <destFileName>jts.jar</destFileName>
+                                            <groupId>org.locationtech.spatial4j</groupId>
+                                            <artifactId>spatial4j</artifactId>
+                                            <destFileName>spatial4j.jar</destFileName>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.locationtech.jts</groupId>
+                                            <artifactId>jts-core</artifactId>
+                                            <destFileName>jts-core.jar</destFileName>
                                         </artifactItem>
                                     </artifactItems>
                                     <outputDirectory>${project.build.directory}/dependency</outputDirectory>
@@ -250,7 +282,7 @@
                             <systemProperties>
                                 <property>
                                     <name>index.search.solr.zookeeper-url</name>
-                                    <value>0.0.0.0:2181</value>
+                                    <value>172.17.0.1:9983</value>
                                 </property>
                                 <property>
                                     <name>log4j.configuration</name>
@@ -274,44 +306,27 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <alias>zookeeper</alias>
-                                    <name>jplock/zookeeper</name>
-                                    <run>
-                                        <ports>
-                                            <port>2181:2181</port>
-                                        </ports>
-                                        <wait>
-                                            <tcp>
-                                                <ports>
-                                                    <port>2181</port>
-                                                </ports>
-                                            </tcp>
-                                            <time>60000</time>
-                                        </wait>
-                                    </run>
-                                </image>
-                                <image>
                                     <alias>solr</alias>
                                     <name>solr:${solr.test.version}</name>
                                     <run>
                                         <volumes>
                                             <bind>
-                                                <volume>${project.build.directory}/dependency/jts.jar:/opt/solr/server/lib/jts.jar</volume>
+                                                <volume>${project.build.directory}/dependency/spatial4j.jar:/opt/solr/server/solr-webapp/webapp/WEB-INF/lib/spatial4j.jar</volume>
+                                                <volume>${project.build.directory}/dependency/jts-core.jar:/opt/solr/server/solr-webapp/webapp/WEB-INF/lib/jts-core.jar</volume>
                                             </bind>
                                         </volumes>
                                         <ports>
                                             <port>8983:8983</port>
+                                            <port>9983:9983</port>
                                         </ports>
-                                        <links>
-                                            <link>zookeeper</link>
-                                        </links>
-                                        <cmd>/opt/solr/bin/solr start -f -z zookeeper:2181</cmd>
+                                        <cmd>/opt/solr/bin/solr start -f -DzkRun -h 172.17.0.1</cmd>
                                          <wait>
                                             <http>
                                                 <url>http://localhost:8983</url>
                                                 <method>GET</method>
                                                 <status>200..399</status>
                                             </http>
+                                            <time>60000</time>
                                         </wait>
                                     </run>
                                 </image>
@@ -328,7 +343,6 @@
                                         </volumes>
                                         <cmd>bash -c 'import-collections'</cmd>
                                         <links>
-                                            <link>zookeeper</link>
                                             <link>solr</link>
                                         </links>
                                         <wait>

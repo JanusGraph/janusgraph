@@ -270,21 +270,6 @@ Configuration options for metrics reporting to CSV file
 | metrics.csv.directory | Metrics CSV output directory | String | (no default value) | MASKABLE |
 | metrics.csv.interval | Time between dumps of CSV files containing Metrics data, in milliseconds | Duration | (no default value) | MASKABLE |
 
-### metrics.ganglia
-Configuration options for metrics reporting through Ganglia
-
-
-| Name | Description | Datatype | Default Value | Mutability |
-| ---- | ---- | ---- | ---- | ---- |
-| metrics.ganglia.addressing-mode | Whether to communicate to Ganglia via uni- or multicast | String | unicast | MASKABLE |
-| metrics.ganglia.hostname | The unicast host or multicast group name to which Metrics will send Ganglia data | String | (no default value) | MASKABLE |
-| metrics.ganglia.interval | The number of milliseconds to wait between sending Metrics data to Ganglia | Duration | (no default value) | MASKABLE |
-| metrics.ganglia.port | The port to which Ganglia data are sent | Integer | 8649 | MASKABLE |
-| metrics.ganglia.protocol-31 | Whether to send data to Ganglia in the 3.1 protocol format | Boolean | true | MASKABLE |
-| metrics.ganglia.spoof | If non-null, it must be a valid Gmetric spoof string formatted as an IP:hostname pair. See https://github.com/ganglia/monitor-core/wiki/Gmetric-Spoofing for information about this setting. | String | (no default value) | MASKABLE |
-| metrics.ganglia.ttl | The multicast TTL to set on outgoing Ganglia datagrams | Integer | 1 | MASKABLE |
-| metrics.ganglia.uuid | The host UUID to set on outgoing Ganglia datagrams. See https://github.com/ganglia/monitor-core/wiki/UUIDSources for information about this setting. | String | (no default value) | LOCAL |
-
 ### metrics.graphite
 Configuration options for metrics reporting through Graphite
 

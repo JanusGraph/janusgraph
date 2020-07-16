@@ -82,6 +82,8 @@ jobs:
     - <<: *STANDARD_TEST_JOB
       env: MODULE='lucene'
     - <<: *STANDARD_TEST_JOB
+      env: MODULE='solr' ARGS='-Pdocker,solr8'
+    - <<: *STANDARD_TEST_JOB
       env: MODULE='solr' ARGS='-Pdocker,solr7'
     - <<: *STANDARD_TEST_JOB
       env: MODULE='es' ARGS='-Pelasticsearch7'
