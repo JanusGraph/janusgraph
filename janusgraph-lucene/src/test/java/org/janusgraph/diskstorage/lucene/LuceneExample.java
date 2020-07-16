@@ -124,7 +124,7 @@ public abstract class LuceneExample {
         qb.add(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD);
         qb.add(filter.build(), BooleanClause.Occur.FILTER);
         TopDocs docs = searcher.search(qb.build(), MAX_RESULT);
-        if (docs.totalHits>=MAX_RESULT) throw new RuntimeException("Max results exceeded: " + MAX_RESULT);
+        if (docs.totalHits.value>=MAX_RESULT) throw new RuntimeException("Max results exceeded: " + MAX_RESULT);
 
         Set<String> result = getResults(searcher,docs);
         System.out.println(result);
@@ -133,7 +133,7 @@ public abstract class LuceneExample {
 
     private Set<String> getResults(IndexSearcher searcher, TopDocs docs) throws IOException {
         Set<String> found = Sets.newHashSet();
-        for (int i = 0; i < docs.totalHits; i++) {
+        for (int i = 0; i < docs.totalHits.value; i++) {
             found.add(searcher.doc(docs.scoreDocs[i].doc).getField("docid").stringValue());
         }
         return found;

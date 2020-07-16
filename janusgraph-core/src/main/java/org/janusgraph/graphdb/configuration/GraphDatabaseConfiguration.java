@@ -41,7 +41,6 @@ import org.janusgraph.util.system.ConfigurationUtil;
 import org.janusgraph.util.system.NetworkUtil;
 
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -1080,92 +1079,6 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.MASKABLE, String.class);
 
     /**
-     * The configuration namespace within {@link #METRICS_NS} for Ganglia.
-     */
-    public static final ConfigNamespace METRICS_GANGLIA_NS = new ConfigNamespace(METRICS_NS,"ganglia","Configuration options for metrics reporting through Ganglia");
-
-    /**
-     * The unicast host or multicast group name to which Metrics will send
-     * Ganglia data. Setting this config key has no effect unless
-     * {@link #GANGLIA_INTERVAL} is also set.
-     */
-    public static final ConfigOption<String> GANGLIA_HOST_OR_GROUP = new ConfigOption<>(METRICS_GANGLIA_NS,"hostname",
-            "The unicast host or multicast group name to which Metrics will send Ganglia data",
-            ConfigOption.Type.MASKABLE, String.class);
-
-    /**
-     * The number of milliseconds to wait between sending Metrics data to the
-     * host or group specified by {@link #GANGLIA_HOST_OR_GROUP}. This has no
-     * effect unless {@link #GANGLIA_HOST_OR_GROUP} is also set.
-     */
-    public static final ConfigOption<Duration> GANGLIA_INTERVAL = new ConfigOption<>(METRICS_GANGLIA_NS,"interval",
-            "The number of milliseconds to wait between sending Metrics data to Ganglia",
-            ConfigOption.Type.MASKABLE, Duration.class);
-
-    /**
-     * The port to which Ganglia data are sent.
-     * <p>
-     */
-    public static final ConfigOption<Integer> GANGLIA_PORT = new ConfigOption<>(METRICS_GANGLIA_NS,"port",
-            "The port to which Ganglia data are sent",
-            ConfigOption.Type.MASKABLE, 8649);
-
-    /**
-     * Whether to interpret {@link #GANGLIA_HOST_OR_GROUP} as a unicast or
-     * multicast address. If present, it must be either the string "multicast"
-     * or the string "unicast".
-     * <p>
-     */
-    public static final ConfigOption<String> GANGLIA_ADDRESSING_MODE = new ConfigOption<>(METRICS_GANGLIA_NS,"addressing-mode",
-            "Whether to communicate to Ganglia via uni- or multicast",
-            ConfigOption.Type.MASKABLE, "unicast", s -> s!=null && s.equalsIgnoreCase("unicast") || s.equalsIgnoreCase("multicast"));
-
-    /**
-     * The multicast TTL to set on outgoing Ganglia datagrams. This has no
-     * effect when {@link #GANGLIA_ADDRESSING_MODE} is set to "multicast".
-     * <p>
-     * This is a TTL in the multicast protocol sense (number of routed hops),
-     * not a timestamp sense.
-     */
-    public static final ConfigOption<Integer> GANGLIA_TTL = new ConfigOption<>(METRICS_GANGLIA_NS,"ttl",
-            "The multicast TTL to set on outgoing Ganglia datagrams",
-            ConfigOption.Type.MASKABLE, 1);
-
-    /**
-     * Whether to send data to Ganglia in the 3.1 protocol format (true) or the
-     * 3.0 protocol format (false).
-     * <p>
-     */
-    public static final ConfigOption<Boolean> GANGLIA_USE_PROTOCOL_31 = new ConfigOption<>(METRICS_GANGLIA_NS,"protocol-31",
-            "Whether to send data to Ganglia in the 3.1 protocol format",
-            ConfigOption.Type.MASKABLE, true);
-
-    /**
-     * The host UUID to set on outgoing Ganglia datagrams. If null, no UUID is
-     * set on outgoing data.
-     * <p>
-     * See https://github.com/ganglia/monitor-core/wiki/UUIDSources
-     * <p>
-     */
-    public static final ConfigOption<String> GANGLIA_UUID = new ConfigOption<>(METRICS_GANGLIA_NS,"uuid",
-            "The host UUID to set on outgoing Ganglia datagrams. " +
-            "See https://github.com/ganglia/monitor-core/wiki/UUIDSources for information about this setting.",
-            ConfigOption.Type.LOCAL, String.class);
-
-    /**
-     * If non-null, it must be a valid Gmetric spoof string formatted as an
-     * IP:hostname pair. If null, Ganglia will automatically determine the IP
-     * and hostname to set on outgoing datagrams.
-     * <p>
-     * See https://github.com/ganglia/monitor-core/wiki/Gmetric-Spoofing
-     * <p>
-     */
-    public static final ConfigOption<String> GANGLIA_SPOOF = new ConfigOption<String>(METRICS_GANGLIA_NS,"spoof",
-            "If non-null, it must be a valid Gmetric spoof string formatted as an IP:hostname pair. " +
-            "See https://github.com/ganglia/monitor-core/wiki/Gmetric-Spoofing for information about this setting.",
-            ConfigOption.Type.MASKABLE, String.class, s -> s!=null && 0 < s.indexOf(':'));
-
-    /**
      * The configuration namespace within {@link #METRICS_NS} for
      * Graphite.
      */
@@ -1468,7 +1381,6 @@ public class GraphDatabaseConfiguration {
         configureMetricsCsvReporter();
         configureMetricsJmxReporter();
         configureMetricsSlf4jReporter();
-        configureMetricsGangliaReporter();
         configureMetricsGraphiteReporter();
     }
 
@@ -1495,37 +1407,6 @@ public class GraphDatabaseConfiguration {
             // null loggerName is allowed -- that means Metrics will use its internal default
             MetricManager.INSTANCE.addSlf4jReporter(configuration.get(METRICS_SLF4J_INTERVAL),
                 configuration.has(METRICS_SLF4J_LOGGER) ? configuration.get(METRICS_SLF4J_LOGGER) : null);
-        }
-    }
-
-    private void configureMetricsGangliaReporter() {
-        if (configuration.has(GANGLIA_HOST_OR_GROUP)) {
-            final String host = configuration.get(GANGLIA_HOST_OR_GROUP);
-            final Duration intervalDuration = configuration.get(GANGLIA_INTERVAL);
-            final Integer port = configuration.get(GANGLIA_PORT);
-
-            final UDPAddressingMode addressingMode;
-            final String addressingModeString = configuration.get(GANGLIA_ADDRESSING_MODE);
-            if (addressingModeString.equalsIgnoreCase("multicast")) {
-                addressingMode = UDPAddressingMode.MULTICAST;
-            } else if (addressingModeString.equalsIgnoreCase("unicast")) {
-                addressingMode = UDPAddressingMode.UNICAST;
-            } else throw new AssertionError();
-
-            final Boolean proto31 = configuration.get(GANGLIA_USE_PROTOCOL_31);
-
-            final int ttl = configuration.get(GANGLIA_TTL);
-
-            final UUID uuid = configuration.has(GANGLIA_UUID)? UUID.fromString(configuration.get(GANGLIA_UUID)):null;
-
-            String spoof = null;
-            if (configuration.has(GANGLIA_SPOOF)) spoof = configuration.get(GANGLIA_SPOOF);
-
-            try {
-                MetricManager.INSTANCE.addGangliaReporter(host, port, addressingMode, ttl, proto31, uuid, spoof, intervalDuration);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
         }
     }
 
