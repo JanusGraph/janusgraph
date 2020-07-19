@@ -117,6 +117,7 @@
         <cassandra-driver.version>4.10.0</cassandra-driver.version>
         <testcontainers.version>1.15.1</testcontainers.version>
         <easymock.version>4.2</easymock.version>
+        <protobuf.version>3.14.0</protobuf.version>
     </properties>
     <modules>
         <module>janusgraph-driver</module>
@@ -781,6 +782,11 @@
                 <version>29.0-jre</version>
             </dependency>
             <dependency>
+                <groupId>com.google.errorprone</groupId>
+                <artifactId>error_prone_annotations</artifactId>
+                <version>2.4.0</version>
+            </dependency>
+            <dependency>
                 <groupId>commons-lang</groupId>
                 <artifactId>commons-lang</artifactId>
                 <version>2.6</version>
@@ -934,7 +940,7 @@
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java</artifactId>
-                <version>3.14.0</version>
+                <version>${protobuf.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.velocity</groupId>
