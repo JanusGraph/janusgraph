@@ -18,6 +18,7 @@ import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Contain;
+import org.janusgraph.core.attribute.Text;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.inmemory.InMemoryStoreManager;
@@ -177,6 +178,32 @@ public class QueryTest {
         assertEquals(1, res.size());
         res = graph.traversal().V().has("prop2", "prop2val2").has("prop1", "prop1val1").limit(1).toList();
         assertEquals(1, res.size());
+    }
+
+    @Test
+    public void testFuzzyMatchWithoutIndex() {
+        JanusGraphManagement mgmt = graph.openManagement();
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.commit();
+
+        tx.addVertex().property("name", "some value");
+        tx.commit();
+
+        // Exact match
+        assertEquals(1, graph.traversal().V().has("name", Text.textFuzzy("some value")).count().next());
+        assertEquals(1, graph.traversal().V().has("name", Text.textContainsFuzzy("value")).count().next());
+
+        // One character different
+        assertEquals(1, graph.traversal().V().has("name", Text.textFuzzy("some values")).count().next());
+        assertEquals(1, graph.traversal().V().has("name", Text.textContainsFuzzy("values")).count().next());
+
+        // Two characters different
+        assertEquals(1, graph.traversal().V().has("name", Text.textFuzzy("some val")).count().next());
+        assertEquals(1, graph.traversal().V().has("name", Text.textContainsFuzzy("values!")).count().next());
+
+        // Three characters different
+        assertEquals(0, graph.traversal().V().has("name", Text.textFuzzy("some Val")).count().next());
+        assertEquals(0, graph.traversal().V().has("name", Text.textContainsFuzzy("valuable")).count().next());
     }
 
 }

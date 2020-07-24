@@ -243,6 +243,9 @@ public enum Text implements JanusGraphPredicate {
 
     };
 
+    private static final LevenshteinDistance ONE_LEVENSHTEIN_DISTANCE = new LevenshteinDistance(1);
+    private static final LevenshteinDistance TWO_LEVENSHTEIN_DISTANCE = new LevenshteinDistance(2);
+
     /**
      * Whether {@code term} is at X Levenshtein of a {@code value} 
      * with X=:
@@ -254,16 +257,15 @@ public enum Text implements JanusGraphPredicate {
      * @return true if {@code term} is similar to {@code value} 
      */
     private static boolean isFuzzy(String term, String value){
-        int distance;
         term = term.trim();
         if (term.length() < 3) {
-            distance = 0;
+            return term.equals(value);
         } else if (term.length() < 6) {
-            distance = 1;
-        } else {
-            distance = 2;
+            int levenshteinDistance = ONE_LEVENSHTEIN_DISTANCE.apply(value, term);
+            return levenshteinDistance <= 1 && levenshteinDistance >= 0;
         }
-        return LevenshteinDistance.getDefaultInstance().apply(value, term)<=distance;
+        int levenshteinDist = TWO_LEVENSHTEIN_DISTANCE.apply(value, term);
+        return levenshteinDist <= 2 && levenshteinDist >= 0;
     }
 
     private static final Logger log = LoggerFactory.getLogger(Text.class);
