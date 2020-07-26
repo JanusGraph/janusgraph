@@ -62,6 +62,7 @@ import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
 import org.janusgraph.graphdb.query.index.ApproximateIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.BruteForceIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.testutil.TestGraphConfigs;
@@ -1825,7 +1826,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         // Write schema and one vertex
         final PropertyKey prop = makeKey(propName, String.class);
-        createExternalVertexIndex(prop, INDEX);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(prop, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
         finishSchema();
 
         final JanusGraphVertex v = graph.addVertex();
@@ -1849,12 +1850,37 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         propDeleter.commit();
 
         // The vertex must not exist after deletion
+        // See https://github.com/JanusGraph/janusgraph/issues/2176. The vertex is deleted from storage backend, but
+        // may not be deleted from index backend
         graph.tx().rollback();
         assertNull(getV(graph, id));
-        assertEmpty(graph.query().has(propName).vertices());
+        assertTrue(verticesRemoved(graph.query().has(propName).vertices()));
         if (null != updatedValue)
-            assertEmpty(graph.query().has(propName, updatedValue).vertices());
+            assertTrue(verticesRemoved(graph.query().has(propName, updatedValue).vertices()));
         graph.tx().rollback();
+    }
+
+    /**
+     * Check whether given iterable does not contain any valid vertex
+     * This function returns true if either of the following conditions holds:
+     * 1) the iterable is empty
+     * 2) all vertices in the iterable are phantom vertices
+     * @param vertices An iterable of vertices
+     * @return boolean indicating if given vertices do not exist
+     */
+    private boolean verticesRemoved(Iterable<JanusGraphVertex> vertices) {
+        if (Iterables.isEmpty(vertices)) {
+            return true;
+        }
+        StandardJanusGraphTx queryTx = (StandardJanusGraphTx) graph.newTransaction();
+        for (JanusGraphVertex v : vertices) {
+            if (!graph.edgeQuery(v.longId(), graph.vertexExistenceQuery, queryTx.getTxHandle()).isEmpty()) {
+                queryTx.rollback();
+                return false;
+            }
+        }
+        queryTx.rollback();
+        return true;
     }
 
     /**
