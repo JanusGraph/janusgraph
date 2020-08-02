@@ -22,10 +22,6 @@
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-server</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
         <!-- TESTING -->
         <dependency>
             <groupId>org.easymock</groupId>
