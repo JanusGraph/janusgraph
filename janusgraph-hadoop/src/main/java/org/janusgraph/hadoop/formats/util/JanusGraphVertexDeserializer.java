@@ -28,6 +28,7 @@ import org.janusgraph.hadoop.formats.util.input.SystemTypeInspector;
 import org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetup;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerEdge;
@@ -131,7 +132,10 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
                     Object value = relation.getValue();
                     Preconditions.checkNotNull(value);
                     VertexProperty.Cardinality card = getPropertyKeyCardinality(type.name());
-                    tv.property(card, type.name(), value, T.id, relation.relationId);
+                    VertexProperty<Object> vp = tv.property(card, type.name(), value, T.id, relation.relationId);
+
+                    // Decode meta properties
+                    decodeProperties(relation, vp);
                 } else {
                     assert type.isEdgeLabel();
 
@@ -164,25 +168,28 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
                     } else {
                         throw new RuntimeException("Direction.BOTH is not supported");
                     }
-
-                    if (relation.hasProperties()) {
-                        // Load relation properties
-                        for (final LongObjectCursor<Object> next : relation) {
-                            assert next.value != null;
-                            RelationType rt = typeManager.getExistingRelationType(next.key);
-                            if (rt.isPropertyKey()) {
-                                te.property(rt.name(), next.value);
-                            } else {
-                                throw new RuntimeException("Metaedges are not supported");
-                            }
-                        }
-                    }
+                    decodeProperties(relation, te);
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
         return tv;
+    }
+
+    private void decodeProperties(final RelationCache relation, final Element element) {
+        if (relation.hasProperties()) {
+            // Load relation properties
+            for (final LongObjectCursor<Object> next : relation) {
+                assert next.value != null;
+                RelationType rt = typeManager.getExistingRelationType(next.key);
+                if (rt.isPropertyKey()) {
+                    element.property(rt.name(), next.value);
+                } else {
+                    throw new RuntimeException("Metaedges are not supported");
+                }
+            }
+        }
     }
 
     public TinkerVertex getOrCreateVertex(final long vertexId, final String label, final TinkerGraph tg) {

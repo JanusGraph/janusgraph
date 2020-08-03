@@ -167,5 +167,41 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
         assertEquals(0L, (long) t.V().count().next());
     }
 
+    @Test
+    public void testReadWithMetaProperties() throws Exception {
+        GraphOfTheGodsFactory.load(graph, null, true);
+        GraphTraversalSource t = graph.traversal();
+
+        assertEquals(0L, (long) t.V().has("name", "sky").properties("property").count().next());
+
+        mgmt.makePropertyKey("prop").cardinality(Cardinality.SINGLE).dataType(String.class).make();
+        mgmt.makePropertyKey("meta_property").cardinality(Cardinality.SINGLE).dataType(String.class).make();
+        mgmt.commit();
+        finishSchema();
+
+        t.V().has("name", "sky")
+            .property("prop", "value")
+            .iterate();
+        graph.tx().commit();
+        assertEquals(1L, (long) t.V().has("name", "sky").properties("prop").count().next());
+        assertEquals(0L, (long) t.V().has("name", "sky").properties("prop")
+            .properties("meta_property").count().next());
+
+        t.V()
+            .has("name", "sky")
+            .properties("prop")
+            .property("meta_property", "meta_value")
+            .iterate();
+        graph.tx().commit();
+        assertEquals(1L, (long) t.V().has("name", "sky").properties("prop")
+            .properties("meta_property").count().next());
+
+        Graph g = getGraph();
+        t = g.traversal().withComputer(SparkGraphComputer.class);
+        assertEquals(1L, (long) t.V().has("name", "sky").properties("prop").count().next());
+        assertEquals(1L, (long) t.V().has("name", "sky").properties("prop")
+            .properties("meta_property").count().next());
+    }
+
     abstract protected Graph getGraph() throws IOException, ConfigurationException;
 }
