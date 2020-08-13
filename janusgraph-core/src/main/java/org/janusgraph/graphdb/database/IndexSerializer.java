@@ -19,6 +19,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.janusgraph.core.*;
+import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.configuration.Configuration;
@@ -114,6 +115,13 @@ public class IndexSerializer {
 
     public boolean supports(final MixedIndexType index, final ParameterIndexField field, final JanusGraphPredicate predicate) {
         return getMixedIndex(index).supports(getKeyInformation(field),predicate);
+    }
+
+    public boolean supportsExistsQuery(final MixedIndexType index, final ParameterIndexField field) {
+        if (Geoshape.class.equals(getKeyInformation(field).getDataType())) {
+            return getMixedIndex(index).getFeatures().supportsGeoExists();
+        }
+        return true;
     }
 
     public IndexFeatures features(final MixedIndexType index) {

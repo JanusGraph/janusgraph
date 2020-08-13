@@ -702,7 +702,12 @@ public class LuceneIndex implements IndexProvider {
             final String key = atom.getKey();
             KeyInformation ki = information.get(key);
             final JanusGraphPredicate janusgraphPredicate = atom.getPredicate();
-            if (value instanceof Number) {
+            if (value == null && janusgraphPredicate == Cmp.NOT_EQUAL) {
+                // some fields like Integer omit norms but have docValues
+                params.addQuery(new DocValuesFieldExistsQuery(key), BooleanClause.Occur.SHOULD);
+                // some fields like Text have no docValue but have norms
+                params.addQuery(new NormsFieldExistsQuery(key), BooleanClause.Occur.SHOULD);
+            } else if (value instanceof Number) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on numeric types: " + janusgraphPredicate);
                 params.addQuery(numericQuery(key, (Cmp) janusgraphPredicate, (Number) value));
             } else if (value instanceof String) {

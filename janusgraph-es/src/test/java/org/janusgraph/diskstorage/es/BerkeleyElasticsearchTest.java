@@ -36,33 +36,13 @@ import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
  */
 
 @Testcontainers
-public class BerkeleyElasticsearchTest extends JanusGraphIndexTest {
-
-    @Container
-    private static JanusGraphElasticsearchContainer esr = new JanusGraphElasticsearchContainer();
-
-    public BerkeleyElasticsearchTest() {
-        super(true, true, true);
-    }
+public class BerkeleyElasticsearchTest extends ElasticsearchJanusGraphIndexTest {
 
     @Override
     public WriteConfiguration getConfiguration() {
         return esr.setConfiguration(getBerkeleyJEConfiguration(), INDEX)
             .set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, INDEX)
             .getConfiguration();
-    }
-
-    @Override
-    public boolean supportsLuceneStyleQueries() {
-        return true;
-    }
-    @Override
-    public boolean supportsWildcardQuery() {
-        return true;
-    }
-    @Override
-    protected boolean supportsCollections() {
-        return true;
     }
 
     /**

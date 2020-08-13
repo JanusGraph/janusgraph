@@ -21,6 +21,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.IsStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.OrStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
@@ -67,6 +68,7 @@ import java.util.stream.Stream;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.eq;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.gt;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.lt;
+import static org.apache.tinkerpop.gremlin.process.traversal.P.neq;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.within;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.filter;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.properties;
@@ -205,19 +207,19 @@ public class JanusGraphStepStrategyTest {
             arguments(g.V().has("name", "marko").has("age", gt(31).and(lt(10).or(gt(40)))).out(),
                 g_V("name", eq("marko"), "age", new OrP<Integer>(Arrays.asList(gt(31), new AndP<Integer>(Arrays.asList(lt(10), gt(40)))))).out(), Collections.emptyList()),
             arguments(g.V().has("name", "marko").or(has("age"), has("age", gt(32))).has("lang", "java"),
-                g_V("name", eq("marko"), "lang", eq("java")).or(has("age"), has("age", gt(32))), Collections.singletonList(FilterRankingStrategy.instance())),
+                g_V("name", eq("marko"), "lang", eq("java"), __.or(g_V("age", neq(null)), g_V("age", gt(32)))), Collections.singletonList(FilterRankingStrategy.instance())),
             arguments(g.V().has("name", "marko").as("a").or(has("age"), has("age", gt(32))).has("lang", "java"),
-                g_V("name", eq("marko")).as("a").or(has("age"), has("age", gt(32))).has("lang", "java"), Collections.emptyList()),
+                g_V("name", eq("marko"), __.or(g_V("age", neq(null)), g_V("age", gt(32))), "lang", eq("java")).as("a"), Collections.emptyList()),
             arguments(g.V().has("name", "marko").as("a").or(has("age"), has("age", gt(32))).has("lang", "java"),
-                g_V("name", eq("marko"), "lang", eq("java")).or(has("age"), has("age", gt(32))).as("a"), Collections.singletonList(FilterRankingStrategy.instance())),
+                g_V("name", eq("marko"), "lang", eq("java"), __.or(g_V("age", neq(null)), g_V("age", gt(32)))).as("a"), Collections.singletonList(FilterRankingStrategy.instance())),
             arguments(g.V().dedup().has("name", "marko").or(has("age"), has("age", gt(32))).has("lang", "java"),
-                g_V("name", eq("marko"), "lang", eq("java")).or(has("age"), has("age", gt(32))).dedup(), Collections.singletonList(FilterRankingStrategy.instance())),
+                g_V("name", eq("marko"), "lang", eq("java"), __.or(g_V("age", neq(null)), g_V("age", gt(32)))).dedup(), Collections.singletonList(FilterRankingStrategy.instance())),
             arguments(g.V().as("a").dedup().has("name", "marko").or(has("age"), has("age", gt(32))).has("lang", "java"),
-                g_V("name", eq("marko"), "lang", eq("java")).or(has("age"), has("age", gt(32))).dedup().as("a"), Collections.singletonList(FilterRankingStrategy.instance())),
+                g_V("name", eq("marko"), "lang", eq("java"), __.or(g_V("age", neq(null)), g_V("age", gt(32)))).dedup().as("a"), Collections.singletonList(FilterRankingStrategy.instance())),
             arguments(g.V().as("a").has("name", "marko").as("b").or(has("age"), has("age", gt(32))).has("lang", "java"),
-                g_V("name", eq("marko"), "lang", eq("java")).or(has("age"), has("age", gt(32))).as("b", "a"), Collections.singletonList(FilterRankingStrategy.instance())),
+                g_V("name", eq("marko"), "lang", eq("java"), __.or(g_V("age", neq(null)), g_V("age", gt(32)))).as("b", "a"), Collections.singletonList(FilterRankingStrategy.instance())),
             arguments(g.V().as("a").dedup().has("name", "marko").or(has("age"), has("age", gt(32))).filter(has("name", "bob")).has("lang", "java"),
-                g_V("name", eq("marko"), "lang", eq("java"), "name", eq("bob")).or(has("age"), has("age", gt(32))).dedup().as("a"), Arrays.asList(InlineFilterStrategy.instance(), FilterRankingStrategy.instance())),
+                g_V("name", eq("marko"), "lang", eq("java"), "name", eq("bob"), __.or(g_V("age", neq(null)), g_V("age", gt(32)))).dedup().as("a"), Arrays.asList(InlineFilterStrategy.instance(), FilterRankingStrategy.instance())),
             arguments(g.V().has("name", "marko").or(not(has("age")), has("age", gt(32))).has("name", "bob").has("lang", "java"),
                 g_V("name", eq("marko"), "name", eq("bob"), "lang", eq("java")).or(not(filter(properties("age"))), has("age", gt(32))), TraversalStrategies.GlobalCache.getStrategies(JanusGraph.class).toList()),
             arguments(g.V().has("name", eq("marko").and(eq("bob").and(eq("stephen")))).out("knows"),

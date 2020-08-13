@@ -20,6 +20,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.janusgraph.TestCategory;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
@@ -159,6 +160,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     public abstract boolean supportsWildcardQuery();
 
+    public abstract boolean supportsGeoPointExistsQuery();
+
     @Override
     public void open(WriteConfiguration config) {
         super.open(config);
@@ -245,6 +248,120 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         for (final IndexInformation index : backend.getIndexInformation().values()) {
             assertEquals(((IndexProvider) index).exists(), exists, "index " + suffix);
         }
+    }
+
+    @Test
+    public void testGeoshapeExistsQuery() {
+        if (!supportsGeoPointExistsQuery()) return;
+
+        PropertyKey geoshape = mgmt.makePropertyKey("geoshape").dataType(Geoshape.class).make();
+        mgmt.buildIndex("theIndex", Vertex.class).addKey(geoshape).buildMixedIndex(INDEX);
+        finishSchema();
+
+        tx.addVertex("geoshape", Geoshape.point(37.97, 23.72));
+        tx.addVertex();
+        tx.commit();
+
+        clopen(option(FORCE_INDEX_USAGE), true);
+        assertEquals(1, graph.traversal().V().has("geoshape").count().next());
+    }
+
+    /**
+     * test exists query, i.e., has(key) query using all data types supported by mixed index, except
+     * Geoshape which has a separate test case
+     */
+    @Test
+    public void testExistsQuery() {
+        PropertyKey compositeInt = mgmt.makePropertyKey("compositeInt").dataType(Integer.class).make();
+        PropertyKey mixedInt = mgmt.makePropertyKey("mixedInt").dataType(Integer.class).make();
+        PropertyKey stringKey = mgmt.makePropertyKey("string").dataType(String.class).make();
+        PropertyKey textKey = mgmt.makePropertyKey("text").dataType(String.class).make();
+        PropertyKey boolKey = mgmt.makePropertyKey("bool").dataType(Boolean.class).make();
+        PropertyKey longKey = mgmt.makePropertyKey("long").dataType(Long.class).make();
+        PropertyKey byteKey = mgmt.makePropertyKey("byte").dataType(Byte.class).make();
+        PropertyKey shortKey = mgmt.makePropertyKey("short").dataType(Short.class).make();
+        PropertyKey floatKey = mgmt.makePropertyKey("float").dataType(Float.class).make();
+        PropertyKey dateKey = mgmt.makePropertyKey("date").dataType(Date.class).make();
+        PropertyKey instant = mgmt.makePropertyKey("instant").dataType(Instant.class).make();
+        PropertyKey uuid = mgmt.makePropertyKey("uuid").dataType(UUID.class).make();
+
+        mgmt.buildIndex("int", Vertex.class).addKey(compositeInt).buildCompositeIndex();
+        mgmt.buildIndex("namev", Vertex.class).addKey(stringKey, Mapping.STRING.asParameter())
+            .buildMixedIndex(INDEX);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(textKey, Mapping.TEXT.asParameter()).addKey(longKey)
+            .addKey(instant).addKey(boolKey).buildMixedIndex(INDEX);
+        mgmt.buildIndex("mi", Vertex.class).addKey(mixedInt).addKey(floatKey).addKey(uuid).buildMixedIndex(INDEX);
+        mgmt.buildIndex("theIndex", Vertex.class).addKey(floatKey).addKey(byteKey)
+            .addKey(shortKey).addKey(dateKey).buildMixedIndex(INDEX);
+        finishSchema();
+
+        JanusGraphVertex v = tx.addVertex("string", "", "compositeInt", 30, "text", "male", "mixedInt", 0,
+            "short", 0, "float", 0.0, "date", new Date(), "instant", Instant.ofEpochMilli(1), "uuid", UUID.randomUUID());
+        v.property("compositeInt").property("bool2", true);
+        tx.addVertex("string", "robert", "text", "female", "long", 12345678L,
+            "float", 100000.5, "instant", Instant.ofEpochMilli(100), "uuid", UUID.randomUUID(), "bool", true);
+        tx.addVertex("text", "prefer not to say", "long", 23456789L,
+            "byte", Byte.MIN_VALUE, "uuid", UUID.randomUUID());
+        tx.addVertex(T.label, "person", "mixedInt", 2, "short", 1);
+        tx.commit();
+
+        /* force index to be used */
+        clopen(option(FORCE_INDEX_USAGE), true);
+
+        // test has(key) -> has(key, NOT_EQUAL, null) (exists query) transformation in JanusGraph GraphCentricQuery
+        assertCount(2, tx.query().has("string").vertices());
+        assertCount(3, tx.query().has("text").vertices());
+        assertCount(2, tx.query().has("mixedInt").vertices());
+        assertCount(2, tx.query().has("short").vertices());
+        assertCount(1, tx.query().has("byte").vertices());
+        assertCount(2, tx.query().has("float").vertices());
+        assertCount(1, tx.query().has("date").vertices());
+        assertCount(2, tx.query().has("instant").vertices());
+        assertCount(3, tx.query().has("uuid").vertices());
+        assertCount(1, tx.query().has("bool").vertices());
+
+        // test has(key) -> has(key, neq(null)) transformation in Gremlin query
+        assertEquals(2, graph.traversal().V().has("string").as("v").select("v").count().next());
+        assertEquals(3, graph.traversal().V().has("text").count().next());
+        assertEquals(2, graph.traversal().V().has("mixedInt").count().next());
+        assertEquals(2, graph.traversal().V().has("short").count().next());
+        assertEquals(1, graph.traversal().V().has("byte").count().next());
+        assertEquals(2, graph.traversal().V().has("float").count().next());
+        assertEquals(1, graph.traversal().V().has("date").count().next());
+        assertEquals(2, graph.traversal().V().has("instant").count().next());
+        assertEquals(3, graph.traversal().V().has("uuid").count().next());
+        assertEquals(1, graph.traversal().V().has("bool").count().next());
+
+        // test has(key) transformations in OR/AND clauses where all conditions can use mixed index
+        assertEquals(3, graph.traversal().V().or(__.has("string"), __.has("text")).count().next());
+        assertEquals(2, graph.traversal().V().and(__.has("string"), __.has("text")).count().next());
+
+        // test mixed index for multiple fields, especially when some fields are missing in some vertices
+        assertEquals(3, graph.traversal().V().has("text").count().next());
+        assertEquals(2, graph.traversal().V().has("long").count().next());
+        assertEquals(3, graph.traversal().V().or(__.has("text"), __.has("long")).count().next());
+        assertEquals(2, graph.traversal().V().and(__.has("text"), __.has("long")).count().next());
+
+        /* composite index does not support exists query */
+        clopen(option(FORCE_INDEX_USAGE), false);
+
+        assertEquals(1, graph.traversal().V().has("compositeInt").count().next());
+
+        Vertex vertex = graph.traversal().V().has("compositeInt").next();
+        assertEquals(1, graph.traversal().V().hasId(vertex.id()).has("string").count().next());
+        assertEquals(1, graph.traversal().V(vertex).has("string").count().next());
+        assertEquals(0, graph.traversal().V().hasId(vertex.id()).has("byte").count().next());
+        assertEquals(0, graph.traversal().V(vertex).has("byte").count().next());
+        assertEquals(1, graph.traversal().V().hasLabel("person").has("short").count().next());
+        assertEquals(0, graph.traversal().V().hasLabel("person").has("string").count().next());
+
+        // test has(key) transformations in OR/AND clauses where one of conditions can use mixed index
+        assertEquals(2, graph.traversal().V().or(__.has("string"), __.has("compositeInt")).count().next());
+        assertEquals(1, graph.traversal().V().and(__.has("string"), __.has("compositeInt")).count().next());
+
+        // test has(key) transformations for meta-properties
+        assertNotNull(graph.traversal().V().has("compositeInt").properties("compositeInt").has("bool2").next());
+        assertNotNull(graph.traversal().V().has("compositeInt").properties("compositeInt").as("p").has("bool2").select("p").next());
     }
 
     @Test
