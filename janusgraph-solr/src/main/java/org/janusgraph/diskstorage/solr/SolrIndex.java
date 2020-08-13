@@ -719,7 +719,9 @@ public class SolrIndex implements IndexProvider {
             final String key = atom.getKey();
             final JanusGraphPredicate predicate = atom.getPredicate();
 
-            if (value instanceof Number) {
+            if (value == null && predicate == Cmp.NOT_EQUAL) {
+                return key + ":*";
+            } else if (value instanceof Number) {
                 final String queryValue = escapeValue(value);
                 Preconditions.checkArgument(predicate instanceof Cmp,
                         "Relation not supported on numeric types: " + predicate);

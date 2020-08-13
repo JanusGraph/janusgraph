@@ -37,12 +37,14 @@ public class IndexFeatures {
     private final boolean supportsNanoseconds;
     private final boolean supportsCustomAnalyzer;
     private final boolean supportsGeoContains;
+    private final boolean supportsGeoExists;
     private final boolean supportsNotQueryNormalForm;
     private final Set<Cardinality> supportedCardinalities;
 
     public IndexFeatures(boolean supportsDocumentTTL, Mapping defaultMap, Set<Mapping> supportedMap,
                          String wildcardField, Set<Cardinality> supportedCardinalities, boolean supportsNanoseconds,
-                         boolean supportCustomAnalyzer, boolean supportsGeoContains, boolean supportsNotQueryNormalForm) {
+                         boolean supportCustomAnalyzer, boolean supportsGeoContains, boolean supportGeoExists,
+                         boolean supportsNotQueryNormalForm) {
 
         Preconditions.checkArgument(defaultMap!=null && defaultMap!=Mapping.DEFAULT);
         Preconditions.checkArgument(supportedMap!=null && !supportedMap.isEmpty()
@@ -55,6 +57,7 @@ public class IndexFeatures {
         this.supportsNanoseconds = supportsNanoseconds;
         this.supportsCustomAnalyzer = supportCustomAnalyzer;
         this.supportsGeoContains = supportsGeoContains;
+        this.supportsGeoExists = supportGeoExists;
         this.supportsNotQueryNormalForm = supportsNotQueryNormalForm;
     }
 
@@ -90,6 +93,10 @@ public class IndexFeatures {
         return supportsGeoContains;
     }
 
+    public boolean supportsGeoExists() {
+        return supportsGeoExists;
+    }
+
     public boolean supportNotQueryNormalForm() {
         return supportsNotQueryNormalForm;
     }
@@ -104,6 +111,7 @@ public class IndexFeatures {
         private boolean supportsNanoseconds;
         private boolean supportsCustomAnalyzer;
         private boolean supportsGeoContains;
+        private boolean supportsGeoExists;
         private boolean supportNotQueryNormalForm;
 
         public Builder supportsDocumentTTL() {
@@ -146,6 +154,11 @@ public class IndexFeatures {
             return this;
         }
 
+        public Builder supportsGeoExists() {
+            supportsGeoExists = true;
+            return this;
+        }
+
         public Builder supportNotQueryNormalForm() {
             this.supportNotQueryNormalForm = true;
             return this;
@@ -154,7 +167,7 @@ public class IndexFeatures {
         public IndexFeatures build() {
             return new IndexFeatures(supportsDocumentTTL, defaultStringMapping, Collections.unmodifiableSet(new HashSet<>(supportedMappings)),
                 wildcardField,  Collections.unmodifiableSet(new HashSet<>(supportedCardinalities)), supportsNanoseconds, supportsCustomAnalyzer,
-                supportsGeoContains, supportNotQueryNormalForm);
+                supportsGeoContains, supportsGeoExists, supportNotQueryNormalForm);
         }
     }
 }

@@ -38,6 +38,11 @@ public abstract class SolrJanusGraphIndexTest extends JanusGraphIndexTest {
         return true;
     }
 
+    @Override
+    public boolean supportsGeoPointExistsQuery() {
+        return false;
+    }
+
     @Test
     public void testRawQueries() {
         clopen(option(SolrIndex.DYNAMIC_FIELDS,JanusGraphIndexTest.INDEX),false);

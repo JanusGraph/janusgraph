@@ -16,11 +16,14 @@ package org.janusgraph.graphdb.tinkerpop.optimize.step;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.JanusGraphTransaction;
@@ -172,6 +175,9 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                     currentStep.getLabels().forEach(janusgraphStep::addLabel);
                     traversal.removeStep(currentStep);
                 }
+            } else if (isExistsStep(currentStep)) {
+                currentStep = foldInHasFilter(traversal, (TraversalFilterStep) currentStep);
+                continue;
             } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep) && !(currentStep instanceof HasContainerHolder)) {
                 break;
             }
@@ -190,6 +196,9 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                 traversal.removeStep(currentStep);
                 currentStep = foldInOrder(janusgraphStep, currentStep, traversal, rootTraversal, janusgraphStep instanceof JanusGraphStep && ((JanusGraphStep)janusgraphStep).returnsVertex(), hasContainers);
                 foldInRange(janusgraphStep, currentStep, traversal, hasContainers);
+            } else if (isExistsStep(currentStep)) {
+                currentStep = foldInHasFilter(traversal, (TraversalFilterStep) currentStep);
+                continue;
             } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep)) {
                 break;
             }
@@ -204,6 +213,8 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             if (currentStep instanceof HasContainerHolder) {
                 final Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers();
                 toReturn = toReturn == null ? validJanusGraphHas(containers) : toReturn && validJanusGraphHas(containers);
+            } else if (isExistsStep(currentStep)) {
+                toReturn = true;
             } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep) && !(currentStep instanceof RangeGlobalStep) && !(currentStep instanceof OrderGlobalStep)) {
                 toReturn = toReturn != null && (toReturn && defaultValue);
                 break;
@@ -211,6 +222,41 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             currentStep = currentStep.getNextStep();
         }
         return Boolean.TRUE.equals(toReturn);
+    }
+
+    /**
+     * Check if a given step is an "exists" step, i.e. has(key) step
+     * Tinkerpop translates has(key) gremlin query into TraversalFilterStep(PropertiesStep)
+     * @param step
+     * @return true if given step is essentially an "exists" step
+     */
+    static boolean isExistsStep(final Step<?, ?> step) {
+        if (step instanceof TraversalFilterStep) {
+            List<Traversal.Admin> traversals = ((TraversalFilterStep) step).getLocalChildren();
+            assert traversals.size() == 1;
+            List<Step> steps = traversals.get(0).getSteps();
+            if (!(steps.size() == 1 && steps.get(0) instanceof PropertiesStep)) return false;
+            return ((PropertiesStep) steps.get(0)).getPropertyKeys().length == 1;
+        }
+        return false;
+    }
+
+    /**
+     * Convert a TraversalFilterStep that is essentially "has(key)" into a normal HasStep
+     * @param traversal local traversal
+     * @param currentStep
+     */
+    static Step foldInHasFilter(final Traversal.Admin<?, ?> traversal, final TraversalFilterStep<?> currentStep) {
+        List<? extends Traversal.Admin<?, ?>> traversals = currentStep.getLocalChildren();
+        assert(traversals.size() == 1);
+        List<Step> steps = traversals.get(0).getSteps();
+        assert(steps.size() == 1 && steps.get(0) instanceof PropertiesStep);
+        String[] propertyKeys = ((PropertiesStep) steps.get(0)).getPropertyKeys();
+        assert(propertyKeys.length == 1);
+        HasStep hasStep = new HasStep(traversal, new HasContainer(propertyKeys[0], P.neq(null)));
+        currentStep.getLabels().forEach(hasStep::addLabel);
+        TraversalHelper.replaceStep(currentStep, hasStep, traversal);
+        return hasStep;
     }
 
     static Step<?, ?> foldInOrder(final HasStepFolder janusgraphStep, final Step<?, ?>  tinkerpopStep, final Traversal.Admin<?, ?> traversal,

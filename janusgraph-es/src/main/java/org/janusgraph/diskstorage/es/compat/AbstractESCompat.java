@@ -49,6 +49,7 @@ public abstract class AbstractESCompat {
             .supportsCardinality(Cardinality.SET)
             .supportsNanoseconds()
             .supportsCustomAnalyzer()
+            .supportsGeoExists()
             .supportNotQueryNormalForm()
         ;
     }
@@ -137,6 +138,10 @@ public abstract class AbstractESCompat {
 
     public Map<String,Object> regexp(String key, Object value) {
         return ImmutableMap.of("regexp", ImmutableMap.of(key, value));
+    }
+
+    public Map<String,Object> exists(String key) {
+        return ImmutableMap.of("exists", ImmutableMap.of("field", key));
     }
 
     public Map<String,Object> match(String key, Object value) {

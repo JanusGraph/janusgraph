@@ -51,6 +51,11 @@ public class BerkeleyLuceneTest extends JanusGraphIndexTest {
     }
 
     @Override
+    public boolean supportsGeoPointExistsQuery() {
+        return false;
+    }
+
+    @Override
     public boolean supportsWildcardQuery() {
         return false;
     }

@@ -24,17 +24,10 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-public class CQLElasticsearchTest extends JanusGraphIndexTest {
-
-    @Container
-    private static JanusGraphElasticsearchContainer esr = new JanusGraphElasticsearchContainer();
+public class CQLElasticsearchTest extends ElasticsearchJanusGraphIndexTest {
 
     @Container
     private static JanusGraphCassandraContainer cql = new JanusGraphCassandraContainer();
-
-    public CQLElasticsearchTest() {
-        super(true, true, true);
-    }
 
     @Override
     public WriteConfiguration getConfiguration() {
@@ -42,19 +35,6 @@ public class CQLElasticsearchTest extends JanusGraphIndexTest {
         return esr.setConfiguration(config, INDEX)
             .set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, INDEX)
             .getConfiguration();
-    }
-
-    @Override
-    public boolean supportsLuceneStyleQueries() {
-        return true;
-    }
-    @Override
-    public boolean supportsWildcardQuery() {
-        return true;
-    }
-    @Override
-    protected boolean supportsCollections() {
-        return true;
     }
 
     @Override
