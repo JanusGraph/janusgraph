@@ -7,7 +7,7 @@ designed for scalability and high availability. Cassandra supports two
 protocols for communications, Thrift (legacy RPC protocol) and CQL (native
 protocol).
 
-[Elasticsearch](https://www.elastic.co/products/elasticsearch) is a scalable,
+[Elasticsearch](https://www.elastic.co/elasticsearch/) is a scalable,
 distributed search engine.
 
 > Check the JanusGraph [version compatibility](https://docs.janusgraph.org/changelog/#version-compatibility)

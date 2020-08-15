@@ -18,7 +18,7 @@ including:
     process.
 
 -   Adding an existing or external graph datasets (e.g. publicly
-    available [RDF datasets](http://linkeddata.org/)) to a running
+    available [RDF datasets](https://www.w3.org/wiki/DataSetRDFDumps)) to a running
     JanusGraph cluster.
 
 -   Updating a JanusGraph graph with results from a graph analytics job.

@@ -24,7 +24,7 @@ JanusGraph:
 -   **Temporal**: Millisecond granularity temporal indexing.
 -   **Custom Analyzer**: Choose to use a custom analyzer
 
-Please see [Version Compatibility](../appendices.md#version-compatibility) 
+Please see [Version Compatibility](../changelog.md#version-compatibility)
 for details on what versions of Solr will work with JanusGraph.
 
 ## Solr Configuration Overview

@@ -6,7 +6,7 @@
 > expected and uncover the unexpected.
 >
 > —  [Elasticsearch
-> Overview](https://www.elastic.co/products/elasticsearch/)
+> Overview](https://www.elastic.co/elasticsearch/)
 
 JanusGraph supports [Elasticsearch](https://www.elastic.co/) as an index
 backend. Here are some of the Elasticsearch features supported by
@@ -56,7 +56,7 @@ $ elasticsearch/bin/elasticsearch
 ## Elasticsearch Configuration Overview
 
 JanusGraph supports HTTP(S) client connections to a running
-Elasticsearch cluster. Please see [Version Compatibility](../appendices.md#version-compatibility) for details on
+Elasticsearch cluster. Please see [Version Compatibility](../changelog.md#version-compatibility) for details on
 what versions of Elasticsearch will work with the different client types
 in JanusGraph.
 
