@@ -26,7 +26,7 @@ and its underlying, supported persistence solutions.
   - Numerous graph-level configurations provide knobs for tuning
     performance.
 - Vertex-centric indices provide vertex-level querying to alleviate
-    issues with the infamous [super node problem](http://thinkaurelius.com/2012/10/25/a-solution-to-the-supernode-problem/).
+    issues with the infamous [super node problem](https://www.datastax.com/blog/2012/10/solution-supernode-problem).
 - Provides an optimized disk representation to allow for efficient use
     of storage and speed of access.
 - Open source under the liberal [Apache 2 license](https://en.wikipedia.org/wiki/Apache_License).

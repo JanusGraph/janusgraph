@@ -151,7 +151,7 @@ iterate over all vertices or edges in large graphs effectively.
 
 ## Tips and Tricks for Managing an HBase Cluster
 
-The [HBase shell](https://wiki.apache.org/hadoop/Hbase/Shell) on the
+The [HBase shell](https://hbase.apache.org/book.html#shell) on the
 master server can be used to get an overall status check of the cluster.
 ```bash
 $HBASE_HOME/bin/hbase shell

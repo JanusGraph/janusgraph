@@ -440,7 +440,7 @@ instantiate `JanusGraph` objects.
 
 !!! important
     The above command uses Groovy Grape and if it is not configured properly 
-    download errors may ensue. Please refer to [this section](https://tinkerpop.apache.org/docs/{{tinkerpop_version}} /reference/#gremlin-applications) 
+    download errors may ensue. Please refer to [this section](https://tinkerpop.apache.org/docs/{{tinkerpop_version}}/reference/#gremlin-applications)
     of the TinkerPop documentation for more information around setting up ~/.groovy/grapeConfig.xml.
 
 Create a file called `GREMLIN_SERVER_HOME/conf/janusgraph.properties`
