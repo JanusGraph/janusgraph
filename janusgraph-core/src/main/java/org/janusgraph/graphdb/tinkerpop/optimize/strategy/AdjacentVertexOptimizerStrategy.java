@@ -14,21 +14,17 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize.strategy;
 
-import static org.janusgraph.graphdb.types.system.ImplicitKey.ADJACENT_ID;
-
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.FilterStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -50,27 +46,29 @@ public abstract class AdjacentVertexOptimizerStrategy<T extends FilterStep<?>>
 
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPost() {
-        Set<Class<? extends ProviderOptimizationStrategy>> postStrategies = new HashSet<Class<? extends ProviderOptimizationStrategy>>();
+        Set<Class<? extends ProviderOptimizationStrategy>> postStrategies = new HashSet<>();
         postStrategies.add(JanusGraphLocalQueryOptimizerStrategy.class);
         return postStrategies;
     }
 
     protected void optimizeStep(T step) {
-        P<?> predicate = parsePredicate(step);
-        if (isValidPredicate(predicate)) {
-            OptimizablePosition pos = getOptimizablePosition(step);
-            replaceSequence(step, pos, predicate);
+        OptimizablePosition pos = getOptimizablePosition(step);
+        if (pos != OptimizablePosition.NONE && isValidStep(step)) {
+            replaceSequence(step, pos);
         }
     }
 
-    protected abstract P<?> parsePredicate(T step);
-
-    protected abstract boolean isValidPredicate(P<?> predicate);
+    protected abstract boolean isValidStep(T step);
 
     private OptimizablePosition getOptimizablePosition(T originalStep) {
         Step<?, ?> predecessor = originalStep.getPreviousStep();
 
-        // match predecessing out(), in() or both() steps
+        // ignore in-between LazyBarrierSteps
+        if (predecessor instanceof NoOpBarrierStep) {
+            predecessor = predecessor.getPreviousStep();
+        }
+
+        // match preceding out(), in() or both() steps
         if (predecessor instanceof VertexStep<?>) {
             if (((VertexStep<?>) predecessor).returnsVertex()) {
                 return OptimizablePosition.V2V_ID;
@@ -80,7 +78,12 @@ public abstract class AdjacentVertexOptimizerStrategy<T extends FilterStep<?>>
 
         Step<?, ?> prePredecessor = predecessor.getPreviousStep();
 
-        // match predecessing inV(), outV() or otherV() steps
+        // ignore in-between LazyBarrierSteps
+        if (prePredecessor instanceof NoOpBarrierStep) {
+            prePredecessor = prePredecessor.getPreviousStep();
+        }
+
+        // match preceding inV(), outV() or otherV() steps
         // predecessor has to operate on an edge type
         if ((predecessor instanceof EdgeVertexStep || predecessor instanceof EdgeOtherVertexStep) &&
             (prePredecessor instanceof VertexStep) && ((VertexStep<?>) prePredecessor).returnsEdge()) {
@@ -90,45 +93,61 @@ public abstract class AdjacentVertexOptimizerStrategy<T extends FilterStep<?>>
         return OptimizablePosition.NONE;
     }
 
-    private void replaceSequence(T originalStep, OptimizablePosition pos,
-                                   P<?> predicate) {
+    private void replaceSequence(T originalStep, OptimizablePosition pos) {
         switch (pos) {
         case V2E_E2V_ID:
-            replaceSequenceV2EthenE2VthenID(originalStep, predicate);
+            replaceSequenceV2EthenE2VthenID(originalStep);
             break;
         case V2V_ID:
-            replaceSequenceV2VthenID(originalStep, predicate);
+            replaceSequenceV2VthenID(originalStep);
             break;
         default:
             break;
         }
     }
 
-    private void replaceSequenceV2EthenE2VthenID(T originalStep, P<?> predicate) {
+    private void replaceSequenceV2EthenE2VthenID(T originalStep) {
         Traversal.Admin<?,?> traversal = originalStep.getTraversal();
 
         Step<Edge,Vertex> e2vStep;
+        // remove obsolete NoOpBarrier
+        if (originalStep.getPreviousStep() instanceof NoOpBarrierStep) {
+            traversal.removeStep(originalStep.getPreviousStep());
+        }
         e2vStep = (Step<Edge, Vertex>) originalStep.getPreviousStep();
         originalStep.getLabels().forEach(e2vStep::addLabel);
-
-        // create new has("~adjacent", id_value) step before e2v step
-        HasStep<Edge> hasAdjacentIdStep = makeHasAdjacentIdStep(traversal, predicate);
 
         // remove original selection step
         traversal.removeStep(originalStep);
 
+        // create new has("~adjacent", id_value) step before e2v step
+        FilterStep<Edge> filterByAdjacentIdStep = makeFilterByAdjacentIdStep(traversal, originalStep);
+
         // insert new step
-        TraversalHelper.insertBeforeStep(hasAdjacentIdStep, e2vStep, traversal);
+        TraversalHelper.insertBeforeStep(filterByAdjacentIdStep, e2vStep, traversal);
+
+        // remove obsolete NoOpBarrier
+        Step<?,?> v2eStep = filterByAdjacentIdStep.getPreviousStep();
+        while (v2eStep instanceof NoOpBarrierStep) {
+            Step<?,?> barrierStep = v2eStep;
+            v2eStep = barrierStep.getPreviousStep();
+            traversal.removeStep(barrierStep);
+        }
     }
 
-    private void replaceSequenceV2VthenID(T originalStep, P<?> predicate) {
+    private void replaceSequenceV2VthenID(T originalStep) {
         Traversal.Admin<?,?> traversal = originalStep.getTraversal();
+
+        // remove obsolete NoOpBarrier
+        if (originalStep.getPreviousStep() instanceof NoOpBarrierStep) {
+            traversal.removeStep(originalStep.getPreviousStep());
+        }
 
         // create new V2E step based on old V2V step
         VertexStep<?> v2vStep = (VertexStep<?>) originalStep.getPreviousStep();
         String[] edgeLabels = v2vStep.getEdgeLabels();
         Direction v2vDirection = v2vStep.getDirection();
-        VertexStep<Edge> v2eStep = new VertexStep<Edge>(traversal, Edge.class, v2vDirection, edgeLabels);
+        VertexStep<Edge> v2eStep = new VertexStep<>(traversal, Edge.class, v2vDirection, edgeLabels);
 
         // create new E2V step based on old V2V step
         Step<Edge, Vertex> e2vStep;
@@ -141,21 +160,18 @@ public abstract class AdjacentVertexOptimizerStrategy<T extends FilterStep<?>>
 
         Step<?, Vertex> predecessor = v2vStep.getPreviousStep();
 
-        // create new has("~adjacent", id_value) step before e2v step
-        HasStep<Edge> hasAdjacentIdStep = makeHasAdjacentIdStep(traversal, predicate);
-
         // drop old steps
         traversal.removeStep(originalStep);
         traversal.removeStep(v2vStep);
 
+        // create new has("~adjacent", id_value) step before e2v step
+        FilterStep<Edge> filterByAdjacentIdStep = makeFilterByAdjacentIdStep(traversal, originalStep);
+
         // insert new steps
         TraversalHelper.insertAfterStep(v2eStep, predecessor, traversal);
-        TraversalHelper.insertAfterStep(hasAdjacentIdStep, v2eStep, traversal);
-        TraversalHelper.insertAfterStep(e2vStep, hasAdjacentIdStep, traversal);
+        TraversalHelper.insertAfterStep(filterByAdjacentIdStep, v2eStep, traversal);
+        TraversalHelper.insertAfterStep(e2vStep, filterByAdjacentIdStep, traversal);
     }
 
-    private HasStep<Edge> makeHasAdjacentIdStep(Traversal.Admin<?, ?> traversal, P<?> predicate) {
-        HasContainer hc = new HasContainer(ADJACENT_ID.name(), P.eq(predicate.getValue()));
-        return new HasStep<Edge>(traversal, hc);
-    }
+    protected abstract FilterStep<Edge> makeFilterByAdjacentIdStep(Traversal.Admin<?, ?> traversal, T originalStep);
 }

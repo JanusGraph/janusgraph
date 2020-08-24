@@ -18,11 +18,15 @@ import java.util.List;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.FilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import static org.janusgraph.graphdb.types.system.ImplicitKey.ADJACENT_ID;
 
 /**
  * @author Florian Grieskamp (Florian.Grieskamp@gdata.de)
@@ -35,7 +39,9 @@ public class AdjacentVertexHasIdOptimizerStrategy
 
     private AdjacentVertexHasIdOptimizerStrategy() {}
 
-    public static AdjacentVertexHasIdOptimizerStrategy instance() { return INSTANCE; }
+    public static AdjacentVertexHasIdOptimizerStrategy instance() {
+        return INSTANCE;
+    }
 
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
@@ -43,8 +49,7 @@ public class AdjacentVertexHasIdOptimizerStrategy
             .forEach(step -> optimizeStep(step));
     }
 
-    @Override
-    protected P<?> parsePredicate(HasStep<?> hasStep) {
+    private P<?> parsePredicate(HasStep<?> hasStep) {
         List<HasContainer> hasContainers = hasStep.getHasContainers();
 
         if (hasContainers.size() != 1) {
@@ -61,7 +66,8 @@ public class AdjacentVertexHasIdOptimizerStrategy
     }
 
     @Override
-    protected boolean isValidPredicate(P<?> predicate) {
+    protected boolean isValidStep(HasStep<?> step) {
+        P predicate = parsePredicate(step);
         if (predicate == null) {
             return false;
         }
@@ -72,5 +78,11 @@ public class AdjacentVertexHasIdOptimizerStrategy
 
         Object predicateValue = predicate.getValue();
         return predicateValue instanceof Vertex || predicateValue instanceof Long;
+    }
+
+    @Override
+    protected FilterStep<Edge> makeFilterByAdjacentIdStep(Traversal.Admin<?, ?> traversal, HasStep<?> originalStep) {
+        HasContainer hc = new HasContainer(ADJACENT_ID.name(), P.eq(parsePredicate(originalStep).getValue()));
+        return new HasStep<Edge>(traversal, hc);
     }
 }

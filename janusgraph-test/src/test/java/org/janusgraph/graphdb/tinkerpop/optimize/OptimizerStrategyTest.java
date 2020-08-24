@@ -21,12 +21,21 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.StorageSetup;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.JanusGraphBaseTest;
+import org.janusgraph.graphdb.JanusGraphTest;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
+import java.util.Map;
+
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
+import static org.janusgraph.graphdb.JanusGraphBaseTest.validateConfigOptions;
 
 /**
  * @author Florian Grieskamp (Florian.Grieskamp@gdata.de)
@@ -43,8 +52,8 @@ public abstract class OptimizerStrategyTest {
     protected int sid;
 
     // sample graph vertices
-    protected JanusGraphVertex sv[];
-    protected JanusGraphVertex vs[];
+    protected JanusGraphVertex[] sv;
+    protected JanusGraphVertex[] vs;
 
     @BeforeEach
     protected void setUp() {
@@ -63,6 +72,22 @@ public abstract class OptimizerStrategyTest {
         g = graph.traversal();
         tx = graph.newTransaction();
         mgmt = graph.openManagement();
+    }
+
+    public void clopen(Object... settings) {
+        if (settings!=null && settings.length>0) {
+            if (graph!=null && graph.isOpen()) {
+                graph.close();
+            }
+            Map<JanusGraphBaseTest.TestConfigOption,Object> options = validateConfigOptions(settings);
+            ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
+            config.set(GraphDatabaseConfiguration.STORAGE_BACKEND,"inmemory");
+            for (Map.Entry<JanusGraphBaseTest.TestConfigOption,Object> option : options.entrySet()) {
+                config.set(option.getKey().option, option.getValue(), option.getKey().umbrella);
+            }
+            open(config.getConfiguration());
+        }
+        newTx();
     }
 
     @AfterEach
@@ -96,8 +121,10 @@ public abstract class OptimizerStrategyTest {
     protected void makeSampleGraph() {
         PropertyKey id = mgmt.makePropertyKey("id").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
         PropertyKey weight = mgmt.makePropertyKey("weight").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
+        PropertyKey uniqueId = mgmt.makePropertyKey("uniqueId").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
 
         mgmt.buildIndex("byId", Vertex.class).addKey(id).buildCompositeIndex();
+        mgmt.buildIndex("byUniqueId", Vertex.class).addKey(uniqueId).unique().buildCompositeIndex();
         mgmt.buildIndex("byWeight", Vertex.class).addKey(weight).buildCompositeIndex();
         mgmt.buildIndex("byIdWeight", Vertex.class).addKey(id).addKey(weight).buildCompositeIndex();
 
@@ -111,15 +138,16 @@ public abstract class OptimizerStrategyTest {
         finishSchema();
 
         numV = 100;
+        int uid = 0;
         vs = new JanusGraphVertex[numV];
         for (int i = 0; i < numV; i++) {
-            vs[i] = graph.addVertex("id", i, "weight", i % 5);
+            vs[i] = graph.addVertex("id", i, "weight", i % 5, "uniqueId", uid++);
         }
         superV = 10;
         sid = -1;
         sv = new JanusGraphVertex[superV];
         for (int i = 0; i < superV; i++) {
-            sv[i] = graph.addVertex("id", sid);
+            sv[i] = graph.addVertex("id", sid, "uniqueId", uid++);
             for (int j = 0; j < numV; j++) {
                 sv[i].addEdge("knows", vs[j], "weight", j % 5);
                 sv[i].property(VertexProperty.Cardinality.list, "names", "n" + j, "weight", j % 5);
