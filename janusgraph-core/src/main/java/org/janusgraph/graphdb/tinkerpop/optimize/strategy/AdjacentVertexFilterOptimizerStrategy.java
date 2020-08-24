@@ -48,9 +48,15 @@ public class AdjacentVertexFilterOptimizerStrategy
 
     private AdjacentVertexFilterOptimizerStrategy() {}
 
-    public static AdjacentVertexFilterOptimizerStrategy instance() { return INSTANCE; }
+    public static AdjacentVertexFilterOptimizerStrategy instance() {
+        return INSTANCE;
+    }
 
-    private enum OptimizableQueryType { NONE, IS, HASID }
+    private enum OptimizableQueryType {
+        NONE,
+        IS,
+        HASID
+    }
 
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {

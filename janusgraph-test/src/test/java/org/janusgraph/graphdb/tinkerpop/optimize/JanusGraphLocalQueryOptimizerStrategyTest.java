@@ -48,22 +48,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class JanusGraphLocalQueryOptimizerStrategyTest extends OptimizerStrategyTest {
 
-    public void clopen(Object... settings) {
-        if (settings!=null && settings.length>0) {
-            if (graph!=null && graph.isOpen()) {
-                graph.close();
-            }
-            Map<JanusGraphBaseTest.TestConfigOption,Object> options = validateConfigOptions(settings);
-            ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
-            config.set(GraphDatabaseConfiguration.STORAGE_BACKEND,"inmemory");
-            for (Map.Entry<JanusGraphBaseTest.TestConfigOption,Object> option : options.entrySet()) {
-                config.set(option.getKey().option, option.getValue(), option.getKey().umbrella);
-            }
-            open(config.getConfiguration());
-        }
-        newTx();
-    }
-
     @Test
     public void testDefaultConfiguration() {
         makeSampleGraph();

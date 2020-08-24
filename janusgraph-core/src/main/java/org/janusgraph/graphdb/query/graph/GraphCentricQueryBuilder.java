@@ -28,6 +28,7 @@ import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.*;
 import org.janusgraph.graphdb.query.condition.*;
+import org.janusgraph.graphdb.query.index.IndexSelectionUtil;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.*;
@@ -261,16 +262,12 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         if (orders.isEmpty()) orders = OrderList.NO_ORDER;
 
         //Compile all indexes that cover at least one of the query conditions
-        final Set<IndexType> indexCandidates = new HashSet<>();
-        ConditionUtil.traversal(conditions, condition -> {
-            if (condition instanceof PredicateCondition) {
-                final RelationType type = ((PredicateCondition<RelationType,JanusGraphElement>) condition).getKey();
-                Preconditions.checkArgument(type != null && type.isPropertyKey());
-                Iterables.addAll(indexCandidates, Iterables.filter(((InternalRelationType) type).getKeyIndexes(),
-                    indexType -> indexType.getElement() == resultType && !(conditions instanceof Or && (indexType.isCompositeIndex() || !serializer.features((MixedIndexType) indexType).supportNotQueryNormalForm()))));
-            }
-            return true;
-        });
+        final Set<IndexType> indexCandidates = IndexSelectionUtil.getMatchingIndexes(conditions);
+
+        indexCandidates.removeIf(
+            indexType -> (indexType.getElement() != resultType)
+                    || (conditions instanceof Or
+                    && (indexType.isCompositeIndex() || !serializer.features((MixedIndexType) indexType).supportNotQueryNormalForm())));
 
         final Set<Condition> coveredClauses = new HashSet<>();
         final IndexSelectionStrategy.SelectedIndexQuery selectedIndex = indexSelector.selectIndices(indexCandidates, conditions, coveredClauses, orders, serializer);
