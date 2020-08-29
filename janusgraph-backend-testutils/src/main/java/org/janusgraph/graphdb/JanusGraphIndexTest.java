@@ -18,6 +18,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.janusgraph.TestCategory;
 import org.janusgraph.core.Cardinality;
@@ -62,6 +63,7 @@ import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
 import org.janusgraph.graphdb.query.index.ApproximateIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.BruteForceIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
+import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
@@ -89,7 +91,9 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.janusgraph.graphdb.JanusGraphTest.evaluateQuery;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -918,7 +922,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         GraphTraversalSource g = graph.traversal();
         TraversalMetrics profile = g.V().has("name", "value")
             .has("prop", "value").profile().next();
-        return profile.getMetrics().stream().findFirst().get().getNested().stream().filter(m -> m.getName().equals("backend-query")).count();
+        return profile.getMetrics().stream().findFirst().get().getNested().stream().filter(m -> m.getName().equals(QueryProfiler.BACKEND_QUERY)).count();
     }
 
     @Test
@@ -2363,4 +2367,50 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             }
         }
     }
+
+    /**
+     * This test builds a mixed index and tests index queries with order and range/limit.
+     * It also tests if index query cache is utilised correctly.
+     */
+    @Test
+    public void testOrderByWithRange() {
+        final PropertyKey age = makeKey("age", Integer.class);
+        final JanusGraphIndex mixed = mgmt.buildIndex("mixed", Vertex.class).addKey(age).buildMixedIndex(INDEX);
+        finishSchema();
+
+        for (int i = 0; i < 100; i++) {
+            tx.addVertex("age", i);
+        }
+        tx.commit();
+
+        Supplier<GraphTraversal> common = () -> graph.traversal().V().has("age", P.gte(0)).order();
+
+        Supplier<GraphTraversal> traversal;
+
+        // traverse with limit 30 (cache cold miss)
+        traversal = () -> common.get().by(ORDER_AGE_ASC).limit(30).values("age");
+        assertBackendHit((TraversalMetrics) traversal.get().profile().next());
+        assertIntRange(traversal.get(), 0, 30);
+
+        traversal = () -> common.get().by(ORDER_AGE_DESC).limit(30).values("age");
+        assertBackendHit((TraversalMetrics) traversal.get().profile().next());
+        assertIntRange(traversal.get(), 99, 69);
+
+        // traverse with limit 30 (cache hit)
+        traversal = () -> common.get().by(ORDER_AGE_ASC).limit(30).values("age");
+        assertNoBackendHit((TraversalMetrics) traversal.get().profile().next());
+        assertIntRange(traversal.get(), 0, 30);
+
+        // traverse with limit followed by orderBy
+        traversal = () -> graph.traversal().V().has("age", P.gte(0)).limit(30).order().by(ORDER_AGE_ASC).values("age");
+        assertBackendHit((TraversalMetrics) traversal.get().profile().next());
+        assertNoBackendHit((TraversalMetrics) traversal.get().profile().next());
+
+        // traverse with range(10, 20) (cache hit)
+        traversal = () -> common.get().by(ORDER_AGE_DESC).range(10, 20).values("age");
+        assertNoBackendHit((TraversalMetrics) traversal.get().profile().next());
+        assertIntRange(traversal.get(), 89, 79);
+
+    }
+
 }
