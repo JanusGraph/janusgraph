@@ -14,6 +14,7 @@
 
 package org.janusgraph.testutil;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -32,10 +33,12 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.janusgraph.graphdb.query.profile.QueryProfiler;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.stream.IntStream;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -78,6 +81,28 @@ public class JanusGraphAssert {
             assertEquals(expectedElement, req.next());
         }
         assertFalse(req.hasNext());
+    }
+
+    public static void assertIntRange(GraphTraversal<?, Integer> traversal, int start, int end) {
+        int[] intArray;
+        if (start <= end) {
+            intArray = IntStream.range(start, end).toArray();
+        } else {
+            intArray = IntStream.range(end, start).map(i -> start + end - i).toArray();
+        }
+        assertArrayEquals(intArray, traversal.toList().stream().mapToInt(i -> i).toArray());
+    }
+
+    public static void assertBackendHit(TraversalMetrics profile) {
+        assertTrue(profile.getMetrics().stream().anyMatch(metrics -> {
+            return metrics.getNested().stream().anyMatch(m -> m.getName().equals(QueryProfiler.BACKEND_QUERY));
+        }));
+    }
+
+    public static void assertNoBackendHit(TraversalMetrics profile) {
+        assertFalse(profile.getMetrics().stream().anyMatch(metrics -> {
+            return metrics.getNested().stream().anyMatch(m -> m.getName().equals(QueryProfiler.BACKEND_QUERY));
+        }));
     }
 
     private static boolean isEmpty(Object obj) {

@@ -16,9 +16,6 @@ package org.janusgraph.graphdb.transaction;
 
 import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.Weigher;
 import com.google.common.collect.*;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Cmp;
@@ -60,6 +57,8 @@ import org.janusgraph.graphdb.transaction.indexcache.ConcurrentIndexCache;
 import org.janusgraph.graphdb.transaction.indexcache.IndexCache;
 import org.janusgraph.graphdb.transaction.indexcache.SimpleIndexCache;
 import org.janusgraph.graphdb.transaction.lock.*;
+import org.janusgraph.graphdb.transaction.subquerycache.GuavaSubqueryCache;
+import org.janusgraph.graphdb.transaction.subquerycache.SubqueryCache;
 import org.janusgraph.graphdb.transaction.vertexcache.GuavaVertexCache;
 import org.janusgraph.graphdb.transaction.vertexcache.VertexCache;
 import org.janusgraph.graphdb.types.*;
@@ -149,7 +148,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
      * to be passed to the IndexProvider. This cache will drop entries when it overflows
      * since the result set can always be retrieved from the IndexProvider
      */
-    private final Cache<JointIndexQuery.Subquery, List<Object>> indexCache;
+    private final SubqueryCache indexCache;
     /**
      * Builds an inverted index for newly added properties so they can be considered in index queries.
      * This cache my not release elements since that would entail an expensive linear scan over addedRelations
@@ -247,7 +246,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
         vertexCache = new GuavaVertexCache(effectiveVertexCacheSize,concurrencyLevel,config.getDirtyVertexSize());
 
-        indexCache = CacheBuilder.newBuilder().weigher((Weigher<JointIndexQuery.Subquery, List<Object>>) (q, r) -> 2 + r.size()).concurrencyLevel(concurrencyLevel).maximumWeight(config.getIndexCacheWeight()).build();
+        indexCache = new GuavaSubqueryCache(concurrencyLevel, config.getIndexCacheWeight());
 
         uniqueLocks = UNINITIALIZED_LOCKS;
         deletedRelations = EMPTY_DELETED_RELATIONS;

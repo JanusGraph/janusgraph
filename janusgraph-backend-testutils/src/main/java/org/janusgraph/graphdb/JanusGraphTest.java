@@ -4459,7 +4459,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 case "optimization":
                     assertNull(subMetric.getCount(TraversalMetrics.ELEMENT_COUNT_ID));
                     break;
-                case "backend-query":
+                case QueryProfiler.BACKEND_QUERY:
                     if (fromCache) fail("Should not execute backend-queries when cached");
                     assertTrue(subMetric.getCount(TraversalMetrics.ELEMENT_COUNT_ID) > 0);
                     break;
