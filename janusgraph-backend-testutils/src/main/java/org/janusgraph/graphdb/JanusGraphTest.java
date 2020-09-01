@@ -4029,6 +4029,72 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertFalse(graph.traversal().V(vertexIdToBeDeleted).hasNext());
     }
 
+    @Test
+    public void testNestedContainPredicates() {
+        int graphSize = 10;
+        for (int i = 0; i < graphSize; ++i) {
+            graph.addVertex("id", i);
+        }
+        GraphTraversalSource g = graph.traversal();
+
+        /*
+         P.within
+         */
+
+        // unnested
+        assertEquals(3, g.V().has("id", P.within(4, 5, 6)).count().next());
+        assertEquals(0, g.V().has("id", P.within()).count().next());
+
+        // or
+        assertEquals(3, g.V().or(__.has("id", P.within(2, 3, 4))).count().next());
+        assertEquals(6, g.V().or(__.has("id", P.within(2, 3, 4)), __.has("id", P.within(6, 7, 8))).count().next());
+        assertEquals(5, g.V().or(__.has("id", P.within(2, 3, 4)), __.has("id", P.within(4, 5, 6))).count().next());
+        assertEquals(3, g.V().or(__.has("id", P.within(2, 3, 4)), __.has("id", P.within())).count().next());
+
+        // and
+        assertEquals(3, g.V().and(__.has("id", P.within(2, 3, 4))).count().next());
+        assertEquals(0, g.V().and(__.has("id", P.within(2, 3, 4)), __.has("id", P.within(6, 7, 8))).count().next());
+        assertEquals(1, g.V().and(__.has("id", P.within(2, 3, 4)), __.has("id", P.within(4, 5, 6))).count().next());
+        assertEquals(0, g.V().and(__.has("id", P.within(2, 3, 4)), __.has("id", P.within())).count().next());
+
+        /*
+         P.without
+         */
+
+        // unnested
+        assertEquals(graphSize - 3, g.V().has("id", P.without(4, 5, 6)).count().next());
+        assertEquals(graphSize, g.V().has("id", P.without()).count().next());
+
+        // or
+        assertEquals(graphSize - 3, g.V().or(__.has("id", P.without(2, 3, 4))).count().next());
+        assertEquals(graphSize, g.V().or(__.has("id", P.without(2, 3, 4)), __.has("id", P.without(6, 7, 8))).count().next());
+        assertEquals(graphSize - 1, g.V().or(__.has("id", P.without(2, 3, 4)), __.has("id", P.without(4, 5, 6))).count().next());
+        assertEquals(graphSize, g.V().or(__.has("id", P.without(2, 3, 4)), __.has("id", P.without())).count().next());
+
+        // and
+        assertEquals(graphSize - 3, g.V().and(__.has("id", P.without(2, 3, 4))).count().next());
+        assertEquals(graphSize - 6, g.V().and(__.has("id", P.without(2, 3, 4)), __.has("id", P.without(6, 7, 8))).count().next());
+        assertEquals(graphSize - 5, g.V().and(__.has("id", P.without(2, 3, 4)), __.has("id", P.without(4, 5, 6))).count().next());
+        assertEquals(graphSize - 3, g.V().and(__.has("id", P.without(2, 3, 4)), __.has("id", P.without())).count().next());
+
+        /*
+         both P.within and P.without
+         */
+
+        // or
+        assertEquals(graphSize - 3, g.V().or(__.has("id", P.within(2, 3, 4)), __.has("id", P.without(6, 7, 8))).count().next());
+        assertEquals(graphSize - 2, g.V().or(__.has("id", P.within(2, 3, 4)), __.has("id", P.without(4, 5, 6))).count().next());
+        assertEquals(graphSize, g.V().or(__.has("id", P.within(2, 3, 4)), __.has("id", P.without(2, 3, 4))).count().next());
+        assertEquals(graphSize, g.V().or(__.has("id", P.within(2, 3, 4)), __.has("id", P.without())).count().next());
+        assertEquals(graphSize - 3, g.V().or(__.has("id", P.within()), __.has("id", P.without(2, 3, 4))).count().next());
+
+        // and
+        assertEquals(3, g.V().and(__.has("id", P.within(2, 3, 4)), __.has("id", P.without(6, 7, 8))).count().next());
+        assertEquals(2, g.V().and(__.has("id", P.within(2, 3, 4)), __.has("id", P.without(4, 5, 6))).count().next());
+        assertEquals(0, g.V().and(__.has("id", P.within(2, 3, 4)), __.has("id", P.without(2, 3, 4))).count().next());
+        assertEquals(3, g.V().and(__.has("id", P.within(2, 3, 4)), __.has("id", P.without())).count().next());
+        assertEquals(0, g.V().and(__.has("id", P.within()), __.has("id", P.without(2, 3, 4))).count().next());
+    }
 
     @Test
     public void testTinkerPopCardinality() {
