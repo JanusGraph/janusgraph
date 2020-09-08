@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.graphdb.tinkerpop.optimize;
+package org.janusgraph.graphdb.tinkerpop.optimize.step;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
@@ -39,6 +39,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComp
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 
+import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.javatuples.Pair;
 
 import java.util.ArrayList;

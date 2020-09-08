@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.blueprints.process.traversal.strategy.optimization;
+package org.janusgraph.graphdb.tinkerpop.optimize;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -48,13 +48,12 @@ import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.predicate.ConnectiveJanusPredicate;
 import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
-import org.janusgraph.graphdb.tinkerpop.optimize.HasStepFolder;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphLocalQueryOptimizerStrategy;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphMultiQueryStep;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStep;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStepStrategy;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphVertexStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMultiQueryStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphLocalQueryOptimizerStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphStepStrategy;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;

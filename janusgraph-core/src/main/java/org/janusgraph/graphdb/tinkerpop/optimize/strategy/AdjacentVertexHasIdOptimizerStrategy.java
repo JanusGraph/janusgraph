@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.graphdb.tinkerpop.optimize;
+package org.janusgraph.graphdb.tinkerpop.optimize.strategy;
 
 import java.util.List;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;

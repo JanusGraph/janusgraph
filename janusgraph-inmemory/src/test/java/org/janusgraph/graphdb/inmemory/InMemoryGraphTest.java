@@ -76,7 +76,7 @@ public class InMemoryGraphTest extends JanusGraphTest {
     public void testTransactionConfiguration() {}
 
     @Override @Test @Disabled
-    public void testTinkerPopOptimizationStrategies() {}
+    public void testMultiQueryMetricsWhenReadingFromBackend() {}
 
     @Override @Test @Disabled
     public void testDataTypes() {}
