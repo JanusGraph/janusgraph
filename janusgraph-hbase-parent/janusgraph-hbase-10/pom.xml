@@ -230,10 +230,10 @@
                     <version>${hadoop2.version}</version>
                     <optional>true</optional>
                     <exclusions>
-                    <exclusion>
-                        <groupId>com.thoughtworks.paranamer</groupId>
-                        <artifactId>paranamer</artifactId>
-                    </exclusion>
+                        <exclusion>
+                            <groupId>com.thoughtworks.paranamer</groupId>
+                            <artifactId>paranamer</artifactId>
+                        </exclusion>
                     </exclusions>
                 </dependency>
             </dependencies>

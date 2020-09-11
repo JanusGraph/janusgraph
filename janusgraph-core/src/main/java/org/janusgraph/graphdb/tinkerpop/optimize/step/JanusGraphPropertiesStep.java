@@ -145,12 +145,14 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
             } else {
                 //this asks for properties
                 assert orders.isEmpty();
-                iterator = (Iterator<E>) traverser.get().properties(getPropertyKeys());
-                if (!hasContainers.isEmpty()) {
+                Iterator<? extends Property<?>> propertiesIt = traverser.get().properties(getPropertyKeys());
+                if(hasContainers.isEmpty()){
+                    iterator = (Iterator<E>) propertiesIt;
+                } else {
                     List<E> properties = new LinkedList<>();
-                    iterator.forEachRemaining(e -> {
+                    propertiesIt.forEachRemaining(e -> {
                         if(HasContainer.testAll(e, hasContainers)){
-                            properties.add(e);
+                            properties.add((E) e);
                         }
                     });
                     iterator = properties.iterator();
