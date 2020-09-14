@@ -4148,6 +4148,10 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                            gts.V(sv[0]).both("knows").is(vs[50]),
                            AdjacentVertexIsOptimizerStrategy.instance());
 
+        // Result should stay the same
+        assertSameResultWithOptimizations(gts.V(sv[0]).as("v1").out("knows").is(vs[50]).as("v2").select("v1", "v2").by("id"),
+            AdjacentVertexIsOptimizerStrategy.instance());
+
         // AdjacentVertexHasIdOptimizer outE/inE/bothE
         assertOptimization(gts.V(sv[0]).outE("knows").has(ImplicitKey.ADJACENT_ID.name(), vs[50]).inV(),
                            gts.V(sv[0]).outE("knows").inV().hasId(vs[50]),
@@ -4174,6 +4178,10 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertOptimization(gts.V(sv[0]).in().hasId(P.neq(vs[50])),
                            gts.V(sv[0]).in().hasId(P.neq(vs[50])),
                            AdjacentVertexHasIdOptimizerStrategy.instance());
+
+        // Result should stay the same
+        assertSameResultWithOptimizations(gts.V(sv[0]).as("v1").out("knows").hasId(vs[50].id()).as("v2").select("v1", "v2").by("id"),
+            AdjacentVertexHasIdOptimizerStrategy.instance());
 
         int[] loop1 = {0}; // repeat starts from vertex with id 0 and goes in to the sv[0] vertex then loops back out to the vertex with the next id
         int[] loop2 = {0};
@@ -4313,6 +4321,18 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         t = gts.V().has("id", sid).values("names").profile("~metrics");
         assertCount(superV * numV, t);
         assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
+    }
+
+    private static void assertSameResultWithOptimizations(Traversal<?,?> originalTraversal, TraversalStrategy<?>... strategies) {
+        Traversal.Admin<?,?> optimizedTraversal = originalTraversal.asAdmin().clone();
+        optimizedTraversal.getStrategies().addStrategies(strategies);
+        List<?> optimizedResult = optimizedTraversal.toList();
+
+        Traversal.Admin<?,?> unOptimizedTraversal = originalTraversal.asAdmin().clone();
+        Stream.of(strategies).forEach(s -> unOptimizedTraversal.getStrategies().removeStrategies(s.getClass()));
+        List<?> unOptimizedResult = unOptimizedTraversal.toList();
+
+        assertEquals(unOptimizedResult, optimizedResult);
     }
 
     private static boolean queryProfilerAnnotationIsPresent(Traversal t, String queryProfilerAnnotation) {
