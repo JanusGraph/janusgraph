@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.query;
 
 import com.google.common.collect.Iterators;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Contain;
@@ -33,6 +34,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -55,6 +57,46 @@ public class QueryTest {
     public void shutdown() {
         if (tx!=null && tx.isOpen()) tx.commit();
         if (graph!=null && graph.isOpen()) graph.close();
+    }
+
+    @Test
+    public void testQueryLimitAdjustment() {
+        JanusGraphManagement mgmt = graph.openManagement();
+        PropertyKey prop1Key = mgmt.makePropertyKey("prop1").dataType(String.class).make();
+        PropertyKey prop2Key = mgmt.makePropertyKey("prop2").dataType(String.class).make();
+        PropertyKey prop3Key = mgmt.makePropertyKey("prop3").dataType(String.class).make();
+        PropertyKey prop4Key = mgmt.makePropertyKey("prop4").dataType(String.class).make();
+
+        mgmt.buildIndex("prop1_idx", Vertex.class).addKey(prop1Key).buildCompositeIndex();
+        mgmt.buildIndex("props_idx", Vertex.class).addKey(prop1Key).addKey(prop2Key).buildCompositeIndex();
+
+        mgmt.commit();
+
+        for (int i = 0; i < 20; i++) {
+            tx.addVertex().property("prop1", "prop1val").element().property("prop2", "prop2val")
+                .element().property("prop3", "prop3val" + i % 2).element().property("prop4", "prop4val" + i % 2);
+        }
+        tx.commit();
+
+        // Single condition, fully met by index prop1_idx. No need to adjust backend query limit.
+        assertCount(5, graph.traversal().V().has("prop1", "prop1val").limit(5));
+        assertEquals("multiKSQ[1]@5", graph.traversal().V().has("prop1", "prop1val").limit(5)
+                .profile().next().getMetrics(0).getAnnotation("query"));
+
+        // Two conditions, fully met by index props_idx. No need to adjust backend query limit.
+        assertCount(5, graph.traversal().V().has("prop1", "prop1val").has("prop2", "prop2val").limit(5));
+        assertEquals("multiKSQ[1]@5", graph.traversal().V().has("prop1", "prop1val").has("prop2", "prop2val").limit(5)
+            .profile().next().getMetrics(0).getAnnotation("query"));
+
+        // Two conditions, one of which met by index prop1_idx. Multiply original limit by two for sake of in-memory filtering.
+        assertCount(5, graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").limit(5));
+        assertEquals("multiKSQ[1]@10", graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").limit(5)
+            .profile().next().getMetrics(0).getAnnotation("query"));
+
+        // Three conditions, one of which met by index prop1_idx. Multiply original limit by four for sake of in-memory filtering.
+        assertCount(5, graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").has("prop4", "prop4val0").limit(5));
+        assertEquals("multiKSQ[1]@20", graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").has("prop4", "prop4val0").limit(5)
+            .profile().next().getMetrics(0).getAnnotation("query"));
     }
 
     @Test
