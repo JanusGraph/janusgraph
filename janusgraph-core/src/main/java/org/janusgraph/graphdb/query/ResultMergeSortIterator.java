@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.query;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 
 import java.util.Comparator;
 import java.util.Iterator;
@@ -23,11 +24,11 @@ import java.util.NoSuchElementException;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class ResultMergeSortIterator<R> implements Iterator<R> {
+public class ResultMergeSortIterator<R> implements CloseableIterator<R> {
 
 
-    private final Iterator<R> first;
-    private final Iterator<R> second;
+    private final CloseableIterator<R> first;
+    private final CloseableIterator<R> second;
     private final Comparator<R> comp;
     private final boolean filterDuplicates;
 
@@ -35,7 +36,7 @@ public class ResultMergeSortIterator<R> implements Iterator<R> {
     private R nextSecond;
     private R next;
 
-    public ResultMergeSortIterator(Iterator<R> first, Iterator<R> second, Comparator<R> comparator, boolean filterDuplicates) {
+    public ResultMergeSortIterator(CloseableIterator<R> first, CloseableIterator<R> second, Comparator<R> comparator, boolean filterDuplicates) {
         Preconditions.checkNotNull(first);
         Preconditions.checkNotNull(second);
         Preconditions.checkNotNull(comparator);
@@ -104,9 +105,13 @@ public class ResultMergeSortIterator<R> implements Iterator<R> {
 
     public static<R> Iterable<R> mergeSort(final Iterable<R> first, final Iterable<R> second,
                                            final Comparator<R> comparator, final boolean filterDuplicates) {
-        return () -> new ResultMergeSortIterator<>(first.iterator(),second.iterator(),comparator,filterDuplicates);
+        return () -> new ResultMergeSortIterator<>(CloseableIterator.asCloseable(first.iterator()),
+            CloseableIterator.asCloseable(second.iterator()), comparator, filterDuplicates);
     }
 
-
-
+    @Override
+    public void close() {
+        first.close();
+        second.close();
+    }
 }
