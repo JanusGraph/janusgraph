@@ -109,6 +109,7 @@ public abstract class AdjacentVertexOptimizerStrategy<T extends FilterStep<?>>
 
         Step<Edge,Vertex> e2vStep;
         e2vStep = (Step<Edge, Vertex>) originalStep.getPreviousStep();
+        originalStep.getLabels().forEach(e2vStep::addLabel);
 
         // create new has("~adjacent", id_value) step before e2v step
         HasStep<Edge> hasAdjacentIdStep = makeHasAdjacentIdStep(traversal, predicate);
@@ -136,6 +137,7 @@ public abstract class AdjacentVertexOptimizerStrategy<T extends FilterStep<?>>
         } else {
             e2vStep = new EdgeVertexStep(traversal, v2vDirection.opposite());
         }
+        originalStep.getLabels().forEach(e2vStep::addLabel);
 
         Step<?, Vertex> predecessor = v2vStep.getPreviousStep();
 
