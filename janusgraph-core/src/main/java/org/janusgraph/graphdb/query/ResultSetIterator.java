@@ -14,9 +14,9 @@
 
 package org.janusgraph.graphdb.query;
 
+import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 import org.janusgraph.core.JanusGraphElement;
 
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
@@ -25,9 +25,9 @@ import java.util.NoSuchElementException;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class ResultSetIterator<R extends JanusGraphElement> implements Iterator<R> {
+public class ResultSetIterator<R extends JanusGraphElement> implements CloseableIterator<R> {
 
-    private final Iterator<R> iterator;
+    private final CloseableIterator<R> iterator;
     private final int limit;
 
     private R current;
@@ -35,7 +35,7 @@ public class ResultSetIterator<R extends JanusGraphElement> implements Iterator<
     private int count;
 
 
-    public ResultSetIterator(Iterator<R> inner, int limit) {
+    public ResultSetIterator(CloseableIterator<R> inner, int limit) {
         this.iterator = inner;
         this.limit = limit;
         count = 0;
@@ -53,6 +53,8 @@ public class ResultSetIterator<R extends JanusGraphElement> implements Iterator<
         R r = null;
         if (count < limit && iterator.hasNext()) {
             r = iterator.next();
+        } else {
+            close();
         }
         return r;
     }
@@ -76,8 +78,13 @@ public class ResultSetIterator<R extends JanusGraphElement> implements Iterator<
             throw new UnsupportedOperationException();
     }
 
+    @Override
+    public void close() {
+        iterator.close();
+    }
+
     public static<R extends JanusGraphElement> Iterable<R> wrap(final Iterable<R> inner, final int limit) {
-        return () -> new ResultSetIterator<>(inner.iterator(),limit);
+        return () -> new ResultSetIterator<>(CloseableIterator.asCloseable(inner.iterator()), limit);
     }
 
 }

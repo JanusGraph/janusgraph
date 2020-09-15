@@ -18,6 +18,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Contain;
@@ -34,10 +35,12 @@ import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.*;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
+import org.janusgraph.graphdb.util.IteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
 
 /**
@@ -195,7 +198,14 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     }
 
     public <E extends JanusGraphElement> Iterable<E> iterables(final GraphCentricQuery query, final Class<E> aClass) {
-        return Iterables.filter(new QueryProcessor<>(query, tx.elementProcessor), aClass);
+        return new Iterable<E>() {
+            @Override
+            public CloseableIterator<E> iterator() {
+                return IteratorUtils.filter(new QueryProcessor(query, tx.elementProcessor).iterator(),
+                    (Predicate<? super E>) e -> aClass.isInstance(e));
+            }
+
+        };
     }
 
 

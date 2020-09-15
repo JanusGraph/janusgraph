@@ -35,7 +35,7 @@ import com.google.common.cache.Cache;
 /**
  * @author davidclement90@laposte.net
  */
-public class SubqueryIterator implements Iterator<JanusGraphElement>, AutoCloseable {
+public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElement> {
 
     private final JointIndexQuery.Subquery subQuery;
 
@@ -72,25 +72,28 @@ public class SubqueryIterator implements Iterator<JanusGraphElement>, AutoClosea
     }
 
     @Override
-    public boolean hasNext() {
-        if (!elementIterator.hasNext() && currentIds != null) {
-            indexCache.put(subQuery, currentIds);
+    protected JanusGraphElement computeNext() {
+        if (elementIterator.hasNext()) {
+            return elementIterator.next();
+        }
+        close();
+        return endOfData();
+    }
+
+    /**
+     * Close the iterator, stop timer and update profiler.
+     * Put results into cache if the underlying elementIterator is exhausted.
+     */
+    @Override
+    public void close() {
+        if (isTimerRunning) {
+            assert currentIds != null;
+            if (!elementIterator.hasNext()) {
+                indexCache.put(subQuery, currentIds);
+            }
+            profiler.setResultSize(currentIds.size());
             profiler.stopTimer();
             isTimerRunning = false;
-            profiler.setResultSize(currentIds.size());
-        }
-        return elementIterator.hasNext();
-    }
-
-    @Override
-    public JanusGraphElement next() {
-        return this.elementIterator.next();
-    }
-
-    @Override
-    public void close() throws Exception {
-        if (isTimerRunning) {
-            profiler.stopTimer();
         }
     }
 

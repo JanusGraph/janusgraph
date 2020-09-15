@@ -18,6 +18,7 @@ import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
+import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 import org.janusgraph.core.*;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
@@ -129,10 +130,10 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
         }
 
         @Override
-        public Iterator<Entry> getNewIterator(int newLimit) {
+        public CloseableIterator<Entry> getNewIterator(int newLimit) {
             if (newLimit>sliceQuery.getLimit())
                 sliceQuery = sliceQuery.updateLimit(newLimit);
-            return getBasicIterator();
+            return CloseableIterator.asCloseable(getBasicIterator());
         }
     }
 
