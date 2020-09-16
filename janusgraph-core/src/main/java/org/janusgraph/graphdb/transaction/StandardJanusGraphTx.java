@@ -698,6 +698,10 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     }
 
     public JanusGraphEdge addEdge(JanusGraphVertex outVertex, JanusGraphVertex inVertex, EdgeLabel label) {
+       return addEdge(null, outVertex, inVertex, label);
+    }
+
+    public JanusGraphEdge addEdge(Long id, JanusGraphVertex outVertex, JanusGraphVertex inVertex, EdgeLabel label) {
         verifyWriteAccess(outVertex, inVertex);
         outVertex = ((InternalVertex) outVertex).it();
         inVertex = ((InternalVertex) inVertex).it();
@@ -722,8 +726,9 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                             throw new SchemaViolationException("An edge with the given label already exists on the in-vertex and the label [%s] is in-unique", label.name());
                 }
             }
-            StandardEdge edge = new StandardEdge(IDManager.getTemporaryRelationID(temporaryIds.nextID()), label, (InternalVertex) outVertex, (InternalVertex) inVertex, ElementLifeCycle.New);
-            if (config.hasAssignIDsImmediately()) graph.assignID(edge);
+            long edgeId = id == null ? IDManager.getTemporaryRelationID(temporaryIds.nextID()) : id;
+            StandardEdge edge = new StandardEdge(edgeId, label, (InternalVertex) outVertex, (InternalVertex) inVertex, ElementLifeCycle.New);
+            if (config.hasAssignIDsImmediately() && id == null) graph.assignID(edge);
             connectRelation(edge);
             return edge;
         } finally {
@@ -742,10 +747,18 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     }
 
     public JanusGraphVertexProperty addProperty(JanusGraphVertex vertex, PropertyKey key, Object value) {
-        return addProperty(key.cardinality().convert(), vertex, key, value);
+        return addProperty(vertex, key, value, null);
+    }
+
+    public JanusGraphVertexProperty addProperty(JanusGraphVertex vertex, PropertyKey key, Object value, Long id) {
+        return addProperty(key.cardinality().convert(), vertex, key, value, id);
     }
 
     public JanusGraphVertexProperty addProperty(VertexProperty.Cardinality cardinality, JanusGraphVertex vertex, PropertyKey key, Object value) {
+        return addProperty(cardinality, vertex, key, value, null);
+    }
+
+    public JanusGraphVertexProperty addProperty(VertexProperty.Cardinality cardinality, JanusGraphVertex vertex, PropertyKey key, Object value, Long id) {
         if (key.cardinality().convert()!=cardinality && cardinality!=VertexProperty.Cardinality.single)
             throw new SchemaViolationException("Key is defined for %s cardinality which conflicts with specified: %s",key.cardinality(),cardinality);
         verifyWriteAccess(vertex);
@@ -817,8 +830,9 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                         throw new SchemaViolationException("Adding this property for key [%s] and value [%s] violates a uniqueness constraint [%s]", key.name(), normalizedValue, lockTuple.getIndex());
                 }
             }
-            StandardVertexProperty prop = new StandardVertexProperty(IDManager.getTemporaryRelationID(temporaryIds.nextID()), key, (InternalVertex) vertex, normalizedValue, ElementLifeCycle.New);
-            if (config.hasAssignIDsImmediately()) graph.assignID(prop);
+            long propId = id == null ? IDManager.getTemporaryRelationID(temporaryIds.nextID()) : id;
+            StandardVertexProperty prop = new StandardVertexProperty(propId, key, (InternalVertex) vertex, normalizedValue, ElementLifeCycle.New);
+            if (config.hasAssignIDsImmediately() && id == null) graph.assignID(prop);
             connectRelation(prop);
             return prop;
         } finally {
