@@ -71,8 +71,8 @@ public class CacheVertexProperty extends AbstractVertexProperty {
         copyProperties(copy);
         copy.remove();
 
-        StandardVertexProperty u = (StandardVertexProperty) tx().addProperty(getVertex(0), propertyKey(), value());
-        if (type.getConsistencyModifier()!= ConsistencyModifier.FORK) u.setId(longId());
+        Long id = type.getConsistencyModifier() != ConsistencyModifier.FORK ? longId() : null;
+        StandardVertexProperty u = (StandardVertexProperty) tx().addProperty(getVertex(0), propertyKey(), value(), id);
         u.setPreviousID(longId());
         copyProperties(u);
         return u;
