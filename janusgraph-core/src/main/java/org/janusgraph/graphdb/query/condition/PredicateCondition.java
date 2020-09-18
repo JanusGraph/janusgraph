@@ -106,7 +106,7 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
             return false;
 
         PredicateCondition oth = (PredicateCondition) other;
-        return key.equals(oth.key) && predicate.equals(oth.predicate) && value.equals(oth.value);
+        return key.equals(oth.key) && predicate.equals(oth.predicate) && Objects.equals(value, oth.value);
     }
 
     @Override
