@@ -4,7 +4,7 @@ When JanusGraph is deployed on a cluster of multiple storage backend instances, 
 
 ```properties
 cluster.max-partitions = 32
-id.placement = simple 
+ids.placement = simple 
 ```
 
 The configuration option `max-partitions` controls how many virtual partitions JanusGraph creates. This number should be roughly twice the number of storage backend instances. If the cluster of storage backend instances is expected to grow, estimate the size of the cluster in the foreseeable future and take this number as the baseline. Setting this number too large will unnecessarily fragment the cluster which can lead to poor performance. This number should be larger than the maximum expected number of nodes in the JanusGraph graph. It must be greater than 1 and a power of 2. 
