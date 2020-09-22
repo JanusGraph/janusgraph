@@ -70,9 +70,8 @@
     <properties>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
         <tinkerpop.version>3.4.6</tinkerpop.version>
-        <junit-platform.version>1.6.1</junit-platform.version>
-        <junit.version>5.6.1</junit.version>
-        <mrunit.version>1.1.0</mrunit.version>
+        <junit-platform.version>1.7.0</junit-platform.version>
+        <junit.version>5.7.0</junit.version>
         <mockito.version>2.23.0</mockito.version>
         <jamm.version>0.3.0</jamm.version>
         <metrics.version>4.1.5</metrics.version>
@@ -92,18 +91,10 @@
         <elasticsearch.version>7.6.2</elasticsearch.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
-        <joda.version>2.9.9</joda.version>
-        <concurrentlinkedhashmap.version>1.4</concurrentlinkedhashmap.version>
-        <antlr2.version>2.7.7</antlr2.version>
-        <antlr.version>3.5.2</antlr.version>
-        <asm3.version>3.1</asm3.version>
-        <asm4.version>4.0</asm4.version>
         <zookeeper.version>3.5.7</zookeeper.version>
         <!-- align with org.apache.tinkerpop:tinkerpop -->
         <netty4.version>4.1.49.Final</netty4.version>
         <jna.version>4.0.0</jna.version>
-        <kuali.s3.wagon.version>1.1.20</kuali.s3.wagon.version>
-        <jasper.version>5.5.23</jasper.version>
         <gmavenplus.version>1.5</gmavenplus.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -124,7 +115,7 @@
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <cassandra.version>3.11.6</cassandra.version>
         <cassandra-driver.version>3.9.0</cassandra-driver.version>
-        <testcontainers.version>1.13.0</testcontainers.version>
+        <testcontainers.version>1.14.3</testcontainers.version>
         <easymock.version>3.4</easymock.version>
     </properties>
     <modules>
@@ -617,36 +608,6 @@
                 <groupId>com.fasterxml.jackson.module</groupId>
                 <artifactId>jackson-module-scala_2.11</artifactId>
                 <version>${jackson2.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>joda-time</groupId>
-                <artifactId>joda-time</artifactId>
-                <version>${joda.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
-                <artifactId>concurrentlinkedhashmap-lru</artifactId>
-                <version>${concurrentlinkedhashmap.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.antlr</groupId>
-                <artifactId>antlr-runtime</artifactId>
-                <version>${antlr.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.antlr</groupId>
-                <artifactId>antlr</artifactId>
-                <version>${antlr.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.antlr</groupId>
-                <artifactId>antlr-master</artifactId>
-                <version>${antlr.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>antlr</groupId>
-                <artifactId>antlr</artifactId>
-                <version>${antlr2.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.code.findbugs</groupId>
