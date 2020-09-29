@@ -71,14 +71,13 @@ JanusGraph supports the following Metrics reporters:
 
 -   [Console](#console-reporter)
 -   [CSV](#csv-file-reporter)
--   [Ganglia](#ganglia-reporter)
 -   [Graphite](#graphite-reporter)
 -   [JMX](#jmx-reporter)
 -   [Slf4j](#slf4j-reporter)
 -   [User-provided/Custom](#custom-reporter)
 
-Each reporter type is independent of and can coexist with the others.
-For example, it’s possible to configure Ganglia, JMX, and Slf4j Metrics
+Each reporter type is independent and can coexist with other reporter types.
+For example, it’s possible to configure JMX and Slf4j Metrics
 reporters to operate simultaneously. Just set all their respective
 configuration keys in janusgraph.properties (and enable metrics as
 directed above).
@@ -149,103 +148,6 @@ metrics.enabled = true
 # Required; specify logging interval in milliseconds
 metrics.csv.interval = 60000
 metrics.csv.directory = foo/bar
-```
-
-### Ganglia Reporter
-
-!!! note
-    Configuration of [Ganglia](http://ganglia.sourceforge.net/) requires
-    an additional library that is not packaged with JanusGraph due to its
-    LGPL licensing that conflicts with the JanusGraph’s Apache 2.0
-    License. To run with Ganglia monitoring, download the
-    `org.acplt:oncrpc` jar from
-    [here](https://repo1.maven.org/maven2/org/acplt/oncrpc/1.0.7/) and copy
-    it to the JanusGraph `/lib` directory before starting the server.
-
-<table>
-<caption>Metrics Ganglia Reporter Configuration Options</caption>
-<thead>
-<tr>
-<th>Config Key</th>
-<th>Required?</th>
-<th>Value</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>metrics.ganglia.hostname</td>
-<td>yes</td>
-<td>Unicast host or multicast group to which our Metrics are sent</td>
-<td>null</td>
-</tr>
-<tr>
-<td>metrics.ganglia.interval</td>
-<td>yes</td>
-<td>Milliseconds to wait between sending datagrams</td>
-<td>null</td>
-</tr>
-<tr>
-<td>metrics.ganglia.port</td>
-<td>no</td>
-<td>UDP port to which we send Metrics datagrams</td>
-<td>8649</td>
-</tr>
-<tr>
-<td>metrics.ganglia.addressing-mode</td>
-<td>no</td>
-<td>Must be "unicast" or "multicast"</td>
-<td>unicast</td>
-</tr>
-<tr>
-<td>metrics.ganglia.ttl</td>
-<td>no</td>
-<td>Multicast datagram TTL; ignore for unicast</td>
-<td>1</td>
-</tr>
-<tr>
-<td>metrics.ganglia.protocol-31</td>
-<td>no</td>
-<td>Boolean; true to use Ganglia protocol 3.1, false to use 3.0</td>
-<td>true</td>
-</tr>
-<tr>
-<td>metrics.ganglia.uuid</td>
-<td>no</td>
-<td><a href="https://github.com/ganglia/monitor-core/wiki/UUIDSources">Host UUID to report instead of IP:hostname</a></td>
-<td>null</td>
-</tr>
-<tr>
-<td>metrics.ganglia.spoof</td>
-<td>no</td>
-<td><a href="https://github.com/ganglia/monitor-core/wiki/Gmetric-Spoofing">Override IP:hostname reported to Ganglia</a></td>
-<td>null</td>
-</tr>
-</tbody>
-</table>
-
-Example janusgraph.properties snippet that sends unicast UDP datagrams
-to localhost on the default port once every 30 seconds:
-```properties
-metrics.enabled = true
-# Required; IP or hostname string
-metrics.ganglia.hostname = 127.0.0.1
-# Required; specify logging interval in milliseconds
-metrics.ganglia.interval = 30000
-```
-
-Example janusgraph.properties snippet that sends unicast UDP datagrams
-to a non-default destination port and which also spoofs the IP and
-hostname reported to Ganglia:
-```properties
-metrics.enabled = true
-# Required; IP or hostname string
-metrics.ganglia.hostname = 1.2.3.4
-# Required; specify logging interval in milliseconds
-metrics.ganglia.interval = 60000
-# Optional
-metrics.ganglia.port = 6789
-metrics.ganglia.spoof = 10.0.0.1:zombo.com
 ```
 
 ### Graphite Reporter

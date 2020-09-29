@@ -161,10 +161,6 @@ after a shiny new JanusGraph header.
     
     `org.apache.tinkerpop.gremlin.server.GremlinServer` => `org.janusgraph.graphdb.server.JanusGraphServer`
 
-##### Drop support for Ganglia metrics
-
-We are dropping Ganglia as we are using dropwizard for metrics. Dropwizard did drop Ganglia in the newest major version.
-
 ### Version 0.5.2 (Release Date: May 3, 2020)
 
 === "Maven"
