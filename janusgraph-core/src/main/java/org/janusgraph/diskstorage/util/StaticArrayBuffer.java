@@ -346,29 +346,13 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     @Override
     public String toString() {
-        return toString("-");
-    }
-
-    public final String toString(String separator) {
-        StringBuilder s = new StringBuilder();
+        StringBuilder s = new StringBuilder("0x");
         for (int i=offset;i<limit;i++) {
-            if (i>offset) s.append(separator);
-            s.append(toFixedWidthString(array[i]));
+            s.append(String.format("%02X", array[i]));
         }
         return s.toString();
     }
 
-    private static String toString(byte b) {
-        return String.valueOf((b>=0)?b:256+b);
-    }
-
-    private static String toFixedWidthString(byte b) {
-        String s = toString(b);
-        assert s.length()<=3 && s.length()>0;
-        if (s.length()==1) s = "  "+s;
-        else if (s.length()==2) s = " " + s;
-        return s;
-    }
 
     @Override
     public int compareTo(StaticBuffer other) {

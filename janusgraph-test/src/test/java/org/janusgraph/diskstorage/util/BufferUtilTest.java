@@ -84,18 +84,6 @@ public class BufferUtilTest {
         assertEquals(BufferUtil.zeroBuffer(8), bn);
     }
 
-    @Test
-    public void staticArrayBufferTest() {
-        long[] values = {2342342342L,2342,0,-1,-214252345234L};
-        byte[] array = new byte[values.length*8];
-        for (int i=0;i<values.length;i++) {
-            StaticArrayBuffer.putLong(array,i*8,values[i]);
-        }
-        for (int i=0;i<values.length;i++) {
-            assertEquals(values[i],StaticArrayBuffer.getLong(array,i*8));
-        }
-    }
-
     public static ByteBuffer of(long val) {
         ByteBuffer bb = ByteBuffer.allocate(8).putLong(val);
         bb.flip();
