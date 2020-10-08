@@ -14,7 +14,7 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import org.janusgraph.graphdb.tinkerpop.optimize.HasStepFolder.OrderEntry;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder.OrderEntry;
 
 import java.util.List;
 import java.util.Objects;

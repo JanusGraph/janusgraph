@@ -12,28 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.blueprints.process.traversal.strategy.optimization;
+package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import org.janusgraph.StorageSetup;
-import org.janusgraph.core.JanusGraph;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 
 import org.apache.tinkerpop.gremlin.process.traversal.IO;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IoStep;
 
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class JanusGraphIoRegistrationStrategyTest {
+public class JanusGraphIoRegistrationStrategyTest extends OptimizerStrategyTest {
 
     @Test
     public void shouldAddJanusGraphRegistryForIoTraversal() {
-        JanusGraph graph = StorageSetup.getInMemoryGraph();
-        GraphTraversalSource g = graph.traversal();
-
         GraphTraversal<Object, Object> t = g.io("someNonExistingFile");
         t.asAdmin().applyStrategies();
 

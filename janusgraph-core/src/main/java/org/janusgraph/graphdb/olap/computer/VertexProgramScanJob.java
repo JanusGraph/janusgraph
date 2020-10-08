@@ -28,7 +28,7 @@ import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.olap.QueryContainer;
 import org.janusgraph.graphdb.olap.VertexJobConverter;
 import org.janusgraph.graphdb.olap.VertexScanJob;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphVertexStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
 
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;

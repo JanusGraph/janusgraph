@@ -16,9 +16,9 @@ package org.janusgraph.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphLocalQueryOptimizerStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphLocalQueryOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphVertexStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;

@@ -16,23 +16,59 @@ package org.janusgraph.graphdb.tinkerpop.optimize;
 
 import static java.time.Duration.ofSeconds;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.inV;
+import static org.janusgraph.testutil.JanusGraphAssert.assertNumStep;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedFactory;
-import org.janusgraph.StorageSetup;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.AdjacentVertexFilterOptimizerStrategy;
 import org.junit.jupiter.api.Test;
 
-class AdjacentVertexFilterOptimizerStrategyTest {
+/**
+ * @author Florian Grieskamp (Florian.Grieskamp@gdata.de)
+ */
+public class AdjacentVertexFilterOptimizerStrategyTest extends OptimizerStrategyTest {
 
     @Test
-    void shouldNotStuck() {
-        final Graph graph = StorageSetup.getInMemoryGraph();
+    public void shouldOptimizeFilterStep() {
+        makeSampleGraph();
 
+        // is() optimization within filter
+        assertNumStep(1, 1, g.V(sv[0]).outE("knows").filter(__.inV().is(vs[50])),
+            JanusGraphVertexStep.class, TraversalFilterStep.class);
+        assertNumStep(1, 1, g.V(sv[0]).outE("knows").filter(__.otherV().is(vs[50])),
+            JanusGraphVertexStep.class, TraversalFilterStep.class);
+        assertNumStep(1, 1, g.V(sv[0]).bothE("knows").filter(__.otherV().is(vs[50])),
+            JanusGraphVertexStep.class, TraversalFilterStep.class);
+
+        // hasId() optimization within filter
+        assertNumStep(1, 1, g.V(sv[0]).outE("knows").filter(__.inV().hasId(vs[50].id())),
+            JanusGraphVertexStep.class, TraversalFilterStep.class);
+        assertNumStep(1, 1, g.V(sv[0]).outE("knows").filter(__.otherV().hasId(vs[50].id())),
+            JanusGraphVertexStep.class, TraversalFilterStep.class);
+        assertNumStep(1, 1, g.V(sv[0]).bothE("knows").filter(__.otherV().hasId(vs[50].id())),
+            JanusGraphVertexStep.class, TraversalFilterStep.class);
+    }
+
+    @Test
+    public void shouldNotOptimizeFilterStep() {
+        makeSampleGraph();
+
+        // is() optimization within filter
+        assertNumStep(1, 2, g.V(sv[0]).bothE("knows").filter(__.inV().is(vs[50])),
+            JanusGraphVertexStep.class, TraversalFilterStep.class);
+
+        // hasId() optimization within filter
+        assertNumStep(1, 2, g.V(sv[0]).bothE("knows").filter(__.inV().hasId(vs[50].id())),
+            JanusGraphVertexStep.class, TraversalFilterStep.class);
+    }
+
+    @Test
+    public void shouldNotStuck() {
         assertTimeoutPreemptively(ofSeconds(10), () -> {
             Vertex vertex = graph.traversal().addV().next();
             graph.traversal().withStrategies(AdjacentVertexFilterOptimizerStrategy.instance())
@@ -41,9 +77,7 @@ class AdjacentVertexFilterOptimizerStrategyTest {
     }
 
     @Test
-    void shouldNotFailedWithDetachedVertex() {
-        final Graph graph = StorageSetup.getInMemoryGraph();
-        GraphTraversalSource g = graph.traversal();
+    public void shouldNotFailedWithDetachedVertex() {
         g.addV("A").property("p", "1").as("a")
          .addV("A").property("p", "2").as("b")
          .addE("E").from("a").to("b")
