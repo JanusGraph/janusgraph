@@ -32,5 +32,4 @@ metrics: {
     csvReporter: {enabled: false, interval: 180000, fileName: /tmp/gremlin-server-metrics.csv},
     jmxReporter: {enabled: true},
     slf4jReporter: {enabled: true, interval: 180000},
-    gangliaReporter: {enabled: false, interval: 180000, addressingMode: MULTICAST},
     graphiteReporter: {enabled: false, interval: 180000}}
