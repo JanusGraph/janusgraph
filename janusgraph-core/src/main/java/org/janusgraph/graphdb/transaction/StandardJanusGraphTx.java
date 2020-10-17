@@ -798,14 +798,13 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 //                }
 //            }
 
+            long propId = id == null ? IDManager.getTemporaryRelationID(temporaryIds.nextID()) : id;
+            StandardVertexProperty prop = new StandardVertexProperty(propId, key, (InternalVertex) vertex, normalizedValue, ElementLifeCycle.New);
+            if (config.hasAssignIDsImmediately() && id == null) graph.assignID(prop);
+
             //Delete properties if the cardinality is restricted
             if (cardinality==VertexProperty.Cardinality.single || cardinality== VertexProperty.Cardinality.set) {
-                Consumer<JanusGraphRelation> propertyRemover;
-                if (cardinality == VertexProperty.Cardinality.single)
-                    propertyRemover = JanusGraphElement::remove;
-                else
-                    propertyRemover = p -> { if (((JanusGraphVertexProperty)p).value().equals(normalizedValue)) p.remove(); };
-
+                Consumer<JanusGraphVertexProperty> propertyRemover = JanusGraphVertexProperty.getRemover(cardinality, normalizedValue);
                 /* If we are simply overwriting a vertex property, then we don't have to explicitly remove it thereby saving a read operation
                    However, this only applies if
                    1) we don't lock on the property key or consistency checks are disabled and
@@ -816,7 +815,10 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                 if ( (!config.hasVerifyUniqueness() || ((InternalRelationType)key).getConsistencyModifier()!=ConsistencyModifier.LOCK) &&
                         !TypeUtil.hasAnyIndex(key) && cardinality==keyCardinality.convert()) {
                     //Only delete in-memory so as to not trigger a read from the database which isn't necessary because we will overwrite blindly
-                    ((InternalVertex) vertex).getAddedRelations(p -> p.getType().equals(key)).forEach(propertyRemover);
+                    //We need to label the new property as "upsert", so that in case property deletion happens, we not only delete this new
+                    //in-memory property, but also read from database to delete the old value (if exists)
+                    ((InternalVertex) vertex).getAddedRelations(p -> p.getType().equals(key)).forEach(p -> propertyRemover.accept((JanusGraphVertexProperty) p));
+                    prop.setUpsert(true);
                 } else {
                     ((InternalVertex) vertex).query().types(key).properties().forEach(propertyRemover);
                 }
@@ -830,9 +832,6 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                         throw new SchemaViolationException("Adding this property for key [%s] and value [%s] violates a uniqueness constraint [%s]", key.name(), normalizedValue, lockTuple.getIndex());
                 }
             }
-            long propId = id == null ? IDManager.getTemporaryRelationID(temporaryIds.nextID()) : id;
-            StandardVertexProperty prop = new StandardVertexProperty(propId, key, (InternalVertex) vertex, normalizedValue, ElementLifeCycle.New);
-            if (config.hasAssignIDsImmediately() && id == null) graph.assignID(prop);
             connectRelation(prop);
             return prop;
         } finally {

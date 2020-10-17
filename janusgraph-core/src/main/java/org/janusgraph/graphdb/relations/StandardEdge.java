@@ -38,8 +38,6 @@ public class StandardEdge extends AbstractEdge implements StandardRelation, Reas
         this.lifecycle = lifecycle;
     }
 
-    //############## SAME CODE AS StandardProperty #############################
-
     private static final Map<PropertyKey, Object> EMPTY_PROPERTIES = ImmutableMap.of();
 
     private byte lifecycle;
