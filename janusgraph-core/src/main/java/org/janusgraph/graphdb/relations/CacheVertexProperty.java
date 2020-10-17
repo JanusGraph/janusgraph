@@ -121,7 +121,7 @@ public class CacheVertexProperty extends AbstractVertexProperty {
 
     @Override
     public void remove() {
-        if (!tx().isRemovedRelation(longId())) {
+        if (!isRemoved()) {
             tx().removeRelation(this);
         }// else throw InvalidElementException.removedException(this);
     }

@@ -17,6 +17,8 @@ package org.janusgraph.core;
 
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
+import java.util.function.Consumer;
+
 /**
  * JanusGraphProperty is a {@link JanusGraphRelation} connecting a vertex to a value.
  * JanusGraphProperty extends {@link JanusGraphRelation}, with methods for retrieving the property's value and key.
@@ -43,6 +45,18 @@ public interface JanusGraphVertexProperty<V> extends JanusGraphRelation, VertexP
     @Override
     default PropertyKey propertyKey() {
         return (PropertyKey)getType();
+    }
+
+    static Consumer<JanusGraphVertexProperty> getRemover(VertexProperty.Cardinality cardinality, Object value) {
+        if (cardinality == VertexProperty.Cardinality.single) {
+            return JanusGraphElement::remove;
+        } else {
+            return p -> {
+                if (p.value().equals(value)) {
+                    p.remove();
+                }
+            };
+        }
     }
 
 }
