@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.idmanagement;
 
 import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.LongSet;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraph;
@@ -31,6 +32,7 @@ import org.janusgraph.graphdb.database.idassigner.VertexIDAssigner;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalVertex;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -109,6 +111,27 @@ public class VertexIDAssignerTest {
         config.set(GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS, 1<<numPartitionsBits);
         config.set(GraphDatabaseConfiguration.ALLOW_SETTING_VERTEX_ID, allowSettingVertexId);
         return JanusGraphFactory.open(config);
+    }
+
+    @Test
+    public void testDisableIdsFlush() {
+        final JanusGraph graph = getInMemoryGraph(false, false, 2);
+        JanusGraphVertex v1 = graph.addVertex();
+        JanusGraphVertex v2 = graph.addVertex();
+        Edge e = v1.addEdge("knows", v2);
+        e.property("prop", "old");
+        graph.tx().commit();
+        assertEquals("old", graph.traversal().E().next().property("prop").value());
+        assertEquals(1, (long) graph.traversal().E().count().next());
+        Object id = graph.traversal().E().next().id();
+
+        // VertexIDAssigner shouldn't assign a new id if the edge is an existing one
+        e = graph.traversal().E().next();
+        e.property("prop", "new");
+        graph.tx().commit();
+        assertEquals("new", graph.traversal().E().next().property("prop").value());
+        assertEquals(1, (long) graph.traversal().E().count().next());
+        assertEquals(id, graph.traversal().E().next().id());
     }
 
     @ParameterizedTest
