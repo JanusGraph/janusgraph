@@ -28,11 +28,14 @@ import org.janusgraph.graphdb.types.system.BaseVertexLabel;
 import org.janusgraph.graphdb.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.util.Iterator;
+import java.lang.Object;
+import org.apache.commons.lang3.ArrayUtils;
 
 public abstract class AbstractVertex extends AbstractElement implements InternalVertex, Vertex {
 
@@ -171,8 +174,27 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public JanusGraphEdge addEdge(String label, Vertex vertex, Object... keyValues) {
+        if (keyValues!=null && keyValues.length!=0) {
+            org.apache.tinkerpop.gremlin.structure.util.ElementHelper.legalPropertyKeyValueArray(keyValues);
+            for (int i = 0; i < keyValues.length; i = i + 2) {
+                if (keyValues[i].equals(T.id))
+                {
+                    String relationId = keyValues[i+1].toString();
+                    keyValues = ArrayUtils.removeElement(keyValues, keyValues[i]);
+                    keyValues = ArrayUtils.removeElement(keyValues, keyValues[i]);  
+                    return addEdge(relationId, label, vertex, keyValues);
+                }               
+            }
+        }
         Preconditions.checkArgument(vertex instanceof JanusGraphVertex,"Invalid vertex provided: %s",vertex);
         JanusGraphEdge edge = tx().addEdge(it(), (JanusGraphVertex) vertex, tx().getOrCreateEdgeLabel(label));
+        ElementHelper.attachProperties(edge,keyValues);
+        return edge;
+    }
+
+    public JanusGraphEdge addEdge(String relationId, String label, Vertex vertex, Object... keyValues) {
+        Preconditions.checkArgument(vertex instanceof JanusGraphVertex,"Invalid vertex provided: %s",vertex);
+        JanusGraphEdge edge = tx().addEdge(relationId, it(), (JanusGraphVertex) vertex, tx().getOrCreateEdgeLabel(label));
         ElementHelper.attachProperties(edge,keyValues);
         return edge;
     }
