@@ -12,20 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.graphdb.types.typemaker;
+package org.janusgraph.core.schema;
 
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.VertexLabel;
-import org.janusgraph.core.schema.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class IgnorePropertySchemaMaker extends DisableDefaultSchemaMaker {
 
     public static final IgnorePropertySchemaMaker INSTANCE = new IgnorePropertySchemaMaker();
+    private static final Logger log = LoggerFactory.getLogger(IgnorePropertySchemaMaker.class);
+
+    private boolean loggingEnabled;
+
+    @Override
+    public void enableLogging(Boolean enabled) {
+        if (Boolean.TRUE.equals(enabled)) {
+            loggingEnabled = true;
+        }
+    }
 
     @Override
     public PropertyKey makePropertyKey(PropertyKeyMaker factory) {
+        if (loggingEnabled) {
+            log.warn("Property key '{}' does not exist, will ignore", factory.getName());
+        }
         return null;
     }
 }

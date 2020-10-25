@@ -12,14 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.graphdb.types.typemaker;
+package org.janusgraph.core.schema;
 
 import org.janusgraph.core.*;
-import org.janusgraph.core.schema.DefaultSchemaMaker;
-import org.janusgraph.core.schema.EdgeLabelMaker;
-import org.janusgraph.core.schema.PropertyKeyMaker;
-import org.janusgraph.core.schema.SchemaManager;
-import org.janusgraph.core.schema.VertexLabelMaker;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

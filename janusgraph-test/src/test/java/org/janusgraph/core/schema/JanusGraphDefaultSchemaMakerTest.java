@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.graphdb.tinkerpop;
+package org.janusgraph.core.schema;
 
 import static org.easymock.EasyMock.expect;
 
 import org.easymock.EasyMockSupport;
+import org.janusgraph.core.schema.JanusGraphDefaultSchemaMaker;
 import org.junit.jupiter.api.Test;
 
 import org.janusgraph.core.attribute.Geoshape;
