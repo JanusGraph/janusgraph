@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.graphdb.tinkerpop;
+package org.janusgraph.core.schema;
 
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.DefaultSchemaMaker;
-import org.janusgraph.core.schema.PropertyKeyMaker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.UUID;
@@ -31,8 +33,18 @@ import java.util.UUID;
 public class JanusGraphDefaultSchemaMaker implements DefaultSchemaMaker {
 
     public static final DefaultSchemaMaker INSTANCE = new JanusGraphDefaultSchemaMaker();
+    private static final Logger log = LoggerFactory.getLogger(JanusGraphDefaultSchemaMaker.class);
+
+    private boolean loggingEnabled;
 
     private JanusGraphDefaultSchemaMaker() {
+    }
+
+    @Override
+    public void enableLogging(Boolean enabled) {
+        if (Boolean.TRUE.equals(enabled)) {
+            loggingEnabled = true;
+        }
     }
 
     @Override
@@ -41,8 +53,21 @@ public class JanusGraphDefaultSchemaMaker implements DefaultSchemaMaker {
     }
 
     @Override
+    public EdgeLabel makeEdgeLabel(EdgeLabelMaker factory) {
+        logWarn("Edge label '{}' does not exist, will create now", factory.getName());
+        return DefaultSchemaMaker.super.makeEdgeLabel(factory);
+    }
+
+    @Override
+    public PropertyKey makePropertyKey(PropertyKeyMaker factory) {
+        logWarn("Property key '{}' does not exist, will create now", factory.getName());
+        return DefaultSchemaMaker.super.makePropertyKey(factory);
+    }
+
+    @Override
     public PropertyKey makePropertyKey(PropertyKeyMaker factory, Object value) {
         String name = factory.getName();
+        logWarn("Property key '{}' does not exist, will create now", name);
         Class actualClass = determineClass(value);
         if (factory.cardinalityIsSet()) {
             return factory.dataType(actualClass).make();
@@ -51,8 +76,44 @@ public class JanusGraphDefaultSchemaMaker implements DefaultSchemaMaker {
     }
 
     @Override
+    public VertexLabel makeVertexLabel(VertexLabelMaker factory) {
+        logWarn("Vertex label '{}' does not exist, will create now", factory.getName());
+        return DefaultSchemaMaker.super.makeVertexLabel(factory);
+    }
+
+    @Override
+    public void makePropertyConstraintForVertex(VertexLabel vertexLabel, PropertyKey key,
+                                                SchemaManager manager) {
+        logWarn("Property key constraint does not exist for given vertex label '{}' and property key '{}', will " +
+                "create now", vertexLabel, key);
+        DefaultSchemaMaker.super.makePropertyConstraintForVertex(vertexLabel, key, manager);
+    }
+
+    @Override
+    public void makePropertyConstraintForEdge(EdgeLabel edgeLabel, PropertyKey key,
+                                              SchemaManager manager) {
+        logWarn("Property key constraint does not exist for given edge label '{}' and property key '{}', will " +
+                "create now", edgeLabel, key);
+        DefaultSchemaMaker.super.makePropertyConstraintForEdge(edgeLabel, key, manager);
+    }
+
+    @Override
+    public void makeConnectionConstraint(EdgeLabel edgeLabel, VertexLabel outVLabel,
+                                         VertexLabel inVLabel, SchemaManager manager) {
+        logWarn("Connection constraint does not exist for given edge label '{}', outgoing vertex label '{}' and " +
+                "incoming vertex label '{}', will create now", edgeLabel, outVLabel, inVLabel);
+        DefaultSchemaMaker.super.makeConnectionConstraint(edgeLabel, outVLabel, inVLabel, manager);
+    }
+
+    @Override
     public boolean ignoreUndefinedQueryTypes() {
         return true;
+    }
+
+    private void logWarn(String message, Object... objects) {
+        if (loggingEnabled) {
+            log.warn(message, objects);
+        }
     }
 
     protected Class determineClass(Object value) {

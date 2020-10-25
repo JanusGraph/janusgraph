@@ -104,6 +104,9 @@ import org.janusgraph.core.log.Change;
 import org.janusgraph.core.log.LogProcessorFramework;
 import org.janusgraph.core.log.TransactionRecovery;
 import org.janusgraph.core.schema.ConsistencyModifier;
+import org.janusgraph.core.schema.DisableDefaultSchemaMaker;
+import org.janusgraph.core.schema.IgnorePropertySchemaMaker;
+import org.janusgraph.core.schema.JanusGraphDefaultSchemaMaker;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.JanusGraphSchemaType;
@@ -1323,7 +1326,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     /**
      * Tests the automatic creation of types for default schema maker
-     * {@link org.janusgraph.graphdb.tinkerpop.JanusGraphDefaultSchemaMaker}
+     * {@link JanusGraphDefaultSchemaMaker}
      */
     @Test
     public void testDefaultSchemaMaker() {
@@ -1343,7 +1346,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     /**
-     * Tests {@link org.janusgraph.graphdb.types.typemaker.DisableDefaultSchemaMaker} which throws Exceptions for
+     * Tests {@link DisableDefaultSchemaMaker} which throws Exceptions for
      * unknown labels and properties
      */
     @Test
@@ -1383,7 +1386,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     /**
-     * Tests {@link org.janusgraph.graphdb.types.typemaker.IgnorePropertySchemaMaker} which ignores unknown properties
+     * Tests {@link IgnorePropertySchemaMaker} which ignores unknown properties
      * without throwing exceptions
      */
     @Test

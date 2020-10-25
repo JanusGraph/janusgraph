@@ -73,6 +73,12 @@ For more information on features and bug fixes in 0.6.0, see the GitHub mileston
 
 #### Upgrade Instructions
 
+##### Removal of LoggingSchemaMaker
+
+The `schema.default=logging` option is not valid anymore. Use `schema.default=default`
+and `schema.logging=true` options together to make application behaviour unaltered,
+if you are using `LoggingSchemaMaker`.
+
 ##### Replacing the server startup script is replaced
 
 The `gremlin-server.sh` is placed by `janusgraph-server.sh`. The 

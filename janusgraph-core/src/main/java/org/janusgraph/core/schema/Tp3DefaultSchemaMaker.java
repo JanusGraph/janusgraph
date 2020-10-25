@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.graphdb.tinkerpop;
+package org.janusgraph.core.schema;
 
 import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.schema.DefaultSchemaMaker;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

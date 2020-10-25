@@ -34,6 +34,15 @@ import org.janusgraph.core.VertexLabel;
 public interface DefaultSchemaMaker {
 
     /**
+     * Enable/Disable logging in schema maker
+     *
+     * @param enabled
+     */
+    default void enableLogging(Boolean enabled) {
+        // do nothing
+    }
+
+    /**
      * Creates a new edge label with default settings against the provided {@link EdgeLabelMaker}.
      *
      * @param factory EdgeLabelMaker through which the edge label is created
