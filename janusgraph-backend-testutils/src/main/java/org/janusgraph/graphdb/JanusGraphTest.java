@@ -278,6 +278,38 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     /**
+     * Update properties of vertex property, vertex, and edge, and then remove the vertex and edge in the same transaction
+     */
+    @Test
+    public void testUpdateThenRemove() {
+        EdgeLabel forkConnect = mgmt.makeEdgeLabel("fork-connect").make();
+        mgmt.setConsistency(forkConnect, ConsistencyModifier.FORK);
+        mgmt.commit();
+
+        Vertex v = graph.traversal().addV().property("_v", 1).next();
+        v.property("_v").property("flag", false);
+        Vertex v2 = graph.traversal().addV().property("_v", 2).next();
+        Edge edge = v.addEdge("connect", v2, "_p", 1);
+        Edge forkEdge = v.addEdge("fork-connect", v2, "_p", 1);
+        graph.tx().commit();
+
+        // update properties and then remove vertices & edges
+        JanusGraphVertexProperty p = (JanusGraphVertexProperty) graph.traversal().V(v).properties("_v").next();
+        p.property("flag", true);
+        edge = graph.traversal().E(edge).next();
+        edge.property("_p", 2);
+        forkEdge = graph.traversal().E(forkEdge).next();
+        forkEdge.property("_p", 2);
+        // FIXME: https://github.com/JanusGraph/janusgraph/issues/1981
+        // v2 = graph.traversal().V().has("_v", 2).next();
+        // v2.property("_v", 3);
+        graph.traversal().V().drop().iterate();
+        graph.tx().commit();
+        assertFalse(graph.traversal().V().hasNext());
+        assertFalse(graph.traversal().E().hasNext());
+    }
+
+    /**
      * Iterating over all vertices and edges in a graph
      */
     @Test
