@@ -12,7 +12,7 @@
     <url>https://janusgraph.org</url>
 
     <properties>
-        <vavr.version>0.9.0</vavr.version>
+        <vavr.version>0.10.3</vavr.version>
         <test.byteordered>byteordered</test.byteordered>
         <test.murmur>murmur</test.murmur>
         <test.javaagent.opts>-javaagent:${com.github.jbellis:jamm:jar}</test.javaagent.opts>
