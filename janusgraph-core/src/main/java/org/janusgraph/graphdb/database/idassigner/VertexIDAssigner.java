@@ -292,7 +292,7 @@ public class VertexIDAssigner implements AutoCloseable {
 
     private void assignID(final InternalElement element, final long partitionIDl, final IDManager.VertexIDType userVertexIDType) {
         Preconditions.checkNotNull(element);
-        Preconditions.checkArgument(!element.hasId());
+        if (element.hasId()) return;
         Preconditions.checkArgument((element instanceof JanusGraphRelation) ^ (userVertexIDType!=null));
         Preconditions.checkArgument(partitionIDl >= 0 && partitionIDl < partitionIdBound, partitionIDl);
         final int partitionID = (int) partitionIDl;
