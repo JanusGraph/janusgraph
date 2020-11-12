@@ -39,14 +39,22 @@ public class StaticArrayEntryTest {
     }
 
     @Test
-    public void testToStringWithNoValue() {
-        long l = random.nextLong();
+    public void testRandomLongToStringWithNoValue() {
+        testToStringWithNoValue(random.nextLong());
+    }
+
+    @Test
+    public void testHexLongWithLeadingZeroToStringWithNoValue() {
+        testToStringWithNoValue(Long.MAX_VALUE >> 3);
+    }
+
+    private void testToStringWithNoValue(long l) {
         StaticBuffer b = BufferUtil.getLongBuffer(l);
         long column = b.getLong(0);
         Entry entry = new StaticArrayEntry(b, 8);
 
         final String[] split = entry.toString().split("->");
-        assertEquals(String.format("0x%08X", column), split[0]);
+        assertEquals(String.format("0x%016X", column), split[0]);
         assertEquals("[no value]", split[1]);
     }
 }
