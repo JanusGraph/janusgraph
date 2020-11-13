@@ -43,8 +43,6 @@ public class StandardEdge extends AbstractEdge implements StandardRelation, Reas
         this.lifecycle = lifecycle;
     }
 
-    //############## SAME CODE AS StandardProperty #############################
-
     @Override
     public long getPreviousID() {
         return previousID;

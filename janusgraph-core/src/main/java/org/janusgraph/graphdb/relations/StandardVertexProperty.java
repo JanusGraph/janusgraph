@@ -15,6 +15,8 @@
 package org.janusgraph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalVertex;
@@ -24,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -33,6 +36,7 @@ public class StandardVertexProperty extends AbstractVertexProperty implements St
 
     private static final Map<PropertyKey, Object> EMPTY_PROPERTIES = Collections.emptyMap();
 
+    private boolean isUpsert;
     private byte lifecycle;
     private long previousID = 0;
     private volatile Map<PropertyKey, Object> properties = EMPTY_PROPERTIES;
@@ -42,7 +46,14 @@ public class StandardVertexProperty extends AbstractVertexProperty implements St
         this.lifecycle = lifecycle;
     }
 
-    //############## SAME CODE AS StandardEdge #############################
+    /**
+     * Mark this property as 'upsert', i.e. the old property value is not read from DB and marked as
+     * deleted in the transaction
+     * @param upsert
+     */
+    public void setUpsert(final boolean upsert) {
+        isUpsert = upsert;
+    }
 
     @Override
     public long getPreviousID() {
@@ -100,6 +111,11 @@ public class StandardVertexProperty extends AbstractVertexProperty implements St
         if (!ElementLifeCycle.isRemoved(lifecycle)) {
             tx().removeRelation(this);
             lifecycle = ElementLifeCycle.update(lifecycle, ElementLifeCycle.Event.REMOVED);
+            if (isUpsert) {
+                VertexProperty.Cardinality cardinality = ((PropertyKey) type).cardinality().convert();
+                Consumer<JanusGraphVertexProperty> propertyRemover = JanusGraphVertexProperty.getRemover(cardinality, value());
+                element().query().types(type.name()).properties().forEach(propertyRemover);
+            }
         } //else throw InvalidElementException.removedException(this);
     }
 

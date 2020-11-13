@@ -62,10 +62,10 @@ public class CacheEdge extends AbstractEdge {
         if (startVertex.hasAddedRelations() && startVertex.hasRemovedRelations()) {
             //Test whether this relation has been replaced
             final long id = super.longId();
-            final Iterable<InternalRelation> previous = startVertex.getAddedRelations(
+            final Iterable<InternalRelation> added = startVertex.getAddedRelations(
                 internalRelation -> (internalRelation instanceof StandardEdge) && ((StandardEdge) internalRelation).getPreviousID() == id);
-            assert Iterables.size(previous) <= 1 || (isLoop() && Iterables.size(previous) == 2);
-            it = Iterables.getFirst(previous, null);
+            assert Iterables.size(added) <= 1 || (isLoop() && Iterables.size(added) == 2);
+            it = Iterables.getFirst(added, null);
         }
 
         if (it != null)
@@ -91,7 +91,6 @@ public class CacheEdge extends AbstractEdge {
         StandardEdge u = (StandardEdge) tx().addEdge(id, getVertex(0), getVertex(1), edgeLabel());
         u.setPreviousID(longId());
         copyProperties(u);
-        setId(u.longId());
         return u;
     }
 
@@ -139,7 +138,7 @@ public class CacheEdge extends AbstractEdge {
 
     @Override
     public void remove() {
-        if (!tx().isRemovedRelation(super.longId())) {
+        if (!isRemoved()) {
             tx().removeRelation(this);
         }// else throw InvalidElementException.removedException(this);
     }
