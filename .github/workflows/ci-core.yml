@@ -19,6 +19,7 @@ on:
     paths-ignore:
     - 'docs/**'
     - '.github/workflows/ci-docs.yml'
+    - '.github/ISSUE_TEMPLATE/**'
     - 'requirements.txt'
     - 'docs.Dockerfile'
     - '*.md'
