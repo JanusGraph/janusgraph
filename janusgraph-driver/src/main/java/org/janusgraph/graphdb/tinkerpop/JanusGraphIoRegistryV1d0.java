@@ -18,8 +18,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.io.AbstractIoRegistry;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoSerializersV1d0;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
 import org.janusgraph.graphdb.tinkerpop.io.graphson.JanusGraphSONModuleV1d0;
 
 /**
@@ -34,7 +36,9 @@ public class JanusGraphIoRegistryV1d0 extends AbstractIoRegistry {
         register(GraphSONIo.class, null, JanusGraphSONModuleV1d0.getInstance());
         register(GryoIo.class, RelationIdentifier.class, null);
         register(GryoIo.class, Geoshape.class, new Geoshape.GeoShapeGryoSerializer());
-        register(GryoIo.class, P.class, new JanusGraphPSerializer());
+        register(GryoIo.class, JanusGraphP.class, new JanusGraphPSerializer());
+        //fallback for older JanusGraph drivers
+        register(GryoIo.class, P.class, new DeprecatedJanusGraphPSerializer(new GryoSerializersV1d0.PSerializer()));
     }
 
     public static JanusGraphIoRegistryV1d0 instance() {

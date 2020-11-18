@@ -91,10 +91,12 @@ on Cassandra's JVM configurations, Elasticsearch and the old gremlin-server.sh.
 ##### Serialization of JanusGraph predicates has changed
 
 The serialization of JanusGraph predicates has changed in this version for both 
-GraphSON and Gryo. It is therefore necessary to update both the client and 
-the server to this version in parallel as the server will not be able to 
-deserialize a JanusGraph predicate that was serialized by a client prior 
-to version 0.6.0 once it was updated to version 0.6.0.
+GraphSON and Gryo. The newest version of the JanusGraph Driver requires a JanusGraph 
+Server version of 0.6.0 and above. The server includes a fallback for clients with an 
+older driver to make the upgrade to version 0.6.0 easier. This means that the server 
+can be upgraded first without having to update all clients at the same time. The 
+fallback will however be removed in a future version of JanusGraph so clients should 
+also be upgraded.
 
 ##### GraphBinary is now supported
 
