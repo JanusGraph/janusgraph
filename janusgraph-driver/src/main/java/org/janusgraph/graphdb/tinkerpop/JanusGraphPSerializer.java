@@ -19,10 +19,8 @@ import org.apache.tinkerpop.shaded.kryo.Serializer;
 import org.apache.tinkerpop.shaded.kryo.io.Input;
 import org.apache.tinkerpop.shaded.kryo.io.Output;
 import org.janusgraph.core.attribute.Geo;
-import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
 import org.janusgraph.core.attribute.Text;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
 
 /**
  * Serialize Janus Graph Predicates.
@@ -32,8 +30,6 @@ import org.slf4j.LoggerFactory;
  * are added.
  */
 public class JanusGraphPSerializer extends Serializer<JanusGraphP> {
-
-    private static final Logger log = LoggerFactory.getLogger(JanusGraphPSerializer.class);
 
     @Override
     public void write(Kryo kryo, Output output, JanusGraphP p) {
@@ -47,6 +43,25 @@ public class JanusGraphPSerializer extends Serializer<JanusGraphP> {
         final Object value = kryo.readClassAndObject(input);
 
         return createPredicateWithValue(predicate, value);
+    }
+
+    public static boolean checkForJanusGraphPredicate(String predicateName) {
+        switch (predicateName) {
+            case "geoIntersect":
+            case "geoDisjoint":
+            case "geoWithin":
+            case "geoContains":
+            case "textContains":
+            case "textContainsFuzzy":
+            case "textContainsPrefix":
+            case "textContainsRegex":
+            case "textFuzzy":
+            case "textPrefix":
+            case "textRegex":
+                return true;
+            default:
+                return false;
+        }
     }
 
     public static JanusGraphP createPredicateWithValue(String predicateName, Object value) {

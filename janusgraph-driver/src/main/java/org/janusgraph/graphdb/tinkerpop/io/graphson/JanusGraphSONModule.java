@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONUtil;
 import org.apache.tinkerpop.shaded.jackson.core.JsonParser;
@@ -28,6 +29,7 @@ import org.apache.tinkerpop.shaded.jackson.core.type.WritableTypeId;
 import org.apache.tinkerpop.shaded.jackson.databind.DeserializationContext;
 import org.apache.tinkerpop.shaded.jackson.databind.deser.std.StdDeserializer;
 import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.graphdb.tinkerpop.DeprecatedJanusGraphPSerializer;
 import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
@@ -185,6 +187,41 @@ public abstract class JanusGraphSONModule extends TinkerPopJacksonModule {
             String predicate = (String) data.get(GraphSONTokens.PREDICATE);
             Object value = data.get(GraphSONTokens.VALUE);
             return JanusGraphPSerializer.createPredicateWithValue(predicate, value);
+        }
+
+        @Override
+        public boolean isCachable() {
+            return true;
+        }
+    }
+
+    @Deprecated
+    public static class DeprecatedJanusGraphPDeserializerV2d0 extends StdDeserializer<P> {
+
+        public DeprecatedJanusGraphPDeserializerV2d0() {
+            super(P.class);
+        }
+
+        @Override
+        public P deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException {
+            String predicate = null;
+            Object value = null;
+
+            while (jsonParser.nextToken() != JsonToken.END_OBJECT) {
+                if (jsonParser.getCurrentName().equals(GraphSONTokens.PREDICATE)) {
+                    jsonParser.nextToken();
+                    predicate = jsonParser.getText();
+                } else if (jsonParser.getCurrentName().equals(GraphSONTokens.VALUE)) {
+                    jsonParser.nextToken();
+                    value = deserializationContext.readValue(jsonParser, Object.class);
+                }
+            }
+
+            try {
+                return DeprecatedJanusGraphPSerializer.createPredicateWithValue(predicate, value);
+            } catch (final Exception e) {
+                throw new IllegalStateException(e.getMessage(), e);
+            }
         }
 
         @Override
