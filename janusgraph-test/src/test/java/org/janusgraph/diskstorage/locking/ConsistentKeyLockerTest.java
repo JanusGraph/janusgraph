@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.easymock.IAnswer;
 import org.janusgraph.diskstorage.locking.consistentkey.*;
 
 import org.janusgraph.diskstorage.util.time.Timer;
@@ -77,10 +78,10 @@ public class ConsistentKeyLockerTest {
     private final StaticBuffer otherLockRid = new StaticArrayBuffer(new byte[]{(byte) 64});
     private final StaticBuffer defaultLockVal = BufferUtil.getIntBuffer(0); // maybe refactor...
 
-    private StoreTransaction defaultTx;
+    private TestTrxImpl   defaultTx;
     private Configuration defaultTxCustomOpts;
 
-    private StoreTransaction otherTx;
+    private TestTrxImpl   otherTx;
     private Configuration otherTxCustomOpts;
 
     private final Duration defaultWaitNS = Duration.ofNanos(100 * 1000 * 1000);
@@ -109,27 +110,35 @@ public class ConsistentKeyLockerTest {
 
         manager = relaxedCtrl.createMock(StoreManager.class);
 
-        defaultTx = relaxedCtrl.createMock(StoreTransaction.class);
         BaseTransactionConfig defaultTxCfg = relaxedCtrl.createMock(BaseTransactionConfig.class);
+        defaultTx = new TestTrxImpl(defaultTxCfg);
         defaultTxCustomOpts = relaxedCtrl.createMock(Configuration.class);
-        expect(defaultTx.getConfiguration()).andReturn(defaultTxCfg).anyTimes();
         expect(defaultTxCfg.getGroupName()).andReturn("default").anyTimes();
         expect(defaultTxCfg.getCustomOptions()).andReturn(defaultTxCustomOpts).anyTimes();
         final Comparator<BaseTransactionConfig> defaultTxCfgChecker
             = (actual, ignored) -> actual.getCustomOptions() == defaultTxCustomOpts ? 0 : -1;
         expect(manager.beginTransaction(cmp(null, defaultTxCfgChecker, LogicalOperator.EQUAL)))
-                .andReturn(defaultTx).anyTimes();
+                .andAnswer(new IAnswer<StoreTransaction>() {
+                    @Override
+                    public StoreTransaction answer() throws Throwable {
+                        return defaultTx.open();
+                    }
+                }).anyTimes();
 
-        otherTx = relaxedCtrl.createMock(StoreTransaction.class);
         BaseTransactionConfig otherTxCfg = relaxedCtrl.createMock(BaseTransactionConfig.class);
+        otherTx = new TestTrxImpl(otherTxCfg);
         otherTxCustomOpts = relaxedCtrl.createMock(Configuration.class);
-        expect(otherTx.getConfiguration()).andReturn(otherTxCfg).anyTimes();
         expect(otherTxCfg.getGroupName()).andReturn("other").anyTimes();
         expect(otherTxCfg.getCustomOptions()).andReturn(otherTxCustomOpts).anyTimes();
         final Comparator<BaseTransactionConfig> otherTxCfgChecker
             = (actual, ignored) -> actual.getCustomOptions() == otherTxCustomOpts ? 0 : -1;
         expect(manager.beginTransaction(cmp(null, otherTxCfgChecker, LogicalOperator.EQUAL)))
-                .andReturn(otherTx).anyTimes();
+                .andAnswer(new IAnswer<StoreTransaction>() {
+                    @Override
+                    public StoreTransaction answer() throws Throwable {
+                        return otherTx.open();
+                    }
+                }).anyTimes();
 
 
         /*
@@ -164,6 +173,9 @@ public class ConsistentKeyLockerTest {
     public void verifyMocks() {
         ctrl.verify();
         relaxedCtrl.verify();
+
+        assertFalse(defaultTx.isOpen(), "Transaction leak found: openCount=" + defaultTx.getOpenCount() + ", commitCount=" + defaultTx.getCommitCount() + ", rollbackCount=" + defaultTx.getRollbackCount());
+        assertFalse(otherTx.isOpen(), "Transaction leak found: openCount=" + otherTx.getOpenCount() + ", commitCount=" + otherTx.getCommitCount() + ", rollbackCount=" + otherTx.getRollbackCount());
     }
 
     /**
@@ -1200,6 +1212,48 @@ public class ConsistentKeyLockerTest {
         @Override
         public long getTime(Instant timestamp) {
             return timestamp.getEpochSecond() * 1000000000L + timestamp.getNano();
+        }
+    }
+
+    private static class TestTrxImpl implements StoreTransaction {
+        private final BaseTransactionConfig trxConfig;
+        private       int                   openCount     = 0;
+        private       int                   commitCount   = 0;
+        private       int                   rollbackCount = 0;
+
+        public TestTrxImpl(BaseTransactionConfig trxConfig) {
+            this.trxConfig = trxConfig;
+        }
+
+        public boolean isOpen() {
+            return openCount > (commitCount + rollbackCount);
+        }
+
+        public int getOpenCount() { return openCount; }
+
+        public int getCommitCount() { return commitCount; }
+
+        public int getRollbackCount() { return rollbackCount; }
+
+        public StoreTransaction open() {
+            openCount++;
+
+            return this;
+        }
+
+        @Override
+        public BaseTransactionConfig getConfiguration() {
+            return trxConfig;
+        }
+
+        @Override
+        public void commit() throws BackendException {
+            commitCount++;
+        }
+
+        @Override
+        public void rollback() throws BackendException {
+            rollbackCount++;
         }
     }
 }

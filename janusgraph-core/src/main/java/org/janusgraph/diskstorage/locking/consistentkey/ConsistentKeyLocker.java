@@ -381,13 +381,28 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         final Timer writeTimer = times.getTimer().start();
         StaticBuffer newLockCol = serializer.toLockCol(writeTimer.getStartTime(), rid, times);
         Entry newLockEntry = StaticArrayEntry.of(newLockCol, zeroBuf);
+        StoreTransaction newTx = null;
         try {
-            final StoreTransaction newTx = overrideTimestamp(txh, writeTimer.getStartTime());
+            newTx = overrideTimestamp(txh, writeTimer.getStartTime());
+
             store.mutate(key, Collections.singletonList(newLockEntry),
                 null == del ? KeyColumnValueStore.NO_DELETIONS : Collections.singletonList(del), newTx);
+
+            newTx.commit();
+            newTx = null;
         } catch (BackendException e) {
             log.debug("Lock write attempt failed with exception", e);
             t = e;
+        } finally {
+            if (newTx != null) {
+                try {
+                    log.error("Transaction is still open! Rolling back", new Throwable());
+
+                    newTx.rollback();
+                } catch (Throwable excp) {
+                    log.error("Transaction rollback failed", excp);
+                }
+            }
         }
         writeTimer.stop();
 
@@ -397,11 +412,26 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
     private WriteResult tryDeleteLockOnce(StaticBuffer key, StaticBuffer col, StoreTransaction txh) {
         Throwable t = null;
         final Timer delTimer = times.getTimer().start();
+        StoreTransaction newTx = null;
         try {
-            final StoreTransaction newTx = overrideTimestamp(txh, delTimer.getStartTime());
+            newTx = overrideTimestamp(txh, delTimer.getStartTime());
+
             store.mutate(key, Collections.emptyList(), Collections.singletonList(col), newTx);
+
+            newTx.commit();
+            newTx = null;
         } catch (BackendException e) {
             t = e;
+        } finally {
+            if (newTx != null) {
+                try {
+                    log.error("Transaction is still open! Rolling back", new Throwable());
+
+                    newTx.rollback();
+                } catch (Throwable excp) {
+                    log.error("Transaction rollback failed", excp);
+                }
+            }
         }
         delTimer.stop();
 
@@ -532,9 +562,13 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
     protected void deleteSingleLock(KeyColumn kc, ConsistentKeyLockStatus ls, StoreTransaction tx) {
         List<StaticBuffer> deletions = Collections.singletonList(serializer.toLockCol(ls.getWriteTimestamp(), rid, times));
         for (int i = 0; i < lockRetryCount; i++) {
+            StoreTransaction newTx = null;
             try {
-                StoreTransaction newTx = overrideTimestamp(tx, times.getTime());
+                newTx = overrideTimestamp(tx, times.getTime());
                 store.mutate(serializer.toLockKey(kc.getKey(), kc.getColumn()), Collections.emptyList(), deletions, newTx);
+
+                newTx.commit();
+                newTx = null;
                 return;
             } catch (TemporaryBackendException e) {
                 log.warn("Temporary storage exception while deleting lock", e);
@@ -542,6 +576,16 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             } catch (BackendException e) {
                 log.error("Storage exception while deleting lock", e);
                 return; // give up on this lock
+            } finally {
+                if (newTx != null) {
+                    try {
+                        log.error("Transaction is still open! Rolling back", new Throwable());
+
+                        newTx.rollback();
+                    } catch (Throwable excp) {
+                        log.error("Transaction rollback failed", excp);
+                    }
+                }
             }
         }
     }
