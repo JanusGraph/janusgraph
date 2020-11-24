@@ -15,12 +15,12 @@
 package org.janusgraph.diskstorage.log;
 
 import com.google.common.base.Preconditions;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 
-import org.janusgraph.testutil.FlakyTest;
 import org.junit.jupiter.api.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -94,7 +94,7 @@ public abstract class LogTest {
         simpleSendReceive(2000,1);
     }
 
-    @FlakyTest
+    @RepeatedIfExceptionsTest(repeats = 4, minSuccess = 2)
     @Tag(LogTest.requiresOrderPreserving)
     public void testMultipleReadersOnSingleLogSerial() throws Exception {
         sendReceive(4, 2000, 5, true, TIMEOUT_MS);

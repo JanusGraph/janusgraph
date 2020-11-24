@@ -53,14 +53,6 @@ x-template-full:
   script: travis_wait 50 mvn verify --projects janusgraph-${MODULE} ${ARGS};
   if: type = cron OR commit_message =~ /\[full build\]/
 
-x-template-standard:
-  &STANDARD_TEST_JOB
-  stage: test
-  install: travis_wait mvn clean install --projects janusgraph-${MODULE} --also-make -DskipTests=true 
-    -Dmaven.javadoc.skip=true --batch-mode --show-version ${INSTALL_ARGS};
-  script: travis_wait 50 mvn verify --projects janusgraph-${MODULE} -Pcoverage ${ARGS};
-  after_success: bash <(curl -s https://codecov.io/bash);
-  if: commit_message !~ /\[doc only\]/
 
 jobs:
   include:
@@ -70,56 +62,6 @@ jobs:
       install: mvn clean install --batch-mode -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true
       script: mvn install -pl janusgraph-dist -Pjanusgraph-release -Dgpg.skip=true
       if: commit_message !~ /\[doc only\]/
-
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='driver'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='server'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='test'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='inmemory' ARGS='-Dtest.skip.tp=false'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='lucene'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='solr' ARGS='-Pdocker,solr8'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='solr' ARGS='-Pdocker,solr7'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='es' ARGS='-Pelasticsearch7'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='es' ARGS='-Pelasticsearch6'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='es' ARGS='-Pelasticsearch60'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='berkeleyje'
-
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/diskstorage/hbase/*'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/graphdb/hbase/*'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='hbase-parent/janusgraph-hbase-10' ARGS='-Dtest=**/hadoop/*'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dtest=**/diskstorage/hbase/* -Dhbase.profile -Phbase2'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dtest=**/graphdb/hbase/* -Dhbase.profile -Phbase2'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='hbase-parent/janusgraph-hbase-10' INSTALL_ARGS='-Dhbase.profile -Phbase2' ARGS='-Dtest=**/hadoop/* -Dhbase.profile -Phbase2'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cql' ARGS='-Pcassandra3-byteordered -Dtest=**/diskstorage/cql/*'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cql' ARGS='-Pcassandra3-murmur -Dtest=**/diskstorage/cql/*'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cql' ARGS='-Pcassandra3-murmur-ssl -Dtest=**/diskstorage/cql/CQLStoreTest.java'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cql' ARGS=' -Pcassandra3-murmur-client-auth -Dtest=**/diskstorage/cql/CQLStoreTest.java'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cql' ARGS='-Pcassandra3-byteordered -Dtest=**/graphdb/cql/*'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cql' ARGS='-Pcassandra3-murmur -Dtest=**/graphdb/cql/*'
-    - <<: *STANDARD_TEST_JOB
-      env: MODULE='cql' ARGS='-Pcassandra3-murmur -Dtest=**/hadoop/*'
 
     - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra3-byteordered -Dcassandra.docker.version=3.11.4'

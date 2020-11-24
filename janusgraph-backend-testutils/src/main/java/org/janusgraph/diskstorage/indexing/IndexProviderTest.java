@@ -16,6 +16,7 @@ package org.janusgraph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.graphdb.internal.Order;
@@ -30,7 +31,6 @@ import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.types.ParameterType;
-import org.janusgraph.testutil.FlakyTest;
 import org.janusgraph.testutil.RandomGenerator;
 
 import org.junit.jupiter.api.AfterEach;
@@ -811,7 +811,7 @@ public abstract class IndexProviderTest {
         assertTrue(results.contains("restore-doc1"));
     }
 
-    @FlakyTest
+    @RepeatedIfExceptionsTest(repeats = 4, minSuccess = 2)
     public void testTTL() throws Exception {
         if (!index.getFeatures().supportsDocumentTTL())
             return;
