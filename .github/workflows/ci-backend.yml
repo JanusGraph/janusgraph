@@ -1,0 +1,98 @@
+# Copyright 2020 JanusGraph Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: CI Backend
+
+on:
+  pull_request:
+    paths-ignore:
+    - 'docs/**'
+  push:
+    paths-ignore:
+    - 'docs/**'
+
+env:
+  ES_JAVA_OPTS: "-Xms256m -Xmx512m"
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v1
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - run: mvn clean install --projects janusgraph-all --also-make 
+          -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode
+
+  tests:
+    runs-on: ubuntu-20.04
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - module: inmemory
+            args: "-Dtest.skip.tp=false"
+          - module: berkeleyje
+          - module: cql
+            args: "-Pcassandra3-byteordered -Dtest=\"**/diskstorage/cql/*\""
+          - module: cql
+            args: "-Pcassandra3-murmur -Dtest=\"**/diskstorage/cql/*\""
+          - module: cql
+            args: "-Pcassandra3-byteordered -Dtest=\"**/graphdb/cql/*\""
+          - module: cql
+            args: "-Pcassandra3-murmur -Dtest=\"**/graphdb/cql/*\""
+          - module: cql
+            args: "-Pcassandra3-murmur -Dtest=\"**/hadoop/*\""
+          - module: cql
+            args: "-Pcassandra3-murmur-ssl -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
+          - module: cql
+            args: "-Pcassandra3-murmur-client-auth -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
+          - module: hbase-parent/janusgraph-hbase-10
+            args: "-Dtest=\"**/diskstorage/hbase/*\""
+          - module: hbase-parent/janusgraph-hbase-10
+            args: "-Dtest=\"**/graphdb/hbase/*\""
+          - module: hbase-parent/janusgraph-hbase-10
+            args: "-Dtest=\"**/hadoop/*\""
+          - module: hbase-parent/janusgraph-hbase-10
+            install-args: "-Dhbase.profile -Phbase2"
+            args: "-Dtest=\"**/diskstorage/hbase/*\""
+          - module: hbase-parent/janusgraph-hbase-10
+            install-args: "-Dhbase.profile -Phbase2"
+            args: "-Dtest=\"**/graphdb/hbase/*\""
+          - module: hbase-parent/janusgraph-hbase-10
+            install-args: "-Dhbase.profile -Phbase2"
+            args: "-Dtest=\"**/hadoop/*\""
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v1
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - run: mvn clean install --projects janusgraph-${{ matrix.module }} --also-make 
+          -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode ${{ matrix.install-args }}
+      - run: mvn verify --projects janusgraph-${{ matrix.module }} -Pcoverage ${{ matrix.args }}
+      - uses: codecov/codecov-action@v1
