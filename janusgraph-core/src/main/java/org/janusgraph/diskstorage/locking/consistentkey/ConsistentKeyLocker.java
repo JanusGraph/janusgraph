@@ -396,11 +396,13 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         } finally {
             if (newTx != null) {
                 try {
-                    log.error("Transaction is still open! Rolling back", new Throwable());
+                    if (log.isDebugEnabled()) {
+                        log.debug("Transaction is still open! Rolling back", new Throwable());
+                    }
 
                     newTx.rollback();
                 } catch (Throwable excp) {
-                    log.error("Transaction rollback failed", excp);
+                    log.debug("Transaction rollback failed", excp);
                 }
             }
         }
@@ -425,11 +427,13 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         } finally {
             if (newTx != null) {
                 try {
-                    log.error("Transaction is still open! Rolling back", new Throwable());
+                    if (log.isDebugEnabled()) {
+                        log.debug("Transaction is still open! Rolling back", new Throwable());
+                    }
 
                     newTx.rollback();
                 } catch (Throwable excp) {
-                    log.error("Transaction rollback failed", excp);
+                    log.debug("Transaction rollback failed", excp);
                 }
             }
         }
@@ -579,11 +583,13 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             } finally {
                 if (newTx != null) {
                     try {
-                        log.error("Transaction is still open! Rolling back", new Throwable());
+                        if (log.isDebugEnabled()) {
+                            log.debug("Transaction is still open! Rolling back", new Throwable());
+                        }
 
                         newTx.rollback();
                     } catch (Throwable excp) {
-                        log.error("Transaction rollback failed", excp);
+                        log.debug("Transaction rollback failed", excp);
                     }
                 }
             }
