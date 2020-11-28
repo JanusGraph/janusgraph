@@ -372,28 +372,57 @@ CQL storage backend options
 | ---- | ---- | ---- | ---- | ---- |
 | storage.cql.atomic-batch-mutate | True to use Cassandra atomic batch mutation, false to use non-atomic batches | Boolean | false | MASKABLE |
 | storage.cql.batch-statement-size | The number of statements in each batch | Integer | 20 | MASKABLE |
-| storage.cql.cluster-name | Default name for the Cassandra cluster | String | JanusGraph Cluster | MASKABLE |
 | storage.cql.compaction-strategy-class | The compaction strategy to use for JanusGraph tables | String | (no default value) | FIXED |
 | storage.cql.compaction-strategy-options | Compaction strategy options.  This list is interpreted as a map.  It must have an even number of elements in [key,val,key,val,...] form. | String[] | (no default value) | FIXED |
 | storage.cql.compression | Whether the storage backend should use compression when storing the data | Boolean | true | FIXED |
 | storage.cql.compression-block-size | The size of the compression blocks in kilobytes | Integer | 64 | FIXED |
 | storage.cql.compression-type | The sstable_compression value JanusGraph uses when creating column families. This accepts any value allowed by Cassandra's sstable_compression option. Leave this unset to disable sstable_compression on JanusGraph-created CFs. | String | LZ4Compressor | MASKABLE |
+| storage.cql.heartbeat-interval | The connection heartbeat interval in milliseconds. | Long | (no default value) | MASKABLE |
+| storage.cql.heartbeat-timeout | How long the driver waits for the response (in milliseconds) to a heartbeat. | Long | (no default value) | MASKABLE |
 | storage.cql.keyspace | The name of JanusGraph's keyspace.  It will be created if it does not exist. | String | janusgraph | LOCAL |
-| storage.cql.local-core-connections-per-host | The number of connections initially created and kept open to each host for local datacenter | Integer | 1 | FIXED |
-| storage.cql.local-datacenter | The name of the local or closest Cassandra datacenter.  When set and not whitespace, this value will be passed into ConnectionPoolConfigurationImpl.setLocalDatacenter. When unset or set to whitespace, setLocalDatacenter will not be invoked. | String | (no default value) | MASKABLE |
+| storage.cql.local-datacenter | The name of the local or closest Cassandra datacenter. This value will be passed into CqlSessionBuilder.withLocalDatacenter. | String | datacenter1 | MASKABLE |
 | storage.cql.local-max-connections-per-host | The maximum number of connections that can be created per host for local datacenter | Integer | 1 | FIXED |
-| storage.cql.local-max-requests-per-connection | The maximum number of requests per connection for local datacenter | Integer | 1024 | FIXED |
+| storage.cql.max-requests-per-connection | The maximum number of requests that can be executed concurrently on a connection. | Integer | 1024 | FIXED |
 | storage.cql.only-use-local-consistency-for-system-operations | True to prevent any system queries from using QUORUM consistency and always use LOCAL_QUORUM instead | Boolean | false | MASKABLE |
 | storage.cql.protocol-version | The protocol version used to connect to the Cassandra database.  If no value is supplied then the driver will negotiate with the server. | Integer | 0 | LOCAL |
 | storage.cql.read-consistency-level | The consistency level of read operations against Cassandra | String | QUORUM | MASKABLE |
-| storage.cql.remote-core-connections-per-host | The number of connections initially created and kept open to each host for remote datacenter | Integer | 1 | FIXED |
 | storage.cql.remote-max-connections-per-host | The maximum number of connections that can be created per host for remote datacenter | Integer | 1 | FIXED |
-| storage.cql.remote-max-requests-per-connection | The maximum number of requests per connection for remote datacenter | Integer | 256 | FIXED |
 | storage.cql.replication-factor | The number of data replicas (including the original copy) that should be kept | Integer | 1 | GLOBAL_OFFLINE |
 | storage.cql.replication-strategy-class | The replication strategy to use for JanusGraph keyspace | String | SimpleStrategy | FIXED |
 | storage.cql.replication-strategy-options | Replication strategy options, e.g. factor or replicas per datacenter.  This list is interpreted as a map.  It must have an even number of elements in [key,val,key,val,...] form.  A replication_factor set here takes precedence over one set with storage.cql.replication-factor | String[] | (no default value) | FIXED |
+| storage.cql.session-name | Default name for the Cassandra session | String | JanusGraph Session | MASKABLE |
 | storage.cql.use-external-locking | True to prevent JanusGraph from using its own locking mechanism. Setting this to true eliminates redundant checks when using an external locking mechanism outside of JanusGraph. Be aware that when use-external-locking is set to true, that failure to employ a locking algorithm which locks all columns that participate in a transaction upfront and unlocks them when the transaction ends, will result in a 'read uncommitted' transaction isolation level guarantee. If set to true without an appropriate external locking mechanism in place side effects such as dirty/non-repeatable/phantom reads should be expected. | Boolean | false | MASKABLE |
 | storage.cql.write-consistency-level | The consistency level of write operations against Cassandra | String | QUORUM | MASKABLE |
+
+### storage.cql.metrics
+Configuration options for CQL metrics
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| storage.cql.metrics.cql-messages-delay-refresh-interval | The interval at which percentile data is refreshed in milliseconds for requests. Used if 'cql-messages' node metric is enabled. See DataStax driver configuration option `advanced.metrics.node.cql-messages.refresh-interval` | Long | (no default value) | LOCAL |
+| storage.cql.metrics.cql-messages-highest-latency | The largest latency that we expect to record for requests in milliseconds. Used if 'cql-messages' node metric is enabled. See DataStax driver configuration option `advanced.metrics.node.cql-messages.highest-latency` | Long | (no default value) | LOCAL |
+| storage.cql.metrics.cql-messages-significant-digits | The number of significant decimal digits to which internal structures will maintain value resolution and separation for requests. This must be between 0 and 5. Used if 'cql-messages' node metric is enabled. See DataStax driver configuration option `advanced.metrics.node.cql-messages.significant-digits` | Integer | (no default value) | LOCAL |
+| storage.cql.metrics.cql-requests-highest-latency | The largest latency that we expect to record for requests in milliseconds. Used if 'cql-requests' session metric is enabled. See DataStax driver configuration option `advanced.metrics.session.cql-requests.highest-latency` | Long | (no default value) | LOCAL |
+| storage.cql.metrics.cql-requests-refresh-interval | The interval at which percentile data is refreshed in milliseconds for requests. Used if 'cql-requests' session metric is enabled. See DataStax driver configuration option `advanced.metrics.session.cql-requests.refresh-interval` | Long | (no default value) | LOCAL |
+| storage.cql.metrics.cql-requests-significant-digits | The number of significant decimal digits to which internal structures will maintain value resolution and separation for requests. This must be between 0 and 5. Used if 'cql-requests' session metric is enabled. See DataStax driver configuration option `advanced.metrics.session.cql-requests.significant-digits` | Integer | (no default value) | LOCAL |
+| storage.cql.metrics.node-enabled | Comma separated list of enabled node metrics. Used only when basic metrics are enabled. Check DataStax Cassandra Driver 4 documentation for available metrics (example: pool.open-connections, pool.available-streams, bytes-sent). | String[] | (no default value) | LOCAL |
+| storage.cql.metrics.node-expire-after | The time after which the node level metrics will be evicted in milliseconds. | Long | (no default value) | LOCAL |
+| storage.cql.metrics.session-enabled | Comma separated list of enabled session metrics. Used only when basic metrics are enabled. Check DataStax Cassandra Driver 4 documentation for available metrics (example: bytes-sent, bytes-received, connected-nodes). | String[] | (no default value) | LOCAL |
+| storage.cql.metrics.throttling-delay-highest-latency | The largest latency that we expect to record for throttling in milliseconds. Used if 'throttling.delay' session metric is enabled. See DataStax driver configuration option `advanced.metrics.session.throttling.delay.highest-latency` | Long | (no default value) | LOCAL |
+| storage.cql.metrics.throttling-delay-refresh-interval | The interval at which percentile data is refreshed in milliseconds for throttling. Used if 'throttling.delay' session metric is enabled. See DataStax driver configuration option `advanced.metrics.session.throttling.delay.refresh-interval` | Long | (no default value) | LOCAL |
+| storage.cql.metrics.throttling-delay-significant-digits | The number of significant decimal digits to which internal structures will maintain value resolution and separation for throttling. This must be between 0 and 5. Used if 'throttling.delay' session metric is enabled. See DataStax driver configuration option `advanced.metrics.session.throttling.delay.significant-digits` | Integer | (no default value) | LOCAL |
+
+### storage.cql.netty
+Configuration options related to the Netty event loop groups used internally by the CQL driver.
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| storage.cql.netty.admin-size | The number of threads for the event loop group used for admin tasks not related to request I/O (handle cluster events, refresh metadata, schedule reconnections, etc.). If this is set to 0, the driver will use `Runtime.getRuntime().availableProcessors() * 2`. | Integer | 0 | LOCAL |
+| storage.cql.netty.io-size | The number of threads for the event loop group used for I/O operations (reading and writing to Cassandra nodes). If this is set to 0, the driver will use `Runtime.getRuntime().availableProcessors() * 2`. | Integer | 0 | LOCAL |
+| storage.cql.netty.timer-tick-duration | The timer tick duration in milliseconds. This is how frequent the timer should wake up to check for timed-out tasks or speculative executions. See DataStax Java Driver option `advanced.netty.timer.tick-duration` for more information. | Long | (no default value) | LOCAL |
+| storage.cql.netty.timer-ticks-per-wheel | Number of ticks in a Timer wheel. See DataStax Java Driver option `advanced.netty.timer.ticks-per-wheel` for more information. | Integer | (no default value) | LOCAL |
 
 ### storage.cql.ssl
 Configuration options for SSL
@@ -403,6 +432,7 @@ Configuration options for SSL
 | ---- | ---- | ---- | ---- | ---- |
 | storage.cql.ssl.client-authentication-enabled | Enables use of a client key to authenticate with Cassandra | Boolean | false | LOCAL |
 | storage.cql.ssl.enabled | Controls use of the SSL connection to Cassandra | Boolean | false | LOCAL |
+| storage.cql.ssl.hostname_validation | Enable / disable SSL hostname validation. | Boolean | false | LOCAL |
 
 ### storage.cql.ssl.keystore
 Configuration options for SSL Keystore.

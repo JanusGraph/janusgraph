@@ -14,21 +14,21 @@
 
 package org.janusgraph.hadoop;
 
-import com.datastax.driver.core.Cluster;
+import com.datastax.oss.driver.api.core.CqlSession;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.janusgraph.hadoop.formats.cql.CqlBinaryInputFormat;
 
 public class CqlHadoopStoreManager implements HadoopStoreManager {
 
-    private Cluster cluster;
+    private CqlSession session;
 
-    public CqlHadoopStoreManager(Cluster cluster){
-        this.cluster = cluster;
+    public CqlHadoopStoreManager(CqlSession session){
+        this.session = session;
     }
 
     public String getPartitioner(){
-        return this.cluster.getMetadata().getPartitioner();
+        return this.session.getMetadata().getTokenMap().get().getPartitionerName();
     }
 
     @Override

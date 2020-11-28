@@ -18,7 +18,7 @@ import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry.GetColVal;
 
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.Row;
 
 import io.vavr.Tuple3;
 
