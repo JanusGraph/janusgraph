@@ -68,6 +68,10 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.github.artsok</groupId>
+            <artifactId>rerunner-jupiter</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <resources>

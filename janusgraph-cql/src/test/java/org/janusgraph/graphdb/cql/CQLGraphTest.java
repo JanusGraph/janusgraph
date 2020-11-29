@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.cql;
 
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
@@ -137,5 +138,11 @@ public class CQLGraphTest extends JanusGraphTest {
             tx.getTxHandle().getBaseTransactionConfig().getCustomOptions()
                 .get(WRITE_CONSISTENCY));
         tx.rollback();
+    }
+
+    @RepeatedIfExceptionsTest(repeats = 3)
+    @Override
+    public void simpleLogTest() throws InterruptedException{
+        super.simpleLogTest();
     }
 }

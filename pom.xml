@@ -513,7 +513,7 @@
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>0.8.5</version>
+                    <version>0.8.6</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -944,7 +944,7 @@
             <dependency>
                 <groupId>org.jacoco</groupId>
                 <artifactId>org.jacoco.ant</artifactId>
-                <version>0.8.5</version>
+                <version>0.8.6</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
@@ -1088,6 +1088,11 @@
                 <groupId>org.easymock</groupId>
                 <artifactId>easymock</artifactId>
                 <version>${easymock.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.artsok</groupId>
+                <artifactId>rerunner-jupiter</artifactId>
+                <version>2.1.6</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -1419,7 +1424,7 @@
                             <dependency>
                                 <groupId>org.jacoco</groupId>
                                 <artifactId>org.jacoco.ant</artifactId>
-                                <version>0.8.5</version>
+                                <version>0.8.6</version>
                             </dependency>
                         </dependencies>
                     </plugin>
