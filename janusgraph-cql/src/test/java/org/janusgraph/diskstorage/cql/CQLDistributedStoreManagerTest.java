@@ -55,7 +55,7 @@ public class CQLDistributedStoreManagerTest extends DistributedStoreManagerTest<
     @Override
     @Test
     @FeatureFlag(feature = JanusGraphFeature.OrderedScan)
-    @Disabled(value = "Test can't run inside of a container")
+    @Disabled(value = "GitHub Actions do run inside of a container")
     public void testGetDeployment() {
         final Deployment deployment = Deployment.LOCAL;
         assertEquals(deployment, manager.getDeployment());

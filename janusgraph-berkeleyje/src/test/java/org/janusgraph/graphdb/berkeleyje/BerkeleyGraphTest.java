@@ -14,13 +14,13 @@
 
 package org.janusgraph.graphdb.berkeleyje;
 
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,8 +113,7 @@ public class BerkeleyGraphTest extends JanusGraphTest {
         //Do nothing TODO: Figure out why this is failing in BerkeleyDB!!
     }
 
-    @Test
-    @Disabled(value = "1ms is sometimes to long, value can't be reduced")
+    @RepeatedIfExceptionsTest(repeats = 10, suspend = 100L)
     public void testIDBlockAllocationTimeout() throws BackendException {
         config.set("ids.authority.wait-time", Duration.of(0L, ChronoUnit.MILLIS));
         config.set("ids.renew-timeout", Duration.of(1L, ChronoUnit.MILLIS));

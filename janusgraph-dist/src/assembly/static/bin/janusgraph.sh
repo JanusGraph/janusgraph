@@ -152,10 +152,11 @@ start() {
 
     status_class $CASSANDRA_FRIENDLY_NAME $CASSANDRA_CLASS_NAME >/dev/null && status && echo "Stop services before starting" && exit 1
     echo "Forking Cassandra..."
+    "$BIN"/../cassandra/bin/cassandra || exit 1
     if [ -n "$VERBOSE" ]; then
-        "$BIN"/../cassandra/bin/cassandra || exit 1
+
     else
-        "$BIN"/../cassandra/bin/cassandra >/dev/null 2>&1 || exit 1
+        #"$BIN"/../cassandra/bin/cassandra >/dev/null 2>&1 || exit 1
     fi
     wait_for_cassandra || {
         echo "See $BIN/../logs/cassandra.log for Cassandra log output."    >&2

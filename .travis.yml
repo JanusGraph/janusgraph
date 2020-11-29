@@ -56,13 +56,6 @@ x-template-full:
 
 jobs:
   include:
-    - stage: test
-      env: MODULE='release'
-      before_install: sudo apt-get -y install expect
-      install: mvn clean install --batch-mode -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true
-      script: mvn install -pl janusgraph-dist -Pjanusgraph-release -Dgpg.skip=true
-      if: commit_message !~ /\[doc only\]/
-
     - <<: *FULL_BUILD_JOB
       env: MODULE='cql' ARGS=' -Pcassandra3-byteordered -Dcassandra.docker.version=3.11.4'
     - <<: *FULL_BUILD_JOB
