@@ -108,6 +108,16 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REMOTE_MAX_CONNECT
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_FACTOR;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_OPTIONS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_STRATEGY;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_ERROR_ENABLED;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_MAX_QUERY_LENGTH;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_MAX_VALUES;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_MAX_VALUE_LENGTH;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SHOW_STACK_TRACES;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SHOW_VALUES;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SLOW_ENABLED;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SLOW_THRESHOLD;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SUCCESS_ENABLED;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_TRACKER_CLASS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SESSION_NAME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_CLIENT_AUTHENTICATION_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_ENABLED;
@@ -297,6 +307,8 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         if (configuration.get(BASIC_METRICS)) {
             configureMetrics(configuration, configLoaderBuilder);
         }
+
+        configureRequestTracker(configuration, configLoaderBuilder);
 
         builder.withConfigLoader(configLoaderBuilder.build());
 
@@ -587,6 +599,48 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                 configLoaderBuilder.withDuration(DefaultDriverOption.METRICS_NODE_EXPIRE_AFTER,
                     Duration.ofMillis(configuration.get(METRICS_NODE_EXPIRE_AFTER)));
             }
+        }
+    }
+
+    private void configureRequestTracker(Configuration configuration, ProgrammaticDriverConfigLoaderBuilder configLoaderBuilder){
+        if (configuration.has(REQUEST_TRACKER_CLASS)) {
+            configLoaderBuilder.withString(DefaultDriverOption.REQUEST_TRACKER_CLASS, configuration.get(REQUEST_TRACKER_CLASS));
+        }
+        if (configuration.has(REQUEST_LOGGER_SUCCESS_ENABLED)) {
+            configLoaderBuilder.withBoolean(DefaultDriverOption.REQUEST_LOGGER_SUCCESS_ENABLED,
+                configuration.get(REQUEST_LOGGER_SUCCESS_ENABLED));
+        }
+        if (configuration.has(REQUEST_LOGGER_SLOW_THRESHOLD)) {
+            configLoaderBuilder.withDuration(DefaultDriverOption.REQUEST_LOGGER_SLOW_THRESHOLD,
+                Duration.ofMillis(configuration.get(REQUEST_LOGGER_SLOW_THRESHOLD)));
+        }
+        if (configuration.has(REQUEST_LOGGER_SLOW_ENABLED)) {
+            configLoaderBuilder.withBoolean(DefaultDriverOption.REQUEST_LOGGER_SLOW_ENABLED,
+                configuration.get(REQUEST_LOGGER_SLOW_ENABLED));
+        }
+        if (configuration.has(REQUEST_LOGGER_ERROR_ENABLED)) {
+            configLoaderBuilder.withBoolean(DefaultDriverOption.REQUEST_LOGGER_ERROR_ENABLED,
+                configuration.get(REQUEST_LOGGER_ERROR_ENABLED));
+        }
+        if (configuration.has(REQUEST_LOGGER_MAX_QUERY_LENGTH)) {
+            configLoaderBuilder.withInt(DefaultDriverOption.REQUEST_LOGGER_MAX_QUERY_LENGTH,
+                configuration.get(REQUEST_LOGGER_MAX_QUERY_LENGTH));
+        }
+        if (configuration.has(REQUEST_LOGGER_SHOW_VALUES)) {
+            configLoaderBuilder.withBoolean(DefaultDriverOption.REQUEST_LOGGER_VALUES,
+                configuration.get(REQUEST_LOGGER_SHOW_VALUES));
+        }
+        if (configuration.has(REQUEST_LOGGER_MAX_VALUE_LENGTH)) {
+            configLoaderBuilder.withInt(DefaultDriverOption.REQUEST_LOGGER_MAX_VALUE_LENGTH,
+                configuration.get(REQUEST_LOGGER_MAX_VALUE_LENGTH));
+        }
+        if (configuration.has(REQUEST_LOGGER_MAX_VALUES)) {
+            configLoaderBuilder.withInt(DefaultDriverOption.REQUEST_LOGGER_MAX_VALUES,
+                configuration.get(REQUEST_LOGGER_MAX_VALUES));
+        }
+        if (configuration.has(REQUEST_LOGGER_SHOW_STACK_TRACES)) {
+            configLoaderBuilder.withBoolean(DefaultDriverOption.REQUEST_LOGGER_STACK_TRACES,
+                configuration.get(REQUEST_LOGGER_SHOW_STACK_TRACES));
         }
     }
 

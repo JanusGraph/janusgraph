@@ -454,4 +454,96 @@ public interface CQLConfigOptions {
         "The time after which the node level metrics will be evicted in milliseconds.",
         ConfigOption.Type.LOCAL,
         Long.class);
+
+    // Request tracker (request logging)
+
+    ConfigNamespace REQUEST_TRACKER = new ConfigNamespace(
+        CQL_NS,
+        "request-tracker",
+        "Configuration options for CQL request tracker and builtin request logger");
+
+    ConfigOption<String> REQUEST_TRACKER_CLASS = new ConfigOption<>(
+        REQUEST_TRACKER,
+        "class",
+        "It is either a predefined DataStax driver value for a builtin request tracker " +
+            "or a full qualified class name which implements " +
+            "`com.datastax.oss.driver.internal.core.tracker.RequestTracker` interface. " +
+            "If no any value provided, the default DataStax request tracker is used, which is `NoopRequestTracker` " +
+            "which doesn't do anything. If `RequestLogger` value is provided, the DataStax [RequestLogger]" +
+            "(https://docs.datastax.com/en/developer/java-driver/4.9/manual/core/request_tracker/#request-logger) " +
+            "is used.",
+        ConfigOption.Type.LOCAL,
+        String.class);
+
+    ConfigOption<Boolean> REQUEST_LOGGER_SUCCESS_ENABLED = new ConfigOption<>(
+        REQUEST_TRACKER,
+        "logs-success-enabled",
+        "Whether to log successful requests. " +
+            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+        ConfigOption.Type.LOCAL,
+        Boolean.class);
+
+    ConfigOption<Long> REQUEST_LOGGER_SLOW_THRESHOLD = new ConfigOption<>(
+        REQUEST_TRACKER,
+        "logs-slow-threshold",
+        "The threshold to classify a successful request as `slow`. In milliseconds. " +
+            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+        ConfigOption.Type.LOCAL,
+        Long.class);
+
+    ConfigOption<Boolean> REQUEST_LOGGER_SLOW_ENABLED = new ConfigOption<>(
+        REQUEST_TRACKER,
+        "logs-slow-enabled",
+        "Whether to log `slow` requests." +
+            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+        ConfigOption.Type.LOCAL,
+        Boolean.class);
+
+    ConfigOption<Boolean> REQUEST_LOGGER_ERROR_ENABLED = new ConfigOption<>(
+        REQUEST_TRACKER,
+        "logs-error-enabled",
+        "Whether to log failed requests." +
+            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+        ConfigOption.Type.LOCAL,
+        Boolean.class);
+
+    ConfigOption<Integer> REQUEST_LOGGER_MAX_QUERY_LENGTH = new ConfigOption<>(
+        REQUEST_TRACKER,
+        "logs-max-query-length",
+        "The maximum length of the query string in the log message. " +
+            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+        ConfigOption.Type.LOCAL,
+        Integer.class);
+
+    ConfigOption<Boolean> REQUEST_LOGGER_SHOW_VALUES = new ConfigOption<>(
+        REQUEST_TRACKER,
+        "logs-show-values",
+        "Whether to log bound values in addition to the query string. " +
+            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+        ConfigOption.Type.LOCAL,
+        Boolean.class);
+
+    ConfigOption<Integer> REQUEST_LOGGER_MAX_VALUE_LENGTH = new ConfigOption<>(
+        REQUEST_TRACKER,
+        "logs-max-value-length",
+        "The maximum length for bound values in the log message. " +
+            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+        ConfigOption.Type.LOCAL,
+        Integer.class);
+
+    ConfigOption<Integer> REQUEST_LOGGER_MAX_VALUES = new ConfigOption<>(
+        REQUEST_TRACKER,
+        "logs-max-values",
+        "The maximum number of bound values to log. " +
+            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+        ConfigOption.Type.LOCAL,
+        Integer.class);
+
+    ConfigOption<Boolean> REQUEST_LOGGER_SHOW_STACK_TRACES = new ConfigOption<>(
+        REQUEST_TRACKER,
+        "logs-show-stack-traces",
+        "Whether to log stack traces for failed queries. " +
+            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+        ConfigOption.Type.LOCAL,
+        Boolean.class);
 }
