@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.cql;
 
+import com.datastax.oss.driver.internal.core.tracker.RequestLogger;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
@@ -137,5 +138,38 @@ public class CQLGraphTest extends JanusGraphTest {
             tx.getTxHandle().getBaseTransactionConfig().getCustomOptions()
                 .get(WRITE_CONSISTENCY));
         tx.rollback();
+    }
+
+    @Test
+    public void testRequestLoggerConfigurationSet() {
+        close();
+        WriteConfiguration wc = getConfiguration();
+        assertNull(wc.get(ConfigElement.getPath(REQUEST_TRACKER_CLASS), REQUEST_TRACKER_CLASS.getDatatype()));
+        assertNull(wc.get(ConfigElement.getPath(REQUEST_LOGGER_SUCCESS_ENABLED), REQUEST_LOGGER_SUCCESS_ENABLED.getDatatype()));
+        assertNull(wc.get(ConfigElement.getPath(REQUEST_LOGGER_SLOW_THRESHOLD), REQUEST_LOGGER_SLOW_THRESHOLD.getDatatype()));
+        assertNull(wc.get(ConfigElement.getPath(REQUEST_LOGGER_SLOW_ENABLED), REQUEST_LOGGER_SLOW_ENABLED.getDatatype()));
+        assertNull(wc.get(ConfigElement.getPath(REQUEST_LOGGER_ERROR_ENABLED), REQUEST_LOGGER_ERROR_ENABLED.getDatatype()));
+        assertNull(wc.get(ConfigElement.getPath(REQUEST_LOGGER_MAX_QUERY_LENGTH), REQUEST_LOGGER_MAX_QUERY_LENGTH.getDatatype()));
+        assertNull(wc.get(ConfigElement.getPath(REQUEST_LOGGER_SHOW_VALUES), REQUEST_LOGGER_SHOW_VALUES.getDatatype()));
+        assertNull(wc.get(ConfigElement.getPath(REQUEST_LOGGER_MAX_VALUE_LENGTH), REQUEST_LOGGER_MAX_VALUE_LENGTH.getDatatype()));
+        assertNull(wc.get(ConfigElement.getPath(REQUEST_LOGGER_MAX_VALUES), REQUEST_LOGGER_MAX_VALUES.getDatatype()));
+        assertNull(wc.get(ConfigElement.getPath(REQUEST_LOGGER_SHOW_STACK_TRACES), REQUEST_LOGGER_SHOW_STACK_TRACES.getDatatype()));
+
+        wc.set(ConfigElement.getPath(REQUEST_TRACKER_CLASS), RequestLogger.class.getSimpleName());
+        wc.set(ConfigElement.getPath(REQUEST_LOGGER_SUCCESS_ENABLED), true);
+        wc.set(ConfigElement.getPath(REQUEST_LOGGER_SLOW_THRESHOLD), 1L);
+        wc.set(ConfigElement.getPath(REQUEST_LOGGER_SLOW_ENABLED), true);
+        wc.set(ConfigElement.getPath(REQUEST_LOGGER_ERROR_ENABLED), true);
+        wc.set(ConfigElement.getPath(REQUEST_LOGGER_MAX_QUERY_LENGTH), 100000);
+        wc.set(ConfigElement.getPath(REQUEST_LOGGER_SHOW_VALUES), true);
+        wc.set(ConfigElement.getPath(REQUEST_LOGGER_MAX_VALUE_LENGTH), 100000);
+        wc.set(ConfigElement.getPath(REQUEST_LOGGER_MAX_VALUES), 100000);
+        wc.set(ConfigElement.getPath(REQUEST_LOGGER_SHOW_STACK_TRACES), true);
+
+        graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
+        assertDoesNotThrow(() -> {
+            graph.traversal().V().hasNext();
+            graph.tx().rollback();
+        });
     }
 }

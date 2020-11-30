@@ -424,6 +424,23 @@ Configuration options related to the Netty event loop groups used internally by 
 | storage.cql.netty.timer-tick-duration | The timer tick duration in milliseconds. This is how frequent the timer should wake up to check for timed-out tasks or speculative executions. See DataStax Java Driver option `advanced.netty.timer.tick-duration` for more information. | Long | (no default value) | LOCAL |
 | storage.cql.netty.timer-ticks-per-wheel | Number of ticks in a Timer wheel. See DataStax Java Driver option `advanced.netty.timer.ticks-per-wheel` for more information. | Integer | (no default value) | LOCAL |
 
+### storage.cql.request-tracker
+Configuration options for CQL request tracker and builtin request logger
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| storage.cql.request-tracker.class | It is either a predefined DataStax driver value for a builtin request tracker or a full qualified class name which implements `com.datastax.oss.driver.internal.core.tracker.RequestTracker` interface. If no any value provided, the default DataStax request tracker is used, which is `NoopRequestTracker` which doesn't do anything. If `RequestLogger` value is provided, the DataStax [RequestLogger](https://docs.datastax.com/en/developer/java-driver/4.9/manual/core/request_tracker/#request-logger) is used. | String | (no default value) | LOCAL |
+| storage.cql.request-tracker.logs-error-enabled | Whether to log failed requests.Can be used when `root.storage.cql.request-tracker.class` is set to `RequestLogger`. | Boolean | (no default value) | LOCAL |
+| storage.cql.request-tracker.logs-max-query-length | The maximum length of the query string in the log message. Can be used when `root.storage.cql.request-tracker.class` is set to `RequestLogger`. | Integer | (no default value) | LOCAL |
+| storage.cql.request-tracker.logs-max-value-length | The maximum length for bound values in the log message. Can be used when `root.storage.cql.request-tracker.class` is set to `RequestLogger`. | Integer | (no default value) | LOCAL |
+| storage.cql.request-tracker.logs-max-values | The maximum number of bound values to log. Can be used when `root.storage.cql.request-tracker.class` is set to `RequestLogger`. | Integer | (no default value) | LOCAL |
+| storage.cql.request-tracker.logs-show-stack-traces | Whether to log stack traces for failed queries. Can be used when `root.storage.cql.request-tracker.class` is set to `RequestLogger`. | Boolean | (no default value) | LOCAL |
+| storage.cql.request-tracker.logs-show-values | Whether to log bound values in addition to the query string. Can be used when `root.storage.cql.request-tracker.class` is set to `RequestLogger`. | Boolean | (no default value) | LOCAL |
+| storage.cql.request-tracker.logs-slow-enabled | Whether to log `slow` requests.Can be used when `root.storage.cql.request-tracker.class` is set to `RequestLogger`. | Boolean | (no default value) | LOCAL |
+| storage.cql.request-tracker.logs-slow-threshold | The threshold to classify a successful request as `slow`. In milliseconds. Can be used when `root.storage.cql.request-tracker.class` is set to `RequestLogger`. | Long | (no default value) | LOCAL |
+| storage.cql.request-tracker.logs-success-enabled | Whether to log successful requests. Can be used when `root.storage.cql.request-tracker.class` is set to `RequestLogger`. | Boolean | (no default value) | LOCAL |
+
 ### storage.cql.ssl
 Configuration options for SSL
 
