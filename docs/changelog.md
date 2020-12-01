@@ -194,15 +194,17 @@ See `advanced.metrics.session.enabled` and `advanced.metrics.node.enabled` secti
 for a complete list of available Session level and Node level metrics.
 
 Due to driver upgrade the next cql configuration options have been removed:
-- `local-core-connections-per-host`
-- `remote-core-connections-per-host`
-- `local-max-requests-per-connection`
-- `remote-max-requests-per-connection`
-- `cluster-name`
+
+* `local-core-connections-per-host`
+* `remote-core-connections-per-host`
+* `local-max-requests-per-connection`
+* `remote-max-requests-per-connection`
+* `cluster-name`
 
 New cql configuration options should be used for upgrade:
-- `max-requests-per-connection`
-- `session-name`
+
+* `max-requests-per-connection`
+* `session-name`
 
 `storage.cql.local-datacenter` is mandatory now and defaults to `datacenter1`.
 
