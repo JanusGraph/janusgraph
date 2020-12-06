@@ -30,8 +30,24 @@ env:
   VERIFY_MAVEN_OPTS: "-Pcoverage"
 
 jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - run: mvn clean install --projects janusgraph-all ${{ env.BUILD_MAVEN_OPTS }}
+
   tests:
     runs-on: ubuntu-20.04
+    needs: build
     strategy:
       fail-fast: false
       matrix:
@@ -73,9 +89,8 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ matrix.module }}-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ matrix.module }}-${{ runner.os }}-maven-
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v1
         with:

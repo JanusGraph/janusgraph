@@ -60,9 +60,8 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ matrix.module }}-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ matrix.module }}-${{ runner.os }}-maven-
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v1
         with:
