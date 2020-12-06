@@ -672,7 +672,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     private static final Predicate<InternalRelation> NO_FILTER = Predicates.alwaysTrue();
 
     public void commit(final Collection<InternalRelation> addedRelations,
-                     final Collection<InternalRelation> deletedRelations, final StandardJanusGraphTx tx) {
+                     final Collection<InternalRelation> deletedRelations, final StandardJanusGraphTx tx) throws BackendException {
         if (addedRelations.isEmpty() && deletedRelations.isEmpty()) return;
         //1. Finalize transaction
         log.debug("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
@@ -824,8 +824,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             } catch (Throwable e2) {
                 log.error("Could not roll-back transaction ["+transactionId+"] after failure due to exception",e2);
             }
-            if (e instanceof RuntimeException) throw (RuntimeException)e;
-            else throw new JanusGraphException("Unexpected exception",e);
+            throw e;
         }
     }
 

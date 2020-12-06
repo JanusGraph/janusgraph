@@ -444,8 +444,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         // ...and then filter out the TimestampRid objects with expired timestamps
         // (This doesn't use Iterables.filter and Predicate so that we can throw a checked exception if necessary)
         final List<TimestampRid> unexpiredTRs = new ArrayList<>(Iterables.size(iterable));
+        final Instant cutoffTime = now.minus(lockExpire);
         for (TimestampRid tr : iterable) {
-            final Instant cutoffTime = now.minus(lockExpire);
             if (tr.getTimestamp().isBefore(cutoffTime)) {
                 log.warn("Discarded expired claim on {} with timestamp {}", kc, tr.getTimestamp());
                 if (null != cleanerService)
