@@ -188,6 +188,36 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         graphOfTheGods.tx().commit();
     }
 
+    @Test
+    public void testNullQueries() {
+        makeKey("p2", String.class);
+        PropertyKey p3 = makeKey("p3", String.class);
+        PropertyKey p4 = makeKey("p4", String.class);
+        mgmt.buildIndex("composite", Vertex.class).addKey(p3).buildCompositeIndex();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(p4, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        tx.addVertex();
+        tx.commit();
+        newTx();
+
+        // test neq query
+        assertFalse(tx.traversal().V().has("p4", P.neq("v")).hasNext());
+        assertFalse(tx.traversal().V().has("p4", P.neq(null)).hasNext());
+
+        // test has null query
+        assertTrue(tx.traversal().V().has("p4", (Object) null).hasNext());
+
+        // test has not query
+        assertTrue(tx.traversal().V().hasNot("p4").hasNext());
+        assertTrue(tx.query().hasNot("p4").vertices().iterator().hasNext());
+        assertFalse(tx.query().hasNot("p4", null).vertices().iterator().hasNext());
+        assertFalse(tx.query().hasNot("p4", "value").vertices().iterator().hasNext());
+
+        // test not has query
+        assertTrue(tx.traversal().V().not(__.has("p4")).hasNext());
+    }
+
     /**
      * Ensure clearing storage actually removes underlying graph and index databases.
      * @throws Exception
