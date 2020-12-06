@@ -113,7 +113,7 @@
         <compiler.target>1.8</compiler.target>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
-        <cassandra.version>3.11.6</cassandra.version>
+        <cassandra.version>3.11.9</cassandra.version>
         <cassandra-driver.version>4.9.0</cassandra-driver.version>
         <testcontainers.version>1.14.3</testcontainers.version>
         <easymock.version>3.4</easymock.version>
@@ -148,26 +148,6 @@
             </releases>
             <snapshots>
                 <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        <!-- the repositories below are included here for `mvn project-info-reports:dependencies` -->
-        <repository>
-            <!-- for com.sleepycat:je:jar -->
-            <id>oracleReleases</id>
-            <name>Oracle Released Java Packages</name>
-            <url>https://download.oracle.com/maven</url>
-            <layout>default</layout>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <!-- for org.restlet.jee:org.restlet:jar -->
-            <id>restlet-releases</id>
-            <name>Restlet Release Repository</name>
-            <url>https://maven.restlet.talend.com/</url>
-            <snapshots>
-                <enabled>false</enabled>
             </snapshots>
         </repository>
     </repositories>
@@ -513,7 +493,7 @@
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>0.8.5</version>
+                    <version>0.8.6</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -944,7 +924,7 @@
             <dependency>
                 <groupId>org.jacoco</groupId>
                 <artifactId>org.jacoco.ant</artifactId>
-                <version>0.8.5</version>
+                <version>0.8.6</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
@@ -1419,7 +1399,7 @@
                             <dependency>
                                 <groupId>org.jacoco</groupId>
                                 <artifactId>org.jacoco.ant</artifactId>
-                                <version>0.8.5</version>
+                                <version>0.8.6</version>
                             </dependency>
                         </dependencies>
                     </plugin>
