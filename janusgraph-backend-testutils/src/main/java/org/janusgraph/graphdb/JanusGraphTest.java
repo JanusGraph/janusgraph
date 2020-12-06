@@ -122,6 +122,7 @@ import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.janusgraph.diskstorage.locking.PermanentLockingException;
 import org.janusgraph.diskstorage.log.Log;
 import org.janusgraph.diskstorage.log.Message;
 import org.janusgraph.diskstorage.log.MessageReader;
@@ -2939,7 +2940,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     /**
      * Executes a transaction job in two parallel transactions under the assumptions that the two transactions
-     * should conflict and the one committed later should throw a locking exception.
+     * should conflict and the one committed later should throw a locking exception due to mismatch of expected value.
      *
      * @param graph
      * @param job
@@ -2953,23 +2954,27 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
          * Under pessimistic locking, tx1 should abort and tx2 should commit.
          * Under optimistic locking, tx1 may commit and tx2 may abort.
          */
+        JanusGraphException janusGraphException;
         if (isLockingOptimistic()) {
             tx1.commit();
-            try {
-                tx2.commit();
-                fail("Storage backend does not abort conflicting transactions");
-            } catch (JanusGraphException ignored) {
-            }
+            janusGraphException = assertThrows(JanusGraphException.class, () -> tx2.commit());
         } else {
-            try {
-                tx1.commit();
-                fail("Storage backend does not abort conflicting transactions");
-            } catch (JanusGraphException ignored) {
-            }
+            janusGraphException = assertThrows(JanusGraphException.class, () -> tx1.commit());
             tx2.commit();
         }
+        Throwable rootCause = janusGraphException.getCause().getCause();
+        assertTrue(rootCause instanceof PermanentLockingException);
+        assertTrue(rootCause.getMessage().contains("Expected value mismatch for"));
     }
 
+    /**
+     * Execute multiple identical transactions concurrently. Note that since these transactions are running in the same process,
+     * {@link org.janusgraph.diskstorage.locking.LocalLockMediator} is used to resolve lock contentions. If there is only
+     * one lock needed in the whole transaction, exactly one transaction shall succeed and others shall fail due to local
+     * lock contention. If there is more than one lock needed in the transaction, at most one transaction shall succeed
+     * and others shall fail due to local lock contention.
+     * @throws Exception
+     */
     @Test
     public void testConcurrentConsistencyEnforcement() throws Exception {
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
@@ -2987,25 +2992,33 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         final String nameA = "a", nameB = "b";
         final int parallelThreads = 4;
 
-        int numSuccess = executeParallelTransactions(tx -> {
+        // Only one lock is needed
+        int[] results = executeParallelTransactions(tx -> {
             final JanusGraphVertex a = tx.addVertex();
             final JanusGraphVertex base = getV(tx, baseVid);
             base.addEdge("married", a);
         }, parallelThreads);
+        int numOfSuccess = results[0];
+        int numOfLockContentions = results[1];
+        assertEquals(1, numOfSuccess);
+        assertEquals(parallelThreads - 1, numOfLockContentions);
 
-        assertTrue(numSuccess <= 1, "At most 1 tx should succeed: " + numSuccess);
-
-        numSuccess = executeParallelTransactions(tx -> {
+        // Two locks are needed. Note that the order of adding/modifying/deleting elements might not be consistent with
+        // the order of real mutations during commit. Thus, it can be the case that one thread gets one lock and another
+        // thread gets another, and both fail because they are unable to get the other lock.
+        results = executeParallelTransactions(tx -> {
             tx.addVertex("name", nameA);
             final JanusGraphVertex b = tx.addVertex("name", nameB);
             b.addEdge("friend", b);
         }, parallelThreads);
+        numOfSuccess = results[0];
+        numOfLockContentions = results[1];
+        assertTrue(numOfSuccess <= 1);
+        assertEquals(parallelThreads - numOfSuccess, numOfLockContentions);
 
         newTx();
         final long numA = Iterables.size(tx.query().has("name", nameA).vertices());
         final long numB = Iterables.size(tx.query().has("name", nameB).vertices());
-//        System.out.println(numA + " - " + numB);
-        assertTrue(numSuccess <= 1, "At most 1 tx should succeed: " + numSuccess);
         assertTrue(numA <= 1);
         assertTrue(numB <= 1);
     }
@@ -3019,23 +3032,36 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         if (tx.isOpen()) tx.rollback();
     }
 
-    private int executeParallelTransactions(final TransactionJob job, int number) {
-        final CountDownLatch startLatch = new CountDownLatch(number);
-        final CountDownLatch finishLatch = new CountDownLatch(number);
+    /**
+     * Execute multiple transactions in different threads concurrently to test locking
+     * @param job A transaction job which triggers locking
+     * @param concurrency Number of threads, each of which runs a transaction
+     * @return [number of successful transactions, number of transactions failed due to local lock contention]
+     */
+    private int[] executeParallelTransactions(final TransactionJob job, int concurrency) {
+        final CountDownLatch startLatch = new CountDownLatch(concurrency);
+        final CountDownLatch finishLatch = new CountDownLatch(concurrency);
         final AtomicInteger txSuccess = new AtomicInteger(0);
-        for (int i = 0; i < number; i++) {
+        final AtomicInteger lockingExCount = new AtomicInteger(0);
+        for (int i = 0; i < concurrency; i++) {
             new Thread() {
                 @Override
                 public void run() {
-                    awaitAllThreadsReady();
                     JanusGraphTransaction tx = graph.newTransaction();
                     try {
                         job.run(tx);
+                        // we force all threads to wait until they are all ready to commit, so that we can test lock
+                        // contention
+                        awaitAllThreadsReady();
                         tx.commit();
                         txSuccess.incrementAndGet();
                     } catch (Exception ex) {
                         ex.printStackTrace();
                         if (tx.isOpen()) tx.rollback();
+                        if (ex.getCause() instanceof PermanentLockingException &&
+                            ex.getCause().getMessage().contains("Local lock contention")) {
+                            lockingExCount.incrementAndGet();
+                        }
                     } finally {
                         finishLatch.countDown();
                     }
@@ -3057,7 +3083,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        return txSuccess.get();
+        return new int[] {txSuccess.get(), lockingExCount.get()};
     }
 
    /* ==================================================================================
