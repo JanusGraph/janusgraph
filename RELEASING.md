@@ -182,7 +182,7 @@ You may also need to update the following files in the main repo for any new or 
 
 Create a release commit:
 ```Shell
-git commit -m "JanusGraph release <version> [full build]" -s
+git commit -m "JanusGraph release <version> [tp-tests]" -s
 ```
 
 After that create a release tag with the next command:
@@ -197,7 +197,7 @@ git tag -a v0.3.2 -m ""
 #### Create the Pull Request
 
 Open up pull requests for the version updates.
-It is recommended to add `[full build]` to the commit message so the full suite of compatibility tests will run.
+It is recommended to add `[tp-tests]` to the commit message so the TinkerPop test suite will run.
 After the updates are approved and merged, continue on with the release process.
 
 # Build Release Artifacts

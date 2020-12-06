@@ -18,6 +18,9 @@
             <name>Oracle Released Java Packages</name>
             <url>https://download.oracle.com/maven</url>
             <layout>default</layout>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
         </repository>
     </repositories>
     <dependencies>
