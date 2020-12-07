@@ -959,7 +959,7 @@
             <dependency>
                 <groupId>it.unimi.dsi</groupId>
                 <artifactId>fastutil</artifactId>
-                <version>6.5.7</version>
+                <version>8.4.4</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.cassandra</groupId>
