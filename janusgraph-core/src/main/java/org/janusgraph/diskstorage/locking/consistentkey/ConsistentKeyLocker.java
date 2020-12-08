@@ -380,7 +380,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         Throwable t = null;
         final Timer writeTimer = times.getTimer().start();
         StaticBuffer newLockCol = serializer.toLockCol(writeTimer.getStartTime(), rid, times);
-        Entry newLockEntry = StaticArrayEntry.of(newLockCol, zeroBuf);
+        StaticArrayEntry newLockEntry = (StaticArrayEntry) StaticArrayEntry.of(newLockCol, zeroBuf);
+        newLockEntry.setMetaData(EntryMetaData.TTL, (int) lockExpire.getSeconds());
         StoreTransaction newTx = null;
         try {
             newTx = overrideTimestamp(txh, writeTimer.getStartTime());
