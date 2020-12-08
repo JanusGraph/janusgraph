@@ -159,8 +159,7 @@ public class QueryUtil {
             final RelationType type = getType(tx, atom.getKey());
 
             if (type == null) {
-                if (atom.getPredicate() == Cmp.EQUAL && atom.getValue() == null ||
-                        (atom.getPredicate() == Cmp.NOT_EQUAL && atom.getValue() != null))
+                if (atom.getPredicate() == Cmp.EQUAL && atom.getValue() == null)
                     continue; //Ignore condition, its trivially satisfied
 
                 return null;
