@@ -75,7 +75,7 @@ jobs:
       - run: curl -sfL https://raw.githubusercontent.com/traefik/structor/master/godownloader.sh | bash -s -- -b ./bin ${STRUCTOR_VERSION}
       - run: sudo ./bin/structor -o janusgraph -r janusgraph 
             --force-edit-url 
-            --rqts-url="https://raw.githubusercontent.com/janusgraph/janusgraph/master/requirements.txt" 
+            --rqts-url="https://raw.githubusercontent.com/janusgraph/janusgraph/master/docs/requirements.txt" 
             --dockerfile-url="https://raw.githubusercontent.com/janusgraph/janusgraph/master/docs/docs.Dockerfile" 
             --dockerfile-name="default-docs.Dockerfile" 
             --menu.js-url="https://raw.githubusercontent.com/janusgraph/janusgraph/master/docs/theme/structor-menu.js.gotmpl" 
