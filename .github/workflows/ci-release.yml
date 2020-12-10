@@ -19,11 +19,15 @@ on:
     paths-ignore:
     - 'docs/**'
     - '.github/workflows/ci-docs.yml'
+    - 'requirements.txt'
+    - 'docs.Dockerfile'
     - '*.md'
   push:
     paths-ignore:
     - 'docs/**'
     - '.github/workflows/ci-docs.yml'
+    - 'requirements.txt'
+    - 'docs.Dockerfile'
     - '*.md'
 
 env:
