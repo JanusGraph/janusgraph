@@ -39,8 +39,6 @@ env:
 
 stages:
   - test
-  - documentation
-  - deploy
 
 x-template:
   &STANDARD_TEST_JOB
@@ -132,42 +130,6 @@ jobs:
                 -e COVERITY_EMAIL="${COVERITY_EMAIL}" \
                 -i janusgraph/analysis;
       if: branch = coverity_scan
-
-    - stage: documentation
-      install: docker build -t doc-site:mkdocs -f docs.Dockerfile .
-      script:
-        - echo "Updating configuration markdown";
-          mvn --quiet clean install -DskipTests=true -pl janusgraph-doc -am;
-        - echo "Check for changes in configuration";
-          git diff  --exit-code docs/basics/janusgraph-cfg.md;
-        - docker run --rm -v $PWD:/mkdocs doc-site:mkdocs mkdocs build
-    
-    - stage: deploy
-      install: skip
-      script: skip
-      before_deploy:
-        - echo "Download documentation generator";
-          curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION}
-        - echo "Build documentation";
-          sudo "$GOPATH/bin/structor" -o janusgraph -r janusgraph \
-            --force-edit-url \
-            --rqts-url="https://raw.githubusercontent.com/janusgraph/janusgraph/master/requirements.txt"
-            --dockerfile-url="https://raw.githubusercontent.com/janusgraph/janusgraph/master/docs.Dockerfile" \
-            --menu.js-url="https://raw.githubusercontent.com/janusgraph/janusgraph/master/docs/theme/structor-menu.js.gotmpl" \
-            --exp-branch=master --debug;
-          sudo chown -R $UID site;
-      deploy:
-        provider: pages
-        repo: JanusGraph/docs.janusgraph.org
-        target_branch: master
-        edge: false
-        github_token: ${GITHUB_TOKEN}
-        local_dir: site
-        skip_cleanup: true
-        on:
-          repo: JanusGraph/janusgraph
-          all_branches: true
-          condition: $TRAVIS_BRANCH =~ ^master$|^v[0-9.]+$
 
   # https://docs.travis-ci.com/user/customizing-the-build#Rows-that-are-Allowed-to-Fail
   allow_failures:
