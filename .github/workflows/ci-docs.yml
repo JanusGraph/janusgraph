@@ -19,7 +19,7 @@ on:
   push:
 
 env:
-  STRUCTOR_VERSION: v1.7.1
+  STRUCTOR_VERSION: v1.11.2
   BUILD_MAVEN_OPTS: "-Dmaven.javadoc.skip=true -DskipTests=true --batch-mode --also-make"
   VERIFY_MAVEN_OPTS: "-Pcoverage"
 
@@ -55,7 +55,7 @@ jobs:
           java-version: 1.8
       - run: mvn clean install -pl janusgraph-doc ${{ env.BUILD_MAVEN_OPTS }}
       - run: git diff  --exit-code docs/basics/janusgraph-cfg.md
-      - run: docker build -t doc-site:mkdocs -f docs/docs.Dockerfile ./docs
+      - run: docker build -t doc-site:mkdocs -f docs.Dockerfile .
       - run: docker run --rm -v $PWD:/mkdocs doc-site:mkdocs mkdocs build
       - uses: actions/upload-artifact@v2
         if: github.ref != 'refs/heads/master'
@@ -71,19 +71,21 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+          persist-credentials: false
       - run: mkdir ./bin
       - run: curl -sfL https://raw.githubusercontent.com/traefik/structor/master/godownloader.sh | bash -s -- -b ./bin ${STRUCTOR_VERSION}
       - run: sudo ./bin/structor -o janusgraph -r janusgraph 
             --force-edit-url 
-            --rqts-url="https://raw.githubusercontent.com/janusgraph/janusgraph/master/docs/requirements.txt" 
-            --dockerfile-url="https://raw.githubusercontent.com/janusgraph/janusgraph/master/docs/docs.Dockerfile" 
-            --dockerfile-name="default-docs.Dockerfile" 
-            --menu.js-url="https://raw.githubusercontent.com/janusgraph/janusgraph/master/docs/theme/structor-menu.js.gotmpl" 
+            --rqts-url="https://raw.githubusercontent.com/JanusGraph/janusgraph/master/requirements.txt" 
+            --dockerfile-url="https://raw.githubusercontent.com/JanusGraph/janusgraph/master/docs.Dockerfile" 
+            --dockerfile-name="https://raw.githubusercontent.com/JanusGraph/janusgraph/master/docs.Dockerfile" 
+            --menu.js-url="https://raw.githubusercontent.com/JanusGraph/janusgraph/master/docs/theme/structor-menu.js.gotmpl" 
+            --exclude v0.3,v0.2
             --exp-branch=master --debug
-      - uses: JamesIves/github-pages-deploy-action@3.7.1
+      - run: sudo chown -R $(id -u):$(id -g) .
+      - uses: JamesIves/github-pages-deploy-action@4.0.0-beta-01
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
           REPOSITORY_NAME: JanusGraph/docs.janusgraph.org
           BRANCH: master
           FOLDER: site
-          SINGLE_COMMIT: true
