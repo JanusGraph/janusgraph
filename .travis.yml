@@ -41,8 +41,6 @@ env:
 
 stages:
   - test
-  - documentation
-  - deploy
 
 x-template-full:
   &FULL_BUILD_JOB

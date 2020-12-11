@@ -80,7 +80,6 @@ jobs:
             --dockerfile-url="https://raw.githubusercontent.com/JanusGraph/janusgraph/master/docs.Dockerfile" 
             --dockerfile-name="https://raw.githubusercontent.com/JanusGraph/janusgraph/master/docs.Dockerfile" 
             --menu.js-url="https://raw.githubusercontent.com/JanusGraph/janusgraph/master/docs/theme/structor-menu.js.gotmpl" 
-            --exclude v0.3,v0.2
             --exp-branch=master --debug
       - run: sudo chown -R $(id -u):$(id -g) .
       - uses: JamesIves/github-pages-deploy-action@4.0.0-beta-01
