@@ -20,6 +20,7 @@ import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,6 +113,7 @@ public class BerkeleyGraphTest extends JanusGraphTest {
         //Do nothing TODO: Figure out why this is failing in BerkeleyDB!!
     }
 
+    @Disabled("Unable to run on GitHub Actions.")
     @Test
     public void testIDBlockAllocationTimeout() throws BackendException {
         config.set("ids.authority.wait-time", Duration.of(0L, ChronoUnit.NANOS));
@@ -119,12 +121,7 @@ public class BerkeleyGraphTest extends JanusGraphTest {
         close();
         JanusGraphFactory.drop(graph);
         open(config);
-        try {
-            graph.addVertex();
-            fail();
-        } catch (JanusGraphException ignored) {
-
-        }
+        assertThrows(JanusGraphException.class, () -> graph.addVertex());
 
         assertTrue(graph.isOpen());
 

@@ -20,7 +20,7 @@
         <test.jvm.opts>-Xms256m -Xmx1280m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</test.jvm.opts>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <top.level.basedir>${basedir}/..</top.level.basedir>
-        <test.docker.version.cassandra3>3.11.4</test.docker.version.cassandra3>
+        <test.docker.version.cassandra3>3.11.9</test.docker.version.cassandra3>
     </properties>
 
     <dependencies>

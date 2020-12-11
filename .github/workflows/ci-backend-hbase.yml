@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: CI Release
+name: CI Backend Hbase
 
 on:
   pull_request:
@@ -31,7 +31,6 @@ on:
     - '*.md'
 
 env:
-  ES_JAVA_OPTS: "-Xms256m -Xmx512m"
   BUILD_MAVEN_OPTS: "-DskipTests=true --batch-mode --also-make"
   VERIFY_MAVEN_OPTS: "-Pcoverage"
 
@@ -52,49 +51,28 @@ jobs:
       - run: mvn clean install --projects janusgraph-all -Pjanusgraph-cache -Dmaven.javadoc.skip=true ${{ env.BUILD_MAVEN_OPTS }}
       - run: mvn verify --projects janusgraph-all -Pjanusgraph-cache ${{ env.VERIFY_MAVEN_OPTS }}
 
-  dist-tests:
+  tests:
     runs-on: ubuntu-20.04
-    needs: build-all
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-      - uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
-      - run: sudo apt-get update && sudo apt-get install -y expect
-      - run: mvn clean install -Pjanusgraph-release ${{ env.BUILD_MAVEN_OPTS }} -Dgpg.skip=true
-      - run: mvn verify -pl janusgraph-dist -Pjanusgraph-release -Dgpg.skip=true
-      - uses: actions/upload-artifact@v2
-        with:
-          name: distribution-builds
-          path: janusgraph-dist/target/janusgraph-*.zip
-
-  tp-tests:
-    runs-on: ubuntu-20.04
-    if: "github.event_name == 'push' && contains(github.event.head_commit.message, '[tp-tests]') || github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[tp-tests]')"
     needs: build-all
     strategy:
       fail-fast: false
       matrix:
         include:
-          - module: inmemory
-            args: "-Dtest.skip.tp=false -DskipTests=true"
-          - module: berkeleyje
-            args: "-Dtest.skip.tp=false -DskipTests=true"
-          - module: cql
-            args: "-Pcassandra3-byteordered -Dtest.skip.tp=false -DskipTests=true"
-          - module: cql
-            args: "-Pcassandra3-murmur -Dtest.skip.tp=false -DskipTests=true"
           - module: hbase-parent/janusgraph-hbase-10
-            args: "-Dtest.skip.tp=false -DskipTests=true"
+            args: "-Dtest=\"**/diskstorage/hbase/*\""
+          - module: hbase-parent/janusgraph-hbase-10
+            args: "-Dtest=\"**/graphdb/hbase/*\""
+          - module: hbase-parent/janusgraph-hbase-10
+            args: "-Dtest=\"**/hadoop/*\""
           - module: hbase-parent/janusgraph-hbase-10
             install-args: "-Dhbase.profile -Phbase2"
-            args: "-Dtest.skip.tp=false -DskipTests=true"
+            args: "-Dtest=\"**/diskstorage/hbase/*\""
+          - module: hbase-parent/janusgraph-hbase-10
+            install-args: "-Dhbase.profile -Phbase2"
+            args: "-Dtest=\"**/graphdb/hbase/*\""
+          - module: hbase-parent/janusgraph-hbase-10
+            install-args: "-Dhbase.profile -Phbase2"
+            args: "-Dtest=\"**/hadoop/*\""
     steps:
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
@@ -107,4 +85,5 @@ jobs:
         with:
           java-version: 1.8
       - run: mvn clean install --projects janusgraph-${{ matrix.module }} ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
-      - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ matrix.args }}
+      - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.args }}
+      - uses: codecov/codecov-action@v1
