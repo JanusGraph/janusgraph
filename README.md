@@ -47,6 +47,9 @@ tools:
 
 ## Community
 
+* GitHub Discussions: see [`GitHub Discussions`](https://github.com/JanusGraph/janusgraph/discussions) 
+  for all general discussions and questions about JanusGraph
+  
 * Chat rooms on Gitter:
 
   * [Our main chat room](https://gitter.im/JanusGraph/janusgraph) for all general discussions and questions about JanusGraph
