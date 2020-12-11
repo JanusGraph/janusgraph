@@ -1069,6 +1069,11 @@
                 <artifactId>easymock</artifactId>
                 <version>${easymock.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.github.artsok</groupId>
+                <artifactId>rerunner-jupiter</artifactId>
+                <version>2.1.6</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

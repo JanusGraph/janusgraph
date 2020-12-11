@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.es;
 
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
@@ -26,6 +27,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.junit.jupiter.Container;
 
 import java.io.File;
+import java.util.concurrent.ExecutionException;
 
 import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
 
@@ -75,5 +77,11 @@ public class BerkeleyElasticsearchTest extends JanusGraphIndexTest {
         GraphOfTheGodsFactory.load(gotg);
         JanusGraphIndexTest.assertGraphOfTheGods(gotg);
         gotg.close();
+    }
+
+    @RepeatedIfExceptionsTest(repeats = 3)
+    @Override
+    public void testIndexUpdatesWithoutReindex() throws InterruptedException, ExecutionException {
+        super.testIndexUpdatesWithoutReindex();
     }
 }
