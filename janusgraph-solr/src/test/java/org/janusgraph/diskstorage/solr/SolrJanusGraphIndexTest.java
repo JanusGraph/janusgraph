@@ -14,8 +14,8 @@
 
 package org.janusgraph.diskstorage.solr;
 
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
-import org.janusgraph.testutil.FlakyTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -67,7 +67,7 @@ public abstract class SolrJanusGraphIndexTest extends JanusGraphIndexTest {
     }
 
     @Override
-    @FlakyTest(minSuccess = 1, invocationCount = 8)
+    @RepeatedIfExceptionsTest(repeats = 10, suspend = 1000L)
     public void testIndexReplay() throws Exception {
         super.testIndexReplay();
     }

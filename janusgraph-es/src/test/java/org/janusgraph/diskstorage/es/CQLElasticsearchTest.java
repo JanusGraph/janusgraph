@@ -60,5 +60,4 @@ public class CQLElasticsearchTest extends JanusGraphIndexTest {
     @Override
     @Disabled("CQL seems to not clear storage correctly")
     public void testClearStorage() {}
-
 }

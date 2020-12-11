@@ -14,11 +14,11 @@
 
 package org.janusgraph.graphdb.vertices;
 
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.junit.jupiter.api.BeforeEach;
-import org.janusgraph.testutil.FlakyTest;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -48,7 +48,7 @@ public class StandardVertexTest {
         standardVertex = spy(new StandardVertex(tx, 1, (byte) 1));
     }
 
-    @FlakyTest(minSuccess = 1, invocationCount = 3)
+    @RepeatedIfExceptionsTest(repeats = 3, minSuccess = 1)
     public void shouldNotStuckInDeadlockWhenTheVerticeAndItsRelationIsDeletedInParallel()
         throws InterruptedException, TimeoutException, ExecutionException {
 

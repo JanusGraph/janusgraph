@@ -41,7 +41,7 @@ All of JanusGraph's tests are written for JUnit.  JanusGraph's JUnit tests are a
 If a test should be marked as flaky add following annotation to the test and open an issue.
 
 ```java
-@FlakyTest
+@RepeatedIfExceptionsTest(repeats = 4, minSuccess = 2)
 public void testFlakyFailsSometimes(){}
 ```
 

@@ -14,10 +14,10 @@
 
 package org.janusgraph.graphdb.berkeleyje;
 
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.BerkeleyStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphOperationCountingTest;
-import org.janusgraph.testutil.FlakyTest;
 import org.junit.jupiter.api.AfterEach;
 
 public class BerkeleyOperationCountingTest extends JanusGraphOperationCountingTest {
@@ -28,7 +28,7 @@ public class BerkeleyOperationCountingTest extends JanusGraphOperationCountingTe
     }
 
     @Override
-    @FlakyTest
+    @RepeatedIfExceptionsTest(repeats = 4, minSuccess = 2)
     public void testIdCounts() {
         super.testIdCounts();
     }
