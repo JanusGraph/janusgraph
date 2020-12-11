@@ -169,18 +169,6 @@ you've signed the contribution.
 > `git ci -v` will get you a diff of your commit while writing your commit
 > message.
 
-> Note: If this is a non-code change, e.g. documentation, add `[doc only]` to the
-> PR subject line. This is to save CPU time on Travis CI, which lets us get more
-> build time for the other changes which actually change the code.
->
-> The tests actually run twice for each PR:
-> 
-> * when the PR is submitted for review
-> * when the PR is merged to the base branch
->
-> Having [doc only] in the commit skips the first one, but the merge commit also
-> needs it, so having it in the title (first line of commit) helps it easily
-> propagate to both places.
 
 ## Push your changes to your GitHub fork
 

@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.cql;
 
 import com.datastax.oss.driver.internal.core.tracker.RequestLogger;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
@@ -171,5 +172,11 @@ public class CQLGraphTest extends JanusGraphTest {
             graph.traversal().V().hasNext();
             graph.tx().rollback();
         });
+    }
+
+    @RepeatedIfExceptionsTest(repeats = 3)
+    @Override
+    public void simpleLogTest() throws InterruptedException{
+        super.simpleLogTest();
     }
 }

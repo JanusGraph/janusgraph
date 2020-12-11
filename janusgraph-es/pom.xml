@@ -116,7 +116,6 @@
                 </exclusion>
             </exclusions>
     	</dependency>
-
     </dependencies>
     <build>
         <resources>
@@ -145,10 +144,8 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-
                 <executions>
                     <execution>
                         <id>default-test</id>

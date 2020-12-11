@@ -100,41 +100,6 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-    <profiles>
-        <profile>
-            <id>janusgraph-release</id>
-            <build>
-                <plugins>
-                    <!-- Forces gpg-plugin to run after shade-plugin.
-                     Otherwise, Maven will sign the unshaded jar, then shade the jar
-                     (giving it completely different contents and breaking the sig) -->
-                    <plugin>
-                        <artifactId>maven-shade-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>shade-gremlin-groovy</id>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <!-- Redeclare gpg-plugin after jar-plugin to force the test jar to be signed.
-                      gpg-plugin runs in the package phase, same as jar-plugin, so the only
-                      constraint that guarantees the jar will exist when gpg-plugin is
-                      invoked is declaration order in the pom. -->
-                    <plugin>
-                        <artifactId>maven-jar-plugin</artifactId>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
     <build>
         <plugins>
             <plugin>
@@ -229,4 +194,39 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>janusgraph-release</id>
+            <build>
+                <plugins>
+                    <!-- Forces gpg-plugin to run after shade-plugin.
+                     Otherwise, Maven will sign the unshaded jar, then shade the jar
+                     (giving it completely different contents and breaking the sig) -->
+                    <plugin>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>shade-gremlin-groovy</id>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- Redeclare gpg-plugin after jar-plugin to force the test jar to be signed.
+                      gpg-plugin runs in the package phase, same as jar-plugin, so the only
+                      constraint that guarantees the jar will exist when gpg-plugin is
+                      invoked is declaration order in the pom. -->
+                    <plugin>
+                        <artifactId>maven-jar-plugin</artifactId>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

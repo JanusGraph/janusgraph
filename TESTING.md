@@ -143,7 +143,7 @@ System properties to configure CQL test executions:
 | Property | Description | Default value |
 | -------- | ----------- | ------------- |
 | `cassandra.docker.image` | Docker image to pull and run. | `cassandra` |
-| `cassandra.docker.version` | Docker image tag to pull and run  | `3.11.4` |
+| `cassandra.docker.version` | Docker image tag to pull and run  | `3.11.9` |
 | `cassandra.docker.partitioner` | Set the cassandra partitioner. Supported partitioner are `murmur`, or `byteordered`| `murmur` |
 | `cassandra.docker.useSSL` | Activate SSL **Note: This property currently only works with the partitioner set to `murmur`.** | `false` |
 | `cassandra.docker.useDefaultConfigFromImage` | If set to `false` default configs of the image are used. **Note: `cassandra.docker.partitioner` and `cassandra.docker.useSSL` are ignored.** | `false` |

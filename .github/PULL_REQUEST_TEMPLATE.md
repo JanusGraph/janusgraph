@@ -19,10 +19,3 @@ to ensure the following steps have been taken:
 
 ### For documentation related changes:
 - [ ] Have you ensured that format looks appropriate for the output in which it is rendered?
-- [ ] If this PR is a documentation-only change, have you added a `[doc only]`
-  tag to the first line of your commit message to avoid spending CPU cycles in
-  Travis CI when no code, tests, or build configuration are modified?
-
-### Note:
-Please ensure that once the PR is submitted, you check Travis CI for build issues and submit an update to your PR as soon as possible.
-
