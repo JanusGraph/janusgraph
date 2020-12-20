@@ -17,6 +17,7 @@ package org.janusgraph.graphdb.query;
 import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 import org.janusgraph.core.JanusGraphElement;
 
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
@@ -27,7 +28,7 @@ import java.util.NoSuchElementException;
  */
 public class ResultSetIterator<R extends JanusGraphElement> implements CloseableIterator<R> {
 
-    private final CloseableIterator<R> iterator;
+    private final Iterator<R> iterator;
     private final int limit;
 
     private R current;
@@ -35,7 +36,7 @@ public class ResultSetIterator<R extends JanusGraphElement> implements Closeable
     private int count;
 
 
-    public ResultSetIterator(CloseableIterator<R> inner, int limit) {
+    public ResultSetIterator(Iterator<R> inner, int limit) {
         this.iterator = inner;
         this.limit = limit;
         count = 0;
@@ -80,11 +81,11 @@ public class ResultSetIterator<R extends JanusGraphElement> implements Closeable
 
     @Override
     public void close() {
-        iterator.close();
+        CloseableIterator.closeIterator(iterator);
     }
 
     public static<R extends JanusGraphElement> Iterable<R> wrap(final Iterable<R> inner, final int limit) {
-        return () -> new ResultSetIterator<>(CloseableIterator.asCloseable(inner.iterator()), limit);
+        return () -> new ResultSetIterator<>(inner.iterator(), limit);
     }
 
 }

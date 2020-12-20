@@ -39,7 +39,7 @@ public abstract class LimitAdjustingIterator<R> implements CloseableIterator<R> 
     private int currentLimit;
     private int count;
 
-    private CloseableIterator<R> iterator;
+    private Iterator<R> iterator;
 
     /**
      * Initializes this iterator with the current limit and the maximum number of elements that may be retrieved from the
@@ -62,7 +62,7 @@ public abstract class LimitAdjustingIterator<R> implements CloseableIterator<R> 
      * @param newLimit
      * @return
      */
-    public abstract CloseableIterator<R> getNewIterator(int newLimit);
+    public abstract Iterator<R> getNewIterator(int newLimit);
 
     @Override
     public boolean hasNext() {
@@ -101,9 +101,7 @@ public abstract class LimitAdjustingIterator<R> implements CloseableIterator<R> 
     }
 
     @Override
-    public void close() {
-        if (iterator != null) {
-            iterator.close();
-        }
+    public void close(){
+        CloseableIterator.closeIterator(iterator);
     }
 }

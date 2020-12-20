@@ -22,10 +22,10 @@ import java.util.Objects;
 
 public class MultiIterator<E> extends CloseableAbstractIterator<E> {
 
-    private Iterator<CloseableIterator<E>> listIterator;
-    private CloseableIterator<E> currentIterator;
+    private Iterator<Iterator<E>> listIterator;
+    private Iterator<E> currentIterator;
 
-    public MultiIterator(final List<CloseableIterator<E>> iterators) {
+    public MultiIterator(final List<Iterator<E>> iterators) {
         Objects.requireNonNull(iterators);
         listIterator = iterators.iterator();
     }
@@ -38,7 +38,7 @@ public class MultiIterator<E> extends CloseableAbstractIterator<E> {
             } else if (currentIterator.hasNext()) {
                 return currentIterator.next();
             } else {
-                currentIterator.close();
+                CloseableIterator.closeIterator(currentIterator);
                 currentIterator = null;
             }
         }
@@ -51,7 +51,7 @@ public class MultiIterator<E> extends CloseableAbstractIterator<E> {
             if (currentIterator == null) {
                 currentIterator = listIterator.next();
             } else {
-                currentIterator.close();
+                CloseableIterator.closeIterator(currentIterator);
                 currentIterator = null;
             }
         }
