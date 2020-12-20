@@ -47,10 +47,10 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_STRATEG
 import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -87,9 +87,7 @@ import com.datastax.driver.core.exceptions.UnsupportedFeatureException;
 import com.datastax.driver.core.schemabuilder.Create.Options;
 import com.datastax.driver.core.schemabuilder.TableOptions.CompactionOptions;
 import com.datastax.driver.core.schemabuilder.TableOptions.CompressionOptions;
-import com.google.common.collect.Lists;
 
-import io.vavr.Lazy;
 import io.vavr.Tuple;
 import io.vavr.Tuple3;
 import io.vavr.collection.Array;
@@ -401,7 +399,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         return Try.of(() -> new CQLResultSetKeyIterator(
                 query,
                 this.getter,
-                new CQLPagingIterator(this.storeManager.getPageSize(), () ->
+                new CQLPagingIterator(() ->
                     getKeysRanged.bind()
                         .setToken(KEY_START_BINDING, metadata.newToken(query.getKeyStart().asByteBuffer()))
                         .setToken(KEY_END_BINDING, metadata.newToken(query.getKeyEnd().asByteBuffer()))
@@ -421,7 +419,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         return Try.of(() -> new CQLResultSetKeyIterator(
                 query,
                 this.getter,
-                new CQLPagingIterator(this.storeManager.getPageSize(), () ->
+                new CQLPagingIterator(() ->
                     getKeysAll.bind()
                         .setBytes(SLICE_START_BINDING, query.getSliceStart().asByteBuffer())
                         .setBytes(SLICE_END_BINDING, query.getSliceEnd().asByteBuffer())
@@ -441,43 +439,43 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     private class CQLPagingIterator implements Iterator<Row> {
 
         private ResultSet currentResultSet;
-
-        private int index;
-        private int paginatedResultSize;
+        private int availableWithoutFetching;
         private final Supplier<Statement> statementSupplier;
 
-        private byte[] lastPagingState = null;
-
-        public CQLPagingIterator(final int pageSize, Supplier<Statement> statementSupplier) {
-            this.index = 0;
-            this.paginatedResultSize = pageSize;
+        public CQLPagingIterator(Supplier<Statement> statementSupplier) {
             this.statementSupplier = statementSupplier;
-            this.currentResultSet = getResultSet();
+            fetchResultSet();
         }
 
         @Override
         public boolean hasNext() {
-            return !currentResultSet.isExhausted();
+            if(availableWithoutFetching<=0){
+                if(currentResultSet.isFullyFetched()){
+                    return false;
+                }
+                fetchResultSet();
+            }
+            return availableWithoutFetching > 0;
         }
 
         @Override
         public Row next() {
-            if(index == paginatedResultSize) {
-                currentResultSet = getResultSet();
-                this.index = 0;
+            if(hasNext()){
+                --availableWithoutFetching;
+                return currentResultSet.one();
             }
-            this.index++;
-            lastPagingState = currentResultSet.getExecutionInfo().getPagingStateUnsafe();
-            return currentResultSet.one();
-
+            throw new NoSuchElementException();
         }
 
-        private ResultSet getResultSet() {
-            final Statement boundStmnt = statementSupplier.get();
-            if (lastPagingState != null) {
-                boundStmnt.setPagingStateUnsafe(lastPagingState);
-            }
-            return session.execute(boundStmnt);
+        private void fetchResultSet() {
+            do {
+                final Statement boundStmnt = statementSupplier.get();
+                if (currentResultSet != null) {
+                    boundStmnt.setPagingStateUnsafe(currentResultSet.getExecutionInfo().getPagingStateUnsafe());
+                }
+                currentResultSet = session.execute(boundStmnt);
+                availableWithoutFetching = currentResultSet.getAvailableWithoutFetching();
+            } while (availableWithoutFetching <= 0 && !currentResultSet.isFullyFetched());
         }
     }
 }
