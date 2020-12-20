@@ -73,9 +73,9 @@ public class BackendQueryHolder<E extends BackendQuery<E>> implements ProfileObs
     }
 
     @Override
-    public void observeWith(QueryProfiler parentProfiler) {
+    public void observeWith(QueryProfiler parentProfiler, boolean hasSiblings) {
         Preconditions.checkArgument(parentProfiler!=null);
-        this.profiler = parentProfiler.addNested(QueryProfiler.OR_QUERY);
+        profiler = parentProfiler.addNested(QueryProfiler.OR_QUERY, hasSiblings);
         profiler.setAnnotation(QueryProfiler.FITTED_ANNOTATION,isFitted);
         profiler.setAnnotation(QueryProfiler.ORDERED_ANNOTATION,isSorted);
         profiler.setAnnotation(QueryProfiler.QUERY_ANNOTATION,backendQuery);

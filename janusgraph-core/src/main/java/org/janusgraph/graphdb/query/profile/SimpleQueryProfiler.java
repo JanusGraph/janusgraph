@@ -44,7 +44,7 @@ public class SimpleQueryProfiler implements QueryProfiler, Iterable<SimpleQueryP
     }
 
     @Override
-    public QueryProfiler addNested(String groupName) {
+    public QueryProfiler addNested(String groupName, boolean hasSiblings) {
         SimpleQueryProfiler nested = new SimpleQueryProfiler(groupName);
         nestedProfilers.add(nested);
         return nested;

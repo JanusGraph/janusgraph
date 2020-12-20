@@ -60,6 +60,8 @@ public class BaseVertexCentricQuery extends BaseQuery implements ProfileObservab
      */
     protected final Direction direction;
 
+    private QueryProfiler profiler = QueryProfiler.NO_OP;
+
     public BaseVertexCentricQuery(Condition<JanusGraphRelation> condition, Direction direction,
                                   List<BackendQueryHolder<SliceQuery>> queries, OrderList orders,
                                   int limit) {
@@ -136,10 +138,17 @@ public class BaseVertexCentricQuery extends BaseQuery implements ProfileObservab
     }
 
     @Override
-    public void observeWith(QueryProfiler profiler) {
+    public void observeWith(QueryProfiler profiler, boolean hasSiblings) {
+        this.profiler = profiler;
         profiler.setAnnotation(QueryProfiler.CONDITION_ANNOTATION,condition);
         profiler.setAnnotation(QueryProfiler.ORDERS_ANNOTATION,orders);
         if (hasLimit()) profiler.setAnnotation(QueryProfiler.LIMIT_ANNOTATION,getLimit());
-        queries.forEach(bqh -> bqh.observeWith(profiler));
+        boolean consistsOfMultipleQueries = queries.size() > 1;
+        queries.forEach(bqh -> bqh.observeWith(profiler, consistsOfMultipleQueries));
+    }
+
+    @Override
+    public QueryProfiler getProfiler() {
+        return profiler;
     }
 }

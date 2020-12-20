@@ -1343,10 +1343,19 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     retrievals.add(limit -> {
                         final JointIndexQuery.Subquery adjustedQuery = subquery.updateLimit(limit);
                         try {
-                            return indexCache.get(adjustedQuery,
-                                () -> QueryProfiler.profile(subquery.getProfiler(), adjustedQuery, q -> indexSerializer.query(q, txHandle).collect(Collectors.toList())));
+                            final List<Object> cacheResponse = indexCache.getIfPresent(adjustedQuery);
+                            if (cacheResponse != null) {
+                                subquery.getProfiler().setAnnotation(QueryProfiler.CACHED_ANNOTATION, true);
+                                return cacheResponse;
+                            } else {
+                                subquery.getProfiler().setAnnotation(QueryProfiler.CACHED_ANNOTATION, false);
+                                final List<Object> results = QueryProfiler.profile(subquery.getProfiler(), adjustedQuery,
+                                    q -> indexSerializer.query(q, txHandle).collect(Collectors.toList()));
+                                indexCache.put(adjustedQuery, results);
+                                return results;
+                            }
                         } catch (Exception e) {
-                            throw new JanusGraphException("Could not call index", e.getCause());
+                            throw new JanusGraphException("Could not call index", e);
                         }
                     });
                 }
@@ -1358,10 +1367,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                 if (config.hasForceIndexUsage()) throw new JanusGraphException("Could not find a suitable index to answer graph query and graph scans are disabled: " + query);
                 log.warn("Query requires iterating over all vertices [{}]. For better performance, use indexes", query.getCondition());
 
-                QueryProfiler sub = profiler.addNested("scan");
-                sub.setAnnotation(QueryProfiler.QUERY_ANNOTATION,indexQuery);
-                sub.setAnnotation(QueryProfiler.FULLSCAN_ANNOTATION,true);
-                sub.setAnnotation(QueryProfiler.CONDITION_ANNOTATION,query.getResultType());
+                profiler.setAnnotation(QueryProfiler.FULLSCAN_ANNOTATION,true);
 
                 switch (query.getResultType()) {
                     case VERTEX:

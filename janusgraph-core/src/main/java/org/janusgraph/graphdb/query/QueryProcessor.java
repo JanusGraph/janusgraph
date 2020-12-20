@@ -19,6 +19,7 @@ import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 import org.janusgraph.core.QueryException;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.graphdb.util.CloseableAbstractIterator;
 import org.janusgraph.graphdb.util.CloseableIteratorUtils;
 
 import java.util.*;
@@ -125,7 +126,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
 
             if (!allNew.isEmpty()) iterator = CloseableIteratorUtils.concat(allNew.iterator(), iterator);
         }
-        return iterator;
+        return new ProfiledIterator(iterator, query.getProfiler());
     }
 
     private CloseableIterator<R> getFilterIterator(final CloseableIterator<R> iterator, final boolean filterDeletions, final boolean filterMatches) {
@@ -133,6 +134,37 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
             return CloseableIteratorUtils.filter(iterator, r -> (!filterDeletions || !executor.isDeleted(query, r)) && (!filterMatches || query.matches(r)));
         } else {
             return iterator;
+        }
+    }
+
+    private final class ProfiledIterator extends CloseableAbstractIterator<R> {
+        private final Iterator<R> iterator;
+        private final QueryProfiler profiler;
+        private boolean timerRunning;
+
+        private ProfiledIterator(Iterator iterator, QueryProfiler profiler) {
+            this.iterator = iterator;
+            this.profiler = profiler;
+            profiler.startTimer();
+            timerRunning = true;
+        }
+
+        @Override
+        protected R computeNext() {
+            if (iterator.hasNext()) {
+                return iterator.next();
+            }
+            close();
+            return endOfData();
+        }
+
+        @Override
+        public void close() {
+           if (timerRunning) {
+               profiler.stopTimer();
+               timerRunning = false;
+           }
+           CloseableIterator.closeIterator(iterator);
         }
     }
 

@@ -55,18 +55,25 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
                             Function<Object, ? extends JanusGraphElement> function, List<Object> otherResults) {
         this.subQuery = subQuery;
         this.indexCache = indexCache;
+        profiler = subQuery.getProfiler();
+        // if subquery's profiler is flattened out (merged with its parent because it's the only child), we don't start
+        // its timer here because it shares its timer with its parent and the timer has already been started
+        if (!subQuery.isProfilerFlattened()) {
+            profiler.startTimer();
+            isTimerRunning = true;
+        }
         final List<Object> cacheResponse = indexCache.getIfPresent(subQuery);
         final Stream<?> stream;
         if (cacheResponse != null) {
             stream = cacheResponse.stream();
+            profiler.setAnnotation(QueryProfiler.CACHED_ANNOTATION, true);
         } else {
+            profiler.setAnnotation(QueryProfiler.CACHED_ANNOTATION, false);
             try {
                 currentIds = new ArrayList<>();
-                profiler = QueryProfiler.startProfile(subQuery.getProfiler(), subQuery);
-                isTimerRunning = true;
                 stream = indexSerializer.query(subQuery, tx).peek(r -> currentIds.add(r));
             } catch (final Exception e) {
-                throw new JanusGraphException("Could not call index", e.getCause());
+                throw new JanusGraphException("Could not call index", e);
             }
         }
         elementIterator = stream.filter(e -> otherResults == null || otherResults.contains(e)).limit(limit).map(function).map(r -> (JanusGraphElement) r).iterator();
@@ -87,12 +94,14 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
      */
     @Override
     public void close() {
-        if (isTimerRunning) {
-            assert currentIds != null;
+        if (currentIds != null) {
             if (!elementIterator.hasNext()) {
                 indexCache.put(subQuery, currentIds);
             }
             profiler.setResultSize(currentIds.size());
+            currentIds = null;
+        }
+        if (isTimerRunning) {
             profiler.stopTimer();
             isTimerRunning = false;
         }

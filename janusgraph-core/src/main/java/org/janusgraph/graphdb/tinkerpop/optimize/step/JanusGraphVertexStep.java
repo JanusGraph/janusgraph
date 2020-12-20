@@ -90,7 +90,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
         }
         for (final OrderEntry order : orders) query.orderBy(order.key, order.order);
         if (limit != BaseQuery.NO_LIMIT) query.limit(limit);
-        ((BasicVertexCentricQueryBuilder) query).profiler(queryProfiler);
+        ((BasicVertexCentricQueryBuilder) query).profiler(queryProfiler.addNested(QueryProfiler.VERTEX_CENTRIC_QUERY));
         return query;
     }
 
@@ -189,7 +189,10 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
             result = multiQueryResults.get(traverser.get());
         } else {
             final JanusGraphVertexQuery query = makeQuery((JanusGraphTraversalUtil.getJanusGraphVertex(traverser)).query());
+            QueryProfiler profiler = ((BasicVertexCentricQueryBuilder) query).getProfiler();
+            profiler.startTimer();
             result = (Vertex.class.isAssignableFrom(getReturnClass())) ? query.vertices() : query.edges();
+            profiler.stopTimer();
         }
 
         if (batchPropertyPrefetching) {

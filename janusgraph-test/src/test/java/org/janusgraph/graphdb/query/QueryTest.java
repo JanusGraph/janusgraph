@@ -15,7 +15,9 @@
 package org.janusgraph.graphdb.query;
 
 import com.google.common.collect.Iterators;
+import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Contain;
@@ -27,6 +29,7 @@ import org.janusgraph.diskstorage.inmemory.InMemoryStoreManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.OrderList;
+import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,7 +40,7 @@ import java.util.List;
 
 import static org.janusgraph.testutil.JanusGraphAssert.assertBackendHit;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
-import static org.janusgraph.testutil.JanusGraphAssert.assertNoBackendHit;
+import static org.janusgraph.testutil.JanusGraphAssert.assertCacheHit;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -62,6 +65,12 @@ public class QueryTest {
         if (graph!=null && graph.isOpen()) graph.close();
     }
 
+    private String getQueryAnnotation(TraversalMetrics metrics) {
+        Object[] nestedArr = metrics.getMetrics(0).getNested().toArray();
+        // the last nested group is the actual backend query
+        return (String) ((Metrics) nestedArr[nestedArr.length - 1]).getAnnotation(QueryProfiler.QUERY_ANNOTATION);
+    }
+
     @Test
     public void testQueryLimitAdjustment() {
         JanusGraphManagement mgmt = graph.openManagement();
@@ -83,23 +92,23 @@ public class QueryTest {
 
         // Single condition, fully met by index prop1_idx. No need to adjust backend query limit.
         assertCount(5, graph.traversal().V().has("prop1", "prop1val").limit(5));
-        assertEquals("multiKSQ[1]@5", graph.traversal().V().has("prop1", "prop1val").limit(5)
-                .profile().next().getMetrics(0).getAnnotation("query"));
+        assertEquals("multiKSQ[1]@5", getQueryAnnotation(graph.traversal().V().has("prop1", "prop1val").limit(5)
+                .profile().next()));
 
         // Two conditions, fully met by index props_idx. No need to adjust backend query limit.
         assertCount(5, graph.traversal().V().has("prop1", "prop1val").has("prop2", "prop2val").limit(5));
-        assertEquals("multiKSQ[1]@5", graph.traversal().V().has("prop1", "prop1val").has("prop2", "prop2val").limit(5)
-            .profile().next().getMetrics(0).getAnnotation("query"));
+        assertEquals("multiKSQ[1]@5", getQueryAnnotation(graph.traversal().V().has("prop1", "prop1val").has("prop2", "prop2val").limit(5)
+            .profile().next()));
 
         // Two conditions, one of which met by index prop1_idx. Multiply original limit by two for sake of in-memory filtering.
         assertCount(5, graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").limit(5));
-        assertEquals("multiKSQ[1]@10", graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").limit(5)
-            .profile().next().getMetrics(0).getAnnotation("query"));
+        assertEquals("multiKSQ[1]@10", getQueryAnnotation(graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").limit(5)
+            .profile().next()));
 
         // Three conditions, one of which met by index prop1_idx. Multiply original limit by four for sake of in-memory filtering.
         assertCount(5, graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").has("prop4", "prop4val0").limit(5));
-        assertEquals("multiKSQ[1]@20", graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").has("prop4", "prop4val0").limit(5)
-            .profile().next().getMetrics(0).getAnnotation("query"));
+        assertEquals("multiKSQ[1]@20", getQueryAnnotation(graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").has("prop4", "prop4val0").limit(5)
+            .profile().next()));
     }
 
     @Test
@@ -185,7 +194,7 @@ public class QueryTest {
 
         // cache is used when there is no result for given query
         assertBackendHit(graph.traversal().V().has("prop", "value").profile().next());
-        assertNoBackendHit(graph.traversal().V().has("prop", "value").profile().next());
+        assertCacheHit(graph.traversal().V().has("prop", "value").profile().next());
         assertEquals(0, graph.traversal().V().has("prop", "value").toList().size());
         graph.tx().rollback();
 
@@ -196,19 +205,19 @@ public class QueryTest {
 
         // cache is used when there are results for given query
         assertBackendHit(graph.traversal().V().has("prop", "value").profile().next());
-        assertNoBackendHit(graph.traversal().V().has("prop", "value").profile().next());
+        assertCacheHit(graph.traversal().V().has("prop", "value").profile().next());
         assertEquals(100, graph.traversal().V().has("prop", "value").toList().size());
         graph.tx().rollback();
 
         // cache is used with limit
         assertBackendHit(graph.traversal().V().has("prop", "value").limit(10).profile().next());
-        assertNoBackendHit(graph.traversal().V().has("prop", "value").limit(10).profile().next());
+        assertCacheHit(graph.traversal().V().has("prop", "value").limit(10).profile().next());
         assertEquals(10, graph.traversal().V().has("prop", "value").limit(10).toList().size());
         graph.tx().rollback();
 
         // result is cached and cache is used with limit larger than number of possible results
         assertBackendHit(graph.traversal().V().has("prop", "value").limit(1000).profile().next());
-        assertNoBackendHit(graph.traversal().V().has("prop", "value").limit(1000).profile().next());
+        assertCacheHit(graph.traversal().V().has("prop", "value").limit(1000).profile().next());
         assertEquals(100, graph.traversal().V().has("prop", "value").limit(1000).toList().size());
         graph.tx().rollback();
 
@@ -220,18 +229,18 @@ public class QueryTest {
 
         // cache is used when first query exhausts all results
         assertBackendHit(graph.traversal().V().has("prop", "value").limit(200).profile().next());
-        assertNoBackendHit(graph.traversal().V().has("prop", "value").limit(1000).profile().next());
+        assertCacheHit(graph.traversal().V().has("prop", "value").limit(1000).profile().next());
         assertEquals(100, graph.traversal().V().has("prop", "value").limit(1000).toList().size());
         graph.tx().rollback();
 
         assertBackendHit(graph.traversal().V().has("prop", "value").profile().next());
-        assertNoBackendHit(graph.traversal().V().has("prop", "value").limit(1000).profile().next());
+        assertCacheHit(graph.traversal().V().has("prop", "value").limit(1000).profile().next());
         assertEquals(100, graph.traversal().V().has("prop", "value").limit(1000).toList().size());
         graph.tx().rollback();
 
         // cache is used when second query has lower limit
         assertBackendHit(graph.traversal().V().has("prop", "value").limit(10).profile().next());
-        assertNoBackendHit(graph.traversal().V().has("prop", "value").limit(9).profile().next());
+        assertCacheHit(graph.traversal().V().has("prop", "value").limit(9).profile().next());
         assertEquals(9, graph.traversal().V().has("prop", "value").limit(9).toList().size());
         graph.tx().rollback();
 
@@ -257,14 +266,14 @@ public class QueryTest {
         while (iter.hasNext()) {
             iter.next();
         }
-        assertNoBackendHit(graph.traversal().V().has("prop", "value").limit(1).profile().next());
+        assertCacheHit(graph.traversal().V().has("prop", "value").limit(1).profile().next());
         graph.tx().rollback();
 
         iter = graph.traversal().V().has("prop", "value");
         for (int i = 0; i < 100; i++) {
             iter.next();
         }
-        assertNoBackendHit(graph.traversal().V().has("prop", "value").limit(1).profile().next());
+        assertCacheHit(graph.traversal().V().has("prop", "value").limit(1).profile().next());
         graph.tx().rollback();
     }
 

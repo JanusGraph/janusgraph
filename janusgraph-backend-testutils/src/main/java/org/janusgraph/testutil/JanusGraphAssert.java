@@ -31,6 +31,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversalStrategies;
+import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
@@ -93,15 +94,24 @@ public class JanusGraphAssert {
         assertArrayEquals(intArray, traversal.toList().stream().mapToInt(i -> i).toArray());
     }
 
+    private static boolean hasCacheHit(Metrics metrics) {
+        Boolean isCached = Boolean.valueOf((String) metrics.getAnnotation(QueryProfiler.CACHED_ANNOTATION));
+        if (Boolean.TRUE.equals(isCached)) return true;
+        for (Metrics subMetrics : metrics.getNested()) {
+            if (hasCacheHit(subMetrics)) return true;
+        }
+        return false;
+    }
+
     public static void assertBackendHit(TraversalMetrics profile) {
-        assertTrue(profile.getMetrics().stream().anyMatch(metrics -> {
-            return metrics.getNested().stream().anyMatch(m -> m.getName().equals(QueryProfiler.BACKEND_QUERY));
+        assertFalse(profile.getMetrics().stream().anyMatch(metrics -> {
+            return hasCacheHit(metrics);
         }));
     }
 
-    public static void assertNoBackendHit(TraversalMetrics profile) {
-        assertFalse(profile.getMetrics().stream().anyMatch(metrics -> {
-            return metrics.getNested().stream().anyMatch(m -> m.getName().equals(QueryProfiler.BACKEND_QUERY));
+    public static void assertCacheHit(TraversalMetrics profile) {
+        assertTrue(profile.getMetrics().stream().anyMatch(metrics -> {
+            return hasCacheHit(metrics);
         }));
     }
 

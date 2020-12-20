@@ -19,6 +19,12 @@ package org.janusgraph.graphdb.query.profile;
  */
 public interface ProfileObservable {
 
-    void observeWith(QueryProfiler profiler);
+    default void observeWith(QueryProfiler profiler) {
+        observeWith(profiler, false);
+    }
+
+    void observeWith(QueryProfiler profiler, boolean hasSiblings);
+
+    QueryProfiler getProfiler();
 
 }

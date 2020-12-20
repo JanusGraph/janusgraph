@@ -83,7 +83,8 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
                 }
             }
         } else profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,1);
-        return resultConstructor.getResult(vertex,bq);
+        Q result = resultConstructor.getResult(vertex,bq);
+        return result;
     }
 
     //#### RELATIONS

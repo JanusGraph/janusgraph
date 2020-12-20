@@ -42,6 +42,12 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
     private final StaticBuffer sliceStart;
     private final StaticBuffer sliceEnd;
+    private String type;
+
+    public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd, final String type) {
+        this(sliceStart, sliceEnd);
+        this.type = type;
+    }
 
     public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd) {
         assert sliceStart != null && sliceEnd != null;
@@ -135,6 +141,16 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
     @Override
     public SliceQuery updateLimit(int newLimit) {
         return new SliceQuery(sliceStart, sliceEnd).setLimit(newLimit);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        if (type != null) {
+            sb.append(type).append(":");
+        }
+        sb.append("SliceQuery[").append(getSliceStart()).append(",").append(getSliceEnd()).append(")@").append(getLimit());
+        return sb.toString();
     }
 
 }

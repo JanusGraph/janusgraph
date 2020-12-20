@@ -123,6 +123,14 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     }
 
     /**
+     * Returns the query profiler that observes this query
+     * @return
+     */
+    public QueryProfiler getProfiler() {
+       return profiler;
+    }
+
+    /**
      * Restricts the result set of this query to only system types.
      * @return
      */

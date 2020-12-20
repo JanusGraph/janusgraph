@@ -17,6 +17,7 @@ package org.janusgraph.graphdb.query.graph;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.graphdb.query.BackendQuery;
 import org.janusgraph.graphdb.query.BaseQuery;
+import org.janusgraph.graphdb.query.Query;
 import org.janusgraph.graphdb.query.profile.ProfileObservable;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.types.CompositeIndexType;
@@ -44,6 +45,8 @@ import java.util.Objects;
 public class JointIndexQuery extends BaseQuery implements BackendQuery<JointIndexQuery>, ProfileObservable {
 
     private final List<Subquery> queries;
+
+    private QueryProfiler profiler = QueryProfiler.NO_OP;
 
     private JointIndexQuery(List<Subquery> queries) {
         this.queries = Preconditions.checkNotNull(queries);
@@ -74,8 +77,15 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
     }
 
     @Override
-    public void observeWith(QueryProfiler profiler) {
-        queries.forEach(q -> q.observeWith(profiler));
+    public void observeWith(QueryProfiler profiler, boolean hasSiblings) {
+        this.profiler = profiler;
+        boolean consistsOfMultipleQueries = queries.size() > 1;
+        queries.forEach(q -> q.observeWith(profiler, consistsOfMultipleQueries));
+    }
+
+    @Override
+    public QueryProfiler getProfiler() {
+        return profiler;
     }
 
     @Override
@@ -116,6 +126,7 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
         private final IndexType index;
         private final BackendQuery query;
         private QueryProfiler profiler = QueryProfiler.NO_OP;
+        private boolean profilerFlattened;
 
         private Subquery(IndexType index, BackendQuery query) {
             assert index!=null && query!=null && (query instanceof MultiKeySliceQuery || query instanceof IndexQuery);
@@ -123,8 +134,9 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
             this.query = query;
         }
 
-        public void observeWith(QueryProfiler prof) {
-            this.profiler = prof.addNested(QueryProfiler.AND_QUERY);
+        public void observeWith(QueryProfiler prof, boolean hasSiblings) {
+            profiler = prof.addNested(QueryProfiler.AND_QUERY, hasSiblings);
+            profilerFlattened = prof.equals(profiler);
             profiler.setAnnotation(QueryProfiler.QUERY_ANNOTATION,query);
             profiler.setAnnotation(QueryProfiler.INDEX_ANNOTATION,index.getName());
             if (index.isMixedIndex()) profiler.setAnnotation(QueryProfiler.INDEX_ANNOTATION+"_impl",index.getBackingIndexName());
@@ -132,6 +144,10 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
 
         public QueryProfiler getProfiler() {
             return profiler;
+        }
+
+        public boolean isProfilerFlattened() {
+            return this.profilerFlattened;
         }
 
         public IndexType getIndex() {

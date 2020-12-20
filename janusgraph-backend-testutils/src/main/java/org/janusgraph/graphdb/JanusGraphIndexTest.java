@@ -19,6 +19,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.janusgraph.TestCategory;
@@ -83,7 +84,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.janusgraph.graphdb.JanusGraphTest.evaluateQuery;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -146,10 +146,13 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     public abstract boolean supportsLuceneStyleQueries();
 
-
     public abstract boolean supportsWildcardQuery();
 
     public abstract boolean supportsGeoPointExistsQuery();
+
+    public String getStringField(String propertyKey) {
+        return propertyKey;
+    }
 
     @Override
     public void open(WriteConfiguration config) {
@@ -990,6 +993,78 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testGraphCentricQueryProfiling() {
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey prop = makeKey("prop", Integer.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, Mapping.STRING.asParameter()).addKey(prop).buildMixedIndex(INDEX);
+        finishSchema();
+
+        tx.addVertex("name", "bob", "prop", 100);
+        tx.commit();
+
+        // satisfied by a single graph-centric query which is satisfied by a single mixed index query
+        if (indexFeatures.supportNotQueryNormalForm()) {
+            newTx();
+            Metrics mMixedOr = tx.traversal().V().or(__.has("name", "bob"), __.has("prop", 100))
+                .profile().next().getMetrics(0);
+            assertEquals("Or(JanusGraphStep([],[name.eq(bob)]),JanusGraphStep([],[prop.eq(100)]))", mMixedOr.getName());
+            assertTrue(mMixedOr.getDuration(TimeUnit.MICROSECONDS) > 0);
+            assertEquals(2, mMixedOr.getNested().size());
+            Metrics nested = (Metrics) mMixedOr.getNested().toArray()[0];
+            assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
+            assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+            nested = (Metrics) mMixedOr.getNested().toArray()[1];
+            assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
+            assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+            Map<String, String> annotations = new HashMap() {{
+                put("condition", "((name = bob) OR (prop = 100))");
+                put("orders", "[]");
+                put("isFitted", "false");
+                put("isOrdered", "true");
+                put("isCached", "false");
+                put("query", "[((name = bob) OR (prop = 100))](2000):mixed");
+                put("index", "mixed");
+                put("index_impl", "search");
+            }};
+            assertEquals(annotations, nested.getAnnotations());
+        }
+
+        // satisfied by a single graph-centric query which is satisfied by a single mixed index query
+        newTx();
+        Metrics mMixedAnd = tx.traversal().V().has("name", "bob").has("prop", 100)
+            .profile().next().getMetrics(0);
+        assertEquals("JanusGraphStep([],[name.eq(bob), prop.eq(100)])", mMixedAnd.getName());
+        assertTrue(mMixedAnd.getDuration(TimeUnit.MICROSECONDS) > 0);
+        assertEquals(3, mMixedAnd.getNested().size());
+        Metrics nested = (Metrics) mMixedAnd.getNested().toArray()[0];
+        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        nested = (Metrics) mMixedAnd.getNested().toArray()[1];
+        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        nested = (Metrics) mMixedAnd.getNested().toArray()[2];
+        assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        String query;
+        if (readConfig.get(INDEX_BACKEND, INDEX).equals("solr")) {
+            query = "[(name_s = bob AND prop_i = 100)](1000):mixed";
+        } else {
+            query = "[(name = bob AND prop = 100)](1000):mixed";
+        }
+        Map<String, String> annotations = new HashMap() {{
+            put("condition", "(name = bob AND prop = 100)");
+            put("orders", "[]");
+            put("isFitted", "true");
+            put("isOrdered", "true");
+            put("isCached", "false");
+            put("query", query);
+            put("index", "mixed");
+            put("index_impl", "search");
+        }};
+        assertEquals(annotations, nested.getAnnotations());
+    }
+
+    @Test
     public void testIndexSelectStrategy() {
         final PropertyKey name = makeKey("name", String.class);
         final JanusGraphIndex compositeNameIndex = mgmt.buildIndex("composite", Vertex.class).addKey(name).buildCompositeIndex();
@@ -1002,33 +1077,45 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         mixedIndex.name();
         finishSchema();
 
+        final String backend = readConfig.get(INDEX_BACKEND, INDEX);
+        String nameKey = getStringField("name");
+        String propKey = getStringField("prop");
+
         // best combination is to pick up only 1 index (mixed index), however, greedy based approximate algorithm
         // picks up 2 indexes (composite index + mixed index)
+        final String oneIndexResult = String.format("[(%s = value AND %s = value)](1000):mixed", nameKey, propKey);
+        final String twoIndexesResult = String.format("[composite:multiKSQ[1]@2147483647, mixed:[(%s = value AND %s = value)]:mixed]", nameKey, propKey);
 
         // use default config
-        assertEquals(1, getIndexSelectResultNum());
+        assertEquals(oneIndexResult, getIndexSelectResult());
 
         // use full class name
-        assertEquals(1, getIndexSelectResultNum(option(INDEX_SELECT_STRATEGY),
+        assertEquals(oneIndexResult, getIndexSelectResult(option(INDEX_SELECT_STRATEGY),
             ThresholdBasedIndexSelectionStrategy.class.getName()));
 
-        assertEquals(1, getIndexSelectResultNum(option(INDEX_SELECT_BRUTE_FORCE_THRESHOLD), 10,
+        assertEquals(oneIndexResult, getIndexSelectResult(option(INDEX_SELECT_BRUTE_FORCE_THRESHOLD), 10,
             option(INDEX_SELECT_STRATEGY), ThresholdBasedIndexSelectionStrategy.NAME));
 
-        assertEquals(2, getIndexSelectResultNum(option(INDEX_SELECT_BRUTE_FORCE_THRESHOLD), 0,
+        assertEquals(twoIndexesResult, getIndexSelectResult(option(INDEX_SELECT_BRUTE_FORCE_THRESHOLD), 0,
             option(INDEX_SELECT_STRATEGY), ThresholdBasedIndexSelectionStrategy.NAME));
 
-        assertEquals(1, getIndexSelectResultNum(option(INDEX_SELECT_STRATEGY), BruteForceIndexSelectionStrategy.NAME));
+        assertEquals(oneIndexResult, getIndexSelectResult(option(INDEX_SELECT_STRATEGY), BruteForceIndexSelectionStrategy.NAME));
 
-        assertEquals(2, getIndexSelectResultNum(option(INDEX_SELECT_STRATEGY), ApproximateIndexSelectionStrategy.NAME));
+        assertEquals(twoIndexesResult, getIndexSelectResult(option(INDEX_SELECT_STRATEGY), ApproximateIndexSelectionStrategy.NAME));
     }
 
-    private long getIndexSelectResultNum(Object... settings) {
+    private String getIndexSelectResult(Object... settings) {
         clopen(settings);
         GraphTraversalSource g = graph.traversal();
         TraversalMetrics profile = g.V().has("name", "value")
             .has("prop", "value").profile().next();
-        return profile.getMetrics().stream().findFirst().get().getNested().stream().filter(m -> m.getName().equals(QueryProfiler.BACKEND_QUERY)).count();
+        Metrics nested = (Metrics) profile.getMetrics(0).getNested().toArray()[0];
+        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
+        nested = (Metrics) profile.getMetrics(0).getNested().toArray()[1];
+        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
+        nested = (Metrics) profile.getMetrics(0).getNested().toArray()[2];
+        assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
+        return (String) nested.getAnnotation(QueryProfiler.QUERY_ANNOTATION);
     }
 
     @Test
@@ -2504,17 +2591,17 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         // traverse with limit 30 (cache hit)
         traversal = () -> common.get().by(ORDER_AGE_ASC).limit(30).values("age");
-        assertNoBackendHit((TraversalMetrics) traversal.get().profile().next());
+        assertCacheHit((TraversalMetrics) traversal.get().profile().next());
         assertIntRange(traversal.get(), 0, 30);
 
         // traverse with limit followed by orderBy
         traversal = () -> graph.traversal().V().has("age", P.gte(0)).limit(30).order().by(ORDER_AGE_ASC).values("age");
         assertBackendHit((TraversalMetrics) traversal.get().profile().next());
-        assertNoBackendHit((TraversalMetrics) traversal.get().profile().next());
+        assertCacheHit((TraversalMetrics) traversal.get().profile().next());
 
         // traverse with range(10, 20) (cache hit)
         traversal = () -> common.get().by(ORDER_AGE_DESC).range(10, 20).values("age");
-        assertNoBackendHit((TraversalMetrics) traversal.get().profile().next());
+        assertCacheHit((TraversalMetrics) traversal.get().profile().next());
         assertIntRange(traversal.get(), 89, 79);
 
     }

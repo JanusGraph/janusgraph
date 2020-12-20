@@ -79,6 +79,6 @@ public class KeySliceQuery extends SliceQuery {
 
     @Override
     public String toString() {
-        return String.format("KeySliceQuery(key: %s, start: %s, end: %s, limit:%d)", key, getSliceStart(), getSliceEnd(), getLimit());
+        return "KeySliceQuery(" + key + ")[" + getSliceStart() + "," + getSliceEnd() + ")@" + getLimit();
     }
 }
