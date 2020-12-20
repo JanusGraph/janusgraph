@@ -35,7 +35,7 @@ import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.*;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
-import org.janusgraph.graphdb.util.IteratorUtils;
+import org.janusgraph.graphdb.util.CloseableIteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -201,7 +201,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         return new Iterable<E>() {
             @Override
             public CloseableIterator<E> iterator() {
-                return IteratorUtils.filter(new QueryProcessor(query, tx.elementProcessor).iterator(),
+                return CloseableIteratorUtils.filter(new QueryProcessor(query, tx.elementProcessor).iterator(),
                     (Predicate<? super E>) e -> aClass.isInstance(e));
             }
 

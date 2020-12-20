@@ -15,13 +15,12 @@
 package org.janusgraph.graphdb.util;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 import org.janusgraph.graphdb.query.Query;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,9 +29,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 public class MultiDistinctUnorderedIteratorTest {
     @Test
     public void shouldConcatEmptyIterators() {
-        List<CloseableIterator<Element>> iterators = new ArrayList<>();
+        List<Iterator<Element>> iterators = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
-            iterators.add(CloseableIterator.asCloseable(Collections.emptyIterator()));
+            iterators.add(CloseableIteratorUtils.emptyIterator());
         }
         MultiDistinctUnorderedIterator<Element> multiIterator = new MultiDistinctUnorderedIterator<Element>(
             0, Query.NO_LIMIT, iterators);
@@ -42,11 +41,11 @@ public class MultiDistinctUnorderedIteratorTest {
 
     @Test
     public void shouldConcatIteratorsAndDedup() {
-        List<CloseableIterator<Integer>> iterators = new ArrayList<>();
+        List<Iterator<Integer>> iterators = new ArrayList<>();
         final int num = 5;
         for (int i = 0; i < num; i++) {
-            iterators.add(CloseableIterator.asCloseable(Collections.emptyIterator()));
-            iterators.add(CloseableIterator.asCloseable(Arrays.asList(i, i + 1).iterator()));
+            iterators.add(CloseableIteratorUtils.emptyIterator());
+            iterators.add(Arrays.asList(i, i + 1).iterator());
         }
 
         MultiDistinctUnorderedIterator<Integer> multiIterator = new MultiDistinctUnorderedIterator<>(0, Query.NO_LIMIT, iterators);
@@ -59,11 +58,11 @@ public class MultiDistinctUnorderedIteratorTest {
 
     @Test
     public void shouldSkipLowLimit() {
-        List<CloseableIterator<Integer>> iterators = new ArrayList<>();
+        List<Iterator<Integer>> iterators = new ArrayList<>();
         final int num = 5;
         for (int i = 0; i < num; i++) {
-            iterators.add(CloseableIterator.asCloseable(Collections.emptyIterator()));
-            iterators.add(CloseableIterator.asCloseable(Arrays.asList(i, i + 1).iterator()));
+            iterators.add(CloseableIteratorUtils.emptyIterator());
+            iterators.add(Arrays.asList(i, i + 1).iterator());
         }
 
         MultiDistinctUnorderedIterator<Integer> multiIterator = new MultiDistinctUnorderedIterator<>(2, Query.NO_LIMIT, iterators);
@@ -76,11 +75,11 @@ public class MultiDistinctUnorderedIteratorTest {
 
     @Test
     public void shouldStopAtHighLimit() {
-        List<CloseableIterator<Integer>> iterators = new ArrayList<>();
+        List<Iterator<Integer>> iterators = new ArrayList<>();
         final int num = 5;
         for (int i = 0; i < num; i++) {
-            iterators.add(CloseableIterator.asCloseable(Collections.emptyIterator()));
-            iterators.add(CloseableIterator.asCloseable(Arrays.asList(i, i + 1).iterator()));
+            iterators.add(CloseableIteratorUtils.emptyIterator());
+            iterators.add(Arrays.asList(i, i + 1).iterator());
         }
 
         MultiDistinctUnorderedIterator<Integer> multiIterator = new MultiDistinctUnorderedIterator<>(2, num, iterators);

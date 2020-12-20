@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class IteratorUtilsTest {
+public class CloseableIteratorUtilsTest {
     @Test
     public void testFilter() {
         MutableBoolean closed = new MutableBoolean(false);
@@ -46,7 +46,7 @@ public class IteratorUtilsTest {
                 closed.setTrue();
             }
         };
-        CloseableIterator iterator = IteratorUtils.filter(unfiltered, num -> num % 2 == 0);
+        CloseableIterator iterator = CloseableIteratorUtils.filter(unfiltered, num -> num % 2 == 0);
         for (int i = 0; i < 10; i += 2) {
             assertEquals(i, iterator.next());
         }

@@ -17,6 +17,7 @@ package org.janusgraph.graphdb.util;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,14 +32,14 @@ import org.janusgraph.graphdb.tinkerpop.optimize.HasStepFolder.OrderEntry;
 
 public class MultiDistinctOrderedIterator<E> implements CloseableIterator<E> {
 
-    private final Map<Integer, CloseableIterator<E>> iterators = new LinkedHashMap<>();
+    private final Map<Integer, Iterator<E>> iterators = new LinkedHashMap<>();
     private final Map<Integer, E> values = new LinkedHashMap<>();
     private final TreeMap<E, Integer> currentElements;
     private final Set<E> allElements = new HashSet<>();
     private final Integer limit;
     private long count = 0;
 
-    public MultiDistinctOrderedIterator(final Integer lowLimit, final Integer highLimit, final List<CloseableIterator<E>> iterators, final List<OrderEntry> orders) {
+    public MultiDistinctOrderedIterator(final Integer lowLimit, final Integer highLimit, final List<Iterator<E>> iterators, final List<OrderEntry> orders) {
         this.limit = highLimit;
         final List<Comparator<E>> comp = new ArrayList<>();
         orders.forEach(o -> comp.add(new ElementValueComparator(o.key, o.order)));
@@ -86,7 +87,7 @@ public class MultiDistinctOrderedIterator<E> implements CloseableIterator<E> {
 
     @Override
     public void close() {
-        iterators.values().forEach(iter -> iter.close());
+        iterators.values().forEach(CloseableIterator::closeIterator);
     }
 
 }

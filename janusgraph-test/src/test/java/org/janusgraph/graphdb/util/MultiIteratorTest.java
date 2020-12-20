@@ -32,9 +32,9 @@ public class MultiIteratorTest {
 
     @Test
     public void shouldConcatEmptyIterators() {
-        List<CloseableIterator<Integer>> iterators = new ArrayList<>();
+        List<Iterator<Integer>> iterators = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
-            iterators.add(CloseableIterator.asCloseable(Collections.emptyIterator()));
+            iterators.add(Collections.emptyIterator());
         }
         MultiIterator<Integer> multiIterator = new MultiIterator<>(iterators);
         assertFalse(multiIterator.hasNext());
@@ -43,8 +43,8 @@ public class MultiIteratorTest {
 
     @Test
     public void shouldConcatSingleIterator() {
-        List<CloseableIterator<String>> iterators = new LinkedList<>();
-        iterators.add(CloseableIterator.asCloseable(Arrays.asList("value1", "value2").iterator()));
+        List<Iterator<String>> iterators = new LinkedList<>();
+        iterators.add(Arrays.asList("value1", "value2").iterator());
         MultiIterator<String> multiIterator = new MultiIterator<>(iterators);
         assertEquals("value1", multiIterator.next());
         assertEquals("value2", multiIterator.next());
@@ -54,11 +54,11 @@ public class MultiIteratorTest {
 
     @Test
     public void shouldConcatIterators() {
-        List<CloseableIterator<Integer>> iterators = new ArrayList<>();
+        List<Iterator<Integer>> iterators = new ArrayList<>();
         final int num = 3;
         for (int i = 0; i < num; i++) {
-            iterators.add(CloseableIterator.asCloseable(Collections.emptyIterator()));
-            iterators.add(CloseableIterator.asCloseable(Arrays.asList(i).iterator()));
+            iterators.add(Collections.emptyIterator());
+            iterators.add(Arrays.asList(i).iterator());
         }
         MultiIterator<Integer> multiIterator = new MultiIterator<>(iterators);
         for (int i = 0; i < num; i++) {
@@ -70,7 +70,7 @@ public class MultiIteratorTest {
 
     @Test
     public void shouldCloseUnderlyingIteratorsAfterIteration() {
-        List<CloseableIterator<Integer>> iterators = new ArrayList<>();
+        List<Iterator<Integer>> iterators = new ArrayList<>();
         final int num = 3;
         List<Boolean> closed = initialise(iterators, num);
 
@@ -87,7 +87,7 @@ public class MultiIteratorTest {
 
     @Test
     public void shouldCloseUnderlyingIteratorsWhenCloseCalledAtBeginning() {
-        List<CloseableIterator<Integer>> iterators = new ArrayList<>();
+        List<Iterator<Integer>> iterators = new ArrayList<>();
         final int num = 3;
         List<Boolean> closed = initialise(iterators, num);
 
@@ -101,7 +101,7 @@ public class MultiIteratorTest {
 
     @Test
     public void shouldCloseUnderlyingIteratorsWhenCloseCalledInTheMiddle() {
-        List<CloseableIterator<Integer>> iterators = new ArrayList<>();
+        List<Iterator<Integer>> iterators = new ArrayList<>();
         final int num = 3;
         List<Boolean> closed = initialise(iterators, num);
 
@@ -115,7 +115,7 @@ public class MultiIteratorTest {
         }
     }
 
-    private List<Boolean> initialise(List<CloseableIterator<Integer>> iterators, int num) {
+    private List<Boolean> initialise(List<Iterator<Integer>> iterators, int num) {
         List<Boolean> closed = Arrays.asList(false, false, false);
         for (int i = 0; i < num; i++) {
             Iterator<Integer> iter = Arrays.asList(i).iterator();

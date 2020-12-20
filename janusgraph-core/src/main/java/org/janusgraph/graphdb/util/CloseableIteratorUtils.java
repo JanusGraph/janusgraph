@@ -17,20 +17,29 @@ package org.janusgraph.graphdb.util;
 import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-public class IteratorUtils {
-    public static <T> CloseableIterator<T> concat(final CloseableIterator<T>... iterators) {
+public class CloseableIteratorUtils {
+
+    public static final CloseableIterator<Object> EMPTY_CLOSABLE_ITERATOR = CloseableIterator.asCloseable(Collections.emptyIterator());
+
+    public static <T> CloseableIterator<T> emptyIterator() {
+        return (CloseableIterator<T>) EMPTY_CLOSABLE_ITERATOR;
+    }
+
+    public static <T> CloseableIterator<T> concat(final Iterator<T>... iterators) {
         return concat(Arrays.asList(iterators));
     }
 
-    public static <T> CloseableIterator<T> concat(final List<CloseableIterator<T>> iterators) {
-        return new MultiIterator<T>(iterators);
+    public static <T> CloseableIterator<T> concat(final List<Iterator<T>> iterators) {
+        return new MultiIterator<>(iterators);
     }
 
-    public static <T> CloseableIterator<T> filter(final CloseableIterator<T> unfiltered,
+    public static <T> CloseableIterator<T> filter(final Iterator<T> unfiltered,
                                                   final Predicate<? super T> retainIfTrue) {
         Objects.requireNonNull(unfiltered);
         Objects.requireNonNull(retainIfTrue);
@@ -49,7 +58,7 @@ public class IteratorUtils {
 
             @Override
             public void close() {
-                unfiltered.close();
+                CloseableIterator.closeIterator(unfiltered);
             }
         };
     }

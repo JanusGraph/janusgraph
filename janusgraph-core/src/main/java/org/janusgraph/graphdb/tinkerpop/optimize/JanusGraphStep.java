@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphQuery;
@@ -92,7 +91,7 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
             }
 
             final GraphCentricQueryBuilder builder = (GraphCentricQueryBuilder) tx.query();
-            final List<CloseableIterator<E>> responses = new ArrayList<>();
+            final List<Iterator<E>> responses = new ArrayList<>();
             queries.entries().forEach(q ->  executeGraphCentricQuery(builder, responses, q));
 
             if (orders.isEmpty()) {
@@ -155,10 +154,10 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
         return graphCentricQuery;
     }
 
-    private void executeGraphCentricQuery(final GraphCentricQueryBuilder builder, final List<CloseableIterator<E>> responses,
+    private void executeGraphCentricQuery(final GraphCentricQueryBuilder builder, final List<Iterator<E>> responses,
             final Entry<Integer, GraphCentricQuery> query) {
         final Class<? extends JanusGraphElement> graphClass = Vertex.class.isAssignableFrom(this.returnClass) ? JanusGraphVertex.class: JanusGraphEdge.class;
-        final CloseableIterator<E> response = CloseableIterator.asCloseable((Iterator<E>) builder.iterables(query.getValue(), graphClass).iterator());
+        final Iterator<E> response = (Iterator<E>) builder.iterables(query.getValue(), graphClass).iterator();
         long i = 0;
         while (i < query.getKey() && response.hasNext()) {
             response.next();

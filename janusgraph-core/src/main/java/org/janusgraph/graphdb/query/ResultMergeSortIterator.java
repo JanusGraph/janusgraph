@@ -26,9 +26,8 @@ import java.util.NoSuchElementException;
  */
 public class ResultMergeSortIterator<R> implements CloseableIterator<R> {
 
-
-    private final CloseableIterator<R> first;
-    private final CloseableIterator<R> second;
+    private final Iterator<R> first;
+    private final Iterator<R> second;
     private final Comparator<R> comp;
     private final boolean filterDuplicates;
 
@@ -36,7 +35,7 @@ public class ResultMergeSortIterator<R> implements CloseableIterator<R> {
     private R nextSecond;
     private R next;
 
-    public ResultMergeSortIterator(CloseableIterator<R> first, CloseableIterator<R> second, Comparator<R> comparator, boolean filterDuplicates) {
+    public ResultMergeSortIterator(Iterator<R> first, Iterator<R> second, Comparator<R> comparator, boolean filterDuplicates) {
         Preconditions.checkNotNull(first);
         Preconditions.checkNotNull(second);
         Preconditions.checkNotNull(comparator);
@@ -105,13 +104,12 @@ public class ResultMergeSortIterator<R> implements CloseableIterator<R> {
 
     public static<R> Iterable<R> mergeSort(final Iterable<R> first, final Iterable<R> second,
                                            final Comparator<R> comparator, final boolean filterDuplicates) {
-        return () -> new ResultMergeSortIterator<>(CloseableIterator.asCloseable(first.iterator()),
-            CloseableIterator.asCloseable(second.iterator()), comparator, filterDuplicates);
+        return () -> new ResultMergeSortIterator<>(first.iterator(), second.iterator(), comparator, filterDuplicates);
     }
 
     @Override
     public void close() {
-        first.close();
-        second.close();
+        CloseableIterator.closeIterator(first);
+        CloseableIterator.closeIterator(second);
     }
 }
