@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -92,6 +94,29 @@ public final class BufferPageUtils {
         }
     }
 
+    static int computeValPosSize(int valuePosition)
+    {
+        //this assumes that the key size will almost never be > 127 bytes,
+        // thus most of the time saving 3 out of 4 bytes to store the value position within the buffer
+        return valuePosition > 127 ? Integer.BYTES : 1;
+    }
+
+    static int writeValPos(Entry e, byte[] rawData, int offset)
+    {
+        if (e.getValuePosition() <= 127) //"column" name length fits into one byte - should be 99.99% of cases
+        {
+            final byte entryValPos = (byte) e.getValuePosition();
+            rawData[offset] = entryValPos;
+            return 1;
+        }
+        else //doesn't fit in 1 byte - use full integer
+        {
+            // if we write -valuePosition in big-endian order, 1st byte should have a negative value, indicating full int
+            ByteBuffer.wrap(rawData, offset, Integer.BYTES).order(ByteOrder.BIG_ENDIAN).asIntBuffer().put(-e.getValuePosition());
+            return Integer.BYTES;
+        }
+    }
+
     public static BufferPage buildFromEntryArray(final Entry[] array, final int start, final int end) {
         Preconditions.checkArgument(start >= 0 && end <= array.length);
         final int size = end - start;
@@ -101,22 +126,19 @@ public final class BufferPageUtils {
         int rawSize = 0;
         for (int i = 0; i < size; i++) {
             offsetIndex[i] = rawSize;
-            rawSize += array[start + i].length() + 1; //extra 1 byte for valuePosition
+            rawSize += array[start + i].length() + computeValPosSize(array[start+i].getValuePosition()); //extra bytes to store valuePosition
         }
         byte[] rawData = new byte[rawSize];
 
         for (int i = 0; i < size; i++) {
-            //this assumes that the key size will never be > 127 bytes, thus saving 3 out of 4 bytes to store the value position within the buffer
-            Preconditions.checkArgument(array[start + i].getValuePosition() <= 127);
-            final byte entryValPos = (byte) array[start + i].getValuePosition();
-            rawData[offsetIndex[i]] = entryValPos;
+            final int valPosSize = writeValPos(array[start + i], rawData, offsetIndex[i]);
 
             if (array[start + i] instanceof StaticArrayBuffer) {
                 final StaticArrayBuffer arrayBuffer = (StaticArrayBuffer) array[start + i];
-                arrayBuffer.copyTo(rawData, offsetIndex[i] + 1);
+                arrayBuffer.copyTo(rawData, offsetIndex[i] + valPosSize);
             } else {
                 final byte[] entryData = array[start + i].getBytes(0, array[start + i].length());
-                System.arraycopy(entryData, 0, rawData, offsetIndex[i] + 1, entryData.length);
+                System.arraycopy(entryData, 0, rawData, offsetIndex[i] + valPosSize, entryData.length);
             }
         }
         return new BufferPage(offsetIndex, rawData);

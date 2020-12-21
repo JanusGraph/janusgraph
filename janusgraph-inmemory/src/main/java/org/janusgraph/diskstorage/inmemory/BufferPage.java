@@ -82,7 +82,9 @@ class BufferPage {
             // apparently we don't have to worry about column name being in anything but array-backed buffer
             //So we can compare relevant array parts directly, avoiding the churn of new StaticArrayBuffers created by getColumn()
             Preconditions.checkArgument(column instanceof StaticArrayBuffer);
-            compare = -((StaticArrayBuffer) column).compareTo(rawData, offsetIndex[mid] + 1, offsetIndex[mid] + 1 + rawData[offsetIndex[mid]]);
+            final int valPos = readValPos(rawData, offsetIndex[mid], null);
+            final int valPosSize = BufferPageUtils.computeValPosSize(valPos);
+            compare = -((StaticArrayBuffer) column).compareTo(rawData, offsetIndex[mid] + valPosSize, offsetIndex[mid] + valPosSize + valPos);
 
             if (compare < 0) {
                 low = mid + 1;
@@ -111,24 +113,58 @@ class BufferPage {
         }
     }
 
+    /**
+     * This figures out how the "valuePosition" was stored (i.e. 1 byte or 4), reads it correctly,
+     * and leaves the byte buffer (if given) at the beginning of the key value
+     */
+    static int readValPos(byte[] rawData, int entryOffset, ByteBuffer entryBuffer) {
+        final byte firstByte = rawData[entryOffset];
+        if (firstByte > 0) //this entry has a short "column" key whose length fit in 1 byte
+        {
+            if (entryBuffer != null)
+            {
+                entryBuffer.position(entryOffset + 1);
+            }
+            return firstByte;
+        }
+        else // negative value in first byte indicates that key length doesn't fit in 1 byte - read as whole int and negate to get valuePosition
+        {
+            final ByteBuffer buf = (entryBuffer == null) ? ByteBuffer.wrap(rawData, entryOffset, rawData.length - entryOffset) : entryBuffer;
+            int valPos = - buf.getInt();
+            return valPos;
+        }
+    }
+
+    /**
+     * Entry is packed into byte array in the following way
+     * 1. "valPos" - offset at which the value data starts (same as size of "column")
+     * 2. "column" - N bytes, where N=valPos
+     * 3. "value" - everything from the end of column to the end of the array
+     * @param index
+     * @return
+     */
     public Entry get(final int index) {
         final int entryBufLen = getEntryLength(index);
 
         final ByteBuffer entryBuffer = ByteBuffer.wrap(rawData, offsetIndex[index], entryBufLen);
 
-        final byte valPos = entryBuffer.get();
+        //first read valPos, leave the cursor in the byte buffer at the first byte of "column"
+        final int valPos = readValPos(rawData, offsetIndex[index], entryBuffer);
 
+        //now, everything from this position to position+valPos is "column"
         final byte[] col = new byte[valPos];
         entryBuffer.get(col);
 
-        final byte[] val = new byte[entryBufLen - valPos - 1];
+        //finally, everything else till the end of the buffer is "value"
+        final byte[] val = new byte[entryBufLen - entryBuffer.position() + offsetIndex[index]];
         entryBuffer.get(val);
 
         return StaticArrayEntry.of(StaticArrayBuffer.of(col), StaticArrayBuffer.of(val));
     }
 
     public Entry getNoCopy(final int index) {
-        return new StaticArrayEntry(rawData, offsetIndex[index] + 1, getEntryEndOffset(index), rawData[offsetIndex[index]]);
+        final int valPos = readValPos(rawData, offsetIndex[index], null);
+        return new StaticArrayEntry(rawData, offsetIndex[index] + BufferPageUtils.computeValPosSize(valPos), getEntryEndOffset(index), valPos);
     }
 
     public int numEntries() {
