@@ -33,7 +33,6 @@ on:
 env:
   ES_JAVA_OPTS: "-Xms256m -Xmx512m"
   BUILD_MAVEN_OPTS: "-DskipTests=true --batch-mode --also-make"
-  VERIFY_MAVEN_OPTS: "-Pcoverage"
 
 jobs:
   build-all:
@@ -75,7 +74,7 @@ jobs:
 
   tp-tests:
     runs-on: ubuntu-20.04
-    if: "contains(github.event.head_commit.message, '[tp-tests]')"
+    if: "github.event_name == 'push' && contains(github.event.head_commit.message, '[tp-tests]') || github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[tp-tests]')"
     needs: build-all
     strategy:
       fail-fast: false
@@ -106,4 +105,4 @@ jobs:
         with:
           java-version: 1.8
       - run: mvn clean install --projects janusgraph-${{ matrix.module }} ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
-      - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.args }}
+      - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ matrix.args }}
