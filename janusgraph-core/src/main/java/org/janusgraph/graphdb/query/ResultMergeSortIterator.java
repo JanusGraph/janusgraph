@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.query;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 
 import java.util.Comparator;
 import java.util.Iterator;
@@ -23,8 +24,7 @@ import java.util.NoSuchElementException;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class ResultMergeSortIterator<R> implements Iterator<R> {
-
+public class ResultMergeSortIterator<R> implements CloseableIterator<R> {
 
     private final Iterator<R> first;
     private final Iterator<R> second;
@@ -104,9 +104,12 @@ public class ResultMergeSortIterator<R> implements Iterator<R> {
 
     public static<R> Iterable<R> mergeSort(final Iterable<R> first, final Iterable<R> second,
                                            final Comparator<R> comparator, final boolean filterDuplicates) {
-        return () -> new ResultMergeSortIterator<>(first.iterator(),second.iterator(),comparator,filterDuplicates);
+        return () -> new ResultMergeSortIterator<>(first.iterator(), second.iterator(), comparator, filterDuplicates);
     }
 
-
-
+    @Override
+    public void close() {
+        CloseableIterator.closeIterator(first);
+        CloseableIterator.closeIterator(second);
+    }
 }

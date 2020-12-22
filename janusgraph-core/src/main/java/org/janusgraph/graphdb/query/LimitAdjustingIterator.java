@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.query;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -32,7 +33,7 @@ import java.util.NoSuchElementException;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class LimitAdjustingIterator<R> implements Iterator<R> {
+public abstract class LimitAdjustingIterator<R> implements CloseableIterator<R> {
 
     private final int maxLimit;
     private int currentLimit;
@@ -97,5 +98,10 @@ public abstract class LimitAdjustingIterator<R> implements Iterator<R> {
     @Override
     public void remove() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void close(){
+        CloseableIterator.closeIterator(iterator);
     }
 }

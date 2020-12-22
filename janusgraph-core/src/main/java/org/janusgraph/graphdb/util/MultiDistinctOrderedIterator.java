@@ -22,20 +22,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.TreeMap;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
-import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 import org.apache.tinkerpop.gremlin.util.function.MultiComparator;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder.OrderEntry;
 
-import com.google.common.collect.Iterators;
 
-public class MultiDistinctOrderedIterator<E extends Element> implements Iterator<E> {
+public class MultiDistinctOrderedIterator<E> implements CloseableIterator<E> {
 
     private final Map<Integer, Iterator<E>> iterators = new LinkedHashMap<>();
     private final Map<Integer, E> values = new LinkedHashMap<>();
@@ -46,17 +41,11 @@ public class MultiDistinctOrderedIterator<E extends Element> implements Iterator
 
     public MultiDistinctOrderedIterator(final Integer lowLimit, final Integer highLimit, final List<Iterator<E>> iterators, final List<OrderEntry> orders) {
         this.limit = highLimit;
-        Comparator<E> comparator = null;
-        if (orders.isEmpty()) {
-            final Stream<E> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize(Iterators.concat(iterators.iterator()), Spliterator.ORDERED), false);
-            this.iterators.put(0, stream.iterator());
-        } else {
-            final List<Comparator<E>> comp = new ArrayList<>();
-            orders.forEach(o -> comp.add(new ElementValueComparator(o.key, o.order)));
-            comparator = new MultiComparator<>(comp);
-            for (int i = 0; i < iterators.size(); i++) {
-                this.iterators.put(i, iterators.get(i));
-            }
+        final List<Comparator<E>> comp = new ArrayList<>();
+        orders.forEach(o -> comp.add(new ElementValueComparator(o.key, o.order)));
+        Comparator<E> comparator = new MultiComparator<>(comp);
+        for (int i = 0; i < iterators.size(); i++) {
+            this.iterators.put(i, iterators.get(i));
         }
         currentElements = new TreeMap<>(comparator);
         long i = 0;
@@ -94,6 +83,11 @@ public class MultiDistinctOrderedIterator<E extends Element> implements Iterator
     public E next() {
         count++;
         return values.remove(currentElements.remove(currentElements.firstKey()));
+    }
+
+    @Override
+    public void close() {
+        iterators.values().forEach(CloseableIterator::closeIterator);
     }
 
 }

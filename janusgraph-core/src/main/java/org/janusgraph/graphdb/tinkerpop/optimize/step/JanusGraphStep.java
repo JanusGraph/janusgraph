@@ -46,6 +46,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.janusgraph.graphdb.util.MultiDistinctUnorderedIterator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -97,7 +98,11 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
             final List<Iterator<E>> responses = new ArrayList<>();
             queries.entries().forEach(q ->  executeGraphCentricQuery(builder, responses, q));
 
-            return new MultiDistinctOrderedIterator<E>(lowLimit, highLimit, responses, orders);
+            if (orders.isEmpty()) {
+                return new MultiDistinctUnorderedIterator<E>(lowLimit, highLimit, responses);
+            } else {
+                return new MultiDistinctOrderedIterator<E>(lowLimit, highLimit, responses, orders);
+            }
         });
     }
 
