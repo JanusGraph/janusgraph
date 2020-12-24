@@ -127,7 +127,7 @@ nav:
     - Changelog: changelog.md
 
 extra:
-    latest_version: 0.5.2
+    latest_version: 0.5.3
     snapshot_version: 0.5.3-SNAPSHOT
     tinkerpop_version: 3.4.6
     hadoop2_version: 2.7.7
