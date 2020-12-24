@@ -16,44 +16,46 @@ package org.janusgraph.graphdb.util;
 
 import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 
+import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
 
 public class MultiIterator<E> extends CloseableAbstractIterator<E> {
 
-    private Iterator<Iterator<E>> listIterator;
+    private final Iterator<Iterator<E>> collectionIterator;
     private Iterator<E> currentIterator;
 
-    public MultiIterator(final List<Iterator<E>> iterators) {
-        Objects.requireNonNull(iterators);
-        listIterator = iterators.iterator();
+    /**
+     * @param iterators iterators to concatenate. Must be not null. During iteration, iterators are closed lazily when
+     *                  exhausted (if an iterator extends {@link AutoCloseable}).
+     */
+    public MultiIterator(final Collection<Iterator<E>> iterators) {
+        collectionIterator = iterators.iterator();
+        if(collectionIterator.hasNext()){
+            currentIterator = collectionIterator.next();
+        } else {
+            endOfData();
+        }
     }
 
     @Override
     protected E computeNext() {
-        while (currentIterator != null || listIterator.hasNext()) {
-            if (currentIterator == null) {
-                currentIterator = listIterator.next();
-            } else if (currentIterator.hasNext()) {
-                return currentIterator.next();
-            } else {
-                CloseableIterator.closeIterator(currentIterator);
-                currentIterator = null;
-            }
+        while (!currentIterator.hasNext() && collectionIterator.hasNext()){
+            CloseableIterator.closeIterator(currentIterator);
+            currentIterator = collectionIterator.next();
         }
+        if(currentIterator.hasNext()){
+            return currentIterator.next();
+        }
+        CloseableIterator.closeIterator(currentIterator);
+        currentIterator = null;
         return endOfData();
     }
 
     @Override
     public void close() {
-        while (currentIterator != null || listIterator.hasNext()) {
-            if (currentIterator == null) {
-                currentIterator = listIterator.next();
-            } else {
-                CloseableIterator.closeIterator(currentIterator);
-                currentIterator = null;
-            }
+        CloseableIterator.closeIterator(currentIterator);
+        while (collectionIterator.hasNext()){
+            CloseableIterator.closeIterator(collectionIterator.next());
         }
     }
 }

@@ -23,9 +23,12 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MultiIteratorTest {
@@ -113,6 +116,26 @@ public class MultiIteratorTest {
         for (int i = 0; i < num; i++) {
             assertTrue(closed.get(i), "Iterator #" + i + " is not closed");
         }
+    }
+
+    /**
+     * To verify that `computeNext` is never called and NPE is not thrown.
+     */
+    @Test
+    public void shouldNotHasNextWhenIteratorIsEmpty() {
+        MultiIterator<Integer> multiIterator = new MultiIterator<>(Collections.emptyList());
+        assertFalse(multiIterator.hasNext());
+        assertDoesNotThrow(multiIterator::close);
+    }
+
+    /**
+     * To verify that `computeNext` is never called and NPE is not thrown.
+     */
+    @Test
+    public void shouldThrowNoSuchElementExceptionWhenNextCalledWithEmptyIterators() {
+        MultiIterator<Integer> multiIterator = new MultiIterator<>(Collections.emptyList());
+        assertThrows(NoSuchElementException.class, multiIterator::next);
+        assertDoesNotThrow(multiIterator::close);
     }
 
     private List<Boolean> initialise(List<Iterator<Integer>> iterators, int num) {
