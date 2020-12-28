@@ -1,4 +1,4 @@
-// Copyright 2018 JanusGraph Authors
+// Copyright 2020 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,26 +14,17 @@
 
 package org.janusgraph.diskstorage.solr;
 
-import org.janusgraph.diskstorage.PermanentBackendException;
-import org.junit.jupiter.api.Test;
+import org.janusgraph.diskstorage.configuration.Configuration;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @Testcontainers
-public class SolrIndexKerberosMissingConfigTest {
+public class SolrIndexWithoutKerberosTest extends SolrIndexTest {
 
     @Container
     protected static JanusGraphSolrContainer solrContainer = new JanusGraphSolrContainer();
 
-	/**
-	 * This test needs to stand alone because the java.security.auth.login.config
-	 * property is JVM wide and is required for the KDC to run.
-     */
-	@Test
-	public void testIndexInitializationFailsWhenMissingJavaSecurityAuthLoginConfig() {
-        System.clearProperty("java.security.auth.login.config");
-        assertThrows(PermanentBackendException.class, () -> new SolrIndex(solrContainer.getLocalSolrTestConfigOverwriteKerberos()));
+    protected Configuration getSolrTestConfig() {
+        return solrContainer.getLocalSolrTestConfig();
     }
 }

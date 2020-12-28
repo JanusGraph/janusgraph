@@ -79,25 +79,28 @@ mvn test -Dtest=BerkeleyJEGraphPerformanceMemoryTest
 mvn test -Dtest=BerkeleyJEGraphPerformanceMemoryTest -Dtest.skip.mem=false
 ```
 
-## Running Tests with an External Solr
+## Running Solr Tests
 
-Solr tests can be run against an external Solr instance. For convenience the `docker` Maven profile is provided to manage a Solr Docker container through the Maven Failsafe Plugin. The default test version will be the same as the Solr client version.
+**Note** Running Solr tests require Docker.
+
+Solr tests run against an external Solr instance. The default test version will be the same as the Solr client version.
 
 ```bash
-mvn clean install -pl janusgraph-solr -Pdocker
+mvn clean install -pl janusgraph-solr
 ```
 
 Additional Maven profiles are defined for testing against default versions of other supported major Solr releases.
-(Currently, only Solr 7 is supported.)
+(Currently, only Solr 7 and Solr 8 are supported.)
 
 ```bash
-mvn clean install -pl janusgraph-solr -Pdocker,solr7
+mvn clean install -pl janusgraph-solr -Psolr7
+mvn clean install -pl janusgraph-solr -Psolr8
 ```
 
-Finally the `solr.test.version` property can be used to test against arbitrary Solr versions.
+Finally the `solr.docker.version` property can be used to test against arbitrary Solr versions.
 
 ```bash
-mvn clean install -pl janusgraph-solr -Pdocker -Dsolr.test.version=7.0.0
+mvn clean install -pl janusgraph-solr -Dsolr.docker.version=7.0.0
 ```
 
 ## Running Elasticsearch Tests

@@ -17,29 +17,22 @@ package org.janusgraph.diskstorage.solr;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 
 @Testcontainers
 public class CQLSolrTest extends SolrJanusGraphIndexTest {
 
     @Container
-    private static JanusGraphCassandraContainer cql = new JanusGraphCassandraContainer();
+    protected static JanusGraphSolrContainer solrContainer = new JanusGraphSolrContainer();
+
+    @Container
+    private static JanusGraphCassandraContainer cassandraContainer = new JanusGraphCassandraContainer();
 
     @Override
     public WriteConfiguration getConfiguration() {
-        ModifiableConfiguration config = cql.getConfiguration(CQLSolrTest.class.getName());
-
-        //Add index
-        config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getZookeeperUrls(), INDEX);
-        config.set(SolrIndex.WAIT_SEARCHER, true, INDEX);
-        config.set(INDEX_BACKEND,"solr",INDEX);
-        config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, INDEX);
-        //TODO: set SOLR specific config options
-        return config.getConfiguration();
+        ModifiableConfiguration config = cassandraContainer.getConfiguration(CQLSolrTest.class.getName());
+        return solrContainer.getLocalSolrTestConfig(INDEX, config).getConfiguration();
     }
 
     @Override

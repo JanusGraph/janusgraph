@@ -8,12 +8,12 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 [![Downloads][downloads-shield]][downloads-link]
 [![Maven][maven-shield]][maven-link]
 [![Javadoc][javadoc-shield]][javadoc-link]
-[![Build Status][travis-shield]][travis-link]
+[![GitHub Workflow Status][actions-shield]][actions-link]
 [![Codecov][codecov-shield]][codecov-link]
 [![Coverity Scan][coverity-shield]][coverity-link]
 
-[travis-shield]: https://travis-ci.org/JanusGraph/janusgraph.svg?branch=master
-[travis-link]: https://travis-ci.org/JanusGraph/janusgraph
+[actions-shield]: https://img.shields.io/github/workflow/status/JanusGraph/janusgraph/CI%20Core
+[actions-link]: https://github.com/JanusGraph/janusgraph/actions
 [maven-shield]: https://img.shields.io/maven-central/v/org.janusgraph/janusgraph-core.svg
 [maven-link]: https://search.maven.org/#search%7Cga%7C1%7Corg.janusgraph
 [javadoc-shield]: https://javadoc.io/badge/org.janusgraph/janusgraph-core.svg?color=blue
