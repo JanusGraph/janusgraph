@@ -11,10 +11,12 @@
     <url>https://janusgraph.org</url>
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
-        <solr7.test.version>7.7.2</solr7.test.version>
-        <solr8.test.version>8.5.2</solr8.test.version>
-        <solr.test.version>${solr8.test.version}</solr.test.version>
+        <solr7.docker.version>7.7.2</solr7.docker.version>
+        <solr8.docker.version>8.5.2</solr8.docker.version>
+        <solr.docker.version>${solr8.docker.version}</solr.docker.version>
+        <solr.docker.image>solr</solr.docker.image>
         <skip.solr.test>${skipTests}</skip.solr.test>
+        <test.solr.excludes>KERBEROS_TESTS</test.solr.excludes>
     </properties>
     <dependencies>
         <dependency>
@@ -187,6 +189,11 @@
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
+            <artifactId>solr</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
@@ -207,6 +214,33 @@
         </testResources>
         <plugins>
             <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-jts</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.locationtech.spatial4j</groupId>
+                                    <artifactId>spatial4j</artifactId>
+                                    <destFileName>spatial4j.jar</destFileName>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.locationtech.jts</groupId>
+                                    <artifactId>jts-core</artifactId>
+                                    <destFileName>jts-core.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                            <outputDirectory>${project.build.directory}/dependency</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <executions>
                     <execution>
@@ -214,6 +248,11 @@
                         <configuration>
                             <argLine>${default.test.jvm.opts}</argLine>
                             <skipTests>${skip.solr.test}</skipTests>
+                            <excludedGroups>${test.solr.excludes}</excludedGroups>
+                            <systemPropertyVariables>
+                                <solr.docker.image>${solr.docker.image}</solr.docker.image>
+                                <solr.docker.version>${solr.docker.version}</solr.docker.version>
+                            </systemPropertyVariables>
                         </configuration>
                     </execution>
                 </executions>
@@ -224,155 +263,14 @@
         <profile>
             <id>solr7</id>
             <properties>
-                <solr.test.version>${solr7.test.version}</solr.test.version>
+                <solr.docker.version>${solr7.docker.version}</solr.docker.version>
             </properties>
         </profile>
         <profile>
             <id>solr8</id>
             <properties>
-                <solr.test.version>${solr8.test.version}</solr.test.version>
+                <solr.docker.version>${solr8.docker.version}</solr.docker.version>
             </properties>
-        </profile>
-        <profile>
-            <!-- Run tests with Solr Docker container -->
-            <id>docker</id>
-            <properties>
-                <skip.solr.test>true</skip.solr.test>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-dependency-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>copy-jts</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>copy</goal>
-                                </goals>
-                                <configuration>
-                                    <artifactItems>
-                                        <artifactItem>
-                                            <groupId>org.locationtech.spatial4j</groupId>
-                                            <artifactId>spatial4j</artifactId>
-                                            <destFileName>spatial4j.jar</destFileName>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.locationtech.jts</groupId>
-                                            <artifactId>jts-core</artifactId>
-                                            <destFileName>jts-core.jar</destFileName>
-                                        </artifactItem>
-                                    </artifactItems>
-                                    <outputDirectory>${project.build.directory}/dependency</outputDirectory>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <configuration>
-                            <skipITs>false</skipITs>
-                            <argLine>${default.test.jvm.opts}</argLine>
-                            <includes>
-                                <include>**/org/janusgraph/diskstorage/solr/*.java</include>
-                            </includes>
-                            <excludes>
-                                <exclude>**/org/janusgraph/diskstorage/solr/SolrIndexKerberosKeytabTest.java</exclude>
-                            </excludes>
-                            <systemProperties>
-                                <property>
-                                    <name>index.search.solr.zookeeper-url</name>
-                                    <value>172.17.0.1:9983</value>
-                                </property>
-                                <property>
-                                    <name>log4j.configuration</name>
-                                    <value>file:${project.build.directory}/test-classes/log4j.properties</value>
-                                </property>
-                            </systemProperties>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                        <version>0.33.0</version>
-                        <configuration>
-                            <images>
-                                <image>
-                                    <alias>solr</alias>
-                                    <name>solr:${solr.test.version}</name>
-                                    <run>
-                                        <volumes>
-                                            <bind>
-                                                <volume>${project.build.directory}/dependency/spatial4j.jar:/opt/solr/server/solr-webapp/webapp/WEB-INF/lib/spatial4j.jar</volume>
-                                                <volume>${project.build.directory}/dependency/jts-core.jar:/opt/solr/server/solr-webapp/webapp/WEB-INF/lib/jts-core.jar</volume>
-                                            </bind>
-                                        </volumes>
-                                        <ports>
-                                            <port>8983:8983</port>
-                                            <port>9983:9983</port>
-                                        </ports>
-                                        <cmd>/opt/solr/bin/solr start -f -DzkRun -h 172.17.0.1</cmd>
-                                         <wait>
-                                            <http>
-                                                <url>http://localhost:8983</url>
-                                                <method>GET</method>
-                                                <status>200..399</status>
-                                            </http>
-                                            <time>60000</time>
-                                        </wait>
-                                    </run>
-                                </image>
-                                <image>
-                                    <alias>solr-setup</alias>
-                                    <name>solr:${solr.test.version}</name>
-                                    <run>
-                                        <volumes>
-                                            <bind>
-                                                <volume>${basedir}/src/test/resources/solr/core-template:/opt/solr/mydata</volume>
-                                                <volume>${basedir}/src/test/resources/collections.txt:/tmp/collections.txt</volume>
-                                                <volume>${basedir}/src/test/resources/import-collections.sh:/usr/bin/import-collections</volume>
-                                            </bind>
-                                        </volumes>
-                                        <cmd>bash -c 'import-collections'</cmd>
-                                        <links>
-                                            <link>solr</link>
-                                        </links>
-                                        <wait>
-                                            <log>All collections imported</log>
-                                            <time>600000</time>
-                                        </wait>
-                                    </run>
-                                </image>
-                            </images>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>docker-start</id>
-                                <phase>pre-integration-test</phase>
-                                <goals>
-                                    <goal>start</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>docker-stop</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                    <goal>remove</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
     </profiles>
 </project>

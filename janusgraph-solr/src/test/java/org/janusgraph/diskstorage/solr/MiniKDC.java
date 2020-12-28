@@ -75,8 +75,8 @@ public class MiniKDC {
         setSystemProperties();
     }
 
-    public void setUpMiniKdc() throws Exception {
-        setUpKdcServer();
+    public void start(String listenAddress) throws Exception {
+        setUpKdcServer(listenAddress);
         setUpPrincipals();
     }
 
@@ -108,10 +108,10 @@ public class MiniKDC {
         unsetSystemProperties();
     }
 
-    private void setUpKdcServer() throws Exception {
+    private void setUpKdcServer(String listenAddress) throws Exception {
         kdcServer = new SimpleKdcServer();
         kdcServer.setKdcRealm(REALM);
-        kdcServer.setKdcHost(LOCALHOST);
+        kdcServer.setKdcHost(listenAddress);
         kdcServer.setWorkDir(testDir);
         kdcServer.setKdcTcpPort(NetworkUtil.getServerPort());
 

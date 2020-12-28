@@ -41,9 +41,6 @@ public class SolrRunner {
     protected static final int NUM_SERVERS = 1;
     protected static final String[] COLLECTIONS = readCollections();
 
-    protected static final String[] KEY_FIELDS = new String[0];
-
-
     private static final String SECURITY_JSON = "{\"authentication\": {\"class\": \"org.apache.solr.security.KerberosPlugin\"}}";
 
     private static final String TMP_DIRECTORY = System.getProperty("java.io.tmpdir");

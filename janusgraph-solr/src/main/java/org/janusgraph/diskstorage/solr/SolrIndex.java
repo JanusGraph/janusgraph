@@ -24,21 +24,8 @@ import java.lang.reflect.Constructor;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.TimeZone;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -48,13 +35,10 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
-import org.apache.http.HttpException;
-import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.client.HttpClient;
 import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.impl.auth.KerberosScheme;
-import org.apache.http.protocol.HttpContext;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -276,32 +260,28 @@ public class SolrIndex implements IndexProvider {
                 // Process possible zookeeper chroot. e.g. localhost:2181/solr
                 // chroot has to be the same assuming one Zookeeper ensemble.
                 // Parse from the last string. If found, take it as the chroot.
-                String chroot = null;
+                Optional<String> chroot = Optional.empty();
                 for (int i = zookeeperUrl.length - 1; i >= 0; i--) {
                     int chrootIndex = zookeeperUrl[i].indexOf("/");
                     if (chrootIndex != -1) {
                         String hostAndPort = zookeeperUrl[i].substring(0, chrootIndex);
-                        if (chroot == null) {
-                            chroot = zookeeperUrl[i].substring(chrootIndex);
+                        if (!chroot.isPresent()) {
+                            chroot = Optional.of(zookeeperUrl[i].substring(chrootIndex));
                         }
                         zookeeperUrl[i] = hostAndPort;
                     }
                 }
-                final CloudSolrClient.Builder builder = new CloudSolrClient.Builder()
+                final CloudSolrClient.Builder builder = new CloudSolrClient
+                    .Builder(Arrays.asList(zookeeperUrl), chroot)
                     .withLBHttpSolrClientBuilder(
                         new LBHttpSolrClient.Builder()
                             .withHttpSolrClientBuilder(new HttpSolrClient.Builder().withInvariantParams(clientParams))
                             .withBaseSolrUrls(config.get(HTTP_URLS))
                          )
-                    .withZkHost(Arrays.asList(zookeeperUrl))
                     .sendUpdatesOnlyToShardLeaders();
-                if (chroot != null) {
-                    builder.withZkChroot(chroot);
-                }
                 final CloudSolrClient cloudServer = builder.build();
                 cloudServer.connect();
                 solrClient = cloudServer;
-
                 break;
             case HTTP:
                 clientParams.add(HttpClientUtil.PROP_ALLOW_COMPRESSION, config.get(HTTP_ALLOW_COMPRESSION).toString());

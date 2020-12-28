@@ -16,8 +16,6 @@ package org.janusgraph.diskstorage.solr;
 
 import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -25,17 +23,6 @@ import org.junit.jupiter.api.Test;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public abstract class SolrJanusGraphIndexTest extends JanusGraphIndexTest {
-
-    @BeforeAll
-    public static void setUpMiniCluster() throws Exception {
-        SolrRunner.start();
-    }
-
-    @AfterAll
-    public static void tearDownMiniCluster() throws Exception {
-        SolrRunner.stop();
-    }
-
 
     protected SolrJanusGraphIndexTest() {
         super(true, true, true);

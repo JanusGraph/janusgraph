@@ -28,14 +28,10 @@ import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexProviderTest;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
 import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -44,21 +40,11 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * @author Jared Holmberg (jholmberg@bericotechnologies.com)
  */
-public class SolrIndexTest extends IndexProviderTest {
-
-    @BeforeAll
-    public static void setUpMiniCluster() throws Exception {
-        SolrRunner.start();
-    }
-
-    @AfterAll
-    public static void tearDownMiniCluster() throws Exception {
-        SolrRunner.stop();
-    }
+public abstract class SolrIndexTest extends IndexProviderTest {
 
     @Override
     public IndexProvider openIndex() throws BackendException {
-        return new SolrIndex(getLocalSolrTestConfig());
+        return new SolrIndex(getSolrTestConfig());
     }
 
     @Override
@@ -76,15 +62,7 @@ public class SolrIndexTest extends IndexProviderTest {
         return KeywordTokenizer.class.getName();
     }
 
-    protected Configuration getLocalSolrTestConfig() {
-        final String index = "solr";
-        final ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
-
-        config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getZookeeperUrls(), index);
-        config.set(SolrIndex.WAIT_SEARCHER, true, index);
-        config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index);
-        return config.restrictTo(index);
-    }
+    protected abstract Configuration getSolrTestConfig();
 
     @Test
     public void testSupport() {

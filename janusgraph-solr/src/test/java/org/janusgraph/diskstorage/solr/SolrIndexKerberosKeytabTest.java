@@ -24,12 +24,14 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.base.Joiner;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@Tag(SolrTestCategory.KERBEROS_TESTS)
 public class SolrIndexKerberosKeytabTest extends SolrIndexTest {
 
     private static final String KEYTAB_CONF = "jaas_keytab.conf";
@@ -47,7 +49,7 @@ public class SolrIndexKerberosKeytabTest extends SolrIndexTest {
             : Joiner.on(File.separator).join(userDir, "janusgraph-solr", "target", "test-classes", "solr");
         jassConfigFilePath = Joiner.on(File.separator).join(solrHome, KEYTAB_CONF);
         miniKDC = new MiniKDC(jassConfigFilePath);
-        miniKDC.setUpMiniKdc();
+        miniKDC.start("127.0.0.1");
         SolrRunner.start(true);
 
         // java.security.auth.login.config is already set as part of the initialization of the KDC.
@@ -86,7 +88,7 @@ public class SolrIndexKerberosKeytabTest extends SolrIndexTest {
     }
 
     @Override
-    protected Configuration getLocalSolrTestConfig() {
+    protected Configuration getSolrTestConfig() {
         final String index = "solr";
         final ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
 
