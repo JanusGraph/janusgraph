@@ -197,6 +197,12 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>${jna.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <directory>${basedir}/target</directory>

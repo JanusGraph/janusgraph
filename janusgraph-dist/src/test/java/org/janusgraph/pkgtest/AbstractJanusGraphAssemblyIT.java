@@ -51,7 +51,6 @@ import org.apache.velocity.app.Velocity;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
-import org.jetbrains.annotations.NotNull;
 
 public abstract class AbstractJanusGraphAssemblyIT {
 
@@ -127,17 +126,14 @@ public abstract class AbstractJanusGraphAssemblyIT {
         parseTemplateAndRunExpect("janusgraph-server-sh.after.expect.vm", contextVars, full, debug);
     }
 
-    @NotNull
     private MessageSerializer createGryoMessageSerializer() {
         return new GryoMessageSerializerV3d0(GryoMapper.build().addRegistry(JanusGraphIoRegistry.instance()));
     }
 
-    @NotNull
     private MessageSerializer createGraphSONMessageSerializer() {
         return new GraphSONMessageSerializerV3d0(GraphSONMapper.build().addRegistry(JanusGraphIoRegistry.instance()));
     }
 
-    @NotNull
     private MessageSerializer createGraphBinaryMessageSerializerV1() {
         final GraphBinaryMessageSerializerV1 serializer = new GraphBinaryMessageSerializerV1();
         final Map<String, Object> config = new HashMap<>();
