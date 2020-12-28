@@ -115,7 +115,7 @@
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <cassandra.version>3.11.9</cassandra.version>
         <cassandra-driver.version>4.9.0</cassandra-driver.version>
-        <testcontainers.version>1.14.3</testcontainers.version>
+        <testcontainers.version>1.15.1</testcontainers.version>
         <easymock.version>3.4</easymock.version>
     </properties>
     <modules>
