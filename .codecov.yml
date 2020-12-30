@@ -12,18 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Don't post a comment on pull requests.
-comment: off
-
-# Disable commit statuses
 coverage:
   status:
-    project: no
-    patch: no
-    changes: no
+    patch: off
+    project:
+      default:
+        # allow test coverage to drop by 2%, assume that it's typically due to CI problems
+        threshold: 2
 
 # Ignore test files
 ignore:
   - "**/test/.*"
+  - "janusgraph-backend-testutils/**"
   - "janusgraph-test/**"
-
