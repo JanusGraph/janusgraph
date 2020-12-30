@@ -32,6 +32,7 @@
         <test.zipfile.path>${project.build.directory}/${packname.standard}.zip</test.zipfile.path>
         <test.zipfile-full.path>${project.build.directory}/${packname.full}.zip</test.zipfile-full.path>
         <build.full>package</build.full>
+        <test.excluded.groups></test.excluded.groups>
 
         <!-- RPM/DEB packaging -->
         <pkg.release>1</pkg.release>
@@ -486,6 +487,15 @@
         </profile>
 
         <profile>
+            <id>java-11</id>
+            <properties>
+                <packname.standard>janusgraph-java-11-${project.version}</packname.standard>
+                <test.zipfile.path>${project.build.directory}/${packname.standard}.zip</test.zipfile.path>
+                <test.excluded.groups>FULL_TESTS</test.excluded.groups>
+                <build.full>none</build.full>
+            </properties>
+        </profile>
+        <profile>
             <id>janusgraph-release</id>
 
             <dependencies>
@@ -635,6 +645,7 @@
                                     <configuration>
                                         <skip>${skipDefaultDistroIT}</skip>
                                         <failIfNoTests>false</failIfNoTests>
+                                        <excludedGroups>${test.excluded.groups}</excludedGroups>
                                         <excludes>
                                             <exclude>**/*HBase*IT.java</exclude>
                                             <exclude>**/*CompatIT.java</exclude>

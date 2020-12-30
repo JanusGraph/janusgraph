@@ -27,6 +27,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoMapper;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.net.Socket;
@@ -54,6 +55,7 @@ public abstract class AbstractJanusGraphAssemblyIT extends JanusGraphAssemblyBas
     }
 
     @Test
+    @Tag(TestCategory.FULL_TESTS)
     public void testSingleVertexInteractionAgainstGremlinShFull() throws Exception {
         unzipAndRunExpect("single-vertex.expect.vm", getConfigPath(), getGraphName(), true, false);
     }
@@ -64,6 +66,7 @@ public abstract class AbstractJanusGraphAssemblyIT extends JanusGraphAssemblyBas
     }
 
     @Test
+    @Tag(TestCategory.FULL_TESTS)
     public void testGettingStartedAgainstGremlinShFull() throws Exception {
         unzipAndRunExpect("getting-started.expect.vm", getConfigPath(), getGraphName(), true, false);
     }
@@ -74,6 +77,7 @@ public abstract class AbstractJanusGraphAssemblyIT extends JanusGraphAssemblyBas
     }
 
     @Test
+    @Tag(TestCategory.FULL_TESTS)
     public void testJanusGraphServerGremlinFull() throws Exception {
         testJanusGraphServer(true);
     }

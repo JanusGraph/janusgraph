@@ -23,7 +23,7 @@ import org.testcontainers.junit.jupiter.Container;
 public class CqlESAssemblyIT extends AbstractJanusGraphAssemblyIT {
 
     @Container
-    private static JanusGraphCassandraContainer cql = new JanusGraphCassandraContainer(true);
+    private static JanusGraphCassandraContainer _cql = new JanusGraphCassandraContainer(true);
 
     @Container
     private static JanusGraphElasticsearchContainer es = new JanusGraphElasticsearchContainer(true);

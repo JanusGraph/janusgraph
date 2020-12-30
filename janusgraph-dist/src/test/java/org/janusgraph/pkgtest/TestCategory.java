@@ -1,4 +1,4 @@
-// Copyright 2017 JanusGraph Authors
+// Copyright 2021 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,17 +14,6 @@
 
 package org.janusgraph.pkgtest;
 
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-
-/**
- * Test the janusgraph.sh script that starts and stops Cassandra, ES, and Gremlin Server.
- */
-public class JanusGraphScriptIT extends JanusGraphAssemblyBaseIT {
-
-    @Test
-    @Tag(TestCategory.FULL_TESTS)
-    public void testGraphOfTheGodsGraphSONFull() throws Exception {
-        unzipAndRunExpect("janusgraph-sh.expect.vm", true);
-    }
+public final class TestCategory {
+    public static final String FULL_TESTS = "FULL_TESTS";
 }
