@@ -42,10 +42,6 @@ janusgraph-hbase/src/test/janusgraph-zookeeper-test/*
 janusgraph-*/pom.xml.versionsBackup
 # JUnitBenchmarks output
 /janusgraph-*/jub.*.xml
-# .deb/.rpm packaging folders
-/debian/
-/redhat/
-/pkgcommon/
 
 # Emacs file backups
 *~

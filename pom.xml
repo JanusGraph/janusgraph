@@ -268,7 +268,6 @@
                         <exclude>**/src/test/resources/excludes</exclude>
                         <exclude>**/src/test/resources/longTests1</exclude>
                         <exclude>**/src/test/resources/longTests2</exclude>
-                        <exclude>**/src/pkg/static/debian/**</exclude>
                         <exclude>**/src/test/resources/mockito-extensions/**</exclude>
                         <exclude>**/src/test/resources/org/janusgraph/hadoop/formats/edgelist/rdf/**</exclude>
                     </excludes>
@@ -366,24 +365,6 @@
                     </configuration>
                 </plugin>
                 <plugin>
-                    <artifactId>maven-site-plugin</artifactId>
-                    <version>3.3</version>
-                    <executions>
-                        <execution>
-                            <id>default-site</id>
-                            <phase>none</phase>
-                        </execution>
-                        <execution>
-                            <id>default-deploy</id>
-                            <phase>none</phase>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-scm-plugin</artifactId>
-                    <version>1.9</version>
-                </plugin>
-                <plugin>
                     <artifactId>maven-deploy-plugin</artifactId>
                     <version>2.8.2</version>
                 </plugin>
@@ -416,10 +397,6 @@
                     <version>3.2.0</version>
                 </plugin>
                 <plugin>
-                    <artifactId>maven-install-plugin</artifactId>
-                    <version>2.4</version>
-                </plugin>
-                <plugin>
                     <artifactId>maven-source-plugin</artifactId>
                     <version>3.2.1</version>
                 </plugin>
@@ -437,28 +414,8 @@
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>properties-maven-plugin</artifactId>
-                    <version>1.0-alpha-2</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>wagon-maven-plugin</artifactId>
-                    <version>2.0.0</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>1.8</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
                     <version>3.0.0</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>xml-maven-plugin</artifactId>
-                    <version>1.0.2</version>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
@@ -466,24 +423,6 @@
                     <version>2.5.2</version>
                     <configuration>
                         <aggregate>true</aggregate>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>com.github.github</groupId>
-                    <artifactId>site-maven-plugin</artifactId>
-                    <version>0.12</version>
-                    <configuration>
-                        <!--
-                          To push changes to gh-pages during
-                          release:perform using this plugin, your
-                          ~/.m2/settings.xml file must contain a
-                          <server> stanza that matches the
-                          <server>github</server> tag below.  Here's
-                          an example settings.xml:
-                        -->
-                        <server>github</server>
-                        <repositoryName>janusgraph</repositoryName>
-                        <repositoryOwner>JanusGraph</repositoryOwner>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -1159,14 +1098,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-
-        <profile>
-            <id>sonar-upload</id>
-            <properties>
-                <sonar.jacoco.reportPath>${top.level.basedir}/target/jacoco-combined.exec</sonar.jacoco.reportPath>
-                <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
-            </properties>
         </profile>
 
         <profile>
