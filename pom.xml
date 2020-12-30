@@ -719,8 +719,6 @@
                 <artifactId>netty-transport-native-epoll</artifactId>
                 <version>${netty4.version}</version>
             </dependency>
-
-            <!-- The Objenesis version is closely coupled to Kryo and to TP3 versions -->
             <dependency>
                 <groupId>org.objenesis</groupId>
                 <artifactId>objenesis</artifactId>
@@ -1071,6 +1069,13 @@
     </dependencies>
 
     <profiles>
+        <profile>
+            <id>java-11</id>
+            <properties>
+                <compiler.source>11</compiler.source>
+                <compiler.target>11</compiler.target>
+            </properties>
+        </profile>
 
         <profile>
             <id>janusgraph-release</id>

@@ -116,6 +116,11 @@ Prior to 0.6.0, even if `smart-limit` is disabled, JanusGraph adds a `HARD_MAX_L
 is equivalent to 100,000 to avoid fetching too many results at a time. This limit is now
 configurable, and by default, it's Integer.MAX_VALUE which can be interpreted as no limit.
 
+##### Add experimental support for Java 11
+
+We started to work on support for Java 11. We would like to get feedback,
+if everything is working as expected after upgrading to Java 11.
+
 ##### Removal of LoggingSchemaMaker
 
 The `schema.default=logging` option is not valid anymore. Use `schema.default=default`

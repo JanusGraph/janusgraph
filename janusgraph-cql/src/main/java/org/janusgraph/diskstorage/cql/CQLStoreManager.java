@@ -59,7 +59,6 @@ import org.janusgraph.util.system.NetworkUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Resource;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Arrays;
@@ -163,7 +162,6 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     final ExecutorService executorService;
 
-    @Resource
     private CqlSession session;
     private final StoreFeatures storeFeatures;
     private final Map<String, CQLKeyColumnValueStore> openStores;
