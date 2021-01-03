@@ -15,8 +15,10 @@
 package org.janusgraph.pkgtest;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
-public class GremlinShellArgsIT extends AbstractJanusGraphAssemblyIT {
+public class GremlinShellArgsIT extends JanusGraphAssemblyBaseIT {
 
     @Test
     public void testScriptFileArgument() throws Exception {
@@ -24,7 +26,7 @@ public class GremlinShellArgsIT extends AbstractJanusGraphAssemblyIT {
     }
 
     @Test
-    public void testScriptFileFullArgument() throws Exception {
+    public void testScriptFileArgumentFull() throws Exception {
         unzipAndRunExpect("gremlin-shell-args.expect.vm", true);
     }
 }

@@ -14,27 +14,33 @@
 
 package org.janusgraph.pkgtest;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class InMemoryAssemblyIT extends AbstractJanusGraphAssemblyIT {
 
-    @Test
-    public void testSimpleGremlinSession() throws Exception {
-        testSimpleGremlinSession("conf/janusgraph-inmemory.properties", "inmemory", false);
+    @Override
+    protected String getConfigPath() {
+        return "conf/janusgraph-inmemory.properties";
+    }
+
+    @Override
+    protected String getServerConfigPath() {
+        return "conf/gremlin-server/gremlin-server.yaml";
+    }
+
+    @Override
+    protected String getGraphName() {
+        return "inmemory";
     }
 
     @Test
-    public void testSimpleGremlinSessionFull() throws Exception {
-        testSimpleGremlinSession("conf/janusgraph-inmemory.properties", "inmemory", true);
-    }
+    @Disabled
+    @Override
+    public void testGettingStartedAgainstGremlinSh() {}
 
     @Test
-    public void testJanusGraphServerGremlin() throws Exception {
-        testJanusGraphServer("conf/gremlin-server/gremlin-server.yaml", false);
-    }
-
-    @Test
-    public void testJanusGraphServerGremlinFull() throws Exception {
-        testJanusGraphServer("conf/gremlin-server/gremlin-server.yaml", true);
-    }
+    @Disabled
+    @Override
+    public void testGettingStartedAgainstGremlinShFull() {}
 }
