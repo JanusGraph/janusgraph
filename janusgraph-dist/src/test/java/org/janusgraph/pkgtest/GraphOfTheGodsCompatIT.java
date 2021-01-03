@@ -18,6 +18,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +28,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
-public class GraphOfTheGodsCompatIT extends AbstractJanusGraphAssemblyIT {
+public class GraphOfTheGodsCompatIT extends JanusGraphAssemblyBaseIT {
 
     private static final Logger log =
             LoggerFactory.getLogger(GraphOfTheGodsCompatIT.class);
