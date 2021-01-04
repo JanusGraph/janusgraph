@@ -79,7 +79,7 @@
         <httpcomponents.httpclient.version>4.5.13</httpcomponents.httpclient.version>
         <httpcomponents.httpcore.version>4.4.14</httpcomponents.httpcore.version>
         <hadoop2.version>2.7.7</hadoop2.version>
-        <hbase1.version>1.4.10</hbase1.version>
+        <hbase1.version>1.6.0</hbase1.version>
         <hbase2.version>2.1.5</hbase2.version>
         <hbase.server.version>1.4.10</hbase.server.version>
         <bigtable.version>1.16.0</bigtable.version>
