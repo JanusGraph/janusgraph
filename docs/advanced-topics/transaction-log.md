@@ -181,7 +181,7 @@ modifications.
 
 There are a number of configuration options to fine tune how the log
 processor reads from the log. Refer to the complete list of
-configuration options [Configuration Reference](configuration-reference.md) for the
+configuration options [Configuration Reference](../configs/configuration-reference.md) for the
 options under the `log` namespace. To configure the user transaction
 log, use the `log.user` namespace. The options listed there allow the
 configuration of the number of threads to be used, the number of log

@@ -56,7 +56,7 @@ operation for mutating transactions which increases the latency. Also
 note, that additional space is required to store the log. The
 transaction write-ahead log has a configurable time-to-live of 2 days
 which means that log entries expire after that time to keep the storage
-overhead small. Refer to [Configuration Reference](../basics/configuration-reference.md) for a complete list of all
+overhead small. Refer to [Configuration Reference](../configs/configuration-reference.md) for a complete list of all
 log related configuration options to fine tune logging behavior.
 
 ## JanusGraph Instance Failure

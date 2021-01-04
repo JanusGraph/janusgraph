@@ -130,7 +130,7 @@ Gremlin commands over the wire:
 
 In this case, each Gremlin Server would be configured to connect to the
 Cassandra cluster. The following shows the graph specific fragment of
-the Gremlin Server configuration. Refer to [JanusGraph Server](../basics/server.md) for a complete
+the Gremlin Server configuration. Refer to [JanusGraph Server](../operations/server.md) for a complete
 example and more information on how to configure the server.
 
 ```yaml
@@ -153,7 +153,7 @@ documentation](https://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/referen
 
 ## CQL Specific Configuration
 
-Refer to [Configuration Reference](../basics/configuration-reference.md) for a complete listing of all Cassandra
+Refer to [Configuration Reference](../configs/configuration-reference.md) for a complete listing of all Cassandra
 specific configuration options in addition to the general JanusGraph
 configuration options.
 
@@ -303,7 +303,7 @@ storage.hostname = [IP-address-of-one-Cassandra-EC2-instance]
 ```
 
 You may add additional configuration options found on this page or in
-[Configuration Reference](../basics/configuration-reference.md).
+[Configuration Reference](../configs/configuration-reference.md).
 
 -   Start the Gremlin Console again and type the following::
 ```groovy

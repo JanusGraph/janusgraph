@@ -9,7 +9,7 @@ against one or more JanusGraph instances hosted within it. This section
 will describe how to use the WebSocket configuration, as well as
 describe how to configure JanusGraph Server to handle HTTP endpoint
 interactions. For information about how to connect to a JanusGraph
-Server from different languages refer to [Connecting to JanusGraph](../connecting/index.md).
+Server from different languages refer to [Connecting to JanusGraph](../interactions/connecting/index.md).
 
 ## Getting Started
 
@@ -546,7 +546,7 @@ Gremlin Server will be ready to listen for WebSocket connections when it
 is started. The easiest way to test the connection is with Gremlin
 Console.
 
-Follow the instructions here [Connecting to Gremlin Server](../connecting/index.md) to verify the Gremlin
+Follow the instructions here [Connecting to Gremlin Server](../interactions/connecting/index.md) to verify the Gremlin
 Server is working.
 
 !!! important

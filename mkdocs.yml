@@ -21,24 +21,56 @@ repo_url: 'https://github.com/janusgraph/janusgraph'
 copyright: 'Copyright &copy; 2020 JanusGraph Authors. All rights reserved.<br> The Linux Foundation has registered trademarks and uses trademarks. For a list of<br> trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage</a> page.<br> Cassandra, Groovy, HBase, Hadoop, Lucene, Solr, and TinkerPop are trademarks of the Apache Software Foundation.<br> Berkeley DB and Berkeley DB Java Edition are trademarks of Oracle.'
 
 plugins:
-    - search
-    - markdownextradata
+  - search
+  - markdownextradata
+  - redirects:
+      redirect_maps:
+        basics/common-questions.md: common-questions.md
+        basics/cache.md: operations/cache.md
+        basics/technical-limitations.md: advanced-topics/technical-limitations.md
+        basics/transaction-log.md: advanced-topics/transaction-log.md
+        basics/configuration.md: configs/index.md
+        basics/schema.md: schema/index.md
+        basics/gremlin.md: getting-started/gremlin.md
+        basics/server.md: operations/server.md
+        basics/deployment.md: operations/deployment.md
+        basics/configured-graph-factory.md: operations/configured-graph-factory.md
+        basics/multi-node.md: operations/dynamic-graphs.md
+        basics/transactions.md: interactions/transactions.md
+        basics/configuration-reference.md: configs/configuration-reference.md
+        basics/example-config.md: configs/example-config.md
+        index-management/index-performance.md: schema/index-management/index-performance.md
+        index-management/index-lifecycle.md: schema/index-management/index-lifecycle.md
+        index-management/index-reindexing.md: schema/index-management/index-reindexing.md
+        index-management/index-removal.md: schema/index-management/index-removal.md
+        index-backend/search-predicates.md: interactions/search-predicates.md
+        connecting/index.md: interactions/connecting/index.md
+        connecting/java.md: interactions/connecting/java.md
+        connecting/python.md: interactions/connecting/python.md
+        connecting/dotnet.md: interactions/connecting/dotnet.md
+        advanced-topics/bulk-loading.md: operations/bulk-loading.md
+        advanced-topics/advschema.md: schema/advschema.md
+        advanced-topics/monitoring.md: operations/monitoring.md
+        advanced-topics/migrating-titan.md: operations/migrating-titan.md
+        advanced-topics/migrating-thrift.md: operations/migrating-thrift.md
+        advanced-topics/recovery.md: operations/recovery.md
+        appendices.md: operations/management.md
 
 theme:
-    language: 'en'
-    name: 'material'
-    feature:
-        tabs: false
-    palette:
-        primary: 'green'
-        accent: 'teal'
-    font: false
-    logo: 'janusgraph-logomark.svg'
-    favicon: 'favicon.ico'
+  language: 'en'
+  name: 'material'
+  feature:
+    tabs: false
+  palette:
+    primary: 'green'
+    accent: 'teal'
+  font: false
+  logo: 'janusgraph-logomark.svg'
+  favicon: 'favicon.ico'
 
 extra_css:
-    - 'theme/structor-menu.css'
-    - 'theme/extra.css'
+  - 'theme/structor-menu.css'
+  - 'theme/extra.css'
 
 extra:
   social:
@@ -47,89 +79,92 @@ extra:
     - type: twitter
       link: https://twitter.com/janusgraph
     - type: envelope
-      link: https://groups.google.com/group/janusgraph-users
+      link: https://lists.lfaidata.foundation/g/janusgraph-users
     - type: envelope
-      link: https://groups.google.com/group/janusgraph-dev
+      link: https://lists.lfaidata.foundation/g/janusgraph-dev
 
 markdown_extensions:
-    - pymdownx.superfences
-    - pymdownx.tabbed
-    - pymdownx.snippets
-    - pymdownx.details
-    - markdown.extensions.admonition
-    - markdown_include.include:
-        base_path: docs
-    - markdown.extensions.codehilite:
-          linenums: True
-    - codehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.snippets
+  - pymdownx.details
+  - markdown.extensions.admonition
+  - markdown_include.include:
+      base_path: docs
+  - markdown.extensions.codehilite:
+      linenums: True
+  - codehilite
 
 nav:
-    - Introduction: index.md
-    - Getting Started:
-        - Installation: getting-started/installation.md
-        - Basic Usage: getting-started/basic-usage.md
-        - Architectural Overview: getting-started/architecture.md
-    - JanusGraph Basics:
-        - Configuration: basics/configuration.md
-        - Schema and Data Modeling: basics/schema.md
-        - Gremlin Query Language: basics/gremlin.md
-        - JanusGraph Server: basics/server.md
-        - Deployment Scenarios: basics/deployment.md
-        - ConfiguredGraphFactory: basics/configured-graph-factory.md
-        - Things to Consider in a Multi-Node JanusGraph Cluster: basics/multi-node.md
-        - Transactions: basics/transactions.md
-        - JanusGraph Cache: basics/cache.md
-        - Transaction Log: basics/transaction-log.md
-        - Configuration Reference: basics/configuration-reference.md
-        - Config Example: basics/example-config.md
-        - Common Questions: basics/common-questions.md
-        - Technical Limitations: basics/technical-limitations.md
-    - Index Management:
-        - Indexing for Better Performance: index-management/index-performance.md
-        - Index Lifecycle: index-management/index-lifecycle.md
-        - Reindexing: index-management/index-reindexing.md
-        - Removal: index-management/index-removal.md
-    - Storage Backends:
-        - Introduction: storage-backend/index.md
-        - Apache Cassandra: storage-backend/cassandra.md
-        - Apache HBase: storage-backend/hbase.md
-        - Google Cloud Bigtable: storage-backend/bigtable.md
-        - Oracle Berkeley DB Java Edition: storage-backend/bdb.md
-        - InMemory Storage Backend: storage-backend/inmemorybackend.md
-    - Mixed Index Backends:
-        - Introduction: index-backend/index.md
-        - Search Predicates and Data Types: index-backend/search-predicates.md
-        - Index Parameters and Full-Text Search: index-backend/text-search.md
-        - Field Mapping: index-backend/field-mapping.md
-        - Direct Index Query: index-backend/direct-index-query.md
-        - Elasticsearch: index-backend/elasticsearch.md
-        - Apache Solr: index-backend/solr.md
-        - Apache Lucene: index-backend/lucene.md
-    - Advanced Topics:
-        - Advanced Schema: advanced-topics/advschema.md
-        - Eventually-Consistent Storage Backends: advanced-topics/eventual-consistency.md
-        - Failure & Recovery: advanced-topics/recovery.md
-        - Bulk Loading: advanced-topics/bulk-loading.md
-        - Graph Partitioning: advanced-topics/partitioning.md
-        - Datatype and Attribute Serializer Configuration: advanced-topics/serializer.md
-        - JanusGraph with TinkerPop’s Hadoop-Gremlin: advanced-topics/hadoop.md
-        - Monitoring JanusGraph: advanced-topics/monitoring.md
-        - Migrating from Titan: advanced-topics/migrating-titan.md
-        - Migrating from Thrift: advanced-topics/migrating-thrift.md
-        - JanusGraph Data model: advanced-topics/data-model.md
-        - JanusGraph Bus: advanced-topics/janusgraph-bus.md
+  - Introduction: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Basic Usage: getting-started/basic-usage.md
+    - Gremlin Query Language: getting-started/gremlin.md
+    - Architectural Overview: getting-started/architecture.md
+  - Interactions with JanusGraph:
+    - Transactions: interactions/transactions.md
+    - Search Predicates and Mixed Index Data Types: interactions/search-predicates.md
     - Connecting to JanusGraph:
-        - Introduction: connecting/index.md
-        - Using Java: connecting/java.md
-        - Using Python: connecting/python.md
-        - Using .Net: connecting/dotnet.md
-    - Development: development.md
-    - Appendices: appendices.md
-    - Changelog: changelog.md
+      - Introduction: interactions/connecting/index.md
+      - Using Java: interactions/connecting/java.md
+      - Using Python: interactions/connecting/python.md
+      - Using .Net: interactions/connecting/dotnet.md
+  - Configuration:
+    - Introduction: configs/index.md
+    - Configuration Reference: configs/configuration-reference.md
+    - Config Example: configs/example-config.md
+  - Schema Management:
+    - Schema and Data Modeling: schema/index.md
+    - Advanced Schema: schema/advschema.md
+    - Index Management:
+      - Indexing for Better Performance: schema/index-management/index-performance.md
+      - Index Lifecycle: schema/index-management/index-lifecycle.md
+      - Reindexing: schema/index-management/index-reindexing.md
+      - Removal: schema/index-management/index-removal.md
+  - Operations:
+    - JanusGraph Server: operations/server.md
+    - Deployment Scenarios: operations/deployment.md
+    - ConfiguredGraphFactory: operations/configured-graph-factory.md
+    - Dynamic Graphs: operations/dynamic-graphs.md
+    - Bulk Loading: operations/bulk-loading.md
+    - JanusGraph Cache: operations/cache.md
+    - Monitoring: operations/monitoring.md
+    - Migrating from Titan: operations/migrating-titan.md
+    - Migrating from Thrift: operations/migrating-thrift.md
+    - Failure & Recovery: operations/recovery.md
+    - Management System: operations/management.md
+  - Storage Backends:
+    - Introduction: storage-backend/index.md
+    - Apache Cassandra: storage-backend/cassandra.md
+    - Apache HBase: storage-backend/hbase.md
+    - Google Cloud Bigtable: storage-backend/bigtable.md
+    - Oracle Berkeley DB Java Edition: storage-backend/bdb.md
+    - InMemory Storage Backend: storage-backend/inmemorybackend.md
+  - Mixed Index Backends:
+    - Introduction: index-backend/index.md
+    - Index Parameters and Full-Text Search: index-backend/text-search.md
+    - Field Mapping: index-backend/field-mapping.md
+    - Direct Index Query: index-backend/direct-index-query.md
+    - Elasticsearch: index-backend/elasticsearch.md
+    - Apache Solr: index-backend/solr.md
+    - Apache Lucene: index-backend/lucene.md
+  - Advanced Topics:
+    - Eventually-Consistent Storage Backends: advanced-topics/eventual-consistency.md
+    - Graph Partitioning: advanced-topics/partitioning.md
+    - Datatype and Attribute Serializer Configuration: advanced-topics/serializer.md
+    - JanusGraph with TinkerPop’s Hadoop-Gremlin: advanced-topics/hadoop.md
+    - Transaction Log: advanced-topics/transaction-log.md
+    - JanusGraph Data model: advanced-topics/data-model.md
+    - JanusGraph Bus: advanced-topics/janusgraph-bus.md
+    - Technical Limitations: advanced-topics/technical-limitations.md
+  - Common Questions: common-questions.md
+  - Development: development.md
+  - Changelog: changelog.md
 
 extra:
-    latest_version: 0.6.0
-    snapshot_version: 0.6.0-SNAPSHOT
-    tinkerpop_version: 3.4.9
-    hadoop2_version: 2.7.7
-    jamm_version: 0.3.0
+  latest_version: 0.6.0
+  snapshot_version: 0.6.0-SNAPSHOT
+  tinkerpop_version: 3.4.9
+  hadoop2_version: 2.7.7
+  jamm_version: 0.3.0

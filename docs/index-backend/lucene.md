@@ -51,7 +51,7 @@ In the above configuration, the index backend is named `search`. Replace
 ## Configuration Options
 
 
-Refer to [Configuration Reference](../basics/configuration-reference.md) for a complete listing of all Lucene
+Refer to [Configuration Reference](../configs/configuration-reference.md) for a complete listing of all Lucene
 specific configuration options in addition to the general JanusGraph
 configuration options.
 

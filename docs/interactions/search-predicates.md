@@ -1,6 +1,9 @@
-# Search Predicates and Data Types
+# Search Predicates and Mixed Index Data Types
 
 This page lists all of the comparison predicates that JanusGraph supports in global graph search and local traversals.
+
+!!! note 
+    Some parts of this section require mixed index, see [mixed index backend](../index-backend/index.md).
 
 ## Compare Predicate
 
@@ -20,7 +23,7 @@ Boolean and UUID data types support the `eq` and `neq` comparison predicates.
 
 ## Text Predicate
 
-The `Text` enum specifies the [Text Search](text-search.md) used to query for matching text or string values.  We differentiate between two types of predicates:
+The `Text` enum specifies the [Text Search](../index-backend/text-search.md) used to query for matching text or string values.  We differentiate between two types of predicates:
 
 * Text search predicates which match against the individual words inside a text string after it has been tokenized. These predicates are not case sensitive.
     - `textContains`: is true if (at least) one word inside the text string matches the query string
@@ -32,7 +35,7 @@ The `Text` enum specifies the [Text Search](text-search.md) used to query for ma
     - `textRegex`: if the string value matches the given regular expression in its entirety
     - `textFuzzy`: if the string value is similar to the given query string (based on Levenshtein edit distance)
 
-See [Text Search](text-search.md) for more information about full-text and string search.
+See [Text Search](../index-backend/text-search.md) for more information about full-text and string search.
 
 ## Geo Predicate
 
@@ -43,7 +46,7 @@ The `Geo` enum specifies geo-location predicates.
 * `geoDisjoint` which holds true if the two geometric objects have no points in common (opposite of `geoIntersect`).
 * `geoContains` which holds true if one geometric object is contained by the other.
 
-See [Geo Mapping](text-search.md#geo-mapping) for more information about geo search.
+See [Geo Mapping](../index-backend/text-search.md#geo-mapping) for more information about geo search.
 
 ## Query Examples
 
@@ -168,7 +171,7 @@ In addition, when importing a graph via GraphSON the geometry may be represented
 Note that unlike the JanusGraph API GeoJSON specifies coordinates as lng lat.
 
 ## Collections
-If you are using [Elasticsearch](elasticsearch.md) then you can index properties with SET and LIST cardinality.
+If you are using [Elasticsearch](../index-backend/elasticsearch.md) then you can index properties with SET and LIST cardinality.
 For instance:
 
 ```groovy

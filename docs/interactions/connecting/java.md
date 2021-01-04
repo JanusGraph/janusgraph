@@ -7,7 +7,7 @@ information on how to embed JanusGraph, see the [JanusGraph Examples
 projects](https://github.com/JanusGraph/janusgraph/tree/master/janusgraph-examples).
 
 This section only covers how applications can connect to JanusGraph
-Server using the [GraphBinary](http://tinkerpop.apache.org/docs/current/dev/io/#graphbinary) serialization. Refer to [Gremlin Query Language](../basics/gremlin.md) for an introduction to Gremlin and
+Server using the [GraphBinary](http://tinkerpop.apache.org/docs/current/dev/io/#graphbinary) serialization. Refer to [Gremlin Query Language](../../getting-started/gremlin.md) for an introduction to Gremlin and
 pointers to further resources.
 
 ## Getting Started with JanusGraph and Gremlin-Java
@@ -85,7 +85,7 @@ To get started with JanusGraph in Java:
 
 ## JanusGraph Specific Types and Predicates
 
-JanusGraph specific types and [predicates](../index-backend/search-predicates.md) can be
+JanusGraph specific types and [predicates](../search-predicates.md) can be
 used directly from a Java application through the dependency `janusgraph-driver`.
 
 

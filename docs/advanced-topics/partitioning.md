@@ -56,7 +56,7 @@ of edge cuts and custom placement strategies can be largely nullified.
 While edge cut optimization aims to reduce the cross communication and
 thereby improve query execution, vertex cuts address the hotspot issue
 caused by vertices with a large number of incident edges. While
-[vertex-centric indexes](../index-management/index-performance.md#vertex-centric-indexes) effectively address query
+[vertex-centric indexes](../schema/index-management/index-performance.md#vertex-centric-indexes) effectively address query
 performance for large degree vertices, vertex cuts are needed to address
 the hot spot issue on very large graphs.
 

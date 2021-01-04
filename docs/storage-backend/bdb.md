@@ -37,7 +37,7 @@ In the Gremlin Console, you can not define the type of the variables
 
 ## BerkeleyDB Specific Configuration
 
-Refer to [Configuration Reference](../basics/configuration-reference.md) for a complete listing of all BerkeleyDB
+Refer to [Configuration Reference](../configs/configuration-reference.md) for a complete listing of all BerkeleyDB
 specific configuration options in addition to the general JanusGraph
 configuration options. BerkeleyDB configured with
 [SHARED_CACHE](https://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/EnvironmentConfig.html#SHARED_CACHE)

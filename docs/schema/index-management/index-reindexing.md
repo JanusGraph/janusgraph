@@ -239,7 +239,7 @@ Note, that the acknowledgment might fail due to JanusGraph instance
 failure. In other words, the cluster might wait indefinitely on the
 acknowledgment of a failed instance. In this case, the user must
 manually remove the failed instance from the cluster registry as
-described in [Failure & Recovery](../advanced-topics/recovery.md). After the cluster state has been
+described in [Failure & Recovery](../../operations/recovery.md). After the cluster state has been
 restored, the acknowledgment process must be reinitiated by manually
 registering the index again in the management system.
 

@@ -2,7 +2,7 @@
 
 This page describes some of the advanced schema definition options that
 JanusGraph provides. For general information on JanusGraph’s schema and
-how to define it, refer to [Schema and Data Modeling](../basics/schema.md).
+how to define it, refer to [Schema and Data Modeling](../schema/index.md).
 
 ## Static Vertices
 
@@ -97,7 +97,7 @@ for the same label.
 
 ## Multi-Properties
 
-As discussed in [Schema and Data Modeling](../basics/schema.md), JanusGraph supports property keys with
+As discussed in [Schema and Data Modeling](../schema/index.md), JanusGraph supports property keys with
 SET and LIST cardinality. Hence, JanusGraph supports multiple properties
 with the same key on a single vertex. Furthermore, JanusGraph treats
 properties similarly to edges in that single-valued property annotations
@@ -120,11 +120,11 @@ where attaching provenance information (e.g. who added a property, when
 and from where?) to properties is necessary. Support for higher
 cardinality properties and property annotations on properties is also
 useful in high-concurrency, scale-out design patterns as described in
-[Eventually-Consistent Storage Backends](eventual-consistency.md).
+[Eventually-Consistent Storage Backends](../advanced-topics/eventual-consistency.md).
 
 Vertex-centric indexes and global graph indexes are supported for
 properties in the same manner as they are supported for edges. Refer to
-[Indexing for Better Performance](../index-management/index-performance.md) for information on defining these indexes for edges and
+[Indexing for Better Performance](index-management/index-performance.md) for information on defining these indexes for edges and
 use the corresponding API methods to define the same indexes for
 properties.
 
@@ -145,5 +145,5 @@ mgmt.commit()
 Note, that unidirected edges do not get automatically deleted when their
 in-vertices are deleted. The user must ensure that such inconsistencies
 do not arise or resolve them at query time by explicitly checking vertex
-existence in a transaction. See the discussion in [Ghost Vertices](../basics/common-questions.md#ghost-vertices)
+existence in a transaction. See the discussion in [Ghost Vertices](../common-questions.md#ghost-vertices)
 for more information.

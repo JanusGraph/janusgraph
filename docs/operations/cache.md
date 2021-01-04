@@ -71,7 +71,7 @@ immediately after closing a transaction. Hence, the database level cache
 significantly speeds up graph traversals for read heavy workloads across
 transactions.
 
-[Configuration Reference](configuration-reference.md) lists all of the configuration
+[Configuration Reference](../configs/configuration-reference.md) lists all of the configuration
 options that pertain to JanusGraph’s database level cache. This page
 attempts to explain their usage.
 

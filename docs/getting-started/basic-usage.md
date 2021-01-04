@@ -1,7 +1,7 @@
 # Basic Usage
 
 This section offers a very short introduction to Gremlin's feature set.
-For a closer look at the topic, refer to [Gremlin Query Language](../basics/gremlin.md).
+For a closer look at the topic, refer to [Gremlin Query Language](./gremlin.md).
 
 The examples in this section make extensive use of a toy graph
 distributed with JanusGraph called *The Graph of the Gods*. This graph
@@ -32,8 +32,8 @@ tutorial demonstrates loading *The Graph of the Gods* using the
 helper class `GraphOfTheGodsFactory` with different configurations. This section
 skips over the configuration details, but additional information about
 storage backends, index backends, and their configuration are available
-in [Storage Backends](../storage-backend/index.md), [Index Backends](../index-backend/search-predicates.md), and
-[Configuration Reference](../basics/configuration-reference.md).
+in [Storage Backends](../storage-backend/index.md), [Index Backends](../index-backend/index.md), and
+[Configuration Reference](../configs/configuration-reference.md).
 
 #### Loading with an index backend
 

@@ -67,9 +67,18 @@ compile "org.janusgraph:janusgraph-core:0.6.0"
 * Apache TinkerPop 3.4.9
 * Java 1.8
 
+#### Changes
+
 For more information on features and bug fixes in 0.6.0, see the GitHub milestone:
 
 -   <https://github.com/JanusGraph/janusgraph/milestone/17?closed=1>
+
+#### Assets
+
+* [JavaDoc](https://javadoc.io/doc/org.janusgraph/janusgraph-core/0.6.0)
+* [GitHub Release](https://github.com/JanusGraph/janusgraph/releases/tag/v0.6.0)
+* [JanusGraph zip](https://github.com/JanusGraph/janusgraph/releases/download/v0.6.0/janusgraph-0.6.0.zip)
+* [JanusGraph zip with embedded Cassandra and ElasticSearch](https://github.com/JanusGraph/janusgraph/releases/download/v0.6.0/janusgraph-full-0.6.0.zip)
 
 #### Upgrade Instructions
 
@@ -116,7 +125,7 @@ after the keyword `serializers`. This will add the support on the server site.
 ```
 !!! note 
     The java driver is the only driver that currently supports GraphBinary, 
-    see [Connecting to JanusGraph using Java](connecting/java.md).
+    see [Connecting to JanusGraph using Java](interactions/connecting/java.md).
 
 ##### New index selection algorithm
 In version 0.6.0, the index selection algorithm has changed. If the number of possible
@@ -124,7 +133,7 @@ indexes for a query is small enough, the new algorithm will perform an exhaustiv
 to minimize the number of indexes which need to be queried. The default limit is set to 10.
 In order to maintain the old selection algorithm regardless of the available indexes, set
 the key `query.index-select-threshold` to `0`.
-For more information, see [Configuration Reference](basics/configuration-reference.md#query)
+For more information, see [Configuration Reference](configs/configuration-reference.md#query)
     
 ##### Removal of Cassandra Thrift support
 
@@ -136,7 +145,7 @@ encouraging users to switch from Thrift to CQL since version 0.2.1.
 This means that the following backends were removed: 
 `cassandrathrift`, `cassandra`, `astyanax`, and `embeddedcassandra`.
 Users who still use one of these Thrift backends should migrate to CQL.
-[Our migration guide](advanced-topics/migrating-thrift.md) explains the 
+[Our migration guide](operations/migrating-thrift.md) explains the 
 necessary steps for this. The option to run Cassandra embedded 
 in the same JVM as JanusGraph is however no longer supported with CQL.
 
@@ -240,9 +249,18 @@ See more new cql configuration options in configuration references under `storag
 * Apache TinkerPop 3.4.6
 * Java 1.8
 
+#### Changes
+
 For more information on features and bug fixes in 0.5.3, see the GitHub milestone:
 
 -   <https://github.com/JanusGraph/janusgraph/milestone/20?closed=1>
+
+#### Assets
+
+* [JavaDoc](https://javadoc.io/doc/org.janusgraph/janusgraph-core/0.5.3)
+* [GitHub Release](https://github.com/JanusGraph/janusgraph/releases/tag/v0.5.3)
+* [JanusGraph zip](https://github.com/JanusGraph/janusgraph/releases/download/v0.5.3/janusgraph-0.5.3.zip)
+* [JanusGraph zip with embedded Cassandra and ElasticSearch](https://github.com/JanusGraph/janusgraph/releases/download/v0.5.3/janusgraph-full-0.5.3.zip)
 
 ### Version 0.5.2 (Release Date: May 3, 2020)
 
@@ -651,7 +669,7 @@ For more information on features and bug fixes in 0.3.0, see the GitHub mileston
 !!! important
     You should back-up your data prior to attempting an upgrade! Also please note that once an upgrade has been completed you will no longer be able to connect to your graph with client versions prior to 0.3.0.
 
-JanusGraph 0.3.0 implements [Schema Constraints](./basics/schema.md#schema-constraints) which made it necessary to also introduce the concept of a schema version. There is a check to prevent client connections that either expect a different schema version or have no concept of a schema version. To perform an upgrade, the configuration option `graph.allow-upgrade=true` must be set on each graph you wish to upgrade. The graph must be opened with a 0.3.0 or greater version of JanusGraph since older versions have no concept of `graph.storage-version` and will not allow for it to be set.
+JanusGraph 0.3.0 implements [Schema Constraints](./schema/index.md#schema-constraints) which made it necessary to also introduce the concept of a schema version. There is a check to prevent client connections that either expect a different schema version or have no concept of a schema version. To perform an upgrade, the configuration option `graph.allow-upgrade=true` must be set on each graph you wish to upgrade. The graph must be opened with a 0.3.0 or greater version of JanusGraph since older versions have no concept of `graph.storage-version` and will not allow for it to be set.
 
 Example excerpt from `janusgraph.properties` file
 ```properties
@@ -1018,4 +1036,4 @@ adjust your code and configuration accordingly:
     `JanusGraph` rather than `JanusGraphGraph`
 
 For more information on how to configure JanusGraph to read data which
-had previously been written by Titan refer to [Migration from titan](advanced-topics/migrating-titan.md).
+had previously been written by Titan refer to [Migration from titan](operations/migrating-titan.md).
