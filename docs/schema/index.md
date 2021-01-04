@@ -18,7 +18,7 @@ system that is easy to reason about.
 
 Beyond the schema definition options explained in this section, schema
 types provide performance tuning options that are discussed in
-[Advanced Schema](../advanced-topics/advschema.md).
+[Advanced Schema](advschema.md).
 
 ## Displaying Schema Information
 
@@ -97,7 +97,7 @@ This method returns a builder for the property keys.
 
 !!! note
     During property key creation, consider creating also graph indices for better 
-    performance, see [Index Performance](../index-management/index-performance.md).
+    performance, see [Index Performance](../schema/index-management/index-performance.md).
 
 ### Property Key Data Type
 

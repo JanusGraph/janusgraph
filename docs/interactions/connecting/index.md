@@ -1,6 +1,6 @@
 JanusGraph can be queried from all languages for which a TinkerPop
 driver exists. Drivers allow sending of Gremlin traversals to a Gremlin
-Server like the [JanusGraph Server](../basics/server.md). A list of TinkerPop
+Server like the [JanusGraph Server](../../operations/server.md). A list of TinkerPop
 drivers is available on [TinkerPop’s homepage](https://tinkerpop.apache.org/#language-drivers).
 
 In addition to drivers, there exist 

@@ -106,7 +106,7 @@ Potentially temporary failures are those related to resource
 unavailability and IO hiccups (e.g. network timeouts). JanusGraph
 automatically tries to recover from temporary failures by retrying to
 persist the transactional state after some delay. The number of retry
-attempts and the retry delay are configurable (see [Configuration Reference](configuration-reference.md)).
+attempts and the retry delay are configurable (see [Configuration Reference](../configs/configuration-reference.md)).
 
 Permanent failures can be caused by complete connection loss, hardware
 failure or lock contention. To understand the cause of lock contention,

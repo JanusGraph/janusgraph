@@ -149,7 +149,7 @@ mgmt.commit()
 
 !!! note
     To enforce uniqueness against an eventually consistent storage
-    backend, the [consistency](../advanced-topics/eventual-consistency.md) of the index must be
+    backend, the [consistency](../../advanced-topics/eventual-consistency.md) of the index must be
     explicitly set to enabling locking.
 
 ### Mixed Index
@@ -161,7 +161,7 @@ beyond equality. On the other hand, mixed indexes are slower for most
 equality queries than composite indexes.
 
 Unlike composite indexes, mixed indexes require the configuration of an
-[indexing backend](../index-backend/search-predicates.md) and use that indexing backend to
+[indexing backend](../../index-backend/index.md) and use that indexing backend to
 execute lookup operations. JanusGraph can support multiple indexing
 backends in a single installation. Each indexing backend must be
 uniquely identified by name in the JanusGraph configuration which is
@@ -197,7 +197,7 @@ as a text index can be written as follows:
 mgmt.buildIndex('nameAndAge',Vertex.class).addKey(name,Mapping.TEXT.asParameter()).addKey(age,Mapping.TEXT.asParameter()).buildMixedIndex("search")
 ```
 
-See [Index Parameters and Full-Text Search](../index-backend/text-search.md) for more information on text and string
+See [Index Parameters and Full-Text Search](../../index-backend/text-search.md) for more information on text and string
 search options, and see the documentation section specific to the
 indexing backend in use for more details on how each backend handles
 text versus string searches.
@@ -215,7 +215,7 @@ g.V().or(__.has('name', textContains('hercules')), __.has('age', inside(20, 50))
 ```
 
 Mixed indexes support full-text search, range search, geo search and
-others. Refer to [Search Predicates and Data Types](../index-backend/search-predicates.md) for a list of predicates
+others. Refer to [Search Predicates and Data Types](../../interactions/search-predicates.md) for a list of predicates
 supported by a particular indexing backend.
 
 !!! note
@@ -257,7 +257,7 @@ When adding a property key to a mixed index - either through the index
 builder or the `addIndexKey` method - a list of parameters can be
 optionally specified to adjust how the property value is mapped into the
 indexing backend. Refer to the [mapping parameters
-overview](../index-backend/text-search.md) for a complete list of parameter types supported
+overview](../../index-backend/text-search.md) for a complete list of parameter types supported
 by each indexing backend.
 
 ### Ordering
@@ -344,7 +344,7 @@ can speed up such traversals by using localized index structures to
 retrieve only those edges that need to be traversed.
 
 Suppose that Hercules battled hundreds of monsters in addition to the
-three captured in the introductory [Graph of the Gods](../getting-started/basic-usage.md). Without a vertex-centric index, a query asking
+three captured in the introductory [Graph of the Gods](../../getting-started/basic-usage.md). Without a vertex-centric index, a query asking
 for those monsters battled between time point `10` and `20` would
 require retrieving all `battled` edges even though there are only a
 handful of matching edges.
@@ -496,7 +496,7 @@ Assuming there is a global index on the `name` property, this improves the perfo
 a lot, because it's not necessary to fetch every adjacent vertex anymore.
 In addition, a vertex-centric index on adjacent vertex ids does not need to
 be constructed and maintained explicitly.
-Due to the [data model](../advanced-topics/data-model.md), efficient access to
+Due to the [data model](../../advanced-topics/data-model.md), efficient access to
 edges by their adjacent vertex id is already provided by the storage backend.
 
 

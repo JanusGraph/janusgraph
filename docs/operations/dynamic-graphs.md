@@ -1,12 +1,4 @@
-# Things to Consider in a Multi-Node JanusGraph Cluster
-
-JanusGraph is a distributed graph database, which means it can be setup
-in a multi-node cluster. However, when working in such an environment,
-there are important things to consider. Furthermore, if configured
-properly, JanusGraph handles some of these special considerations for
-the user.
-
-## Dynamic Graphs
+# Dynamic Graphs
 
 JanusGraph supports [dynamically creating graphs](configured-graph-factory.md#configuredgraphfactory). This is
 deviation from the way in which standard Gremlin Server implementations
@@ -41,7 +33,7 @@ Gremlin Server in your cluster to use the `JanusGraphManager` and the
 `ConfigurationManagementGraph`. This procedure is explained in detail
 [here](configured-graph-factory.md#configuring-janusgraph-server-for-configuredgraphfactory).
 
-### Graph Reference Consistency
+## Graph Reference Consistency
 
 If you configure all your JanusGraph servers to use the
 [ConfiguredGraphFactory](configured-graph-factory.md#configuring-janusgraph-server-for-configuredgraphfactory),
@@ -69,7 +61,7 @@ able to successfully remove the graph from the cache.
     update APIs will *then* result in the graph cache eviction across all
     JanusGraph nodes in your cluster.
 
-### Dynamic Graph and Traversal Bindings
+## Dynamic Graph and Traversal Bindings
 
 JanusGraph has the ability to bind dynamically created graphs and their
 traversal references to `<graph.graphname>` and
@@ -119,7 +111,7 @@ There are a few channelizers you can choose from:
 All of the channelizers share the exact same functionality as their
 TinkerPop counterparts.
 
-#### Using TinkerPop’s withRemote Functionality
+### Using TinkerPop’s withRemote Functionality
 
 Since traversal references are bound on the JanusGraph servers, we can
 make use of [TinkerPop’s withRemote

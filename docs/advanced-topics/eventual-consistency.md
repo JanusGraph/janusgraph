@@ -124,7 +124,7 @@ one reads multiple properties. Since JanusGraph allows properties on
 properties, provenance information like `author` can be added to the
 properties to facilitate resolution at read time.
 
-See [multi-properties](../basics/schema.md#property-key-cardinality) to learn how to define
+See [multi-properties](../schema/index.md#property-key-cardinality) to learn how to define
 those.
 
 ## Data Inconsistency
@@ -158,7 +158,7 @@ to the edge not being or incorrectly being retrieved.
     that support batch write atomicity and to ensure that write atomicity
     is enabled. To get the benefit of write atomicity, the number
     modifications made in a single transaction must be smaller than the
-    configured `buffer-size` option documented in [Configuration Reference](../basics/configuration-reference.md). The
+    configured `buffer-size` option documented in [Configuration Reference](../configs/configuration-reference.md). The
     buffer size defines the maximum number of modifications that
     JanusGraph will persist in a single batch. If a transaction has more
     modifications, the persistence will be split into multiple batches
@@ -176,7 +176,7 @@ The following strategies can be used to mitigate this issue:
 
 **Existence checks**  
 Configure transactions to (double) check for the existence of vertices
-prior to returning them. Please see [Transaction Configuration](../basics/transactions.md#transaction-configuration) for more
+prior to returning them. Please see [Transaction Configuration](../interactions/transactions.md#transaction-configuration) for more
 information and note that this can significantly decrease performance.
 Note, that this does not fix the inconsistencies but hides some of them
 from the user.

@@ -1,7 +1,7 @@
 # Connecting from .NET
 
 Gremlin traversals can be constructed with Gremlin.Net just like in
-Gremlin-Java or Gremlin-Groovy. Refer to [Gremlin Query Language](../basics/gremlin.md) for an
+Gremlin-Java or Gremlin-Groovy. Refer to [Gremlin Query Language](../../getting-started/gremlin.md) for an
 introduction to Gremlin and pointers to further resources. The main
 syntactical difference for Gremlin.Net is that it follows .NET naming
 conventions, e.g., method names use PascalCase instead of camelCase.
@@ -45,6 +45,6 @@ var herculesAge = await g.V().Has("name", "hercules").Values<int>("age").Promise
 ```
 ## JanusGraph Specific Types and Predicates
 
-JanusGraph contains some types and [predicates](../index-backend/search-predicates.md) that
+JanusGraph contains some types and [predicates](../search-predicates.md) that
 are not part of Apache TinkerPop and are therefore also not supported by
 Gremlin.Net.

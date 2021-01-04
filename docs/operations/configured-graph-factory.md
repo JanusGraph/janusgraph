@@ -92,7 +92,7 @@ the `ConfigurationManagementGraph`.
     data.
 
 !!! important
-    To ensure all graph representations are consistent across all JanusGraph nodes in your cluster, this removes the graph from the `JanusGraphManager` graph cache on every node in the cluster, assuming each node has been properly configured to use the `JanusGraphManager`. Learn more about this feature and how to configure your server to use said feature [here](./multi-node.md#graph-reference-consistency).
+    To ensure all graph representations are consistent across all JanusGraph nodes in your cluster, this removes the graph from the `JanusGraphManager` graph cache on every node in the cluster, assuming each node has been properly configured to use the `JanusGraphManager`. Learn more about this feature and how to configure your server to use said feature [here](./dynamic-graphs.md#graph-reference-consistency).
 
 ## Configuring JanusGraph Server for ConfiguredGraphFactory
 
@@ -208,7 +208,7 @@ a graph cache. For this reason:
 !!! important
     Any updates to a graph configuration results in the eviction of the relevant graph from the graph cache on 
     every node in the JanusGraph cluster, assuming each node has been configured properly to use the `JanusGraphManager`. 
-    Learn more about this feature and how to configure your server to use said feature [here](./multi-node.md#graph-reference-consistency).
+    Learn more about this feature and how to configure your server to use said feature [here](./dynamic-graphs.md#graph-reference-consistency).
     
 
 Since graphs created using the template configuration first create a
@@ -403,7 +403,7 @@ g3 = ConfiguredGraphFactory.create("graph3"); //storage directory === /data/grap
 
 Graphs created using the ConfiguredGraphFactory are bound to the executor context on the Gremlin Server by the "graph.graphname" property, and the graph's traversal reference is bound to the context by "`<graphname>_traversal`". This means, on subsequent connections to the server after the first time you create/open a graph, you can access the graph and traversal references by the "`<graphname>`" and "`<graphname>_traversal`" properties.
 
-Learn more about this feature and how to configure your server to use said feature [here](./multi-node.md#dynamic-graph-and-traversal-bindings).
+Learn more about this feature and how to configure your server to use said feature [here](./dynamic-graphs.md#dynamic-graph-and-traversal-bindings).
 
 !!! IMPORTANT
     If you are connected to a remote Gremlin Server using the Gremlin Console and a **sessioned** connection, then you will have to reconnect to the server to bind the variables. This is also true for any sessioned WebSocket connection.
@@ -433,7 +433,7 @@ It is recommended to use a sessioned connection when creating a
 Configured Graph Factory template. If a sessioned connection is not used
 the Configured Graph Factory Template creation must be sent to the
 server as a single line using semi-colons. See details on sessions can
-be found in [Connecting to Gremlin Server](../connecting/index.md).
+be found in [Connecting to Gremlin Server](../interactions/connecting/index.md).
 
 ```groovy
 gremlin> :remote connect tinkerpop.server conf/remote.yaml session

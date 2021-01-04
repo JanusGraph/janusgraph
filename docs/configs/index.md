@@ -15,7 +15,7 @@ engine that JanusGraph should use as a storage backend.
 to configure them respectively. If advanced graph query support (e.g
 full-text search, geo search, or range queries) is required an
 additional indexing backend must be configured. See
-[Index Backends](../index-backend/search-predicates.md) for details. If query performance is a concern,
+[Index Backends](../index-backend/index.md) for details. If query performance is a concern,
 then caching should be enabled. Cache configuration and tuning is
 described in [JanusGraph Cache](#caching).
 
@@ -167,7 +167,7 @@ entry enables the JanusGraph Gremlin Plugin, which enables auto-imports
 of JanusGraph classes so that they can be referenced in remotely
 submitted scripts.
 
-Learn more about configuring and using JanusGraph Server in [JanusGraph Server](server.md).
+Learn more about configuring and using JanusGraph Server in [JanusGraph Server](../operations/server.md).
 
 #### Server Distribution
 

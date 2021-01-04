@@ -3,7 +3,7 @@
 
 By default, JanusGraph will automatically create property keys and edge
 labels when a new type is encountered. It is strongly encouraged that
-users explicitly schemata as documented in [Schema and Data Modeling](schema.md) before loading any data and disable automatic type
+users explicitly schemata as documented in [Schema and Data Modeling](schema/index.md) before loading any data and disable automatic type
 creation by setting the option `schema.default = none`.
 
 Automatic type creation can cause problems in multi-threaded or highly
@@ -20,7 +20,7 @@ To use a custom class as data type in JanusGraph, either register a
 custom serializer or ensure that the class has a no-argument constructor
 and implements the `equals` method because JanusGraph will verify that
 it can successfully de-/serialize objects of that class. Please see
-[Datatype and Attribute Serializer Configuration](../advanced-topics/serializer.md) for more information.
+[Datatype and Attribute Serializer Configuration](advanced-topics/serializer.md) for more information.
 
 ## Transactional Scope for Edges
 
@@ -29,7 +29,7 @@ originally created or retrieved.
 
 ## Locking Exceptions
 
-When defining unique types with [locking enabled](../advanced-topics/eventual-consistency.md)
+When defining unique types with [locking enabled](advanced-topics/eventual-consistency.md)
 (i.e. requesting that JanusGraph ensures uniqueness) it is likely to
 encounter locking exceptions of the type `PermanentLockingException`
 under concurrent modifications to the graph.
@@ -48,13 +48,13 @@ modified in another, both transactions will successfully commit on
 eventually consistent storage backends and the vertex will still exist
 with only the modified properties or edges. This is referred to as a
 ghost vertex. It is possible to guard against ghost vertices on
-eventually consistent backends using key [uniqueness](../index-management/index-performance.md#index-uniqueness) but
+eventually consistent backends using key [uniqueness](schema/index-management/index-performance.md#index-uniqueness) but
 this is prohibitively expensive in most cases. A more scalable approach
 is to allow ghost vertices temporarily and clearing them out in regular
 time intervals.
 
 Another option is to detect them at read-time using the option
-`checkInternalVertexExistence()` documented in [Transaction Configuration](transactions.md#transaction-configuration).
+`checkInternalVertexExistence()` documented in [Transaction Configuration](interactions/transactions.md#transaction-configuration).
 
 ## Debug-level Logging Slows Execution
 
@@ -71,7 +71,7 @@ running JanusGraph it is likely that the caches are configured
 incorrectly. If the caches are too large, the heap may fill up with
 cache entries. Try reducing the size of the transaction level cache
 before tuning the database level cache, in particular if you have many
-concurrent transactions. See [JanusGraph Cache](cache.md) for more
+concurrent transactions. See [JanusGraph Cache](operations/cache.md) for more
 information.
 
 ## Elasticsearch OutOfMemoryException
@@ -109,6 +109,6 @@ recommended to close the graph on all active nodes by running either
 manager is in use. Closing and reopening the graph on all active nodes
 will prevent cached(stale) references to the graph that has been
 dropped. ConfiguredGraphFactory graphs that are dropped may need to have
-their configurations recreated using the [graph configuration singleton](configured-graph-factory.md#graph-configurations) or
-[template configuration](configured-graph-factory.md#template-configuration).
+their configurations recreated using the [graph configuration singleton](operations/configured-graph-factory.md#graph-configurations) or
+[template configuration](operations/configured-graph-factory.md#template-configuration).
 

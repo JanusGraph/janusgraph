@@ -38,7 +38,7 @@ Elasticsearch will work with JanusGraph.
 JanusGraph supports connections to a running Elasticsearch cluster.
 JanusGraph provides two options for running local Elasticsearch
 instances for getting started quickly. JanusGraph server (see
-[Getting started](../basics/server.md#getting-started)) automatically starts a local
+[Getting started](../operations/server.md#getting-started)) automatically starts a local
 Elasticsearch instance. Alternatively JanusGraph releases include a full
 Elasticsearch distribution to allow users to manually start a local
 Elasticsearch instance (see [this
@@ -64,7 +64,7 @@ in JanusGraph.
     JanusGraph’s index options start with the string "`index.[X].`" where
     "`[X]`" is a user-defined name for the backend. This user-defined name
     must be passed to JanusGraph’s ManagementSystem interface when
-    building a mixed index, as described in [Mixed Index](../index-management/index-performance.md#mixed-index), so that
+    building a mixed index, as described in [Mixed Index](../schema/index-management/index-performance.md#mixed-index), so that
     JanusGraph knows which of potentially multiple configured index
     backends to use. Configuration snippets in this chapter use the name
     `search`, whereas prose discussion of options typically write `[X]` in
@@ -103,7 +103,7 @@ index.search.hostname=10.0.0.10, 10.0.0.20:7777
 #### JanusGraph `index.[X]` and `index.[X].elasticsearch` options
 
 JanusGraph only uses default values for `index-name` and
-`health-request-timeout`. See [Configuration Reference](../basics/configuration-reference.md) for descriptions of
+`health-request-timeout`. See [Configuration Reference](../configs/configuration-reference.md) for descriptions of
 these options and their accepted values.
 
 -   `index.[X].elasticsearch.index-name`
@@ -334,7 +334,7 @@ diagnostic utility like `netstat`. Check the JanusGraph configuration.
 
 ### Write Optimization
 
-For [bulk loading](../advanced-topics/bulk-loading.md) or other write-intense applications,
+For [bulk loading](../operations/bulk-loading.md) or other write-intense applications,
 consider increasing Elasticsearch’s refresh interval. Refer to [this
 discussion](https://www.elastic.co/guide/en/elasticsearch/reference/current/tune-for-indexing-speed.html)
 on how to increase the refresh interval and its impact on write

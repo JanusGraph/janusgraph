@@ -1,7 +1,7 @@
 # Connecting from Python
 
 Gremlin traversals can be constructed with Gremlin-Python just like in
-Gremlin-Java or Gremlin-Groovy. Refer to [Gremlin Query Language](../basics/gremlin.md) for an
+Gremlin-Java or Gremlin-Groovy. Refer to [Gremlin Query Language](../../getting-started/gremlin.md) for an
 introduction to Gremlin and pointers to further resources.
 
 !!! important
@@ -49,6 +49,6 @@ print('Hercules is {} years old.'.format(herculesAge))
 
 ## JanusGraph Specific Types and Predicates
 
-JanusGraph contains some types and [predicates](../index-backend/search-predicates.md) that
+JanusGraph contains some types and [predicates](../search-predicates.md) that
 are not part of Apache TinkerPop and are therefore also not supported by
 Gremlin-Python.

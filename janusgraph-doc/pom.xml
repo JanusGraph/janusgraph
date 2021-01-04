@@ -73,7 +73,7 @@
                             <mainClass>org.janusgraph.util.system.ConfigurationPrinter</mainClass>
                             <arguments>
                                 <argument>org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS</argument>
-                                <argument>${doc.dir}/basics/janusgraph-cfg.md</argument>
+                                <argument>${doc.dir}/configs/janusgraph-cfg.md</argument>
                             </arguments>
                         </configuration>
                     </execution>

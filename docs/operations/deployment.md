@@ -31,7 +31,7 @@ fault tolerance with a minimum number of servers required. JanusGraph
 Server runs together with an instance of the storage backend and
 optionally also an instance of the index backend on every server.
 
-![Getting started deployment scenario diagram](getting-started-scenario.svg)
+![Getting started deployment scenario diagram](images/getting-started-scenario.svg)
 
 A setup like this can be extended by simply adding more servers of the
 same kind or by moving one of the components onto dedicated servers. The
@@ -56,7 +56,7 @@ storage/index backend) on different servers is that they can be scaled
 and managed independently of each other. This offers a higher
 flexibility at the cost of having to maintain more servers.
 
-![Advanced deployment scenario diagram](advanced-scenario.svg)
+![Advanced deployment scenario diagram](images/advanced-scenario.svg)
 
 Since this scenario offers independent scalability of the different
 components, it of course makes most sense to also use scalable backends.
@@ -68,7 +68,7 @@ backend(s) on just one server. This is especially attractive for testing
 purposes or for example when JanusGraph just supports a single
 application which can then also run on the same server.
 
-![Minimalist deployment scenario diagram](minimalist-scenario.svg)
+![Minimalist deployment scenario diagram](images/minimalist-scenario.svg)
 
 Opposed to the previous scenarios, it makes most sense to use backends
 for this scenario that are not scalable. The in-memory backend can be

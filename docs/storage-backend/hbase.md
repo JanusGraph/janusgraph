@@ -94,7 +94,7 @@ languages need to reference and compute on the graph.
 
 In this case, each Gremlin Server would be configured to connect to the
 HBase cluster. The following shows the graph specific fragment of the
-Gremlin Server configuration. Refer to [JanusGraph Server](../basics/server.md) for a complete
+Gremlin Server configuration. Refer to [JanusGraph Server](../operations/server.md) for a complete
 example and more information on how to configure the server.
 
 ```yaml
@@ -114,7 +114,7 @@ scriptEngines: {
 
 ## HBase Specific Configuration
 
-Refer to [Configuration Reference](../basics/configuration-reference.md) for a complete listing of all HBase specific
+Refer to [Configuration Reference](../configs/configuration-reference.md) for a complete listing of all HBase specific
 configuration options in addition to the general JanusGraph
 configuration options.
 

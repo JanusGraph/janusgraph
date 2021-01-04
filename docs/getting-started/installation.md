@@ -61,7 +61,7 @@ gremlin> :remote connect tinkerpop.server conf/remote.yaml
 ==>Configured janusgraph/172.17.0.2:8182
 ```
 Notice how it's not necessary to bind any ports in order to make this example work.
-For further reading, see the [JanusGraph Server](../basics/server.md) section as well as the [JanusGraph Docker documentation](https://github.com/JanusGraph/janusgraph-docker/blob/master/README.md).
+For further reading, see the [JanusGraph Server](../operations/server.md) section as well as the [JanusGraph Docker documentation](https://github.com/JanusGraph/janusgraph-docker/blob/master/README.md).
 
 ## Local Installation
 
@@ -98,7 +98,7 @@ gremlin>
 
 The Gremlin Console interprets commands using [Apache Groovy](https://www.groovy-lang.org/), which is a superset of Java.
 Gremlin-Groovy extends Groovy by providing a set of methods for basic and advanced graph traversal funcionality.
-For a deeper dive into Gremlin language's features, please refer to our [introduction to Gremlin](../basics/gremlin.md).
+For a deeper dive into Gremlin language's features, please refer to our [introduction to Gremlin](./gremlin.md).
 
 ### Running the Gremlin Server
 
@@ -125,7 +125,7 @@ $ ./bin/janusgraph-server.sh console ./conf/gremlin-server/gremlin-server-[...].
     For further information about storage backends, visit the [corresponding section](../storage-backend/index.md) of the documentation.
     
     You are also encouraged to look into `janusgraph.sh`, which by defaults starts a more sophisticated server than `janusgraph-server.sh`.
-    Further documentation on server configuration can be found in the [JanusGraph Server](../basics/server.md#using-the-pre-packaged-distribution) section. (This requires to download `janusgraph-full-{{ latest_version }}.zip` instead of the default `janusgraph-{{ latest_version }}.zip`.)
+    Further documentation on server configuration can be found in the [JanusGraph Server](../operations/server.md#using-the-pre-packaged-distribution) section. (This requires to download `janusgraph-full-{{ latest_version }}.zip` instead of the default `janusgraph-{{ latest_version }}.zip`.)
 
 A Gremlin server is now running on your local machine and waiting for clients to connect on the default port `8182`.
 To instantiate a client -- as done before -- run the `gremlin.sh` script.

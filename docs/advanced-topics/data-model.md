@@ -14,7 +14,7 @@ edge has to be stored twice - once for each end vertex of the edge.
 In addition, JanusGraph maintains the adjacency list of each vertex in
 sort order with the order being defined by the sort key and sort order
 the edge labels. The sort order enables efficient retrievals of subsets
-of the adjacency list using [vertex centric indices](../index-management/index-performance.md#vertex-centric-indexes).
+of the adjacency list using [vertex centric indices](../schema/index-management/index-performance.md#vertex-centric-indexes).
 
 JanusGraph stores the adjacency list representation of a graph in any
 [storage backend](../storage-backend/index.md) that supports the Bigtable data

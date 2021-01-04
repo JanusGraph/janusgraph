@@ -12,10 +12,7 @@ JanusGraph has a specialty tests, disabled by default, intended to generate basi
 
 ## Continuous Integration
 
-JanusGraph runs continuous integration via Travis; see the [dashboard](https://travis-ci.org/JanusGraph/janusgraph) for current status.
-
-Travis sends emails on test failures and status transitions (to/from failure) to
-[janusgraph-ci@googlegroups.com](https://groups.google.com/forum/#!forum/janusgraph-ci) mailing list.
+JanusGraph runs continuous integration via Github Actions; see the [dashboard](https://github.com/JanusGraph/janusgraph/actions) for current status.
 
 ## JUnit
 

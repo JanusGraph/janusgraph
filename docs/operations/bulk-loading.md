@@ -161,7 +161,7 @@ the load on the backend.
 By parallelizing the bulk loading across multiple machines, the load
 time can be greatly reduced if JanusGraph’s storage backend cluster is
 large enough to serve the additional requests. This is essentially the
-approach [JanusGraph with TinkerPop’s Hadoop-Gremlin](hadoop.md) takes to bulk loading data into JanusGraph
+approach [JanusGraph with TinkerPop’s Hadoop-Gremlin](../advanced-topics/hadoop.md) takes to bulk loading data into JanusGraph
 using MapReduce.
 
 If Hadoop cannot be used for parallelizing the bulk loading process,
