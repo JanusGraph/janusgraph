@@ -18,6 +18,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Tag;
+import org.janusgraph.TestCategory;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
@@ -56,14 +59,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@Tag(TestCategory.PERFORMANCE_TESTS)
 public abstract class JanusGraphIterativeBenchmark extends JanusGraphBaseTest {
 
     private static final Random random = new Random();
 
-
     public abstract KeyColumnValueStoreManager openStorageManager() throws BackendException;
 
-    //@Test
+    @RepeatedTest(10)
     public void testDataSequential() throws Exception {
         loadData(200000,2);
         close();
@@ -90,11 +93,10 @@ public abstract class JanusGraphIterativeBenchmark extends JanusGraphBaseTest {
 
     }
 
-    //@Test
+    @RepeatedTest(10)
     public void testLoadData() throws Exception {
         loadData(100000,2);
     }
-
 
     public void loadData(final int numVertices, final int numThreads) throws Exception {
         makeKey("w",Integer.class);
@@ -132,7 +134,4 @@ public abstract class JanusGraphIterativeBenchmark extends JanusGraphBaseTest {
         if (!exe.isTerminated()) System.err.println("Could not load data in time");
         System.out.println("Loaded "+numVertices+"vertices");
     }
-
-
-
 }

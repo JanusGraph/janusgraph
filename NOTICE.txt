@@ -36,7 +36,6 @@ It also includes software from other open source projects including, but not lim
  * HPPC [https://labs.carrotsearch.com/hppc.html]
  * JUnit [https://www.junit.org/]
  * Jackson [https://github.com/FasterXML/jackson]
- * Junit Benchmark [https://labs.carrotsearch.com/junit-benchmarks.html]
  * Kryo [https://github.com/EsotericSoftware/kryo]
  * Metrics [https://metrics.dropwizard.io]
  * Mockito [https://site.mockito.org/]

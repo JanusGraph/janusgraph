@@ -24,12 +24,9 @@ import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.testutil.JUnitBenchmarkProvider;
 import org.janusgraph.testutil.MemoryAssess;
-import org.junit.Rule;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.rules.TestRule;
 
 import java.util.List;
 import java.util.Random;
@@ -44,11 +41,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag(TestCategory.MEMORY_TESTS)
 public abstract class JanusGraphPerformanceMemoryTest extends JanusGraphBaseTest {
 
-    @Rule
-    public TestRule benchmark = JUnitBenchmarkProvider.get();
-
-    @Test
-    void edgeById() {
+    @RepeatedTest(10)
+    public void edgeById() {
         Vertex v1 = graph.traversal()
                          .addV("V1")
                          .property("p1", "1").next();
@@ -74,7 +68,7 @@ public abstract class JanusGraphPerformanceMemoryTest extends JanusGraphBaseTest
         assertEquals(10000, graph.traversal().E(edges).count().next());
     }
 
-    @Test
+    @RepeatedTest(10)
     public void testMemoryLeakage() {
         long memoryBaseline = 0;
         SummaryStatistics stats = new SummaryStatistics();
@@ -103,7 +97,7 @@ public abstract class JanusGraphPerformanceMemoryTest extends JanusGraphBaseTest
         assertTrue(stats.getStandardDeviation() < stats.getMin());
     }
 
-    @Test
+    @RepeatedTest(10)
     public void testTransactionalMemory() throws Exception {
         makeVertexIndexedUniqueKey("uid",Long.class);
         makeKey("name",String.class);
