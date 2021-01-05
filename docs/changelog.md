@@ -212,6 +212,38 @@ New cql configuration options should be used for upgrade:
 
 See more new cql configuration options in configuration references under `storage.cql` section.
 
+### Version 0.5.3 (Release Date: December 24, 2020)
+
+=== "Maven"
+    ```xml
+    <dependency>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph-core</artifactId>
+        <version>0.5.3</version>
+    </dependency>
+    ```
+
+=== "Gradle"
+    ```groovy
+    compile "org.janusgraph:janusgraph-core:0.5.3"
+    ```
+
+**Tested Compatibility:**
+
+* Apache Cassandra 2.2.10, 3.0.14, 3.11.0
+* Apache HBase 1.2.6, 1.3.1, 1.4.10, 2.1.5
+* Google Bigtable 1.3.0, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.10.0, 1.11.0, 1.14.0
+* Oracle BerkeleyJE 7.5.11
+* Elasticsearch 6.0.1, 6.6.0, 7.6.2
+* Apache Lucene 7.0.0
+* Apache Solr 7.0.0
+* Apache TinkerPop 3.4.6
+* Java 1.8
+
+For more information on features and bug fixes in 0.5.3, see the GitHub milestone:
+
+-   <https://github.com/JanusGraph/janusgraph/milestone/20?closed=1>
+
 ### Version 0.5.2 (Release Date: May 3, 2020)
 
 === "Maven"

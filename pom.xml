@@ -154,7 +154,7 @@
     <build>
         <directory>${basedir}/target</directory>
         <plugins>
-            <plugin>        
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <version>3.0.0-M2</version>
@@ -273,7 +273,7 @@
                         <exclude>**/src/test/resources/org/janusgraph/hadoop/formats/edgelist/rdf/**</exclude>
                     </excludes>
                 </configuration>
-            </plugin>        
+            </plugin>
 
         </plugins>
         <pluginManagement>
@@ -1104,7 +1104,7 @@
               Sign artifacts artifacts only during release:perform
               when this profile is automatically activated or whenever
               else it is manually activated.
-    
+
               Stolen from: https://blog.sonatype.com/people/2010/01/how-to-generate-pgp-signatures-with-maven/
             -->
             <build>
