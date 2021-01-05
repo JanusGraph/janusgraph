@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize.strategy;
 
-import org.apache.tinkerpop.gremlin.process.computer.traversal.step.map.TraversalVertexProgramStep;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.FilterStep;
@@ -45,7 +44,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.janusgraph.graphdb.types.system.ImplicitKey.ADJACENT_ID;
-import static org.janusgraph.graphdb.types.system.ImplicitKey.ID;
 
 /**
  * @author Florian Grieskamp (Florian.Grieskamp@gdata.de)
@@ -106,15 +104,11 @@ public class AdjacentVertexHasUniquePropertyOptimizerStrategy
             .collect(Collectors.toList());
         final MultiCondition<JanusGraphElement> conditions = QueryUtil.constraints2QNF(tx, constraints);
 
-        // collect all matching indexes
-        final Set<IndexType> availableIndexes = IndexSelectionUtil.getMatchingIndexes(conditions);
-
-        // select only valid unique indexes
-        return availableIndexes.stream()
-            .filter(IndexType::isCompositeIndex)
-            .map(index -> (CompositeIndexType) index)
-            .filter(cIndex -> cIndex.getCardinality() == Cardinality.SINGLE)
-            .anyMatch(cIndex -> IndexSelectionUtil.isIndexSatisfiedByGivenKeys(cIndex, givenKeys));
+        // check all matching unique indexes
+        return IndexSelectionUtil.existsMatchingIndex(conditions,
+            indexType -> indexType.isCompositeIndex()
+                && ((CompositeIndexType) indexType).getCardinality() == Cardinality.SINGLE
+                && IndexSelectionUtil.isIndexSatisfiedByGivenKeys(indexType, givenKeys));
     }
 
     private Traversal.Admin<?,Long> generateFilter(Traversal.Admin<?,?> traversal, HasStep<?> originalStep) {

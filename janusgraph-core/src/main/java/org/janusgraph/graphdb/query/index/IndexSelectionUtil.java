@@ -15,11 +15,12 @@
 package org.janusgraph.graphdb.query.index;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.RelationType;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.OrderList;
+import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.ConditionUtil;
 import org.janusgraph.graphdb.query.condition.MultiCondition;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
@@ -31,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 
 public class IndexSelectionUtil {
     public static boolean indexCoversOrder(MixedIndexType index, OrderList orders) {
@@ -41,20 +43,56 @@ public class IndexSelectionUtil {
         return true;
     }
 
+    private static Iterable<IndexType> getKeyIndexesForCondition(Condition<JanusGraphElement> condition) {
+        if (condition instanceof PredicateCondition) {
+            final RelationType type = ((PredicateCondition<RelationType, JanusGraphElement>) condition).getKey();
+            Preconditions.checkArgument(type != null && type.isPropertyKey());
+            return ((InternalRelationType) type).getKeyIndexes();
+        }
+        return Collections.emptySet();
+    }
+
     public static Set<IndexType> getMatchingIndexes(MultiCondition<JanusGraphElement> conditions) {
-        if (conditions == null) {
+        return getMatchingIndexes(conditions, i -> true);
+    }
+
+    public static Set<IndexType> getMatchingIndexes(MultiCondition<JanusGraphElement> conditions, Predicate<IndexType> filter) {
+        if (conditions == null || filter == null) {
             return Collections.emptySet();
         }
         final Set<IndexType> availableIndexes = new HashSet<>();
         ConditionUtil.traversal(conditions, condition -> {
-            if (condition instanceof PredicateCondition) {
-                final RelationType type = ((PredicateCondition<RelationType, JanusGraphElement>) condition).getKey();
-                Preconditions.checkArgument(type != null && type.isPropertyKey());
-                Iterables.addAll(availableIndexes, ((InternalRelationType) type).getKeyIndexes());
+            for (IndexType indexCandidate : getKeyIndexesForCondition(condition)) {
+                if (filter.test(indexCandidate)) {
+                    availableIndexes.add(indexCandidate);
+                }
             }
             return true;
         });
         return availableIndexes;
+    }
+
+    public static boolean existsMatchingIndex(MultiCondition<JanusGraphElement> conditions)  {
+        return existsMatchingIndex(conditions, i -> true);
+    }
+
+    public static boolean existsMatchingIndex(MultiCondition<JanusGraphElement> conditions, Predicate<IndexType> filter) {
+        if (conditions == null || filter == null) {
+            return false;
+        }
+        MutableBoolean exists = new MutableBoolean();
+        ConditionUtil.traversal(conditions, condition -> {
+            if(exists.isFalse()){
+                for (IndexType indexCandidate : getKeyIndexesForCondition(condition)) {
+                    if (filter.test(indexCandidate)) {
+                        exists.setTrue();
+                        return true;
+                    }
+                }
+            }
+            return true;
+        });
+        return exists.booleanValue();
     }
 
     public static boolean isIndexSatisfiedByGivenKeys(IndexType index, Collection<String> givenKeys) {

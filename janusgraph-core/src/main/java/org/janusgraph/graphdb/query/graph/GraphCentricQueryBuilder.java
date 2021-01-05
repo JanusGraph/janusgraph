@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Cmp;
@@ -23,7 +22,6 @@ import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
 import org.janusgraph.graphdb.internal.ElementCategory;
-import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.*;
@@ -262,12 +260,10 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         if (orders.isEmpty()) orders = OrderList.NO_ORDER;
 
         //Compile all indexes that cover at least one of the query conditions
-        final Set<IndexType> indexCandidates = IndexSelectionUtil.getMatchingIndexes(conditions);
-
-        indexCandidates.removeIf(
-            indexType -> (indexType.getElement() != resultType)
-                    || (conditions instanceof Or
-                    && (indexType.isCompositeIndex() || !serializer.features((MixedIndexType) indexType).supportNotQueryNormalForm())));
+        final Set<IndexType> indexCandidates = IndexSelectionUtil.getMatchingIndexes(conditions,
+            indexType -> indexType.getElement() == resultType
+                    && !(conditions instanceof Or && (indexType.isCompositeIndex() || !serializer.features((MixedIndexType) indexType).supportNotQueryNormalForm()))
+        );
 
         final Set<Condition> coveredClauses = new HashSet<>();
         final IndexSelectionStrategy.SelectedIndexQuery selectedIndex = indexSelector.selectIndices(indexCandidates, conditions, coveredClauses, orders, serializer);
