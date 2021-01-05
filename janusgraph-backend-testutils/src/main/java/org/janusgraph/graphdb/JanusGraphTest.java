@@ -6349,6 +6349,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         // test with no valid constraints
         assertEquals(Collections.emptySet(), IndexSelectionUtil.getMatchingIndexes(null));
+        assertEquals(Collections.emptySet(), IndexSelectionUtil.getMatchingIndexes(null, null));
+        assertEquals(Collections.emptySet(), IndexSelectionUtil.getMatchingIndexes(null, i -> true));
 
         // test with two valid constraints
         List<PredicateCondition<String, JanusGraphElement>> constraints = Arrays.asList(
@@ -6357,5 +6359,39 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         );
         MultiCondition<JanusGraphElement> conditions = QueryUtil.constraints2QNF((StandardJanusGraphTx) tx, constraints);
         assertEquals(2, IndexSelectionUtil.getMatchingIndexes(conditions).size());
+        assertEquals(1, IndexSelectionUtil.getMatchingIndexes(conditions, i -> i.getName().equals("byAge")).size());
+
+        // test with invalid filter
+        assertEquals(0, IndexSelectionUtil.getMatchingIndexes(conditions, null).size());
+    }
+
+    @Test
+    public void testExistsMatchingIndex() {
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey age = makeKey("age", Integer.class);
+        mgmt.buildIndex("byName", Vertex.class).addKey(name).buildCompositeIndex();
+        mgmt.buildIndex("byAge", Vertex.class).addKey(age).buildCompositeIndex();
+        finishSchema();
+
+        String searchName = "someName";
+        Integer searchAge = 42;
+
+        // test with no valid constraints
+        assertEquals(false, IndexSelectionUtil.existsMatchingIndex(null));
+        assertEquals(false, IndexSelectionUtil.existsMatchingIndex(null, null));
+        assertEquals(false, IndexSelectionUtil.existsMatchingIndex(null, i -> true));
+
+        // test with two valid constraints
+        List<PredicateCondition<String, JanusGraphElement>> constraints = Arrays.asList(
+            new PredicateCondition<>("name", JanusGraphPredicateUtils.convert(P.eq(searchName).getBiPredicate()), searchName),
+            new PredicateCondition<>("age", JanusGraphPredicateUtils.convert(P.eq(searchAge).getBiPredicate()), searchAge)
+        );
+        MultiCondition<JanusGraphElement> conditions = QueryUtil.constraints2QNF((StandardJanusGraphTx) tx, constraints);
+        assertEquals(true, IndexSelectionUtil.existsMatchingIndex(conditions));
+        assertEquals(true, IndexSelectionUtil.existsMatchingIndex(conditions, i -> i.getName().equals("byAge")));
+        assertEquals(false, IndexSelectionUtil.existsMatchingIndex(conditions, i -> i.getName().equals("byNonExistentKey")));
+
+        // test with invalid filter
+        assertEquals(false, IndexSelectionUtil.existsMatchingIndex(conditions, null));
     }
 }
