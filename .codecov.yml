@@ -13,12 +13,17 @@
 # limitations under the License.
 
 coverage:
+  notify:
+    after_n_builds: 30
   status:
     patch: off
     project:
       default:
         # allow test coverage to drop by 2%, assume that it's typically due to CI problems
         threshold: 2
+
+comment:
+  after_n_builds: 30
 
 # Ignore test files
 ignore:
