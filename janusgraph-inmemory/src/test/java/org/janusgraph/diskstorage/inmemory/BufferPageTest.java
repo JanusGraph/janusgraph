@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.janusgraph.diskstorage.inmemory.BufferPageUtils.buildFromEntryArray;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
@@ -35,7 +36,7 @@ public class BufferPageTest
     }
 
     static Entry makeEntry(String column, String value) {
-        return StaticArrayEntry.of(makeStaticBuffer(column), makeStaticBuffer(column));
+        return StaticArrayEntry.of(makeStaticBuffer(column), makeStaticBuffer(value));
     }
 
     @Test
@@ -145,4 +146,32 @@ public class BufferPageTest
         assertEquals(1, mergedPages.get(3).numEntries());
     }
 
+    @Test
+    public void testLargeColumnKey()
+    {
+        StringBuffer longStringValue = new StringBuffer("-");
+        for(int i=0; i < 130; i++)
+        {
+            longStringValue.append('-');
+        }
+
+        assertTrue(longStringValue.length() > 127); //we want to make sure we trigger the switch in valPos storage mode
+
+        Entry[] entries = new Entry[]
+        {
+            makeEntry("1"+longStringValue.toString(), "qq"),
+            makeEntry("2qq", longStringValue.toString()),
+            makeEntry("3"+longStringValue.toString(), "qq"),
+            makeEntry("4qq", longStringValue.toString()),
+        };
+
+        BufferPage bp = buildFromEntryArray(entries, entries.length);
+
+        for (int i=0; i<entries.length; i++)
+        {
+            assertTrue(bp.get(i).equals(entries[i]));
+            assertTrue(bp.getNoCopy(i).equals(entries[i]));
+            assertEquals(i, bp.getIndex(entries[i].getColumn()));
+        }
+    }
 }
