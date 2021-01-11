@@ -386,6 +386,7 @@
                 <test.skip.murmur>true</test.skip.murmur>
                 <test.skip.murmur-serial>true</test.skip.murmur-serial>
                 <test.skip.murmur-ssl>true</test.skip.murmur-ssl>
+                <test.cql.excludes>${test.excluded.groups}</test.cql.excludes>
             </properties>
         </profile>
     </profiles>
