@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -93,7 +94,7 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
     }
 
     public JanusGraphCassandraContainer(boolean bindDefaultPort) {
-        super(getCassandraImage() + ":" + getVersion());
+        super(DockerImageName.parse(getCassandraImage() + ":" + getVersion()).asCompatibleSubstituteFor(DEFAULT_IMAGE));
         if (bindDefaultPort) {
             addFixedExposedPort(CQL_PORT, CQL_PORT);
         }

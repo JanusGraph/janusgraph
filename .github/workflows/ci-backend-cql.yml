@@ -87,6 +87,9 @@ jobs:
           - module: cql
             args: "-Pcassandra3-murmur-client-auth -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
             name: murmur-client-auth
+          - module: cql
+            args: "-Pscylladb -Dcassandra.docker.image=scylladb/scylla -Dcassandra.docker.version=4.3.0 -Dtest.cql.excludes=MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS"
+            name: scylladb
     steps:
       - uses: actions/checkout@v2
         with:
@@ -102,9 +105,50 @@ jobs:
           java-version: 1.8
       - run: mvn clean install --projects janusgraph-${{ matrix.module }} ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
       - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.args }}
-      - name: cql 3.0.18
-        if: "github.event_name == 'push' && contains(github.event.head_commit.message, '[cql-tests]') || github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[cql-tests]')"
-        run: mvn verify --projects janusgraph-${{ matrix.module }} -Dcassandra.docker.version=3.0.18' ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.args }}
+      - uses: codecov/codecov-action@v1
+
+  full-tests:
+    runs-on: ubuntu-20.04
+    if: "github.event_name == 'push' && contains(github.event.head_commit.message, '[cql-tests]') || github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[cql-tests]')"
+    needs: build-all
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - module: cql
+            args: "-Pcassandra3-byteordered -Dtest=\"**/diskstorage/cql/*\""
+            name: byteordered-diskstorage
+          - module: cql
+            args: "-Pcassandra3-murmur -Dtest=\"**/diskstorage/cql/*\""
+            name: murmur-diskstorage
+          - module: cql
+            args: "-Pcassandra3-byteordered -Dtest=\"**/graphdb/cql/*\""
+            name: byteordered-graphdb
+          - module: cql
+            args: "-Pcassandra3-murmur -Dtest=\"**/graphdb/cql/*\""
+            name: murmur-graphdb
+          - module: cql
+            args: "-Pcassandra3-murmur -Dtest=\"**/hadoop/*\""
+            name: murmur-hadoop
+          - module: cql
+            args: "-Pcassandra3-murmur-ssl -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
+            name: murmur-ssl
+          - module: cql
+            args: "-Pcassandra3-murmur-client-auth -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
+            name: murmur-client-auth
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - run: mvn clean install --projects janusgraph-${{ matrix.module }} ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
+      - run: mvn verify --projects janusgraph-${{ matrix.module }} -Dcassandra.docker.version=3.0.18' ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.args }}
       - uses: codecov/codecov-action@v1
         with:
           name: codecov-cql-${{ matrix.name }}
