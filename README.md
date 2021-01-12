@@ -62,6 +62,9 @@ tools:
 * Twitter: follow [@JanusGraph](https://twitter.com/JanusGraph) for news and
   updates
 
+* LinkedIn: follow [JanusGraph](https://www.linkedin.com/company/janusgraph) for news and
+  updates
+
 * Mailing lists:
 
   * **janusgraph-users (at) lists.lfaidata.foundation**
