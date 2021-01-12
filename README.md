@@ -64,28 +64,39 @@ tools:
 
 * Mailing lists:
 
-  * **janusgraph-users (at) googlegroups.com**
-    ([archives](https://groups.google.com/group/janusgraph-users))
+  * **janusgraph-users (at) lists.lfaidata.foundation**
+    ([archives](https://lists.lfaidata.foundation/g/janusgraph-users/topics))
     for questions about using JanusGraph, installation, configuration, integrations
 
-    To join with a Google account, use the [web
-    UI](https://groups.google.com/forum/#!forum/janusgraph-users/join); to
+    To join with a LF AI & Data account, use the [web
+    UI](https://lists.lfaidata.foundation/g/janusgraph-users/join); to
     subscribe/unsubscribe with an arbitrary email address, send an email to:
 
-    * janusgraph-users+subscribe (at) googlegroups.com
-    * janusgraph-users+unsubscribe (at) googlegroups.com
+    * janusgraph-users+subscribe (at) lists.lfaidata.foundation
+    * janusgraph-users+unsubscribe (at) lists.lfaidata.foundation
 
-  * **janusgraph-dev (at) googlegroups.com**
-    ([archives](https://groups.google.com/group/janusgraph-dev))
+  * **janusgraph-dev (at) lists.lfaidata.foundation**
+    ([archives](https://lists.lfaidata.foundation/g/janusgraph-dev/topics))
     for internal implementation of JanusGraph itself
 
-    To join with a Google account, use the [web
-    UI](https://groups.google.com/forum/#!forum/janusgraph-dev/join); to
+    To join with a LF AI & Data account, use the [web
+    UI](https://lists.lfaidata.foundation/g/janusgraph-dev/join); to
     subscribe/unsubscribe with an arbitrary email address, send an email to:
 
-    * janusgraph-dev+subscribe (at) googlegroups.com
-    * janusgraph-dev+unsubscribe (at) googlegroups.com
+    * janusgraph-dev+subscribe (at) lists.lfaidata.foundation
+    * janusgraph-dev+unsubscribe (at) lists.lfaidata.foundation
 
+  * **janusgraph-announce (at) lists.lfaidata.foundation**
+    ([archives](https://lists.lfaidata.foundation/g/janusgraph-announce/topics))
+    for new releases and news announcements
+
+    To join with a LF AI & Data account, use the [web
+    UI](https://lists.lfaidata.foundation/g/janusgraph-announce/join); to
+    subscribe/unsubscribe with an arbitrary email address, send an email to:
+
+    * janusgraph-announce+subscribe (at) lists.lfaidata.foundation
+    * janusgraph-announce+unsubscribe (at) lists.lfaidata.foundation
+    
 ## Contributing
 
 Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for more information, including
