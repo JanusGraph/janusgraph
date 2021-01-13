@@ -853,7 +853,7 @@
             <dependency>
                 <groupId>org.jboss.netty</groupId>
                 <artifactId>netty</artifactId>
-                <version>3.2.7.Final</version>
+                <version>3.2.10.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
