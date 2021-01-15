@@ -491,7 +491,7 @@ public class EdgeSerializer implements RelationReader {
                 sliceEnd = BufferUtil.nextBiggerBuffer(sliceStart);
             }
         }
-        return new SliceQuery(sliceStart, sliceEnd);
+        return new SliceQuery(sliceStart, sliceEnd, type.name());
     }
 
     public static class TypedInterval {
