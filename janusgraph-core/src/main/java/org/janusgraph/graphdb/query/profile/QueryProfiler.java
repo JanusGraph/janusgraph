@@ -40,6 +40,9 @@ public interface QueryProfiler {
     String FULLSCAN_ANNOTATION = "fullscan";
     String INDEX_ANNOTATION = "index";
 
+    /* ==================================================================================
+                                       GROUP NAMES
+     ==================================================================================*/
     String OR_QUERY = "OR-query";
     String AND_QUERY = "AND-query";
     String BACKEND_QUERY = "backend-query";

@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.query;
 
 import org.janusgraph.core.JanusGraphElement;
+import org.janusgraph.graphdb.query.profile.ProfileObservable;
 
 import java.util.Comparator;
 
@@ -25,7 +26,7 @@ import java.util.Comparator;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public interface ElementQuery<R extends JanusGraphElement,B extends BackendQuery<B>> extends Query {
+public interface ElementQuery<R extends JanusGraphElement,B extends BackendQuery<B>> extends Query, ProfileObservable {
 
     /**
      * Whether the combination of the individual sub-queries can result in duplicate

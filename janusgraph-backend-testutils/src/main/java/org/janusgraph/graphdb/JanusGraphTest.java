@@ -46,7 +46,19 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -155,8 +167,6 @@ import org.janusgraph.graphdb.schema.VertexLabelDefinition;
 import org.janusgraph.graphdb.serializer.SpecialInt;
 import org.janusgraph.graphdb.serializer.SpecialIntSerializer;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.types.CompositeIndexType;
-import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.graphdb.types.StandardPropertyKeyMaker;
 import org.janusgraph.graphdb.types.system.BaseVertexLabel;
@@ -170,7 +180,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -5683,6 +5692,36 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertTrue(tx.traversal().V().not(__.has("p2")).hasNext());
         // property registered in schema and has composite index
         assertTrue(tx.traversal().V().not(__.has("p3")).hasNext());
+    }
+
+    @Test
+    public void testVertexCentricQueryProfiling() {
+        final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        final EdgeLabel friend = mgmt.makeEdgeLabel("friend").multiplicity(Multiplicity.SIMPLE).make();
+        mgmt.buildEdgeIndex(friend, "byTime", OUT, desc, time);
+        finishSchema();
+
+        JanusGraphVertex v = tx.addVertex();
+        JanusGraphVertex o = tx.addVertex();
+        v.addEdge("friend", o, "time", 100);
+        v.addEdge("friend-no-index", o, "time", 100);
+        tx.commit();
+
+        // satisfied by a single vertex-centric query which is satisfied by one edge query
+        newTx();
+        Metrics mSingleLabel = tx.traversal().V(v).outE("friend").has("time", P.lt(10)).profile().next().getMetrics(1);
+        assertEquals("JanusGraphVertexStep([time.lt(10)])", mSingleLabel.getName());
+        assertTrue(mSingleLabel.getDuration(TimeUnit.MICROSECONDS) > 0);
+        Map<String, String> annotations = new HashMap() {{
+            put("condition", "(time < 10 AND type[friend])");
+            put("orders", "[]");
+            put("vertices", 1);
+            put("isFitted", "true");
+            put("isOrdered", "true");
+            put("query", "2069:byTime:SliceQuery[0xB0E0FF7FFFFFF6,0xB0E1)@2147483647");
+        }};
+        mSingleLabel.getAnnotations().remove("percentDur");
+        assertEquals(annotations, mSingleLabel.getAnnotations());
     }
 
     @Test

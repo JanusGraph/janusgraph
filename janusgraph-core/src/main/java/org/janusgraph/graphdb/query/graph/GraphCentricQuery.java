@@ -39,7 +39,7 @@ import java.util.Objects;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGraphElement, JointIndexQuery>, ProfileObservable {
+public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGraphElement, JointIndexQuery> {
 
     /**
      * The condition of this query, the result set is the set of all elements in the graph for which this
