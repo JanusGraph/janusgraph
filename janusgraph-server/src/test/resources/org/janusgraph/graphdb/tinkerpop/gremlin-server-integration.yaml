@@ -18,7 +18,7 @@ scriptEvaluationTimeout: 30000
 channelizer: org.janusgraph.channelizers.JanusGraphWebSocketChannelizer
 graphManager: org.janusgraph.graphdb.management.JanusGraphManager
 graphs: {
-  ConfigurationManagementGraph: conf/janusgraph-server-integration.properties
+  ConfigurationManagementGraph: "src/test/resources/conf/janusgraph-server-integration.properties"
 }
 scriptEngines: {
   gremlin-groovy: {
