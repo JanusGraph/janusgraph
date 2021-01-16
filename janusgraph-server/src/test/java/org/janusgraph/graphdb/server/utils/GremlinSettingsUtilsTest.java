@@ -23,11 +23,11 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class JanusGraphSettingsUtilsTest {
+public class GremlinSettingsUtilsTest {
 
     @Test
     public void testSetDefaultSerializers() throws Exception {
-        Settings settings = JanusGraphSettingsUtils.configureDefaultSerializersIfNotSet(
+        Settings settings = GremlinSettingsUtils.configureDefaultSerializersIfNotSet(
             Settings.read("src/test/resources/janusgraph-server-without-serializers.yaml"));
 
         assertEquals(5, settings.serializers.size());
@@ -35,7 +35,7 @@ public class JanusGraphSettingsUtilsTest {
 
     @Test
     public void testDontOverwriteSerializers() throws Exception {
-        Settings settings = JanusGraphSettingsUtils.configureDefaultSerializersIfNotSet(
+        Settings settings = GremlinSettingsUtils.configureDefaultSerializersIfNotSet(
             Settings.read("src/test/resources/janusgraph-server-with-serializers.yaml"));
 
         assertEquals(11, settings.serializers.size());
@@ -43,7 +43,7 @@ public class JanusGraphSettingsUtilsTest {
 
     @Test
     public void testSetDefaultSerializersWithGraphBinaryWithRegistry() throws Exception {
-        Settings settings = JanusGraphSettingsUtils.configureDefaultSerializersIfNotSet(
+        Settings settings = GremlinSettingsUtils.configureDefaultSerializersIfNotSet(
             Settings.read("src/test/resources/janusgraph-server-without-serializers.yaml"));
 
         Optional<Settings.SerializerSettings> graphBinary = settings.serializers
@@ -57,7 +57,7 @@ public class JanusGraphSettingsUtilsTest {
 
     @Test
     public void testSetDefaultSerializersWithGraphBinaryWithResultToString() throws Exception {
-        Settings settings = JanusGraphSettingsUtils.configureDefaultSerializersIfNotSet(
+        Settings settings = GremlinSettingsUtils.configureDefaultSerializersIfNotSet(
             Settings.read("src/test/resources/janusgraph-server-without-serializers.yaml"));
 
         Optional<Settings.SerializerSettings> graphBinary = settings.serializers
@@ -71,7 +71,7 @@ public class JanusGraphSettingsUtilsTest {
 
     @Test
     public void testSetDefaultSerializersWithGryoWithRegistry() throws Exception {
-        Settings settings = JanusGraphSettingsUtils.configureDefaultSerializersIfNotSet(
+        Settings settings = GremlinSettingsUtils.configureDefaultSerializersIfNotSet(
             Settings.read("src/test/resources/janusgraph-server-without-serializers.yaml"));
 
         Optional<Settings.SerializerSettings> gryo = settings.serializers
@@ -85,7 +85,7 @@ public class JanusGraphSettingsUtilsTest {
 
     @Test
     public void testSetDefaultSerializersWithGryoWithResultToString() throws Exception {
-        Settings settings = JanusGraphSettingsUtils.configureDefaultSerializersIfNotSet(
+        Settings settings = GremlinSettingsUtils.configureDefaultSerializersIfNotSet(
             Settings.read("src/test/resources/janusgraph-server-without-serializers.yaml"));
 
         Optional<Settings.SerializerSettings> graphBinary = settings.serializers
@@ -99,7 +99,7 @@ public class JanusGraphSettingsUtilsTest {
 
     @Test
     public void testSetDefaultSerializersWithGraphSONWithRegistry() throws Exception {
-        Settings settings = JanusGraphSettingsUtils.configureDefaultSerializersIfNotSet(
+        Settings settings = GremlinSettingsUtils.configureDefaultSerializersIfNotSet(
             Settings.read("src/test/resources/janusgraph-server-without-serializers.yaml"));
 
         Optional<Settings.SerializerSettings> graphson = settings.serializers

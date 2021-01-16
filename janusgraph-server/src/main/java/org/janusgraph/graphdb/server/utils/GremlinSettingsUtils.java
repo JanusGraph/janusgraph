@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class JanusGraphSettingsUtils {
+public class GremlinSettingsUtils {
 
     /**
      * Add a default set of serializers, if they are empty.

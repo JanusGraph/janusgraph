@@ -17,15 +17,14 @@ port: 8182
 scriptEvaluationTimeout: 30000
 channelizer: org.apache.tinkerpop.gremlin.server.channel.WebSocketChannelizer
 graphs: {
-    graph: conf/janusgraph-inmemory.properties
+    graph: "src/test/resources/conf/janusgraph-inmemory.properties"
 }
 scriptEngines: {
     gremlin-groovy: {
         plugins: { org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin: {},
                    org.apache.tinkerpop.gremlin.server.jsr223.GremlinServerGremlinPlugin: {},
                    org.apache.tinkerpop.gremlin.tinkergraph.jsr223.TinkerGraphGremlinPlugin: {},
-                   org.apache.tinkerpop.gremlin.jsr223.ImportGremlinPlugin: {classImports: [java.lang.Math], methodImports: [java.lang.Math#*]},
-                   org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: {files: [scripts/empty-sample.groovy]}}}}
+                   org.apache.tinkerpop.gremlin.jsr223.ImportGremlinPlugin: {classImports: [java.lang.Math], methodImports: [java.lang.Math#*]}}}}
 serializers:
     - { className: org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1, config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
     - { className: org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1, config: { serializeResultToString: true }}
@@ -43,10 +42,10 @@ processors:
     - { className: org.apache.tinkerpop.gremlin.server.op.session.SessionOpProcessor, config: { sessionTimeout: 28800000 }}
     - { className: org.apache.tinkerpop.gremlin.server.op.traversal.TraversalOpProcessor, config: { cacheExpirationTime: 600000, cacheMaxSize: 1000 }}
 metrics: {
-    consoleReporter: {enabled: true, interval: 180000},
-    csvReporter: {enabled: true, interval: 180000, fileName: /tmp/gremlin-server-metrics.csv},
-    jmxReporter: {enabled: true},
-    slf4jReporter: {enabled: true, interval: 180000},
+    consoleReporter: {enabled: false, interval: 180000},
+    csvReporter: {enabled: false, interval: 180000, fileName: /tmp/gremlin-server-metrics.csv},
+    jmxReporter: {enabled: false},
+    slf4jReporter: {enabled: false, interval: 180000},
     graphiteReporter: {enabled: false, interval: 180000}}
 maxInitialLineLength: 4096
 maxHeaderSize: 8192

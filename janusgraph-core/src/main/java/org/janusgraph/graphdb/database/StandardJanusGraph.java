@@ -840,8 +840,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             log.debug("Shutting down graph {} using shutdown hook {}", graph, this);
 
             graph.closeInternal();
+            graph.shutdownHook = null;
         }
     }
-
-
 }
