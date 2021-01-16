@@ -28,11 +28,11 @@ public class QueryInfo {
 
     private final  List<OrderEntry> orders;
 
-    private Integer lowLimit;
+    private int lowLimit;
 
-    private Integer highLimit;
+    private int highLimit;
 
-    public QueryInfo(List<OrderEntry> orders, Integer lowLimit, Integer highLimit) {
+    public QueryInfo(List<OrderEntry> orders, int lowLimit, int highLimit) {
         this.orders = orders;
         this.lowLimit = lowLimit;
         this.highLimit = highLimit;
@@ -42,20 +42,20 @@ public class QueryInfo {
         return orders;
     }
 
-    public Integer getLowLimit() {
+    public int getLowLimit() {
         return lowLimit;
     }
 
-    public Integer getHighLimit() {
+    public int getHighLimit() {
         return highLimit;
     }
 
-    public QueryInfo setLowLimit(Integer lowLimit) {
+    public QueryInfo setLowLimit(int lowLimit) {
         this.lowLimit = lowLimit;
         return this;
     }
 
-    public QueryInfo setHighLimit(Integer highLimit) {
+    public QueryInfo setHighLimit(int highLimit) {
         this.highLimit = highLimit;
         return this;
     }
@@ -71,6 +71,6 @@ public class QueryInfo {
         else if (other==null) return false;
         else if (!getClass().isInstance(other)) return false;
         QueryInfo oth = (QueryInfo)other;
-        return Objects.equals(orders, oth.orders) && Objects.equals(lowLimit, oth.lowLimit) && highLimit.equals(oth.highLimit);
+        return Objects.equals(orders, oth.orders) && lowLimit == oth.lowLimit && highLimit == oth.highLimit;
     }
 }
