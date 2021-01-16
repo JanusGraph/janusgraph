@@ -107,16 +107,15 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
     }
 
     private GraphCentricQuery buildGlobalGraphCentricQuery(final JanusGraphTransaction tx) {
-        //If a query have a local offset or have a local order without a global order and if a query have a limit lower than the global different from other query we can not build globalquery
-        final Iterator<QueryInfo> itQueryInfo =  hasLocalContainers.values().iterator();
-        QueryInfo queryInfo = itQueryInfo.next();
-        if (queryInfo.getLowLimit() > 0 || orders.isEmpty() && !queryInfo.getOrders().isEmpty()) {
-            return null;
-        }
-        final Integer limit = queryInfo.getHighLimit();
-        while (itQueryInfo.hasNext()) {
-            queryInfo = itQueryInfo.next();
-            if (queryInfo.getLowLimit() > 0 || (orders.isEmpty() && !queryInfo.getOrders().isEmpty()) || (queryInfo.getHighLimit() < highLimit && !limit.equals(queryInfo.getHighLimit()))) {
+        Integer limit = null;
+        for (QueryInfo queryInfo : hasLocalContainers.values()) {
+            if (queryInfo.getLowLimit() > 0 || orders.isEmpty() && !queryInfo.getOrders().isEmpty()) {
+                return null;
+            }
+            final int currentHighLimit = queryInfo.getHighLimit();
+            if (limit == null) {
+                limit = currentHighLimit;
+            } else if (currentHighLimit < highLimit && !limit.equals(currentHighLimit)) {
                 return null;
             }
         }
@@ -127,7 +126,7 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
             query.or(localQuery);
         }
         for (final OrderEntry order : orders) query.orderBy(order.key, order.order);
-        if (highLimit != BaseQuery.NO_LIMIT || limit != BaseQuery.NO_LIMIT) query.limit(Math.min(limit, highLimit));
+        query.limit(Math.min(limit, highLimit));
         return buildGraphCentricQuery(query);
     }
 
