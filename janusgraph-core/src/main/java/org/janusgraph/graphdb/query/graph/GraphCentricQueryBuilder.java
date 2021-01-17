@@ -228,9 +228,6 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     public GraphCentricQuery constructQuery(final ElementCategory resultType) {
         final QueryProfiler optProfiler = profiler.addNested(QueryProfiler.OPTIMIZATION);
         optProfiler.startTimer();
-        if (this.globalConstraints.isEmpty()) {
-            this.globalConstraints.add(this.constraints);
-        }
         final GraphCentricQuery query = constructQueryWithoutProfile(resultType);
         optProfiler.stopTimer();
         query.observeWith(profiler);
@@ -241,6 +238,9 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         Preconditions.checkNotNull(resultType);
         if (limit == 0) return GraphCentricQuery.emptyQuery(resultType);
 
+        if (globalConstraints.isEmpty()) {
+            globalConstraints.add(constraints);
+        }
         //Prepare constraints
         final MultiCondition<JanusGraphElement> conditions;
         if (this.globalConstraints.size() == 1) {

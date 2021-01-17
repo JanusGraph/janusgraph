@@ -1346,7 +1346,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                             return indexCache.get(adjustedQuery,
                                 () -> QueryProfiler.profile(subquery.getProfiler(), adjustedQuery, q -> indexSerializer.query(q, txHandle).collect(Collectors.toList())));
                         } catch (Exception e) {
-                            throw new JanusGraphException("Could not call index", e.getCause());
+                            throw new JanusGraphException("Could not call index", e);
                         }
                     });
                 }

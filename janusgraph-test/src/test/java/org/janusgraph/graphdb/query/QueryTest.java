@@ -15,7 +15,9 @@
 package org.janusgraph.graphdb.query;
 
 import com.google.common.collect.Iterators;
+import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Contain;
@@ -27,6 +29,7 @@ import org.janusgraph.diskstorage.inmemory.InMemoryStoreManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.OrderList;
+import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,6 +65,12 @@ public class QueryTest {
         if (graph!=null && graph.isOpen()) graph.close();
     }
 
+    private String getQueryAnnotation(TraversalMetrics metrics) {
+        Object[] nestedArr = metrics.getMetrics(0).getNested().toArray();
+        // the last nested group is the actual backend query
+        return (String) ((Metrics) nestedArr[nestedArr.length - 1]).getAnnotation(QueryProfiler.QUERY_ANNOTATION);
+    }
+
     @Test
     public void testQueryLimitAdjustment() {
         JanusGraphManagement mgmt = graph.openManagement();
@@ -83,23 +92,23 @@ public class QueryTest {
 
         // Single condition, fully met by index prop1_idx. No need to adjust backend query limit.
         assertCount(5, graph.traversal().V().has("prop1", "prop1val").limit(5));
-        assertEquals("multiKSQ[1]@5", graph.traversal().V().has("prop1", "prop1val").limit(5)
-                .profile().next().getMetrics(0).getAnnotation("query"));
+        assertEquals("multiKSQ[1]@5", getQueryAnnotation(graph.traversal().V().has("prop1", "prop1val").limit(5)
+                .profile().next()));
 
         // Two conditions, fully met by index props_idx. No need to adjust backend query limit.
         assertCount(5, graph.traversal().V().has("prop1", "prop1val").has("prop2", "prop2val").limit(5));
-        assertEquals("multiKSQ[1]@5", graph.traversal().V().has("prop1", "prop1val").has("prop2", "prop2val").limit(5)
-            .profile().next().getMetrics(0).getAnnotation("query"));
+        assertEquals("multiKSQ[1]@5", getQueryAnnotation(graph.traversal().V().has("prop1", "prop1val").has("prop2", "prop2val").limit(5)
+            .profile().next()));
 
         // Two conditions, one of which met by index prop1_idx. Multiply original limit by two for sake of in-memory filtering.
         assertCount(5, graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").limit(5));
-        assertEquals("multiKSQ[1]@10", graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").limit(5)
-            .profile().next().getMetrics(0).getAnnotation("query"));
+        assertEquals("multiKSQ[1]@10", getQueryAnnotation(graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").limit(5)
+            .profile().next()));
 
         // Three conditions, one of which met by index prop1_idx. Multiply original limit by four for sake of in-memory filtering.
         assertCount(5, graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").has("prop4", "prop4val0").limit(5));
-        assertEquals("multiKSQ[1]@20", graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").has("prop4", "prop4val0").limit(5)
-            .profile().next().getMetrics(0).getAnnotation("query"));
+        assertEquals("multiKSQ[1]@20", getQueryAnnotation(graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").has("prop4", "prop4val0").limit(5)
+            .profile().next()));
     }
 
     @Test
