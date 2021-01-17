@@ -66,7 +66,7 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
                 isTimerRunning = true;
                 stream = indexSerializer.query(subQuery, tx).peek(r -> currentIds.add(r));
             } catch (final Exception e) {
-                throw new JanusGraphException("Could not call index", e.getCause());
+                throw new JanusGraphException("Could not call index", e);
             }
         }
         elementIterator = stream.filter(e -> otherResults == null || otherResults.contains(e)).limit(limit).map(function).map(r -> (JanusGraphElement) r).iterator();

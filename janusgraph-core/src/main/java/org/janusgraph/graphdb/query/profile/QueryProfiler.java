@@ -47,6 +47,10 @@ public interface QueryProfiler {
     String AND_QUERY = "AND-query";
     String BACKEND_QUERY = "backend-query";
     String OPTIMIZATION = "optimization";
+    // graph centric query construction phase
+    String CONSTRUCT_GRAPH_CENTRIC_QUERY = "constructGraphCentricQuery";
+    // graph centric query execution phase
+    String GRAPH_CENTRIC_QUERY = "GraphCentricQuery";
 
     QueryProfiler NO_OP = new QueryProfiler() {
         @Override
@@ -85,10 +89,6 @@ public interface QueryProfiler {
 
     static<Q extends Query,R extends Collection> R profile(QueryProfiler profiler, Q query, Function<Q,R> queryExecutor) {
         return profile(profiler,query,false,queryExecutor);
-    }
-
-    static<Q extends Query,R extends Collection> R profile(String groupName, QueryProfiler profiler, Q query, Function<Q,R> queryExecutor) {
-        return profile(groupName,profiler,query,false,queryExecutor);
     }
 
     static<Q extends Query,R extends Collection> R profile(QueryProfiler profiler, Q query, boolean multiQuery, Function<Q,R> queryExecutor) {

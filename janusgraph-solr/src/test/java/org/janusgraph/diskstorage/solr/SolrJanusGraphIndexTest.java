@@ -56,6 +56,11 @@ public abstract class SolrJanusGraphIndexTest extends JanusGraphIndexTest {
         return false;
     }
 
+    @Override
+    public String getStringField(String propertyKey) {
+        return propertyKey + "_s";
+    }
+
     @Test
     public void testRawQueries() {
         clopen(option(SolrIndex.DYNAMIC_FIELDS,JanusGraphIndexTest.INDEX),false);

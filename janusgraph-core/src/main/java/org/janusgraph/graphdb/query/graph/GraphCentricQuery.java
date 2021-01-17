@@ -59,6 +59,8 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGr
      */
     private final ElementCategory resultType;
 
+    private QueryProfiler profiler;
+
     public GraphCentricQuery(ElementCategory resultType, Condition<JanusGraphElement> condition, OrderList orders,
                              BackendQueryHolder<JointIndexQuery> indexQuery, int limit) {
         super(limit);
@@ -156,9 +158,14 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGr
 
     @Override
     public void observeWith(QueryProfiler profiler) {
+        this.profiler = profiler;
         profiler.setAnnotation(QueryProfiler.CONDITION_ANNOTATION,condition);
         profiler.setAnnotation(QueryProfiler.ORDERS_ANNOTATION,orders);
         if (hasLimit()) profiler.setAnnotation(QueryProfiler.LIMIT_ANNOTATION,getLimit());
         indexQuery.observeWith(profiler);
+    }
+
+    public QueryProfiler getProfiler() {
+        return profiler;
     }
 }
