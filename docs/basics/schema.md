@@ -96,7 +96,7 @@ is recommended to avoid spaces or special characters in property names.
 This method returns a builder for the property keys.
 
 !!! note
-    During property key creation, consider creating also graph indices for better 
+    During property key creation, consider creating also graph indices for better
     performance, see [Index Performance](../index-management/index-performance.md).
 
 ### Property Key Data Type
@@ -157,7 +157,7 @@ values associated with the key on any given vertex.
 
 The default cardinality setting is SINGLE. Note, that property keys used
 on edges and properties have cardinality SINGLE. Attaching multiple
-values for a single key on an edge or property is not supported.
+values to an edge or property with a cardinality of SINGLE is not supported.
 
 ```java
 mgmt = graph.openManagement()
@@ -311,4 +311,3 @@ works = mgmt.makeEdgeLabel('works').multiplicity(MULTI).make()
 mgmt.addConnection(works, person, company)
 mgmt.commit()
 ```
-
