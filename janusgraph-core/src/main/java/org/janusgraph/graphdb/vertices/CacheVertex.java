@@ -18,6 +18,8 @@ import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.util.datastructures.Retriever;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,11 +29,15 @@ import java.util.Map;
  */
 
 public class CacheVertex extends StandardVertex {
+
+    private final static Logger log = LoggerFactory.getLogger(CacheVertex.class);
+
     // We don't try to be smart and match with previous queries
     // because that would waste more cycles on lookup than save actual memory
     // We use a normal map with synchronization since the likelihood of contention
     // is super low in a single transaction
     protected final Map<SliceQuery, EntryList> queryCache;
+    protected Retriever<SliceQuery, EntryList> lookup;
 
     public CacheVertex(StandardJanusGraphTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
@@ -58,8 +64,18 @@ public class CacheVertex extends StandardVertex {
 
         EntryList result;
         synchronized (queryCache) {
-            result = queryCache.get(query);
+            if(!lookup.equals(this.lookup)){
+                if(this.lookup != null){
+                    queryCache.clear();
+                    log.warn("Cleared cache for vertex=[{}] because of different lookup", this);
+                }
+                this.lookup = lookup;
+                result = null;
+            } else {
+                result = queryCache.get(query);
+            }
         }
+
         if (result == null) {
             //First check for super
             Map.Entry<SliceQuery, EntryList> superset = getSuperResultSet(query);

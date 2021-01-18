@@ -17,8 +17,9 @@ package org.janusgraph.graphdb.query.vertex;
 import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.*;
-import org.janusgraph.core.*;
+import com.google.common.collect.Iterables;
+import org.janusgraph.core.JanusGraphRelation;
+import org.janusgraph.core.VertexList;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
@@ -30,7 +31,9 @@ import org.janusgraph.graphdb.transaction.RelationConstructor;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.Iterator;
+
+import static org.janusgraph.graphdb.transaction.StandardJanusGraphTx.edgesRetriever;
 
 /**
  * This is an optimization of specifically for {@link VertexCentricQuery} that addresses the special but
@@ -117,10 +120,10 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
      * @return
      */
     private Iterator<Entry> getBasicIterator() {
-        final EntryList result = vertex.loadRelations(sliceQuery, query -> QueryProfiler.profile(profiler, query, q -> tx.getGraph().edgeQuery(vertex.longId(), q, tx.getTxHandle())));
+        final EntryList result = vertex.loadRelations(sliceQuery,
+            edgesRetriever(tx.getGraph(), profiler, vertex.longId(), tx.getTxHandle()));
         return result.iterator();
     }
-
 
     private final class LimitAdjustingIterator extends org.janusgraph.graphdb.query.LimitAdjustingIterator<Entry> {
 
