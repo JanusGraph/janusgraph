@@ -106,7 +106,9 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         finishSchema();
 
         //Schema and relation id pools are tapped, Schema id pool twice because the renew is triggered. Each id acquisition requires 1 mutations and 2 reads
-        verifyStoreMetrics(getConfig().get(IDS_STORE_NAME), SYSTEM_METRICS, ImmutableMap.of(M_MUTATE, 3L, M_GET_SLICE, 6L));
+        Map<String, Long> operationCounts = getConfig().get(IDS_CAS) ? ImmutableMap.of(M_CAS_UPDATE, 3L, M_GET_SLICE, 3L)
+            : ImmutableMap.of(M_MUTATE, 3L, M_GET_SLICE, 6L);
+        verifyStoreMetrics(getConfig().get(IDS_STORE_NAME), SYSTEM_METRICS, operationCounts);
     }
 
 

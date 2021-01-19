@@ -73,6 +73,7 @@ General configuration options for graph element IDs
 | Name | Description | Datatype | Default Value | Mutability |
 | ---- | ---- | ---- | ---- | ---- |
 | ids.block-size | Globally reserve graph element IDs in chunks of this size.  Setting this too low will make commits frequently block on slow reservation requests.  Setting it too high will result in IDs wasted when a graph instance shuts down with reserved but mostly-unused blocks. | Integer | 10000 | GLOBAL_OFFLINE |
+| ids.cas-update | Whether to update IDBlock in CAS mode | Boolean | false | FIXED |
 | ids.flush | When true, vertices and edges are assigned IDs immediately upon creation.  When false, IDs are assigned only when the transaction commits. | Boolean | true | MASKABLE |
 | ids.num-partitions | Number of partition block to allocate for placement of vertices | Integer | 10 | MASKABLE |
 | ids.placement | Name of the vertex placement strategy or full class name | String | simple | MASKABLE |

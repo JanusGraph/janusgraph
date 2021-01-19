@@ -107,7 +107,7 @@ public class HBaseStorageSetup {
         config.set(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER, HBaseStoreManager.PREFERRED_TIMESTAMPS);
         config.set(SimpleBulkPlacementStrategy.CONCURRENT_PARTITIONS, 1);
         config.set(GraphDatabaseConfiguration.DROP_ON_CLEAR, false);
-
+        config.set(GraphDatabaseConfiguration.IDS_CAS, true);
         return config;
     }
 

@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Row;
@@ -50,6 +51,12 @@ public class HTable1_0 implements TableMask
     {
         table.batch(writes, results);
         /* table.flushCommits(); not needed anymore */
+    }
+
+    @Override
+    public boolean checkAndPut(byte[] row, byte[] family, byte[] qualifier, byte[] value, Put put) throws IOException
+    {
+        return table.checkAndPut(row, family, qualifier, value, put);
     }
 
     @Override

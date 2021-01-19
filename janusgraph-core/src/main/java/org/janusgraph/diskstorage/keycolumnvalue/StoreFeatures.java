@@ -215,4 +215,5 @@ public interface StoreFeatures {
      */
     boolean hasOptimisticLocking();
 
+    boolean supportsCASUpdate();
 }

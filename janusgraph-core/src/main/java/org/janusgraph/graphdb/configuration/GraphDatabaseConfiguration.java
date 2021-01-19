@@ -773,6 +773,9 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigNamespace IDAUTHORITY_NS = new ConfigNamespace(IDS_NS,"authority","Configuration options for graph element ID reservation/allocation");
 
+    public static final ConfigOption<Boolean> IDS_CAS = new ConfigOption<>(IDS_NS, "cas-update",
+            "Whether to update IDBlock in CAS mode", ConfigOption.Type.FIXED, false);
+
     /**
      * The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend.
      * Also, the time waited after the application before verifying that the application was successful.

@@ -85,6 +85,8 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
      */
     private final TimestampProvider times;
 
+    private boolean idCasUpdate;
+
     private final Duration rollbackWaitTime = Duration.ofMillis(200L);
 
     private final int partitionBitWidth;
@@ -105,6 +107,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         this.manager = manager;
         this.idStore = idStore;
         this.times = config.get(TIMESTAMP_PROVIDER);
+        this.idCasUpdate = config.get(IDS_CAS) && manager.getFeatures().supportsCASUpdate();
         this.waitGracePeriod = idApplicationWaitMS.dividedBy(10);
         Preconditions.checkNotNull(times);
 
@@ -228,7 +231,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
             final int uniquePID = getUniquePartitionID();
             final StaticBuffer partitionKey = getPartitionKey(partition,idNamespace,uniquePID);
             try {
-                long nextStart = getCurrentID(partitionKey);
+                long nextStart = getCurrentID(partitionKey); // consider CAS case
                 if (idBlockUpperBound - blockSize <= nextStart) {
                     log.info("ID overflow detected on partition({})-namespace({}) with uniqueid {}. Current id {}, block size {}, and upper bound {} for bit width {}.",
                             partition, idNamespace, uniquePID, nextStart, blockSize, idBlockUpperBound, uniqueIdBitWidth);
@@ -249,88 +252,103 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                 // calculate the start (inclusive) and end (exclusive) of the allocation we're about to attempt
                 assert idBlockUpperBound - blockSize > nextStart;
                 long nextEnd = nextStart + blockSize;
-                StaticBuffer target = null;
 
                 // attempt to write our claim on the next id block
                 boolean success = false;
-                try {
-                    Timer writeTimer = times.getTimer().start();
-                    target = getBlockApplication(nextEnd, writeTimer.getStartTime());
-                    final StaticBuffer finalTarget = target; // copy for the inner class
-                    BackendOperation.execute(txh -> {
-                        idStore.mutate(partitionKey, Collections.singletonList(StaticArrayEntry.of(finalTarget)), KeyColumnValueStore.NO_DELETIONS, txh);
-                        return true;
-                    },this,times);
-                    writeTimer.stop();
+                if (idCasUpdate) {
+                    log.debug("update next avaliable IDBlock in CAS model. nextStart is {}, nextEnd is {}", nextStart, nextEnd);
+                    StaticBuffer preValue = BufferUtil.getLongBuffer(nextStart);
+                    StaticBuffer newValue = BufferUtil.getLongBuffer(nextEnd);
+                    success = BackendOperation.execute(txh -> {
+                        return idStore.casUpdate(partitionKey, StaticArrayEntry.of(ID_COLUMN, preValue), newValue, txh);
+                    }, this, times);
+                    if (success) {
+                        ConsistentKeyIDBlock idBlock = new ConsistentKeyIDBlock(nextStart, blockSize, uniqueIdBitWidth, uniquePID);
+                        log.debug("Acquired ID block [{}] on partition({})-namespace({}) (my rid is {})",
+                            idBlock, partition, idNamespace, uid);
+                        return idBlock;
+                    }
+                } else {
+                    StaticBuffer target = null;
+                    try {
+                        Timer writeTimer = times.getTimer().start();
+                        target = getBlockApplication(nextEnd, writeTimer.getStartTime());
+                        final StaticBuffer finalTarget = target; // copy for the inner class
+                        BackendOperation.execute(txh -> {
+                            idStore.mutate(partitionKey, Collections.singletonList(StaticArrayEntry.of(finalTarget)), KeyColumnValueStore.NO_DELETIONS, txh);
+                            return true;
+                        },this,times);
+                        writeTimer.stop();
 
-                    final boolean distributed = manager.getFeatures().isDistributed();
-                    Duration writeElapsed = writeTimer.elapsed();
-                    if (idApplicationWaitMS.compareTo(writeElapsed) < 0 && distributed) {
-                        throw new TemporaryBackendException("Wrote claim for id block [" + nextStart + ", " + nextEnd + ") in " + (writeElapsed) + " => too slow, threshold is: " + idApplicationWaitMS);
-                    } else {
+                        final boolean distributed = manager.getFeatures().isDistributed();
+                        Duration writeElapsed = writeTimer.elapsed();
+                        if (idApplicationWaitMS.compareTo(writeElapsed) < 0 && distributed) {
+                            throw new TemporaryBackendException("Wrote claim for id block [" + nextStart + ", " + nextEnd + ") in " + (writeElapsed) + " => too slow, threshold is: " + idApplicationWaitMS);
+                        } else {
 
-                        assert 0 != target.length();
-                        final StaticBuffer[] slice = getBlockSlice(nextEnd);
+                            assert 0 != target.length();
+                            final StaticBuffer[] slice = getBlockSlice(nextEnd);
 
-                        /* At this point we've written our claim on [nextStart, nextEnd),
-                         * but we haven't yet guaranteed the absence of a contending claim on
-                         * the same id block from another machine
-                         */
+                            /* At this point we've written our claim on [nextStart, nextEnd),
+                             * but we haven't yet guaranteed the absence of a contending claim on
+                             * the same id block from another machine
+                             */
 
-                        if (distributed) {
-                            sleepAndConvertInterrupts(idApplicationWaitMS.plus(waitGracePeriod));
-                        }
-
-                        // Read all id allocation claims on this partition, for the counter value we're claiming
-                        final List<Entry> blocks = BackendOperation.execute(
-                            (BackendOperation.Transactional<List<Entry>>) txh -> idStore.getSlice(new KeySliceQuery(partitionKey, slice[0], slice[1]), txh),this,times);
-                        if (blocks == null) throw new TemporaryBackendException("Could not read from storage");
-                        if (blocks.isEmpty())
-                            throw new PermanentBackendException("It seems there is a race-condition in the block application. " +
-                                    "If you have multiple JanusGraph instances running on one physical machine, ensure that they have unique machine idAuthorities");
-
-                        /* If our claim is the lexicographically first one, then our claim
-                         * is the most senior one and we own this id block
-                         */
-                        if (target.equals(blocks.get(0).getColumnAs(StaticBuffer.STATIC_FACTORY))) {
-
-                            ConsistentKeyIDBlock idBlock = new ConsistentKeyIDBlock(nextStart,blockSize,uniqueIdBitWidth,uniquePID);
-
-                            if (log.isDebugEnabled()) {
-                                log.debug("Acquired ID block [{}] on partition({})-namespace({}) (my rid is {})",
-                                    idBlock, partition, idNamespace, uid);
+                            if (distributed) {
+                                sleepAndConvertInterrupts(idApplicationWaitMS.plus(waitGracePeriod));
                             }
 
-                            success = true;
-                            return idBlock;
-                        } else {
-                            // Another claimant beat us to this id block -- try again.
-                            log.debug("Failed to acquire ID block [{},{}) (another host claimed it first)", nextStart, nextEnd);
-                        }
-                    }
-                } finally {
-                    if (!success && null != target) {
-                        //Delete claim to not pollute id space
-                        for (int attempt = 0; attempt < ROLLBACK_ATTEMPTS; attempt++) {
-                            try {
-                                final StaticBuffer finalTarget = target; // copy for the inner class
-                                BackendOperation.execute(txh -> {
-                                    idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Collections.singletonList(finalTarget), txh);
-                                    return true;
-                                }, new BackendOperation.TransactionalProvider() { //Use normal consistency level for these non-critical delete operations
-                                    @Override
-                                    public StoreTransaction openTx() throws BackendException {
-                                        return manager.beginTransaction(storeTxConfigBuilder.build());
-                                    }
-                                    @Override
-                                    public void close() {}
-                                },times);
+                            // Read all id allocation claims on this partition, for the counter value we're claiming
+                            final List<Entry> blocks = BackendOperation.execute(
+                                (BackendOperation.Transactional<List<Entry>>) txh -> idStore.getSlice(new KeySliceQuery(partitionKey, slice[0], slice[1]), txh),this,times);
+                            if (blocks == null) throw new TemporaryBackendException("Could not read from storage");
+                            if (blocks.isEmpty())
+                                throw new PermanentBackendException("It seems there is a race-condition in the block application. " +
+                                    "If you have multiple JanusGraph instances running on one physical machine, ensure that they have unique machine idAuthorities");
 
-                                break;
-                            } catch (BackendException e) {
-                                log.warn("Storage exception while deleting old block application - retrying in {}", rollbackWaitTime, e);
-                                if (!rollbackWaitTime.isZero())
-                                    sleepAndConvertInterrupts(rollbackWaitTime);
+                            /* If our claim is the lexicographically first one, then our claim
+                             * is the most senior one and we own this id block
+                             */
+                            if (target.equals(blocks.get(0).getColumnAs(StaticBuffer.STATIC_FACTORY))) {
+
+                                ConsistentKeyIDBlock idBlock = new ConsistentKeyIDBlock(nextStart,blockSize,uniqueIdBitWidth,uniquePID);
+
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Acquired ID block [{}] on partition({})-namespace({}) (my rid is {})",
+                                        idBlock, partition, idNamespace, uid);
+                                }
+
+                                success = true;
+                                return idBlock;
+                            } else {
+                                // Another claimant beat us to this id block -- try again.
+                                log.debug("Failed to acquire ID block [{},{}) (another host claimed it first)", nextStart, nextEnd);
+                            }
+                        }
+                    } finally {
+                        if (!success && null != target) {
+                            //Delete claim to not pollute id space
+                            for (int attempt = 0; attempt < ROLLBACK_ATTEMPTS; attempt++) {
+                                try {
+                                    final StaticBuffer finalTarget = target; // copy for the inner class
+                                    BackendOperation.execute(txh -> {
+                                        idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Collections.singletonList(finalTarget), txh);
+                                        return true;
+                                    }, new BackendOperation.TransactionalProvider() { //Use normal consistency level for these non-critical delete operations
+                                        @Override
+                                        public StoreTransaction openTx() throws BackendException {
+                                            return manager.beginTransaction(storeTxConfigBuilder.build());
+                                        }
+                                        @Override
+                                        public void close() {}
+                                    },times);
+
+                                    break;
+                                } catch (BackendException e) {
+                                    log.warn("Storage exception while deleting old block application - retrying in {}", rollbackWaitTime, e);
+                                    if (!rollbackWaitTime.isZero())
+                                        sleepAndConvertInterrupts(rollbackWaitTime);
+                                }
                             }
                         }
                     }
@@ -369,7 +387,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
     }
 
     private long getBlockValue(Entry column) {
-        return -column.getLong(0);
+        return this.idCasUpdate ? column.getValue().getLong(0) : -column.getLong(0);
     }
 
     private void sleepAndConvertInterrupts(Duration d) throws BackendException {
