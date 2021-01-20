@@ -14,7 +14,10 @@
 
 package org.janusgraph.diskstorage.es;
 
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.testcontainers.junit.jupiter.Container;
 
 public abstract class ElasticsearchJanusGraphIndexTest extends JanusGraphIndexTest {
@@ -25,6 +28,18 @@ public abstract class ElasticsearchJanusGraphIndexTest extends JanusGraphIndexTe
     public ElasticsearchJanusGraphIndexTest() {
         super(true, true, true);
     }
+
+    @Override
+    public WriteConfiguration getConfiguration() {
+        String[] indexBackends = getIndexBackends();
+        ModifiableConfiguration config =  esr.setConfiguration(getStorageConfiguration(), indexBackends);
+        for (String indexBackend : indexBackends) {
+            config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, indexBackend);
+        }
+        return config.getConfiguration();
+    }
+
+    public abstract ModifiableConfiguration getStorageConfiguration();
 
     @Override
     public boolean supportsLuceneStyleQueries() {

@@ -16,9 +16,6 @@ package org.janusgraph.diskstorage.es;
 
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.JanusGraphIndexTest;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.jupiter.api.Disabled;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -30,11 +27,8 @@ public class CQLElasticsearchTest extends ElasticsearchJanusGraphIndexTest {
     private static JanusGraphCassandraContainer cql = new JanusGraphCassandraContainer();
 
     @Override
-    public WriteConfiguration getConfiguration() {
-        ModifiableConfiguration config = cql.getConfiguration(CQLElasticsearchTest.class.getName());
-        return esr.setConfiguration(config, INDEX)
-            .set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, INDEX)
-            .getConfiguration();
+    public ModifiableConfiguration getStorageConfiguration() {
+        return cql.getConfiguration(CQLElasticsearchTest.class.getName());
     }
 
     @Override

@@ -110,6 +110,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     public static final String EINDEX = "e" + INDEX;
     public static final String PINDEX = "p" + INDEX;
 
+    public static final String INDEX2 = INDEX + "2";
+
     private static final int RETRY_COUNT = 30;
     private static final long RETRY_INTERVAL = 1000L;
 
@@ -126,6 +128,10 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         this.supportsGeoPoint = supportsGeoPoint;
         this.supportsNumeric = supportsNumeric;
         this.supportsText = supportsText;
+    }
+
+    protected String[] getIndexBackends() {
+        return new String[] {INDEX, INDEX2};
     }
 
     private Parameter getStringMapping() {
@@ -181,6 +187,27 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertEquals("demigod", h.label());
         assertCount(5, h.query().direction(Direction.BOTH).edges());
         graphOfTheGods.tx().commit();
+    }
+
+    @Test
+    public void testMultipleIndexBackends() {
+        PropertyKey p1 = makeKey("p1", String.class);
+        PropertyKey p2 = makeKey("p2", String.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(p1, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
+        mgmt.buildIndex("mi", Vertex.class).addKey(p2, Mapping.STRING.asParameter()).buildMixedIndex(INDEX2);
+        finishSchema();
+
+        assertEquals(0, tx.traversal().V().has("p1", "val1").has("p2", "val2").count().next());
+        tx.addVertex("p1", "val1", "p2", "val2");
+        tx.addVertex("p1", "val1");
+        tx.addVertex("p2", "val2");
+        tx.commit();
+
+        clopen(option(FORCE_INDEX_USAGE), true);
+        assertEquals(2, tx.traversal().V().has("p1", "val1").count().next());
+        assertEquals(2, tx.traversal().V().has("p2", "val2").count().next());
+        assertEquals(1, tx.traversal().V().has("p1", "val1").has("p2", "val2").count().next());
+        assertEquals(3, tx.traversal().V().or(__.has("p1", "val1"), __.has("p2", "val2")).count().next());
     }
 
     @Test
