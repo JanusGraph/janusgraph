@@ -17,14 +17,12 @@ package org.janusgraph.diskstorage.es;
 import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
-import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.util.system.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.junit.jupiter.Container;
 
 import java.io.File;
 import java.util.concurrent.ExecutionException;
@@ -39,10 +37,8 @@ import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
 public class BerkeleyElasticsearchTest extends ElasticsearchJanusGraphIndexTest {
 
     @Override
-    public WriteConfiguration getConfiguration() {
-        return esr.setConfiguration(getBerkeleyJEConfiguration(), INDEX)
-            .set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, INDEX)
-            .getConfiguration();
+    public ModifiableConfiguration getStorageConfiguration() {
+        return getBerkeleyJEConfiguration();
     }
 
     /**

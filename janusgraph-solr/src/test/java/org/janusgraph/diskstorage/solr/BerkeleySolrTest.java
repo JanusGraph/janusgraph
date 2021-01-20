@@ -24,13 +24,9 @@ import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
 @Testcontainers
 public class BerkeleySolrTest extends SolrJanusGraphIndexTest {
 
-    @Container
-    protected static JanusGraphSolrContainer solrContainer = new JanusGraphSolrContainer();
-
     @Override
-    public WriteConfiguration getConfiguration() {
-        ModifiableConfiguration berkeleyJEConfiguration = getBerkeleyJEConfiguration();
-        return solrContainer.getLocalSolrTestConfig(INDEX, berkeleyJEConfiguration).getConfiguration();
+    public ModifiableConfiguration getStorageConfiguration() {
+        return getBerkeleyJEConfiguration();
     }
 
     @Override

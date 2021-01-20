@@ -15,18 +15,31 @@
 package org.janusgraph.diskstorage.solr;
 
 import io.github.artsok.RepeatedIfExceptionsTest;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public abstract class SolrJanusGraphIndexTest extends JanusGraphIndexTest {
 
+    @Container
+    protected static JanusGraphSolrContainer solrContainer = new JanusGraphSolrContainer();
+
     protected SolrJanusGraphIndexTest() {
         super(true, true, true);
     }
+
+    @Override
+    public WriteConfiguration getConfiguration() {
+        return solrContainer.getLocalSolrTestConfig(getStorageConfiguration(), getIndexBackends()).getConfiguration();
+    }
+
+    public abstract ModifiableConfiguration getStorageConfiguration();
 
     @Override
     public boolean supportsLuceneStyleQueries() {

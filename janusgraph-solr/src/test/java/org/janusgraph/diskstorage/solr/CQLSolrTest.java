@@ -24,15 +24,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class CQLSolrTest extends SolrJanusGraphIndexTest {
 
     @Container
-    protected static JanusGraphSolrContainer solrContainer = new JanusGraphSolrContainer();
-
-    @Container
     private static JanusGraphCassandraContainer cassandraContainer = new JanusGraphCassandraContainer();
 
     @Override
-    public WriteConfiguration getConfiguration() {
-        ModifiableConfiguration config = cassandraContainer.getConfiguration(CQLSolrTest.class.getName());
-        return solrContainer.getLocalSolrTestConfig(INDEX, config).getConfiguration();
+    public ModifiableConfiguration getStorageConfiguration() {
+        return cassandraContainer.getConfiguration(CQLSolrTest.class.getName());
     }
 
     @Override

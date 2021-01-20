@@ -89,22 +89,24 @@ public class JanusGraphSolrContainer extends SolrContainer {
     public Configuration getLocalSolrTestConfig() {
         final String index = "solr";
         final ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
-        return getLocalSolrTestConfig(index, config).restrictTo(index);
+        return getLocalSolrTestConfig(config, index).restrictTo(index);
     }
 
     public Configuration getLocalSolrTestConfigOverwriteKerberos() {
         final String index = "solr";
         final ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(SolrIndex.KERBEROS_ENABLED, true, index);
-        return getLocalSolrTestConfig(index, config).restrictTo(index);
+        return getLocalSolrTestConfig(config, index).restrictTo(index);
     }
 
-    public ModifiableConfiguration getLocalSolrTestConfig(String index, ModifiableConfiguration config) {
-        config.set(INDEX_BACKEND, "solr", index);
-        config.set(SolrIndex.ZOOKEEPER_URL, new String[]{getZookeeperUrl(false)}, index);
-        config.set(SolrIndex.HTTP_URLS, new String[]{"http://" + getHost() + ":" + getSolrPort() + "/solr"}, index);
-        config.set(SolrIndex.WAIT_SEARCHER, true, index);
-        config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index);
+    public ModifiableConfiguration getLocalSolrTestConfig(ModifiableConfiguration config, String... indexBackends) {
+        for (String indexBackend : indexBackends) {
+            config.set(INDEX_BACKEND, "solr", indexBackend);
+            config.set(SolrIndex.ZOOKEEPER_URL, new String[]{getZookeeperUrl(false)}, indexBackend);
+            config.set(SolrIndex.HTTP_URLS, new String[]{"http://" + getHost() + ":" + getSolrPort() + "/solr"}, indexBackend);
+            config.set(SolrIndex.WAIT_SEARCHER, true, indexBackend);
+            config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, indexBackend);
+        }
         return config;
     }
 }
