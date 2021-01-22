@@ -122,6 +122,11 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
+    public KeySlicesIterator getKeys(MultiSlicesQuery queries, StoreTransaction txh) throws BackendException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public String getName() {
         return name;
     }

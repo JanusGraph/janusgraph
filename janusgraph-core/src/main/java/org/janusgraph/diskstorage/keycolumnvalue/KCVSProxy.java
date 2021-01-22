@@ -62,6 +62,11 @@ public class KCVSProxy implements KeyColumnValueStore {
     }
 
     @Override
+    public KeySlicesIterator getKeys(MultiSlicesQuery queries, StoreTransaction txh) throws BackendException {
+        return store.getKeys(queries, txh);
+    }
+
+    @Override
     public String getName() {
         return store.getName();
     }

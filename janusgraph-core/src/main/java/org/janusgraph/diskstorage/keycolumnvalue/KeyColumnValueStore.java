@@ -174,6 +174,19 @@ public interface KeyColumnValueStore {
     // like current getKeys if column-slice is such that it queries for vertex state property
 
     /**
+     * Returns a {@link KeySlicesIterator} over all keys in the store that have one or more columns matching the column-range. Calling {@link KeySlicesIterator#getEntries()}
+     * returns the map of all entries that match the column-range specified by the given queries.
+     * <p>
+     * This method is mandatory for stores which do not guaranty key orders while running parallel scans.
+     *
+     * @param queries
+     * @param txh
+     * @return
+     * @throws org.janusgraph.diskstorage.BackendException
+     */
+    KeySlicesIterator getKeys(MultiSlicesQuery queries, StoreTransaction txh) throws BackendException;
+
+    /**
      * Returns the name of this store. Each store has a unique name which is used to open it.
      *
      * @return store name

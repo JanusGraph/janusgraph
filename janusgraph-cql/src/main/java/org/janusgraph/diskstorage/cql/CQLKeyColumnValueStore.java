@@ -49,6 +49,8 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.KeySlicesIterator;
+import org.janusgraph.diskstorage.keycolumnvalue.MultiSlicesQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.RecordIterator;
@@ -430,6 +432,11 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                         .setPageSize(this.storeManager.getPageSize())
                         .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel()).build())))
                 .getOrElseThrow(EXCEPTION_MAPPER);
+    }
+
+    @Override
+    public KeySlicesIterator getKeys(MultiSlicesQuery queries, StoreTransaction txh) throws BackendException {
+        throw new UnsupportedOperationException();
     }
 
     /**

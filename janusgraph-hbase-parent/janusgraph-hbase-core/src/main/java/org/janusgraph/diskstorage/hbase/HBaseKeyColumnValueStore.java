@@ -130,6 +130,11 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         return executeKeySliceQuery(new FilterList(FilterList.Operator.MUST_PASS_ALL), query);
     }
 
+    @Override
+    public KeySlicesIterator getKeys(MultiSlicesQuery queries, StoreTransaction txh) throws BackendException {
+        throw new UnsupportedOperationException();
+    }
+
     public static Filter getFilter(SliceQuery query) {
         byte[] colStartBytes = query.getSliceStart().length() > 0 ? query.getSliceStart().as(StaticBuffer.ARRAY_FACTORY) : null;
         byte[] colEndBytes = query.getSliceEnd().length() > 0 ? query.getSliceEnd().as(StaticBuffer.ARRAY_FACTORY) : null;
