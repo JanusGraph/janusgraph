@@ -56,7 +56,7 @@
        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-text</artifactId>
-            <version>1.0</version>
+            <version>1.9</version>
             <exclusions>
                  <exclusion>
                       <groupId>org.apache.commons</groupId>
