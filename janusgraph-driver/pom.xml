@@ -103,78 +103,6 @@
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.1.0</version>
-                <executions>
-                    <execution>
-                        <id>shade-gremlin-groovy</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <artifactSet>
-                                <includes>
-                                    <include>com.esotericsoftware.kryo:*</include>
-                                    <include>com.esotericsoftware.minlog:*</include>
-                                    <include>com.esotericsoftware.reflectasm:*</include>
-                                    <include>org.objenesis:*</include>
-                                </includes>
-                            </artifactSet>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/MANIFEST.MF</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                            <relocations>
-                                <relocation>
-                                    <pattern>com.esotericsoftware.kryo</pattern>
-                                    <shadedPattern>org.janusgraph.shaded.kryo_2_24_0</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>com.esotericsoftware.minlog</pattern>
-                                    <shadedPattern>org.janusgraph.shaded.minlog_1_2</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>com.esotericsoftware.reflectasm</pattern>
-                                    <shadedPattern>org.janusgraph.shaded.kryo_2_24_0_reflectasm</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>org.objenesis</pattern>
-                                    <shadedPattern>org.janusgraph.shaded.objenesis_2_1</shadedPattern>
-                                </relocation>
-                            </relocations>
-                            <!-- false below means the shade plugin overwrites the main project artifact (the one with no classifier).
-                                 false does *not* actually detach the main artifact, despite what the option name suggests. -->
-                            <shadedArtifactAttached>false</shadedArtifactAttached>
-                            <minimizeJar>false</minimizeJar>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.gmavenplus</groupId>
-                <artifactId>gmavenplus-plugin</artifactId>
-                <version>${gmavenplus.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>generateStubs</goal>
-                            <goal>compile</goal>
-                            <goal>testGenerateStubs</goal>
-                            <goal>testCompile</goal>
-                        </goals>
-                        <configuration>
-                            <providerSelection>1.8</providerSelection>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <executions>
                     <execution>
@@ -194,39 +122,4 @@
             </plugin>
         </plugins>
     </build>
-    <profiles>
-        <profile>
-            <id>janusgraph-release</id>
-            <build>
-                <plugins>
-                    <!-- Forces gpg-plugin to run after shade-plugin.
-                     Otherwise, Maven will sign the unshaded jar, then shade the jar
-                     (giving it completely different contents and breaking the sig) -->
-                    <plugin>
-                        <artifactId>maven-shade-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>shade-gremlin-groovy</id>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <!-- Redeclare gpg-plugin after jar-plugin to force the test jar to be signed.
-                      gpg-plugin runs in the package phase, same as jar-plugin, so the only
-                      constraint that guarantees the jar will exist when gpg-plugin is
-                      invoked is declaration order in the pom. -->
-                    <plugin>
-                        <artifactId>maven-jar-plugin</artifactId>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

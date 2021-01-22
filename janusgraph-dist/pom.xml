@@ -317,16 +317,6 @@
             </plugin>
 
             <plugin>
-                <artifactId>maven-install-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>default-install</id>
-                        <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
                 <artifactId>maven-source-plugin</artifactId>
                 <executions>
                     <execution>
@@ -691,14 +681,7 @@
                                 <configuration>
                                     <!--
                                         We set attached=true so that the gpg plugin will
-                                        sign all of our assembly artifacts. We handle
-                                        deployment of the artifacts manually because
-                                        maven-deploy-plugin can't upload files to a flat
-                                        S3 directory; it insists on creating a
-                                        long/packagename/and/artifactid/and/version/
-                                        path at the destination before uploading, and we
-                                        don't want that for our files S3. codehaus's
-                                        wagon:upload plugin comes to our rescue.
+                                        sign all of our assembly artifacts.
                                     -->
                                     <attach>true</attach>
                                     <!--
