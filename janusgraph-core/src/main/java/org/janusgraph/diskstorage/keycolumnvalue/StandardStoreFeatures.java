@@ -22,6 +22,7 @@ import org.janusgraph.diskstorage.util.time.TimestampProviders;
  */
 public class StandardStoreFeatures implements StoreFeatures {
 
+    private final boolean consistentScan;
     private final boolean unorderedScan;
     private final boolean orderedScan;
     private final boolean multiQuery;
@@ -52,6 +53,11 @@ public class StandardStoreFeatures implements StoreFeatures {
     @Override
     public boolean hasUnorderedScan() {
         return unorderedScan;
+    }
+
+    @Override
+    public boolean hasConsistentScan() {
+        return consistentScan;
     }
 
     @Override
@@ -158,6 +164,7 @@ public class StandardStoreFeatures implements StoreFeatures {
      */
     public static class Builder {
 
+        private boolean consistentScan = true;
         private boolean unorderedScan;
         private boolean orderedScan;
         private boolean multiQuery;
@@ -190,6 +197,7 @@ public class StandardStoreFeatures implements StoreFeatures {
          * the supplied {@code template}.
          */
         public Builder(StoreFeatures template) {
+            consistentScan(template.hasConsistentScan());
             unorderedScan(template.hasUnorderedScan());
             orderedScan(template.hasOrderedScan());
             multiQuery(template.hasMultiQuery());
@@ -215,6 +223,11 @@ public class StandardStoreFeatures implements StoreFeatures {
 
         public Builder optimisticLocking(boolean b) {
             optimisticLocking = b;
+            return this;
+        }
+
+        public Builder consistentScan(boolean consistentScan) {
+            this.consistentScan = consistentScan;
             return this;
         }
 
@@ -324,7 +337,7 @@ public class StandardStoreFeatures implements StoreFeatures {
         }
 
         public StandardStoreFeatures build() {
-            return new StandardStoreFeatures(unorderedScan, orderedScan,
+            return new StandardStoreFeatures(consistentScan, unorderedScan, orderedScan,
                     multiQuery, locking, batchMutation, localKeyPartition,
                     keyOrdered, distributed, transactional, keyConsistent,
                     timestamps, preferredTimestamps, cellLevelTTL,
@@ -334,16 +347,17 @@ public class StandardStoreFeatures implements StoreFeatures {
         }
     }
 
-    private StandardStoreFeatures(boolean unorderedScan, boolean orderedScan,
-            boolean multiQuery, boolean locking, boolean batchMutation,
-            boolean localKeyPartition, boolean keyOrdered, boolean distributed,
-            boolean transactional, boolean keyConsistent,
-            boolean timestamps, TimestampProviders preferredTimestamps,
-            boolean cellLevelTTL, boolean storeLevelTTL,
-            boolean visibility, boolean supportsPersist,
-            Configuration keyConsistentTxConfig,
-            Configuration localKeyConsistentTxConfig,
-            Configuration scanTxConfig, boolean supportsInterruption, boolean optimisticLocking) {
+    private StandardStoreFeatures(boolean consistentScan, boolean unorderedScan, boolean orderedScan,
+                                  boolean multiQuery, boolean locking, boolean batchMutation,
+                                  boolean localKeyPartition, boolean keyOrdered, boolean distributed,
+                                  boolean transactional, boolean keyConsistent,
+                                  boolean timestamps, TimestampProviders preferredTimestamps,
+                                  boolean cellLevelTTL, boolean storeLevelTTL,
+                                  boolean visibility, boolean supportsPersist,
+                                  Configuration keyConsistentTxConfig,
+                                  Configuration localKeyConsistentTxConfig,
+                                  Configuration scanTxConfig, boolean supportsInterruption, boolean optimisticLocking) {
+        this.consistentScan = consistentScan;
         this.unorderedScan = unorderedScan;
         this.orderedScan = orderedScan;
         this.multiQuery = multiQuery;

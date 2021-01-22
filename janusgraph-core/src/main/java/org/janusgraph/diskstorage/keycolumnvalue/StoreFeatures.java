@@ -40,6 +40,14 @@ public interface StoreFeatures {
     boolean hasUnorderedScan();
 
     /**
+     * Whether this storage backend supports a consistent key order among different scans.
+     * If it supports ordered scan, it must support consistent key scan.
+     * If it doesn't support ordered scan, it may or may not support consistent key scan.
+     * If the consistent scan is not supported, the backend should support {@link KeyColumnValueStore#getKeys(MultiSlicesQuery, StoreTransaction)}
+     */
+    boolean hasConsistentScan();
+
+    /**
      * Whether this storage backend supports global key scans via
      * {@link KeyColumnValueStore#getKeys(KeyRangeQuery, StoreTransaction)}.
      */

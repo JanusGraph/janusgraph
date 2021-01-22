@@ -135,6 +135,11 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
     }
 
     @Override
+    public KeySlicesIterator getKeys(MultiSlicesQuery queries, StoreTransaction txh) throws BackendException {
+        throw new UnsupportedOperationException("This store has ordered keys, use getKeys(KeyRangeQuery, StoreTransaction) instead");
+    }
+
+    @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue,
                             StoreTransaction txh) throws BackendException {
         store.acquireLock(concatenate(key, column), expectedValue, txh);

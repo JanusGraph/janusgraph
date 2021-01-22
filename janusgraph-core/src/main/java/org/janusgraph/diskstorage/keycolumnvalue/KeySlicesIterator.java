@@ -19,27 +19,29 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.util.RecordIterator;
 import org.janusgraph.graphdb.olap.VertexJobConverter;
 
+import java.util.Map;
+
 /**
- * @author Matthias Broecheler (me@matthiasb.com)
+ * @author Sergii Karpenko (sergiy.karpenko@gmail.com)
  */
 
-public interface KeyIterator extends RecordIterator<StaticBuffer> {
+public interface KeySlicesIterator extends RecordIterator<StaticBuffer> {
 
     /**
-     * Returns an iterator over all entries associated with the current
-     * key that match the column range specified in the query.
+     * Returns map of iterators over all entries associated with the current
+     * key that match the column range specified in the queries.
      * <p>
-     * Closing the returned sub-iterator has no effect on this iterator.
+     * Closing any of the returned sub-iterators has no effect on this iterator.
      *
      * Calling {@link #next()} might close previously returned RecordIterators
      * depending on the implementation, hence it is important to iterate over
      * (and close) the RecordIterator before calling {@link #next()} or {@link #hasNext()}.
      *
-     * Important! Entries should be sorted inside iterator.
+     * Important! Entries should be sorted inside iterators.
      * Otherwise {@link VertexJobConverter} will not work correctly
      *
      * @return
      */
-    RecordIterator<Entry> getEntries();
+    Map<SliceQuery, RecordIterator<Entry>> getEntries();
 
 }
