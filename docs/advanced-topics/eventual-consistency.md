@@ -185,8 +185,7 @@ from the user.
 Run regular batch-jobs to repair inconsistencies in the graph using
 [JanusGraph with TinkerPop’s Hadoop-Gremlin](hadoop.md). 
 This is the only strategy that can address all
-inconsistencies and effectively repair them. We will provide increasing
-support for such repairs in future versions of Faunus.
+inconsistencies and effectively repair them.
 
 **Soft Deletes**  
 Instead of deleting vertices, they are marked as deleted which keeps
