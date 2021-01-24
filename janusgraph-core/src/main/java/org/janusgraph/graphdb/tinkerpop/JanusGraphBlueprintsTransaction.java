@@ -34,6 +34,7 @@ import org.apache.commons.configuration.Configuration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Optional;
 
 /**
  * Blueprints specific implementation of {@link JanusGraphTransaction}.
@@ -102,7 +103,8 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
     @Override
     public JanusGraphVertex addVertex(Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
-        if (ElementHelper.getIdValue(keyValues).isPresent() && !((StandardJanusGraph) getGraph()).getConfiguration().allowVertexIdSetting()) throw Vertex.Exceptions.userSuppliedIdsNotSupported();
+        final Optional<Object> idValue = ElementHelper.getIdValue(keyValues);
+        if (idValue.isPresent() && !((StandardJanusGraph) getGraph()).getConfiguration().allowVertexIdSetting()) throw Vertex.Exceptions.userSuppliedIdsNotSupported();
         Object labelValue = null;
         for (int i = 0; i < keyValues.length; i = i + 2) {
             if (keyValues[i].equals(T.label)) {
@@ -117,7 +119,7 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
             label = (labelValue instanceof VertexLabel)?(VertexLabel)labelValue:getOrCreateVertexLabel((String) labelValue);
         }
 
-        final Long id = ElementHelper.getIdValue(keyValues).map(Number.class::cast).map(Number::longValue).orElse(null);
+        final Long id = idValue.map(Number.class::cast).map(Number::longValue).orElse(null);
         final JanusGraphVertex vertex = addVertex(id, label);
         org.janusgraph.graphdb.util.ElementHelper.attachProperties(vertex, keyValues);
         return vertex;
