@@ -18,11 +18,15 @@ import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.commons.math.stat.descriptive.SummaryStatistics;
+
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
@@ -44,6 +48,33 @@ public abstract class JanusGraphPerformanceMemoryTest extends JanusGraphBaseTest
 
     @Rule
     public TestRule benchmark = JUnitBenchmarkProvider.get();
+
+    @Test
+    void edgeById() {
+        Vertex v1 = graph.traversal()
+                         .addV("V1")
+                         .property("p1", "1").next();
+
+        Vertex v2 = graph.traversal()
+                         .addV("V1")
+                         .property("p1", "1").next();
+        for (int i = 0; i < 10000; i++) {
+            graph.traversal()
+                 .V(v1)
+                 .addE("E")
+                 .to(v2)
+                 .property("time", i)
+                 .iterate();
+        }
+        graph.traversal().tx().commit();
+
+        List<Edge> edges = graph.traversal().E().toList();
+
+        for (Edge edge : edges) {
+            graph.traversal().E(edge).count().next();
+        }
+        assertEquals(10000, graph.traversal().E(edges).count().next());
+    }
 
     @Test
     public void testMemoryLeakage() {

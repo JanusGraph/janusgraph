@@ -397,6 +397,17 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertFalse(graph.traversal().E().has("_e", -3).hasNext());
     }
 
+    @Test
+    public void testUpdateForkEdgePropertyThenFindEdgeById() {
+        initializeGraphWithVerticesAndEdges();
+        AbstractEdge edge = (AbstractEdge) graph.traversal().E().has("_e", 2).next();
+        Object id = edge.id();
+
+        edge.property("_e", -2);
+
+        assertTrue(graph.traversal().E(id).hasNext());
+    }
+
   /* ==================================================================================
                             INDEXING
      ==================================================================================*/
