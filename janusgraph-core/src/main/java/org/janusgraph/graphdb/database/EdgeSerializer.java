@@ -420,8 +420,7 @@ public class EdgeSerializer implements RelationReader {
                     assert propertyKey==ImplicitKey.JANUSGRAPHID || propertyKey==ImplicitKey.ADJACENT_ID;
                     assert propertyKey!=ImplicitKey.ADJACENT_ID || (i==sortKeyIDs.length);
                     assert propertyKey!=ImplicitKey.JANUSGRAPHID || (!type.multiplicity().isConstrained() &&
-                                                  (i==sortKeyIDs.length && propertyKey.isPropertyKey()
-                                                      || i==sortKeyIDs.length+1 && propertyKey.isEdgeLabel() ));
+                                                  (i==sortKeyIDs.length || i==sortKeyIDs.length+1));
                     assert colStart.getPosition()==colEnd.getPosition();
                     assert interval==null || interval.isPoints();
                     keyEndPos = colStart.getPosition();

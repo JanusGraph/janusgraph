@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.relations;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphTransaction;
@@ -23,9 +22,12 @@ import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.RelationType;
 import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.graphdb.internal.InternalRelation;
+import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.janusgraph.graphdb.types.system.ImplicitKey;
 
 public class RelationIdentifierUtils {
     public static RelationIdentifier get(InternalRelation r) {
@@ -74,7 +76,14 @@ public class RelationIdentifierUtils {
             v = tmp;
             dir = Direction.IN;
         }
-        return ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types((EdgeLabel) type).direction(dir).adjacent(other).edges();
+        VertexCentricQueryBuilder query =
+            ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types(type).direction(dir).adjacent(other);
+
+        RelationType internalVertex = ((StandardJanusGraphTx) tx).getExistingRelationType(type.longId());
+        if (((InternalRelationType) internalVertex).getConsistencyModifier() != ConsistencyModifier.FORK) {
+            query.has(ImplicitKey.JANUSGRAPHID.name(), rId.getRelationId());
+        }
+        return query.edges();
     }
 
     public static JanusGraphEdge findEdge(RelationIdentifier rId, JanusGraphTransaction tx) {
