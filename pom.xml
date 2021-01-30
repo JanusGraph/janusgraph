@@ -87,7 +87,7 @@
         <!-- align with org.apache.hbase:hbase -->
         <jackson1.version>1.9.13</jackson1.version>
         <jackson2.version>2.12.1</jackson2.version>
-        <lucene-solr.version>8.6.2</lucene-solr.version>
+        <lucene-solr.version>8.7.0</lucene-solr.version>
         <elasticsearch.version>7.10.2</elasticsearch.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
