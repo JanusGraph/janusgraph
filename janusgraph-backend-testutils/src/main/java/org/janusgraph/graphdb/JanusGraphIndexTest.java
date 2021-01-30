@@ -160,6 +160,10 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         return propertyKey;
     }
 
+    public String getTextField(String propertyKey) {
+        return propertyKey;
+    }
+
     @Override
     public void open(WriteConfiguration config) {
         super.open(config);
@@ -1023,11 +1027,13 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     public void testGraphCentricQueryProfiling() {
         final PropertyKey name = makeKey("name", String.class);
         final PropertyKey prop = makeKey("prop", String.class);
+        final PropertyKey description = makeKey("desc", String.class);
         mgmt.buildIndex("mixed", Vertex.class).addKey(name, Mapping.STRING.asParameter())
             .addKey(prop, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
+        mgmt.buildIndex("mi", Vertex.class).addKey(description).buildMixedIndex(INDEX2);
         finishSchema();
 
-        tx.addVertex("name", "bob", "prop", "val");
+        tx.addVertex("name", "bob", "prop", "val", "desc", "he likes coding");
         tx.commit();
 
         // satisfied by a single graph-centric query which is satisfied by a single mixed index query
@@ -1084,6 +1090,32 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             put("index_impl", "search");
         }};
         assertEquals(annotations, nested.getAnnotations());
+
+        // satisfied by a single graph centric query which is satisfied by union of two mixed index queries
+        newTx();
+        final Metrics mMixedAnd2 = tx.traversal().V().has("name", "bob").has("prop", "val")
+            .has("desc", Text.textContains("coding")).profile().next().getMetrics(0);
+        assertEquals("JanusGraphStep([],[name.eq(bob), prop.eq(val), desc.textContains(coding)])", mMixedAnd2.getName());
+        assertTrue(mMixedAnd2.getDuration(TimeUnit.MICROSECONDS) > 0);
+        assertEquals(3, mMixedAnd2.getNested().size());
+        nested = (Metrics) mMixedAnd2.getNested().toArray()[0];
+        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        nested = (Metrics) mMixedAnd2.getNested().toArray()[1];
+        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        nested = (Metrics) mMixedAnd2.getNested().toArray()[2];
+        assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        String descKey = getTextField("desc");
+        annotations = new HashMap() {{
+            put("condition", "(name = bob AND prop = val AND desc textContains coding)");
+            put("orders", "[]");
+            put("isFitted", "true");
+            put("isOrdered", "true");
+            put("query", String.format("[mixed:[(%s = bob AND %s = val)]:mixed, mi:[(%s textContains coding)]:mi]", nameKey, propKey, descKey));
+        }};
+        assertEquals(annotations, nested.getAnnotations());
     }
 
     @Test
@@ -1123,9 +1155,18 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     private long getIndexSelectResultNum(Object... settings) {
         clopen(settings);
         GraphTraversalSource g = graph.traversal();
-        Object[] metrics = g.V().has("name", "value")
-            .has("prop", "value").profile().next().getMetrics(0).getNested().toArray();
-        return ((Metrics) metrics[metrics.length - 1]).getNested().stream().filter(m -> m.getName().equals(QueryProfiler.BACKEND_QUERY)).count();
+        Metrics metrics = g.V().has("name", "value")
+            .has("prop", "value").profile().next().getMetrics(0);
+        return getBackendQueriesNum(metrics);
+    }
+
+    private long getBackendQueriesNum(Metrics metrics) {
+        if (metrics.getName().equals(QueryProfiler.BACKEND_QUERY)) return 1;
+        int sum = 0;
+        for (Metrics subMetrics : metrics.getNested()) {
+           sum += getBackendQueriesNum(subMetrics);
+        }
+        return sum;
     }
 
     @Test

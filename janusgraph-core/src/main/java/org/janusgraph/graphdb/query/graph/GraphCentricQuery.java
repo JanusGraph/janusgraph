@@ -157,7 +157,7 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGr
 
 
     @Override
-    public void observeWith(QueryProfiler profiler) {
+    public void observeWith(QueryProfiler profiler, boolean hasSiblings) {
         this.profiler = profiler;
         profiler.setAnnotation(QueryProfiler.CONDITION_ANNOTATION,condition);
         profiler.setAnnotation(QueryProfiler.ORDERS_ANNOTATION,orders);
@@ -165,6 +165,7 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGr
         indexQuery.observeWith(profiler);
     }
 
+    @Override
     public QueryProfiler getProfiler() {
         return profiler;
     }

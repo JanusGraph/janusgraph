@@ -72,6 +72,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Property;
@@ -5717,6 +5718,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             put("index", "nameIdx");
         }};
         assertEquals(nameIdxAnnotations, nested.getAnnotations());
+        assertEquals(1, nested.getNested().size());
+        Metrics backendQueryMetrics = (Metrics) nested.getNested().toArray()[0];
+        assertTrue(backendQueryMetrics.getDuration(TimeUnit.MICROSECONDS) > 0);
 
         // satisfied by unions of two separate graph-centric queries, each satisfied by a single composite index query
         newTx();
@@ -5735,6 +5739,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
         assertEquals(nameIdxAnnotations, nested.getAnnotations());
+        assertEquals(1, nested.getNested().size());
+        backendQueryMetrics = (Metrics) nested.getNested().toArray()[0];
+        assertTrue(backendQueryMetrics.getDuration(TimeUnit.MICROSECONDS) > 0);
         nested = (Metrics) mCompMultiOr.getNested().toArray()[3];
         assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
@@ -5750,6 +5757,37 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             put("index", "weightIdx");
         }};
         assertEquals(weightIdxAnnotations, nested.getAnnotations());
+        assertEquals(1, nested.getNested().size());
+        backendQueryMetrics = (Metrics) nested.getNested().toArray()[0];
+        assertTrue(backendQueryMetrics.getDuration(TimeUnit.MICROSECONDS) > 0);
+
+        // satisfied by a single graph-centric query which satisfied by intersection of two composite index queries
+        newTx();
+        TraversalMetrics metrics = tx.traversal().V().and(__.has("name", "bob"), __.has("weight", 100))
+            .profile().next();
+        Metrics mCompMultiAnd = metrics.getMetrics(0);
+        assertEquals("JanusGraphStep([],[name.eq(bob), weight.eq(100)])", mCompMultiAnd.getName());
+        assertTrue(mCompMultiAnd.getDuration(TimeUnit.MICROSECONDS) > 0);
+        assertEquals(3, mCompMultiAnd.getNested().size());
+        nested = (Metrics) mCompMultiAnd.getNested().toArray()[0];
+        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        nested = (Metrics) mCompMultiAnd.getNested().toArray()[1];
+        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        nested = (Metrics) mCompMultiAnd.getNested().toArray()[2];
+        assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        assertEquals("(name = bob AND weight = 100)", nested.getAnnotation("condition"));
+        assertEquals(2, nested.getNested().size());
+        Metrics deeplyNested = (Metrics) nested.getNested().toArray()[0];
+        assertEquals("AND-query", deeplyNested.getName());
+        // FIXME: assertTrue(deeplyNested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        assertEquals("multiKSQ[1]@2147483647", deeplyNested.getAnnotation("query"));
+        deeplyNested = (Metrics) nested.getNested().toArray()[1];
+        assertEquals("AND-query", deeplyNested.getName());
+        // FIXME: assertTrue(deeplyNested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        assertEquals("multiKSQ[1]@2147483647", deeplyNested.getAnnotation("query"));
 
         // satisfied by one graph-centric query, which satisfied by in-memory filtering after one composite index query
         newTx();
@@ -5838,6 +5876,39 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         }};
         mSingleLabel.getAnnotations().remove("percentDur");
         assertEquals(annotations, mSingleLabel.getAnnotations());
+
+        // satisfied by a single vertex-centric query which is satisfied by union of two edge queries
+        newTx();
+        Metrics mMultiLabels = tx.traversal().V(v).outE("friend", "friend-no-index").has("time", 100)
+            .profile().next().getMetrics(1);
+        assertEquals("JanusGraphVertexStep([time.eq(100)])", mMultiLabels.getName());
+        assertTrue(mMultiLabels.getDuration(TimeUnit.MICROSECONDS) > 0);
+        annotations = new HashMap() {{
+            put("condition", "(time = 100 AND (type[friend] OR type[friend-no-index]))");
+            put("orders", "[]");
+            put("vertices", 1);
+        }};
+        mMultiLabels.getAnnotations().remove("percentDur");
+        assertEquals(annotations, mMultiLabels.getAnnotations());
+        assertEquals(3, mMultiLabels.getNested().size());
+        Metrics friendMetrics = (Metrics) mMultiLabels.getNested().toArray()[1];
+        assertEquals("OR-query", friendMetrics.getName());
+        // FIXME: assertTrue(friendMetrics.getDuration(TimeUnit.MICROSECONDS) > 0);
+        annotations = new HashMap() {{
+            put("isFitted", "true");
+            put("isOrdered", "true");
+            put("query", "2069:byTime:SliceQuery[0xB0E0FF7FFFFF9B,0xB0E0FF7FFFFF9C)@2147483647"); // vertex-centric index utilized
+        }};
+        assertEquals(annotations, friendMetrics.getAnnotations());
+        Metrics friendNoIndexMetrics = (Metrics) mMultiLabels.getNested().toArray()[2];
+        assertEquals("OR-query", friendNoIndexMetrics.getName());
+        // FIXME: assertTrue(friendNoIndexMetrics.getDuration(TimeUnit.MICROSECONDS) > 0);
+        annotations = new HashMap() {{
+            put("isFitted", "false");
+            put("isOrdered", "true");
+            put("query", "friend-no-index:SliceQuery[0x7180,0x7181)@2147483647"); // no vertex-centric index found
+        }};
+        assertEquals(annotations, friendNoIndexMetrics.getAnnotations());
     }
 
     @Test

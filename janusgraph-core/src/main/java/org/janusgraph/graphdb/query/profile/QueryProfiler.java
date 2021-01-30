@@ -54,7 +54,7 @@ public interface QueryProfiler {
 
     QueryProfiler NO_OP = new QueryProfiler() {
         @Override
-        public QueryProfiler addNested(String groupName) {
+        public QueryProfiler addNested(String groupName, boolean hasSiblings) {
             return this;
         }
 
@@ -76,8 +76,11 @@ public interface QueryProfiler {
         }
     };
 
+    default QueryProfiler addNested(String groupName) {
+        return addNested(groupName, false);
+    }
 
-    QueryProfiler addNested(String groupName);
+    QueryProfiler addNested(String groupName, boolean hasSiblings);
 
     QueryProfiler setAnnotation(String key, Object value);
 
