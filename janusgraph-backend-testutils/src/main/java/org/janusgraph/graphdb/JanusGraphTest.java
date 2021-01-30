@@ -6538,4 +6538,87 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         // test with invalid filter
         assertEquals(false, IndexSelectionUtil.existsMatchingIndex(conditions, null));
     }
+    
+    @Test
+    public void testReindexingForEdgeIndex() throws InterruptedException, ExecutionException {
+    	String indexWithDirectionIn = "edgesByAssocKindIn";
+    	String indexwithDirectionOut = "edgesByAssocKindOut";
+    	String indexWithDirectionBoth = "edgesByAssocKindBoth";
+    	
+    	String propertyKeyForIn = "assocKindForIn";
+    	String propertyKeyForOut = "assocKindForOut";
+    	String propertyKeyForBoth = "assocKindForBoth";
+    	
+    	
+    	//Schema creation
+    	EdgeLabel edgeLabel = mgmt.makeEdgeLabel("egLabel").multiplicity(Multiplicity.MULTI).make();
+		mgmt.makePropertyKey("vtName").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+		PropertyKey propAssocKindIn = mgmt.makePropertyKey(propertyKeyForIn).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();	
+		PropertyKey propAssocKindOut = mgmt.makePropertyKey(propertyKeyForOut).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();	
+		PropertyKey propAssocKindBoth = mgmt.makePropertyKey(propertyKeyForBoth).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();	
+		
+		//Index creation
+    	mgmt.buildEdgeIndex(edgeLabel, indexWithDirectionIn, Direction.IN, propAssocKindIn);
+    	mgmt.buildEdgeIndex(edgeLabel, indexwithDirectionOut, Direction.OUT, propAssocKindOut);
+    	mgmt.buildEdgeIndex(edgeLabel, indexWithDirectionBoth, Direction.BOTH, propAssocKindBoth);    	
+    	finishSchema();
+    	
+    	//Create Vertex
+    	JanusGraphVertex a = tx.addVertex();
+    	a.property("vtName","A");
+    	JanusGraphVertex b = tx.addVertex();
+    	b.property("vtName","B");
+    	
+    	//Add Edges
+    	a.addEdge("egLabel",b,propertyKeyForIn,1,propertyKeyForOut,1,propertyKeyForBoth,1);
+    	b.addEdge("egLabel",a,propertyKeyForIn,2, propertyKeyForOut,2,propertyKeyForBoth,2);
+    	newTx();
+    	
+    	performReindexAndVerifyEdgeCount(indexWithDirectionIn, propertyKeyForIn);
+    	performReindexAndVerifyEdgeCount(indexwithDirectionOut, propertyKeyForOut);
+    	performReindexAndVerifyEdgeCount(indexWithDirectionBoth, propertyKeyForBoth);
+    }
+    
+    public void performReindexAndVerifyEdgeCount(String indexName, String propKey) throws InterruptedException, ExecutionException {
+    	RelationType t = mgmt.getRelationType("egLabel");
+    	RelationTypeIndex relationIndex = mgmt.getRelationIndex(t,indexName);
+    	assertEquals(SchemaStatus.ENABLED, relationIndex.getIndexStatus());
+
+    	GraphTraversalSource g = graph.traversal();
+    	
+    	//asserting before reindex
+    	assertEquals(0, g.V().has("vtName", "A").inE().hasLabel("egLabel").has(propKey, 1).count().next());
+    	assertEquals(1, g.V().has("vtName", "A").inE().hasLabel("egLabel").has(propKey, 2).count().next());
+    	assertEquals(1, g.V().has("vtName", "A").outE().hasLabel("egLabel").has(propKey, 1).count().next());
+    	assertEquals(0, g.V().has("vtName", "A").outE().hasLabel("egLabel").has(propKey, 2).count().next());
+    	assertEquals(1, g.V().has("vtName", "A").bothE().hasLabel("egLabel").has(propKey, 1).count().next());
+    	assertEquals(1, g.V().has("vtName", "A").bothE().hasLabel("egLabel").has(propKey, 2).count().next());    	
+    	assertEquals(1, g.V().has("vtName", "B").inE().hasLabel("egLabel").has(propKey, 1).count().next());
+    	assertEquals(0, g.V().has("vtName", "B").inE().hasLabel("egLabel").has(propKey, 2).count().next());
+    	assertEquals(0, g.V().has("vtName", "B").outE().hasLabel("egLabel").has(propKey, 1).count().next());
+    	assertEquals(1, g.V().has("vtName", "B").outE().hasLabel("egLabel").has(propKey, 2).count().next());
+    	assertEquals(1, g.V().has("vtName", "B").bothE().hasLabel("egLabel").has(propKey, 1).count().next());
+    	assertEquals(1, g.V().has("vtName", "B").bothE().hasLabel("egLabel").has(propKey, 2).count().next());
+    	
+    	//Reindexing
+    	mgmt.updateIndex(relationIndex, SchemaAction.REINDEX).get();
+    	finishSchema();
+    	
+    	relationIndex = mgmt.getRelationIndex(t,indexName);
+    	assertEquals(SchemaStatus.ENABLED, relationIndex.getIndexStatus());
+    	
+    	//asserting after reindex
+    	assertEquals(0, g.V().has("vtName", "A").inE().hasLabel("egLabel").has(propKey, 1).count().next());
+    	assertEquals(1, g.V().has("vtName", "A").inE().hasLabel("egLabel").has(propKey, 2).count().next());
+    	assertEquals(1, g.V().has("vtName", "A").outE().hasLabel("egLabel").has(propKey, 1).count().next());
+    	assertEquals(0, g.V().has("vtName", "A").outE().hasLabel("egLabel").has(propKey, 2).count().next());
+    	assertEquals(1, g.V().has("vtName", "A").bothE().hasLabel("egLabel").has(propKey, 1).count().next());
+    	assertEquals(1, g.V().has("vtName", "A").bothE().hasLabel("egLabel").has(propKey, 2).count().next());
+    	assertEquals(1, g.V().has("vtName", "B").inE().hasLabel("egLabel").has(propKey, 1).count().next());
+    	assertEquals(0, g.V().has("vtName", "B").inE().hasLabel("egLabel").has(propKey, 2).count().next());
+    	assertEquals(0, g.V().has("vtName", "B").outE().hasLabel("egLabel").has(propKey, 1).count().next());
+    	assertEquals(1, g.V().has("vtName", "B").outE().hasLabel("egLabel").has(propKey, 2).count().next());
+    	assertEquals(1, g.V().has("vtName", "B").bothE().hasLabel("egLabel").has(propKey, 1).count().next());
+    	assertEquals(1, g.V().has("vtName", "B").bothE().hasLabel("egLabel").has(propKey, 2).count().next());
+    }
 }

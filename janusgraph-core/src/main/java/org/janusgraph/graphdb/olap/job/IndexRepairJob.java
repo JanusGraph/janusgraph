@@ -39,6 +39,7 @@ import org.janusgraph.graphdb.types.system.BaseLabel;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.util.StringUtils;
+import org.janusgraph.graphdb.internal.InternalVertex;
 
 import java.util.*;
 
@@ -124,20 +125,48 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                 RelationTypeIndexWrapper wrapper = (RelationTypeIndexWrapper)index;
                 InternalRelationType wrappedType = wrapper.getWrappedType();
                 EdgeSerializer edgeSerializer = writeTx.getEdgeSerializer();
-                List<Entry> additions = new ArrayList<>();
-
+                List<Entry> outAdditions = new ArrayList<>();
+                Map<StaticBuffer,List<Entry>> inAdditionsMap = new HashMap<>();
+                
                 for (Object relation : vertex.query().types(indexRelationTypeName).direction(Direction.OUT).relations()) {
                     InternalRelation janusgraphRelation = (InternalRelation) relation;
                     for (int pos = 0; pos < janusgraphRelation.getArity(); pos++) {
                         if (!wrappedType.isUnidirected(Direction.BOTH) && !wrappedType.isUnidirected(EdgeDirection.fromPosition(pos)))
                             continue; //Directionality is not covered
+
                         Entry entry = edgeSerializer.writeRelation(janusgraphRelation, wrappedType, pos, writeTx);
-                        additions.add(entry);
+                        
+                        //The below condition is check to avoid self-links which is getting created after re-indexing
+                        if(pos==0) {
+                            //Create OUT edge index entry. 
+                            //Here source will the current vertex and target vertex the other side of the relation 
+                            outAdditions.add(entry); 
+                        }else if(pos==1) {
+                            //Create IN edge index entry.
+                            //Here the source vertex is the other side of the current vertex and target will be the current vertex
+                            InternalVertex otherVertex = janusgraphRelation.getVertex(1);
+                            StaticBuffer otherVertexKey = writeTx.getIdInspector().getKey(otherVertex.longId());
+                            inAdditionsMap.computeIfAbsent(otherVertexKey, k -> new ArrayList<Entry>()).add(entry);
+                        }else {
+                            throw new IllegalStateException("Invalid position:" + pos);
+                        }
+						 
                     }
                 }
+		
+                //Mutating all OUT relationships for the current vertex
                 StaticBuffer vertexKey = writeTx.getIdInspector().getKey(vertex.longId());
-                mutator.mutateEdges(vertexKey, additions, KCVSCache.NO_DELETIONS);
-                metrics.incrementCustom(ADDED_RECORDS_COUNT, additions.size());
+                mutator.mutateEdges(vertexKey, outAdditions, KCVSCache.NO_DELETIONS);
+                
+                //Mutating all IN relationships for the current vertex
+                int totalInAdditions = 0;
+                for(Map.Entry<StaticBuffer, List<Entry>> entry : inAdditionsMap.entrySet()) {
+                    StaticBuffer otherVertexKey = entry.getKey();
+                    List<Entry> inAdditions = entry.getValue();
+                    totalInAdditions += inAdditions.size();
+                    mutator.mutateEdges(otherVertexKey, inAdditions, KCVSCache.NO_DELETIONS);
+                }
+                metrics.incrementCustom(ADDED_RECORDS_COUNT, outAdditions.size()+totalInAdditions);
             } else if (index instanceof JanusGraphIndex) {
                 IndexType indexType = managementSystem.getSchemaVertex(index).asIndexType();
                 assert indexType!=null;
