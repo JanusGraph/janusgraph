@@ -41,6 +41,11 @@ public interface AddedRelationsContainer {
      */
     Collection<InternalRelation> getAll();
 
+    /**
+     * Clears the container which releases allocated memory.
+     * Calling any of the other methods after clearing the container has undetermined behavior.
+     */
+    void clear();
 
     AddedRelationsContainer EMPTY = new AddedRelationsContainer() {
         @Override
@@ -66,6 +71,11 @@ public interface AddedRelationsContainer {
         @Override
         public Collection<InternalRelation> getAll() {
             return Collections.emptyList();
+        }
+
+        @Override
+        public void clear() {
+            // nothing to clear
         }
     };
 

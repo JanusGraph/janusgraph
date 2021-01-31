@@ -28,4 +28,10 @@ public interface IndexCache {
 
     Iterable<JanusGraphVertexProperty> get(Object value, PropertyKey key);
 
+    /**
+     * Closes the cache which allows the cache to release allocated memory.
+     * Calling any of the other methods after closing a cache has undetermined behavior.
+     */
+    void close();
+
 }

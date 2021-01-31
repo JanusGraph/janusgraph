@@ -51,4 +51,9 @@ public class ConcurrentIndexCache implements IndexCache {
         }
         return result;
     }
+
+    @Override
+    public void close() {
+        map.clear();
+    }
 }

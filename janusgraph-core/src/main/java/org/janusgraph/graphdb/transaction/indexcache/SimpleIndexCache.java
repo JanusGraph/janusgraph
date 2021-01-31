@@ -45,4 +45,9 @@ public class SimpleIndexCache implements IndexCache {
     public Iterable<JanusGraphVertexProperty> get(final Object value, final PropertyKey key) {
         return Iterables.filter(map.get(value), janusgraphProperty -> janusgraphProperty.propertyKey().equals(key));
     }
+
+    @Override
+    public void close() {
+        map.clear();
+    }
 }

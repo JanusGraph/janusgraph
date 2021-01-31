@@ -1478,10 +1478,19 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     }
 
     private void releaseTransaction() {
-        //TODO: release non crucial data structures to preserve memory?
         isOpen = false;
         graph.closeTransaction(this);
         vertexCache.close();
+        indexCache.close();
+        addedRelations.clear();
+        if (!Objects.equals(EMPTY_DELETED_RELATIONS, deletedRelations)) {
+            deletedRelations.clear();
+        }
+        if (!Objects.equals(UNINITIALIZED_LOCKS, uniqueLocks)) {
+            uniqueLocks.clear();
+        }
+        newVertexIndexEntries.close();
+        newTypeCache.clear();
     }
 
     @Override
