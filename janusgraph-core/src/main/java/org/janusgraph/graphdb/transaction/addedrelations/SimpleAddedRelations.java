@@ -78,6 +78,11 @@ public class SimpleAddedRelations implements AddedRelationsContainer {
         });
     }
 
+    @Override
+    public void clear() {
+        container.release();
+    }
+
     private Iterator<InternalRelation> iterator() {
         return Iterators.transform(container.iterator(), e -> {
             assert e != null;

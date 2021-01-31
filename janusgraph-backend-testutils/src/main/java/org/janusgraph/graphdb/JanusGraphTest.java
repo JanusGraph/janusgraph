@@ -2410,6 +2410,17 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testTransactionScopeTransition() {
+        tx.rollback();
+
+        JanusGraphVertex newV = graph.addVertex();
+        graph.tx().commit();
+
+        newV.property("prop", "value");
+        graph.tx().commit();
+    }
+
+    @Test
     public void testNestedTransactions() {
         Vertex v1 = graph.addVertex();
         newTx();
