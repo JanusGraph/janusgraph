@@ -190,7 +190,7 @@ start() {
       exit 1
     fi
 
-    $JAVA -Dlog4j.configuration=$LOG4J_CONF $JAVA_OPTIONS -cp $CP:$CLASSPATH $JANUSGRAPH_SERVER_CMD "$JANUSGRAPH_YAML" >> "$LOG_FILE" 2>&1 &
+    $JAVA -Dlog4j.configuration=$LOG4J_CONF $JAVA_OPTIONS -cp $CLASSPATH $JANUSGRAPH_SERVER_CMD "$JANUSGRAPH_YAML" >> "$LOG_FILE" 2>&1 &
     PID=$!
     disown $PID
     echo $PID > "$PID_FILE"
@@ -208,7 +208,7 @@ start() {
       exit 1
     fi
 
-    su -c "$JAVA -Dlog4j.configuration=$LOG4J_CONF $JAVA_OPTIONS -cp $CP:$CLASSPATH $JANUSGRAPH_SERVER_CMD \"$JANUSGRAPH_YAML\" >> \"$LOG_FILE\" 2>&1 & echo \$! "  "$RUNAS" > "$PID_FILE"
+    su -c "$JAVA -Dlog4j.configuration=$LOG4J_CONF $JAVA_OPTIONS -cp $CLASSPATH $JANUSGRAPH_SERVER_CMD \"$JANUSGRAPH_YAML\" >> \"$LOG_FILE\" 2>&1 & echo \$! "  "$RUNAS" > "$PID_FILE"
     chown "$RUNAS" "$PID_FILE"
   fi
 
@@ -233,7 +233,7 @@ startForeground() {
   fi
 
   if [[ -z "$RUNAS" ]]; then
-    $JAVA -Dlog4j.configuration=$LOG4J_CONF $JAVA_OPTIONS -cp $CP:$CLASSPATH $JANUSGRAPH_SERVER_CMD "$JANUSGRAPH_YAML"
+    $JAVA -Dlog4j.configuration=$LOG4J_CONF $JAVA_OPTIONS -cp $CLASSPATH $JANUSGRAPH_SERVER_CMD "$JANUSGRAPH_YAML"
     exit 0
   else
     echo Starting in foreground not supported with RUNAS
