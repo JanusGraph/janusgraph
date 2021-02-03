@@ -26,7 +26,8 @@ import java.util.Date;
 public class DateSerializer implements OrderPreservingSerializer<Date> {
 
     private final LongSerializer ls = LongSerializer.INSTANCE;
-    private final StdDateFormat dateFormat = StdDateFormat.instance;
+    // StdDateFormat is not thread-safe
+    private static final ThreadLocal<StdDateFormat> dateFormat = ThreadLocal.withInitial(StdDateFormat::new);
 
     @Override
     public Date read(ScanBuffer buffer) {
@@ -56,7 +57,7 @@ public class DateSerializer implements OrderPreservingSerializer<Date> {
             return new Date(((Number)value).longValue());
         } else if (value instanceof String) {
             try {
-                return dateFormat.parse((String) value);
+                return dateFormat.get().parse((String) value);
             } catch (ParseException ignored) {
             }
         }
