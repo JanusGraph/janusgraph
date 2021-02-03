@@ -14,10 +14,18 @@
 
 package org.janusgraph.graphdb.database.serialize.attribute;
 
+import org.apache.tinkerpop.shaded.jackson.databind.util.StdDateFormat;
 import org.janusgraph.graphdb.database.serialize.StandardSerializer;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Stream;
+
+import org.junit.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -25,7 +33,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DateSerializerTest {
-    private StandardSerializer serializer = new StandardSerializer();
+    private final StandardSerializer serializer = new StandardSerializer();
 
     private static Stream<Arguments> params() {
         return Stream.of(
@@ -44,5 +52,25 @@ public class DateSerializerTest {
     public void dateSerializerConvertString(Date expected, Object value) {
         Date actual = serializer.convert(Date.class, value);
         assertEquals(expected, actual);
+    }
+
+    @Test
+    public void dateSerializerConvertStringThreadSafe() throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(64);
+        String input = "2021-01-30T17:30:31.000";
+        Date reference = StdDateFormat.instance.parse(input);
+
+        List<Future<Date>> futures = new ArrayList<>();
+        try {
+            // Have serializer parse the same date 100x in parallel
+            for (int i = 0; i < 100; ++i) {
+                futures.add(pool.submit(() -> serializer.convert(Date.class, input)));
+            }
+            for (Future<Date> future : futures) {
+                assertEquals(reference, future.get());
+            }
+        } finally {
+            pool.shutdown();
+        }
     }
 }
