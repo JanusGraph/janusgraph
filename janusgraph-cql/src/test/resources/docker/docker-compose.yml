@@ -15,7 +15,7 @@
 version: '2'
 services:
   cassandra:
-    image: cassandra:3.11.9
+    image: cassandra:3.11.10
     container_name: jg-cassandra
     ports:
       - "9042:9042"
