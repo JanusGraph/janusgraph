@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.management;
 
+import org.apache.tinkerpop.gremlin.jsr223.GremlinScriptEngineManager;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.ConfiguredGraphFactory;
@@ -170,6 +171,8 @@ public class JanusGraphManager implements GraphManager {
     @Override
     public TraversalSource removeTraversalSource(String tsName) {
         if (tsName == null) return null;
+        // Remove the traversal source from the script engine bindings so that closed/dropped graph instances do not leak
+        removeGremlinScriptEngineBinding(tsName);
         return traversalSources.remove(tsName);
     }
 
@@ -252,6 +255,8 @@ public class JanusGraphManager implements GraphManager {
     @Override
     public Graph removeGraph(String gName) {
         if (gName == null) return null;
+        // Remove the graph from the script engine bindings so that closed/dropped graph instances do not leak
+        removeGremlinScriptEngineBinding(gName);
         return graphs.remove(gName);
     }
 
@@ -263,12 +268,18 @@ public class JanusGraphManager implements GraphManager {
 
     private void updateTraversalSource(String graphName, Graph graph, GremlinExecutor gremlinExecutor,
                                        JanusGraphManager graphManager){
-        gremlinExecutor.getScriptEngineManager().put(graphName, graph);
-        String traversalName = graphName + "_traversal";
+        final GremlinScriptEngineManager scriptEngineManager = gremlinExecutor.getScriptEngineManager();
+        scriptEngineManager.put(graphName, graph);
+        String traversalName = ConfiguredGraphFactory.toTraversalSourceName(graphName);
         TraversalSource traversalSource = graph.traversal();
-        gremlinExecutor.getScriptEngineManager().put(traversalName, traversalSource);
+        scriptEngineManager.put(traversalName, traversalSource);
         graphManager.putTraversalSource(traversalName, traversalSource);
     }
 
+    private void removeGremlinScriptEngineBinding(String key) {
+        if (null != gremlinExecutor) {
+            gremlinExecutor.getScriptEngineManager().getBindings().remove(key);
+        }
+    }
 }
 
