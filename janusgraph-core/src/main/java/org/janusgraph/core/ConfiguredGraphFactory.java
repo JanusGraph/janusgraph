@@ -139,6 +139,7 @@ public class ConfiguredGraphFactory {
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
         final Graph graph = jgm.removeGraph(graphName);
+        jgm.removeTraversalSource(toTraversalSourceName(graphName));
         if (null != graph) graph.close();
         return (JanusGraph) graph;
     }
@@ -243,7 +244,9 @@ public class ConfiguredGraphFactory {
     private static void removeGraphFromCache(final JanusGraph graph) {
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
-        jgm.removeGraph(((StandardJanusGraph) graph).getGraphName());
+        final String graphName = ((StandardJanusGraph) graph).getGraphName();
+        jgm.removeGraph(graphName);
+        jgm.removeTraversalSource(toTraversalSourceName(graphName));
         final ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
         mgmt.evictGraphFromCache();
         mgmt.commit();
@@ -287,6 +290,15 @@ public class ConfiguredGraphFactory {
     public static Map<String, Object> getTemplateConfiguration() {
         final ConfigurationManagementGraph configManagementGraph = getConfigGraphManagementInstance();
         return configManagementGraph.getTemplateConfiguration();
+    }
+
+    /**
+     * Get traversal source name given a graph name.
+     * @param graphName
+     * @return A traversal source name for the provided graph name
+     */
+    public static String toTraversalSourceName(String graphName){
+        return graphName + "_traversal";
     }
 }
 

@@ -14,6 +14,8 @@
 
 package org.janusgraph.core;
 
+import org.apache.tinkerpop.gremlin.groovy.engine.GremlinExecutor;
+import org.apache.tinkerpop.gremlin.jsr223.GremlinScriptEngineManager;
 import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.janusgraph.graphdb.management.JanusGraphManager;
 import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
@@ -31,7 +33,13 @@ import java.util.HashMap;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
+import org.mockito.Mockito;
+
+import javax.script.Bindings;
+import javax.script.SimpleBindings;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 
 public class ConfiguredGraphFactoryTest {
     private static final JanusGraphManager gm;
@@ -277,6 +285,55 @@ public class ConfiguredGraphFactoryTest {
             ConfiguredGraphFactory.removeConfiguration("graph1");
             ConfiguredGraphFactory.close("graph1");
         }
+    }
+
+    @Test
+    public void dropShouldCleanUpTraversalSourceAndBindings() throws Exception {
+        try {
+            final String graphName = "graph1";
+            final Map<String, Object> map = new HashMap<>();
+            map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
+            map.put(GRAPH_NAME.toStringWithoutRoot(), graphName);
+            ConfiguredGraphFactory.createConfiguration(new MapConfiguration(map));
+            final JanusGraphManager jgm = JanusGraphManager.getInstance();
+            final Bindings bindings = new SimpleBindings();
+            jgm.configureGremlinExecutor(mockGremlinExecutor(bindings));
+            final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.open(graphName);
+            jgm.putTraversalSource(ConfiguredGraphFactory.toTraversalSourceName(graphName), graph.traversal());
+            assertNotNull(jgm.getGraph(graphName));
+            assertEquals(ConfiguredGraphFactory.toTraversalSourceName(graphName),
+                jgm.getTraversalSourceNames().iterator().next());
+            // Confirm the graph and traversal source were added to the Gremlin Script Engine bindings
+            assertTrue(bindings.containsKey("graph1"));
+            assertTrue(bindings.containsKey("graph1_traversal"));
+            // Drop the graph and confirm that the graph and traversal source
+            ConfiguredGraphFactory.drop(graphName);
+            assertNull(jgm.getGraph(graphName));
+            assertTrue(jgm.getTraversalSourceNames().isEmpty());
+            // Confirm the graph and traversal source were removed from the Gremlin Script Engine bindings
+            assertFalse(bindings.containsKey("graph1"));
+            assertFalse(bindings.containsKey("graph1_traversal"));
+        } finally {
+            ConfiguredGraphFactory.removeConfiguration("graph1");
+        }
+    }
+
+    /**
+     * Build a mock Gremlin Executor that can be used to confirm binding management happens correct on
+     * ConfiguredGraphFactory create and drops.
+     */
+    private static GremlinExecutor mockGremlinExecutor(final Bindings bindings) {
+        final GremlinExecutor gremlinExecutor = Mockito.mock(GremlinExecutor.class);
+        final GremlinScriptEngineManager scriptEngineManager = Mockito.mock(GremlinScriptEngineManager.class);
+        Mockito.when(gremlinExecutor.getScriptEngineManager()).thenReturn(scriptEngineManager);
+        Mockito.when(gremlinExecutor.getScriptEngineManager().getBindings()).thenReturn(bindings);
+        Mockito.doAnswer(invocation -> {
+            bindings.put(invocation.getArgument(0), invocation.getArgument(1));
+            return null;
+        }).when(scriptEngineManager).put(any(String.class), any(Object.class));
+        Mockito.doAnswer(invocation -> bindings.get(invocation.getArgument(0)))
+            .when(scriptEngineManager).get(any(String.class));
+        return gremlinExecutor;
     }
 }
 
