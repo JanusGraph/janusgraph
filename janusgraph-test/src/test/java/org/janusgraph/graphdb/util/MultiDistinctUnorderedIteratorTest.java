@@ -14,8 +14,12 @@
 
 package org.janusgraph.graphdb.util;
 
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.janusgraph.graphdb.query.Query;
+
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedVertex;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -41,16 +45,18 @@ public class MultiDistinctUnorderedIteratorTest {
 
     @Test
     public void shouldConcatIteratorsAndDedup() {
-        List<Iterator<Integer>> iterators = new ArrayList<>();
+        List<Iterator<Vertex>> iterators = new ArrayList<>();
         final int num = 5;
         for (int i = 0; i < num; i++) {
             iterators.add(CloseableIteratorUtils.emptyIterator());
-            iterators.add(Arrays.asList(i, i + 1).iterator());
+            List<Vertex> vertices = Arrays.asList(DetachedVertex.build().setId(i).create(),
+                DetachedVertex.build().setId(i + 1).create());
+            iterators.add(vertices.iterator());
         }
 
-        MultiDistinctUnorderedIterator<Integer> multiIterator = new MultiDistinctUnorderedIterator<>(0, Query.NO_LIMIT, iterators);
+        MultiDistinctUnorderedIterator<Vertex> multiIterator = new MultiDistinctUnorderedIterator<>(0, Query.NO_LIMIT, iterators);
         for (int i = 0; i <= num; i++) {
-            assertEquals(i, multiIterator.next());
+            assertEquals(DetachedVertex.build().setId(i).create(), multiIterator.next());
         }
         assertFalse(multiIterator.hasNext());
         multiIterator.close();
@@ -58,16 +64,18 @@ public class MultiDistinctUnorderedIteratorTest {
 
     @Test
     public void shouldSkipLowLimit() {
-        List<Iterator<Integer>> iterators = new ArrayList<>();
+        List<Iterator<Vertex>> iterators = new ArrayList<>();
         final int num = 5;
         for (int i = 0; i < num; i++) {
             iterators.add(CloseableIteratorUtils.emptyIterator());
-            iterators.add(Arrays.asList(i, i + 1).iterator());
+            List<Vertex> vertices = Arrays.asList(DetachedVertex.build().setId(i).create(),
+                DetachedVertex.build().setId(i + 1).create());
+            iterators.add(vertices.iterator());
         }
 
-        MultiDistinctUnorderedIterator<Integer> multiIterator = new MultiDistinctUnorderedIterator<>(2, Query.NO_LIMIT, iterators);
+        MultiDistinctUnorderedIterator<Vertex> multiIterator = new MultiDistinctUnorderedIterator<>(2, Query.NO_LIMIT, iterators);
         for (int i = 2; i <= num; i++) {
-            assertEquals(i, multiIterator.next());
+            assertEquals(DetachedVertex.build().setId(i).create(), multiIterator.next());
         }
         assertFalse(multiIterator.hasNext());
         multiIterator.close();
@@ -75,19 +83,20 @@ public class MultiDistinctUnorderedIteratorTest {
 
     @Test
     public void shouldStopAtHighLimit() {
-        List<Iterator<Integer>> iterators = new ArrayList<>();
+        List<Iterator<Vertex>> iterators = new ArrayList<>();
         final int num = 5;
         for (int i = 0; i < num; i++) {
             iterators.add(CloseableIteratorUtils.emptyIterator());
-            iterators.add(Arrays.asList(i, i + 1).iterator());
+            List<Vertex> vertices = Arrays.asList(DetachedVertex.build().setId(i).create(),
+                DetachedVertex.build().setId(i + 1).create());
+            iterators.add(vertices.iterator());
         }
 
-        MultiDistinctUnorderedIterator<Integer> multiIterator = new MultiDistinctUnorderedIterator<>(2, num, iterators);
+        MultiDistinctUnorderedIterator<Vertex> multiIterator = new MultiDistinctUnorderedIterator<>(2, num, iterators);
         for (int i = 2; i < num; i++) {
-            assertEquals(i, multiIterator.next());
+            assertEquals(DetachedVertex.build().setId(i).create(), multiIterator.next());
         }
         assertFalse(multiIterator.hasNext());
         multiIterator.close();
     }
-
 }
