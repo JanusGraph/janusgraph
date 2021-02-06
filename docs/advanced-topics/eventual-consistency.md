@@ -44,19 +44,15 @@ optimizations (e.g. local conflict detection) and detection of failure
 scenarios (e.g. expired locks).
 
 The actual lock application mechanism is abstracted such that JanusGraph
-can use multiple implementations of a locking provider. Currently, two
-locking providers are supported in the JanusGraph distribution:
+can use multiple implementations of a locking provider. Currently, only one
+locking provider is included in the JanusGraph distribution:
 
-1.  A locking implementation based on key-consistent read and write
-    operations that is agnostic to the underlying storage backend as
-    long as it supports key-consistent operations (which includes
-    Cassandra and HBase). This is the default implementation and uses
-    timestamp based lock applications to determine which transaction
-    holds the lock.
-2.  A Cassandra specific locking implementation based on the Astyanax
-    locking recipe.
-
-Both locking providers require that clocks are synchronized across all
+A locking implementation based on key-consistent read and write
+operations that is agnostic to the underlying storage backend as
+long as it supports key-consistent operations (which includes
+Cassandra and HBase). This is the default implementation and uses
+timestamp based lock applications to determine which transaction
+holds the lock. It requires that clocks are synchronized across all
 machines in the cluster.
 
 !!! warning
