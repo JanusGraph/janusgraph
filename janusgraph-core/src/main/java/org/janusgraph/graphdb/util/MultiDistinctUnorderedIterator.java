@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.util;
 
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 
 import java.util.HashSet;
@@ -22,9 +23,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-public class MultiDistinctUnorderedIterator<E> extends CloseableAbstractIterator<E> {
+public class MultiDistinctUnorderedIterator<E extends Element> extends CloseableAbstractIterator<E> {
 
-    private final Set<E> allElements = new HashSet<E>();
+    private final Set<Object> allElements = new HashSet<>();
     private final CloseableIterator<E> iterator;
     private final int limit;
     private long count;
@@ -46,7 +47,7 @@ public class MultiDistinctUnorderedIterator<E> extends CloseableAbstractIterator
         if (count < limit) {
             while (iterator.hasNext()) {
                 E elem = iterator.next();
-                if (allElements.add(elem)) {
+                if (allElements.add(elem.id())) {
                     count++;
                     return elem;
                 }

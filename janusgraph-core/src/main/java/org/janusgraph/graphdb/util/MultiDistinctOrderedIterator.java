@@ -25,17 +25,18 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 import org.apache.tinkerpop.gremlin.util.function.MultiComparator;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder.OrderEntry;
 
 
-public class MultiDistinctOrderedIterator<E> implements CloseableIterator<E> {
+public class MultiDistinctOrderedIterator<E extends Element> implements CloseableIterator<E> {
 
     private final Map<Integer, Iterator<E>> iterators = new LinkedHashMap<>();
     private final Map<Integer, E> values = new LinkedHashMap<>();
     private final TreeMap<E, Integer> currentElements;
-    private final Set<E> allElements = new HashSet<>();
+    private final Set<Object> allElements = new HashSet<>();
     private final Integer limit;
     private long count = 0;
 
@@ -65,14 +66,14 @@ public class MultiDistinctOrderedIterator<E> implements CloseableIterator<E> {
                 E element = null;
                 do {
                     element = iterators.get(i).next();
-                    if (allElements.contains(element)) {
+                    if (allElements.contains(element.id())) {
                         element = null;
                     }
                 } while (element == null && iterators.get(i).hasNext());
                 if (element != null) {
                     values.put(i, element);
                     currentElements.put(element, i);
-                    allElements.add(element);
+                    allElements.add(element.id());
                 }
             }
         }
