@@ -1,8 +1,8 @@
 # Indexing for Better Performance
 
 JanusGraph supports two different kinds of indexing to speed up query
-processing: **graph indexes** and **vertex-centric indexes**. Most graph
-queries start the traversal from a list of vertices or edges that are
+processing: **graph indexes** and **vertex-centric indexes (a.k.a. relation indexes)**.
+Most graph queries start the traversal from a list of vertices or edges that are
 identified by their properties. Graph indexes make these global
 retrieval operations efficient on large graphs. Vertex-centric indexes
 speed up the actual traversal through the graph, in particular when
@@ -64,6 +64,9 @@ same transaction as the initial schema.
 
 ### Composite Index
 
+Composite indexes are stored in a separate store called `graphIndex`.
+For example, if your storage backend is Cassandra, you will see a table
+named `graphIndex` under your namespace.
 Composite indexes retrieve vertices or edges by one or a (fixed)
 composition of multiple keys. Consider the following composite index
 definitions.
@@ -335,8 +338,14 @@ specified label.
 
 ## Vertex-centric Indexes
 
-Vertex-centric indexes are local index structures built individually per
-vertex. In large graphs vertices can have thousands of incident edges.
+Vertex-centric indexes, also known as Relation indexes, are local index
+structures built individually per vertex. They are stored together with edges
+and properties in `edgeStore`. There are two types of vertex-centric indexes,
+edge indexes and property indexes.
+
+### Edge Indexes
+
+In large graphs vertices can have thousands of incident edges.
 Traversing through those vertices can be very slow because a large
 subset of the incident edges has to be retrieved and then filtered in
 memory to match the conditions of the traversal. Vertex-centric indexes
@@ -426,6 +435,37 @@ g.V(h).outE('battled').has('time', inside(10, 50)).inV()
 
 Hence, the `battlesByRatingAndTime` index can speed up the first two but
 not the third query.
+
+### Property Indexes
+
+Similar to edge indexes, property indexes can be built to traverse properties
+based on associated meta-properties efficiently. The following toy example
+illustrates the usage of property indexes.
+
+```groovy
+graph = JanusGraphFactory.open("inmemory")
+mgmt = graph.openManagement()
+timestamp = mgmt.makePropertyKey("timestamp").dataType(Integer.class).make()
+amount = mgmt.makePropertyKey("amount").dataType(Integer.class).cardinality(Cardinality.LIST).make()
+mgmt.buildPropertyIndex(amount, 'amountByTime', Order.desc, timestamp)
+mgmt.commit()
+
+bob = graph.addVertex()
+bob.property("amount", 100, "timestamp", 1600000000)
+bob.property("amount", 200, "timestamp", 1500000000)
+bob.property("amount", -150, "timestamp", 1550000000)
+graph.tx().commit()
+
+g = graph.traversal()
+g.V(bob).properties("amount").has("timestamp", P.gt(1500000000))
+```
+
+In the above example, we model a number of transactions Bob has made. `amount` is a vertex
+property that records the amount of money involved in each transaction, while `timestamp` is
+a meta property of `amount` which records the time that a particular record happens. By creating
+a property index, we can efficiently retrieve transaction amounts by timestamp. Alternatively,
+we can also model the transactions as edges, then both `amount` and `timestamp` will be edge
+properties, and we could use Edge indexes to speed up the query.
 
 Multiple vertex-centric indexes can be built for the same edge label in
 order to support different constraint traversals. JanusGraph’s query
