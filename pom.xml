@@ -73,7 +73,7 @@
         <junit-platform.version>1.7.0</junit-platform.version>
         <junit.version>5.7.0</junit.version>
         <mockito.version>3.7.7</mockito.version>
-        <jamm.version>0.3.0</jamm.version>
+        <jamm.version>0.3.3</jamm.version>
         <metrics.version>4.1.17</metrics.version>
         <slf4j.version>1.7.30</slf4j.version>
         <httpcomponents.httpclient.version>4.5.13</httpcomponents.httpclient.version>
