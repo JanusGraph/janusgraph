@@ -908,7 +908,7 @@
             <dependency>
                 <groupId>com.carrotsearch</groupId>
                 <artifactId>junit-benchmarks</artifactId>
-                <version>0.7.0</version>
+                <version>0.7.2</version>
             </dependency>
             <dependency>
                 <groupId>com.carrotsearch</groupId>
