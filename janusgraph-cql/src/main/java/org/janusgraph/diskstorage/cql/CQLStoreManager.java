@@ -65,6 +65,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -367,15 +368,16 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     @VisibleForTesting
     Map<String, String> getCompressionOptions(final String name) throws BackendException {
-        KeyspaceMetadata keyspaceMetadata = this.session.getMetadata().getKeyspace(this.keyspace)
-            .orElseThrow(() -> new PermanentBackendException(String.format("Unknown keyspace '%s'", this.keyspace)));
-
-        TableMetadata tableMetadata = keyspaceMetadata.getTable(name)
-            .orElseThrow(() -> new PermanentBackendException(String.format("Unknown table '%s'", name)));
-
+        TableMetadata tableMetadata = getTableMetadata(name);
         Object compressionOptions = tableMetadata.getOptions().get(CqlIdentifier.fromCql("compression"));
-
         return (Map<String, String>) compressionOptions;
+    }
+
+    @VisibleForTesting
+    String getSpeculativeRetry(final String name) throws BackendException {
+        TableMetadata tableMetadata = getTableMetadata(name);
+        Object res = tableMetadata.getOptions().get(CqlIdentifier.fromCql("speculative_retry"));
+        return (String) res;
     }
 
     @VisibleForTesting
