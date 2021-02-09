@@ -134,6 +134,13 @@ public interface CQLConfigOptions {
             ConfigOption.Type.FIXED,
             String[].class);
 
+    ConfigOption<String> SPECULATIVE_RETRY = new ConfigOption<>(
+        CQL_NS,
+        "speculative-retry",
+        "The speculative retry policy. One of: NONE, ALWAYS, <X>percentile, <N>ms.",
+        ConfigOption.Type.FIXED,
+        String.class);
+
     // Compression
     ConfigOption<Boolean> CF_COMPRESSION = new ConfigOption<>(
             CQL_NS,

@@ -83,6 +83,7 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_BLO
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_TYPE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_OPTIONS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_STRATEGY;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SPECULATIVE_RETRY;
 import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
 
 /**
@@ -228,6 +229,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
         createTable = compactionOptions(createTable, configuration);
         createTable = compressionOptions(createTable, configuration);
+        createTable = speculativeRetryOptions(createTable, configuration);
 
         session.execute(createTable.build());
     }
@@ -247,8 +249,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     private static CreateTableWithOptions compactionOptions(final CreateTableWithOptions createTable,
-                                                          final Configuration configuration) {
-
+                                                            final Configuration configuration) {
         if (!configuration.has(COMPACTION_STRATEGY)) {
             return createTable;
         }
@@ -266,6 +267,14 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         return createTable.withCompaction(compactionStrategy);
+    }
+
+    private static CreateTableWithOptions speculativeRetryOptions(final CreateTableWithOptions createTable,
+                                                                  final Configuration configuration) {
+        if (!configuration.has(SPECULATIVE_RETRY)) {
+            return createTable;
+        }
+        return createTable.withSpeculativeRetry(configuration.get(SPECULATIVE_RETRY));
     }
 
     @Override
