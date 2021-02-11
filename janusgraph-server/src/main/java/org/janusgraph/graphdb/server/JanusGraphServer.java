@@ -66,7 +66,7 @@ public class JanusGraphServer {
 
     private Server createGrpcServer(JanusGraphSettings janusGraphSettings, GraphManager graphManager) {
         return ServerBuilder
-            .forPort(janusGraphSettings.grpcServer.port)
+            .forPort(janusGraphSettings.getGrpcServer().getPort())
             .addService(new JanusGraphManagerImpl(graphManager))
             .build();
     }
@@ -82,7 +82,7 @@ public class JanusGraphServer {
             gremlinSettings = GremlinSettingsUtils.configureDefaultSerializersIfNotSet(janusGraphSettings.getGremlinSettings());
             gremlinServer = new GremlinServer(gremlinSettings);
             CompletableFuture<Void> grpcServerFuture = CompletableFuture.completedFuture(null);
-            if (janusGraphSettings.grpcServer.enable) {
+            if (janusGraphSettings.getGrpcServer().isEnabled()) {
                 grpcServerFuture = CompletableFuture.runAsync(() -> {
                     GraphManager graphManager = gremlinServer.getServerGremlinExecutor().getGraphManager();
                     grpcServer = createGrpcServer(janusGraphSettings, graphManager);
