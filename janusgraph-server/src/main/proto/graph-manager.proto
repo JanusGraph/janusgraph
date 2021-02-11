@@ -25,7 +25,7 @@ message JanusGraphContext {
 }
 
 message GetJanusGraphContextByGraphNameRequest {
-    string graphName = 2;
+    string graphName = 1;
 }
 
 message GetJanusGraphContextsRequest {

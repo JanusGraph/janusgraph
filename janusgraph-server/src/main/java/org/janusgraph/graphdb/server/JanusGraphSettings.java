@@ -28,24 +28,15 @@ import java.util.Map;
 import java.util.Objects;
 
 public class JanusGraphSettings {
-    public JanusGraphSettings.GrpcServerSettings grpcServer = new JanusGraphSettings.GrpcServerSettings();
-
+    private JanusGraphSettings.GrpcServerSettings grpcServer = new JanusGraphSettings.GrpcServerSettings();
     private Settings gremlinSettings;
-
-    public static class GrpcServerSettings {
-        public boolean enable = false;
-        public int port = 10182;
-    }
-
-    public Settings getGremlinSettings() {
-        return gremlinSettings;
-    }
 
     public static JanusGraphSettings read(final String file) throws Exception {
         InputStream input = new FileInputStream(file);
         return read(input);
     }
 
+    // TODO: Merge JanusGraphSettings with GremlinSettings which will be released in TinkerPop 3.4.11 and ongoing
     public static JanusGraphSettings read(final InputStream stream) throws IOException {
         Objects.requireNonNull(stream);
         Constructor constructor = new Constructor(JanusGraphSettings.class);
@@ -72,5 +63,38 @@ public class JanusGraphSettings {
         while ((ch = stream.read()) != -1)
             sb.append((char) ch);
         return sb.toString();
+    }
+
+    public GrpcServerSettings getGrpcServer() {
+        return grpcServer;
+    }
+
+    public void setGrpcServer(GrpcServerSettings grpcServer) {
+        this.grpcServer = grpcServer;
+    }
+
+    public Settings getGremlinSettings() {
+        return gremlinSettings;
+    }
+
+    public static class GrpcServerSettings {
+        private boolean enabled = false;
+        private int port = 10182;
+
+        public int getPort() {
+            return port;
+        }
+
+        public void setPort(int port) {
+            this.port = port;
+        }
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
     }
 }

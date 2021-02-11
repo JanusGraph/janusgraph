@@ -27,21 +27,21 @@ public class JanusGraphSettingsTest {
     public void testGrpcServerDefaultValues() throws Exception {
         JanusGraphSettings settings = JanusGraphSettings.read("src/test/resources/janusgraph-server-without-serializers.yaml");
 
-        assertFalse(settings.grpcServer.enable);
-        assertEquals(10182, settings.grpcServer.port);
+        assertFalse(settings.getGrpcServer().isEnabled());
+        assertEquals(10182, settings.getGrpcServer().getPort());
     }
 
     @Test
     public void testGrpcServerOverwriteDefaultValues() throws Exception {
-        JanusGraphSettings settings = JanusGraphSettings.read("src/test/resources/janusgraph-server-with-server-configs.yaml");
+        JanusGraphSettings settings = JanusGraphSettings.read("src/test/resources/janusgraph-server-with-grpc.yaml");
 
-        assertTrue(settings.grpcServer.enable);
-        assertEquals(8042, settings.grpcServer.port);
+        assertTrue(settings.getGrpcServer().isEnabled());
+        assertEquals(8042, settings.getGrpcServer().getPort());
     }
 
     @Test
     public void testLoadGremlinServerCorrectly() throws Exception {
-        JanusGraphSettings janusGraphSettings = JanusGraphSettings.read("src/test/resources/janusgraph-server-with-server-configs.yaml");
+        JanusGraphSettings janusGraphSettings = JanusGraphSettings.read("src/test/resources/janusgraph-server-with-grpc.yaml");
 
         Settings settings = janusGraphSettings.getGremlinSettings();
 

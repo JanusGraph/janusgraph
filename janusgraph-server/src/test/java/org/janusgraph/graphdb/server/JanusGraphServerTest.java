@@ -60,14 +60,14 @@ public class JanusGraphServerTest {
 
     @Test
     public void testGrpcServerIsEnabled() {
-        final JanusGraphServer server = new JanusGraphServer("src/test/resources/janusgraph-server-with-server-configs.yaml");
+        final JanusGraphServer server = new JanusGraphServer("src/test/resources/janusgraph-server-with-grpc.yaml");
 
         CompletableFuture<Void> start = server.start();
 
         assertFalse(start.isCompletedExceptionally());
 
         JanusGraphSettings settings = server.getJanusGraphSettings();
-        assertTrue(settings.grpcServer.enable);
+        assertTrue(settings.getGrpcServer().isEnabled());
 
         CompletableFuture<Void> stop = server.stop();
         CompletableFuture.allOf(start, stop).join();

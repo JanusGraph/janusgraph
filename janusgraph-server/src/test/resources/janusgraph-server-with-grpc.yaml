@@ -16,7 +16,7 @@ host: 0.0.0.0
 port: 8182
 scriptEvaluationTimeout: 30000
 grpcServer: {
-    enable: true,
+    enabled: true,
     port: 8042
 }
 channelizer: org.apache.tinkerpop.gremlin.server.channel.WebSocketChannelizer

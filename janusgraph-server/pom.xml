@@ -55,7 +55,7 @@
             <artifactId>annotations-api</artifactId>
             <version>6.0.53</version>
             <scope>provided</scope>
-          </dependency>
+        </dependency>
 
         <!-- TESTING -->
         <dependency>
@@ -109,8 +109,8 @@
                 <executions>
                     <execution>
                         <goals>
-                        <goal>compile</goal>
-                        <goal>compile-custom</goal>
+                            <goal>compile</goal>
+                            <goal>compile-custom</goal>
                         </goals>
                     </execution>
                 </executions>
