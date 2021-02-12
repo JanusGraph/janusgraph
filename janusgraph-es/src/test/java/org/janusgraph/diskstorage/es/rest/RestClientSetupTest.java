@@ -32,6 +32,7 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.Credentials;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
@@ -256,6 +257,27 @@ public class RestClientSetupTest {
         return hccc;
     }
 
+    private RestClientBuilder.RequestConfigCallback configCallbackTestBase(Map<String, String> extraConfigValues) throws Exception {
+
+        baseConfigTest(ImmutableMap.<String, String>builder().
+            put("index." + INDEX_NAME + ".backend", "elasticsearch").
+            put("index." + INDEX_NAME + ".hostname", ES_HOST_01).
+            putAll(extraConfigValues).
+            build()
+        );
+
+        final ArgumentCaptor<RestClientBuilder.RequestConfigCallback> rccCaptor =
+            ArgumentCaptor.forClass(RestClientBuilder.RequestConfigCallback.class);
+
+        // callback is passed to the client builder
+        verify(restClientBuilderMock).setRequestConfigCallback(rccCaptor.capture());
+
+        final RestClientBuilder.RequestConfigCallback rcc = rccCaptor.getValue();
+        assertNotNull(rcc);
+
+        return rcc;
+    }
+
     private CredentialsProvider basicAuthTestBase(final Map<String, String> extraConfigValues, final String realm,
             final String username, final String password) throws Exception {
         final HttpClientConfigCallback hccc = authTestBase(
@@ -298,6 +320,32 @@ public class RestClientSetupTest {
         assertEquals(testUser, credentials.getUserPrincipal().getName());
         assertEquals(testPassword, credentials.getPassword());
     }
+
+    @Test
+    public void testConnectAndSocketTimeout() throws Exception {
+        final RestClientBuilder.RequestConfigCallback rcc = configCallbackTestBase(
+            ImmutableMap.<String, String>builder().
+                put("index." + INDEX_NAME + ".elasticsearch.connect-timeout", "5000").
+                put("index." + INDEX_NAME + ".elasticsearch.socket-timeout", "60000").
+                build()
+        );
+
+        // verifying that the custom callback is in the chain
+        final RequestConfig.Builder rccb = mock(RequestConfig.Builder.class);
+        when(rccb.setConnectTimeout(any(Integer.class))).thenReturn(rccb);
+        ArgumentCaptor<Integer> connectArgumentCaptor = ArgumentCaptor.forClass(Integer.class);
+        ArgumentCaptor<Integer> socketArgumentCaptor = ArgumentCaptor.forClass(Integer.class);
+        rcc.customizeRequestConfig(rccb);
+
+
+        verify(rccb).setConnectTimeout(connectArgumentCaptor.capture());
+        verify(rccb).setSocketTimeout(socketArgumentCaptor.capture());
+
+
+        assertEquals(5000, connectArgumentCaptor.getValue());
+        assertEquals(60000, socketArgumentCaptor.getValue());
+    }
+
 
     @Test
     public void testCustomAuthenticator() throws Exception {

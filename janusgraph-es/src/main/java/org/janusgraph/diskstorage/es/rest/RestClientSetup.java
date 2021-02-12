@@ -68,6 +68,7 @@ public class RestClientSetup {
             log.debug("Configured remote host: {} : {}", hostname, hostPort);
             hosts.add(new HttpHost(hostname, hostPort, httpScheme));
         }
+
         final RestClient rc = getRestClient(hosts.toArray(new HttpHost[hosts.size()]), config);
 
         final int scrollKeepAlive = config.get(ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE);
@@ -122,7 +123,22 @@ public class RestClientSetup {
      * @return callback or null if the request customization is not needed
      */
     protected RequestConfigCallback getRequestConfigCallback(Configuration config) {
-        return null;
+
+        final List<RequestConfigCallback> callbackList = new LinkedList<>();
+
+        final Integer connectTimeout = config.get(ElasticSearchIndex.CONNECT_TIMEOUT);
+        final Integer socketTimeout = config.get(ElasticSearchIndex.SOCKET_TIMEOUT);
+
+        callbackList.add((requestConfigBuilder) ->
+            requestConfigBuilder.setConnectTimeout(connectTimeout).setSocketTimeout(socketTimeout));
+
+        // will execute the chain of individual callbacks
+        return requestConfigBuilder -> {
+            for(RequestConfigCallback cb: callbackList) {
+                cb.customizeRequestConfig(requestConfigBuilder);
+            }
+            return requestConfigBuilder;
+        };
     }
 
     /**
