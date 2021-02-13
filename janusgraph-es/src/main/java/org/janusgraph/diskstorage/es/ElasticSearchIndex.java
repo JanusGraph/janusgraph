@@ -21,6 +21,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IN
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
+import org.elasticsearch.client.RestClientBuilder;
 import org.janusgraph.diskstorage.es.compat.ESCompatUtils;
 import org.janusgraph.diskstorage.es.mapping.IndexMapping;
 import org.janusgraph.diskstorage.es.rest.util.HttpAuthTypes;
@@ -266,6 +267,16 @@ public class ElasticSearchIndex implements IndexProvider {
             "Enables cache for generated index store names. " +
                 "It is recommended to always enable index store names cache unless you have more then 50000 indexes " +
                 "per index store.", ConfigOption.Type.MASKABLE, true);
+
+    public static final ConfigOption<Integer> CONNECT_TIMEOUT =
+        new ConfigOption<>(ELASTICSEARCH_NS, "connect-timeout",
+            "Sets the maximum connection timeout (in milliseconds).", ConfigOption.Type.MASKABLE,
+            Integer.class, RestClientBuilder.DEFAULT_CONNECT_TIMEOUT_MILLIS);
+
+    public static final ConfigOption<Integer> SOCKET_TIMEOUT =
+        new ConfigOption<>(ELASTICSEARCH_NS, "socket-timeout",
+            "Sets the maximum socket timeout (in milliseconds).", ConfigOption.Type.MASKABLE,
+            Integer.class, RestClientBuilder.DEFAULT_SOCKET_TIMEOUT_MILLIS);
 
     public static final int HOST_PORT_DEFAULT = 9200;
 
