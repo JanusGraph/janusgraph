@@ -115,7 +115,7 @@
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <cassandra.version>3.11.10</cassandra.version>
         <cassandra-driver.version>4.10.0</cassandra-driver.version>
-        <testcontainers.version>1.15.1</testcontainers.version>
+        <testcontainers.version>1.15.2</testcontainers.version>
         <easymock.version>4.2</easymock.version>
         <protobuf.version>3.14.0</protobuf.version>
     </properties>
