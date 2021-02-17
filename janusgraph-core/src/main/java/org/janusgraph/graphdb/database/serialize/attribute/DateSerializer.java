@@ -14,20 +14,64 @@
 
 package org.janusgraph.graphdb.database.serialize.attribute;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.primitives.Longs;
 import org.janusgraph.diskstorage.ScanBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
 import org.janusgraph.graphdb.database.serialize.OrderPreservingSerializer;
 
-import org.apache.tinkerpop.shaded.jackson.databind.util.StdDateFormat;
-
-import java.text.ParseException;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.TemporalAccessor;
+import java.time.temporal.TemporalQueries;
 import java.util.Date;
+import java.util.Locale;
+
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
+import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
 
 public class DateSerializer implements OrderPreservingSerializer<Date> {
 
+    private static final LocalDate EPOCH = LocalDate.of(1970, 1, 1);
+
+    // Equivalent to ISO_LOCAL_DATE_TIME with optional time
+    private static final DateTimeFormatter LENIENT_ISO_LOCAL_DATE_TIME;
+    static {
+        LENIENT_ISO_LOCAL_DATE_TIME = new DateTimeFormatterBuilder()
+            .parseCaseInsensitive()
+            .append(ISO_LOCAL_DATE)
+            .optionalStart()
+            .appendLiteral('T')
+            .append(ISO_LOCAL_TIME)
+            .optionalEnd()
+            .toFormatter(Locale.ROOT);
+    }
+
+    private static final DateTimeFormatter TIME_OFFSET_WITHOUT_COLON = new DateTimeFormatterBuilder()
+        .appendOffset("+HHmm", "Z")
+        .toFormatter(Locale.ROOT);
+
+    // Equivalent to ISO_DATE_TIME with optional time and offsets without colons
+    private static final DateTimeFormatter LENIENT_ISO_DATE_TIME;
+    static {
+        LENIENT_ISO_DATE_TIME = new DateTimeFormatterBuilder()
+            .append(LENIENT_ISO_LOCAL_DATE_TIME)
+            .optionalStart()
+            .appendZoneOrOffsetId()
+            .optionalEnd()
+            .optionalStart()
+            .append(TIME_OFFSET_WITHOUT_COLON)
+            .optionalEnd()
+            .toFormatter(Locale.ROOT);
+    }
+
     private final LongSerializer ls = LongSerializer.INSTANCE;
-    // StdDateFormat is not thread-safe
-    private static final ThreadLocal<StdDateFormat> dateFormat = ThreadLocal.withInitial(StdDateFormat::new);
 
     @Override
     public Date read(ScanBuffer buffer) {
@@ -56,11 +100,29 @@ public class DateSerializer implements OrderPreservingSerializer<Date> {
         if (value instanceof Number && !(value instanceof Float) && !(value instanceof Double)) {
             return new Date(((Number)value).longValue());
         } else if (value instanceof String) {
-            try {
-                return dateFormat.get().parse((String) value);
-            } catch (ParseException ignored) {
+            String s = (String) value;
+
+            Long v = Longs.tryParse(s);
+            if (v != null) {
+                return new Date(v);
             }
+
+            if (s.contains(" ")) {
+                return dateFromTemporalAccessor(RFC_1123_DATE_TIME.parse(s));
+            }
+
+            return dateFromTemporalAccessor(LENIENT_ISO_DATE_TIME.parse(s));
         }
         return null;
+    }
+
+    /**
+     * Ensures no exception is thrown and sensitive defaults are used for date, time and zone.
+     */
+    private static Date dateFromTemporalAccessor(TemporalAccessor accessor) {
+        LocalDate localDate = MoreObjects.firstNonNull(accessor.query(TemporalQueries.localDate()), EPOCH);
+        LocalTime localTime = MoreObjects.firstNonNull(accessor.query(TemporalQueries.localTime()), LocalTime.MIDNIGHT);
+        ZoneId zone = MoreObjects.firstNonNull(accessor.query(TemporalQueries.zone()), ZoneOffset.UTC);
+        return Date.from(ZonedDateTime.of(localDate, localTime, zone).toInstant());
     }
 }
