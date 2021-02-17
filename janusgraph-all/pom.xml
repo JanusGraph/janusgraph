@@ -28,6 +28,11 @@
     <dependencies>
         <dependency>
             <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-grpc</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-driver</artifactId>
             <version>${project.version}</version>
         </dependency>

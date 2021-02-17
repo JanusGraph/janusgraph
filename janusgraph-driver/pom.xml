@@ -38,6 +38,13 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>
+        <!--gRPC client-->
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-grpc</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
        <!-- The Noggit JSON parsing library is needed for GeoJSON parsing -->
        <dependency>
            <groupId>org.noggit</groupId>

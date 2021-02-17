@@ -117,9 +117,12 @@
         <cassandra-driver.version>4.10.0</cassandra-driver.version>
         <testcontainers.version>1.15.2</testcontainers.version>
         <easymock.version>4.2</easymock.version>
-        <protobuf.version>3.14.0</protobuf.version>
+        <protobuf.version>3.15.3</protobuf.version>
+        <grpc.version>1.36.0</grpc.version>
+        <protoc.version>3.15.3</protoc.version>
     </properties>
     <modules>
+        <module>janusgraph-grpc</module>
         <module>janusgraph-driver</module>
         <module>janusgraph-core</module>
         <module>janusgraph-server</module>
@@ -941,6 +944,36 @@
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java</artifactId>
                 <version>${protobuf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java-util</artifactId>
+                <version>${protobuf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-core</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-protobuf</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-stub</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-testing</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-netty-shaded</artifactId>
+                <version>${grpc.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.velocity</groupId>

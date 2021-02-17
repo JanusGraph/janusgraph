@@ -20,6 +20,7 @@ import io.grpc.ServerBuilder;
 import org.apache.tinkerpop.gremlin.server.GraphManager;
 import org.apache.tinkerpop.gremlin.server.GremlinServer;
 import org.apache.tinkerpop.gremlin.server.Settings;
+import org.janusgraph.graphdb.grpc.JanusGraphManagerServiceImpl;
 import org.janusgraph.graphdb.server.utils.GremlinSettingsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,11 +38,14 @@ public class JanusGraphServer {
     private CompletableFuture<Void> serverStopped = null;
     private Server grpcServer = null;
 
+    public static final String MANIFEST_JANUSGRAPH_VERSION_ATTRIBUTE = "janusgraphVersion";
+    public static final String MANIFEST_TINKERPOP_VERSION_ATTRIBUTE = "tinkerpopVersion";
+
     public JanusGraphServer(final String file) {
         confPath = file;
     }
 
-    public static void main(final String[] args) throws Exception {
+    public static void main(final String[] args) {
         printHeader();
         final String file = (args.length > 0) ? args[0] : "conf/janusgraph-server.yaml";
         JanusGraphServer janusGraphServer = new JanusGraphServer(file);
@@ -67,7 +71,7 @@ public class JanusGraphServer {
     private Server createGrpcServer(JanusGraphSettings janusGraphSettings, GraphManager graphManager) {
         return ServerBuilder
             .forPort(janusGraphSettings.getGrpcServer().getPort())
-            .addService(new JanusGraphManagerImpl(graphManager))
+            .addService(new JanusGraphManagerServiceImpl(graphManager))
             .build();
     }
 
@@ -127,7 +131,7 @@ public class JanusGraphServer {
 
     private static void printHeader() {
         logger.info(getHeader());
-        logger.info("JanusGraph Version: {}", Manifests.read("janusgraphVersion"));
-        logger.info("TinkerPop Version: {}", Manifests.read("tinkerpopVersion"));
+        logger.info("JanusGraph Version: {}", Manifests.read(MANIFEST_JANUSGRAPH_VERSION_ATTRIBUTE));
+        logger.info("TinkerPop Version: {}", Manifests.read(MANIFEST_TINKERPOP_VERSION_ATTRIBUTE));
     }
 }
