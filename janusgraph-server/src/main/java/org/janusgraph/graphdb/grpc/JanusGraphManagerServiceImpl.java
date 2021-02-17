@@ -12,41 +12,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.graphdb.server;
+package org.janusgraph.graphdb.grpc;
 
+import com.jcabi.manifests.Manifests;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang.NullArgumentException;
 import org.apache.tinkerpop.gremlin.server.GraphManager;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.core.JanusGraph;
+import org.janusgraph.graphdb.server.JanusGraphServer;
 
-public class JanusGraphManagerImpl extends JanusGraphManagerGrpc.JanusGraphManagerImplBase {
+public class JanusGraphManagerServiceImpl extends JanusGraphManagerServiceGrpc.JanusGraphManagerServiceImplBase {
     private final GraphManager graphManager;
 
-    public JanusGraphManagerImpl(GraphManager graphManager) {
+    public JanusGraphManagerServiceImpl(GraphManager graphManager) {
         this.graphManager = graphManager;
     }
 
     @Override
-    public void getJanusGraphContexts(GetJanusGraphContextsRequest request, StreamObserver<JanusGraphContext> responseObserver) {
+    public void getJanusGraphContexts(GetJanusGraphContextsRequest request, StreamObserver<GetJanusGraphContextsResponse> responseObserver) {
         if (request == null) {
             responseObserver.onError(Status.INTERNAL.withCause(new NullArgumentException("request should be set")).asRuntimeException());
             return;
         }
+        GetJanusGraphContextsResponse.Builder response = GetJanusGraphContextsResponse.newBuilder();
         for (String graphName : graphManager.getGraphNames()) {
             Graph graph = graphManager.getGraph(graphName);
             if (!(graph instanceof JanusGraph)) {
                 continue;
             }
-            responseObserver.onNext(JanusGraphContext.newBuilder().setGraphName(graphName).build());
+            response.addContexts(JanusGraphContext.newBuilder().setGraphName(graphName));
         }
+        responseObserver.onNext(response.build());
         responseObserver.onCompleted();
     }
 
     @Override
     public void getJanusGraphContextByGraphName(GetJanusGraphContextByGraphNameRequest request,
-                                                StreamObserver<JanusGraphContext> responseObserver) {
+                                                StreamObserver<GetJanusGraphContextByGraphNameResponse> responseObserver) {
         if (request == null) {
             responseObserver.onError(Status.INVALID_ARGUMENT
                 .withCause(new NullArgumentException("request should be set")).asRuntimeException());
@@ -63,7 +67,31 @@ public class JanusGraphManagerImpl extends JanusGraphManagerGrpc.JanusGraphManag
             responseObserver.onError(Status.INTERNAL
                 .withCause(new IllegalStateException("graphName should access a JanusGraph instance")).asException());
         }
-        responseObserver.onNext(JanusGraphContext.newBuilder().setGraphName(graphName).build());
+        responseObserver.onNext(GetJanusGraphContextByGraphNameResponse.newBuilder()
+            .setContext(JanusGraphContext.newBuilder().setGraphName(graphName))
+            .build());
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void getVersion(GetVersionRequest request, StreamObserver<GetVersionResponse> responseObserver) {
+        if (request == null) {
+            responseObserver.onError(Status.INVALID_ARGUMENT
+                .withCause(new NullArgumentException("request should be set")).asRuntimeException());
+            return;
+        }
+        String tinkerPopVersion = "debug-tp";
+        String janusGraphVersion = "debug-jg";
+        if (Manifests.exists(JanusGraphServer.MANIFEST_TINKERPOP_VERSION_ATTRIBUTE)){
+            tinkerPopVersion = Manifests.read(JanusGraphServer.MANIFEST_TINKERPOP_VERSION_ATTRIBUTE);
+        }
+        if (Manifests.exists(JanusGraphServer.MANIFEST_JANUSGRAPH_VERSION_ATTRIBUTE)){
+            janusGraphVersion = Manifests.read(JanusGraphServer.MANIFEST_JANUSGRAPH_VERSION_ATTRIBUTE);
+        }
+        responseObserver.onNext(GetVersionResponse.newBuilder()
+            .setTinkerpopVersion(tinkerPopVersion)
+            .setJanusgraphVersion(janusGraphVersion)
+            .build());
         responseObserver.onCompleted();
     }
 }
