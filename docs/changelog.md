@@ -82,6 +82,14 @@ For more information on features and bug fixes in 0.6.0, see the GitHub mileston
 
 #### Upgrade Instructions
 
+##### Breaking change for gremlin EventStrategy usage
+
+If you are using [EventStrategy](https://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/strategy/decoration/EventStrategy.html),
+please note that now you need to register it every time you start a new transaction.
+An example is available at [ThreadLocalTxLeakTest::eventListenersCanBeReusedAcrossTx](https://github.com/JanusGraph/janusgraph/blob/master/janusgraph-test/src/test/java/org/janusgraph/core/ThreadLocalTxLeakTest.java)
+See more background of this breaking change in this
+[pull request](https://github.com/JanusGraph/janusgraph/pull/2472).
+
 ##### Removal of LoggingSchemaMaker
 
 The `schema.default=logging` option is not valid anymore. Use `schema.default=default`

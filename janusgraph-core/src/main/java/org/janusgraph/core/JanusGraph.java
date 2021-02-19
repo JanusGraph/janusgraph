@@ -57,6 +57,11 @@ import org.apache.tinkerpop.gremlin.util.Gremlin;
         reason = "JanusGraph test graph computer (FulgoraGraphComputer) " +
             "currently does not support graph filters but does not throw proper exception because doing so breaks numerous " +
             "tests in gremlin-test ProcessComputerSuite.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest",
+        method = "shouldResetAfterRollback",
+        reason = "JanusGraph assumes lifecycle of transactionListeners in AbstractThreadLocalTransaction ends when the " +
+            "transaction ends (commit/rollback/close). TinkerPop, however, asserts transactionListeners are active across transactions.")
 public interface JanusGraph extends Transaction {
 
    /* ---------------------------------------------------------------
