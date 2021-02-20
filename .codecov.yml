@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-coverage:
+codecov:
   notify:
-    after_n_builds: 30
+    wait_for_ci: yes
+
+coverage:
   status:
     patch: off
     project:
@@ -23,7 +25,7 @@ coverage:
         threshold: 2
 
 comment:
-  after_n_builds: 30
+  after_n_builds: 26
 
 # Ignore test files
 ignore:
