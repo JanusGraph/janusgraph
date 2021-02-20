@@ -12,18 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-coverage:
+codecov:
   notify:
-    after_n_builds: 30
+    wait_for_ci: yes
+
+coverage:
   status:
-    patch: off
+    patch:
+      default:
+        threshold: 5
     project:
       default:
         # allow test coverage to drop by 2%, assume that it's typically due to CI problems
         threshold: 2
 
-comment:
-  after_n_builds: 30
+comment: false
 
 # Ignore test files
 ignore:

@@ -62,21 +62,29 @@ jobs:
         include:
           - module: hbase-parent/janusgraph-hbase-10
             args: "-Dtest=\"**/diskstorage/hbase/*\""
+            name: hbase-10-diskstorage
           - module: hbase-parent/janusgraph-hbase-10
             args: "-Dtest=\"**/graphdb/hbase/*\""
+            name: hbase-10-graphdb
           - module: hbase-parent/janusgraph-hbase-10
             args: "-Dtest=\"**/hadoop/*\""
+            name: hbase-10-hadoop
           - module: hbase-parent/janusgraph-hbase-10
             install-args: "-Dhbase.profile -Phbase2"
             args: "-Dtest=\"**/diskstorage/hbase/*\""
+            name: hbase-2-diskstorage
           - module: hbase-parent/janusgraph-hbase-10
             install-args: "-Dhbase.profile -Phbase2"
             args: "-Dtest=\"**/graphdb/hbase/*\""
+            name: hbase-2-graphdb
           - module: hbase-parent/janusgraph-hbase-10
             install-args: "-Dhbase.profile -Phbase2"
             args: "-Dtest=\"**/hadoop/*\""
+            name: hbase-2-hadoop
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
       - uses: actions/cache@v2
         with:
           path: ~/.m2/repository
@@ -89,3 +97,5 @@ jobs:
       - run: mvn clean install --projects janusgraph-${{ matrix.module }} ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
       - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.args }}
       - uses: codecov/codecov-action@v1
+        with:
+          name: codecov-hbase-${{ matrix.name }}
