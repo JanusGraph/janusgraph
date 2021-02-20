@@ -80,16 +80,16 @@ abstract public class JanusGraphAbstractAuthenticator implements Authenticator {
     @Override
     public void setup(final Map<String,Object> config) {
         logger.info("Initializing authentication with the {}", this.getClass().getName());
-        Preconditions.checkArgument(config != null, String.format(
+        Preconditions.checkArgument(config != null,
                     "Could not configure a %s - provide a 'config' in the 'authentication' settings",
-                    this.getClass().getName()));
+                    this.getClass().getName());
 
-        Preconditions.checkState(config.containsKey(CONFIG_CREDENTIALS_DB), String.format(
-            "Credential configuration missing the %s key that points to a graph config file or graph name", CONFIG_CREDENTIALS_DB));
-        Preconditions.checkState(config.containsKey(CONFIG_DEFAULT_USER), String.format(
-            "Credential configuration missing the %s key for the default user", CONFIG_DEFAULT_USER));
-        Preconditions.checkState(config.containsKey(CONFIG_DEFAULT_PASSWORD), String.format(
-            "Credential configuration missing the %s key for the default password", CONFIG_DEFAULT_PASSWORD));
+        Preconditions.checkState(config.containsKey(CONFIG_CREDENTIALS_DB),
+            "Credential configuration missing the %s key that points to a graph config file or graph name", CONFIG_CREDENTIALS_DB);
+        Preconditions.checkState(config.containsKey(CONFIG_DEFAULT_USER),
+            "Credential configuration missing the %s key for the default user", CONFIG_DEFAULT_USER);
+        Preconditions.checkState(config.containsKey(CONFIG_DEFAULT_PASSWORD),
+            "Credential configuration missing the %s key for the default password", CONFIG_DEFAULT_PASSWORD);
 
         final JanusGraph graph = openGraph(config.get(CONFIG_CREDENTIALS_DB).toString());
         credentials = createCredentials(graph);

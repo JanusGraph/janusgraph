@@ -248,8 +248,8 @@ public class RestClientSetup {
 
         try {
             final Class<?> c = Class.forName(authClassName);
-            Preconditions.checkArgument(RestClientAuthenticator.class.isAssignableFrom(c), "Authenticator class "
-                    + authClassName + " must be a subclass of " + RestClientAuthenticator.class.getName());
+            Preconditions.checkArgument(RestClientAuthenticator.class.isAssignableFrom(c),
+                "Authenticator class %s must be a subclass of %s", authClassName, RestClientAuthenticator.class.getName());
             @SuppressWarnings("unchecked")
             final Constructor<RestClientAuthenticator> ctr = ((Class<RestClientAuthenticator>)c).getConstructor(String[].class);
             authenticator = ctr.newInstance((Object)authClassConstructorArgList);

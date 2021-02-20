@@ -31,7 +31,7 @@ public class KeySelector {
     private int count;
 
     public KeySelector(Predicate<StaticBuffer> keyFilter, int limit) {
-        Preconditions.checkArgument(limit > 0, "The count limit needs to be positive. Given: " + limit);
+        Preconditions.checkArgument(limit > 0, "The count limit needs to be positive. Given: %d", limit);
         Preconditions.checkArgument(keyFilter!=null);
         this.keyFilter = keyFilter;
         this.limit = limit;

@@ -130,7 +130,7 @@ public class IndexSerializer {
 
     private IndexInformation getMixedIndex(final MixedIndexType index) {
         final IndexInformation indexinfo = mixedIndexes.get(index.getBackingIndexName());
-        Preconditions.checkArgument(indexinfo != null, "Index is unknown or not configured: " + index.getBackingIndexName());
+        Preconditions.checkArgument(indexinfo != null, "Index is unknown or not configured: %s", index.getBackingIndexName());
         return indexinfo;
     }
 

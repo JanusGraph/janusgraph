@@ -51,7 +51,7 @@ public class IndexHelper {
             Object value = values[i];
             Preconditions.checkNotNull(value);
             PropertyKey key = f.getFieldKey();
-            Preconditions.checkArgument(key.dataType().equals(value.getClass()),"Incompatible data types for: " + value);
+            Preconditions.checkArgument(key.dataType().equals(value.getClass()),"Incompatible data types for: %s", value);
             gb.has(key, Cmp.EQUAL,value);
         }
         if (index.hasSchemaTypeConstraint()) {

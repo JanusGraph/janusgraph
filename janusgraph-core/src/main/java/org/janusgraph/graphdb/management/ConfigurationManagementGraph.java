@@ -141,9 +141,9 @@ public class ConfigurationManagementGraph {
      */
     public void createTemplateConfiguration(final Configuration config) {
         Preconditions.checkArgument(!config.containsKey(PROPERTY_GRAPH_NAME),
-                                    String.format("Your template configuration may not contain the property \"%s\".",
+                                    "Your template configuration may not contain the property \"%s\".",
                                                   PROPERTY_GRAPH_NAME
-                                    ));
+                                    );
         Preconditions.checkState(null == getTemplateConfiguration(),
                                 "You may only have one template configuration and one exists already.");
         final Map<Object, Object> map = ConfigurationConverter.getMap(config);
@@ -166,10 +166,8 @@ public class ConfigurationManagementGraph {
         if (config.containsKey(PROPERTY_GRAPH_NAME)) {
             final String graphNameOnConfig = (String) map.get(PROPERTY_GRAPH_NAME);
             Preconditions.checkArgument(graphName.equals(graphNameOnConfig),
-                                        String.format("Supplied graphName %s does not match property value supplied on config: %s.",
-                                                      graphName,
-                                                      graphNameOnConfig
-                                        ));
+                                        "Supplied graphName %s does not match property value supplied on config: %s.",
+                                        graphName, graphNameOnConfig);
         } else {
             map.put(PROPERTY_GRAPH_NAME, graphName);
         }
@@ -189,9 +187,7 @@ public class ConfigurationManagementGraph {
      */
     public void updateTemplateConfiguration(final Configuration config) {
         Preconditions.checkArgument(!config.containsKey(PROPERTY_GRAPH_NAME),
-                                    String.format("Your updated template configuration may not contain the property \"%s\".",
-                                                  PROPERTY_GRAPH_NAME
-                                    ));
+                                    "Your updated template configuration may not contain the property \"%s\".", PROPERTY_GRAPH_NAME);
         log.warn("Any graph configuration created using the template configuration are only guaranteed to have their configuration updated " +
                  "according to this new template configuration when the graph in question has been closed on every Janus Graph Node, its " +
                  "corresponding Configuration has been removed, and the graph has been recreated.");
