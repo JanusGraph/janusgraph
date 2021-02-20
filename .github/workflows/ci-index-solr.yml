@@ -63,10 +63,14 @@ jobs:
         include:
           - module: solr
             args: "-Psolr7"
+            name: solr7
           - module: solr
             args: "-Psolr8"
+            name: solr8
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
       - uses: actions/cache@v2
         with:
           path: ~/.m2/repository
@@ -79,3 +83,5 @@ jobs:
       - run: mvn clean install --projects janusgraph-${{ matrix.module }} ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
       - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.args }}
       - uses: codecov/codecov-action@v1
+        with:
+          name: codecov-index-${{ matrix.name }}

@@ -62,24 +62,35 @@ jobs:
         include:
           - module: cql
             args: "-Pcassandra3-byteordered -Dtest=\"**/diskstorage/cql/*\""
+            name: byteordered-diskstorage
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/diskstorage/cql/*\""
+            name: murmur-diskstorage
           - module: cql
             args: "-Pcassandra3-byteordered -Dtest=\"**/graphdb/cql/*\""
+            name: byteordered-graphdb
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/graphdb/cql/*\""
+            name: murmur-graphdb
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/hadoop/*\""
+            name: murmur-hadoop
           - module: cql
             args: "-Pcassandra3-byteordered -Dtest=\"**/core/cql/*\""
+            name: byteordered-core
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/core/cql/*\""
+            name: murmur-core
           - module: cql
             args: "-Pcassandra3-murmur-ssl -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
+            name: murmur-ssl
           - module: cql
             args: "-Pcassandra3-murmur-client-auth -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
+            name: murmur-client-auth
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
       - uses: actions/cache@v2
         with:
           path: ~/.m2/repository
@@ -95,3 +106,5 @@ jobs:
         if: "github.event_name == 'push' && contains(github.event.head_commit.message, '[cql-tests]') || github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[cql-tests]')"
         run: mvn verify --projects janusgraph-${{ matrix.module }} -Dcassandra.docker.version=3.0.18' ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.args }}
       - uses: codecov/codecov-action@v1
+        with:
+          name: codecov-cql-${{ matrix.name }}
