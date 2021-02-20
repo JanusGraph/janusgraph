@@ -32,16 +32,20 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-            <!-- Avoid being overwritten by the top level pom. Used here only by the HBase server.
-              -->
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>14.0</version>
+                <!-- Avoid being overwritten by the top level pom. Used here only by the HBase server. -->
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>14.0</version>
             </dependency>
             <dependency>
-            <groupId>org.jruby.jcodings</groupId>
-            <artifactId>jcodings</artifactId>
-            <version>1.0.55</version>
+                <groupId>org.jruby.jcodings</groupId>
+                <artifactId>jcodings</artifactId>
+                <version>1.0.55</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish</groupId>
+                <artifactId>javax.el</artifactId>
+                <version>3.0.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
