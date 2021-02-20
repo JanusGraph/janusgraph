@@ -708,7 +708,7 @@ public class LuceneIndex implements IndexProvider {
                 // some fields like Text have no docValue but have norms
                 params.addQuery(new NormsFieldExistsQuery(key), BooleanClause.Occur.SHOULD);
             } else if (value instanceof Number) {
-                Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on numeric types: " + janusgraphPredicate);
+                Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on numeric types: %s", janusgraphPredicate);
                 params.addQuery(numericQuery(key, (Cmp) janusgraphPredicate, (Number) value));
             } else if (value instanceof String) {
                 if (janusgraphPredicate == Cmp.LESS_THAN) {
@@ -760,19 +760,19 @@ public class LuceneIndex implements IndexProvider {
                         throw new IllegalArgumentException("Relation is not supported for string value: " + janusgraphPredicate);
                 }
             } else if (value instanceof Geoshape) {
-                Preconditions.checkArgument(janusgraphPredicate instanceof Geo, "Relation not supported on geo types: " + janusgraphPredicate);
+                Preconditions.checkArgument(janusgraphPredicate instanceof Geo, "Relation not supported on geo types: %s",  janusgraphPredicate);
                 final Shape shape = ((Geoshape) value).getShape();
                 final SpatialOperation spatialOp = SPATIAL_PREDICATES.get(janusgraphPredicate);
                 final SpatialArgs args = new SpatialArgs(spatialOp, shape);
                 params.addQuery(getSpatialStrategy(key, information.get(key)).makeQuery(args));
             } else if (value instanceof Date) {
-                Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on date types: " + janusgraphPredicate);
+                Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on date types: %s", janusgraphPredicate);
                 params.addQuery(numericQuery(key, (Cmp) janusgraphPredicate, ((Date) value).getTime()));
             } else if (value instanceof Instant) {
-                Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on instant types: " + janusgraphPredicate);
+                Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on instant types: %s", janusgraphPredicate);
                 params.addQuery(numericQuery(key, (Cmp) janusgraphPredicate, ((Instant) value).toEpochMilli()));
             } else if (value instanceof Boolean) {
-                Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on boolean types: " + janusgraphPredicate);
+                Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on boolean types: %s", janusgraphPredicate);
                 final int intValue;
                 switch ((Cmp) janusgraphPredicate) {
                     case EQUAL:
@@ -787,7 +787,7 @@ public class LuceneIndex implements IndexProvider {
                         throw new IllegalArgumentException("Boolean types only support EQUAL or NOT_EQUAL");
                 }
             } else if (value instanceof UUID) {
-                Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on UUID types: " + janusgraphPredicate);
+                Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on UUID types: %s", janusgraphPredicate);
                 if (janusgraphPredicate == Cmp.EQUAL) {
                     params.addQuery(new TermQuery(new Term(key, value.toString())));
                 } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {

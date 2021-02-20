@@ -40,7 +40,7 @@ public class CompatibilityValidator {
 
         boolean usingTitanIdStore = localIdStoreIsDefault || JanusGraphConstants.TITAN_ID_STORE_NAME.equals(localConfigurationIdsStoreName);
 
-        Preconditions.checkArgument(usingTitanIdStore,"ID store for Titan compatibility has not been initialized to: " + JanusGraphConstants.TITAN_ID_STORE_NAME);
+        Preconditions.checkArgument(usingTitanIdStore,"ID store for Titan compatibility has not been initialized to: %s", JanusGraphConstants.TITAN_ID_STORE_NAME);
     }
 
 }

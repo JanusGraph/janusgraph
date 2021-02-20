@@ -114,7 +114,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
             Preconditions.checkNotNull(rid, "Expected valid relation id: %s", value);
             return addConstraint(ImplicitKey.JANUSGRAPHID.name(), rel, rid.getRelationId());
         } else {
-            Preconditions.checkArgument(rel.isValidCondition(value), "Invalid condition provided: " + value);
+            Preconditions.checkArgument(rel.isValidCondition(value), "Invalid condition provided: %s", value);
         }
         if (constraints == NO_CONSTRAINTS) constraints = new ArrayList<>(5);
         constraints.add(new PredicateCondition<>(type, rel, value));

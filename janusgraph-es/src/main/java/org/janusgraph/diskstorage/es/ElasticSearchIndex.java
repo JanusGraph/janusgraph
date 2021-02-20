@@ -685,7 +685,7 @@ public class ElasticSearchIndex implements IndexProvider {
                         .map(v -> convertToEsType(v.value, Mapping.getMapping(keyInformation)))
                         .filter(v -> {
                             Preconditions.checkArgument(!(v instanceof byte[]),
-                                "Collections not supported for " + add.getKey());
+                                "Collections not supported for %s", add.getKey());
                             return true;
                         }).toArray();
                     break;
@@ -945,7 +945,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 return compat.exists(key);
             } else if (value instanceof Number) {
                 Preconditions.checkArgument(predicate instanceof Cmp,
-                        "Relation not supported on numeric types: " + predicate);
+                        "Relation not supported on numeric types: %s", predicate);
                 return getRelationFromCmp((Cmp) predicate, key, value);
             } else if (value instanceof String) {
 
@@ -993,7 +993,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 // geopoint
                 final Geoshape shape = (Geoshape) value;
                 Preconditions.checkArgument(predicate instanceof Geo && predicate != Geo.CONTAINS,
-                        "Relation not supported on geopoint types: " + predicate);
+                        "Relation not supported on geopoint types: %s", predicate);
 
                 final Map<String,Object> query;
                 switch (shape.getType()) {
@@ -1022,7 +1022,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 return predicate == Geo.DISJOINT ?  compat.boolMustNot(query) : query;
             } else if (value instanceof Geoshape) {
                 Preconditions.checkArgument(predicate instanceof Geo,
-                        "Relation not supported on geoshape types: " + predicate);
+                        "Relation not supported on geoshape types: %s", predicate);
                 final Geoshape shape = (Geoshape) value;
                 final Map<String,Object> geo;
                 switch (shape.getType()) {
@@ -1069,7 +1069,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 return compat.geoShape(key, geo, (Geo) predicate);
             } else if (value instanceof Date || value instanceof Instant) {
                 Preconditions.checkArgument(predicate instanceof Cmp,
-                        "Relation not supported on date types: " + predicate);
+                        "Relation not supported on date types: %s", predicate);
 
                 if (value instanceof Instant) {
                     value = Date.from((Instant) value);

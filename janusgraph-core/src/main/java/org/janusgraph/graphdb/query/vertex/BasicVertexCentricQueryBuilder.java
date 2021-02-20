@@ -493,13 +493,13 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                 Direction typeDir = dir;
                 if (type.isPropertyKey()) {
                     Preconditions.checkArgument(returnType != RelationCategory.EDGE,
-                            "Querying for edges but including a property key: " + type.name());
+                            "Querying for edges but including a property key: %s", type.name());
                     returnType = RelationCategory.PROPERTY;
                     typeDir = Direction.OUT;
                 }
                 if (type.isEdgeLabel()) {
                     Preconditions.checkArgument(returnType != RelationCategory.PROPERTY,
-                        "Querying for properties but including an edge label: " + type.name());
+                        "Querying for properties but including an edge label: %s", type.name());
                     returnType = RelationCategory.EDGE;
                     if (!type.isUnidirected(Direction.BOTH)) {
                         //Make sure unidirectionality lines up

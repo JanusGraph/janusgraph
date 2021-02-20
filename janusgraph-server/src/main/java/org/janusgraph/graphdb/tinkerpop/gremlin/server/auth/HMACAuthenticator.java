@@ -91,8 +91,7 @@ public class HMACAuthenticator extends JanusGraphAbstractAuthenticator {
 
     public void setup(final Map<String,Object> config) {
         Preconditions.checkArgument(config != null, "Credential configuration cannot be null");
-        Preconditions.checkState(config.containsKey(CONFIG_HMAC_SECRET), 
-        			String.format("Credential configuration missing the %s key", CONFIG_HMAC_SECRET));
+        Preconditions.checkState(config.containsKey(CONFIG_HMAC_SECRET), "Credential configuration missing the %s key", CONFIG_HMAC_SECRET);
 
         if (config.containsKey(CONFIG_HMAC_ALGO)) {
             hmacAlgo = config.get(CONFIG_HMAC_ALGO).toString();

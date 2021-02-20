@@ -135,9 +135,7 @@ public class ManagementSystem implements JanusGraphManagement {
                 assert openInstances.size() > 0;
                 Preconditions.checkArgument(openInstances.size() < 2, "Cannot change offline config option [%s] since multiple instances are currently open: %s", option, openInstances);
                 Preconditions.checkArgument(openInstances.contains(graph.getConfiguration().getUniqueGraphId()),
-                        "Only one open instance ("
-                                + openInstances.iterator().next() + "), but it's not the current one ("
-                                + graph.getConfiguration().getUniqueGraphId() + ")");
+                        "Only one open instance (%s), but it's not the current one (%s)", openInstances.iterator().next(), graph.getConfiguration().getUniqueGraphId());
                 //Indicate that this graph must be closed
                 graphShutdownRequired = true;
             }
@@ -1305,7 +1303,7 @@ public class ManagementSystem implements JanusGraphManagement {
         if (type instanceof VertexLabelVertex) {
             Preconditions.checkArgument(((VertexLabelVertex) type).isStatic(), "must define vertex label as static to allow setting TTL");
         } else {
-            Preconditions.checkArgument(type instanceof EdgeLabelVertex || type instanceof PropertyKeyVertex, "TTL is not supported for type " + type.getClass().getSimpleName());
+            Preconditions.checkArgument(type instanceof EdgeLabelVertex || type instanceof PropertyKeyVertex, "TTL is not supported for type %s", type.getClass().getSimpleName());
         }
         Preconditions.checkArgument(type instanceof JanusGraphSchemaVertex);
 
@@ -1324,7 +1322,7 @@ public class ManagementSystem implements JanusGraphManagement {
         TypeDefinitionCategory cat = modifierType.getCategory();
 
         if (cat.hasDataType() && null != value) {
-            Preconditions.checkArgument(cat.getDataType().equals(value.getClass()), "modifier value is not of expected type " + cat.getDataType());
+            Preconditions.checkArgument(cat.getDataType().equals(value.getClass()), "modifier value is not of expected type %s", cat.getDataType());
         }
 
         JanusGraphSchemaVertex typeVertex;

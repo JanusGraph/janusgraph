@@ -72,7 +72,7 @@ public class ConditionUtil {
         Preconditions.checkArgument(!evaluator.apply(condition)
             || condition.getType() == Condition.Type.LITERAL
             || condition instanceof Not
-            || condition instanceof MultiCondition, "Unexpected condition type: " + condition);
+            || condition instanceof MultiCondition, "Unexpected condition type: %s", condition);
         if (condition instanceof Not) {
             traversal(((Not) condition).getChild(), evaluator);
         } else if (condition instanceof MultiCondition) {

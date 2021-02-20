@@ -52,10 +52,10 @@ public class ShortSerializer implements OrderPreservingSerializer<Short>  {
     public Short convert(Object value) {
         if (value instanceof Number) {
             final double d = ((Number) value).doubleValue();
-            Preconditions.checkArgument(!Double.isNaN(d) && Math.round(d) == d, "Not a valid short: " + value);
+            Preconditions.checkArgument(!Double.isNaN(d) && Math.round(d) == d, "Not a valid short: %s", value);
             final long l = ((Number) value).longValue();
             Preconditions.checkArgument(l >= Short.MIN_VALUE && l <= Short.MAX_VALUE,
-                    "Value too large for short: " + value);
+                    "Value too large for short: %s ", value);
             return (short) l;
         } else if (value instanceof String) {
             return Short.parseShort((String) value);

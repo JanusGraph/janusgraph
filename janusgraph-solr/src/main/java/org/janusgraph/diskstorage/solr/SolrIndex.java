@@ -724,7 +724,7 @@ public class SolrIndex implements IndexProvider {
             } else if (value instanceof Number) {
                 final String queryValue = escapeValue(value);
                 Preconditions.checkArgument(predicate instanceof Cmp,
-                        "Relation not supported on numeric types: " + predicate);
+                        "Relation not supported on numeric types: %s", predicate);
                 final Cmp numRel = (Cmp) predicate;
                 switch (numRel) {
                     case EQUAL:
@@ -786,9 +786,9 @@ public class SolrIndex implements IndexProvider {
             } else if (value instanceof Geoshape) {
                 final Mapping map = Mapping.getMapping(information.get(key));
                 Preconditions.checkArgument(predicate instanceof Geo && predicate != Geo.DISJOINT,
-                        "Relation not supported on geo types: " + predicate);
+                        "Relation not supported on geo types: %s", predicate);
                 Preconditions.checkArgument(map == Mapping.PREFIX_TREE || predicate == Geo.WITHIN || predicate == Geo.INTERSECT,
-                        "Relation not supported on geopoint types: " + predicate);
+                        "Relation not supported on geopoint types: %s", predicate);
                 final Geoshape geo = (Geoshape)value;
                 if (geo.getType() == Geoshape.Type.CIRCLE && (predicate == Geo.INTERSECT || map == Mapping.DEFAULT)) {
                     final Geoshape.Point center = geo.getPoint();
@@ -808,8 +808,7 @@ public class SolrIndex implements IndexProvider {
             } else if (value instanceof Date || value instanceof Instant) {
                 final String s = value.toString();
                 final String queryValue = escapeValue(value instanceof Date ? toIsoDate((Date) value) : value.toString());
-                Preconditions.checkArgument(predicate instanceof Cmp, "Relation not supported on date types: "
-                        + predicate);
+                Preconditions.checkArgument(predicate instanceof Cmp, "Relation not supported on date types: %s", predicate);
                 final Cmp numRel = (Cmp) predicate;
 
                 switch (numRel) {

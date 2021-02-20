@@ -40,11 +40,11 @@ public abstract class LocalStoreManager extends AbstractStoreManager {
         super(storageConfig);
         Preconditions.checkArgument(storageConfig.has(STORAGE_DIRECTORY) ||
                                     (storageConfig.has(STORAGE_ROOT) && storageConfig.has(GRAPH_NAME)),
-                                    String.format("Please supply configuration parameter \"%s\" or both \"%s\" and \"%s\".",
+                                    "Please supply configuration parameter \"%s\" or both \"%s\" and \"%s\".",
                                                   STORAGE_DIRECTORY.toStringWithoutRoot(),
                                                   STORAGE_ROOT.toStringWithoutRoot(),
                                                   GRAPH_NAME.toStringWithoutRoot()
-                                    ));
+                                    );
         if (storageConfig.has(STORAGE_DIRECTORY)) {
             final String storageDir = storageConfig.get(STORAGE_DIRECTORY);
             directory = DirectoryUtil.getOrCreateDataDirectory(storageDir);
