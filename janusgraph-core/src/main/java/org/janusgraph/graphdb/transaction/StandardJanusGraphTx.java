@@ -129,14 +129,14 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     /**
      * Keeps track of vertices already loaded in memory. Cannot release vertices with added relations.
      */
-    private final VertexCache vertexCache;
+    private VertexCache vertexCache;
 
     //######## Data structures that keep track of new and deleted elements
     //These data structures cannot release elements, since we would loose track of what was added or deleted
     /**
      * Keeps track of all added relations in this transaction
      */
-    private final AddedRelationsContainer addedRelations;
+    private AddedRelationsContainer addedRelations;
     /**
      * Keeps track of all deleted relations in this transaction
      */
@@ -148,12 +148,12 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
      * to be passed to the IndexProvider. This cache will drop entries when it overflows
      * since the result set can always be retrieved from the IndexProvider
      */
-    private final SubqueryCache indexCache;
+    private SubqueryCache indexCache;
     /**
      * Builds an inverted index for newly added properties so they can be considered in index queries.
      * This cache my not release elements since that would entail an expensive linear scan over addedRelations
      */
-    private final IndexCache newVertexIndexEntries;
+    private IndexCache newVertexIndexEntries;
 
     //######## Lock applications
     /**
@@ -167,7 +167,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
      * Caches JanusGraph types by name so that they can be quickly retrieved once they are loaded in the transaction.
      * Since type retrieval by name is common and there are only a few types, since cache is a simple map (i.e. no release)
      */
-    private final Map<String, Long> newTypeCache;
+    private Map<String, Long> newTypeCache;
 
     /**
      * Used to assign temporary ids to new vertices and relations added in this transaction.
@@ -1480,17 +1480,13 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     private void releaseTransaction() {
         isOpen = false;
         graph.closeTransaction(this);
-        vertexCache.close();
-        indexCache.close();
-        addedRelations.clear();
-        if (!Objects.equals(EMPTY_DELETED_RELATIONS, deletedRelations)) {
-            deletedRelations.clear();
-        }
-        if (!Objects.equals(UNINITIALIZED_LOCKS, uniqueLocks)) {
-            uniqueLocks.clear();
-        }
-        newVertexIndexEntries.close();
-        newTypeCache.clear();
+        vertexCache = null;
+        indexCache = null;
+        addedRelations = null;
+        deletedRelations = null;
+        uniqueLocks = null;
+        newVertexIndexEntries = null;
+        newTypeCache = null;
     }
 
     @Override
