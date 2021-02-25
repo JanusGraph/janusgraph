@@ -31,6 +31,7 @@ import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.junit.jupiter.api.Test;
 
 import java.util.Random;
 import java.util.concurrent.*;
@@ -52,10 +53,9 @@ public abstract class JanusGraphIterativeBenchmark extends JanusGraphBaseTest {
 
     private static final Random random = new Random();
 
-
     public abstract KeyColumnValueStoreManager openStorageManager() throws BackendException;
 
-    //@Test
+    @Test
     public void testDataSequential() throws Exception {
         loadData(200000,2);
         close();
@@ -82,7 +82,7 @@ public abstract class JanusGraphIterativeBenchmark extends JanusGraphBaseTest {
 
     }
 
-    //@Test
+    @Test
     public void testLoadData() throws Exception {
         loadData(100000,2);
     }

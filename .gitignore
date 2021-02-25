@@ -40,8 +40,6 @@ janusgraph-hbase/src/test/janusgraph-zookeeper-test/*
 # Backup files created by `mvn versions:update-child-modules`
 # http://mojo.codehaus.org/versions-maven-plugin/update-child-modules-mojo.html
 janusgraph-*/pom.xml.versionsBackup
-# JUnitBenchmarks output
-/janusgraph-*/jub.*.xml
 # .deb/.rpm packaging folders
 /debian/
 /redhat/

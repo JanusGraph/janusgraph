@@ -24,17 +24,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.commons.math.stat.descriptive.SummaryStatistics;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.junit.Rule;
-import org.junit.rules.TestRule;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.TestCategory;
-import org.janusgraph.testutil.JUnitBenchmarkProvider;
 import org.janusgraph.testutil.MemoryAssess;
 /**
  * These tests focus on the in-memory data structures of individual transactions and how they hold up to high memory pressure
@@ -42,10 +39,7 @@ import org.janusgraph.testutil.MemoryAssess;
 @Tag(TestCategory.MEMORY_TESTS)
 public abstract class JanusGraphPerformanceMemoryTest extends JanusGraphBaseTest {
 
-    @Rule
-    public TestRule benchmark = JUnitBenchmarkProvider.get();
-
-    @Test
+    @RepeatedTest(10)
     public void testMemoryLeakage() {
         long memoryBaseline = 0;
         SummaryStatistics stats = new SummaryStatistics();
@@ -74,7 +68,7 @@ public abstract class JanusGraphPerformanceMemoryTest extends JanusGraphBaseTest
         assertTrue(stats.getStandardDeviation() < stats.getMin());
     }
 
-    @Test
+    @RepeatedTest(10)
     public void testTransactionalMemory() throws Exception {
         makeVertexIndexedUniqueKey("uid",Long.class);
         makeKey("name",String.class);

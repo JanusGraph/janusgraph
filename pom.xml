@@ -95,7 +95,6 @@
         <!-- align with org.apache.tinkerpop:tinkerpop -->
         <netty4.version>4.1.59.Final</netty4.version>
         <jna.version>5.6.0</jna.version>
-        <gmavenplus.version>1.12.1</gmavenplus.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <janusgraph.testdir>${project.build.directory}/janusgraph-test</janusgraph.testdir>
@@ -135,6 +134,7 @@
         <module>janusgraph-lucene</module>
         <module>janusgraph-all</module>
         <module>janusgraph-dist</module>
+        <module>janusgraph-benchmark</module>
         <module>janusgraph-doc</module>
         <module>janusgraph-solr</module>
         <module>janusgraph-examples</module>
@@ -913,24 +913,8 @@
             </dependency>
             <dependency>
                 <groupId>com.carrotsearch</groupId>
-                <artifactId>junit-benchmarks</artifactId>
-                <version>0.7.2</version>
-            </dependency>
-            <dependency>
-                <groupId>com.carrotsearch</groupId>
                 <artifactId>hppc</artifactId>
                 <version>0.8.2</version>
-            </dependency>
-            <dependency>
-                <groupId>com.carrotsearch.randomizedtesting</groupId>
-                <artifactId>randomizedtesting-runner</artifactId>
-                <version>2.7.8</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>junit</groupId>
-                        <artifactId>junit</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>

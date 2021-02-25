@@ -19,14 +19,11 @@ import org.janusgraph.TestCategory;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.EdgeLabelMaker;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.testutil.JUnitBenchmarkProvider;
 import org.janusgraph.testutil.RandomGenerator;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.jupiter.api.*;
-import org.junit.Rule;
-import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,9 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @Tag(TestCategory.PERFORMANCE_TESTS)
 public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
-
-    @Rule
-    public TestRule benchmark = JUnitBenchmarkProvider.get();
 
     // Parallelism settings
     private static final int THREAD_COUNT = getThreadCount();
@@ -107,7 +101,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
         super.tearDown();
     }
 
-    @Test
+    @RepeatedTest(10)
     public void concurrentTxRead() throws Exception {
         final int numTypes = 20;
         final int numThreads = 100;
@@ -149,7 +143,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
      *
      * @throws Exception
      */
-    @Test
+    @RepeatedTest(10)
     public void concurrentReadsOnSingleTransaction() throws Exception {
         initializeGraph();
 
@@ -178,7 +172,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
      *
      * @throws Exception
      */
-    @Test
+    @RepeatedTest(10)
     public void concurrentReadWriteOnSingleTransaction() throws Exception {
         initializeGraph();
 
@@ -208,7 +202,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
         relFuture.cancel(true);
     }
 
-    @Test
+    @RepeatedTest(10)
     public void concurrentIndexReadWriteTest() throws Exception {
         clopen(option(GraphDatabaseConfiguration.ADJUST_LIMIT),false);
 
@@ -291,7 +285,7 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
      * @throws ExecutionException
      * @throws InterruptedException
      */
-    @Test
+    @RepeatedTest(10)
     public void testStandardIndexVertexPropertyReads() throws InterruptedException, ExecutionException {
         testStandardIndexVertexPropertyReadsLogic();
     }

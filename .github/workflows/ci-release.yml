@@ -76,6 +76,23 @@ jobs:
           name: distribution-builds
           path: janusgraph-dist/target/janusgraph-*.zip
 
+  benchmark:
+    runs-on: ubuntu-20.04
+    needs: build-all
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - run: mvn clean install -Pjanusgraph-benchmark ${{ env.BUILD_MAVEN_OPTS }} -Dgpg.skip=true
+      - run: mvn verify --projects janusgraph-benchmark
+
   tp-tests:
     runs-on: ubuntu-20.04
     if: "github.event_name == 'push' && contains(github.event.head_commit.message, '[tp-tests]') || github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[tp-tests]')"

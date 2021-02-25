@@ -16,20 +16,13 @@ package org.janusgraph.graphdb.serializer;
 
 import org.janusgraph.TestCategory;
 import org.janusgraph.graphdb.serializer.attributes.*;
-import org.junit.Rule;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.rules.TestRule;
-
-import org.janusgraph.testutil.JUnitBenchmarkProvider;
 
 @Tag(TestCategory.PERFORMANCE_TESTS)
 public class SerializerSpeedTest extends SerializerTestCommon {
 
-    @Rule
-    public TestRule benchmark = JUnitBenchmarkProvider.get();
-
-    @Test
+    @RepeatedTest(10)
     public void performanceTestStringSerialization() {
         int runs = 100000;
         for (int i = 0; i < runs; i++) {
@@ -37,7 +30,7 @@ public class SerializerSpeedTest extends SerializerTestCommon {
         }
     }
 
-    @Test
+    @RepeatedTest(10)
     public void performanceTestObjectSerialization() {
         serialize.registerClass(2,TClass1.class, new TClass1Serializer());
         serialize.registerClass(80342,TClass2.class, new TClass2Serializer());
