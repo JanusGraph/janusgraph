@@ -56,7 +56,7 @@ public class StandardVertex extends AbstractVertex {
 
     @Override
     public boolean addRelation(InternalRelation r) {
-        Preconditions.checkArgument(r.isNew());
+        Preconditions.checkArgument(r.isNew(), "Unexpected relation status: r is not new");
         if (addedRelations==AddedRelationsContainer.EMPTY) {
             if (tx().getConfiguration().isSingleThreaded()) {
                 addedRelations=new SimpleAddedRelations();

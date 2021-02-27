@@ -33,7 +33,7 @@ public class NumberUtil {
      * @return
      */
     public static int getPowerOf2(long value) {
-        Preconditions.checkArgument(isPowerOf2(value));
+        Preconditions.checkArgument(isPowerOf2(value), "Value %d is not power of 2", value);
         return Long.SIZE-(Long.numberOfLeadingZeros(value)+1);
     }
 

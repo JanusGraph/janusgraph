@@ -27,7 +27,7 @@ public class SchemaElementDefinition {
 
 
     public SchemaElementDefinition(String name, long id) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(name));
+        Preconditions.checkArgument(StringUtils.isNotBlank(name), "name cannot be blank");
         this.name = name;
         this.id = id;
     }

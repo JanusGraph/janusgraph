@@ -278,8 +278,7 @@ public class EdgeSerializer implements RelationReader {
                 valuePosition = out.getPosition();
             }
         } else {
-            assert relation.isProperty();
-            Preconditions.checkArgument(relation.isProperty());
+            Preconditions.checkArgument(relation.isProperty(), "Given relation is not property");
             Object value = ((JanusGraphVertexProperty) relation).value();
             Preconditions.checkNotNull(value);
             PropertyKey key = (PropertyKey) type;

@@ -94,7 +94,7 @@ public class TransactionalConfiguration implements WriteConfiguration {
     }
 
     public void logMutations(DataOutput out) {
-        Preconditions.checkArgument(hasMutations());
+        Preconditions.checkArgument(hasMutations(), "No mutation to log");
         VariableLong.writePositive(out,writtenValues.size());
         for (Map.Entry<String,Object> entry : writtenValues.entrySet()) {
             out.writeObjectNotNull(entry.getKey());
