@@ -56,13 +56,13 @@ public abstract class AbstractConfiguration implements Configuration {
 
     protected Set<String> getContainedNamespaces(ReadConfiguration config, ConfigNamespace umbrella, String... umbrellaElements) {
         verifyElement(umbrella);
-        Preconditions.checkArgument(umbrella.isUmbrella());
+        Preconditions.checkArgument(umbrella.isUmbrella(), "config namespace must be an umbrella namespace");
 
         String prefix = ConfigElement.getPath(umbrella,umbrellaElements);
         Set<String> result = new HashSet<>();
 
         for (String key : config.getKeys(prefix)) {
-            Preconditions.checkArgument(key.startsWith(prefix));
+            Preconditions.checkArgument(key.startsWith(prefix), "key [%s] does not start with prefix [%s]", key, prefix);
             String sub = key.substring(prefix.length()+1).trim();
             if (!sub.isEmpty()) {
                 String ns = ConfigElement.getComponents(sub)[0];
@@ -80,7 +80,7 @@ public abstract class AbstractConfiguration implements Configuration {
         Map<String,Object> result = new HashMap<>();
 
         for (String key : config.getKeys(prefix)) {
-            Preconditions.checkArgument(key.startsWith(prefix));
+            Preconditions.checkArgument(key.startsWith(prefix), "key [%s] does not start with prefix [%s]", key, prefix);
             // A zero-length prefix is a root.  A positive-length prefix
             // is not a root and we should tack on an additional character
             // to consume the dot between the prefix and the rest of the key.
@@ -94,7 +94,7 @@ public abstract class AbstractConfiguration implements Configuration {
     }
 
     protected static Configuration restrictTo(final Configuration config, final String... fixedUmbrella) {
-        Preconditions.checkArgument(fixedUmbrella!=null && fixedUmbrella.length>0);
+        Preconditions.checkArgument(fixedUmbrella!=null && fixedUmbrella.length>0, "No fixedUmbrella is given");
         return new Configuration() {
 
             private String[] concat(String... others) {

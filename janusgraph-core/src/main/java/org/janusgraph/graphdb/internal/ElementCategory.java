@@ -90,13 +90,13 @@ public enum ElementCategory {
         Preconditions.checkArgument(elementId!=null,"Must provide elementId");
         switch (this) {
             case VERTEX:
-                Preconditions.checkArgument(elementId instanceof Long);
+                Preconditions.checkArgument(elementId instanceof Long, "elementId [%s] must be of type Long", elementId);
                 return tx.getVertex((Long) elementId);
             case EDGE:
-                Preconditions.checkArgument(elementId instanceof RelationIdentifier);
+                Preconditions.checkArgument(elementId instanceof RelationIdentifier, "elementId [%s] must be of type RelationIdentifier", elementId);
                 return RelationIdentifierUtils.findEdge(((RelationIdentifier)elementId), tx);
             case PROPERTY:
-                Preconditions.checkArgument(elementId instanceof RelationIdentifier);
+                Preconditions.checkArgument(elementId instanceof RelationIdentifier, "elementId [%s] must be of type RelationIdentifier", elementId);
                 return RelationIdentifierUtils.findProperty(((RelationIdentifier)elementId), tx);
             default: throw new IllegalArgumentException();
         }

@@ -46,7 +46,7 @@ public class ArraysUtil {
         int offset = 0;
         if (arr != null) {
             for (int i = 0; i < arr.length; i++) {
-                Preconditions.checkArgument(element != arr[i]);
+                Preconditions.checkArgument(element != arr[i], "Element: %d equals to arr[%d]: %d", element, i, arr[i]);
                 if (element < arr[i]) {
                     newArray[i] = element;
                     offset = 1;

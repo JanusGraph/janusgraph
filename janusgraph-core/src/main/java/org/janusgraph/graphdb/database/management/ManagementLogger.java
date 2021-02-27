@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.collections.CollectionUtils;
 import org.janusgraph.core.JanusGraphManagerUtility;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
@@ -123,7 +124,7 @@ public class ManagementLogger implements MessageReader {
                                              final boolean evictGraphFromCache,
                                              List<Callable<Boolean>> updatedTypeTriggers,
                                              Set<String> openInstances) {
-        Preconditions.checkArgument(!openInstances.isEmpty());
+        Preconditions.checkArgument(CollectionUtils.isNotEmpty(openInstances), "openInstances cannot be null or empty");
         long evictionId = evictionTriggerCounter.incrementAndGet();
         evictionTriggerMap.put(evictionId,new EvictionTrigger(evictionId,updatedTypeTriggers,graph));
         DataOutput out = graph.getDataSerializer().getDataOutput(128);
