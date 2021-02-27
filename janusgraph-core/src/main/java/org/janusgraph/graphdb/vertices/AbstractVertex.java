@@ -38,6 +38,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     private final StandardJanusGraphTx tx;
 
+    private VertexLabel vertexLabel;
 
     protected AbstractVertex(StandardJanusGraphTx tx, long id) {
         super(id);
@@ -122,14 +123,20 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     protected Vertex getVertexLabelInternal() {
-        return Iterables.getOnlyElement(tx().query(this).noPartitionRestriction().type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).vertices(),null);
+        return Iterables.getOnlyElement(
+            tx().query(this).noPartitionRestriction().queryOnlyLoaded().type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).vertices(),
+            null);
     }
 
     @Override
     public VertexLabel vertexLabel() {
-        Vertex label = getVertexLabelInternal();
-        if (label==null) return BaseVertexLabel.DEFAULT_VERTEXLABEL;
-        else return (VertexLabelVertex)label;
+        if (vertexLabel == null) {
+            vertexLabel = (VertexLabel) getVertexLabelInternal();
+            if (vertexLabel == null) {
+                vertexLabel = BaseVertexLabel.DEFAULT_VERTEXLABEL;
+            }
+        }
+        return vertexLabel;
     }
 
     @Override
@@ -190,7 +197,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     }
 
-
-
-
+    public void setVertexLabel(final VertexLabel vertexLabel) {
+        this.vertexLabel = vertexLabel;
+    }
 }
