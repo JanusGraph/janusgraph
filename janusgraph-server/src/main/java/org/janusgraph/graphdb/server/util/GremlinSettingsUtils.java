@@ -12,15 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.graphdb.server.utils;
+package org.janusgraph.graphdb.server.util;
 
 import org.apache.tinkerpop.gremlin.server.Settings;
+import org.apache.tinkerpop.gremlin.server.util.DefaultGraphManager;
+import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class GremlinSettingsUtils {
+
+    private static final String CONFIGURATION_MANAGEMENT_GRAPH_KEY = ConfigurationManagementGraph.class.getSimpleName();
+
+    public static Settings configureDefaults(Settings settings) {
+        return configureDefaultOfDynamicGraphs(configureDefaultSerializersIfNotSet(settings));
+    }
+
+    public static Settings configureDefaultOfDynamicGraphs(Settings settings) {
+        if (!settings.graphs.containsKey(CONFIGURATION_MANAGEMENT_GRAPH_KEY)) {
+            return settings;
+        }
+        if (settings.graphManager.equals(DefaultGraphManager.class.getName())) {
+            settings.graphManager = org.janusgraph.graphdb.management.JanusGraphManager.class.getCanonicalName();
+        }
+        return settings;
+    }
 
     /**
      * Add a default set of serializers, if they are empty.
@@ -29,32 +47,32 @@ public class GremlinSettingsUtils {
      * @return Update Gremlin Server {@link Settings}.
      */
     public static Settings configureDefaultSerializersIfNotSet(Settings settings) {
-        if(settings.serializers.size() != 0)
+        if (settings.serializers.size() != 0)
             return settings;
 
         List<Settings.SerializerSettings> serializers = new ArrayList<>();
 
         addSerializerWithRegistry(
             serializers,
-            "org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1"
+            org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1.class.getCanonicalName()
         );
         addSerializerWithResultToString(
             serializers,
-            "org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1"
+            org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1.class.getCanonicalName()
         );
 
         addSerializerWithRegistry(
             serializers,
-            "org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0"
+            org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0.class.getCanonicalName()
         );
         addSerializerWithResultToString(
             serializers,
-            "org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0"
+            org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0.class.getCanonicalName()
         );
 
         addSerializerWithRegistry(
             serializers,
-            "org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0"
+            org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0.class.getCanonicalName()
         );
 
         settings.serializers = serializers;
@@ -65,7 +83,8 @@ public class GremlinSettingsUtils {
     private static void addSerializerWithRegistry(List<Settings.SerializerSettings> serializers, String className) {
         Settings.SerializerSettings newSerializerSettings = new Settings.SerializerSettings();
         newSerializerSettings.className = className;
-        newSerializerSettings.config = Collections.singletonMap("ioRegistries", Collections.singletonList("org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry"));
+        newSerializerSettings.config = Collections.singletonMap("ioRegistries",
+            Collections.singletonList(org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry.class.getCanonicalName()));
         serializers.add(newSerializerSettings);
     }
 

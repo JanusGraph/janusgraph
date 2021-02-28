@@ -20,8 +20,10 @@ import io.grpc.ServerBuilder;
 import org.apache.tinkerpop.gremlin.server.GraphManager;
 import org.apache.tinkerpop.gremlin.server.GremlinServer;
 import org.apache.tinkerpop.gremlin.server.Settings;
+import org.apache.tinkerpop.gremlin.server.util.ServerGremlinExecutor;
 import org.janusgraph.graphdb.grpc.JanusGraphManagerServiceImpl;
-import org.janusgraph.graphdb.server.utils.GremlinSettingsUtils;
+import org.janusgraph.graphdb.management.JanusGraphManager;
+import org.janusgraph.graphdb.server.util.GremlinSettingsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +85,7 @@ public class JanusGraphServer {
         try {
             logger.info("Configuring JanusGraph Server from {}", confPath);
             janusGraphSettings = JanusGraphSettings.read(confPath);
-            gremlinSettings = GremlinSettingsUtils.configureDefaultSerializersIfNotSet(janusGraphSettings.getGremlinSettings());
+            gremlinSettings = GremlinSettingsUtils.configureDefaults(janusGraphSettings.getGremlinSettings());
             gremlinServer = new GremlinServer(gremlinSettings);
             CompletableFuture<Void> grpcServerFuture = CompletableFuture.completedFuture(null);
             if (janusGraphSettings.getGrpcServer().isEnabled()) {
@@ -97,11 +99,21 @@ public class JanusGraphServer {
                     }
                 });
             }
-            serverStarted = CompletableFuture.allOf(gremlinServer.start(), grpcServerFuture);
+            CompletableFuture<Void> gremlinServerFuture = gremlinServer.start()
+                .thenAcceptAsync(JanusGraphServer::configure);
+            serverStarted = CompletableFuture.allOf(gremlinServerFuture, grpcServerFuture);
         } catch (Exception ex) {
             serverStarted.completeExceptionally(ex);
         }
         return serverStarted;
+    }
+
+    private static void configure(ServerGremlinExecutor serverGremlinExecutor) {
+        GraphManager graphManager = serverGremlinExecutor.getGraphManager();
+        if (!(graphManager instanceof JanusGraphManager)){
+            return;
+        }
+        ((JanusGraphManager) graphManager).configureGremlinExecutor(serverGremlinExecutor.getGremlinExecutor());
     }
 
     public synchronized CompletableFuture<Void> stop() {

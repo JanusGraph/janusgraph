@@ -239,6 +239,23 @@ New cql configuration options should be used for upgrade:
 
 See more new cql configuration options in configuration references under `storage.cql` section.
 
+##### Automatic configurations of dynamic graph binding
+
+If the JanusGraphManager is configured, dynamic graph binding will be setup automatically, 
+see [Dynamic Graphs](operations/dynamic-graphs.md).
+
+!!! note 
+    Breaking changes in the config of the `gremlin-server.yaml`.
+
+Following, classes are removed and have to be replaced by tinkerpop equivalent:
+
+| removed class | replacement class|
+| --- | --- |
+| `org.janusgraph.channelizers.JanusGraphWebSocketChannelizer` | `org.apache.tinkerpop.gremlin.server.channel.WebSocketChannelizer` |
+| `org.janusgraph.channelizers.JanusGraphHttpChannelizer` | `org.apache.tinkerpop.gremlin.server.channel.HttpChannelizer` |
+| `org.janusgraph.channelizers.JanusGraphNioChannelizer` | `org.apache.tinkerpop.gremlin.server.channel.NioChannelizer` |
+| `org.janusgraph.channelizers.JanusGraphWsAndHttpChannelizer` | `org.apache.tinkerpop.gremlin.server.channel.WsAndHttpChannelizer` |
+
 ### Version 0.5.3 (Release Date: December 24, 2020)
 
 === "Maven"

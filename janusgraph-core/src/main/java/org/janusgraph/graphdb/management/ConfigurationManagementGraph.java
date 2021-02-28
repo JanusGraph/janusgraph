@@ -93,7 +93,7 @@ public class ConfigurationManagementGraph {
     }
 
     // To be used for testing purposes
-    protected static void shutdownConfigurationManagementGraph() {
+    public static void shutdownConfigurationManagementGraph() {
         instance = null;
     }
 

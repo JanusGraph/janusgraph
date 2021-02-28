@@ -83,33 +83,10 @@ reference by their string bindings, on every node in your JanusGraph
 cluster. This is particularly important to be able to work with Gremlin
 Server clients and use [TinkerPops’s withRemote functionality](#using-tinkerpops-withremote-functionality).
 
-#### Set Up
-
-To set up your cluster to bind dynamically created graphs and their
-traversal references, you must:
-
-1.  Configure each node to use the
-    [ConfiguredGraphFactory](configured-graph-factory.md#configuring-JanusGraph-server-for-configuredgraphfactory).
-
-2.  Configure each node to use a `JanusGraphChannelizer`, which injects
-    lower-level Gremlin Server components, like the GremlinExecutor,
-    into the JanusGraph project, giving us greater control of the
-    Gremlin Server.
-
-To configure each node to use a `JanusGraphChannelizer`, we must update
-the `gremlin-server.yaml` to do so:
-
-    channelizer: org.janusgraph.channelizers.JanusGraphWebSocketChannelizer
-
-There are a few channelizers you can choose from:
-
-1.  org.janusgraph.channelizers.JanusGraphWebSocketChannelizer
-2.  org.janusgraph.channelizers.JanusGraphHttpChannelizer
-3.  org.janusgraph.channelizers.JanusGraphNioChannelizer
-4.  org.janusgraph.channelizers.JanusGraphWsAndHttpChannelizer
-
-All of the channelizers share the exact same functionality as their
-TinkerPop counterparts.
+!!! note
+    To set up your cluster to bind dynamically created graphs and their
+    traversal references, you must configure each node to use 
+    the [ConfiguredGraphFactory](configured-graph-factory.md#configuring-janusgraph-server-for-configuredgraphfactory).
 
 ### Using TinkerPop’s withRemote Functionality
 
