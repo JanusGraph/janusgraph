@@ -436,7 +436,7 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
     /**
      * Prints out schema information related to indexes
      *
-     * @return String with graph index information
+     * @return String with graph index and relation index information
      */
     String printIndexes();
 
