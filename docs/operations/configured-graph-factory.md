@@ -92,9 +92,18 @@ the `ConfigurationManagementGraph`.
     data.
 
 !!! important
-    To ensure all graph representations are consistent across all JanusGraph nodes in your cluster, this removes the graph from the `JanusGraphManager` graph cache on every node in the cluster, assuming each node has been properly configured to use the `JanusGraphManager`. Learn more about this feature and how to configure your server to use said feature [here](./dynamic-graphs.md#graph-reference-consistency).
+    To ensure all graph representations are consistent across all JanusGraph 
+    nodes in your cluster, this removes the graph from the `JanusGraphManager` 
+    graph cache on every node in the cluster, assuming each node has been 
+    properly configured to use the `JanusGraphManager`. Learn more about this 
+    feature and how to configure your server to use said feature [here](./dynamic-graphs.md#graph-reference-consistency).
 
 ## Configuring JanusGraph Server for ConfiguredGraphFactory
+
+!!! note
+    Starting with JanusGraph v0.6.0, every JanusGraph Server is started with 
+    the JanusGraphManager, if `ConfigurationManagementGraph`is configured in 
+    the `graphs` section and the default GraphManager is not overwritten.
 
 To be able to use the `ConfiguredGraphFactory`, you must configure your
 server to use the `ConfigurationManagementGraph` APIs. To do this, you

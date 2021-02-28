@@ -93,12 +93,8 @@ public class JanusGraphManager implements GraphManager {
     }
 
     // To be used for testing purposes only, so we can run tests in parallel
-    public static JanusGraphManager getInstance(boolean forceCreate) {
-        if (forceCreate) {
-            return new JanusGraphManager(new Settings());
-        } else {
-            return instance;
-        }
+    public static void resetInstance() {
+        instance = null;
     }
 
     public void configureGremlinExecutor(GremlinExecutor gremlinExecutor) {

@@ -30,104 +30,50 @@
 
 package org.janusgraph.graphdb.tinkerpop;
 
-import org.apache.tinkerpop.gremlin.server.GremlinServer;
-import org.apache.tinkerpop.gremlin.server.Settings;
 import org.apache.tinkerpop.gremlin.server.op.OpLoader;
+import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
+import org.janusgraph.graphdb.management.JanusGraphManager;
+import org.janusgraph.graphdb.server.JanusGraphServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.InputStream;
-
 /**
  * Starts and stops an instance for each executed test.
  */
 public abstract class AbstractGremlinServerIntegrationTest {
-    protected GremlinServer server;
-    private final static String epollOption = "gremlin.server.epoll";
-    private static final boolean GREMLIN_SERVER_EPOLL = "true".equalsIgnoreCase(System.getProperty(epollOption));
+    protected JanusGraphServer server;
     private static final Logger logger = LoggerFactory.getLogger(AbstractGremlinServerIntegrationTest.class);
 
-    public Settings overrideSettings(final Settings settings) {
-        return settings;
-    }
-
-    public InputStream getSettingsInputStream() {
-        return AbstractGremlinServerIntegrationTest.class.getResourceAsStream("gremlin-server-integration.yaml");
+    public String getSettingsPath() {
+        return "src/test/resources/gremlin-server-integration.yaml";
     }
 
     @BeforeEach
-    public void setUp(TestInfo testInfo) throws Exception {
+    public void setUp(TestInfo testInfo) {
         logger.info("* Testing: " + testInfo.getDisplayName());
-        logger.info("* Epoll option enabled:" + GREMLIN_SERVER_EPOLL);
-
         startServer();
     }
 
-    public void setUp(final Settings settings, TestInfo testInfo) throws Exception {
-        logger.info("* Testing: " + testInfo.getDisplayName());
-        logger.info("* Epoll option enabled:" + GREMLIN_SERVER_EPOLL);
-
-        startServer(settings);
-    }
-
-    public void startServer(final Settings settings) throws Exception {
-        if (null == settings) {
-            startServer();
-        } else {
-            final Settings overriddenSettings = overrideSettings(settings);
-            if (GREMLIN_SERVER_EPOLL) {
-                overriddenSettings.useEpollEventLoop = true;
-            }
-            this.server = new GremlinServer(overriddenSettings);
-            server.start().join();
-
-        }
-    }
-
-    public void startServer() throws Exception {
-        final InputStream stream = getSettingsInputStream();
-        final Settings settings = Settings.read(stream);
-        final Settings overriddenSettings = overrideSettings(settings);
-        if (GREMLIN_SERVER_EPOLL) {
-            overriddenSettings.useEpollEventLoop = true;
-        }
-
-        this.server = new GremlinServer(overriddenSettings);
-
+    public void startServer() {
+        this.server = new JanusGraphServer(getSettingsPath());
         server.start().join();
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    public void tearDown() {
         stopServer();
+        JanusGraphManager.resetInstance();
+        ConfigurationManagementGraph.shutdownConfigurationManagementGraph();
     }
 
-    public void stopServer() throws Exception {
+    public void stopServer() {
         server.stop().join();
         // reset the OpLoader processors so that they can get reconfigured on startup - Settings may have changed
         // between tests
         OpLoader.reset();
-    }
-
-    public static boolean deleteDirectory(final File directory) {
-        if (directory.exists()) {
-            final File[] files = directory.listFiles();
-            if (null != files) {
-                for (int i = 0; i < files.length; i++) {
-                    if (files[i].isDirectory()) {
-                        deleteDirectory(files[i]);
-                    } else {
-                        files[i].delete();
-                    }
-                }
-            }
-        }
-
-        return (directory.delete());
     }
 }
 
