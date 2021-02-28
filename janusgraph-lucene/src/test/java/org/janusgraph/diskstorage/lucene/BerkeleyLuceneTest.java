@@ -76,30 +76,66 @@ public class BerkeleyLuceneTest extends JanusGraphIndexTest {
         GraphOfTheGodsFactory.load(graph);
         mgmt = graph.openManagement();
 
-        String expected = "A18422278042949EE2B162837EC27A63";
+        String expected = "026DCB18B35C198CC54FA66B3D86C3FB";
         String output = mgmt.printSchema();
         String outputHash = DigestUtils.md5Hex(output).toUpperCase();
         assertEquals(expected, outputHash);
 
-        expected = "2114C009DC359B1C9AD7D0655AC6C9BF";
-        output = mgmt.printVertexLabels();
-        outputHash = DigestUtils.md5Hex(output).toUpperCase();
-        assertEquals(expected, outputHash);
+        String expectedVertexLabels =
+            "------------------------------------------------------------------------------------------------\n" +
+             "Vertex Label Name              | Partitioned | Static                                             |\n" +
+             "---------------------------------------------------------------------------------------------------\n" +
+             "titan                          | false       | false                                              |\n" +
+             "location                       | false       | false                                              |\n" +
+             "god                            | false       | false                                              |\n" +
+             "demigod                        | false       | false                                              |\n" +
+             "human                          | false       | false                                              |\n" +
+             "monster                        | false       | false                                              |\n" +
+             "---------------------------------------------------------------------------------------------------\n";
+        assertEquals(expectedVertexLabels, mgmt.printVertexLabels());
 
-        expected = "1E8AAE2C887544E490948F2ACBBFE312";
-        output = mgmt.printEdgeLabels();
-        outputHash = DigestUtils.md5Hex(output).toUpperCase();
-        assertEquals(expected, outputHash);
+        String expectedEdgeLabels =
+            "------------------------------------------------------------------------------------------------\n" +
+            "Edge Label Name                | Directed    | Unidirected | Multiplicity                         |\n" +
+            "---------------------------------------------------------------------------------------------------\n" +
+            "brother                        | true        | false       | MULTI                                |\n" +
+            "father                         | true        | false       | MANY2ONE                             |\n" +
+            "mother                         | true        | false       | MANY2ONE                             |\n" +
+            "battled                        | true        | false       | MULTI                                |\n" +
+            "lives                          | true        | false       | MULTI                                |\n" +
+            "pet                            | true        | false       | MULTI                                |\n" +
+            "---------------------------------------------------------------------------------------------------\n";
+        assertEquals(expectedEdgeLabels, mgmt.printEdgeLabels());
 
-        expected = "35851C8867321C8CB3E275886F40E8B9";
-        output = mgmt.printPropertyKeys();
-        outputHash = DigestUtils.md5Hex(output).toUpperCase();
-        assertEquals(expected, outputHash);
+        String expectedPropertyKeys =
+            "------------------------------------------------------------------------------------------------\n" +
+            "Property Key Name              | Cardinality | Data Type                                          |\n" +
+            "---------------------------------------------------------------------------------------------------\n" +
+            "name                           | SINGLE      | class java.lang.String                             |\n" +
+            "age                            | SINGLE      | class java.lang.Integer                            |\n" +
+            "time                           | SINGLE      | class java.lang.Integer                            |\n" +
+            "reason                         | SINGLE      | class java.lang.String                             |\n" +
+            "place                          | SINGLE      | class org.janusgraph.core.attribute.Geoshape       |\n" +
+            "---------------------------------------------------------------------------------------------------\n";
+        assertEquals(expectedPropertyKeys, mgmt.printPropertyKeys());
 
-        expected = "3951BBB935D39EE0FF74CE2D5F7CA997";
-        output = mgmt.printIndexes();
-        outputHash = DigestUtils.md5Hex(output).toUpperCase();
-        assertEquals(expected, outputHash);
+        String expectedIndexes =
+            "------------------------------------------------------------------------------------------------\n" +
+            "Graph Index (Vertex)           | Type        | Unique    | Backing        | Key:           Status |\n" +
+            "---------------------------------------------------------------------------------------------------\n" +
+            "name                           | Composite   | true      | internalindex  | name:         ENABLED |\n" +
+            "vertices                       | Mixed       | false     | search         | age:          ENABLED |\n" +
+            "---------------------------------------------------------------------------------------------------\n" +
+            "Graph Index (Edge)             | Type        | Unique    | Backing        | Key:           Status |\n" +
+            "---------------------------------------------------------------------------------------------------\n" +
+            "edges                          | Mixed       | false     | search         | reason:       ENABLED |\n" +
+            "                               |             |           |                | place:        ENABLED |\n" +
+            "---------------------------------------------------------------------------------------------------\n" +
+            "Relation Index (VCI)           | Type        | Direction | Sort Key       | Order    |     Status |\n" +
+            "---------------------------------------------------------------------------------------------------\n" +
+            "battlesByTime                  | battled     | BOTH      | time           | desc     |    ENABLED |\n" +
+            "---------------------------------------------------------------------------------------------------\n";
+        assertEquals(expectedIndexes, mgmt.printIndexes());
     }
 
 }

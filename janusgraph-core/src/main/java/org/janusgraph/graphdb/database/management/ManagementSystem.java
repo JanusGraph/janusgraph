@@ -497,17 +497,17 @@ public class ManagementSystem implements JanusGraphManagement {
         } else {
             sb.append(DASHBREAK);
         }
-        sb.append(String.format(pattern, "Vertex Index Name", "Type", "Unique", "Backing", "Key:", "Status"));
+        sb.append(String.format(pattern, "Graph Index (Vertex)", "Type", "Unique", "Backing", "Key:", "Status"));
         sb.append(DASHBREAK);
         sb.append(iterateIndexes(pattern, vertexIndexes));
         
         sb.append(DASHBREAK);
-        sb.append(String.format(pattern, "Edge Index (VCI) Name", "Type", "Unique", "Backing", "Key:", "Status"));
+        sb.append(String.format(pattern, "Graph Index (Edge)", "Type", "Unique", "Backing", "Key:", "Status"));
         sb.append(DASHBREAK);
         sb.append(iterateIndexes(pattern, edgeIndexes));
 
         sb.append(DASHBREAK);
-        sb.append(String.format(relationPattern,"Relation Index", "Type", "Direction", "Sort Key", "Order", "Status"));
+        sb.append(String.format(relationPattern,"Relation Index (VCI)", "Type", "Direction", "Sort Key", "Order", "Status"));
         sb.append(DASHBREAK);
         for (RelationTypeIndex ri: relationIndexes) {
             sb.append(String.format(relationPattern, ri.name(), ri.getType(), ri.getDirection(), ri.getSortKey()[0], ri.getSortOrder(), ri.getIndexStatus().name()));
