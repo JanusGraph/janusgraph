@@ -11,6 +11,7 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 [![GitHub Workflow Status][actions-shield]][actions-link]
 [![Codecov][codecov-shield]][codecov-link]
 [![Coverity Scan][coverity-shield]][coverity-link]
+[![Mentioned in Awesome Bigtable](https://awesome.re/mentioned-badge-flat.svg)](https://github.com/zrosenbauer/awesome-bigtable)
 
 [actions-shield]: https://img.shields.io/github/workflow/status/JanusGraph/janusgraph/CI%20Core
 [actions-link]: https://github.com/JanusGraph/janusgraph/actions
