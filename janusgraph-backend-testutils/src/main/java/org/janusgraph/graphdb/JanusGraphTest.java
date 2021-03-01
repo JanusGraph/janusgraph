@@ -5318,6 +5318,11 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 .addKey(time).addKey(text).unique().buildCompositeIndex();
         finishSchema();
 
+        assertEquals("person", mgmt.getIndexOnlyConstraint("vindex1").name());
+        assertNull(mgmt.getIndexOnlyConstraint("vindex2"));
+        assertThrows(IllegalArgumentException.class, () -> mgmt.getIndexOnlyConstraint(null));
+        assertThrows(IllegalArgumentException.class, () -> mgmt.getIndexOnlyConstraint("invalidName"));
+
         //================== VERTEX UNIQUENESS ====================
 
         //I) Label uniqueness

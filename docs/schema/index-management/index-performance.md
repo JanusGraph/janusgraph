@@ -310,8 +310,10 @@ mgmt.buildIndex('byNameAndLabel', Vertex.class).addKey(name).indexOnly(god).buil
 mgmt.commit()
 //Wait for the index to become available
 ManagementSystem.awaitGraphIndexStatus(graph, 'byNameAndLabel').call()
-//Reindex the existing data
+//You can check the indexOnly constraint built just now
 mgmt = graph.openManagement()
+mgmt.getIndexOnlyConstraint("byNameAndLabel")
+//Reindex the existing data
 mgmt.updateIndex(mgmt.getGraphIndex("byNameAndLabel"), SchemaAction.REINDEX).get()
 mgmt.commit()
 ```
