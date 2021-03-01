@@ -164,6 +164,14 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
     Iterable<JanusGraphIndex> getGraphIndexes(final Class<? extends Element> elementType);
 
     /**
+     * Returns the indexOnly constraint for the index with given name or null if such constraint does not exist
+     * @param indexName
+     * @return
+     * @throws IllegalArgumentException if there is no index with given name
+     */
+    JanusGraphSchemaType getIndexOnlyConstraint(final String indexName);
+
+    /**
      * Returns an {@link IndexBuilder} to add a graph index to this JanusGraph graph. The index to-be-created
      * has the provided name and indexes elements of the given type.
      *

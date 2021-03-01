@@ -387,6 +387,15 @@ public class ManagementSystem implements JanusGraphManagement {
     }
 
     @Override
+    public JanusGraphSchemaType getIndexOnlyConstraint(final String indexName) {
+        IndexType index = getGraphIndexDirect(indexName, transaction);
+        if (index == null) {
+            throw new IllegalArgumentException("There is no index with name: " + indexName);
+        }
+        return index.getSchemaTypeConstraint();
+    }
+
+    @Override
     public String printSchema() {
         StringBuilder sb = new StringBuilder();
         sb.append(printVertexLabels(false));
