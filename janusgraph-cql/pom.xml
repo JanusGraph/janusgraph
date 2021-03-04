@@ -379,7 +379,7 @@
         <profile>
             <id>scylladb</id>
             <properties>
-                <cassandra.docker.version>3.0.9</cassandra.docker.version>
+                <cassandra.docker.version>4.3.0</cassandra.docker.version>
                 <cassandra.docker.image>scylladb/scylla</cassandra.docker.image>
                 <cassandra.docker.useDefaultConfigFromImage>true</cassandra.docker.useDefaultConfigFromImage>
                 <test.skip.byteordered>true</test.skip.byteordered>
