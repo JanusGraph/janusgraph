@@ -88,8 +88,18 @@ jobs:
             args: "-Pcassandra3-murmur-client-auth -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
             name: murmur-client-auth
           - module: cql
-            args: "-Pscylladb -Dcassandra.docker.image=scylladb/scylla -Dcassandra.docker.version=4.3.0 -Dtest.cql.excludes=MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS"
-            name: scylladb
+            args: "-Pscylladb -Dtest=\"**/diskstorage/cql/*\""
+            name: scylladb-diskstorage
+          - module: cql
+            args: "-Pscylladb -Dtest=\"**/graphdb/cql/*\""
+            name: scylladb-graphdb
+          # FIXME: this takes forever to run
+          # - module: cql
+          #   args: "-Pscylladb -Dtest=\"**/hadoop/*\""
+          #   name: scylladb-hadoop
+          - module: cql
+            args: "-Pscylladb -Dtest=\"**/core/cql/*\""
+            name: scylladb-core
     steps:
       - uses: actions/checkout@v2
         with:
@@ -106,6 +116,8 @@ jobs:
       - run: mvn clean install --projects janusgraph-${{ matrix.module }} ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
       - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.args }}
       - uses: codecov/codecov-action@v1
+        with:
+          name: codecov-cql-${{ matrix.name }}
 
   full-tests:
     runs-on: ubuntu-20.04
@@ -117,25 +129,22 @@ jobs:
         include:
           - module: cql
             args: "-Pcassandra3-byteordered -Dtest=\"**/diskstorage/cql/*\""
-            name: byteordered-diskstorage
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/diskstorage/cql/*\""
-            name: murmur-diskstorage
           - module: cql
             args: "-Pcassandra3-byteordered -Dtest=\"**/graphdb/cql/*\""
-            name: byteordered-graphdb
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/graphdb/cql/*\""
-            name: murmur-graphdb
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/hadoop/*\""
-            name: murmur-hadoop
+          - module: cql
+            args: "-Pcassandra3-byteordered -Dtest=\"**/core/cql/*\""
+          - module: cql
+            args: "-Pcassandra3-murmur -Dtest=\"**/core/cql/*\""
           - module: cql
             args: "-Pcassandra3-murmur-ssl -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
-            name: murmur-ssl
           - module: cql
             args: "-Pcassandra3-murmur-client-auth -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
-            name: murmur-client-auth
     steps:
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
@@ -149,6 +158,3 @@ jobs:
           java-version: 1.8
       - run: mvn clean install --projects janusgraph-${{ matrix.module }} ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
       - run: mvn verify --projects janusgraph-${{ matrix.module }} -Dcassandra.docker.version=3.0.18' ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.args }}
-      - uses: codecov/codecov-action@v1
-        with:
-          name: codecov-cql-${{ matrix.name }}
