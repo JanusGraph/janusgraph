@@ -171,6 +171,7 @@ import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.graphdb.types.StandardPropertyKeyMaker;
 import org.janusgraph.graphdb.types.system.BaseVertexLabel;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
+import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.janusgraph.testutil.FeatureFlag;
 import org.janusgraph.testutil.JanusGraphFeature;
 import org.janusgraph.testutil.TestGraphConfigs;
@@ -2419,6 +2420,49 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         // access property id in new transaction
         graph.tx().commit();
         assertEquals(expectedId, p.id());
+    }
+
+    /**
+     * By default, relations of a vertex is cached once queried within the lifecycle of that transaction.
+     * This means a subsequent read would hit the cache. However, sometimes users do want to read from data storage in
+     * the mid of a transaction. Note that even with force refresh, user might still see old value if the underlying
+     * data storage is only eventually consistent.
+     */
+    @Test
+    public void testCacheForceRefresh() {
+        if (features.hasLocking()) return;
+
+        graph.addVertex().property("prop", 0);
+        graph.tx().commit();
+
+        JanusGraphTransaction tx1 = graph.newTransaction();
+        Vertex v1 = tx1.traversal().V().next();
+        assertEquals(0, v1.property("prop").value());
+
+        JanusGraphTransaction tx2 = graph.newTransaction();
+        Vertex v2 = tx2.traversal().V().next();
+        assertEquals(0, v2.property("prop").value());
+        v2.property("prop", 2);
+        assertEquals(2, v2.property("prop").value());
+        tx2.commit();
+
+        // tx1 sees old (cached) value
+        assertEquals(0, v1.property("prop").value());
+        assertEquals(0, tx1.traversal().V(v1).next().property("prop").value());
+        assertEquals(0, tx1.traversal().V(v1).properties("prop").next().value());
+        // force refreshing v1 in tx1, now it can see the new value
+        ((CacheVertex) v1).refresh();
+        assertEquals(2, v1.property("prop").value());
+        assertEquals(2, tx1.traversal().V(v1).next().property("prop").value());
+        assertEquals(2, tx1.traversal().V(v1).properties("prop").next().value());
+
+        // verify that force refresh does not affect modified value within a transaction
+        v1.property("prop", 1);
+        ((CacheVertex) v1).refresh();
+        assertEquals(1, v1.property("prop").value());
+        assertEquals(1, tx1.traversal().V(v1).next().property("prop").value());
+        assertEquals(1, tx1.traversal().V(v1).properties("prop").next().value());
+        tx1.commit();
     }
 
     @Test
