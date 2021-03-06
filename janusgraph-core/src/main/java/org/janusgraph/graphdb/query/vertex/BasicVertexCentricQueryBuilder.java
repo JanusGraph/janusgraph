@@ -538,6 +538,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                         InternalRelationType bestCandidate = null;
                         double bestScore = Double.NEGATIVE_INFINITY;
                         boolean bestCandidateSupportsOrder = false;
+                        PropertyKey[] bestCandidateExtendedSortKey = null;
                         for (InternalRelationType candidate : type.getRelationIndexes()) {
                             //Filter out those that don't apply
                             if (!candidate.isUnidirected(Direction.BOTH) && !candidate.isUnidirected(direction)) {
@@ -570,6 +571,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                                 bestScore=score;
                                 bestCandidate=candidate;
                                 bestCandidateSupportsOrder=supportsOrder && currentOrder==orders.size();
+                                bestCandidateExtendedSortKey = extendedSortKey;
                             }
                         }
                         Preconditions.checkArgument(bestCandidate != null,
@@ -578,10 +580,9 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
                         //Construct sort key constraints for the best candidate and then serialize into a SliceQuery
                         //that is wrapped into a BackendQueryHolder
-                        PropertyKey[] extendedSortKey = getExtendedSortKey(bestCandidate,direction,tx);
                         EdgeSerializer.TypedInterval[] sortKeyConstraints
-                                = new EdgeSerializer.TypedInterval[extendedSortKey.length];
-                        constructSliceQueries(extendedSortKey, sortKeyConstraints, 0, bestCandidate, direction,
+                                = new EdgeSerializer.TypedInterval[bestCandidateExtendedSortKey.length];
+                        constructSliceQueries(bestCandidateExtendedSortKey, sortKeyConstraints, 0, bestCandidate, direction,
                                 intervalConstraints, sliceLimit, isIntervalFittedConditions, bestCandidateSupportsOrder,
                                 queries);
                     }
