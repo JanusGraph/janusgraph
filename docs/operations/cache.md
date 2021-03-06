@@ -47,6 +47,29 @@ which means they cannot be evicted since that would entail loosing their
 changes. Therefore, transaction which contain a lot of modifications may
 end up with a larger than configured vertex cache.
 
+Assuming your vertex is not evicted from cache, or it is evicted from
+cache but your program context still holds the reference to the vertex,
+then its properties are cached together with the vertex. This means once
+a property is queried, any subsequent reads will hit the cache. In case
+you want to force JanusGraph to read from the data storage again, or you
+simply want to save memory, you could clear the cache of that vertex manually.
+Note this is not gremlin compliant, so you need to cast your vertex into
+CacheVertex type to do the refresh:
+
+```groovy
+// first read automatically caches the property together with v
+v.property("prop").value();
+// force refresh to clear the cache
+((CacheVertex) v).refresh();
+// now a subsequent read will lead to a data storage read
+v.property("prop").value();
+```
+
+Note that refresh operation cannot guarantee your current transaction reads
+the latest data from an eventual consistent backend. You should not attempt
+to achieve Compare-And-Set (CAS) via refresh operation, even though it might
+be helpful to detect conflicts among transactions in some cases.
+
 ### Index Cache
 
 The index cache contains the results of index queries executed in the

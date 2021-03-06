@@ -38,6 +38,12 @@ public class CacheVertex extends StandardVertex {
         queryCache = new HashMap<>(4);
     }
 
+    public void refresh() {
+        synchronized (queryCache) {
+            queryCache.clear();
+        }
+    }
+
     protected void addToQueryCache(final SliceQuery query, final EntryList entries) {
         synchronized (queryCache) {
             //TODO: become smarter about what to cache and when (e.g. memory pressure)
