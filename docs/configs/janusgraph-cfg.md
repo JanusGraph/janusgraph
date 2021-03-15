@@ -152,7 +152,7 @@ Configuration options for HTTP(S) authentication.
 
 | Name | Description | Datatype | Default Value | Mutability |
 | ---- | ---- | ---- | ---- | ---- |
-| index.[X].elasticsearch.http.auth.type | Authentication type to be used for HTTP(S) access. | String | NONE | LOCAL |
+| index.[X].elasticsearch.http.auth.type | Authentication type to be used for HTTP(S) access. Available options are `NONE`, `BASIC` and `CUSTOM`. | String | NONE | LOCAL |
 
 ### index.[X].elasticsearch.http.auth.basic
 Configuration options for HTTP(S) Basic authentication.

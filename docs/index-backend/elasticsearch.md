@@ -168,8 +168,9 @@ index.search.elasticsearch.http.auth.basic.password=httppassword
 Additional authentication methods can be implemented by providing your own implementation. The custom authenticator is configured as follows:
 
 ```properties
+index.search.elasticsearch.http.auth.type=custom
 index.search.elasticsearch.http.auth.custom.authenticator-class=fully.qualified.class.Name
-index.search.elasticsearch.elasticsearch.http.auth.custom.authenticator-args=arg1,arg2,...
+index.search.elasticsearch.http.auth.custom.authenticator-args=arg1,arg2,...
 ```
 
 Argument list is optional and can be empty.
