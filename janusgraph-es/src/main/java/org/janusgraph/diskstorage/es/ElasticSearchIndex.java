@@ -212,7 +212,8 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public static final ConfigOption<String> ES_HTTP_AUTH_TYPE =
             new ConfigOption<>(ES_HTTP_AUTH_NS, "type",
-            "Authentication type to be used for HTTP(S) access.", ConfigOption.Type.LOCAL, HttpAuthTypes.NONE.toString());
+            "Authentication type to be used for HTTP(S) access. Available options are `NONE`, `BASIC` and `CUSTOM`.",
+            ConfigOption.Type.LOCAL, HttpAuthTypes.NONE.toString());
 
     public static final ConfigNamespace ES_HTTP_AUTH_BASIC_NS =
             new ConfigNamespace(ES_HTTP_AUTH_NS, "basic", "Configuration options for HTTP(S) Basic authentication.");
