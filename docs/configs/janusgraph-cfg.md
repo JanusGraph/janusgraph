@@ -384,12 +384,12 @@ CQL storage backend options
 | storage.cql.heartbeat-timeout | How long the driver waits for the response (in milliseconds) to a heartbeat. | Long | (no default value) | MASKABLE |
 | storage.cql.keyspace | The name of JanusGraph's keyspace.  It will be created if it does not exist. | String | janusgraph | LOCAL |
 | storage.cql.local-datacenter | The name of the local or closest Cassandra datacenter. This value will be passed into CqlSessionBuilder.withLocalDatacenter. | String | datacenter1 | MASKABLE |
-| storage.cql.local-max-connections-per-host | The maximum number of connections that can be created per host for local datacenter | Integer | 1 | FIXED |
+| storage.cql.local-max-connections-per-host | The maximum number of connections that can be created per host for local datacenter | Integer | 20 | FIXED |
 | storage.cql.max-requests-per-connection | The maximum number of requests that can be executed concurrently on a connection. | Integer | 1024 | FIXED |
 | storage.cql.only-use-local-consistency-for-system-operations | True to prevent any system queries from using QUORUM consistency and always use LOCAL_QUORUM instead | Boolean | false | MASKABLE |
 | storage.cql.protocol-version | The protocol version used to connect to the Cassandra database.  If no value is supplied then the driver will negotiate with the server. | Integer | 0 | LOCAL |
 | storage.cql.read-consistency-level | The consistency level of read operations against Cassandra | String | QUORUM | MASKABLE |
-| storage.cql.remote-max-connections-per-host | The maximum number of connections that can be created per host for remote datacenter | Integer | 1 | FIXED |
+| storage.cql.remote-max-connections-per-host | The maximum number of connections that can be created per host for remote datacenter | Integer | 5 | FIXED |
 | storage.cql.replication-factor | The number of data replicas (including the original copy) that should be kept | Integer | 1 | GLOBAL_OFFLINE |
 | storage.cql.replication-strategy-class | The replication strategy to use for JanusGraph keyspace | String | SimpleStrategy | FIXED |
 | storage.cql.replication-strategy-options | Replication strategy options, e.g. factor or replicas per datacenter.  This list is interpreted as a map.  It must have an even number of elements in [key,val,key,val,...] form.  A replication_factor set here takes precedence over one set with storage.cql.replication-factor | String[] | (no default value) | FIXED |

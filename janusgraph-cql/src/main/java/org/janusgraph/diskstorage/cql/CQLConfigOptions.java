@@ -163,14 +163,14 @@ public interface CQLConfigOptions {
             "local-max-connections-per-host",
             "The maximum number of connections that can be created per host for local datacenter",
             ConfigOption.Type.FIXED,
-            1);
+            20);
 
     ConfigOption<Integer> REMOTE_MAX_CONNECTIONS_PER_HOST = new ConfigOption<>(
             CQL_NS,
             "remote-max-connections-per-host",
             "The maximum number of connections that can be created per host for remote datacenter",
             ConfigOption.Type.FIXED,
-            1);
+            5);
 
     ConfigOption<Integer> MAX_REQUESTS_PER_CONNECTION = new ConfigOption<>(
             CQL_NS,
@@ -200,8 +200,8 @@ public interface CQLConfigOptions {
             "Configuration options for SSL");
 
     ConfigNamespace SSL_KEYSTORE_NS = new ConfigNamespace(
-            SSL_NS, 
-            "keystore", 
+            SSL_NS,
+            "keystore",
             "Configuration options for SSL Keystore.");
 
     ConfigNamespace SSL_TRUSTSTORE_NS = new ConfigNamespace(
@@ -236,21 +236,21 @@ public interface CQLConfigOptions {
             "Marks the location of the SSL Keystore.",
             ConfigOption.Type.LOCAL,
             "");
-    
+
     ConfigOption<String> SSL_KEYSTORE_KEY_PASSWORD = new ConfigOption<>(
             SSL_KEYSTORE_NS,
             "keypassword",
             "The password to access the key in SSL Keystore.",
             ConfigOption.Type.LOCAL,
             "");
-    
+
     ConfigOption<String> SSL_KEYSTORE_STORE_PASSWORD = new ConfigOption<>(
             SSL_KEYSTORE_NS,
             "storepassword",
             "The password to access the SSL Keystore.",
             ConfigOption.Type.LOCAL,
             "");
-    
+
     ConfigOption<String> SSL_TRUSTSTORE_LOCATION = new ConfigOption<>(
             SSL_TRUSTSTORE_NS,
             "location",

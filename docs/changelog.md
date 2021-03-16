@@ -221,6 +221,11 @@ New cql configuration options should be used for upgrade:
 
 See more new cql configuration options in configuration references under `storage.cql` section.
 
+##### Increase default cql max connection configuration options
+
+The default option `storage.cql.local-max-connections-per-host` is increased from `1` to `20`.
+The default option `storage.cql.remote-max-connections-per-host` is increased from `1` to `5`.
+
 ### Version 0.5.3 (Release Date: December 24, 2020)
 
 === "Maven"
