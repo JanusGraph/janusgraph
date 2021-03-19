@@ -259,7 +259,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> ADJUST_LIMIT = new ConfigOption<>(QUERY_NS,"smart-limit",
             "Whether the query optimizer should try to guess a smart limit for the query to ensure responsiveness in " +
                     "light of possibly large result sets. Those will be loaded incrementally if this option is enabled.",
-            ConfigOption.Type.MASKABLE, true);
+            ConfigOption.Type.MASKABLE, false);
 
     public static final ConfigOption<Boolean> USE_MULTIQUERY = new ConfigOption<>(QUERY_NS,"batch",
             "Whether traversal queries should be batched when executed against the storage backend. This can lead to significant " +

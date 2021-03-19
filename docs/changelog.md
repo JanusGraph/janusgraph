@@ -90,6 +90,16 @@ An example is available at [ThreadLocalTxLeakTest::eventListenersCanBeReusedAcro
 See more background of this breaking change in this
 [pull request](https://github.com/JanusGraph/janusgraph/pull/2472).
 
+##### Disable smart-limit by default
+
+Prior to 0.6.0, `smart-limit` is enabled by default. It tries to guess a small limit
+for each query internally, and if more results are required by user, it queries
+backend again with a larger limit, and repeats until either results are exhausted or
+user stops the query. However, this is not the same as paging mechanism. All interim
+results will be fetched again in next round, making the whole query costly. Until
+janusgraph can fully utilize the paging capacity provided by backends (e.g. Elasticsearch
+scroll), this option is recommended to be turned off.
+
 ##### Removal of LoggingSchemaMaker
 
 The `schema.default=logging` option is not valid anymore. Use `schema.default=default`

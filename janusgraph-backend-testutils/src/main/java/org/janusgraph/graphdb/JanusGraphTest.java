@@ -5774,7 +5774,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             put("orders", "[]");
             put("isFitted", "true");
             put("isOrdered", "true");
-            put("query", "multiKSQ[1]@1000");
+            put("query", "multiKSQ[1]@100000");
             put("index", "nameIdx");
         }};
         assertEquals(nameIdxAnnotations, nested.getAnnotations());
@@ -5813,7 +5813,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             put("orders", "[]");
             put("isFitted", "true");
             put("isOrdered", "true");
-            put("query", "multiKSQ[1]@1000");
+            put("query", "multiKSQ[1]@100000");
             put("index", "weightIdx");
         }};
         assertEquals(weightIdxAnnotations, nested.getAnnotations());
@@ -5870,7 +5870,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             put("orders", "[]");
             put("isFitted", "false"); // not fitted because prop = 100 requires in-memory filtering
             put("isOrdered", "true");
-            put("query", "multiKSQ[1]@2000");
+            put("query", "multiKSQ[1]@100000");
             put("index", "nameIdx");
         }};
         assertEquals(annotations, nested.getAnnotations());
