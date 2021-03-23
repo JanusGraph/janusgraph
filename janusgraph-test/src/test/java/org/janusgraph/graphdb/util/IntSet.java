@@ -12,19 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.diskstorage.common;
+package org.janusgraph.graphdb.util;
 
-import org.janusgraph.diskstorage.BaseTransactionConfig;
 
-/**
- * Dummy transaction object that does nothing
- *
- * @author Matthias Broecheler (me@matthiasb.com)
- */
+public interface IntSet {
 
-public class NoOpStoreTransaction extends AbstractStoreTransaction {
+    boolean add(int value);
 
-    public NoOpStoreTransaction(BaseTransactionConfig config) {
-        super(config);
-    }
+    boolean addAll(int[] values);
+
+    boolean contains(int value);
+
+    int[] getAll();
+
+    int size();
+
 }
