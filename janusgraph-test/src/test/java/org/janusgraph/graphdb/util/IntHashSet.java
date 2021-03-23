@@ -12,62 +12,57 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.util.datastructures;
+package org.janusgraph.graphdb.util;
 
-import com.google.common.base.Preconditions;
+import com.carrotsearch.hppc.IntIntHashMap;
+import com.carrotsearch.hppc.cursors.IntCursor;
+
+import java.util.Iterator;
 
 /**
- * Immutable set of integers
+ * Implementation of {@link IntSet} against {@link IntIntHashMap}.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class ImmutableIntSet implements IntSet {
+public class IntHashSet extends IntIntHashMap implements IntSet {
 
-    private final int[] values;
-    private final int hashcode;
+    private static final long serialVersionUID = -7297353805905443841L;
+    private static final int defaultValue = 1;
 
-    public ImmutableIntSet(int[] values) {
-        Preconditions.checkNotNull(values);
-        Preconditions.checkArgument(values.length > 0);
-        this.values = values;
-        hashcode = ArraysUtil.sum(values);
+    public IntHashSet() {
+        super();
     }
 
-    public ImmutableIntSet(int value) {
-        this(new int[]{value});
+    public IntHashSet(int size) {
+        super(size);
     }
 
-    @Override
     public boolean add(int value) {
-        throw new UnsupportedOperationException("This IntSet is immutable");
+        return super.put(value, defaultValue)==0;
     }
 
-    @Override
     public boolean addAll(int[] values) {
-        throw new UnsupportedOperationException("This IntSet is immutable");
+        boolean addedAll = true;
+        for (int value : values) if (!add(value)) addedAll = false;
+        return addedAll;
     }
 
-    @Override
     public boolean contains(int value) {
-        for (int value1 : values) {
-            if (value1 == value) return true;
-        }
-        return false;
+        return super.containsKey(value);
     }
 
-    @Override
     public int[] getAll() {
-        return values;
-    }
-
-    @Override
-    public int size() {
-        return values.length;
+        KeysContainer keys = keys();
+        int[] all = new int[keys.size()];
+        Iterator<IntCursor> iterator = keys.iterator();
+        int pos=0;
+        while (iterator.hasNext()) all[pos++]=iterator.next().value;
+        return all;
     }
 
     @Override
     public int hashCode() {
-        return hashcode;
+        return ArraysUtil.sum(getAll());
     }
 
     @Override

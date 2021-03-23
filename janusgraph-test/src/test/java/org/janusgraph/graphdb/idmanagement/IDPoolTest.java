@@ -37,8 +37,8 @@ import org.junit.jupiter.api.Test;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.graphdb.database.idassigner.IDPoolExhaustedException;
 import org.janusgraph.graphdb.database.idassigner.StandardIDPool;
-import org.janusgraph.util.datastructures.IntHashSet;
-import org.janusgraph.util.datastructures.IntSet;
+import org.janusgraph.graphdb.util.IntHashSet;
+import org.janusgraph.graphdb.util.IntSet;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

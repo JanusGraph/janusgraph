@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.util.datastructures;
+package org.janusgraph.graphdb.util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Longs;
