@@ -18,16 +18,14 @@ import com.jcabi.manifests.Manifests;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang.NullArgumentException;
-import org.apache.tinkerpop.gremlin.server.GraphManager;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.janusgraph.core.JanusGraph;
+import org.janusgraph.graphdb.grpc.types.JanusGraphContext;
 import org.janusgraph.graphdb.server.JanusGraphServer;
 
 public class JanusGraphManagerServiceImpl extends JanusGraphManagerServiceGrpc.JanusGraphManagerServiceImplBase {
-    private final GraphManager graphManager;
+    private final JanusGraphContextHandler contextHandler;
 
-    public JanusGraphManagerServiceImpl(GraphManager graphManager) {
-        this.graphManager = graphManager;
+    public JanusGraphManagerServiceImpl(JanusGraphContextHandler contextHandler) {
+        this.contextHandler = contextHandler;
     }
 
     @Override
@@ -37,12 +35,9 @@ public class JanusGraphManagerServiceImpl extends JanusGraphManagerServiceGrpc.J
             return;
         }
         GetJanusGraphContextsResponse.Builder response = GetJanusGraphContextsResponse.newBuilder();
-        for (String graphName : graphManager.getGraphNames()) {
-            Graph graph = graphManager.getGraph(graphName);
-            if (!(graph instanceof JanusGraph)) {
-                continue;
-            }
-            response.addContexts(JanusGraphContext.newBuilder().setGraphName(graphName));
+
+        for (JanusGraphContext context : contextHandler.getContexts()) {
+            response.addContexts(context);
         }
         responseObserver.onNext(response.build());
         responseObserver.onCompleted();
@@ -53,22 +48,22 @@ public class JanusGraphManagerServiceImpl extends JanusGraphManagerServiceGrpc.J
                                                 StreamObserver<GetJanusGraphContextByGraphNameResponse> responseObserver) {
         if (request == null) {
             responseObserver.onError(Status.INVALID_ARGUMENT
-                .withCause(new NullArgumentException("request should be set")).asRuntimeException());
+                .withDescription("request is required").asRuntimeException());
             return;
         }
         final String graphName = request.getGraphName();
         if (graphName.isEmpty()) {
             responseObserver.onError(Status.INVALID_ARGUMENT
-                .withCause(new NullArgumentException("graphName should be set")).asRuntimeException());
+                .withDescription("graphName is required").asException());
             return;
         }
-        Graph graph = graphManager.getGraph(graphName);
-        if (!(graph instanceof JanusGraph)) {
-            responseObserver.onError(Status.INTERNAL
-                .withCause(new IllegalStateException("graphName should access a JanusGraph instance")).asException());
+        JanusGraphContext context = contextHandler.getContextByGraphName(graphName);
+        if (context == null) {
+            responseObserver.onError(Status.NOT_FOUND
+                .withDescription("JanusGraphContext wasn't found for graphName").asException());
         }
         responseObserver.onNext(GetJanusGraphContextByGraphNameResponse.newBuilder()
-            .setContext(JanusGraphContext.newBuilder().setGraphName(graphName))
+            .setContext(context)
             .build());
         responseObserver.onCompleted();
     }
@@ -77,7 +72,7 @@ public class JanusGraphManagerServiceImpl extends JanusGraphManagerServiceGrpc.J
     public void getVersion(GetVersionRequest request, StreamObserver<GetVersionResponse> responseObserver) {
         if (request == null) {
             responseObserver.onError(Status.INVALID_ARGUMENT
-                .withCause(new NullArgumentException("request should be set")).asRuntimeException());
+                .withDescription("request is required").asRuntimeException());
             return;
         }
         String tinkerPopVersion = "debug-tp";

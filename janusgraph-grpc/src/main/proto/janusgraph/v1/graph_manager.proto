@@ -16,16 +16,14 @@ syntax = "proto3";
 
 package janusgraph.v1;
 
+import "janusgraph/types/v1/graph_types.proto";
+
 option java_multiple_files = true;
 option java_outer_classname = "GraphManagerService";
 option java_package = "org.janusgraph.graphdb.grpc";
 
-message JanusGraphContext {
-  string graph_name = 1;
-}
-
 message GetJanusGraphContextByGraphNameResponse {
-  JanusGraphContext context = 1;
+    janusgraph.types.v1.JanusGraphContext context = 1;
 }
 
 message GetJanusGraphContextByGraphNameRequest {
@@ -33,7 +31,7 @@ message GetJanusGraphContextByGraphNameRequest {
 }
 
 message GetJanusGraphContextsResponse {
-  repeated JanusGraphContext contexts = 1;
+  repeated janusgraph.types.v1.JanusGraphContext contexts = 1;
 }
 
 message GetJanusGraphContextsRequest {}
