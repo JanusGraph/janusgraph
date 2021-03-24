@@ -12,7 +12,7 @@
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
         <solr7.docker.version>7.7.2</solr7.docker.version>
-        <solr8.docker.version>8.5.2</solr8.docker.version>
+        <solr8.docker.version>8.7.0</solr8.docker.version>
         <solr.docker.version>${solr8.docker.version}</solr.docker.version>
         <solr.docker.image>solr</solr.docker.image>
         <skip.solr.test>${skipTests}</skip.solr.test>
@@ -78,6 +78,11 @@
         <!-- End logging backends. -->
 
         <dependency>
+            <groupId>org.xerial.snappy</groupId>
+            <artifactId>snappy-java</artifactId>
+            <version>${snappy-java.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
             <version>${lucene-solr.version}</version>
@@ -86,6 +91,10 @@
                 <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>jcl-over-slf4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.xerial.snappy</groupId>
+                    <artifactId>snappy-java</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -147,6 +156,10 @@
                 <exclusion>
                     <groupId>org.ow2.asm</groupId>
                     <artifactId>asm-commons</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.xerial.snappy</groupId>
+                    <artifactId>snappy-java</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
