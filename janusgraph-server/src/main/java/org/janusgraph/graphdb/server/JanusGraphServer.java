@@ -21,7 +21,9 @@ import org.apache.tinkerpop.gremlin.server.GraphManager;
 import org.apache.tinkerpop.gremlin.server.GremlinServer;
 import org.apache.tinkerpop.gremlin.server.Settings;
 import org.apache.tinkerpop.gremlin.server.util.ServerGremlinExecutor;
+import org.janusgraph.graphdb.grpc.JanusGraphContextHandler;
 import org.janusgraph.graphdb.grpc.JanusGraphManagerServiceImpl;
+import org.janusgraph.graphdb.grpc.schema.SchemaManagerImpl;
 import org.janusgraph.graphdb.management.JanusGraphManager;
 import org.janusgraph.graphdb.server.util.GremlinSettingsUtils;
 import org.slf4j.Logger;
@@ -71,9 +73,11 @@ public class JanusGraphServer {
     }
 
     private Server createGrpcServer(JanusGraphSettings janusGraphSettings, GraphManager graphManager) {
+        JanusGraphContextHandler janusGraphContextHandler = new JanusGraphContextHandler(graphManager);
         return ServerBuilder
             .forPort(janusGraphSettings.getGrpcServer().getPort())
-            .addService(new JanusGraphManagerServiceImpl(graphManager))
+            .addService(new JanusGraphManagerServiceImpl(janusGraphContextHandler))
+            .addService(new SchemaManagerImpl(janusGraphContextHandler))
             .build();
     }
 

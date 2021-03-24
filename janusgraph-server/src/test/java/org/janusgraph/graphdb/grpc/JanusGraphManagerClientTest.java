@@ -14,9 +14,16 @@
 
 package org.janusgraph.graphdb.grpc;
 
+import io.grpc.StatusRuntimeException;
+import org.janusgraph.graphdb.grpc.types.JanusGraphContext;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JanusGraphManagerClientTest extends JanusGraphGrpcServerBaseTest {
 
@@ -28,6 +35,7 @@ public class JanusGraphManagerClientTest extends JanusGraphGrpcServerBaseTest {
 
         assertNotEquals("", version);
     }
+
     @Test
     public void testGetTinkerPopVersion() {
         JanusGraphManagerClient janusGraphManagerClient = new JanusGraphManagerClient(managedChannel);
@@ -35,5 +43,49 @@ public class JanusGraphManagerClientTest extends JanusGraphGrpcServerBaseTest {
         String version = janusGraphManagerClient.getTinkerPopVersion();
 
         assertNotEquals("", version);
+    }
+
+    @Test
+    public void testContextIsReturnedForGivenGraphName() {
+        JanusGraphManagerClient janusGraphManagerClient = new JanusGraphManagerClient(managedChannel);
+
+        JanusGraphContext context = janusGraphManagerClient.getContextByGraphName("graph");
+
+        assertEquals("graph", context.getGraphName());
+    }
+
+    @Test
+    public void testErrorIsReturnedForGivenGraphNameWhichIsNotAJanusGraph() {
+        JanusGraphManagerClient janusGraphManagerClient = new JanusGraphManagerClient(managedChannel);
+
+        assertThrows(StatusRuntimeException.class, () ->
+            janusGraphManagerClient.getContextByGraphName("tinkergraph"));
+    }
+
+    @Test
+    public void testErrorIsReturnedForEmptyGivenGraphName() {
+        JanusGraphManagerClient janusGraphManagerClient = new JanusGraphManagerClient(managedChannel);
+
+        assertThrows(StatusRuntimeException.class, () ->
+            janusGraphManagerClient.getContextByGraphName(""));
+    }
+
+    @Test
+    public void testErrorIsReturnedForUnknownGivenGraphName() {
+        JanusGraphManagerClient janusGraphManagerClient = new JanusGraphManagerClient(managedChannel);
+
+        assertThrows(StatusRuntimeException.class, () ->
+            janusGraphManagerClient.getContextByGraphName("test"));
+    }
+
+    @Test
+    public void testAllContextAreReturned() {
+        JanusGraphManagerClient janusGraphManagerClient = new JanusGraphManagerClient(managedChannel);
+
+        List<JanusGraphContext> contexts = janusGraphManagerClient.getContexts();
+
+        assertEquals(2, contexts.size());
+        assertTrue(contexts.stream().anyMatch(it -> it.getGraphName().equals("graph")));
+        assertTrue(contexts.stream().anyMatch(it -> it.getGraphName().equals("graph2")));
     }
 }

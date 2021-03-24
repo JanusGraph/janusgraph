@@ -17,6 +17,9 @@ package org.janusgraph.graphdb.grpc;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import org.janusgraph.graphdb.grpc.types.JanusGraphContext;
+
+import java.util.List;
 
 public class JanusGraphManagerClient {
 
@@ -31,6 +34,18 @@ public class JanusGraphManagerClient {
             .usePlaintext()
             .build();
         blockingStub = JanusGraphManagerServiceGrpc.newBlockingStub(channel);
+    }
+
+    public JanusGraphContext getContextByGraphName(String name) {
+        GetJanusGraphContextByGraphNameRequest request = GetJanusGraphContextByGraphNameRequest.newBuilder().setGraphName(name).build();
+        GetJanusGraphContextByGraphNameResponse response = blockingStub.getJanusGraphContextByGraphName(request);
+        return response.getContext();
+    }
+
+    public List<JanusGraphContext> getContexts() {
+        GetJanusGraphContextsRequest request = GetJanusGraphContextsRequest.newBuilder().build();
+        GetJanusGraphContextsResponse janusGraphContexts = blockingStub.getJanusGraphContexts(request);
+        return janusGraphContexts.getContextsList();
     }
 
     public String getTinkerPopVersion() {
