@@ -233,7 +233,7 @@ startForeground() {
   fi
 
   if [[ -z "$RUNAS" ]]; then
-    $JAVA -Dlog4j.configuration=$LOG4J_CONF $JAVA_OPTIONS -cp $CLASSPATH $JANUSGRAPH_SERVER_CMD "$JANUSGRAPH_YAML"
+    exec $JAVA -Dlog4j.configuration=$LOG4J_CONF $JAVA_OPTIONS -cp $CLASSPATH $JANUSGRAPH_SERVER_CMD "$JANUSGRAPH_YAML"
     exit 0
   else
     echo Starting in foreground not supported with RUNAS
