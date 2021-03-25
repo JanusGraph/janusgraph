@@ -136,21 +136,14 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
 
                         Entry entry = edgeSerializer.writeRelation(janusgraphRelation, wrappedType, pos, writeTx);
                         
-                        //The below condition is check to avoid self-links which is getting created after re-indexing
-                        if(pos==0) {
-                            //Create OUT edge index entry. 
-                            //Here source will the current vertex and target vertex the other side of the relation 
-                            outAdditions.add(entry); 
-                        }else if(pos==1) {
-                            //Create IN edge index entry.
-                            //Here the source vertex is the other side of the current vertex and target will be the current vertex
+                        if (pos == 0) {
+                            outAdditions.add(entry);
+                        } else {
+                            assert pos == 1;
                             InternalVertex otherVertex = janusgraphRelation.getVertex(1);
                             StaticBuffer otherVertexKey = writeTx.getIdInspector().getKey(otherVertex.longId());
                             inAdditionsMap.computeIfAbsent(otherVertexKey, k -> new ArrayList<Entry>()).add(entry);
-                        }else {
-                            throw new IllegalStateException("Invalid position:" + pos);
                         }
-						 
                     }
                 }
 		
