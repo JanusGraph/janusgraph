@@ -190,7 +190,7 @@ after a shiny new JanusGraph header.
 
 We are dropping Ganglia as we are using dropwizard for metrics. Dropwizard did drop Ganglia in the newest major version.
 
-##### DataStax cassandra driver upgrade from 3.9.0 to 4.10.0
+##### DataStax cassandra driver upgrade from 3.9.0 to 4.11.0
 
 All DataStax cassandra driver metrics are now disabled by default. To enable DataStax driver metrics you need to provide 
 a list of Session level metrics and / or Node level metrics you want to enable. To provide a list of enabled metrics, 
@@ -209,7 +209,7 @@ storage.cql.metrics.node-enabled=pool.open-connections,pool.available-streams,by
 ```
 
 See `advanced.metrics.session.enabled` and `advanced.metrics.node.enabled` sections in 
-[DataStax Metrics Configuration](https://docs.datastax.com/en/developer/java-driver/4.9/manual/core/configuration/reference/) 
+[DataStax Metrics Configuration](https://docs.datastax.com/en/developer/java-driver/4.11/manual/core/configuration/reference/) 
 for a complete list of available Session level and Node level metrics.
 
 Due to driver upgrade the next cql configuration options have been removed:
