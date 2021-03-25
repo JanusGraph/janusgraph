@@ -6683,84 +6683,109 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     
     @Test
     public void testReindexingForEdgeIndex() throws InterruptedException, ExecutionException {
-    	String indexWithDirectionIn = "edgesByAssocKindIn";
-    	String indexwithDirectionOut = "edgesByAssocKindOut";
-    	String indexWithDirectionBoth = "edgesByAssocKindBoth";
-    	
-    	String propertyKeyForIn = "assocKindForIn";
-    	String propertyKeyForOut = "assocKindForOut";
-    	String propertyKeyForBoth = "assocKindForBoth";
-    	
-    	
-    	//Schema creation
-    	EdgeLabel edgeLabel = mgmt.makeEdgeLabel("egLabel").multiplicity(Multiplicity.MULTI).make();
-		mgmt.makePropertyKey("vtName").dataType(String.class).cardinality(Cardinality.SINGLE).make();
-		PropertyKey propAssocKindIn = mgmt.makePropertyKey(propertyKeyForIn).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();	
-		PropertyKey propAssocKindOut = mgmt.makePropertyKey(propertyKeyForOut).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();	
-		PropertyKey propAssocKindBoth = mgmt.makePropertyKey(propertyKeyForBoth).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();	
-		
-		//Index creation
-    	mgmt.buildEdgeIndex(edgeLabel, indexWithDirectionIn, Direction.IN, propAssocKindIn);
-    	mgmt.buildEdgeIndex(edgeLabel, indexwithDirectionOut, Direction.OUT, propAssocKindOut);
-    	mgmt.buildEdgeIndex(edgeLabel, indexWithDirectionBoth, Direction.BOTH, propAssocKindBoth);    	
-    	finishSchema();
-    	
-    	//Create Vertex
-    	JanusGraphVertex a = tx.addVertex();
-    	a.property("vtName","A");
-    	JanusGraphVertex b = tx.addVertex();
-    	b.property("vtName","B");
-    	
-    	//Add Edges
-    	a.addEdge("egLabel",b,propertyKeyForIn,1,propertyKeyForOut,1,propertyKeyForBoth,1);
-    	b.addEdge("egLabel",a,propertyKeyForIn,2, propertyKeyForOut,2,propertyKeyForBoth,2);
-    	newTx();
-    	
-    	performReindexAndVerifyEdgeCount(indexWithDirectionIn, propertyKeyForIn);
-    	performReindexAndVerifyEdgeCount(indexwithDirectionOut, propertyKeyForOut);
-    	performReindexAndVerifyEdgeCount(indexWithDirectionBoth, propertyKeyForBoth);
-    }
-    
-    public void performReindexAndVerifyEdgeCount(String indexName, String propKey) throws InterruptedException, ExecutionException {
-    	RelationType t = mgmt.getRelationType("egLabel");
-    	RelationTypeIndex relationIndex = mgmt.getRelationIndex(t,indexName);
-    	assertEquals(SchemaStatus.ENABLED, relationIndex.getIndexStatus());
+        //Schema creation
+        String edgeLabelName = "egLabel";
+        String propertyKeyForIn = "assocKindForIn";
+        String propertyKeyForOut = "assocKindForOut";
+        String propertyKeyForBoth = "assocKindForBoth";
+        EdgeLabel edgeLabel = mgmt.makeEdgeLabel(edgeLabelName).multiplicity(Multiplicity.MULTI).make();
+        mgmt.makePropertyKey("vtName").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey propAssocKindIn = mgmt.makePropertyKey(propertyKeyForIn).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey propAssocKindOut = mgmt.makePropertyKey(propertyKeyForOut).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey propAssocKindBoth = mgmt.makePropertyKey(propertyKeyForBoth).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        finishSchema();
 
-    	GraphTraversalSource g = graph.traversal();
+        //Create Vertex
+        JanusGraphVertex a = tx.addVertex();
+        a.property("vtName","A");
+        JanusGraphVertex b = tx.addVertex();
+        b.property("vtName","B");
+        //Add Edges
+        a.addEdge(edgeLabelName, b,propertyKeyForIn,1,propertyKeyForOut,1,propertyKeyForBoth,1);
+        b.addEdge(edgeLabelName, a,propertyKeyForIn,2, propertyKeyForOut,2,propertyKeyForBoth,2);
+        tx.commit();
+
+        //Index creation
+        String indexWithDirectionIn = "edgesByAssocKindIn";
+        String indexWithDirectionOut = "edgesByAssocKindOut";
+        String indexWithDirectionBoth = "edgesByAssocKindBoth";
+
+        mgmt.buildEdgeIndex(mgmt.getEdgeLabel(edgeLabelName), indexWithDirectionIn, IN, mgmt.getPropertyKey(propertyKeyForIn));
+        mgmt.buildEdgeIndex(mgmt.getEdgeLabel(edgeLabelName), indexWithDirectionOut, OUT, mgmt.getPropertyKey(propertyKeyForOut));
+        mgmt.buildEdgeIndex(mgmt.getEdgeLabel(edgeLabelName), indexWithDirectionBoth, BOTH, mgmt.getPropertyKey(propertyKeyForBoth));
+        mgmt.commit();
+
+        ManagementSystem.awaitRelationIndexStatus(graph, indexWithDirectionIn, edgeLabelName).call();
+        ManagementSystem.awaitRelationIndexStatus(graph, indexWithDirectionOut, edgeLabelName).call();
+        ManagementSystem.awaitRelationIndexStatus(graph, indexWithDirectionBoth, edgeLabelName).call();
+        finishSchema();
+
+        mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType(edgeLabelName), indexWithDirectionIn), SchemaAction.ENABLE_INDEX).get();
+        mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType(edgeLabelName), indexWithDirectionOut), SchemaAction.ENABLE_INDEX).get();
+        mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType(edgeLabelName), indexWithDirectionBoth), SchemaAction.ENABLE_INDEX).get();
+        finishSchema();
+
+        Vertex v1 = tx.traversal().V().has("vtName", "A").next();
+        Vertex v2 = tx.traversal().V().has("vtName", "B").next();
+        Vertex[] vertices = new Vertex[] {v1, v1, v1, v1, v1, v1, v2, v2, v2, v2, v2, v2};
+        int[] propValues = new int[] {1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2};
+        Direction[] dirs = new Direction[] {IN, IN, OUT, OUT, BOTH, BOTH, IN, IN, OUT, OUT, BOTH, BOTH};
+        // vertex-centric index is already enabled, but before existing data is reindexed, any query that hits index will return 0
+        performReindexAndVerifyEdgeCount(indexWithDirectionOut, edgeLabelName, propertyKeyForOut, vertices, propValues, dirs,
+            new int[] {0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0});
+        performReindexAndVerifyEdgeCount(indexWithDirectionIn, edgeLabelName, propertyKeyForIn, vertices, propValues, dirs,
+            new int[] {0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1});
+        performReindexAndVerifyEdgeCount(indexWithDirectionBoth, edgeLabelName, propertyKeyForBoth, vertices, propValues, dirs,
+            new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+    }
+
+    public void performReindexAndVerifyEdgeCount(String indexName, String edgeLabel, String propKey, Vertex[] vertices,
+                                                 int[] propValues, Direction[] dirs, int[] resultsBeforeReindex) throws InterruptedException, ExecutionException {
+        assert propValues.length == dirs.length;
+        assert propValues.length == resultsBeforeReindex.length;
+        RelationType t = mgmt.getRelationType(edgeLabel);
+        RelationTypeIndex relationIndex = mgmt.getRelationIndex(t,indexName);
+        assertEquals(SchemaStatus.ENABLED, relationIndex.getIndexStatus());
+
+        GraphTraversalSource g = graph.traversal();
     	
-    	//asserting before reindex
-    	assertEquals(0, g.V().has("vtName", "A").inE().hasLabel("egLabel").has(propKey, 1).count().next());
-    	assertEquals(1, g.V().has("vtName", "A").inE().hasLabel("egLabel").has(propKey, 2).count().next());
-    	assertEquals(1, g.V().has("vtName", "A").outE().hasLabel("egLabel").has(propKey, 1).count().next());
-    	assertEquals(0, g.V().has("vtName", "A").outE().hasLabel("egLabel").has(propKey, 2).count().next());
-    	assertEquals(1, g.V().has("vtName", "A").bothE().hasLabel("egLabel").has(propKey, 1).count().next());
-    	assertEquals(1, g.V().has("vtName", "A").bothE().hasLabel("egLabel").has(propKey, 2).count().next());    	
-    	assertEquals(1, g.V().has("vtName", "B").inE().hasLabel("egLabel").has(propKey, 1).count().next());
-    	assertEquals(0, g.V().has("vtName", "B").inE().hasLabel("egLabel").has(propKey, 2).count().next());
-    	assertEquals(0, g.V().has("vtName", "B").outE().hasLabel("egLabel").has(propKey, 1).count().next());
-    	assertEquals(1, g.V().has("vtName", "B").outE().hasLabel("egLabel").has(propKey, 2).count().next());
-    	assertEquals(1, g.V().has("vtName", "B").bothE().hasLabel("egLabel").has(propKey, 1).count().next());
-    	assertEquals(1, g.V().has("vtName", "B").bothE().hasLabel("egLabel").has(propKey, 2).count().next());
+        //asserting before reindex
+        for (int i = 0; i < propValues.length; i++) {
+            final int expectedCount = resultsBeforeReindex[i];
+            final Vertex v = vertices[i];
+            long count = 0;
+            if (OUT.equals(dirs[i])) {
+                count = g.V(v).outE(edgeLabel).has(propKey, propValues[i]).count().next();
+            } else if (IN.equals(dirs[i])) {
+                count = g.V(v).inE(edgeLabel).has(propKey, propValues[i]).count().next();
+            } else {
+                count = g.V(v).bothE(edgeLabel).has(propKey, propValues[i]).count().next();
+            }
+            assertEquals(expectedCount, count, String.format("v = %s, index = %s, direction = %s, prop value = %d",
+                g.V(v).properties("vtName").next().value(), indexName, dirs[i], propValues[i]));
+        }
+
+        //Reindexing
+        mgmt.updateIndex(relationIndex, SchemaAction.REINDEX).get();
+        finishSchema();
     	
-    	//Reindexing
-    	mgmt.updateIndex(relationIndex, SchemaAction.REINDEX).get();
-    	finishSchema();
-    	
-    	relationIndex = mgmt.getRelationIndex(t,indexName);
-    	assertEquals(SchemaStatus.ENABLED, relationIndex.getIndexStatus());
-    	
-    	//asserting after reindex
-    	assertEquals(0, g.V().has("vtName", "A").inE().hasLabel("egLabel").has(propKey, 1).count().next());
-    	assertEquals(1, g.V().has("vtName", "A").inE().hasLabel("egLabel").has(propKey, 2).count().next());
-    	assertEquals(1, g.V().has("vtName", "A").outE().hasLabel("egLabel").has(propKey, 1).count().next());
-    	assertEquals(0, g.V().has("vtName", "A").outE().hasLabel("egLabel").has(propKey, 2).count().next());
-    	assertEquals(1, g.V().has("vtName", "A").bothE().hasLabel("egLabel").has(propKey, 1).count().next());
-    	assertEquals(1, g.V().has("vtName", "A").bothE().hasLabel("egLabel").has(propKey, 2).count().next());
-    	assertEquals(1, g.V().has("vtName", "B").inE().hasLabel("egLabel").has(propKey, 1).count().next());
-    	assertEquals(0, g.V().has("vtName", "B").inE().hasLabel("egLabel").has(propKey, 2).count().next());
-    	assertEquals(0, g.V().has("vtName", "B").outE().hasLabel("egLabel").has(propKey, 1).count().next());
-    	assertEquals(1, g.V().has("vtName", "B").outE().hasLabel("egLabel").has(propKey, 2).count().next());
-    	assertEquals(1, g.V().has("vtName", "B").bothE().hasLabel("egLabel").has(propKey, 1).count().next());
-    	assertEquals(1, g.V().has("vtName", "B").bothE().hasLabel("egLabel").has(propKey, 2).count().next());
+        relationIndex = mgmt.getRelationIndex(t,indexName);
+        assertEquals(SchemaStatus.ENABLED, relationIndex.getIndexStatus());
+
+        final int[] expectedResultsAfterReindex = new int[]{0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1};
+        for (int i = 0; i < propValues.length; i++) {
+            final int expectedCount = expectedResultsAfterReindex[i];
+            final Vertex v = vertices[i];
+            long count = 0;
+            if (OUT.equals(dirs[i])) {
+                count = g.V(v).outE(edgeLabel).has(propKey, propValues[i]).count().next();
+            } else if (IN.equals(dirs[i])) {
+                count = g.V(v).inE(edgeLabel).has(propKey, propValues[i]).count().next();
+            } else {
+                count = g.V(v).bothE(edgeLabel).has(propKey, propValues[i]).count().next();
+            }
+            assertEquals(expectedCount, count, String.format("v = %s, index = %s, direction = %s, prop value = %d",
+                g.V(v).properties("vtName").next().value(), indexName, dirs[i], propValues[i]));
+        }
     }
 }
