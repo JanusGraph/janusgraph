@@ -18,7 +18,10 @@ import org.janusgraph.core.VertexLabel;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
+ *
+ * @deprecated part of the management revamp in JG, see https://github.com/JanusGraph/janusgraph/projects/3.
  */
+@Deprecated
 public class VertexLabelDefinition extends SchemaElementDefinition {
 
     private final boolean isPartitioned;

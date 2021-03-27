@@ -21,7 +21,10 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
+ *
+ * @deprecated part of the management revamp in JG, see https://github.com/JanusGraph/janusgraph/projects/3.
  */
+@Deprecated
 public class PropertyKeyDefinition extends RelationTypeDefinition {
 
     private final Class<?> dataType;
