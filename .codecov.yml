@@ -30,6 +30,6 @@ comment: false
 
 # Ignore test files
 ignore:
-  - "**/test/.*"
+  - "**/test/**"
   - "janusgraph-backend-testutils/**"
   - "janusgraph-test/**"

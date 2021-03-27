@@ -115,6 +115,10 @@ jobs:
           java-version: 1.8
       - run: mvn clean install --projects janusgraph-${{ matrix.module }} ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
       - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.args }}
+      - uses: actions/upload-artifact@v2
+        with:
+          name: jacoco-reports
+          path: target/jacoco-combined.exec
       - uses: codecov/codecov-action@v1
         with:
           name: codecov-cql-${{ matrix.name }}
