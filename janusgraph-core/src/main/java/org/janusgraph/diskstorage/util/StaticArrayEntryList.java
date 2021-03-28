@@ -22,6 +22,8 @@ import org.janusgraph.util.encoding.StringEncoding;
 import java.nio.ByteBuffer;
 import java.util.*;
 
+import static org.janusgraph.diskstorage.util.ArrayUtil.growSpace;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -419,8 +421,10 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             pos++;
         }
         assert offset<=data.length;
-        if (data.length>offset*3/2) {
-            //Resize to preserve memory
+        if (data.length > offset + (offset >> 1)) {
+            //  Resize to preserve memory. This happens when either of the following conditions is true:
+            //  1) current memory space is 1.5x more than minimum required space
+            //  2) 1.5 x minimum required space will overflow, in which case the wasted memory space is likely still considerable
             byte[] newData = new byte[offset];
             System.arraycopy(data,0,newData,0,offset);
             data=newData;
@@ -437,16 +441,16 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
     }
 
     private static byte[] ensureSpace(byte[] data, int offset, int length) {
-        if (offset+length<=data.length) return data;
-        byte[] newData = new byte[Math.max(data.length*2,offset+length)];
+        final int minCapacity = offset + length;
+        if (minCapacity > 0 && minCapacity <= data.length) return data;
+        byte[] newData = new byte[growSpace(data.length, minCapacity)];
         System.arraycopy(data,0,newData,0,offset);
         return newData;
     }
 
-    //Copy-pasted from above replacing byte->long
     private static long[] ensureSpace(long[] data, int offset) {
         if (offset+1<=data.length) return data;
-        final long[] newData = new long[Math.max(data.length*2,offset+1)];
+        final long[] newData = new long[growSpace(data.length, offset+1)];
         System.arraycopy(data,0,newData,0,offset);
         return newData;
     }
