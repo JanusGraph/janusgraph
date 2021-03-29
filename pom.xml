@@ -118,7 +118,7 @@
         <testcontainers.version>1.15.2</testcontainers.version>
         <easymock.version>4.2</easymock.version>
         <protobuf.version>3.15.5</protobuf.version>
-        <grpc.version>1.36.0</grpc.version>
+        <grpc.version>1.36.1</grpc.version>
         <protoc.version>3.15.3</protoc.version>
     </properties>
     <modules>
