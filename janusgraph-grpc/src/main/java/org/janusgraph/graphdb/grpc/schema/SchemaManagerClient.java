@@ -17,6 +17,7 @@ package org.janusgraph.graphdb.grpc.schema;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import org.janusgraph.graphdb.grpc.types.EdgeLabel;
 import org.janusgraph.graphdb.grpc.types.JanusGraphContext;
 import org.janusgraph.graphdb.grpc.types.VertexLabel;
 
@@ -46,5 +47,15 @@ public class SchemaManagerClient {
         GetVertexLabelByNameRequest request = GetVertexLabelByNameRequest.newBuilder().setContext(context).setName(name).build();
         GetVertexLabelByNameResponse response = blockingStub.getVertexLabelByName(request);
         return response.getVertexLabel();
+    }
+
+    /**
+     * @param name Get an EdgeLabel by name
+     * @return {@link EdgeLabel}
+     */
+    public EdgeLabel getEdgeLabelByName(String name) {
+        GetEdgeLabelByNameRequest request = GetEdgeLabelByNameRequest.newBuilder().setContext(context).setName(name).build();
+        GetEdgeLabelByNameResponse response = blockingStub.getEdgeLabelByName(request);
+        return response.getEdgeLabel();
     }
 }
