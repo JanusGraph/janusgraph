@@ -5774,7 +5774,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             put("orders", "[]");
             put("isFitted", "true");
             put("isOrdered", "true");
-            put("query", "multiKSQ[1]@100000");
+            put("query", "multiKSQ[1]");
             put("index", "nameIdx");
         }};
         assertEquals(nameIdxAnnotations, nested.getAnnotations());
@@ -5813,7 +5813,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             put("orders", "[]");
             put("isFitted", "true");
             put("isOrdered", "true");
-            put("query", "multiKSQ[1]@100000");
+            put("query", "multiKSQ[1]");
             put("index", "weightIdx");
         }};
         assertEquals(weightIdxAnnotations, nested.getAnnotations());
@@ -5870,7 +5870,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             put("orders", "[]");
             put("isFitted", "false"); // not fitted because prop = 100 requires in-memory filtering
             put("isOrdered", "true");
-            put("query", "multiKSQ[1]@100000");
+            put("query", "multiKSQ[1]");
             put("index", "nameIdx");
         }};
         assertEquals(annotations, nested.getAnnotations());
@@ -5922,7 +5922,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             tx.commit();
         };
 
-        clopen(option(ADJUST_LIMIT), false);
+        clopen(option(ADJUST_LIMIT), false, option(HARD_MAX_LIMIT), 100000);
         dataLoader.run();
 
         newTx();
@@ -5946,6 +5946,35 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         }};
         assertEquals(backendAnnotations, backendQueryMetrics.get(0).getAnnotations());
         assertTrue(backendQueryMetrics.get(0).getDuration(TimeUnit.MICROSECONDS) > 0);
+
+
+        close();
+        JanusGraphFactory.drop(graph);
+        clopen(option(ADJUST_LIMIT), false, option(HARD_MAX_LIMIT), Integer.MAX_VALUE);
+        dataLoader.run();
+
+        newTx();
+        mCompSingle = tx.traversal().V().has("name", "bob").profile().next().getMetrics(0);
+        assertEquals(3, mCompSingle.getNested().size());
+        nested = (Metrics) mCompSingle.getNested().toArray()[2];
+        nameIdxAnnotations = new HashMap() {{
+            put("condition", "(name = bob)");
+            put("orders", "[]");
+            put("isFitted", "true");
+            put("isOrdered", "true");
+            put("query", "multiKSQ[1]");
+            put("index", "nameIdx");
+        }};
+        assertEquals(nameIdxAnnotations, nested.getAnnotations());
+        backendQueryMetrics = nested.getNested().stream().map(m -> (Metrics) m).collect(Collectors.toList());
+        assertEquals(1, backendQueryMetrics.size());
+        backendAnnotations = new HashMap() {{
+            put("query", "nameIdx:multiKSQ[1]");
+        }};
+        assertEquals(backendAnnotations, backendQueryMetrics.get(0).getAnnotations());
+        assertTrue(backendQueryMetrics.get(0).getDuration(TimeUnit.MICROSECONDS) > 0);
+
+
 
         close();
         JanusGraphFactory.drop(graph);
