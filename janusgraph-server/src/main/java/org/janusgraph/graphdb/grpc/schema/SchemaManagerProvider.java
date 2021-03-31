@@ -16,6 +16,8 @@ package org.janusgraph.graphdb.grpc.schema;
 
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.graphdb.grpc.schema.util.GrpcUtils;
+import org.janusgraph.graphdb.grpc.types.EdgeLabel;
 import org.janusgraph.graphdb.grpc.types.VertexLabel;
 
 public class SchemaManagerProvider {
@@ -25,22 +27,21 @@ public class SchemaManagerProvider {
         this.management = graph.openManagement();
     }
 
-    private VertexLabel createVertexLabelProto(org.janusgraph.core.VertexLabel vertexLabel) {
-        return VertexLabel.newBuilder()
-            .setId(vertexLabel.id().toString())
-            .setName(vertexLabel.name())
-            .setPartitioned(vertexLabel.isPartitioned())
-            .setReadOnly(vertexLabel.isStatic())
-            .build();
-    }
-
-
     public VertexLabel getVertexLabelByName(String name) {
         org.janusgraph.core.VertexLabel vertexLabel = management.getVertexLabel(name);
         if (vertexLabel == null) {
             return null;
         }
 
-        return createVertexLabelProto(vertexLabel);
+        return GrpcUtils.createVertexLabelProto(vertexLabel);
+    }
+
+    public EdgeLabel getEdgeLabelByName(String name) {
+        org.janusgraph.core.EdgeLabel edgeLabel = management.getEdgeLabel(name);
+        if (edgeLabel == null) {
+            return null;
+        }
+
+        return GrpcUtils.createEdgeLabelProto(edgeLabel);
     }
 }

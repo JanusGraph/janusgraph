@@ -23,11 +23,43 @@ option java_package = "org.janusgraph.graphdb.grpc.types";
 
 message VertexLabel {
     // The Internal id.
-    string id = 1;
+    google.protobuf.Int64Value id = 1;
     // The VertexLabel Name.
     string name = 2;
     // Marking as readOnly, default not readOnly.
     bool read_only = 3;
     // Marking as partitioned, default not partitioned.
     bool partitioned = 4;
+}
+
+message EdgeLabel {
+    // The Internal id.
+    google.protobuf.Int64Value id = 1;
+    // The EdgeLabel Name.
+    string name = 2;
+    enum Direction {
+        // Edge can be queried from both vertices.
+        BOTH = 0;
+        // Edge can be only queried from the outgoing vertex.
+        // Direction OUT should be only used by experts, see https://docs.janusgraph.org/schema/advschema/#unidirected-edges.
+        OUT = 1;
+    }
+    // Defines queryable direction.
+    Direction direction = 3;
+    enum Multiplicity {
+        // The given edge label specifies a multi-graph, meaning that the multiplicity is not constrained and that
+        // there may be multiple edges of this label between any given pair of vertices.
+        MULTI = 0;
+        // The given edge label specifies a simple graph, meaning that the multiplicity is not constrained but that there
+        // can only be at most a single edge of this label between a given pair of vertices.
+        SIMPLE = 1;
+        // There can only be a single in-edge of this label for a given vertex but multiple out-edges (i.e. in-unique).
+        ONE2MANY = 2;
+        // There can only be a single out-edge of this label for a given vertex but multiple in-edges (i.e. out-unique).
+        MANY2ONE = 3;
+        // There can be only a single in and out-edge of this label for a given vertex (i.e. unique in both directions).
+        ONE2ONE = 4;
+    }
+    // Defines Multiplicity of a edge.
+    Multiplicity multiplicity = 4;
 }

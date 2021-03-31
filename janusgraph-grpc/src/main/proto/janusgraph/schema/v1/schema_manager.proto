@@ -29,9 +29,19 @@ message GetVertexLabelByNameRequest {
 }
 
 message GetVertexLabelByNameResponse {
-    janusgraph.types.v1.VertexLabel vertex_label = 2;
+    janusgraph.types.v1.VertexLabel vertex_label = 1;
+}
+
+message GetEdgeLabelByNameRequest {
+    janusgraph.types.v1.JanusGraphContext context = 1;
+    string name = 2;
+}
+
+message GetEdgeLabelByNameResponse {
+    janusgraph.types.v1.EdgeLabel edge_label = 1;
 }
 
 service SchemaManagerService {
     rpc GetVertexLabelByName(GetVertexLabelByNameRequest) returns (GetVertexLabelByNameResponse);
+    rpc GetEdgeLabelByName(GetEdgeLabelByNameRequest) returns (GetEdgeLabelByNameResponse);
 }
