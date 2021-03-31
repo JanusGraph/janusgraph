@@ -1055,7 +1055,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 put("orders", "[]");
                 put("isFitted", "false");
                 put("isOrdered", "true");
-                put("query", "[((name = bob) OR (prop = val))](100000):mixed");
+                put("query", "[((name = bob) OR (prop = val))]:mixed");
                 put("index", "mixed");
                 put("index_impl", "search");
             }};
@@ -1085,7 +1085,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             put("orders", "[]");
             put("isFitted", "true");
             put("isOrdered", "true");
-            put("query", String.format("[(%s = bob AND %s = val)](100000):mixed", nameKey, propKey));
+            put("query", String.format("[(%s = bob AND %s = val)]:mixed", nameKey, propKey));
             put("index", "mixed");
             put("index_impl", "search");
         }};

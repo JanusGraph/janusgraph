@@ -90,15 +90,31 @@ An example is available at [ThreadLocalTxLeakTest::eventListenersCanBeReusedAcro
 See more background of this breaking change in this
 [pull request](https://github.com/JanusGraph/janusgraph/pull/2472).
 
-##### Disable smart-limit by default
+##### Disable smart-limit by default and change HARD_MAX_LIMIT
 
 Prior to 0.6.0, `smart-limit` is enabled by default. It tries to guess a small limit
-for each query internally, and if more results are required by user, it queries
-backend again with a larger limit, and repeats until either results are exhausted or
-user stops the query. However, this is not the same as paging mechanism. All interim
-results will be fetched again in next round, making the whole query costly. Until
-janusgraph can fully utilize the paging capacity provided by backends (e.g. Elasticsearch
-scroll), this option is recommended to be turned off.
+for each graph centric query (e.g. `g.V().has("prop", "value")`) internally, and if more
+results are required by user, it queries backend again with a larger limit, and repeats
+until either results are exhausted or user stops the query. However, this is not the
+same as paging mechanism. All interim results will be fetched again in next round, making
+the whole query costly. Even worse, if your data backend does not return results in a consistent order,
+then some entries might be missing in the final results. Until JanusGraph can fully utilize
+the paging capacity provided by backends (e.g. Elasticsearch scroll), this option is
+recommended to be turned off. The exception is when you have a large number of results
+but you only need a few of them, then enabling `smart-limit` can reduce latency and memory
+usage. An example would be:
+
+```
+Iterator<Vertex> iter = graph.traversal().V().has("prop", "value");
+while (iter.hasNext()) {
+    Vertex v = iter.next();
+    if (canStop()) break;
+}
+```
+
+Prior to 0.6.0, even if `smart-limit` is disabled, JanusGraph adds a `HARD_MAX_LIMIT` that
+is equivalent to 100,000 to avoid fetching too many results at a time. This limit is now
+configurable, and by default, it's Integer.MAX_VALUE which can be interpreted as no limit.
 
 ##### Removal of LoggingSchemaMaker
 

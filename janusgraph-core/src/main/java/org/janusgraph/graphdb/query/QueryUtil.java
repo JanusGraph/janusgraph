@@ -33,12 +33,13 @@ import java.util.*;
 public class QueryUtil {
 
     public static int adjustLimitForTxModifications(StandardJanusGraphTx tx, int uncoveredAndConditions, int limit) {
-        assert limit > 0 && limit <= 1000000000; //To make sure limit computation does not overflow
+        assert limit > 0;
         assert uncoveredAndConditions >= 0;
 
         if (uncoveredAndConditions > 0) {
             final int maxMultiplier = Integer.MAX_VALUE / limit;
-            limit = limit * Math.min(maxMultiplier, (int) Math.pow(2, uncoveredAndConditions)); //(limit*3)/2+1;
+            final int estimatedMultiplier = (int) Math.pow(2, uncoveredAndConditions);
+            limit = estimatedMultiplier < maxMultiplier ? limit * estimatedMultiplier : Integer.MAX_VALUE;
         }
 
         if (tx.hasModifications())

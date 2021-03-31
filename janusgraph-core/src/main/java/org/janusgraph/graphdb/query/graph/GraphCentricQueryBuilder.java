@@ -19,6 +19,8 @@ import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Contain;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
 import org.janusgraph.graphdb.internal.ElementCategory;
@@ -36,6 +38,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Predicate;
+
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ADJUST_LIMIT;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.HARD_MAX_LIMIT;
 
 /**
  * Builds a {@link JanusGraphQuery}, optimizes the query and compiles the result into a {@link GraphCentricQuery} which
@@ -80,6 +85,10 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
      */
     private boolean useSmartLimit;
     /**
+     * The hard max limit of each query
+     */
+    private int hardMaxLimit;
+    /**
      * Selection service for the best combination of indexes to be queried
      */
     private IndexSelectionStrategy indexSelector;
@@ -87,7 +96,10 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     public GraphCentricQueryBuilder(StandardJanusGraphTx tx, IndexSerializer serializer, IndexSelectionStrategy indexSelector) {
         Preconditions.checkNotNull(tx);
         Preconditions.checkNotNull(serializer);
-        useSmartLimit = tx.getGraph().getConfiguration().adjustQueryLimit();
+        Configuration customOptions = tx.getConfiguration().getCustomOptions();
+        GraphDatabaseConfiguration graphConfigs = tx.getGraph().getConfiguration();
+        useSmartLimit = customOptions.has(ADJUST_LIMIT) ? customOptions.get(ADJUST_LIMIT) : graphConfigs.adjustQueryLimit();
+        hardMaxLimit = customOptions.has(HARD_MAX_LIMIT) ? customOptions.get(HARD_MAX_LIMIT) : graphConfigs.getHardMaxLimit();
         this.tx = tx;
         this.serializer = serializer;
         this.indexSelector = indexSelector;
@@ -223,7 +235,6 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
 
     private static final int DEFAULT_NO_LIMIT = 1000;
     private static final int MAX_BASE_LIMIT = 20000;
-    private static final int HARD_MAX_LIMIT = 100000;
 
     public GraphCentricQuery constructQuery(final ElementCategory resultType) {
         final QueryProfiler optProfiler = profiler.addNested(QueryProfiler.OPTIMIZATION);
@@ -270,11 +281,13 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
 
         BackendQueryHolder<JointIndexQuery> query;
         if (!coveredClauses.isEmpty()) {
-            int indexLimit = limit == Query.NO_LIMIT ? HARD_MAX_LIMIT : limit;
+            int indexLimit;
             if (useSmartLimit) {
                 indexLimit = limit == Query.NO_LIMIT ? DEFAULT_NO_LIMIT : Math.min(MAX_BASE_LIMIT, limit);
+            } else {
+                indexLimit = limit == Query.NO_LIMIT ? hardMaxLimit : limit;
             }
-            indexLimit = Math.min(HARD_MAX_LIMIT,
+            indexLimit = Math.min(hardMaxLimit,
                 QueryUtil.adjustLimitForTxModifications(tx, conditions.numChildren() - coveredClauses.size(), indexLimit));
             query = new BackendQueryHolder<>(selectedIndex.getQuery().updateLimit(indexLimit),
                     coveredClauses.size() == conditions.numChildren(), selectedIndex.isSorted());

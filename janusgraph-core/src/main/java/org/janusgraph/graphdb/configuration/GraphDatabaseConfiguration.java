@@ -262,6 +262,13 @@ public class GraphDatabaseConfiguration {
                     "light of possibly large result sets. Those will be loaded incrementally if this option is enabled.",
             ConfigOption.Type.MASKABLE, false);
 
+    public static final ConfigOption<Integer> HARD_MAX_LIMIT = new ConfigOption<>(QUERY_NS, "hard-max-limit",
+            "If smart-limit is disabled and no limit is given in the query, query optimizer adds a limit in light " +
+                    "of possibly large result sets. It works in the same way as smart-limit except that hard-max-limit is " +
+                    "usually a large number. Default value is Integer.MAX_VALUE which effectively disables this behavior. " +
+                    "This option does not take effect when smart-limit is enabled.",
+            ConfigOption.Type.MASKABLE, Integer.MAX_VALUE);
+
     public static final ConfigOption<Boolean> USE_MULTIQUERY = new ConfigOption<>(QUERY_NS,"batch",
             "Whether traversal queries should be batched when executed against the storage backend. This can lead to significant " +
                     "performance improvement if there is a non-trivial latency to the backend.",
@@ -1178,6 +1185,7 @@ public class GraphDatabaseConfiguration {
     private boolean hasDisabledSchemaConstraints;
     private Boolean propertyPrefetching;
     private boolean adjustQueryLimit;
+    private int hardMaxLimit;
     private Boolean useMultiQuery;
     private boolean optimizerBackendAccess;
     private IndexSelectionStrategy indexSelectionStrategy;
@@ -1282,6 +1290,10 @@ public class GraphDatabaseConfiguration {
 
     public boolean adjustQueryLimit() {
         return adjustQueryLimit;
+    }
+
+    public int getHardMaxLimit() {
+        return hardMaxLimit;
     }
 
     public String getUnknownIndexKeyName() {
@@ -1397,6 +1409,7 @@ public class GraphDatabaseConfiguration {
         optimizerBackendAccess = configuration.get(OPTIMIZER_BACKEND_ACCESS);
         batchPropertyPrefetching = configuration.get(BATCH_PROPERTY_PREFETCHING);
         adjustQueryLimit = configuration.get(ADJUST_LIMIT);
+        hardMaxLimit = configuration.get(HARD_MAX_LIMIT);
         allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
 
