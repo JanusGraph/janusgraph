@@ -73,7 +73,10 @@ public class MultiKeySliceQuery extends BaseQuery implements BackendQuery<MultiK
 
     @Override
     public String toString() {
-        return "multiKSQ["+queries.size()+"]@"+getLimit();
+        StringBuilder builder = new StringBuilder("multiKSQ[");
+        builder.append(queries.size()).append("]");
+        if (hasLimit()) builder.append("@").append(getLimit());
+        return builder.toString();
     }
 
 }

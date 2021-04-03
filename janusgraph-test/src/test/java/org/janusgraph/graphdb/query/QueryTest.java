@@ -86,7 +86,7 @@ public class QueryTest {
 
         for (int i = 0; i < 20; i++) {
             tx.addVertex().property("prop1", "prop1val").element().property("prop2", "prop2val")
-                .element().property("prop3", "prop3val" + i % 2).element().property("prop4", "prop4val" + i % 2);
+                .element().property("prop3", "prop3val").element().property("prop4", "prop4val");
         }
         tx.commit();
 
@@ -101,13 +101,13 @@ public class QueryTest {
             .profile().next()));
 
         // Two conditions, one of which met by index prop1_idx. Multiply original limit by two for sake of in-memory filtering.
-        assertCount(5, graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").limit(5));
-        assertEquals("multiKSQ[1]@10", getQueryAnnotation(graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").limit(5)
+        assertCount(5, graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val").limit(5));
+        assertEquals("multiKSQ[1]@10", getQueryAnnotation(graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val").limit(5)
             .profile().next()));
 
         // Three conditions, one of which met by index prop1_idx. Multiply original limit by four for sake of in-memory filtering.
-        assertCount(5, graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").has("prop4", "prop4val0").limit(5));
-        assertEquals("multiKSQ[1]@20", getQueryAnnotation(graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val0").has("prop4", "prop4val0").limit(5)
+        assertCount(5, graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val").has("prop4", "prop4val").limit(5));
+        assertEquals("multiKSQ[1]@20", getQueryAnnotation(graph.traversal().V().has("prop1", "prop1val").has("prop3", "prop3val").has("prop4", "prop4val").limit(5)
             .profile().next()));
     }
 
