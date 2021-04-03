@@ -386,7 +386,10 @@ CQL storage backend options
 | storage.cql.local-datacenter | The name of the local or closest Cassandra datacenter. This value will be passed into CqlSessionBuilder.withLocalDatacenter. | String | datacenter1 | MASKABLE |
 | storage.cql.local-max-connections-per-host | The maximum number of connections that can be created per host for local datacenter | Integer | 1 | FIXED |
 | storage.cql.max-requests-per-connection | The maximum number of requests that can be executed concurrently on a connection. | Integer | 1024 | FIXED |
+| storage.cql.metadata-schema-enabled | Whether schema metadata is enabled. | Boolean | (no default value) | MASKABLE |
+| storage.cql.metadata-token-map-enabled | Whether token metadata is enabled. If disabled, partitioner-name must be provided. | Boolean | (no default value) | MASKABLE |
 | storage.cql.only-use-local-consistency-for-system-operations | True to prevent any system queries from using QUORUM consistency and always use LOCAL_QUORUM instead | Boolean | false | MASKABLE |
+| storage.cql.partitioner-name | The name of Cassandra cluster's partitioner. It will be retrieved by client if not provided. If provided, it must match the cluster's partitioner name. It can be the full class name such as `org.apache.cassandra.dht.ByteOrderedPartitioner` or the simple name such as `ByteOrderedPartitioner` | String | (no default value) | MASKABLE |
 | storage.cql.protocol-version | The protocol version used to connect to the Cassandra database.  If no value is supplied then the driver will negotiate with the server. | Integer | 0 | LOCAL |
 | storage.cql.read-consistency-level | The consistency level of read operations against Cassandra | String | QUORUM | MASKABLE |
 | storage.cql.remote-max-connections-per-host | The maximum number of connections that can be created per host for remote datacenter | Integer | 1 | FIXED |

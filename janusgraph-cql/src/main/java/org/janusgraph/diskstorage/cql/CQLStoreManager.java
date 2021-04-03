@@ -85,6 +85,8 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_DATACENTER;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_MAX_CONNECTIONS_PER_HOST;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.MAX_REQUESTS_PER_CONNECTION;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METADATA_SCHEMA_ENABLED;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METADATA_TOKEN_MAP_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_NODE_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_NODE_EXPIRE_AFTER;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_NODE_MESSAGES_HIGHEST_LATENCY;
@@ -102,6 +104,7 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.NETTY_IO_SIZE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.NETTY_TIMER_TICKS_PER_WHEEL;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.NETTY_TIMER_TICK_DURATION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ONLY_USE_LOCAL_CONSISTENCY_FOR_SYSTEM_OPERATIONS;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.PARTITIONER_NAME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.PROTOCOL_VERSION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.READ_CONSISTENCY;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REMOTE_MAX_CONNECTIONS_PER_HOST;
@@ -213,8 +216,23 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         fb.optimisticLocking(true);
         fb.multiQuery(false);
 
-        final String partitioner = this.session.getMetadata().getTokenMap().get().getPartitionerName();
-        switch (partitioner.substring(partitioner.lastIndexOf('.') + 1)) {
+        String partitioner = null;
+        if (configuration.has(PARTITIONER_NAME)) {
+            partitioner = getShortPartitionerName(configuration.get(PARTITIONER_NAME));
+        }
+        if (session.getMetadata().getTokenMap().isPresent()) {
+            String retrievedPartitioner = getShortPartitionerName(session.getMetadata().getTokenMap().get().getPartitionerName());
+            if (partitioner == null) {
+                partitioner = retrievedPartitioner;
+            } else if (!partitioner.equals(retrievedPartitioner)) {
+                throw new IllegalArgumentException(String.format("Provided partitioner (%s) does not match with server (%s)",
+                    partitioner, retrievedPartitioner));
+            }
+        } else if (partitioner == null) {
+            throw new IllegalArgumentException(String.format("Partitioner name not provided and cannot retrieve it from " +
+                "server, please check %s and %s options", PARTITIONER_NAME.getName(), METADATA_TOKEN_MAP_ENABLED.getName()));
+        }
+        switch (partitioner) {
             case "RandomPartitioner":
             case "Murmur3Partitioner": {
                 fb.keyOrdered(false).orderedScan(false).unorderedScan(true);
@@ -296,6 +314,14 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         if(configuration.has(HEARTBEAT_TIMEOUT)){
             configLoaderBuilder.withDuration(DefaultDriverOption.HEARTBEAT_TIMEOUT,
                 Duration.ofMillis(configuration.get(HEARTBEAT_TIMEOUT)));
+        }
+
+        if (configuration.has(METADATA_SCHEMA_ENABLED)) {
+            configLoaderBuilder.withBoolean(DefaultDriverOption.METADATA_SCHEMA_ENABLED, configuration.get(METADATA_SCHEMA_ENABLED));
+        }
+
+        if (configuration.has(METADATA_TOKEN_MAP_ENABLED)) {
+            configLoaderBuilder.withBoolean(DefaultDriverOption.METADATA_TOKEN_MAP_ENABLED, configuration.get(METADATA_TOKEN_MAP_ENABLED));
         }
 
         // Keep to 0 for the time being: https://groups.google.com/a/lists.datastax.com/forum/#!topic/java-driver-user/Bc0gQuOVVL0
@@ -647,6 +673,11 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     @Override
     public Object getHadoopManager() {
         return new CqlHadoopStoreManager(this.session);
+    }
+
+    private String getShortPartitionerName(String partitioner) {
+        if (partitioner == null) return null;
+        return partitioner.substring(partitioner.lastIndexOf('.') + 1);
     }
 
 }
