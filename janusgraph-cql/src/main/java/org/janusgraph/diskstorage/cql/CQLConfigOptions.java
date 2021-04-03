@@ -200,6 +200,29 @@ public interface CQLConfigOptions {
         ConfigOption.Type.MASKABLE,
         Long.class);
 
+    ConfigOption<String> PARTITIONER_NAME = new ConfigOption<>(
+        CQL_NS,
+        "partitioner-name",
+        "The name of Cassandra cluster's partitioner. It will be retrieved by client if not provided. " +
+            "If provided, it must match the cluster's partitioner name. It can be the full class name such as " +
+            "`org.apache.cassandra.dht.ByteOrderedPartitioner` or the simple name such as `ByteOrderedPartitioner`",
+        ConfigOption.Type.MASKABLE,
+        String.class);
+
+    ConfigOption<Boolean> METADATA_SCHEMA_ENABLED = new ConfigOption<>(
+        CQL_NS,
+        "metadata-schema-enabled",
+        "Whether schema metadata is enabled.",
+        ConfigOption.Type.MASKABLE,
+        Boolean.class);
+
+    ConfigOption<Boolean> METADATA_TOKEN_MAP_ENABLED = new ConfigOption<>(
+        CQL_NS,
+        "metadata-token-map-enabled",
+        "Whether token metadata is enabled. If disabled, partitioner-name must be provided.",
+        ConfigOption.Type.MASKABLE,
+        Boolean.class);
+
     // SSL
     ConfigNamespace SSL_NS = new ConfigNamespace(
             CQL_NS,
