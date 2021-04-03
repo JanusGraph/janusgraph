@@ -5843,11 +5843,11 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         Metrics deeplyNested = (Metrics) nested.getNested().toArray()[0];
         assertEquals("AND-query", deeplyNested.getName());
         // FIXME: assertTrue(deeplyNested.getDuration(TimeUnit.MICROSECONDS) > 0);
-        assertEquals("multiKSQ[1]@2147483647", deeplyNested.getAnnotation("query"));
+        assertEquals("multiKSQ[1]", deeplyNested.getAnnotation("query"));
         deeplyNested = (Metrics) nested.getNested().toArray()[1];
         assertEquals("AND-query", deeplyNested.getName());
         // FIXME: assertTrue(deeplyNested.getDuration(TimeUnit.MICROSECONDS) > 0);
-        assertEquals("multiKSQ[1]@2147483647", deeplyNested.getAnnotation("query"));
+        assertEquals("multiKSQ[1]", deeplyNested.getAnnotation("query"));
 
         // satisfied by one graph-centric query, which satisfied by in-memory filtering after one composite index query
         newTx();
@@ -5909,6 +5909,89 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testGraphCentricQueryProfilingWithLimitAdjusting() throws BackendException {
+        Runnable dataLoader = () -> {
+            final PropertyKey name = makeKey("name", String.class);
+            final JanusGraphIndex compositeNameIndex = mgmt.buildIndex("nameIdx", Vertex.class).addKey(name).buildCompositeIndex();
+            finishSchema();
+
+            newTx();
+            for (int i = 0; i < 3000; i++) {
+                tx.addVertex("name", "bob");
+            }
+            tx.commit();
+        };
+
+        clopen(option(ADJUST_LIMIT), false);
+        dataLoader.run();
+
+        newTx();
+        Metrics mCompSingle = tx.traversal().V().has("name", "bob").profile().next().getMetrics(0);
+        assertEquals(3, mCompSingle.getNested().size());
+        Metrics nested = (Metrics) mCompSingle.getNested().toArray()[2];
+        Map<String, String> nameIdxAnnotations = new HashMap() {{
+            put("condition", "(name = bob)");
+            put("orders", "[]");
+            put("isFitted", "true");
+            put("isOrdered", "true");
+            put("query", "multiKSQ[1]@100000"); // 100000 is HARD_MAX_LIMIT
+            put("index", "nameIdx");
+        }};
+        assertEquals(nameIdxAnnotations, nested.getAnnotations());
+        List<Metrics> backendQueryMetrics = nested.getNested().stream().map(m -> (Metrics) m).collect(Collectors.toList());
+        assertEquals(1, backendQueryMetrics.size());
+        Map<String, String> backendAnnotations = new HashMap() {{
+            put("query", "nameIdx:multiKSQ[1]@100000");
+            put("limit", 100000);
+        }};
+        assertEquals(backendAnnotations, backendQueryMetrics.get(0).getAnnotations());
+        assertTrue(backendQueryMetrics.get(0).getDuration(TimeUnit.MICROSECONDS) > 0);
+
+        close();
+        JanusGraphFactory.drop(graph);
+        clopen(option(ADJUST_LIMIT), true);
+        dataLoader.run();
+
+        newTx();
+        mCompSingle = tx.traversal().V().has("name", "bob").profile().next().getMetrics(0);
+        assertEquals("JanusGraphStep([],[name.eq(bob)])", mCompSingle.getName());
+        assertTrue(mCompSingle.getDuration(TimeUnit.MICROSECONDS) > 0);
+        assertEquals(3, mCompSingle.getNested().size());
+        nested = (Metrics) mCompSingle.getNested().toArray()[0];
+        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        nested = (Metrics) mCompSingle.getNested().toArray()[1];
+        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        nested = (Metrics) mCompSingle.getNested().toArray()[2];
+        assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        nameIdxAnnotations = new HashMap() {{
+            put("condition", "(name = bob)");
+            put("orders", "[]");
+            put("isFitted", "true");
+            put("isOrdered", "true");
+            put("query", "multiKSQ[1]@4000");
+            put("index", "nameIdx");
+        }};
+        assertEquals(nameIdxAnnotations, nested.getAnnotations());
+        backendQueryMetrics = nested.getNested().stream().map(m -> (Metrics) m).collect(Collectors.toList());
+        assertEquals(3, backendQueryMetrics.size());
+        int limit = 1000;
+        // due to LimitAdjustingIterator, there are three backend queries with limits 1000, 2000, and 4000, respectively.
+        for (int i = 0; i < backendQueryMetrics.size(); i++) {
+            int queryLimit = limit;
+            backendAnnotations = new HashMap() {{
+                put("query", "nameIdx:multiKSQ[1]@" + queryLimit);
+                put("limit", queryLimit);
+            }};
+            assertEquals(backendAnnotations, backendQueryMetrics.get(i).getAnnotations());
+            assertTrue(backendQueryMetrics.get(i).getDuration(TimeUnit.MICROSECONDS) > 0);
+            limit = limit * 2;
+        }
+    }
+
+    @Test
     public void testVertexCentricQueryProfiling() {
         final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
         final EdgeLabel friend = mgmt.makeEdgeLabel("friend").multiplicity(Multiplicity.SIMPLE).make();
@@ -5932,7 +6015,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             put("vertices", 1);
             put("isFitted", "true");
             put("isOrdered", "true");
-            put("query", "2069:byTime:SliceQuery[0xB0E0FF7FFFFFF6,0xB0E1)@2147483647");
+            put("query", "2069:byTime:SliceQuery[0xB0E0FF7FFFFFF6,0xB0E1)");
         }};
         mSingleLabel.getAnnotations().remove("percentDur");
         assertEquals(annotations, mSingleLabel.getAnnotations());
@@ -5957,7 +6040,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         annotations = new HashMap() {{
             put("isFitted", "true");
             put("isOrdered", "true");
-            put("query", "2069:byTime:SliceQuery[0xB0E0FF7FFFFF9B,0xB0E0FF7FFFFF9C)@2147483647"); // vertex-centric index utilized
+            put("query", "2069:byTime:SliceQuery[0xB0E0FF7FFFFF9B,0xB0E0FF7FFFFF9C)"); // vertex-centric index utilized
         }};
         assertEquals(annotations, friendMetrics.getAnnotations());
         Metrics friendNoIndexMetrics = (Metrics) mMultiLabels.getNested().toArray()[2];
@@ -5966,7 +6049,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         annotations = new HashMap() {{
             put("isFitted", "false");
             put("isOrdered", "true");
-            put("query", "friend-no-index:SliceQuery[0x7180,0x7181)@2147483647"); // no vertex-centric index found
+            put("query", "friend-no-index:SliceQuery[0x7180,0x7181)"); // no vertex-centric index found
         }};
         assertEquals(annotations, friendNoIndexMetrics.getAnnotations());
     }

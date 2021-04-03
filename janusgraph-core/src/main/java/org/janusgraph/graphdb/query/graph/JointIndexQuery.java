@@ -116,6 +116,7 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
             subqueries = new ArrayList<>(queries);
         }
         JointIndexQuery jointIndexQuery = new JointIndexQuery(subqueries);
+        jointIndexQuery.observeWith(this.profiler, false);
         jointIndexQuery.setLimit(newLimit);
         return jointIndexQuery;
     }

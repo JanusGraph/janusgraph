@@ -149,7 +149,8 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
         if (type != null) {
             sb.append(type).append(":");
         }
-        sb.append("SliceQuery[").append(getSliceStart()).append(",").append(getSliceEnd()).append(")@").append(getLimit());
+        sb.append("SliceQuery[").append(getSliceStart()).append(",").append(getSliceEnd()).append(")");
+        if (hasLimit()) sb.append("@").append(getLimit());
         return sb.toString();
     }
 

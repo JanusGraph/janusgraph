@@ -79,6 +79,9 @@ public class KeySliceQuery extends SliceQuery {
 
     @Override
     public String toString() {
-        return "KeySliceQuery(" + key + ")[" + getSliceStart() + "," + getSliceEnd() + ")@" + getLimit();
+        StringBuilder builder = new StringBuilder("KeySliceQuery(");
+        builder.append(key).append(")[").append(getSliceStart()).append(",").append(getSliceEnd()).append(")");
+        if (hasLimit()) builder.append("@").append(getLimit());
+        return builder.toString();
     }
 }

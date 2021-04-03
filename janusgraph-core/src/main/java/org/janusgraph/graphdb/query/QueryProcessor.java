@@ -196,7 +196,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
 
         @Override
         public Iterator<R> getNewIterator(int newLimit) {
-            if (!backendQuery.hasLimit() || newLimit>backendQuery.getLimit())
+            if (newLimit>backendQuery.getLimit())
                 backendQuery = backendQuery.updateLimit(newLimit);
             return executor.execute(query, backendQuery, executionInfo, profiler);
         }
