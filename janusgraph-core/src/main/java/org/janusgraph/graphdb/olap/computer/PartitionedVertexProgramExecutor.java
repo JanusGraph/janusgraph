@@ -20,7 +20,6 @@ import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.idmanagement.IDManager;
-import org.janusgraph.graphdb.olap.VertexJobConverter;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.util.WorkerPool;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
@@ -64,7 +63,7 @@ public class PartitionedVertexProgramExecutor<M> {
         if (pVertexAggregates.isEmpty()) return; //Nothing to do here
 
         try (WorkerPool workers = new WorkerPool(numThreads)) {
-            tx = VertexJobConverter.startTransaction(graph);
+            tx = startTransaction(graph);
             for (Map.Entry<Long,EntryList> partitionedVertices : pVertexAggregates.entrySet()) {
                 if (partitionedVertices.getValue()==null) {
                     metrics.incrementCustom(GHOST_PARTITION_VERTEX);
@@ -78,6 +77,10 @@ public class PartitionedVertexProgramExecutor<M> {
         } finally {
             if (tx!=null && tx.isOpen()) tx.rollback();
         }
+    }
+
+    private StandardJanusGraphTx startTransaction(StandardJanusGraph graph) {
+        return (StandardJanusGraphTx) graph.buildTransaction().readOnlyOLAP().start();
     }
 
     private class PartitionedVertexProcessor implements Runnable {

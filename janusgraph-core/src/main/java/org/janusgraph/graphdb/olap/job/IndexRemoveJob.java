@@ -34,6 +34,7 @@ import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.database.management.RelationTypeIndexWrapper;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.InternalRelationType;
+import org.janusgraph.graphdb.olap.GraphProvider;
 import org.janusgraph.graphdb.olap.QueryContainer;
 import org.janusgraph.graphdb.olap.VertexJobConverter;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
@@ -53,7 +54,7 @@ import java.util.function.Predicate;
  */
 public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
 
-    private final VertexJobConverter.GraphProvider graph = new VertexJobConverter.GraphProvider();
+    private final GraphProvider graph = new GraphProvider();
 
     public static final String DELETED_RECORDS_COUNT = "deletes";
 

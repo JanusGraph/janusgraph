@@ -139,6 +139,16 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public StandardTransactionBuilder readOnlyOLAP() {
+        isReadOnly = true;
+        preloadedData = true;
+        verifyInternalVertexExistence = false;
+        dirtyVertexSize = 0;
+        vertexCacheSize = 0;
+        return this;
+    }
+
+    @Override
     public StandardTransactionBuilder enableBatchLoading() {
         hasEnabledBatchLoading = true;
         checkExternalVertexExistence(false);
