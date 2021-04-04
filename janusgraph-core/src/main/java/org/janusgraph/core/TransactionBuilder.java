@@ -34,6 +34,13 @@ public interface TransactionBuilder {
     TransactionBuilder readOnly();
 
     /**
+     * A shortcut for a number of configs that are commonly used by read-only OLAP jobs.
+     *
+     * @return Object containing a number of properties optimized for read-only OLAP jobs
+     */
+    TransactionBuilder readOnlyOLAP();
+
+    /**
      * Enabling batch loading disables a number of consistency checks inside JanusGraph to speed up the ingestion of
      * data under the assumptions that inconsistencies are resolved prior to loading.
      *
