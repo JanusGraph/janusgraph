@@ -22,15 +22,18 @@ import org.apache.tinkerpop.gremlin.server.GraphManager;
 import org.apache.tinkerpop.gremlin.server.Settings;
 import org.apache.tinkerpop.gremlin.server.util.DefaultGraphManager;
 import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.schema.EdgeLabelMaker;
 import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.core.schema.PropertyKeyMaker;
 import org.janusgraph.core.schema.VertexLabelMaker;
 import org.janusgraph.graphdb.grpc.schema.SchemaManagerImpl;
 import org.janusgraph.graphdb.grpc.schema.util.GrpcUtils;
 import org.janusgraph.graphdb.grpc.types.EdgeLabel;
 import org.janusgraph.graphdb.grpc.types.EdgeLabelOrBuilder;
 import org.janusgraph.graphdb.grpc.types.VertexLabelOrBuilder;
+import org.janusgraph.graphdb.grpc.types.VertexProperty;
 import org.janusgraph.graphdb.server.TestingServerClosable;
 import org.javatuples.Pair;
 import org.junit.jupiter.api.AfterEach;
@@ -56,28 +59,36 @@ public abstract class JanusGraphGrpcServerBaseTest {
         return new DefaultGraphManager(settings);
     }
 
-    public long createVertexLabel(String graph, VertexLabelOrBuilder vertexLabel) {
+    public long createVertexLabel(String graph, VertexLabelOrBuilder builder) {
         JanusGraphManagement management = ((JanusGraph) graphManager.getGraph(graph)).openManagement();
-        VertexLabelMaker vertexLabelMaker = management.makeVertexLabel(vertexLabel.getName());
-        if (vertexLabel.getReadOnly()) {
+        VertexLabelMaker vertexLabelMaker = management.makeVertexLabel(builder.getName());
+        if (builder.getReadOnly()) {
             vertexLabelMaker.setStatic();
         }
-        if (vertexLabel.getPartitioned()) {
+        if (builder.getPartitioned()) {
             vertexLabelMaker.partition();
         }
-        VertexLabel createdVertexLabel = vertexLabelMaker.make();
+        VertexLabel vertexLabel = vertexLabelMaker.make();
+        for (VertexProperty vertexProperty : builder.getPropertiesList()) {
+            PropertyKeyMaker propertyKeyMaker = management.makePropertyKey(vertexProperty.getName());
+            PropertyKey propertyKey = propertyKeyMaker
+                .cardinality(GrpcUtils.convertGrpcCardinality(vertexProperty.getCardinality()))
+                .dataType(GrpcUtils.convertGrpcPropertyDataType(vertexProperty.getDataType()))
+                .make();
+            management.addProperties(vertexLabel, propertyKey);
+        }
 
         management.commit();
-        return createdVertexLabel.longId();
+        return vertexLabel.longId();
     }
 
     public long createEdgeLabel(String graph, EdgeLabelOrBuilder edgeLabel) {
         JanusGraphManagement management = ((JanusGraph) graphManager.getGraph(graph)).openManagement();
         EdgeLabelMaker edgeLabelMaker = management.makeEdgeLabel(edgeLabel.getName());
-        if (edgeLabel.getDirection() == EdgeLabel.Direction.BOTH) {
-            edgeLabelMaker.directed();
-        } else {
+        if (edgeLabel.getDirection() == EdgeLabel.Direction.DIRECTION_OUT) {
             edgeLabelMaker.unidirected();
+        } else {
+            edgeLabelMaker.directed();
         }
         edgeLabelMaker.multiplicity(GrpcUtils.convertGrpcEdgeMultiplicity(edgeLabel.getMultiplicity()));
         org.janusgraph.core.EdgeLabel createdEdgeLabel = edgeLabelMaker.make();
