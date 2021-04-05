@@ -20,7 +20,9 @@ import org.janusgraph.graphdb.grpc.JanusGraphGrpcServerBaseTest;
 import org.janusgraph.graphdb.grpc.JanusGraphManagerClient;
 import org.janusgraph.graphdb.grpc.types.EdgeLabel;
 import org.janusgraph.graphdb.grpc.types.JanusGraphContext;
+import org.janusgraph.graphdb.grpc.types.PropertyDataType;
 import org.janusgraph.graphdb.grpc.types.VertexLabel;
+import org.janusgraph.graphdb.grpc.types.VertexProperty;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -31,6 +33,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 
@@ -145,6 +148,103 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"test", "test2"})
+    public void testGetVertexLabelByNameVertexLabelWithVertexProperty(String propertyName) {
+        final String vertexLabelName = "testVertexProperty";
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
+
+        //create property
+        VertexProperty test = VertexProperty.newBuilder()
+            .setName(propertyName)
+            .setDataType(PropertyDataType.PROPERTY_DATA_TYPE_BOOLEAN)
+            .setCardinality(VertexProperty.Cardinality.CARDINALITY_SINGLE)
+            .build();
+        //create vertex
+        createVertexLabel(defaultGraphName, VertexLabel.newBuilder()
+            .setName(vertexLabelName)
+            .addProperties(test));
+
+        VertexLabel vertexLabel = schemaManagerClient.getVertexLabelByName(vertexLabelName);
+
+        VertexProperty property = vertexLabel.getProperties(0);
+        assertEquals(PropertyDataType.PROPERTY_DATA_TYPE_BOOLEAN, property.getDataType());
+        assertEquals(VertexProperty.Cardinality.CARDINALITY_SINGLE, property.getCardinality());
+        assertEquals(propertyName, property.getName());
+        assertNotEquals(0, property.getId());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = PropertyDataType.class, mode = EXCLUDE, names = { "PROPERTY_DATA_TYPE_UNSPECIFIED", "UNRECOGNIZED" })
+    public void testGetVertexLabelByNameVertexLabelWithVertexProperty(PropertyDataType propertyDataType) {
+        final String name = "testPropertyType";
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
+
+        //create property
+        VertexProperty test = VertexProperty.newBuilder()
+            .setName(name)
+            .setDataType(propertyDataType)
+            .build();
+        //create vertex
+        createVertexLabel(defaultGraphName, VertexLabel.newBuilder()
+            .setName(name)
+            .addProperties(test));
+
+        VertexLabel vertexLabel = schemaManagerClient.getVertexLabelByName(name);
+
+        VertexProperty property = vertexLabel.getProperties(0);
+        assertEquals(propertyDataType, property.getDataType());
+        assertEquals(name, property.getName());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = VertexProperty.Cardinality.class, mode = EXCLUDE, names = { "CARDINALITY_UNSPECIFIED", "UNRECOGNIZED" })
+    public void testGetVertexLabelByNameVertexLabelWithVertexProperty(VertexProperty.Cardinality cardinality) {
+        final String name = "testPropertyCardinality";
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
+
+        //create property
+        VertexProperty test = VertexProperty.newBuilder()
+            .setName(name)
+            .setDataType(PropertyDataType.PROPERTY_DATA_TYPE_BOOLEAN)
+            .setCardinality(cardinality)
+            .build();
+        //create vertex
+        createVertexLabel(defaultGraphName, VertexLabel.newBuilder()
+            .setName(name)
+            .addProperties(test));
+
+        VertexLabel vertexLabel = schemaManagerClient.getVertexLabelByName(name);
+
+        VertexProperty property = vertexLabel.getProperties(0);
+        assertEquals(cardinality, property.getCardinality());
+        assertEquals(name, property.getName());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 4, 8, 16})
+    public void testGetVertexLabelByNameVertexLabelWithMultipleVertexProperties(int numberOfProperties) {
+        final String vertexLabelName = "testMultipleVertexProperties";
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
+
+        VertexLabel.Builder builder = VertexLabel.newBuilder()
+            .setName(vertexLabelName);
+
+        for (int i = 0; i < numberOfProperties; i++) {
+            VertexProperty test = VertexProperty.newBuilder()
+                .setName("test"+i)
+                .setDataType(PropertyDataType.PROPERTY_DATA_TYPE_BOOLEAN)
+                .setCardinality(VertexProperty.Cardinality.CARDINALITY_SINGLE)
+                .build();
+            builder.addProperties(test);
+        }
+        createVertexLabel(defaultGraphName, builder);
+
+        VertexLabel vertexLabel = schemaManagerClient.getVertexLabelByName(vertexLabelName);
+
+        assertEquals(numberOfProperties, vertexLabel.getPropertiesCount());
+    }
+
     @Test
     public void testGetEdgeLabelByNameNotFound() {
         SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
@@ -182,13 +282,13 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
         EdgeLabel edgeLabel = schemaManagerClient.getEdgeLabelByName(edgeLabelName);
 
         assertEquals(edgeLabelName, edgeLabel.getName());
-        assertEquals(EdgeLabel.Direction.BOTH, edgeLabel.getDirection());
-        assertEquals(EdgeLabel.Multiplicity.MULTI, edgeLabel.getMultiplicity());
+        assertEquals(EdgeLabel.Direction.DIRECTION_BOTH, edgeLabel.getDirection());
+        assertEquals(EdgeLabel.Multiplicity.MULTIPLICITY_MULTI, edgeLabel.getMultiplicity());
         assertEquals(id, edgeLabel.getId().getValue());
     }
 
     @ParameterizedTest
-    @EnumSource(mode = EXCLUDE, names = {"UNRECOGNIZED"})
+    @EnumSource(value = EdgeLabel.Multiplicity.class, mode = EXCLUDE, names = {"MULTIPLICITY_UNSPECIFIED", "UNRECOGNIZED"})
     public void testGetEdgeLabelByNameWithDefinedMultiplicity(EdgeLabel.Multiplicity multiplicity) {
         final String edgeLabelName = "testMultiplicity";
         SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
@@ -196,7 +296,7 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
         //create edge
         createEdgeLabel(defaultGraphName, EdgeLabel.newBuilder()
             .setName(edgeLabelName)
-            .setDirection(EdgeLabel.Direction.BOTH)
+            .setDirection(EdgeLabel.Direction.DIRECTION_BOTH)
             .setMultiplicity(multiplicity));
 
         EdgeLabel edgeLabel = schemaManagerClient.getEdgeLabelByName(edgeLabelName);
@@ -205,7 +305,7 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
     }
 
     @ParameterizedTest
-    @EnumSource(mode = EXCLUDE, names = {"UNRECOGNIZED"})
+    @EnumSource(value = EdgeLabel.Direction.class, mode = EXCLUDE, names = {"DIRECTION_UNSPECIFIED", "UNRECOGNIZED"})
     public void testGetEdgeLabelByNameWithDefinedDirection(EdgeLabel.Direction direction) {
         final String edgeLabelName = "testDirection";
         SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);

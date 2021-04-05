@@ -21,6 +21,56 @@ import "google/protobuf/wrappers.proto";
 option java_multiple_files = true;
 option java_package = "org.janusgraph.graphdb.grpc.types";
 
+enum PropertyDataType {
+    PROPERTY_DATA_TYPE_UNSPECIFIED = 0;
+    // java class: String.class
+    PROPERTY_DATA_TYPE_STRING = 1;
+    // java class: Character.class
+    PROPERTY_DATA_TYPE_CHARACTER = 2;
+    // java class: Boolean.class
+    PROPERTY_DATA_TYPE_BOOLEAN = 3;
+    // java class: Byte.class
+    PROPERTY_DATA_TYPE_INT8 = 4;
+    // java class: Short.class
+    PROPERTY_DATA_TYPE_INT16 = 5;
+    // java class: Integer.class
+    PROPERTY_DATA_TYPE_INT32 = 6;
+    // java class: Long.class
+    PROPERTY_DATA_TYPE_INT64 = 7;
+    // java class: Float.class
+    PROPERTY_DATA_TYPE_FLOAT32 = 8;
+    // java class: Double.class
+    PROPERTY_DATA_TYPE_FLOAT64 = 9;
+    // java class: Date.class
+    PROPERTY_DATA_TYPE_DATE = 10;
+    // java class: Geoshape.class
+    PROPERTY_DATA_TYPE_GEO_SHAPE = 11;
+    // java class: UUID.class
+    PROPERTY_DATA_TYPE_UUID = 12;
+    // java class: Object.class
+    PROPERTY_DATA_TYPE_JAVA_OBJECT = 13;
+}
+
+message VertexProperty {
+    // The Internal id.
+    google.protobuf.Int64Value id = 1;
+    // The VertexProperty Name.
+    string name = 2;
+    // The Data type.
+    PropertyDataType data_type = 3;
+    enum Cardinality {
+        CARDINALITY_UNSPECIFIED = 0;
+        // Vertex can have the property just once.
+        CARDINALITY_SINGLE = 1;
+        // Vertex can have multiple properties of the same name.
+        CARDINALITY_LIST = 2;
+        // Vertex can have multiple properties of the same with uniqueness constraint for the value.
+        CARDINALITY_SET = 3;
+    }
+    // Defines cardinality.
+    Cardinality cardinality = 4;
+}
+
 message VertexLabel {
     // The Internal id.
     google.protobuf.Int64Value id = 1;
@@ -30,6 +80,8 @@ message VertexLabel {
     bool read_only = 3;
     // Marking as partitioned, default not partitioned.
     bool partitioned = 4;
+    // Contains all constrained properties at the moment.
+    repeated VertexProperty properties = 5;
 }
 
 message EdgeLabel {
@@ -38,27 +90,29 @@ message EdgeLabel {
     // The EdgeLabel Name.
     string name = 2;
     enum Direction {
-        // Edge can be queried from both vertices.
-        BOTH = 0;
+        DIRECTION_UNSPECIFIED = 0;
+        // Edge can be queried from both vertices (default).
+        DIRECTION_BOTH = 1;
         // Edge can be only queried from the outgoing vertex.
         // Direction OUT should be only used by experts, see https://docs.janusgraph.org/schema/advschema/#unidirected-edges.
-        OUT = 1;
+        DIRECTION_OUT = 2;
     }
     // Defines queryable direction.
     Direction direction = 3;
     enum Multiplicity {
+        MULTIPLICITY_UNSPECIFIED = 0;
         // The given edge label specifies a multi-graph, meaning that the multiplicity is not constrained and that
         // there may be multiple edges of this label between any given pair of vertices.
-        MULTI = 0;
+        MULTIPLICITY_MULTI = 1;
         // The given edge label specifies a simple graph, meaning that the multiplicity is not constrained but that there
         // can only be at most a single edge of this label between a given pair of vertices.
-        SIMPLE = 1;
+        MULTIPLICITY_SIMPLE = 2;
         // There can only be a single in-edge of this label for a given vertex but multiple out-edges (i.e. in-unique).
-        ONE2MANY = 2;
+        MULTIPLICITY_ONE2MANY = 3;
         // There can only be a single out-edge of this label for a given vertex but multiple in-edges (i.e. out-unique).
-        MANY2ONE = 3;
+        MULTIPLICITY_MANY2ONE = 4;
         // There can be only a single in and out-edge of this label for a given vertex (i.e. unique in both directions).
-        ONE2ONE = 4;
+        MULTIPLICITY_ONE2ONE = 5;
     }
     // Defines Multiplicity of a edge.
     Multiplicity multiplicity = 4;
