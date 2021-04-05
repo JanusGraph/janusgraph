@@ -30,10 +30,6 @@ public class JanusGraphManagerServiceImpl extends JanusGraphManagerServiceGrpc.J
 
     @Override
     public void getJanusGraphContexts(GetJanusGraphContextsRequest request, StreamObserver<GetJanusGraphContextsResponse> responseObserver) {
-        if (request == null) {
-            responseObserver.onError(Status.INTERNAL.withCause(new NullArgumentException("request should be set")).asRuntimeException());
-            return;
-        }
         GetJanusGraphContextsResponse.Builder response = GetJanusGraphContextsResponse.newBuilder();
 
         for (JanusGraphContext context : contextHandler.getContexts()) {
@@ -46,11 +42,6 @@ public class JanusGraphManagerServiceImpl extends JanusGraphManagerServiceGrpc.J
     @Override
     public void getJanusGraphContextByGraphName(GetJanusGraphContextByGraphNameRequest request,
                                                 StreamObserver<GetJanusGraphContextByGraphNameResponse> responseObserver) {
-        if (request == null) {
-            responseObserver.onError(Status.INVALID_ARGUMENT
-                .withDescription("request is required").asRuntimeException());
-            return;
-        }
         final String graphName = request.getGraphName();
         if (graphName.isEmpty()) {
             responseObserver.onError(Status.INVALID_ARGUMENT
@@ -70,11 +61,6 @@ public class JanusGraphManagerServiceImpl extends JanusGraphManagerServiceGrpc.J
 
     @Override
     public void getVersion(GetVersionRequest request, StreamObserver<GetVersionResponse> responseObserver) {
-        if (request == null) {
-            responseObserver.onError(Status.INVALID_ARGUMENT
-                .withDescription("request is required").asRuntimeException());
-            return;
-        }
         String tinkerPopVersion = "debug-tp";
         String janusGraphVersion = "debug-jg";
         if (Manifests.exists(JanusGraphServer.MANIFEST_TINKERPOP_VERSION_ATTRIBUTE)){

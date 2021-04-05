@@ -18,14 +18,16 @@
 ### Done
 
 * Get vertex by name
+* Get multiple vertices
 * Get edge by name
+* Get multiple edges
 
 # ToDo
 
-* Get multiple vertices
+* Add support for ttl
 * Create/Update/Delete a vertex
-* Get multiple edges
 * Create/Update/Delete a edge
 * Connect/Disconnect a edge with vertices
 * Index Management
 * Properties Management
+* Test against multi node clusters(multiple instances of JG)

@@ -20,6 +20,10 @@ import org.janusgraph.graphdb.grpc.schema.util.GrpcUtils;
 import org.janusgraph.graphdb.grpc.types.EdgeLabel;
 import org.janusgraph.graphdb.grpc.types.VertexLabel;
 
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
 public class SchemaManagerProvider {
     private final JanusGraphManagement management;
 
@@ -36,6 +40,12 @@ public class SchemaManagerProvider {
         return GrpcUtils.createVertexLabelProto(vertexLabel);
     }
 
+    public List<VertexLabel> getVertexLabels() {
+        return StreamSupport
+            .stream(management.getVertexLabels().spliterator(), false)
+            .map(GrpcUtils::createVertexLabelProto).collect(Collectors.toList());
+    }
+
     public EdgeLabel getEdgeLabelByName(String name) {
         org.janusgraph.core.EdgeLabel edgeLabel = management.getEdgeLabel(name);
         if (edgeLabel == null) {
@@ -43,5 +53,11 @@ public class SchemaManagerProvider {
         }
 
         return GrpcUtils.createEdgeLabelProto(edgeLabel);
+    }
+
+    public List<EdgeLabel> getEdgeLabels() {
+        return StreamSupport
+            .stream(management.getRelationTypes(org.janusgraph.core.EdgeLabel.class).spliterator(), false)
+            .map(GrpcUtils::createEdgeLabelProto).collect(Collectors.toList());
     }
 }

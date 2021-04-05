@@ -21,6 +21,8 @@ import org.janusgraph.graphdb.grpc.types.EdgeLabel;
 import org.janusgraph.graphdb.grpc.types.JanusGraphContext;
 import org.janusgraph.graphdb.grpc.types.VertexLabel;
 
+import java.util.List;
+
 public class SchemaManagerClient {
 
     private final SchemaManagerServiceGrpc.SchemaManagerServiceBlockingStub blockingStub;
@@ -50,6 +52,15 @@ public class SchemaManagerClient {
     }
 
     /**
+     * @return Returns a list of {@link VertexLabel}
+     */
+    public List<VertexLabel> getVertexLabels() {
+        GetVertexLabelsRequest request = GetVertexLabelsRequest.newBuilder().setContext(context).build();
+        GetVertexLabelsResponse response = blockingStub.getVertexLabels(request);
+        return response.getVertexLabelsList();
+    }
+
+    /**
      * @param name Get an EdgeLabel by name
      * @return {@link EdgeLabel}
      */
@@ -57,5 +68,14 @@ public class SchemaManagerClient {
         GetEdgeLabelByNameRequest request = GetEdgeLabelByNameRequest.newBuilder().setContext(context).setName(name).build();
         GetEdgeLabelByNameResponse response = blockingStub.getEdgeLabelByName(request);
         return response.getEdgeLabel();
+    }
+
+    /**
+     * @return Returns a list of {@link EdgeLabel}
+     */
+    public List<EdgeLabel> getEdgeLabels() {
+        GetEdgeLabelsRequest request = GetEdgeLabelsRequest.newBuilder().setContext(context).build();
+        GetEdgeLabelsResponse response = blockingStub.getEdgeLabels(request);
+        return response.getEdgeLabelsList();
     }
 }

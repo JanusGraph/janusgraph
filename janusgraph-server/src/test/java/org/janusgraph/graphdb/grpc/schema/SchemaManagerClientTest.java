@@ -26,6 +26,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -115,6 +118,34 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
     }
 
     @Test
+    public void testGetVertexLabelsInvalidArgumentNullContext() {
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(null, managedChannel);
+
+        assertThrows(NullPointerException.class, schemaManagerClient::getVertexLabels);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 4, 8, 16})
+    public void testGetVertexLabels(int numberOfVertices) {
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
+        List<Long> createdIds = new ArrayList<>();
+
+        for (int i = 0; i < numberOfVertices; i++) {
+            long id = createVertexLabel(defaultGraphName, VertexLabel.newBuilder()
+                .setName("testMultipleVertices"+i));
+            createdIds.add(id);
+        }
+
+        List<VertexLabel> vertexLabels = schemaManagerClient.getVertexLabels();
+
+        assertEquals(numberOfVertices, vertexLabels.size());
+        for (Long createdId : createdIds) {
+            long count = vertexLabels.stream().filter(v -> v.getId().getValue() == createdId).count();
+            assertEquals(1, count);
+        }
+    }
+
+    @Test
     public void testGetEdgeLabelByNameNotFound() {
         SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
 
@@ -187,5 +218,33 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
         EdgeLabel edgeLabel = schemaManagerClient.getEdgeLabelByName(edgeLabelName);
 
         assertEquals(direction, edgeLabel.getDirection());
+    }
+
+    @Test
+    public void testGetEdgeLabelsInvalidArgumentNullContext() {
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(null, managedChannel);
+
+        assertThrows(NullPointerException.class, schemaManagerClient::getEdgeLabels);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 4, 8, 16})
+    public void testGetEdgeLabels(int numberOfEdges) {
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
+        List<Long> createdIds = new ArrayList<>();
+
+        for (int i = 0; i < numberOfEdges; i++) {
+            long id = createEdgeLabel(defaultGraphName, EdgeLabel.newBuilder()
+                .setName("testMultipleEdges"+i));
+            createdIds.add(id);
+        }
+
+        List<EdgeLabel> edgeLabels = schemaManagerClient.getEdgeLabels();
+
+        assertEquals(numberOfEdges, edgeLabels.size());
+        for (Long createdId : createdIds) {
+            long count = edgeLabels.stream().filter(e -> e.getId().getValue() == createdId).count();
+            assertEquals(1, count);
+        }
     }
 }
