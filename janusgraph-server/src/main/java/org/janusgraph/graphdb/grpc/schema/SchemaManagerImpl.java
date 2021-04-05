@@ -14,13 +14,14 @@
 
 package org.janusgraph.graphdb.grpc.schema;
 
-import com.google.protobuf.GeneratedMessageV3;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.janusgraph.graphdb.grpc.JanusGraphContextHandler;
 import org.janusgraph.graphdb.grpc.types.EdgeLabel;
 import org.janusgraph.graphdb.grpc.types.JanusGraphContext;
 import org.janusgraph.graphdb.grpc.types.VertexLabel;
+
+import java.util.List;
 
 public class SchemaManagerImpl extends SchemaManagerServiceGrpc.SchemaManagerServiceImplBase {
     private final JanusGraphContextHandler contextHandler;
@@ -29,31 +30,11 @@ public class SchemaManagerImpl extends SchemaManagerServiceGrpc.SchemaManagerSer
         this.contextHandler = contextHandler;
     }
 
-    private JanusGraphContext getContext(GeneratedMessageV3 request) {
-        if (request instanceof GetVertexLabelByNameRequest) {
-            if (((GetVertexLabelByNameRequest) request).hasContext()) {
-                return ((GetVertexLabelByNameRequest) request).getContext();
-            }
-        }
-        if (request instanceof GetEdgeLabelByNameRequest) {
-            if (((GetEdgeLabelByNameRequest) request).hasContext()) {
-                return ((GetEdgeLabelByNameRequest) request).getContext();
-            }
-        }
-        return null;
-    }
-
     interface ErrorFunction {
         void run(Throwable var);
     }
 
-    private SchemaManagerProvider getSchemaManagerProvider(GeneratedMessageV3 request, ErrorFunction errorFunction) {
-        if (request == null) {
-            errorFunction.run(Status.INTERNAL
-                .withDescription("request is required").asRuntimeException());
-            return null;
-        }
-        JanusGraphContext context = getContext(request);
+    private SchemaManagerProvider getSchemaManagerProvider(JanusGraphContext context, ErrorFunction errorFunction) {
         if (context == null) {
             errorFunction.run(Status.INVALID_ARGUMENT
                 .withDescription("context is required").asException());
@@ -62,7 +43,7 @@ public class SchemaManagerImpl extends SchemaManagerServiceGrpc.SchemaManagerSer
         SchemaManagerProvider provider = contextHandler.getSchemaManagerProviderByContext(context);
         if (provider == null) {
             errorFunction.run(Status.INVALID_ARGUMENT
-                .withDescription("context is correct to find a schema manager provider").asException());
+                .withDescription("a schema manager provider was not found with the provided context").asException());
             return null;
         }
         return provider;
@@ -73,7 +54,7 @@ public class SchemaManagerImpl extends SchemaManagerServiceGrpc.SchemaManagerSer
         GetVertexLabelByNameRequest request,
         StreamObserver<GetVertexLabelByNameResponse> responseObserver
     ) {
-        SchemaManagerProvider provider = getSchemaManagerProvider(request, responseObserver::onError);
+        SchemaManagerProvider provider = getSchemaManagerProvider(request.getContext(), responseObserver::onError);
         if (provider == null) return;
 
         final String vertexLabelName = request.getName();
@@ -93,11 +74,24 @@ public class SchemaManagerImpl extends SchemaManagerServiceGrpc.SchemaManagerSer
     }
 
     @Override
+    public void getVertexLabels(
+        GetVertexLabelsRequest request,
+        StreamObserver<GetVertexLabelsResponse> responseObserver
+    ) {
+        SchemaManagerProvider provider = getSchemaManagerProvider(request.getContext(), responseObserver::onError);
+        if (provider == null) return;
+
+        List<VertexLabel> vertexLabels = provider.getVertexLabels();
+        responseObserver.onNext(GetVertexLabelsResponse.newBuilder().addAllVertexLabels(vertexLabels).build());
+        responseObserver.onCompleted();
+    }
+
+    @Override
     public void getEdgeLabelByName(
         GetEdgeLabelByNameRequest request,
         StreamObserver<GetEdgeLabelByNameResponse> responseObserver
     ) {
-        SchemaManagerProvider provider = getSchemaManagerProvider(request, responseObserver::onError);
+        SchemaManagerProvider provider = getSchemaManagerProvider(request.getContext(), responseObserver::onError);
         if (provider == null) return;
 
         final String edgeLabelName = request.getName();
@@ -113,6 +107,19 @@ public class SchemaManagerImpl extends SchemaManagerServiceGrpc.SchemaManagerSer
             return;
         }
         responseObserver.onNext(GetEdgeLabelByNameResponse.newBuilder().setEdgeLabel(edgeLabel).build());
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void getEdgeLabels(
+        GetEdgeLabelsRequest request,
+        StreamObserver<GetEdgeLabelsResponse> responseObserver
+    ) {
+        SchemaManagerProvider provider = getSchemaManagerProvider(request.getContext(), responseObserver::onError);
+        if (provider == null) return;
+
+        List<EdgeLabel> edgeLabels = provider.getEdgeLabels();
+        responseObserver.onNext(GetEdgeLabelsResponse.newBuilder().addAllEdgeLabels(edgeLabels).build());
         responseObserver.onCompleted();
     }
 }
