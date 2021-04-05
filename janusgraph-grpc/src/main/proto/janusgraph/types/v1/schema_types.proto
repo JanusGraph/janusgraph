@@ -21,6 +21,49 @@ import "google/protobuf/wrappers.proto";
 option java_multiple_files = true;
 option java_package = "org.janusgraph.graphdb.grpc.types";
 
+enum PropertyDataType {
+    String = 0;
+    Character = 1;
+    Boolean = 2;
+    Int8 = 3;
+    Int16 = 4;
+    Int32 = 5;
+    Int64 = 6;
+    Float32 = 7;
+    Float64 = 8;
+    Date = 9;
+    JavaObject = 10;
+    GeoShape = 11;
+    Uuid = 12;
+}
+
+enum VertexPropertyCardinality {
+    Single = 0;
+    List = 1;
+    Set = 2;
+}
+
+enum PropertyBinding {
+    Globally = 0;
+    Local = 1;
+}
+
+// current possibilities
+// * schema constraints: property is globally defined but bind to vertex or edge
+// * no schema constraints: property is globally defined but isn't bound to vertex or edge
+// * only properties with the cardinality single can be used for edges
+// future possibilities
+// * per vertex/edge property
+// * enforce schema constraints but special properties that can be bound to any vertex/edge
+
+message VertexProperty {
+    google.protobuf.Int64Value id = 1;
+    string name = 2;
+    PropertyDataType dataType = 3;
+    PropertyBinding binding = 4;
+    VertexPropertyCardinality cardinality = 5;
+}
+
 message VertexLabel {
     // The Internal id.
     google.protobuf.Int64Value id = 1;
@@ -30,6 +73,14 @@ message VertexLabel {
     bool read_only = 3;
     // Marking as partitioned, default not partitioned.
     bool partitioned = 4;
+    repeated VertexProperty properties = 5;
+}
+
+message EdgeProperty {
+    google.protobuf.Int64Value id = 1;
+    string name = 2;
+    PropertyDataType dataType = 3;
+    PropertyBinding binding = 4;
 }
 
 message EdgeLabel {
@@ -62,4 +113,5 @@ message EdgeLabel {
     }
     // Defines Multiplicity of a edge.
     Multiplicity multiplicity = 4;
+    repeated EdgeProperty properties = 5;
 }
