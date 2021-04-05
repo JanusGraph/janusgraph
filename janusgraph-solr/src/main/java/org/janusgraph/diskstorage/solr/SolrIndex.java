@@ -771,7 +771,7 @@ public class SolrIndex implements IndexProvider {
                         return ("-" + key + ":\"" + escapeValue(value) + "\"");
                     }
                 } else if (predicate == Text.FUZZY || predicate == Text.CONTAINS_FUZZY) {
-                    return (key + ":"+escapeValue(value)+"~");
+                    return (key + ":"+escapeValue(value)+"~"+Text.getMaxEditDistance(value.toString()));
                 } else if (predicate == Cmp.LESS_THAN) {
                     return (key + ":[* TO \"" + escapeValue(value) + "\"}");
                 } else if (predicate == Cmp.LESS_THAN_EQUAL) {

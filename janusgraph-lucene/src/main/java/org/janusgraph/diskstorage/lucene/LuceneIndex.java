@@ -748,12 +748,12 @@ public class LuceneIndex implements IndexProvider {
                     } else if (janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate == Cmp.NOT_EQUAL) {
                         tokenize(params, map, delegatingAnalyzer, (String) value, stringFieldKey, janusgraphPredicate);
                     } else if (janusgraphPredicate == Text.FUZZY) {
-                        params.addQuery(new FuzzyQuery(new Term(stringFieldKey, (String) value)));
+                        params.addQuery(new FuzzyQuery(new Term(stringFieldKey, (String) value), Text.getMaxEditDistance((String) value)));
                     } else if (janusgraphPredicate == Text.CONTAINS_FUZZY) {
                         value = ((String) value).toLowerCase();
                         final Builder b = new BooleanQuery.Builder();
                         for (final String term : Text.tokenize((String) value)) {
-                            b.add(new FuzzyQuery(new Term(key, term)), BooleanClause.Occur.MUST);
+                            b.add(new FuzzyQuery(new Term(key, term), Text.getMaxEditDistance(term)), BooleanClause.Occur.MUST);
                         }
                         params.addQuery(b.build());
                     } else

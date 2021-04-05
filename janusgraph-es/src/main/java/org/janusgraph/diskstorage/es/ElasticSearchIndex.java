@@ -964,22 +964,42 @@ public class ElasticSearchIndex implements IndexProvider {
 
                 if (predicate == Text.CONTAINS || predicate == Cmp.EQUAL) {
                     return compat.match(fieldName, value);
+                } else if (predicate == Text.NOT_CONTAINS) {
+                    return compat.boolMustNot(compat.match(fieldName, value));
+                } else if (predicate == Text.CONTAINS_PHRASE) {
+                    return compat.matchPhrase(fieldName, value);
+                } else if (predicate == Text.NOT_CONTAINS_PHRASE) {
+                    return compat.boolMustNot(compat.matchPhrase(fieldName, value));
                 } else if (predicate == Text.CONTAINS_PREFIX) {
                     if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
                         value = ((String) value).toLowerCase();
                     return compat.prefix(fieldName, value);
+                } else if (predicate == Text.NOT_CONTAINS_PREFIX) {
+                    if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
+                            value = ((String) value).toLowerCase();
+                    return compat.boolMustNot(compat.prefix(fieldName, value));
                 } else if (predicate == Text.CONTAINS_REGEX) {
                     if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
                         value = ((String) value).toLowerCase();
                     return compat.regexp(fieldName, value);
+                } else if (predicate == Text.NOT_CONTAINS_REGEX) {
+                    if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
+                            value = ((String) value).toLowerCase();
+                    return compat.boolMustNot(compat.regexp(fieldName, value));
                 } else if (predicate == Text.PREFIX) {
                     return compat.prefix(fieldName, value);
+                } else if (predicate == Text.NOT_PREFIX) {
+                    return compat.boolMustNot(compat.prefix(fieldName, value));
                 } else if (predicate == Text.REGEX) {
                     return compat.regexp(fieldName, value);
+                } else if (predicate == Text.NOT_REGEX) {
+                    return compat.boolMustNot(compat.regexp(fieldName, value));
                 } else if (predicate == Cmp.NOT_EQUAL) {
                     return compat.boolMustNot(compat.match(fieldName, value));
                 } else if (predicate == Text.FUZZY || predicate == Text.CONTAINS_FUZZY) {
                     return compat.fuzzyMatch(fieldName, value);
+                } else if (predicate == Text.NOT_FUZZY || predicate == Text.NOT_CONTAINS_FUZZY) {
+                    return compat.boolMustNot(compat.fuzzyMatch(fieldName, value));
                 } else if (predicate == Cmp.LESS_THAN) {
                     return compat.lt(fieldName, value);
                 } else if (predicate == Cmp.LESS_THAN_EQUAL) {
@@ -1274,11 +1294,16 @@ public class ElasticSearchIndex implements IndexProvider {
             switch(mapping) {
                 case DEFAULT:
                 case TEXT:
-                    return janusgraphPredicate == Text.CONTAINS || janusgraphPredicate == Text.CONTAINS_PREFIX
-                            || janusgraphPredicate == Text.CONTAINS_REGEX || janusgraphPredicate == Text.CONTAINS_FUZZY;
+                    return janusgraphPredicate == Text.CONTAINS || janusgraphPredicate == Text.NOT_CONTAINS
+                            || janusgraphPredicate == Text.CONTAINS_FUZZY || janusgraphPredicate == Text.NOT_CONTAINS_FUZZY
+                            || janusgraphPredicate == Text.CONTAINS_PREFIX || janusgraphPredicate == Text.NOT_CONTAINS_PREFIX
+                            || janusgraphPredicate == Text.CONTAINS_REGEX || janusgraphPredicate == Text.NOT_CONTAINS_REGEX
+                            || janusgraphPredicate == Text.CONTAINS_PHRASE || janusgraphPredicate == Text.NOT_CONTAINS_PHRASE;
                 case STRING:
-                    return janusgraphPredicate instanceof Cmp || janusgraphPredicate==Text.REGEX
-                            || janusgraphPredicate==Text.PREFIX  || janusgraphPredicate == Text.FUZZY;
+                    return janusgraphPredicate instanceof Cmp
+                            || janusgraphPredicate==Text.REGEX || janusgraphPredicate==Text.NOT_REGEX
+                            || janusgraphPredicate==Text.PREFIX || janusgraphPredicate==Text.NOT_PREFIX
+                            || janusgraphPredicate == Text.FUZZY || janusgraphPredicate == Text.NOT_FUZZY;
                 case TEXTSTRING:
                     return janusgraphPredicate instanceof Text || janusgraphPredicate instanceof Cmp;
             }
