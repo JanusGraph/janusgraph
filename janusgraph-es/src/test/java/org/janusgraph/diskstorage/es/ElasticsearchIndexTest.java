@@ -16,6 +16,7 @@ package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 
 import org.apache.commons.configuration.BaseConfiguration;
@@ -43,6 +44,7 @@ import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.diskstorage.indexing.*;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.json.simple.JSONObject;
@@ -403,6 +405,32 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertEquals(1, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Cmp.EQUAL, "John"))).count());
         assertEquals(1, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Cmp.EQUAL, "John Doe"))).count());
         assertEquals(2, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Text.CONTAINS, "John"))).count());
+    }
+
+    @Test
+    public void testTextStringSort() throws Exception {
+        initialize("vertex");
+
+        Multimap<String, Object> firstDoc = HashMultimap.create();
+        firstDoc.put(TEXT_STRING, "John Doe");
+
+        Multimap<String, Object> secondDoc = HashMultimap.create();
+        secondDoc.put(TEXT_STRING, "Jane Doe");
+
+        add("vertex", "test1", firstDoc, true);
+        add("vertex", "test2", secondDoc, true);
+
+        clopen();
+
+        Object[] result = tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Text.CONTAINS, "Doe"),
+            ImmutableList.of(new IndexQuery.OrderEntry(TEXT_STRING, Order.ASC, String.class)))).toArray();
+        assertEquals("test2", result[0]);
+        assertEquals("test1", result[1]);
+
+        result = tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Text.CONTAINS, "Doe"),
+            ImmutableList.of(new IndexQuery.OrderEntry(TEXT_STRING, Order.DESC, String.class)))).toArray();
+        assertEquals("test1", result[0]);
+        assertEquals("test2", result[1]);
     }
 
     @Test
