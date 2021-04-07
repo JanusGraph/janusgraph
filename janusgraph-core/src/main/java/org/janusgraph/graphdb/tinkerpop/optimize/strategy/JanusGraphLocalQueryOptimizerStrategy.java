@@ -23,7 +23,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalSte
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -32,13 +31,11 @@ import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphEdgeVertexStep;
-import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMultiQueryStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertiesStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.MultiQueriable;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -62,31 +59,22 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
             return;
         }
 
-        //If this is a compute graph then we can't apply local traversal optimisation at this stage.
-        final boolean useMultiQuery = !TraversalHelper.onGraphComputer(traversal) && janusGraph.getConfiguration().useMultiQuery();
+        boolean batchPropertyPrefetching = janusGraph.getConfiguration().batchPropertyPrefetching();
+        int txVertexCacheSize = janusGraph.getConfiguration().getTxVertexCacheSize();
 
-        /*
-                ====== MULTIQUERY COMPATIBLE STEPS ======
-         */
+        applyJanusGraphVertexSteps(traversal, batchPropertyPrefetching, txVertexCacheSize);
+        applyJanusGraphPropertiesSteps(traversal);
+        inspectLocalTraversals(traversal);
+    }
 
-        if (useMultiQuery) {
-            JanusGraphTraversalUtil.getMultiQueryCompatibleSteps(traversal).forEach(originalStep -> {
-                JanusGraphMultiQueryStep multiQueryStep = new JanusGraphMultiQueryStep(originalStep);
-                TraversalHelper.insertBeforeStep(multiQueryStep, originalStep, originalStep.getTraversal());
-            });
-        }
-
-        /*
-                ====== VERTEX STEP ======
-         */
-
-        TraversalHelper.getStepsOfClass(VertexStep.class, traversal).forEach(originalStep -> {
+    private void applyJanusGraphVertexSteps(Admin<?, ?> traversal, boolean batchPropertyPrefetching, int txVertexCacheSize) {
+        TraversalHelper.getStepsOfAssignableClass(VertexStep.class, traversal).forEach(originalStep -> {
             final JanusGraphVertexStep vertexStep = new JanusGraphVertexStep(originalStep);
-            TraversalHelper.replaceStep(originalStep, vertexStep, traversal);
+            TraversalHelper.replaceStep(originalStep, vertexStep, originalStep.getTraversal());
 
 
             if (JanusGraphTraversalUtil.isEdgeReturnStep(vertexStep)) {
-                HasStepFolder.foldInHasContainer(vertexStep, traversal, traversal);
+                HasStepFolder.foldInHasContainer(vertexStep, originalStep.getTraversal(), originalStep.getTraversal());
                 //We cannot fold in orders or ranges since they are not local
             }
 
@@ -97,42 +85,27 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
                 vertexStep.setLimit(0, QueryUtil.mergeHighLimits(limit, vertexStep.getHighLimit()));
             }
 
-            if (useMultiQuery) {
-                vertexStep.setUseMultiQuery(true);
-            }
-
-            if (janusGraph.getConfiguration().batchPropertyPrefetching()) {
-                applyBatchPropertyPrefetching(traversal, vertexStep, nextStep, janusGraph.getConfiguration().getTxVertexCacheSize());
+            if (batchPropertyPrefetching) {
+                applyBatchPropertyPrefetching(originalStep.getTraversal(), vertexStep, nextStep, txVertexCacheSize);
             }
         });
+    }
 
-
-        /*
-                ====== PROPERTIES STEP ======
-         */
-
-
-        TraversalHelper.getStepsOfClass(PropertiesStep.class, traversal).forEach(originalStep -> {
+    private void applyJanusGraphPropertiesSteps(Admin<?, ?> traversal) {
+        TraversalHelper.getStepsOfAssignableClass(PropertiesStep.class, traversal).forEach(originalStep -> {
             final JanusGraphPropertiesStep propertiesStep = new JanusGraphPropertiesStep(originalStep);
-            TraversalHelper.replaceStep(originalStep, propertiesStep, traversal);
-
+            TraversalHelper.replaceStep(originalStep, propertiesStep, originalStep.getTraversal());
 
             if (propertiesStep.getReturnType().forProperties()) {
-                HasStepFolder.foldInHasContainer(propertiesStep, traversal, traversal);
+                HasStepFolder.foldInHasContainer(propertiesStep, originalStep.getTraversal(), originalStep.getTraversal());
                 //We cannot fold in orders or ranges since they are not local
             }
-
-            if (useMultiQuery) {
-                propertiesStep.setUseMultiQuery(true);
-            }
         });
+    }
 
-        /*
-                ====== EITHER INSIDE LOCAL ======
-         */
-
+    private void inspectLocalTraversals(final Admin<?, ?> traversal) {
         TraversalHelper.getStepsOfClass(LocalStep.class, traversal).forEach(localStep -> {
-            final Traversal.Admin localTraversal = ((LocalStep<?, ?>) localStep).getLocalChildren().get(0);
+            final Admin localTraversal = ((LocalStep<?, ?>) localStep).getLocalChildren().get(0);
             final Step localStart = localTraversal.getStartStep();
 
             if (localStart instanceof VertexStep) {
@@ -146,7 +119,7 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
                 HasStepFolder.foldInRange(vertexStep, JanusGraphTraversalUtil.getNextNonIdentityStep(vertexStep), localTraversal, null);
 
 
-                unfoldLocalTraversal(traversal,localStep,localTraversal,vertexStep,useMultiQuery);
+                unfoldLocalTraversal(traversal, localStep, localTraversal, vertexStep);
             }
 
             if (localStart instanceof PropertiesStep) {
@@ -160,7 +133,7 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
                 HasStepFolder.foldInRange(propertiesStep, JanusGraphTraversalUtil.getNextNonIdentityStep(propertiesStep), localTraversal, null);
 
 
-                unfoldLocalTraversal(traversal,localStep,localTraversal,propertiesStep,useMultiQuery);
+                unfoldLocalTraversal(traversal, localStep, localTraversal, propertiesStep);
             }
 
         });
@@ -172,9 +145,9 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
      * loads those properties into the vertex cache with a multiQuery preventing the need to
      * go back to the storage back-end for each vertex to fetch the properties.
      *
-     * @param traversal The traversal containing the step
-     * @param vertexStep The step to potentially apply the optimisation to
-     * @param nextStep The next step in the traversal
+     * @param traversal         The traversal containing the step
+     * @param vertexStep        The step to potentially apply the optimisation to
+     * @param nextStep          The next step in the traversal
      * @param txVertexCacheSize The size of the vertex cache
      */
     private void applyBatchPropertyPrefetching(final Admin<?, ?> traversal, final JanusGraphVertexStep vertexStep, final Step nextStep, final int txVertexCacheSize) {
@@ -194,31 +167,15 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
     }
 
     private static void unfoldLocalTraversal(final Traversal.Admin<?, ?> traversal,
-                                             LocalStep<?,?> localStep, Traversal.Admin localTraversal,
-                                             MultiQueriable vertexStep, boolean useMultiQuery) {
+                                             LocalStep<?, ?> localStep, Traversal.Admin localTraversal,
+                                             MultiQueriable vertexStep) {
         assert localTraversal.asAdmin().getSteps().size() > 0;
         if (localTraversal.asAdmin().getSteps().size() == 1) {
             //Can replace the entire localStep by the vertex step in the outer traversal
             assert localTraversal.getStartStep() == vertexStep;
             vertexStep.setTraversal(traversal);
             TraversalHelper.replaceStep(localStep, vertexStep, traversal);
-
-            if (useMultiQuery) {
-                vertexStep.setUseMultiQuery(true);
-            }
         }
-    }
-
-    private static boolean isChildOf(Step<?, ?> currentStep, List<Class<? extends Step>> stepClasses) {
-        Step<?, ?> parent = currentStep.getTraversal().getParent().asStep();
-        while (!parent.equals(EmptyStep.instance())) {
-            final Step<?, ?> p = parent;
-            if(stepClasses.stream().anyMatch(stepClass -> stepClass.isInstance(p))) {
-                return true;
-            }
-            parent = parent.getTraversal().getParent().asStep();
-        }
-        return false;
     }
 
     private static final Set<Class<? extends ProviderOptimizationStrategy>> PRIORS = Collections.singleton(AdjacentVertexFilterOptimizerStrategy.class);

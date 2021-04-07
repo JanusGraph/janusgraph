@@ -127,6 +127,7 @@ nav:
     - Deployment Scenarios: operations/deployment.md
     - ConfiguredGraphFactory: operations/configured-graph-factory.md
     - Dynamic Graphs: operations/dynamic-graphs.md
+    - Batch Processing: operations/batch-processing.md
     - Bulk Loading: operations/bulk-loading.md
     - JanusGraph Cache: operations/cache.md
     - Monitoring: operations/monitoring.md
