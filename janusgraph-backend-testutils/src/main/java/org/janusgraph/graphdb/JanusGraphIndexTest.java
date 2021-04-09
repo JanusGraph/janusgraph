@@ -2661,4 +2661,62 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     }
 
+    private void testMultipleOrClauses() {
+        Vertex v1 = tx.traversal().addV("test").property("a", true).property("b", true).property("c", true).property("d", true).next();
+        Vertex v2 = tx.traversal().addV("test").property("a", true).property("b", false).property("c", true).property("d", false).next();
+        Vertex v3 = tx.traversal().addV("test").property("a", false).property("b", true).property("c", false).property("d", true).next();
+        Vertex v4 = tx.traversal().addV("test").property("a", false).property("b", false).property("c", true).property("d", false).next();
+
+        newTx();
+
+        List<Vertex> vertices = tx.traversal().V()
+            .or(__.has("a", true), __.has("b", true))
+            .or(__.has("c", false), __.has("d", true))
+            .toList();
+
+        assertTrue(vertices.contains(v1));
+        assertFalse(vertices.contains(v2));
+        assertTrue(vertices.contains(v3));
+        assertFalse(vertices.contains(v4));
+        assertEquals(2, vertices.size());
+    }
+
+    @Test
+    public void testMultipleOrClausesMixed() {
+        final PropertyKey a = makeKey("a", Boolean.class);
+        final PropertyKey b = makeKey("b", Boolean.class);
+        final PropertyKey c = makeKey("c", Boolean.class);
+        final PropertyKey d = makeKey("d", Boolean.class);
+
+        mgmt.buildIndex("mixed", Vertex.class)
+            .addKey(a)
+            .addKey(b)
+            .addKey(c)
+            .addKey(d)
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        testMultipleOrClauses();
+    }
+
+    @Test
+    public void testMultipleOrClausesMultipleMixed() {
+        final PropertyKey a = makeKey("a", Boolean.class);
+        final PropertyKey b = makeKey("b", Boolean.class);
+        final PropertyKey c = makeKey("c", Boolean.class);
+        final PropertyKey d = makeKey("d", Boolean.class);
+
+        mgmt.buildIndex("mixed", Vertex.class)
+            .addKey(a)
+            .addKey(b)
+            .buildMixedIndex(INDEX);
+
+        mgmt.buildIndex("mixed2", Vertex.class)
+            .addKey(c)
+            .addKey(d)
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        testMultipleOrClauses();
+    }
 }

@@ -164,11 +164,12 @@ public class JanusGraphStepStrategyTest {
                 final HasStepFolder.OrderEntry orderEntry = (HasStepFolder.OrderEntry) hasKeyValues[i];
                 graphStep.orderBy(orderEntry.key, orderEntry.order);
             } else if (hasKeyValues[i] instanceof DefaultGraphTraversal &&  ((DefaultGraphTraversal) hasKeyValues[i]).getStartStep() instanceof OrStep){
-                for (final Traversal.Admin<?, ?> child : ((OrStep<?>) ((DefaultGraphTraversal) hasKeyValues[i]).getStartStep()).getLocalChildren()) {
+                OrStep<?> orStep = (OrStep<?>) ((DefaultGraphTraversal) hasKeyValues[i]).getStartStep();
+                for (final Traversal.Admin<?, ?> child : orStep.getLocalChildren()) {
                     final JanusGraphStep<Vertex, Vertex> localGraphStep = ((JanusGraphStep<Vertex, Vertex>) ((DefaultGraphTraversal) child).getStartStep());
-                    graphStep.addLocalAll(localGraphStep.getHasContainers());
-                    localGraphStep.getOrders().forEach(orderEntry -> graphStep.localOrderBy(localGraphStep.getHasContainers(), orderEntry.key, orderEntry.order));
-                    graphStep.setLocalLimit(localGraphStep.getHasContainers(), localGraphStep.getLowLimit(), localGraphStep.getHighLimit());
+                    graphStep.addLocalAll(orStep, localGraphStep.getHasContainers());
+                    localGraphStep.getOrders().forEach(orderEntry -> graphStep.localOrderBy(orStep, localGraphStep.getHasContainers(), orderEntry.key, orderEntry.order));
+                    graphStep.setLocalLimit(orStep, localGraphStep.getHasContainers(), localGraphStep.getLowLimit(), localGraphStep.getHighLimit());
                 }
             } else if (hasKeyValues[i] instanceof DefaultGraphTraversal &&  ((DefaultGraphTraversal) hasKeyValues[i]).getStartStep() instanceof RangeGlobalStep){
                 final RangeGlobalStep range = (RangeGlobalStep) ((DefaultGraphTraversal) hasKeyValues[i]).getStartStep();

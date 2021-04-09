@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize.step;
 
+import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.CountGlobalStep;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.core.JanusGraphEdge;
@@ -63,7 +64,7 @@ import java.util.Map.Entry;
 public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implements HasStepFolder<S, E>, Profiling, HasContainerHolder {
 
     private final List<HasContainer> hasContainers = new ArrayList<>();
-    private final Map<List<HasContainer>, QueryInfo> hasLocalContainers = new LinkedHashMap<>();
+    private final Map<String, Map<List<HasContainer>, QueryInfo>> hasLocalContainers = new LinkedHashMap<>();
     private int lowLimit = 0;
     private int highLimit = BaseQuery.NO_LIMIT;
     private final List<OrderEntry> orders = new ArrayList<>();
@@ -82,7 +83,7 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
                 return iteratorList((Iterator)graph.vertices(this.ids));
             }
             if (hasLocalContainers.isEmpty()) {
-                hasLocalContainers.put(new ArrayList<>(), new QueryInfo(new ArrayList<>(), 0, BaseQuery.NO_LIMIT));
+                hasLocalContainers.put(null, Collections.singletonMap(new ArrayList<>(), new QueryInfo(new ArrayList<>(), 0, BaseQuery.NO_LIMIT)));
             }
             final JanusGraphTransaction tx = JanusGraphTraversalUtil.getTx(traversal);
 
@@ -92,13 +93,17 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
             if (globalQuery != null && !globalQuery.getSubQuery(0).getBackendQuery().isEmpty()) {
                 globalQuery.observeWith(queryProfiler.addNested(QueryProfiler.GRAPH_CENTRIC_QUERY));
                 queries.put(0, globalQuery);
-            } else {
-                for (Map.Entry<List<HasContainer>, QueryInfo> c : hasLocalContainers.entrySet()) {
+            } else if (hasLocalContainers.size() == 1) {
+                for (Map.Entry<List<HasContainer>, QueryInfo> c : hasLocalContainers.values().stream().findFirst().get().entrySet()) {
                     GraphCentricQuery centricQuery = buildGraphCentricQuery(tx, c, queryProfiler);
                     centricQuery.observeWith(queryProfiler.addNested(QueryProfiler.GRAPH_CENTRIC_QUERY));
                     queries.put(c.getValue().getLowLimit(), centricQuery);
                 }
+            } else {
+                globalQuery.observeWith(queryProfiler.addNested(QueryProfiler.GRAPH_CENTRIC_QUERY));
+                queries.put(0, globalQuery);
             }
+
 
             final GraphCentricQueryBuilder builder = (GraphCentricQueryBuilder) tx.query();
             final List<Iterator<E>> responses = new ArrayList<>();
@@ -114,22 +119,29 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
 
     private GraphCentricQuery buildGlobalGraphCentricQuery(final JanusGraphTransaction tx, final QueryProfiler globalQueryProfiler) {
         Integer limit = null;
-        for (QueryInfo queryInfo : hasLocalContainers.values()) {
-            if (queryInfo.getLowLimit() > 0 || orders.isEmpty() && !queryInfo.getOrders().isEmpty()) {
-                return null;
-            }
-            final int currentHighLimit = queryInfo.getHighLimit();
-            if (limit == null) {
-                limit = currentHighLimit;
-            } else if (currentHighLimit < highLimit && !limit.equals(currentHighLimit)) {
-                return null;
+        for (Map<List<HasContainer>, QueryInfo> containers : hasLocalContainers.values()) {
+            for (QueryInfo queryInfo : containers.values()) {
+                if (queryInfo.getLowLimit() > 0 || orders.isEmpty() && !queryInfo.getOrders().isEmpty()) {
+                    return null;
+                }
+                final int currentHighLimit = queryInfo.getHighLimit();
+                if (limit == null) {
+                    limit = currentHighLimit;
+                } else if (currentHighLimit < highLimit && !limit.equals(currentHighLimit)) {
+                    return null;
+                }
             }
         }
+
         final JanusGraphQuery query = tx.query();
-        for(final List<HasContainer> localContainers : hasLocalContainers.keySet()) {
-            final JanusGraphQuery localQuery = tx.query();
-            addConstraint(localQuery, localContainers);
-            query.or(localQuery);
+        for (Map<List<HasContainer>, QueryInfo> lc : hasLocalContainers.values()) {
+            List<JanusGraphQuery> localQueries = new ArrayList<>();
+            for(final List<HasContainer> localContainers : lc.keySet()) {
+                final JanusGraphQuery localQuery = tx.query();
+                addConstraint(localQuery, localContainers);
+                localQueries.add(localQuery);
+            }
+            query.or(localQueries);
         }
         for (final OrderEntry order : orders) query.orderBy(order.key, order.order);
         query.limit(Math.min(limit, highLimit));
@@ -190,22 +202,30 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
         if (hasLocalContainers.isEmpty()) {
             return StringFactory.stepString(this, Arrays.toString(this.ids), hasContainers);
         }
-        if (hasLocalContainers.size() == 1){
+        if (hasLocalContainers.size() == 1 && hasLocalContainers.values().stream().findFirst().get().size() == 1) {
+            Map<List<HasContainer>, QueryInfo> localContainers = hasLocalContainers.values().stream().findFirst().get();
             final List<HasContainer> containers = new ArrayList<>(hasContainers);
-            containers.addAll(hasLocalContainers.keySet().iterator().next());
+            containers.addAll(localContainers.keySet().iterator().next());
             return StringFactory.stepString(this, Arrays.toString(this.ids), containers);
         }
+
         final StringBuilder sb = new StringBuilder();
         if (!hasContainers.isEmpty()) {
-            sb.append(StringFactory.stepString(this, Arrays.toString(ids), hasContainers)).append(".");
+            sb.append(StringFactory.stepString(this, Arrays.toString(ids), hasContainers));
         }
-        sb.append("Or(");
-        final Iterator<List<HasContainer>> itContainers = this.hasLocalContainers.keySet().iterator();
-        sb.append(StringFactory.stepString(this, Arrays.toString(this.ids), itContainers.next()));
-        while(itContainers.hasNext()){
-            sb.append(",").append(StringFactory.stepString(this, Arrays.toString(this.ids), itContainers.next()));
+
+        for (Map<List<HasContainer>, QueryInfo> localContainers : hasLocalContainers.values()) {
+            if (sb.length() > 0) {
+                sb.append(".");
+            }
+            sb.append("Or(");
+            final Iterator<List<HasContainer>> itContainers = localContainers.keySet().iterator();
+            sb.append(StringFactory.stepString(this, Arrays.toString(this.ids), itContainers.next()));
+            while (itContainers.hasNext()) {
+                sb.append(",").append(StringFactory.stepString(this, Arrays.toString(this.ids), itContainers.next()));
+            }
+            sb.append(")");
         }
-        sb.append(")");
         return sb.toString();
     }
 
@@ -215,9 +235,10 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
     }
 
     @Override
-    public List<HasContainer> addLocalAll(Iterable<HasContainer> has) {
+    public List<HasContainer> addLocalAll(TraversalParent parent, Iterable<HasContainer> has) {
         final List<HasContainer> containers = HasStepFolder.splitAndP(new ArrayList<>(), has);
-        hasLocalContainers.put(containers, new QueryInfo(new ArrayList<>(), 0, BaseQuery.NO_LIMIT));
+        Map<List<HasContainer>, QueryInfo> hasContainers = hasLocalContainers.computeIfAbsent(parent.asStep().getId(), k -> new LinkedHashMap<>());
+        hasContainers.put(containers, new QueryInfo(new ArrayList<>(), 0, BaseQuery.NO_LIMIT));
         return containers;
     }
 
@@ -227,8 +248,9 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
     }
 
     @Override
-    public void localOrderBy(List<HasContainer> containers, String key, Order order) {
-       hasLocalContainers.get(containers).getOrders().add(new OrderEntry(key, order));
+    public void localOrderBy(TraversalParent parent, List<HasContainer> containers, String key, Order order) {
+        Map<List<HasContainer>, QueryInfo> hasContainers = hasLocalContainers.get(parent.asStep().getId());
+        hasContainers.get(containers).getOrders().add(new OrderEntry(key, order));
     }
 
     @Override
@@ -238,8 +260,9 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
     }
 
     @Override
-    public void setLocalLimit(List<HasContainer> containers, int low, int high) {
-        hasLocalContainers.replace(containers, hasLocalContainers.get(containers).setLowLimit(low).setHighLimit(high));
+    public void setLocalLimit(TraversalParent parent, List<HasContainer> containers, int low, int high) {
+        Map<List<HasContainer>, QueryInfo> hasContainers = hasLocalContainers.get(parent.asStep().getId());
+        hasContainers.replace(containers, hasContainers.get(containers).setLowLimit(low).setHighLimit(high));
     }
 
     @Override
@@ -248,8 +271,9 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
     }
 
     @Override
-    public int getLocalLowLimit(List<HasContainer> containers) {
-        return hasLocalContainers.get(containers).getLowLimit();
+    public int getLocalLowLimit(TraversalParent parent, List<HasContainer> containers) {
+        Map<List<HasContainer>, QueryInfo> hasContainers = hasLocalContainers.get(parent.asStep().getId());
+        return hasContainers.get(containers).getLowLimit();
     }
 
     @Override
@@ -258,8 +282,9 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
     }
 
     @Override
-    public int getLocalHighLimit(List<HasContainer> containers) {
-        return hasLocalContainers.get(containers).getHighLimit();
+    public int getLocalHighLimit(TraversalParent parent, List<HasContainer> containers) {
+        Map<List<HasContainer>, QueryInfo> hasContainers = hasLocalContainers.get(parent.asStep().getId());
+        return hasContainers.get(containers).getHighLimit();
     }
 
     @Override
@@ -270,7 +295,7 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
     @Override
     public List<HasContainer> getHasContainers() {
         final List<HasContainer> toReturn = new ArrayList<>(this.hasContainers);
-        this.hasLocalContainers.keySet().forEach(toReturn::addAll);
+        this.hasLocalContainers.values().forEach(c -> c.keySet().forEach(toReturn::addAll));
         return toReturn;
     }
 
@@ -297,7 +322,7 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + (hasContainers != null ? this.hasContainers.hashCode() : 0);
-        result = 31 * result + (hasLocalContainers != null ? this.hasLocalContainers.hashCode() : 0);
+        result = 31 * result + (hasLocalContainers != null ? this.hasLocalContainers.values().stream().map(Map::hashCode).reduce(0, Integer::sum) : 0);
         result = 31 * result + lowLimit;
         result = 31 * result + highLimit;
         result = 31 * result + (orders != null ? orders.hashCode() : 0);
