@@ -17,6 +17,8 @@ package org.janusgraph.core;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 
+import java.util.Collection;
+
 /**
  * Constructs a query against a mixed index to retrieve all elements (either vertices or edges)
  * that match all conditions.
@@ -55,7 +57,7 @@ public interface JanusGraphQuery<Q extends JanusGraphQuery<Q>> {
 
     Q hasNot(String key, Object value);
 
-    Q or(Q subQuery);
+    Q or(Collection<Q> subQueries);
 
     <T extends Comparable<?>> Q interval(String key, T startValue, T endValue);
 

@@ -48,6 +48,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -79,9 +81,10 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     private final List<PredicateCondition<String, JanusGraphElement>> constraints = new ArrayList<>(5);
 
     /**
-     * List of constraints added to an Or query. None by default
+     * List of constraints added to one or more Or queries. If there are multiple they will be added to an And query.
+     * None by default.
      */
-    private final List<List<PredicateCondition<String, JanusGraphElement>>> globalConstraints = new ArrayList<>();
+    private final List<List<List<PredicateCondition<String, JanusGraphElement>>>> globalConstraints = new ArrayList<>();
     /**
      * The order in which the elements should be returned. None by default.
      */
@@ -205,8 +208,10 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     }
 
     @Override
-    public GraphCentricQueryBuilder or(GraphCentricQueryBuilder subQuery) {
-        this.globalConstraints.add(subQuery.getConstraints());
+    public GraphCentricQueryBuilder or(Collection<GraphCentricQueryBuilder> subQueries) {
+        final List<List<PredicateCondition<String, JanusGraphElement>>> constraints = new ArrayList<>(subQueries.size());
+        subQueries.forEach(subQuery -> constraints.add(subQuery.getConstraints()));
+        this.globalConstraints.add(constraints);
         return this;
     }
 
@@ -258,19 +263,24 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         if (limit == 0) return GraphCentricQuery.emptyQuery(resultType);
 
         if (globalConstraints.isEmpty()) {
-            globalConstraints.add(constraints);
+            globalConstraints.add(Collections.singletonList(constraints));
         }
         //Prepare constraints
         final MultiCondition<JanusGraphElement> conditions;
-        if (this.globalConstraints.size() == 1) {
-            conditions = QueryUtil.constraints2QNF(tx, globalConstraints.get(0));
+        if (this.globalConstraints.size() == 1 && this.globalConstraints.get(0).size() == 1) {
+            conditions = QueryUtil.constraints2QNF(tx, globalConstraints.get(0).get(0));
             if (conditions == null) return GraphCentricQuery.emptyQuery(resultType);
         } else {
-            conditions = new Or<>();
-            for (final List<PredicateCondition<String, JanusGraphElement>> child : this.globalConstraints){
-                final And<JanusGraphElement> localconditions = QueryUtil.constraints2QNF(tx, child);
-                if (localconditions == null) return GraphCentricQuery.emptyQuery(resultType);
-                conditions.add(localconditions);
+            if (this.globalConstraints.size() == 1) {
+                conditions = constructOrCondition(this.globalConstraints.get(0));
+                if (conditions == null) return GraphCentricQuery.emptyQuery(resultType);
+            } else {
+                conditions = new And<>();
+                for (List<List<PredicateCondition<String, JanusGraphElement>>> globalConstraint : this.globalConstraints) {
+                    Or<JanusGraphElement> or = constructOrCondition(globalConstraint);
+                    if (or == null) return GraphCentricQuery.emptyQuery(resultType);
+                    conditions.add(or);
+                }
             }
         }
 
@@ -298,5 +308,15 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             query = new BackendQueryHolder<>(new JointIndexQuery(), false, selectedIndex.isSorted());
         }
         return new GraphCentricQuery(resultType, conditions, orders, query, limit);
+    }
+
+    private Or<JanusGraphElement> constructOrCondition(List<List<PredicateCondition<String, JanusGraphElement>>> globalConstraint) {
+        Or<JanusGraphElement> or = new Or<>();
+        for (final List<PredicateCondition<String, JanusGraphElement>> child : globalConstraint){
+            final And<JanusGraphElement> localconditions = QueryUtil.constraints2QNF(tx, child);
+            if (localconditions == null) return null;
+            or.add(localconditions);
+        }
+        return or;
     }
 }

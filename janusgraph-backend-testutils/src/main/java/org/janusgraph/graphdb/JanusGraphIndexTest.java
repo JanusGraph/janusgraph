@@ -1114,14 +1114,15 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         final PropertyKey name = makeKey("name", String.class);
         final PropertyKey prop = makeKey("prop", String.class);
         final PropertyKey description = makeKey("desc", String.class);
+        final PropertyKey pet = makeKey("pet", String.class);
         mgmt.buildIndex("mixed", Vertex.class).addKey(name, Mapping.STRING.asParameter())
             .addKey(prop, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
-        mgmt.buildIndex("mi", Vertex.class).addKey(description).buildMixedIndex(INDEX2);
+        mgmt.buildIndex("mi", Vertex.class).addKey(description).addKey(pet).buildMixedIndex(INDEX2);
         finishSchema();
 
-        tx.addVertex("name", "bob", "prop", "val", "desc", "he likes coding", "age", 20);
-        tx.addVertex("name", "bob", "prop", "val2", "desc", "he likes coding", "age", 25);
-        tx.addVertex("name", "alex", "prop", "val", "desc", "he likes debugging", "age", 20);
+        tx.addVertex("name", "bob", "prop", "val", "desc", "he likes coding", "pet", "he likes dogs", "age", 20);
+        tx.addVertex("name", "bob", "prop", "val2", "desc", "he likes coding", "pet", "he likes cats", "age", 25);
+        tx.addVertex("name", "alex", "prop", "val", "desc", "he likes debugging", "pet", "he likes cats", "age", 20);
         tx.commit();
 
         // satisfied by a single graph-centric query which is satisfied by a single mixed index query
@@ -1150,6 +1151,72 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 put("index_impl", "search");
             }};
             assertEquals(annotations, nested.getAnnotations());
+
+            // multiple or clause satisfied by a single graph-centric query which is satisfied by a single mixed index query
+            newTx();
+            assertEquals(1, tx.traversal().V()
+                    .or(__.has("name", "bob"), __.has("prop", "val2"))
+                    .or(__.has("name", "alex"), __.has("prop", "val"))
+                    .count().next());
+            assertEquals(1, tx.traversal().V()
+                    .or(__.has("name", "bob"), __.has("prop", "val2"))
+                    .or(__.has("name", "alex"), __.has("prop", "val"))
+                    .toList().size());
+            final Metrics mMixedOr2 = tx.traversal().V()
+                    .or(__.has("name", "bob"), __.has("prop", "val2"))
+                    .or(__.has("name", "alex"), __.has("prop", "val"))
+                    .profile().next().getMetrics(0);
+            assertEquals("Or(JanusGraphStep([],[name.eq(bob)]),JanusGraphStep([],[prop.eq(val2)])).Or(JanusGraphStep([],[name.eq(alex)]),JanusGraphStep([],[prop.eq(val)]))", mMixedOr2.getName());
+            assertTrue(mMixedOr2.getDuration(TimeUnit.MICROSECONDS) > 0);
+            assertEquals(2, mMixedOr2.getNested().size());
+            nested = (Metrics) mMixedOr2.getNested().toArray()[0];
+            assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
+            assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+            nested = (Metrics) mMixedOr2.getNested().toArray()[1];
+            assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
+            assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+            annotations = new HashMap() {{
+                put("condition", "(((name = bob) OR (prop = val2)) AND ((name = alex) OR (prop = val)))");
+                put("orders", "[]");
+                put("isFitted", "true");
+                put("isOrdered", "true");
+                put("query", "[(((name = bob) OR (prop = val2)) AND ((name = alex) OR (prop = val)))]:mixed");
+                put("index", "mixed");
+                put("index_impl", "search");
+            }};
+            assertEquals(annotations, nested.getAnnotations());
+
+            // multiple or clause satisfied by a single graph-centric query which is satisfied by union of two mixed index queries
+            newTx();
+            assertEquals(2, tx.traversal().V()
+                    .or(__.has("name", "alex"), __.has("prop", "val2"))
+                    .or(__.has("desc", Text.textContains("coding")), __.has("pet", Text.textContains("cats")))
+                    .count().next());
+            assertEquals(2, tx.traversal().V()
+                    .or(__.has("name", "alex"), __.has("prop", "val2"))
+                    .or(__.has("desc", Text.textContains("coding")), __.has("pet", Text.textContains("cats")))
+                    .toList().size());
+            final Metrics mMixedOr3 = tx.traversal().V()
+                    .or(__.has("name", "alex"), __.has("prop", "val2"))
+                    .or(__.has("desc", Text.textContains("coding")), __.has("pet", Text.textContains("cats")))
+                    .profile().next().getMetrics(0);
+            assertEquals("Or(JanusGraphStep([],[name.eq(alex)]),JanusGraphStep([],[prop.eq(val2)])).Or(JanusGraphStep([],[desc.textContains(coding)]),JanusGraphStep([],[pet.textContains(cats)]))", mMixedOr3.getName());
+            assertTrue(mMixedOr3.getDuration(TimeUnit.MICROSECONDS) > 0);
+            assertEquals(2, mMixedOr3.getNested().size());
+            nested = (Metrics) mMixedOr3.getNested().toArray()[0];
+            assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
+            assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+            nested = (Metrics) mMixedOr3.getNested().toArray()[1];
+            assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
+            assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+            Map<String, Object> metricsAnnotations = nested.getAnnotations();
+            assertEquals(5, metricsAnnotations.size());
+            assertEquals("(((name = alex) OR (prop = val2)) AND ((desc textContains coding) OR (pet textContains cats)))", metricsAnnotations.get("condition"));
+            assertEquals("[]", metricsAnnotations.get("orders"));
+            assertEquals("true", metricsAnnotations.get("isFitted"));
+            assertEquals("true", metricsAnnotations.get("isOrdered"));
+            assertTrue(metricsAnnotations.get("query").equals("[mixed:[(((name = alex) OR (prop = val2)))]:mixed, mi:[(((desc textContains coding) OR (pet textContains cats)))]:mi]") ||
+                metricsAnnotations.get("query").equals("[mi:[(((desc textContains coding) OR (pet textContains cats)))]:mi, mixed:[(((name = alex) OR (prop = val2)))]:mixed]"));
         }
 
         // satisfied by two graph-centric queries, one is mixed index query and the other one is full scan
@@ -3105,5 +3172,68 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         } finally {
             graph2.close();
         }
+    }
+
+    private void testMultipleOrClauses() {
+        if (indexFeatures.supportNotQueryNormalForm()) {
+            clopen(option(FORCE_INDEX_USAGE), true);
+        }
+
+        Vertex v1 = tx.traversal().addV("test").property("a", true).property("b", true).property("c", true).property("d", true).next();
+        Vertex v2 = tx.traversal().addV("test").property("a", true).property("b", false).property("c", true).property("d", false).next();
+        Vertex v3 = tx.traversal().addV("test").property("a", false).property("b", true).property("c", false).property("d", true).next();
+        Vertex v4 = tx.traversal().addV("test").property("a", false).property("b", false).property("c", true).property("d", false).next();
+
+        newTx();
+
+        List<Vertex> vertices = tx.traversal().V()
+            .or(__.has("a", true), __.has("b", true))
+            .or(__.has("c", false), __.has("d", true))
+            .toList();
+
+        assertTrue(vertices.contains(v1));
+        assertFalse(vertices.contains(v2));
+        assertTrue(vertices.contains(v3));
+        assertFalse(vertices.contains(v4));
+        assertEquals(2, vertices.size());
+    }
+
+    @Test
+    public void testMultipleOrClausesMixed() {
+        final PropertyKey a = makeKey("a", Boolean.class);
+        final PropertyKey b = makeKey("b", Boolean.class);
+        final PropertyKey c = makeKey("c", Boolean.class);
+        final PropertyKey d = makeKey("d", Boolean.class);
+
+        mgmt.buildIndex("mixed", Vertex.class)
+            .addKey(a)
+            .addKey(b)
+            .addKey(c)
+            .addKey(d)
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        testMultipleOrClauses();
+    }
+
+    @Test
+    public void testMultipleOrClausesMultipleMixed() {
+        final PropertyKey a = makeKey("a", Boolean.class);
+        final PropertyKey b = makeKey("b", Boolean.class);
+        final PropertyKey c = makeKey("c", Boolean.class);
+        final PropertyKey d = makeKey("d", Boolean.class);
+
+        mgmt.buildIndex("mixed", Vertex.class)
+            .addKey(a)
+            .addKey(b)
+            .buildMixedIndex(INDEX);
+
+        mgmt.buildIndex("mi", Vertex.class)
+            .addKey(c)
+            .addKey(d)
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        testMultipleOrClauses();
     }
 }

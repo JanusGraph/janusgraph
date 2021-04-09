@@ -22,6 +22,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
+import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -176,12 +177,12 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     }
 
     @Override
-    public List<HasContainer> addLocalHasContainersConvertingAndPContainers(List<HasContainer> localHasContainers) {
+    public List<HasContainer> addLocalHasContainersConvertingAndPContainers(TraversalParent parent, List<HasContainer> localHasContainers) {
         throw new UnsupportedOperationException("addLocalAll is not supported for graph vertex step.");
     }
 
     @Override
-    public List<HasContainer> addLocalHasContainersSplittingAndPContainers(Iterable<HasContainer> has) {
+    public List<HasContainer> addLocalHasContainersSplittingAndPContainers(TraversalParent parent, Iterable<HasContainer> has) {
         throw new UnsupportedOperationException("addLocalAll is not supported for graph vertex step.");
     }
 
@@ -191,7 +192,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     }
 
     @Override
-    public void localOrderBy(List<HasContainer> hasContainers, String key, Order order) {
+    public void localOrderBy(TraversalParent parent, List<HasContainer> hasContainers, String key, Order order) {
        throw new UnsupportedOperationException("localOrderBy is not supported for graph vertex step.");
     }
 
@@ -202,7 +203,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     }
 
     @Override
-    public void setLocalLimit(List<HasContainer> hasContainers, int low, int high) {
+    public void setLocalLimit(TraversalParent parent, List<HasContainer> hasContainers, int low, int high) {
         throw new UnsupportedOperationException("setLocalLimit is not supported for graph vertex step.");
     }
 
@@ -212,7 +213,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     }
 
     @Override
-    public int getLocalLowLimit(List<HasContainer> hasContainers) {
+    public int getLocalLowLimit(TraversalParent parent, List<HasContainer> hasContainers) {
         throw new UnsupportedOperationException("getLocalLowLimit is not supported for properties step.");
     }
 
@@ -222,7 +223,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     }
 
     @Override
-    public int getLocalHighLimit(List<HasContainer> hasContainers) {
+    public int getLocalHighLimit(TraversalParent parent, List<HasContainer> hasContainers) {
         throw new UnsupportedOperationException("getLocalHighLimit is not supported for graph vertex step.");
     }
 
