@@ -512,9 +512,9 @@ Meta data to include in storage backend retrievals
 
 | Name | Description | Datatype | Default Value | Mutability |
 | ---- | ---- | ---- | ---- | ---- |
-| storage.meta.[X].timestamps | Whether to include timestamps in retrieved entries for storage backends that automatically annotated entries with timestamps | Boolean | false | GLOBAL |
-| storage.meta.[X].ttl | Whether to include ttl in retrieved entries for storage backends that support storage and retrieval of cell level TTL | Boolean | false | GLOBAL |
-| storage.meta.[X].visibility | Whether to include visibility in retrieved entries for storage backends that support cell level visibility | Boolean | true | GLOBAL |
+| storage.meta.[X].timestamps | Whether to include timestamps in retrieved entries for storage backends that automatically annotated entries with timestamps. If enabled, timestamp can be retrieved by `element.value(ImplicitKey.TIMESTAMP.name())` or equivalently, `element.value("~timestamp")`. | Boolean | false | GLOBAL |
+| storage.meta.[X].ttl | Whether to include ttl in retrieved entries for storage backends that support storage and retrieval of cell level TTL. If enabled, ttl can be retrieved by `element.value(ImplicitKey.TTL.name())` or equivalently, `element.value("~ttl")`. | Boolean | false | GLOBAL |
+| storage.meta.[X].visibility | Whether to include visibility in retrieved entries for storage backends that support cell level visibility. If enabled, visibility can be retrieved by `element.value(ImplicitKey.VISIBILITY.name())` or equivalently, `element.value("~visibility")`. | Boolean | true | GLOBAL |
 
 ### tx
 Configuration options for transaction handling
