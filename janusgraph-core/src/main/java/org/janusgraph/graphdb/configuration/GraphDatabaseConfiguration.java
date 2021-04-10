@@ -29,6 +29,7 @@ import org.janusgraph.core.schema.JanusGraphDefaultSchemaMaker;
 import org.janusgraph.core.schema.Tp3DefaultSchemaMaker;
 import org.janusgraph.core.schema.DisableDefaultSchemaMaker;
 import org.janusgraph.core.schema.IgnorePropertySchemaMaker;
+import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.janusgraph.util.StringUtils;
 import org.janusgraph.util.stats.NumberUtil;
 import org.janusgraph.diskstorage.util.time.*;
@@ -676,15 +677,21 @@ public class GraphDatabaseConfiguration {
     public static final ConfigNamespace STORE_META_NS = new ConfigNamespace(STORAGE_NS,"meta","Meta data to include in storage backend retrievals",true);
 
     public static final ConfigOption<Boolean> STORE_META_TIMESTAMPS = new ConfigOption<>(STORE_META_NS,"timestamps",
-            "Whether to include timestamps in retrieved entries for storage backends that automatically annotated entries with timestamps",
+            "Whether to include timestamps in retrieved entries for storage backends that automatically annotated entries with timestamps. " +
+            "If enabled, timestamp can be retrieved by `element.value(ImplicitKey.TIMESTAMP.name())` or equivalently, " +
+            "`element.value(\"" + ImplicitKey.TIMESTAMP.name() + "\")`.",
             ConfigOption.Type.GLOBAL, false);
 
     public static final ConfigOption<Boolean> STORE_META_TTL = new ConfigOption<>(STORE_META_NS,"ttl",
-            "Whether to include ttl in retrieved entries for storage backends that support storage and retrieval of cell level TTL",
+            "Whether to include ttl in retrieved entries for storage backends that support storage and retrieval of cell level TTL. " +
+            "If enabled, ttl can be retrieved by `element.value(ImplicitKey.TTL.name())` or equivalently, " +
+            "`element.value(\"" + ImplicitKey.TTL.name() + "\")`.",
             ConfigOption.Type.GLOBAL, false);
 
     public static final ConfigOption<Boolean> STORE_META_VISIBILITY = new ConfigOption<>(STORE_META_NS,"visibility",
-            "Whether to include visibility in retrieved entries for storage backends that support cell level visibility",
+            "Whether to include visibility in retrieved entries for storage backends that support cell level visibility. " +
+            "If enabled, visibility can be retrieved by `element.value(ImplicitKey.VISIBILITY.name())` or equivalently, " +
+            "`element.value(\"" + ImplicitKey.VISIBILITY.name() + "\")`.",
             ConfigOption.Type.GLOBAL, true);
 
 
