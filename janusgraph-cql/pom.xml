@@ -20,7 +20,7 @@
         <test.jvm.opts>-Xms256m -Xmx1280m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</test.jvm.opts>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <top.level.basedir>${basedir}/..</top.level.basedir>
-        <test.docker.version.cassandra3>3.11.10</test.docker.version.cassandra3>
+        <test.docker.version.cassandra3>${cassandra.version}</test.docker.version.cassandra3>
     </properties>
 
     <dependencies>
@@ -291,19 +291,19 @@
                         <phase>test</phase>
                     </execution>
                     <execution>
-                        <id>${test.murmur}-serial-test</id>
+                        <id>cql-serial-test</id>
                         <goals>
                             <goal>test</goal>
                         </goals>
                         <phase>test</phase>
                         <configuration>
-                            <excludedGroups />
+                            <excludedGroups>none</excludedGroups>
                             <groups>SERIAL_TESTS</groups>
                             <parallel>none</parallel>
                             <perCoreThreadCount>false</perCoreThreadCount>
                             <threadCount>1</threadCount>
                             <runOrder>alphabetical</runOrder>
-                            <skip>${test.skip.murmur-serial}</skip>
+                            <skip>${test.skip.serial}</skip>
                         </configuration>
                     </execution>
                 </executions>
@@ -342,7 +342,7 @@
             <properties>
                 <cassandra.docker.version>${test.docker.version.cassandra3}</cassandra.docker.version>
                 <cassandra.docker.partitioner>${test.byteordered}</cassandra.docker.partitioner>
-                <test.skip.murmur-serial>true</test.skip.murmur-serial>
+                <test.skip.serial>true</test.skip.serial>
                 <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
             </properties>
         </profile>
@@ -354,7 +354,7 @@
             <properties>
                 <cassandra.docker.version>${test.docker.version.cassandra3}</cassandra.docker.version>
                 <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
-                <test.skip.murmur-serial>false</test.skip.murmur-serial>
+                <test.skip.serial>false</test.skip.serial>
                 <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
             </properties>
         </profile>
@@ -367,7 +367,7 @@
                 <cassandra.docker.version>${test.docker.version.cassandra3}</cassandra.docker.version>
                 <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
                 <cassandra.docker.useSSL>true</cassandra.docker.useSSL>
-                <test.skip.murmur-serial>false</test.skip.murmur-serial>
+                <test.skip.serial>false</test.skip.serial>
                 <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
             </properties>
         </profile>
@@ -381,7 +381,7 @@
                 <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
                 <cassandra.docker.useSSL>true</cassandra.docker.useSSL>
                 <cassandra.docker.enableClientAuth>true</cassandra.docker.enableClientAuth>
-                <test.skip.murmur-serial>false</test.skip.murmur-serial>
+                <test.skip.serial>false</test.skip.serial>
                 <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
             </properties>
         </profile>
@@ -389,14 +389,14 @@
         <profile>
             <id>scylladb</id>
             <properties>
-                <cassandra.docker.version>4.3.0</cassandra.docker.version>
+                <cassandra.docker.version>${scylladb.version}</cassandra.docker.version>
                 <cassandra.docker.image>scylladb/scylla</cassandra.docker.image>
                 <cassandra.docker.useDefaultConfigFromImage>true</cassandra.docker.useDefaultConfigFromImage>
                 <test.skip.byteordered>true</test.skip.byteordered>
                 <test.skip.murmur>true</test.skip.murmur>
-                <test.skip.murmur-serial>true</test.skip.murmur-serial>
+                <test.skip.serial>false</test.skip.serial>
                 <test.skip.murmur-ssl>true</test.skip.murmur-ssl>
-                <test.cql.excludes>${test.excluded.groups}</test.cql.excludes>
+                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
             </properties>
         </profile>
     </profiles>
