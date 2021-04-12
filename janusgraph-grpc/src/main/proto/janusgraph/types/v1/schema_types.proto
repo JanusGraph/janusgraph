@@ -70,7 +70,7 @@ enum PropertyLocality {
 message VertexProperty {
     google.protobuf.Int64Value id = 1;
     string name = 2;
-    PropertyDataType dataType = 3;
+    PropertyDataType data_type = 3;
     PropertyConstraints constraints = 4;
     PropertyLocality locality = 5;
     reserved 6 to 9;
@@ -80,7 +80,7 @@ message VertexProperty {
 message EdgeProperty {
     google.protobuf.Int64Value id = 1;
     string name = 2;
-    PropertyDataType dataType = 3;
+    PropertyDataType data_type = 3;
     PropertyConstraints constraints = 4;
     PropertyLocality locality = 5;
     reserved 6 to 9;
