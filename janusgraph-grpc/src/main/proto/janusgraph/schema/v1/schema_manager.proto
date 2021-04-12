@@ -41,16 +41,7 @@ message GetEdgeLabelByNameResponse {
     janusgraph.types.v1.EdgeLabel edge_label = 1;
 }
 
-message GetGlobalVertexPropertiesRequest {
-    janusgraph.types.v1.JanusGraphContext context = 1;
-}
-
-message GetGlobalVertexPropertiesResponse {
-    repeated janusgraph.types.v1.VertexProperty properties = 1;
-}
-
 service SchemaManagerService {
     rpc GetVertexLabelByName(GetVertexLabelByNameRequest) returns (GetVertexLabelByNameResponse);
-    rpc GetGlobalVertexProperties(GetGlobalVertexPropertiesRequest) returns (GetGlobalVertexPropertiesResponse)
     rpc GetEdgeLabelByName(GetEdgeLabelByNameRequest) returns (GetEdgeLabelByNameResponse);
 }

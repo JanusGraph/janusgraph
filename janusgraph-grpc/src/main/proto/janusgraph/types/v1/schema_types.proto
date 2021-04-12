@@ -22,46 +22,68 @@ option java_multiple_files = true;
 option java_package = "org.janusgraph.graphdb.grpc.types";
 
 enum PropertyDataType {
-    String = 0;
-    Character = 1;
-    Boolean = 2;
-    Int8 = 3;
-    Int16 = 4;
-    Int32 = 5;
-    Int64 = 6;
-    Float32 = 7;
-    Float64 = 8;
-    Date = 9;
-    JavaObject = 10;
-    GeoShape = 11;
-    Uuid = 12;
+    STRING = 0;
+    CHARACTER = 1;
+    BOOLEAN = 2;
+    INT8 = 3;
+    INT16 = 4;
+    INT32 = 5;
+    INT64 = 6;
+    FLOAT32 = 7;
+    FLOAT64 = 8;
+    DATE = 9;
+    JAVA_OBJECT = 10;
+    GEO_SHAPE = 11;
+    UUID = 12;
 }
 
 enum VertexPropertyCardinality {
-    Single = 0;
-    List = 1;
-    Set = 2;
+    SINGLE = 0;
+    LIST = 1;
+    SET = 2;
 }
 
-enum PropertyBinding {
-    Globally = 0;
-    Local = 1;
+enum PropertyConstraints {
+    // Property can be used on all vertices and properties (can only be used with locality: global)
+    OPEN = 0;
+    // Property can be used on all defined vertices or properties
+    DEFINED = 1;
+    // Property is required on all defined vertices or properties
+    REQUIRED = 2;
+}
+
+enum PropertyLocality {
+    // Property is defined globally for all vertices and all edges/meta properties (if cardinality is single)
+    GLOBAL = 0;
+    // Property is defined a side of a vertex or edge.
+    LOCAL = 1;
 }
 
 // current possibilities
-// * schema constraints: property is globally defined but bind to vertex or edge
-// * no schema constraints: property is globally defined but isn't bound to vertex or edge
-// * only properties with the cardinality single can be used for edges
+// * schema constraints: property is globally defined but bind to vertex or edge - PropertyConstraints: DEFINED, PropertyLocality: GLOBAL
+// * no schema constraints: property is globally defined but isn't bound to vertex or edge - PropertyConstraints: OPEN, PropertyLocality: GLOBAL
+// * only properties with the cardinality single can be used for edges PropertyConstraints: DEFINED/OPEN/REQUIRED, PropertyLocality: GLOBAL
 // future possibilities
-// * per vertex/edge property
-// * enforce schema constraints but special properties that can be bound to any vertex/edge
+// * per vertex/edge property - PropertyConstraints: DEFINED/REQUIRED, PropertyLocality: LOCAL
+// * enforce schema constraints but special properties that can be bound to any vertex/edge allow properties with constraints to be OPEN or DEFINED in the same schema
 
 message VertexProperty {
     google.protobuf.Int64Value id = 1;
     string name = 2;
     PropertyDataType dataType = 3;
-    PropertyBinding binding = 4;
-    VertexPropertyCardinality cardinality = 5;
+    PropertyConstraints constraints = 4;
+    PropertyLocality locality = 5;
+    reserved 6 to 9;
+    VertexPropertyCardinality cardinality = 10;
+}
+
+message EdgeProperty {
+    google.protobuf.Int64Value id = 1;
+    string name = 2;
+    PropertyDataType dataType = 3;
+    PropertyConstraints constraints = 4;
+    PropertyLocality locality = 5;
+    reserved 6 to 9;
 }
 
 message VertexLabel {
@@ -74,13 +96,6 @@ message VertexLabel {
     // Marking as partitioned, default not partitioned.
     bool partitioned = 4;
     repeated VertexProperty properties = 5;
-}
-
-message EdgeProperty {
-    google.protobuf.Int64Value id = 1;
-    string name = 2;
-    PropertyDataType dataType = 3;
-    PropertyBinding binding = 4;
 }
 
 message EdgeLabel {
