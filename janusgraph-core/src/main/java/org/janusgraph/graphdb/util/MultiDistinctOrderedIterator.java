@@ -38,10 +38,12 @@ public class MultiDistinctOrderedIterator<E extends Element> implements Closeabl
     private final TreeMap<E, Integer> currentElements;
     private final Set<Object> allElements = new HashSet<>();
     private final Integer limit;
+    private final boolean singleIterator;
     private long count = 0;
 
     public MultiDistinctOrderedIterator(final Integer lowLimit, final Integer highLimit, final List<Iterator<E>> iterators, final List<OrderEntry> orders) {
         this.limit = highLimit;
+        this.singleIterator = iterators.size() == 1;
         final List<Comparator<E>> comp = new ArrayList<>();
         orders.forEach(o -> comp.add(new ElementValueComparator(o.key, o.order)));
         Comparator<E> comparator = new MultiComparator<>(comp);
@@ -73,7 +75,9 @@ public class MultiDistinctOrderedIterator<E extends Element> implements Closeabl
                 if (element != null) {
                     values.put(i, element);
                     currentElements.put(element, i);
-                    allElements.add(element.id());
+                    if (!singleIterator) {
+                        allElements.add(element.id());
+                    }
                 }
             }
         }
