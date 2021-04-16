@@ -100,7 +100,7 @@ The Gremlin Console interprets commands using [Apache Groovy](https://www.groovy
 Gremlin-Groovy extends Groovy by providing a set of methods for basic and advanced graph traversal funcionality.
 For a deeper dive into Gremlin language's features, please refer to our [introduction to Gremlin](./gremlin.md).
 
-### Running the Gremlin Server
+### Running the JanusGraph Server
 
 In most real-world use cases, queries to a database will not be run from the exact same server the data is stored on.
 Instead, there will be some sort of client-server hierarchy in which the server runs the database and handles requests while multiple clients create these requests and thereby read and write entries within the database independently of one another.
@@ -123,9 +123,6 @@ $ ./bin/janusgraph-server.sh console ./conf/gremlin-server/gremlin-server-[...].
     No search backend is used by default, so mixed indices aren't supported as search backend isn't specified 
     (Make sure you are using `GraphOfTheGodsFactory.loadWithoutMixedIndex(graph, true)` instead of `GraphOfTheGodsFactory.load(graph)` if you follow [Basic Usage example](./basic-usage.md)).
     For further information about storage backends, visit the [corresponding section](../storage-backend/index.md) of the documentation.
-    
-    You are also encouraged to look into `janusgraph.sh`, which by defaults starts a more sophisticated server than `janusgraph-server.sh`.
-    Further documentation on server configuration can be found in the [JanusGraph Server](../operations/server.md#using-the-pre-packaged-distribution) section. (This requires to download `janusgraph-full-{{ latest_version }}.zip` instead of the default `janusgraph-{{ latest_version }}.zip`.)
 
 A Gremlin server is now running on your local machine and waiting for clients to connect on the default port `8182`.
 To instantiate a client -- as done before -- run the `gremlin.sh` script.
@@ -146,3 +143,61 @@ When using a different setup, all you have to do is modify the parameters in the
 
     To forward every command to the remote server, use the `:remote console` command.
     Further documentation can be found in the [TinkerPop reference docs](https://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/reference/#console-remote-console)
+
+### Using the Pre-Packaged Distribution
+
+!!! note
+    Starting with 0.5.1, this requires to download `janusgraph-full-{{ latest_version }}.zip` instead of the default `janusgraph-{{ latest_version }}.zip`.
+
+The JanusGraph
+[release](https://github.com/JanusGraph/janusgraph/releases) comes
+pre-configured to run JanusGraph Server out of the box leveraging a
+sample Cassandra and Elasticsearch configuration to allow users to get
+started quickly with JanusGraph Server. This configuration defaults to
+client applications that can connect to JanusGraph Server via WebSocket
+with a custom subprotocol. There are a number of clients developed in
+different languages to help support the subprotocol. The most familiar
+client to use the WebSocket interface is the Gremlin Console. The
+quick-start bundle is not intended to be representative of a production
+installation, but does provide a way to perform development with
+JanusGraph Server, run tests and see how the components are wired
+together. To use this default configuration:
+
+-   Download a copy of the current `janusgraph-full-$VERSION.zip` file from
+    the [Releases
+    page](https://github.com/JanusGraph/janusgraph/releases)
+
+-   Unzip it and enter the `janusgraph--full-$VERSION` directory
+
+-   Run `bin/janusgraph.sh start`. This step will start Gremlin Server
+    with Cassandra/ES forked into a separate process. Note for security
+    reasons Elasticsearch and therefore `janusgraph.sh` must be run
+    under a non-root account.
+
+```bash
+$ bin/janusgraph.sh start
+Forking Cassandra...
+Running `nodetool statusthrift`.. OK (returned exit status 0 and printed string "running").
+Forking Elasticsearch...
+Connecting to Elasticsearch (127.0.0.1:9300)... OK (connected to 127.0.0.1:9300).
+Forking Gremlin-Server...
+Connecting to Gremlin-Server (127.0.0.1:8182)... OK (connected to 127.0.0.1:8182).
+Run gremlin.sh to connect.
+```
+
+#### Cleaning up after the Pre-Packaged Distribution
+
+If you want to start fresh and remove the database and logs you can use
+the clean command with `janusgraph.sh`. The server should be stopped
+before running the clean operation.
+```bash
+$ cd /Path/to/janusgraph/janusgraph-{project.version}/
+$ ./bin/janusgraph.sh stop
+Killing Gremlin-Server (pid 91505)...
+Killing Elasticsearch (pid 91402)...
+Killing Cassandra (pid 91219)...
+$ ./bin/janusgraph.sh clean
+Are you sure you want to delete all stored data and logs? [y/N] y
+Deleted data in /Path/to/janusgraph/janusgraph-{project.version}/db
+Deleted logs in /Path/to/janusgraph/janusgraph-{project.version}/log
+```
