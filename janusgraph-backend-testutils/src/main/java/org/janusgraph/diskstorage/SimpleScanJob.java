@@ -92,7 +92,7 @@ public class SimpleScanJob implements ScanJob {
                 StaticBuffer start = StaticArrayBuffer.of(Hex.hexToBytes(queryTokens[0]));
                 StaticBuffer end = StaticArrayBuffer.of(Hex.hexToBytes(queryTokens[1]));
                 SliceQuery query = new SliceQuery(start, end);
-                int limit = Integer.valueOf(queryTokens[2]);
+                int limit = Integer.parseInt(queryTokens[2]);
                 if (0 <= limit) {
                     query.setLimit(limit);
                 }

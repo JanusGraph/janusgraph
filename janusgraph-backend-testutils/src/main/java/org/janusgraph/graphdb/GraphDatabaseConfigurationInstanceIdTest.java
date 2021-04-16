@@ -36,7 +36,7 @@ public class GraphDatabaseConfigurationInstanceIdTest {
 
     @Test
     public void graphShouldOpenWithSameInstanceId() {
-        final Map<String, Object> map = new HashMap<String, Object>();
+        final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         map.put(UNIQUE_INSTANCE_ID.toStringWithoutRoot(), "not-unique");
         map.put(REPLACE_INSTANCE_IF_EXISTS.toStringWithoutRoot(), true);
@@ -58,7 +58,7 @@ public class GraphDatabaseConfigurationInstanceIdTest {
 
     @Test
     public void graphShouldNotOpenWithSameInstanceId() {
-        final Map<String, Object> map = new HashMap<String, Object>();
+        final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         map.put(UNIQUE_INSTANCE_ID.toStringWithoutRoot(), "not-unique");
         final MapConfiguration config = new MapConfiguration(map);
@@ -75,7 +75,7 @@ public class GraphDatabaseConfigurationInstanceIdTest {
 
     @Test
     public void instanceIdShouldEqualHostname() throws UnknownHostException {
-        final Map<String, Object> map = new HashMap<String, Object>();
+        final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         map.put(UNIQUE_INSTANCE_ID_HOSTNAME.toStringWithoutRoot(), true);
         final MapConfiguration config = new MapConfiguration(map);
@@ -87,7 +87,7 @@ public class GraphDatabaseConfigurationInstanceIdTest {
 
     @Test
     public void instanceIdShouldEqualHostnamePlusSuffix() throws UnknownHostException {
-        final Map<String, Object> map = new HashMap<String, Object>();
+        final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         map.put(UNIQUE_INSTANCE_ID_HOSTNAME.toStringWithoutRoot(), true);
         map.put(UNIQUE_INSTANCE_ID_SUFFIX.toStringWithoutRoot(), 1);

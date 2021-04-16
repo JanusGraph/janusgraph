@@ -158,7 +158,7 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
 
         initializeMemory();
 
-        return CompletableFuture.supplyAsync(() -> submitAsync());
+        return CompletableFuture.supplyAsync(this::submitAsync);
     }
 
     private void guardAgainstDuplicateSubmission() {

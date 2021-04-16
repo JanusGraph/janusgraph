@@ -41,7 +41,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 public class GraphOfTheGodsFactory {
 
     public static final String INDEX_NAME = "search";
-    private static final String ERR_NO_INDEXING_BACKEND = 
+    private static final String ERR_NO_INDEXING_BACKEND =
             "The indexing backend with name \"%s\" is not defined. Specify an existing indexing backend or " +
             "use GraphOfTheGodsFactory.loadWithoutMixedIndex(graph,true) to load without the use of an " +
             "indexing backend.";
@@ -71,7 +71,7 @@ public class GraphOfTheGodsFactory {
 
     public static void load(final JanusGraph graph, String mixedIndexName, boolean uniqueNameCompositeIndex) {
         if (graph instanceof StandardJanusGraph) {
-            Preconditions.checkState(mixedIndexNullOrExists((StandardJanusGraph)graph, mixedIndexName), 
+            Preconditions.checkState(mixedIndexNullOrExists((StandardJanusGraph)graph, mixedIndexName),
                     ERR_NO_INDEXING_BACKEND, mixedIndexName);
         }
 
@@ -169,7 +169,7 @@ public class GraphOfTheGodsFactory {
      *
      * @param args a singleton array containing a path to a JanusGraph config properties file
      */
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         if (null == args || 1 != args.length) {
             System.err.println("Usage: GraphOfTheGodsFactory <janusgraph-config-file>");
             System.exit(1);

@@ -111,7 +111,7 @@ public abstract class DaemonRunner<S> {
                 /* Can receive "java.lang.IllegalStateException: Shutdown in progress"
                  * when called from JVM shutdown (as opposed to called from the stop method).
                  */
-                log.debug("Could not unregister killer hook: {}", e);
+                log.debug("Could not unregister killer hook: {}", killerHook.getName(), e);
             }
             killerHook = null;
         }

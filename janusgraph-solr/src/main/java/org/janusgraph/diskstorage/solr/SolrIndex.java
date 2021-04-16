@@ -157,7 +157,7 @@ public class SolrIndex implements IndexProvider {
      * TODO Rename ZOOKEEPER_URL and "zookeeper-url" to ZOOKEEPER_URLS and
      * "zookeeper-urls" in future major releases.
      */
-    public static final ConfigOption<String[]> ZOOKEEPER_URL = new ConfigOption<String[]>(SOLR_NS,"zookeeper-url",
+    public static final ConfigOption<String[]> ZOOKEEPER_URL = new ConfigOption<>(SOLR_NS, "zookeeper-url",
             "URL of the Zookeeper instance coordinating the SolrCloud cluster",
             ConfigOption.Type.MASKABLE, new String[] { "localhost:2181" });
 
@@ -207,7 +207,7 @@ public class SolrIndex implements IndexProvider {
 
     /** Security Configuration */
 
-    public static final ConfigOption<Boolean> KERBEROS_ENABLED = new ConfigOption<Boolean>(SOLR_NS,"kerberos-enabled",
+    public static final ConfigOption<Boolean> KERBEROS_ENABLED = new ConfigOption<>(SOLR_NS, "kerberos-enabled",
             "Whether SOLR instance is Kerberized or not.",
             ConfigOption.Type.MASKABLE, false);
 
@@ -958,7 +958,7 @@ public class SolrIndex implements IndexProvider {
 
     @Override
     public void close() throws BackendException {
-        logger.trace("Shutting down connection to Solr", solrClient);
+        logger.trace("Shutting down connection to Solr {}", solrClient);
         try {
             solrClient.close();
         } catch (final IOException e) {

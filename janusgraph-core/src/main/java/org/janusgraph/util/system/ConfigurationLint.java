@@ -33,7 +33,7 @@ public class ConfigurationLint {
     private static final Logger log =
             LoggerFactory.getLogger(ConfigurationLint.class);
 
-    public static void main(String args[]) throws IOException {
+    public static void main(String[] args) throws IOException {
         if (1 != args.length) {
             System.err.println("Usage: ConfigurationLint janusgraph.properties");
             System.err.println("  Reads the supplied config file from disk and checks for unknown options.");

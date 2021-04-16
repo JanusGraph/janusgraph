@@ -14,15 +14,14 @@
 
 package org.janusgraph.graphdb.transaction.addedrelations;
 
-import org.janusgraph.graphdb.internal.InternalRelation;
-
 import com.carrotsearch.hppc.ObjectHashSet;
 import com.carrotsearch.hppc.ObjectSet;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import javax.annotation.Nonnull;
+import org.janusgraph.graphdb.internal.InternalRelation;
 
+import javax.annotation.Nonnull;
 import java.util.AbstractCollection;
 import java.util.Collection;
 import java.util.Collections;

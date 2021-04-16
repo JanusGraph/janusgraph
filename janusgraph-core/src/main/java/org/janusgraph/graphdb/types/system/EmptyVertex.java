@@ -15,8 +15,15 @@
 package org.janusgraph.graphdb.types.system;
 
 import com.google.common.base.Predicate;
-
-import org.janusgraph.core.*;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.janusgraph.core.JanusGraphEdge;
+import org.janusgraph.core.JanusGraphVertexProperty;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.VertexLabel;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
@@ -25,7 +32,6 @@ import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.util.datastructures.Retriever;
-import org.apache.tinkerpop.gremlin.structure.*;
 
 import java.util.Collections;
 import java.util.Iterator;

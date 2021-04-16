@@ -855,7 +855,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                     logger.error("TableNotFoundException", ee);
                     throw new PermanentBackendException(ee);
                 } catch (org.apache.hadoop.hbase.TableExistsException ee) {
-                    logger.debug("Swallowing exception {}", ee);
+                    logger.debug("Swallowing exception", ee);
                 } catch (IOException ee) {
                     throw new TemporaryBackendException(ee);
                 }

@@ -565,7 +565,6 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             if (!attributeHandler.validDataType(attribute.getClass())) {
                 throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(attribute);
             }
-            return attribute;
         } else {
             if (!attribute.getClass().equals(datatype)) {
 
@@ -582,8 +581,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             }
             assert (attribute.getClass().equals(datatype));
             attributeHandler.verifyAttribute(datatype, attribute);
-            return attribute;
         }
+        return attribute;
     }
 
     public void removeRelation(InternalRelation relation) {

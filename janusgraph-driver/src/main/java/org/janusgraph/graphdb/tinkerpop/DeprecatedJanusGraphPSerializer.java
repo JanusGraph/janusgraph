@@ -76,19 +76,20 @@ public class DeprecatedJanusGraphPSerializer implements SerializerShim<P> {
         }
         if (!predicate.equals("and") && !predicate.equals("or")) {
             if (value instanceof Collection) {
-                if (predicate.equals("between")) {
-                    return P.between(((List) value).get(0), ((List) value).get(1));
-                } else if (predicate.equals("inside")) {
-                    return P.inside(((List) value).get(0), ((List) value).get(1));
-                } else if (predicate.equals("outside")) {
-                    return P.outside(((List) value).get(0), ((List) value).get(1));
-                } else if (predicate.equals("within")) {
-                    return P.within((Collection) value);
-                } else {
-                    return predicate.equals("without") ? P.without((Collection) value) : (P) P.class.getMethod(predicate, Collection.class).invoke((Object) null, (Collection) value);
+                switch (predicate) {
+                    case "between":
+                        return P.between(((List) value).get(0), ((List) value).get(1));
+                    case "inside":
+                        return P.inside(((List) value).get(0), ((List) value).get(1));
+                    case "outside":
+                        return P.outside(((List) value).get(0), ((List) value).get(1));
+                    case "within":
+                        return P.within((Collection) value);
+                    default:
+                        return predicate.equals("without") ? P.without((Collection) value) : (P) P.class.getMethod(predicate, Collection.class).invoke(null, value);
                 }
             } else {
-                return (P) P.class.getMethod(predicate, Object.class).invoke((Object) null, value);
+                return (P) P.class.getMethod(predicate, Object.class).invoke(null, value);
             }
         } else {
             return (P) (predicate.equals("and") ? new AndP((List) value) : new OrP((List) value));

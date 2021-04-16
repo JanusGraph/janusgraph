@@ -60,7 +60,7 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
     public SimpleBulkPlacementStrategy(int concurrentPartitions) {
         Preconditions.checkArgument(concurrentPartitions > 0);
         currentPartitions = new int[concurrentPartitions];
-        exhaustedPartitions = Collections.newSetFromMap(new ConcurrentHashMap<Integer,Boolean>());
+        exhaustedPartitions = Collections.newSetFromMap(new ConcurrentHashMap<>());
     }
 
     public SimpleBulkPlacementStrategy(Configuration config) {

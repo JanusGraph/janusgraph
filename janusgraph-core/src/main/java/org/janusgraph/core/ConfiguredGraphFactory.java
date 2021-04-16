@@ -285,7 +285,7 @@ public class ConfiguredGraphFactory {
         } catch (Exception e) {
             // cannot open graph, do nothing
             log.error(String.format("Failed to open graph %s with the following error:\n %s.\n" +
-                "Thus, it and its traversal will not be bound on this server.", graphName, e.toString()));
+                "Thus, it and its traversal will not be bound on this server.", graphName, e));
         }
     }
 

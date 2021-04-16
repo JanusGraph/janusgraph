@@ -99,7 +99,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
         for (int i = 0; i < sig.size(); i++) {
             PropertyKey key = sig.get(i);
             Preconditions.checkNotNull(key);
-            Preconditions.checkArgument(!((PropertyKey) key).dataType().equals(Object.class),
+            Preconditions.checkArgument(!key.dataType().equals(Object.class),
                     "Signature and sort keys must have a proper declared datatype: %s", key.name());
             signature[i] = key.longId();
         }

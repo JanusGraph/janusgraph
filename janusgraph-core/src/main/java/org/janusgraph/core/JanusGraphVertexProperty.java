@@ -47,7 +47,7 @@ public interface JanusGraphVertexProperty<V> extends JanusGraphRelation, VertexP
         return (PropertyKey)getType();
     }
 
-    public static <V> JanusGraphVertexProperty<V> empty() {
+    static <V> JanusGraphVertexProperty<V> empty() {
         return EmptyJanusGraphVertexProperty.instance();
     }
 

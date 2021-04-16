@@ -292,7 +292,7 @@ public class ManagementSystem implements JanusGraphManagement {
             maker = lm;
         }
 
-        boolean canIndexBeEnabled = type.isNew() || Arrays.stream(sortKeys).anyMatch(key -> key.isNew());
+        boolean canIndexBeEnabled = type.isNew() || Arrays.stream(sortKeys).anyMatch(JanusGraphElement::isNew);
 
         maker.status(canIndexBeEnabled ? SchemaStatus.ENABLED : SchemaStatus.INSTALLED);
         maker.invisible();
@@ -397,12 +397,10 @@ public class ManagementSystem implements JanusGraphManagement {
 
     @Override
     public String printSchema() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(printVertexLabels(false));
-        sb.append(printEdgeLabels(false));
-        sb.append(printPropertyKeys(false));
-        sb.append(printIndexes(false));
-        return sb.toString();
+        return printVertexLabels(false) +
+            printEdgeLabels(false) +
+            printPropertyKeys(false) +
+            printIndexes(false);
     }
 
     @Override
@@ -509,7 +507,7 @@ public class ManagementSystem implements JanusGraphManagement {
         sb.append(String.format(pattern, "Graph Index (Vertex)", "Type", "Unique", "Backing", "Key:", "Status"));
         sb.append(DASHBREAK);
         sb.append(iterateIndexes(pattern, vertexIndexes));
-        
+
         sb.append(DASHBREAK);
         sb.append(String.format(pattern, "Graph Index (Edge)", "Type", "Unique", "Backing", "Key:", "Status"));
         sb.append(DASHBREAK);
@@ -1134,10 +1132,9 @@ public class ManagementSystem implements JanusGraphManagement {
         @Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            else if (other == null || !getClass().isInstance(other)) return false;
+            else if (!getClass().isInstance(other)) return false;
             IndexIdentifier oth = (IndexIdentifier) other;
-            return indexName.equals(oth.indexName) &&
-                    (relationTypeName == oth.relationTypeName || (relationTypeName != null && relationTypeName.equals(oth.relationTypeName)));
+            return indexName.equals(oth.indexName) && (Objects.equals(relationTypeName, oth.relationTypeName));
         }
 
         public Consumer<ScanMetrics> getIndexJobFinisher() {
@@ -1158,12 +1155,12 @@ public class ManagementSystem implements JanusGraphManagement {
                                 management.commit();
                             }
                         }
-                        LOGGER.info("Index update job successful for [{}]", IndexIdentifier.this.toString());
+                        LOGGER.info("Index update job successful for [{}]", IndexIdentifier.this);
                     } else {
-                        LOGGER.error("Index update job unsuccessful for [{}]. Check logs", IndexIdentifier.this.toString());
+                        LOGGER.error("Index update job unsuccessful for [{}]. Check logs", IndexIdentifier.this);
                     }
                 } catch (Throwable e) {
-                    LOGGER.error("Error encountered when updating index after job finished [" + IndexIdentifier.this.toString() + "]: ", e);
+                    LOGGER.error("Error encountered when updating index after job finished [" + IndexIdentifier.this + "]: ", e);
                 }
             };
         }

@@ -15,9 +15,7 @@
 package org.janusgraph.graphdb.transaction.addedrelations;
 
 import org.janusgraph.graphdb.internal.InternalRelation;
-
 import com.google.common.base.Predicate;
-
 import java.util.Collection;
 
 /**

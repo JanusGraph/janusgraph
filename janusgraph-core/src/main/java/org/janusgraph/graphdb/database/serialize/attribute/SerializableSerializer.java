@@ -35,7 +35,7 @@ public class SerializableSerializer<T extends Serializable> implements Attribute
     @Override
     public T read(ScanBuffer buffer) {
         byte[] data = serializer.readObjectNotNull(buffer,byte[].class);
-        return (T) SerializationUtils.deserialize(data);
+        return SerializationUtils.deserialize(data);
     }
 
     @Override

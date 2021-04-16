@@ -93,7 +93,7 @@ public class HadoopConfiguration implements WriteConfiguration {
                 default:
                     throw new IllegalArgumentException("Cannot parse time duration from: " + s);
             }
-            return (O) Duration.of(Long.valueOf(comps[0]), unit);
+            return (O) Duration.of(Long.parseLong(comps[0]), unit);
         } else throw new IllegalArgumentException("Unsupported data type: " + dataType);
     }
 

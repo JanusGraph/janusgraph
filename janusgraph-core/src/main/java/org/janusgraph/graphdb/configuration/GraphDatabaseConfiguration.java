@@ -156,12 +156,12 @@ public class GraphDatabaseConfiguration {
             "Setting this to true will allow certain fixed values to be updated such as storage-version. This should only be used for upgrading.",
             ConfigOption.Type.MASKABLE, Boolean.class, false);
 
-    public static final ConfigOption<Boolean> UNIQUE_INSTANCE_ID_HOSTNAME = new ConfigOption<Boolean>(GRAPH_NS,"use-hostname-for-unique-instance-id",
+    public static final ConfigOption<Boolean> UNIQUE_INSTANCE_ID_HOSTNAME = new ConfigOption<>(GRAPH_NS, "use-hostname-for-unique-instance-id",
             "When this is set, this JanusGraph's unique instance identifier is set to the hostname. If " + UNIQUE_INSTANCE_ID_SUFFIX.getName() +
             " is also set, then the identifier is set to <hostname><suffix>.",
             ConfigOption.Type.LOCAL, Boolean.class, false);
 
-    public static final ConfigOption<Boolean> REPLACE_INSTANCE_IF_EXISTS = new ConfigOption<Boolean>(GRAPH_NS,"replace-instance-if-exists",
+    public static final ConfigOption<Boolean> REPLACE_INSTANCE_IF_EXISTS = new ConfigOption<>(GRAPH_NS, "replace-instance-if-exists",
             "If a JanusGraph instance with the same instance identifier already exists, the usage of this " +
             "configuration option results in the opening of this graph anwyay.",
             ConfigOption.Type.LOCAL, Boolean.class, false);

@@ -105,9 +105,9 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
             queries.entries().forEach(q ->  executeGraphCentricQuery(builder, responses, q));
 
             if (orders.isEmpty()) {
-                return new MultiDistinctUnorderedIterator<E>(lowLimit, highLimit, responses);
+                return new MultiDistinctUnorderedIterator<>(lowLimit, highLimit, responses);
             } else {
-                return new MultiDistinctOrderedIterator<E>(lowLimit, highLimit, responses, orders);
+                return new MultiDistinctOrderedIterator<>(lowLimit, highLimit, responses, orders);
             }
         });
     }

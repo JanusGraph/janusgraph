@@ -74,7 +74,7 @@ public abstract class SubsetSubqueryCache implements SubqueryCache {
         return values;
     }
 
-    class SubqueryResult {
+    static class SubqueryResult {
         private List<Object> values;
         private int queryLimit;
 

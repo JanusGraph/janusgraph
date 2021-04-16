@@ -169,7 +169,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
         isOpen = true;
         txCounter = new AtomicLong(0);
-        openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<StandardJanusGraphTx, Boolean>(100, 0.75f, 1));
+        openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<>(100, 0.75f, 1));
 
         //Register instance and ensure uniqueness
         String uniqueInstanceId = configuration.getUniqueGraphId();

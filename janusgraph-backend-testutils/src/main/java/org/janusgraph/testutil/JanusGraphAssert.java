@@ -103,15 +103,11 @@ public class JanusGraphAssert {
     }
 
     public static void assertBackendHit(TraversalMetrics profile) {
-        assertTrue(profile.getMetrics().stream().anyMatch(metrics -> {
-            return hasBackendHit(metrics);
-        }));
+        assertTrue(profile.getMetrics().stream().anyMatch(JanusGraphAssert::hasBackendHit));
     }
 
     public static void assertNoBackendHit(TraversalMetrics profile) {
-        assertFalse(profile.getMetrics().stream().anyMatch(metrics -> {
-            return hasBackendHit(metrics);
-        }));
+        assertFalse(profile.getMetrics().stream().anyMatch(JanusGraphAssert::hasBackendHit));
     }
 
     private static boolean isEmpty(Object obj) {

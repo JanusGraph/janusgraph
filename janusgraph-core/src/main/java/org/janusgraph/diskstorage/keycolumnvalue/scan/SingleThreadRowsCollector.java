@@ -79,9 +79,7 @@ class SingleThreadRowsCollector extends RowsCollector {
                 Map<SliceQuery, RecordIterator<Entry>> sliceToEntriesMap = keyIterator.getEntries();
                 if (!keyFilter.test(key)) continue;
                 Map<SliceQuery, EntryList> rowEntries = new HashMap<>(sliceToEntriesMap.size());
-                sliceToEntriesMap.entrySet().forEach(mapEntry -> {
-                    rowEntries.put(mapEntry.getKey(), EntryArrayList.of(mapEntry.getValue()));
-                });
+                sliceToEntriesMap.forEach((sliceQuery, entryList) -> rowEntries.put(sliceQuery, EntryArrayList.of(entryList)));
                 rowQueue.put(new Row(key, rowEntries));
             }
         } catch (InterruptedException e) {

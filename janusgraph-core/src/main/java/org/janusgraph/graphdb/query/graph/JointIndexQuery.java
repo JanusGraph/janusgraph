@@ -174,7 +174,7 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
 
         @Override
         public String toString() {
-            return index.toString()+":"+query.toString();
+            return index +":"+ query;
         }
 
         @Override

@@ -433,7 +433,7 @@ public class LuceneIndex implements IndexProvider {
                     throw new IllegalArgumentException("Illegal mapping specified: " + mapping);
             }
         } else if (value instanceof Geoshape) {
-            field = new StoredField(fieldName, GEOID + value.toString());
+            field = new StoredField(fieldName, GEOID + value);
         } else if (value instanceof Date) {
             field = new StoredField(fieldName, (((Date) value).getTime()));
         } else if (value instanceof Instant) {

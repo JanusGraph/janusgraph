@@ -46,7 +46,7 @@ public class AdjacentVertexHasIdOptimizerStrategy
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
         TraversalHelper.getStepsOfClass(HasStep.class, traversal)
-            .forEach(step -> optimizeStep(step));
+            .forEach(this::optimizeStep);
     }
 
     private P<?> parsePredicate(HasStep<?> hasStep) {
@@ -83,6 +83,6 @@ public class AdjacentVertexHasIdOptimizerStrategy
     @Override
     protected FilterStep<Edge> makeFilterByAdjacentIdStep(Traversal.Admin<?, ?> traversal, HasStep<?> originalStep) {
         HasContainer hc = new HasContainer(ADJACENT_ID.name(), P.eq(parsePredicate(originalStep).getValue()));
-        return new HasStep<Edge>(traversal, hc);
+        return new HasStep<>(traversal, hc);
     }
 }

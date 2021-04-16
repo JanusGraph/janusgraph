@@ -17,7 +17,11 @@ package org.janusgraph.graphdb.vertices;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
-
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.diskstorage.EntryList;
@@ -28,11 +32,6 @@ import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.util.ElementHelper;
 import org.janusgraph.util.datastructures.Retriever;
-import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -124,7 +123,7 @@ public class PreloadedVertex extends CacheVertex {
             if (count == 0 || !mixin.properties(keys).hasNext()) return super.properties(keys);
             else if (count == keys.length) return mixin.properties(keys);
         }
-        return (Iterator) Iterators.concat(super.properties(keys), mixin.properties(keys));
+        return Iterators.concat(super.properties(keys), mixin.properties(keys));
     }
 
     @Override
