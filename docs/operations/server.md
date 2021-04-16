@@ -1,7 +1,7 @@
 # JanusGraph Server
 JanusGraph uses the [Gremlin Server](https://tinkerpop.apache.org/docs/{{tinkerpop_version}}/reference/#gremlin-server) 
-engine as the server component to process and answer client queries. 
-When packaged in JanusGraph, Gremlin Server is called JanusGraph Server.
+engine as the server component to process and answer client queries and extends it with convenience features for JanusGraph. 
+From now on, we will call this JanusGraph Server.
 
 JanusGraph Server must be started manually in order to use it.
 JanusGraph Server provides a way to remotely execute Gremlin traversals
@@ -11,140 +11,154 @@ describe how to configure JanusGraph Server to handle HTTP endpoint
 interactions. For information about how to connect to a JanusGraph
 Server from different languages refer to [Connecting to JanusGraph](../interactions/connecting/index.md).
 
-## Getting Started
+## Starting a JanusGraph Server
 
-### Using the Pre-Packaged Distribution
+JanusGraph Server comes packaged with a script called `bin/janusgraph-server.sh` to get it started:
+```txt
+$ ./bin/janusgraph-server.sh console
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/var/lib/janusgraph/lib/slf4j-log4j12-1.7.30.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/var/lib/janusgraph/lib/logback-classic-1.1.3.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+0    [main] INFO  org.janusgraph.graphdb.server.JanusGraphServer  -                                                                       
+   mmm                                mmm                       #     
+     #   mmm   m mm   m   m   mmm   m"   "  m mm   mmm   mmmm   # mm  
+     #  "   #  #"  #  #   #  #   "  #   mm  #"  " "   #  #" "#  #"  # 
+     #  m"""#  #   #  #   #   """m  #    #  #     m"""#  #   #  #   # 
+ "mmm"  "mm"#  #   #  "mm"#  "mmm"   "mmm"  #     "mm"#  ##m#"  #   # 
+                                                         #            
+                                                         "            
+[...]
+2240 [gremlin-server-boss-1] INFO  org.apache.tinkerpop.gremlin.server.GremlinServer  - Channel started at port 8182.
+```
 
-!!! note
-    Starting with 0.5.1, this is just included in the full package version.
 
-The JanusGraph
-[release](https://github.com/JanusGraph/janusgraph/releases) comes
-pre-configured to run JanusGraph Server out of the box leveraging a
-sample Cassandra and Elasticsearch configuration to allow users to get
-started quickly with JanusGraph Server. This configuration defaults to
-client applications that can connect to JanusGraph Server via WebSocket
-with a custom subprotocol. There are a number of clients developed in
-different languages to help support the subprotocol. The most familiar
-client to use the WebSocket interface is the Gremlin Console. The
-quick-start bundle is not intended to be representative of a production
-installation, but does provide a way to perform development with
-JanusGraph Server, run tests and see how the components are wired
-together. To use this default configuration:
+JanusGraph Server is configured by the provided YAML file `conf/gremlin-server/gremlin-server.yaml`. 
+That file tells JanusGraph Server many things and is based on the Gremlin Server config, see [Gremlin Server](https://tinkerpop.apache.org/docs/current/reference/#gremlin-server).
 
--   Download a copy of the current `janusgraph-$VERSION.zip` file from
-    the [Releases
-    page](https://github.com/JanusGraph/janusgraph/releases)
+### Usage of janusgraph-server.sh
 
--   Unzip it and enter the `janusgraph-$VERSION` directory
+The JanusGraph Server can be started in the foreground with stdout logging or detached. 
 
--   Run `bin/janusgraph.sh start`. This step will start Gremlin Server
-    with Cassandra/ES forked into a separate process. Note for security
-    reasons Elasticsearch and therefore `janusgraph.sh` must be run
-    under a non-root account.
+```txt
+$ ./bin/janusgraph-server.sh
+Usage: ./bin/janusgraph-server.sh {start|stop|restart|status|console|usage <group> <artifact> <version>|<conf file>}
+
+    start           Start the server in the background using conf/gremlin-server/gremlin-server.yaml as the
+                    default configuration file
+    stop            Stop the server
+    restart         Stop and start the server
+    status          Check if the server is running using the pid file
+    console         Start the server in the foreground using conf/gremlin-server/gremlin-server.yaml as the
+                    default configuration file
+    usage           Print out this help message
+
+If using a custom YAML configuration file then specify it as the only argument for a JanusGraph
+Server to run in the foreground or specify it via the JANUSGRAPH_YAML environment variable.
+```
+
+### Env variables
+
+| Variable | Description | Default Value |
+|---|---|---|
+|`$JANUSGRAPH_HOME`| Root directory of a default janusgraph installation. | (default directory below janusgraph-server.sh) |
+|`$JANUSGRAPH_CONF`| Config directory containing all kinds of server and graph configs. | `$JANUSGRAPH_HOME/conf` |
+|`$LOG_DIR`| Log directory |`"$JANUSGRAPH_HOME/logs"`|
+|`$LOG_FILE`| Default log file |`"$LOG_DIR/janusgraph.log"`|
+|`$PID_DIR`||`"$JANUSGRAPH_HOME/run"`|
+|`$PID_FILE`||`"$PID_DIR/janusgraph.pid"`|
+|`$JANUSGRAPH_YAML`| JanusGraph Server config path |`"$JANUSGRAPH_CONF/gremlin-server/gremlin-server.yaml"`|
+|`$JANUSGRAPH_LIB`| JanusGraph library directory |`"$JANUSGRAPH_HOME/lib"`|
+|`$JAVA_HOME`| If not set java home fallback to `java`. |NOT_SET|
+|`$JAVA_OPTIONS_FILE`||`"$JANUSGRAPH_CONF/jvm.options"`|
+|`$JAVA_OPTIONS`||NOT_SET|
+|`$CP`| Can be used to override the classpath's. (expert mode) |NOT_SET|
+|`$DEBUG`| If you enable debug by creating this env, bash debug will be enabled. |NOT_SET|
+
+### Configure jvm.options
+
+JanusGraph runs on the JVM which is configureable for special use cases. Therefore, JanusGraph provides a `jvm.options` file with some default options.
 
 ```bash
-$ bin/janusgraph.sh start
-Forking Cassandra...
-Running `nodetool statusthrift`.. OK (returned exit status 0 and printed string "running").
-Forking Elasticsearch...
-Connecting to Elasticsearch (127.0.0.1:9300)... OK (connected to 127.0.0.1:9300).
-Forking Gremlin-Server...
-Connecting to Gremlin-Server (127.0.0.1:8182)... OK (connected to 127.0.0.1:8182).
-Run gremlin.sh to connect.
-```
+# Copyright 2020 JanusGraph Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-#### Connecting to Gremlin Server
+#################
+# HEAP SETTINGS #
+#################
 
-After running `janusgraph.sh`, Gremlin Server will be ready to listen
-for WebSocket connections. The easiest way to test the connection is
-with Gremlin Console.
+-Xms4096m
+-Xmx4096m
 
-Start Gremlin Console with bin/gremlin.sh and use the :remote and :> commands to issue Gremlin to Gremlin Server:
 
-```bash
-$  bin/gremlin.sh
-         \,,,/
-         (o o)
------oOOo-(3)-oOOo-----
-plugin activated: tinkerpop.server
-plugin activated: tinkerpop.hadoop
-plugin activated: tinkerpop.utilities
-plugin activated: janusgraph.imports
-plugin activated: tinkerpop.tinkergraph
-gremlin> :remote connect tinkerpop.server conf/remote.yaml
-==>Connected - localhost/127.0.0.1:8182
-gremlin> :> graph.addVertex("name", "stephen")
-==>v[256]
-gremlin> :> g.V().values('name')
-==>stephen
-```
+########################
+# GENERAL JVM SETTINGS #
+########################
 
-The `:remote` command tells the console to configure a remote connection
-to Gremlin Server using the `conf/remote.yaml` file to connect. That
-file points to a Gremlin Server instance running on `localhost`. The
-`:>` is the "submit" command which sends the Gremlin on that line to the
-currently active remote.
-Instead of prefixing every single script with `:>`, the command `:remote console` can
-be executed once to implicitly send all subsequent scripts to the current remote connection.
-By default remote connections are sessionless,
-meaning that each line sent in the console is interpreted as a single
-request. Multiple statements can be sent on a single line using a
-semicolon as the delimiter.
-```groovy
-gremlin> :remote connect tinkerpop.server conf/remote.yaml
-==>Configured localhost/127.0.0.1:8182
-gremlin> :remote console
-==>All scripts will now be sent to Gremlin Server - [localhost/127.0.0.1:8182] - type ':remote console' to return to local mode
-gremlin> graph
-==>standardjanusgraph[cql:[127.0.0.1]]
-gremlin> g
-==>graphtraversalsource[standardjanusgraph[cql:[127.0.0.1]], standard]
-gremlin> g.V()
-gremlin> user = "Chris"
-==>Chris
-gremlin> graph.addVertex("name", user)
-No such property: user for class: Script21
-Type ':help' or ':h' for help.
-Display stack trace? [yN]
-```
 
-Alternatively, you can establish a console with a session by specifying
-[session](https://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/reference/#sessions)
-when creating the connection. A [console
-session](https://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/reference/#console-sessions)
-allows you to reuse variables across several lines of input.
-```groovy
-gremlin> :remote connect tinkerpop.server conf/remote.yaml session
-==>Configured localhost/127.0.0.1:8182-[9acf239e-a3ed-4301-b33f-55c911e04052]
-gremlin> :remote console
-==>All scripts will now be sent to Gremlin Server - [localhost/127.0.0.1:8182]-[9acf239e-a3ed-4301-b33f-55c911e04052] - type ':remote console' to return to local mode
-gremlin> g.V()
-gremlin> user = "Chris"
-==>Chris
-gremlin> user
-==>Chris
-gremlin> graph.addVertex("name", user)
-==>v[4344]
-gremlin> g.V().values('name')
-==>Chris
-```
+# enable thread priorities, primarily so we can give periodic tasks
+# a lower priority to avoid interfering with client workload
+-XX:+UseThreadPriorities
 
-## Cleaning up after the Pre-Packaged Distribution
+# allows lowering thread priority without being root on linux - probably
+# not necessary on Windows but doesn't harm anything.
+# see http://tech.stolsvik.com/2010/01/linux-java-thread-priorities-workar
+-XX:ThreadPriorityPolicy=42
 
-If you want to start fresh and remove the database and logs you can use
-the clean command with `janusgraph.sh`. The server should be stopped
-before running the clean operation.
-```bash
-$ cd /Path/to/janusgraph/janusgraph-{project.version}/
-$ ./bin/janusgraph.sh stop
-Killing Gremlin-Server (pid 91505)...
-Killing Elasticsearch (pid 91402)...
-Killing Cassandra (pid 91219)...
-$ ./bin/janusgraph.sh clean
-Are you sure you want to delete all stored data and logs? [y/N] y
-Deleted data in /Path/to/janusgraph/janusgraph-{project.version}/db
-Deleted logs in /Path/to/janusgraph/janusgraph-{project.version}/log
+# Enable heap-dump if there's an OOM
+-XX:+HeapDumpOnOutOfMemoryError
+
+# Per-thread stack size.
+-Xss256k
+
+# Make sure all memory is faulted and zeroed on startup.
+# This helps prevent soft faults in containers and makes
+# transparent hugepage allocation more effective.
+-XX:+AlwaysPreTouch
+
+# Enable thread-local allocation blocks and allow the JVM to automatically
+# resize them at runtime.
+-XX:+UseTLAB
+-XX:+ResizeTLAB
+-XX:+UseNUMA
+
+
+####################
+# GREMLIN SETTINGS #
+####################
+
+-Dgremlin.io.kryoShimService=org.janusgraph.hadoop.serialize.JanusGraphKryoShimService
+
+
+#################
+#  GC SETTINGS  #
+#################
+
+### CMS Settings
+
+-XX:+UseParNewGC
+-XX:+UseConcMarkSweepGC
+-XX:+CMSParallelRemarkEnabled
+-XX:SurvivorRatio=8
+-XX:MaxTenuringThreshold=1
+-XX:CMSInitiatingOccupancyFraction=75
+-XX:+UseCMSInitiatingOccupancyOnly
+-XX:CMSWaitDuration=10000
+-XX:+CMSParallelInitialMarkEnabled
+-XX:+CMSEdenChunksRecordAlways
+-XX:+CMSClassUnloadingEnabled
 ```
 
 ## JanusGraph Server as a WebSocket Endpoint
@@ -402,173 +416,10 @@ You can then use that token for authentication by using the "Authorization: Toke
 curl -v http://localhost:8182/session -XPOST -d '{"gremlin": "g.V().count()"}' -H "Authorization: Token dXNlcjoxNTA5NTQ2NjI0NDUzOkhrclhYaGhRVG9KTnVSRXJ5U2VpdndhalJRcVBtWEpSMzh5WldqRTM4MW89"
 ```
 
-### Using TinkerPop Gremlin Server with JanusGraph
-
-Since JanusGraph Server is a TinkerPop Gremlin Server packaged 
-with configuration files for JanusGraph, a version compatible 
-TinkerPop Gremlin Server can be downloaded separately and used with JanusGraph. 
-Get started by downloading the appropriate version of Gremlin Server, 
-which needs to match a version supported by the JanusGraph version in use ({{ tinkerpop_version }}).
-
-!!! important
-    Any references to file paths in this section refer to paths under a
-    TinkerPop distribution for Gremlin Server and not a JanusGraph
-    distribution with the JanusGraph Server, unless specifically noted.
-
-Configuring a standalone Gremlin Server to work with 
-JanusGraph is similar to configuring the packaged JanusGraph Server. 
-You should be familiar with [graph configuration](https://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/reference/#_configuring_2). 
-Basically, the Gremlin Server yaml file points to graph-specific configuration files 
-that are used to instantiate JanusGraph instances that it will then host. 
-In order to instantiate these Graph instances, 
-Gremlin Server requires that the appropriate libraries and dependencies 
-for the JanusGraph be available on its classpath.
-
-For purposes of demonstration, these instructions will outline how to
-configure the BerkeleyDB backend for JanusGraph in Gremlin Server. As
-stated earlier, Gremlin Server needs JanusGraph dependencies on its
-classpath. Invoke the following command replacing `$VERSION` with the
-version of JanusGraph to use:
-
-```bash
-bin/gremlin-server.sh -i org.janusgraph janusgraph-all $VERSION
-```
-
-When this process completes, Gremlin Server should now have all the
-JanusGraph dependencies available to it and will thus be able to
-instantiate `JanusGraph` objects.
-
-!!! important
-    The above command uses Groovy Grape and if it is not configured properly 
-    download errors may ensue. Please refer to [this section](https://tinkerpop.apache.org/docs/{{tinkerpop_version}}/reference/#gremlin-applications)
-    of the TinkerPop documentation for more information around setting up ~/.groovy/grapeConfig.xml.
-
-Create a file called `GREMLIN_SERVER_HOME/conf/janusgraph.properties`
-with the following contents:
-```properties
-gremlin.graph=org.janusgraph.core.JanusGraphFactory
-storage.backend=berkeleyje
-storage.directory=db/berkeley
-```
-
-Configuration of other backends is similar. See
-[Storage Backends](../storage-backend/index.md). If using Cassandra, then use Cassandra
-configuration options in the `janusgraph.properties` file. The only
-important piece to leave unchanged is the `gremlin.graph` setting which
-should always use `JanusGraphFactory`. This setting tells Gremlin Server
-how to instantiate a `JanusGraph` instance.
-
-Next create a file called
-`GREMLIN_SERVER_HOME/conf/gremlin-server-janusgraph.yaml` that has the
-following contents:
-```yaml
-host: localhost
-port: 8182
-graphs: {
-  graph: conf/janusgraph.properties}
-scriptEngines: {
-  gremlin-groovy: {
-    plugins: { org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.server.jsr223.GremlinServerGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.tinkergraph.jsr223.TinkerGraphGremlinPlugin: {},
-               org.apache.tinkerpop.gremlin.jsr223.ImportGremlinPlugin: {classImports: [java.lang.Math], methodImports: [java.lang.Math#*]},
-               org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: {files: [scripts/empty-sample.groovy]}}}}
-serializers:
-  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0, config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
-  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0, config: { serializeResultToString: true }}
-  - { className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0, config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
-metrics: {
-  slf4jReporter: {enabled: true, interval: 180000}}
-```
-
-**There are several important parts to this configuration file as they relate to JanusGraph.**
-
-1.  In the `graphs` map, there is a key called `graph` and its value is
-    `conf/janusgraph.properties`. This tells Gremlin Server to
-    instantiate a `Graph` instance called "graph" and use the
-    `conf/janusgraph.properties` file to configure it. The "graph" key
-    becomes the unique name for the `Graph` instance in Gremlin Server
-    and it can be referenced as such in the scripts submitted to it.
-
-2.  In the `plugins` list, there is a reference to
-    `JanusGraphGremlinPlugin`, which tells Gremlin Server to initialize
-    the "JanusGraph Plugin". The "JanusGraph Plugin" will auto-import
-    JanusGraph specific classes for usage in scripts.
-
-3.  Note the `scripts` key and the reference to
-    `scripts/janusgraph.groovy`. This Groovy file is an initialization
-    script for Gremlin Server and that particular ScriptEngine. Create
-    `scripts/janusgraph.groovy` with the following contents:
-
-```groovy
-def globals = [:]
-globals << [g : graph.traversal()]
-```
-
-The above script creates a `Map` called `globals` and assigns to it a
-key/value pair. The key is `g` and its value is a `TraversalSource`
-generated from `graph`, which was configured for Gremlin Server in its
-configuration file. At this point, there are now two global variables
-available to scripts provided to Gremlin Server - `graph` and `g`.
-
-At this point, Gremlin Server is configured and can be used to connect
-to a new or existing JanusGraph database. To start the server:
-```bash
-$ bin/gremlin-server.sh conf/gremlin-server-janusgraph.yaml
-[INFO] GremlinServer -
-         \,,,/
-         (o o)
------oOOo-(3)-oOOo-----
-
-[INFO] GremlinServer - Configuring Gremlin Server from conf/gremlin-server-janusgraph.yaml
-[INFO] MetricManager - Configured Metrics Slf4jReporter configured with interval=180000ms and loggerName=org.apache.tinkerpop.gremlin.server.Settings$Slf4jReporterMetrics
-[INFO] GraphDatabaseConfiguration - Set default timestamp provider MICRO
-[INFO] GraphDatabaseConfiguration - Generated unique-instance-id=7f0000016240-ubuntu1
-[INFO] Backend - Initiated backend operations thread pool of size 8
-[INFO] KCVSLog$MessagePuller - Loaded unidentified ReadMarker start time 2015-10-02T12:28:24.411Z into org.janusgraph.diskstorage.log.kcvs.KCVSLog$MessagePuller@35399441
-[INFO] GraphManager - Graph [graph] was successfully configured via [conf/janusgraph.properties].
-[INFO] ServerGremlinExecutor - Initialized Gremlin thread pool.  Threads in pool named with pattern gremlin-*
-[INFO] ScriptEngines - Loaded gremlin-groovy ScriptEngine
-[INFO] GremlinExecutor - Initialized gremlin-groovy ScriptEngine with scripts/janusgraph.groovy
-[INFO] ServerGremlinExecutor - Initialized GremlinExecutor and configured ScriptEngines.
-[INFO] ServerGremlinExecutor - A GraphTraversalSource is now bound to [g] with graphtraversalsource[standardjanusgraph[berkeleyje:db/berkeley], standard]
-[INFO] AbstractChannelizer - Configured application/vnd.gremlin-v3.0+gryo with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0
-[INFO] AbstractChannelizer - Configured application/vnd.gremlin-v3.0+gryo-stringd with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0
-[INFO] GremlinServer$1 - Gremlin Server configured with worker thread pool of 1, gremlin pool of 8 and boss thread pool of 1.
-[INFO] GremlinServer$1 - Channel started at port 8182.
-```
-
-The following section explains how to connect to the running server.
-
-#### Connecting to JanusGraph via Gremlin Server
-
-Gremlin Server will be ready to listen for WebSocket connections when it
-is started. The easiest way to test the connection is with Gremlin
-Console.
-
-Follow the instructions here [Connecting to Gremlin Server](../interactions/connecting/index.md) to verify the Gremlin
-Server is working.
-
-!!! important
-    A difference you should understand is that when working with
-    JanusGraph Server, the Gremlin Console is started from underneath the
-    JanusGraph distribution and when following the test instructions here
-    for a standalone Gremlin Server, the Gremlin Console is started from
-    under the TinkerPop distribution.
-
-```java
-GryoMapper mapper = GryoMapper.build().addRegistry(JanusGraphIoRegistry.INSTANCE).create();
-Cluster cluster = Cluster.build().serializer(new GryoMessageSerializerV3d0(mapper)).create();
-Client client = cluster.connect();
-client.submit("g.V()").all().get();
-```
-
-By adding the `JanusGraphIoRegistry` to the
-`org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0`, the
-driver will know how to properly deserialize custom data types returned
-by JanusGraph.
-
 ## Extending JanusGraph Server
+
+!!! note
+    We currently are refactoring JanusGraph Server. If you like to get information or want to give input, see [issue #2119](https://github.com/JanusGraph/janusgraph/issues/2119).
 
 It is possible to extend Gremlin Server with other means of
 communication by implementing the interfaces that it provides and

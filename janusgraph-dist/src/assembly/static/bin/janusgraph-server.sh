@@ -63,11 +63,11 @@ if [[ -z "$PID_DIR" ]] ; then
 fi
 
 if [[ -z "$PID_FILE" ]]; then
-  PID_FILE=$PID_DIR/janusgraph.pid
+  PID_FILE="$PID_DIR/janusgraph.pid"
 fi
 
 if [[ -z "$JANUSGRAPH_YAML" ]]; then
-  JANUSGRAPH_YAML=$JANUSGRAPH_CONF/gremlin-server/gremlin-server.yaml
+  JANUSGRAPH_YAML="$JANUSGRAPH_CONF/gremlin-server/gremlin-server.yaml"
 fi
 
 if [[ ! -r "$JANUSGRAPH_YAML" ]]; then
@@ -97,7 +97,7 @@ COLLECTED_JAVA_OPTIONS_FILE=""
 
 # Read user-defined JVM options from jvm.options file
 if [[ -z "$JAVA_OPTIONS_FILE" ]]; then
-  JAVA_OPTIONS_FILE=$JANUSGRAPH_CONF/jvm.options
+  JAVA_OPTIONS_FILE="$JANUSGRAPH_CONF/jvm.options"
 fi
 if [[ -f "$JAVA_OPTIONS_FILE" ]]; then
   for opt in `grep "^-" $JAVA_OPTIONS_FILE`
@@ -242,7 +242,7 @@ startForeground() {
 
 }
 printUsage() {
-  echo "Usage: $0 {start|stop|restart|status|console <group> <artifact> <version>|<conf file>}"
+  echo "Usage: $0 {start|stop|restart|status|console|usage <group> <artifact> <version>|<conf file>}"
   echo
   echo "    start           Start the server in the background using conf/gremlin-server/gremlin-server.yaml as the"
   echo "                    default configuration file"
@@ -251,6 +251,7 @@ printUsage() {
   echo "    status          Check if the server is running"
   echo "    console         Start the server in the foreground using conf/gremlin-server/gremlin-server.yaml as the"
   echo "                    default configuration file"
+  echo "    usage           Print out this help message"
   echo
   echo "If using a custom YAML configuration file then specify it as the only argument for a JanusGraph"
   echo "Server to run in the foreground or specify it via the JANUSGRAPH_YAML environment variable."
