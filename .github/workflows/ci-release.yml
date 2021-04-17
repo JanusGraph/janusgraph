@@ -94,9 +94,9 @@ jobs:
             args: "-Pcassandra3-byteordered -Dtest.skip.tp=false -DskipTests=true"
           - module: cql
             args: "-Pcassandra3-murmur -Dtest.skip.tp=false -DskipTests=true"
-          - module: hbase-parent/janusgraph-hbase-10
+          - module: hbase
             args: "-Dtest.skip.tp=false -DskipTests=true"
-          - module: hbase-parent/janusgraph-hbase-10
+          - module: hbase
             install-args: "-Dhbase.profile -Phbase2"
             args: "-Dtest.skip.tp=false -DskipTests=true"
     steps:

@@ -69,6 +69,14 @@
                     <groupId>com.google.code.gson</groupId>
                     <artifactId>gson</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.ow2.asm</groupId>
+                    <artifactId>asm</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.htrace</groupId>
+                    <artifactId>htrace-core4</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -123,7 +131,7 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>janusgraph-hbase-core</artifactId>
+            <artifactId>janusgraph-hbase</artifactId>
             <version>${project.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>

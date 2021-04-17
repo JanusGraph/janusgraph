@@ -156,6 +156,20 @@ mvn clean install -pl janusgraph-cql -Dcassandra.docker.image=cassandra
 mvn clean install -pl janusgraph-cql -Dcassandra.docker.image=cassandra -Dcassandra.docker.version=3.11.2
 ```
 
+### Running hbase tests
+
+**Note** Running HBase tests require Docker.
+
+### Special versions of HBase
+
+System properties to configure HBase test executions:
+
+| Property | Description | Default value |
+| -------- | ----------- | ------------- |
+| `hbase.docker.version` | HBase version to be used in the docker image. | `2.2.7` |
+| `hbase.docker.uid` | Uid used to run inside HBase of the container | 1000 |
+| `hbase.docker.gid` | Gid used to run inside HBase of the container | 1000 |
+
 ### TinkerPop tests
 
 The CQL backend is tested with TinkerPop tests using following command. 

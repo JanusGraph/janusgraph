@@ -16,7 +16,6 @@ package org.janusgraph.diskstorage;
 
 import org.janusgraph.JanusGraphBaseStoreFeaturesTest;
 import org.janusgraph.diskstorage.common.DistributedStoreManager;
-import org.janusgraph.diskstorage.common.DistributedStoreManager.Deployment;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
@@ -37,12 +36,6 @@ public abstract class DistributedStoreManagerTest<T extends DistributedStoreMana
 
     public StoreFeatures getStoreFeatures(){
         return manager.getFeatures();
-    }
-
-    @Test
-    @FeatureFlag(feature = JanusGraphFeature.OrderedScan)
-    public void testGetDeployment() {
-        assertEquals(Deployment.LOCAL, manager.getDeployment());
     }
 
     @Test
