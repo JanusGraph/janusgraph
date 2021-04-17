@@ -12,36 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.diskstorage.cql;
+package org.janusgraph.diskstorage.hbase;
 
-import org.janusgraph.JanusGraphCassandraContainer;
+import org.janusgraph.HBaseContainer;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.DistributedStoreManagerTest;
-import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-public class CQLDistributedStoreManagerTest extends DistributedStoreManagerTest<CQLStoreManager> {
-
+public class HBaseDistributedStoreManagerTest extends DistributedStoreManagerTest<HBaseStoreManager> {
     @Container
-    public static final JanusGraphCassandraContainer cqlContainer = new JanusGraphCassandraContainer();
-
-    protected ModifiableConfiguration getBaseStorageConfiguration() {
-        return cqlContainer.getConfiguration(getClass().getSimpleName());
-    }
+    public static final HBaseContainer hBaseContainer = new HBaseContainer();
 
     @BeforeEach
     public void setUp() throws BackendException {
-        manager = new CachingCQLStoreManager(getBaseStorageConfiguration());
-        store = manager.openDatabase("distributedcf");
+        manager = new HBaseStoreManager(hBaseContainer.getModifiableConfiguration());
+        store = manager.openDatabase("distributedStoreTest");
     }
 
     @AfterEach
     public void tearDown() throws BackendException {
-        if (null != manager)
-            manager.close();
+        store.close();
+        manager.close();
     }
 }

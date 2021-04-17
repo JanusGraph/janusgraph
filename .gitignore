@@ -33,10 +33,6 @@ target/
 /janusgraph-examples/example-*/.project
 /janusgraph-examples/example-*/.settings
 # End of Eclipse junk
-# HBase testing stuff
-janusgraph-hbase/logs
-janusgraph-hbase/src/test/janusgraph-hbase-test-data/*
-janusgraph-hbase/src/test/janusgraph-zookeeper-test/*
 # Backup files created by `mvn versions:update-child-modules`
 # http://mojo.codehaus.org/versions-maven-plugin/update-child-modules-mojo.html
 janusgraph-*/pom.xml.versionsBackup
