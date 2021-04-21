@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.janusgraph.diskstorage.es.mapping.IndexMapping;
+import org.janusgraph.diskstorage.es.rest.RestPitResponse;
 import org.janusgraph.diskstorage.es.script.ESScriptResponse;
 
 public interface ElasticSearchClient extends Closeable {
@@ -56,12 +57,21 @@ public interface ElasticSearchClient extends Closeable {
 
     long countTotal(String indexName, Map<String,Object> requestData) throws IOException;
 
-    ElasticSearchResponse search(String indexName, Map<String,Object> request, boolean useScroll) throws IOException;
+    ElasticSearchResponse search(String indexName, Map<String,Object> request) throws IOException;
 
-    ElasticSearchResponse search(String scrollId) throws IOException;
+    ElasticSearchResponse searchWithScroll(String indexName, Map<String,Object> request) throws IOException;
+
+    ElasticSearchResponse searchWithScroll(String scrollId) throws IOException;
+
+    ElasticSearchResponse searchAfterWithPit(String pitId, Map<String,Object> requestData) throws IOException;
+
+    ElasticSearchResponse searchAfterWithPit(String pitId, Map<String,Object> requestData, List<Object> searchAfter) throws IOException;
 
     void deleteScroll(String scrollId) throws IOException;
 
     void addAlias(String alias, String index) throws IOException;
 
+    RestPitResponse createPit(String indexName) throws IOException;
+
+    void deletePit(String pitId) throws IOException;
 }

@@ -32,6 +32,9 @@ public class RestSearchResponse extends ElasticSearchResponse {
     @JsonProperty("_scroll_id")
     private String scrollId;
 
+    @JsonProperty("pit_id")
+    private String pitId;
+
     @Override
     public long getTook() {
         return took;
@@ -61,7 +64,7 @@ public class RestSearchResponse extends ElasticSearchResponse {
     @Override
     public Stream<RawQuery.Result<String>> getResults() {
         return hits.getHits().stream()
-            .map(hit -> new RawQuery.Result<>(hit.getId(), hit.getScore() != null ? hit.getScore() : 0f));
+            .map(hit -> new RawQuery.Result<>(hit.getId(), hit.getScore() != null ? hit.getScore() : 0f, hit.getSort()));
     }
 
     @Override
@@ -77,5 +80,15 @@ public class RestSearchResponse extends ElasticSearchResponse {
     @Override
     public void setScrollId(String scrollId) {
         this.scrollId = scrollId;
+    }
+
+    @Override
+    public String getPitId() {
+        return pitId;
+    }
+
+    @Override
+    public void setPitId(String pitId) {
+        this.pitId = pitId;
     }
 }

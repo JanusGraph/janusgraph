@@ -14,43 +14,35 @@
 
 package org.janusgraph.diskstorage.es;
 
-import org.janusgraph.diskstorage.indexing.RawQuery;
 import org.janusgraph.diskstorage.indexing.RawQuery.Result;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
 
-/**
- * @author David Clement (david.clement90@laposte.net)
- */
-public class ElasticSearchScroll implements Iterator<RawQuery.Result<String>> {
+public class ElasticSearchSearchAfter implements Iterator<Result<String>> {
 
-    private final BlockingQueue<RawQuery.Result<String>> queue;
-    private boolean isFinished;
+    private final BlockingDeque<Result<String>> queue;
     private final ElasticSearchClient client;
-    private final String scrollId;
+    private final Map<String, Object> requestData;
     private final int batchSize;
 
-    public ElasticSearchScroll(ElasticSearchClient client, ElasticSearchResponse initialResponse, int nbDocByQuery) {
-        queue = new LinkedBlockingQueue<>();
+    private boolean isFinished;
+    private String pitId;
+    private List<Object> searchAfter;
+
+    public ElasticSearchSearchAfter(ElasticSearchClient client, String pitId, ElasticSearchResponse initialResponse, Map<String,Object> requestData, int nbDocByQuery) {
+        queue = new LinkedBlockingDeque<>();
         this.client = client;
-        this.scrollId = initialResponse.getScrollId();
+        this.pitId = pitId;
+        this.requestData = requestData;
         this.batchSize = nbDocByQuery;
         update(initialResponse);
-    }
-
-    private void update(ElasticSearchResponse response) {
-        response.getResults().forEach(queue::add);
-        this.isFinished = response.numResults() < this.batchSize;
-        try {
-            if (isFinished) client.deleteScroll(scrollId);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e.getMessage(), e);
-        }
     }
 
     @Override
@@ -62,11 +54,24 @@ public class ElasticSearchScroll implements Iterator<RawQuery.Result<String>> {
             if (isFinished) {
                 return false;
             }
-            final ElasticSearchResponse res = client.searchWithScroll(scrollId);
+
+            final ElasticSearchResponse res = client.searchAfterWithPit(pitId, requestData, searchAfter);
             update(res);
             return res.numResults() > 0;
         } catch (final IOException e) {
              throw new UncheckedIOException(e.getMessage(), e);
+        }
+    }
+
+    private void update(ElasticSearchResponse response) {
+        response.getResults().forEach(queue::add);
+        this.searchAfter = queue.isEmpty() ? null : queue.peekLast().getSort();
+        this.pitId = response.getPitId();
+        this.isFinished = response.numResults() < this.batchSize;
+        try {
+            if (isFinished) client.deletePit(pitId);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e.getMessage(), e);
         }
     }
 

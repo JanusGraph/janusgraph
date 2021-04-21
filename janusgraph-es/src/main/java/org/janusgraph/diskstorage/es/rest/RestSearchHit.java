@@ -38,6 +38,9 @@ public class RestSearchHit {
     @JsonProperty("_source")
     private Map<String,Object> source;
 
+    @JsonProperty("sort")
+    private List<Object> sort;
+
     private Map<String,List<Object>> fields;
 
     public String getIndex() {
@@ -78,6 +81,14 @@ public class RestSearchHit {
 
     public void setSource(Map<String, Object> source) {
         this.source = source;
+    }
+
+    public List<Object> getSort() {
+        return sort;
+    }
+
+    public void setSort(List<Object> sort) {
+        this.sort = sort;
     }
 
     public void setFields(Map<String, List<Object>> fields) {

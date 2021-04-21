@@ -20,6 +20,8 @@ import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.graphdb.query.BaseQuery;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.List;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -83,11 +85,19 @@ public class RawQuery extends BaseQuery {
 
         private final O result;
         private final double score;
+        private final List<Object> sort;
 
 
         public Result(O result, double score) {
             this.result = result;
             this.score = score;
+            this.sort = null;
+        }
+
+        public Result(O result, double score, List<Object> sort) {
+            this.result = result;
+            this.score = score;
+            this.sort = sort;
         }
 
         public O getResult() {
@@ -96,6 +106,10 @@ public class RawQuery extends BaseQuery {
 
         public double getScore() {
             return score;
+        }
+
+        public List<Object> getSort() {
+            return sort;
         }
     }
 

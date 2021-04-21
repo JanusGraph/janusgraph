@@ -72,7 +72,7 @@ public class ElasticSearchScrollTest {
         Mockito.when(secondResponse.getResults()).thenReturn(secondResults.stream());
         Mockito.when(secondResponse.numResults()).thenReturn(secondResults.size());
 
-        Mockito.when(client.search(scrollId)).thenReturn(secondResponse);
+        Mockito.when(client.searchWithScroll(scrollId)).thenReturn(secondResponse);
 
         ElasticSearchScroll scroll = new ElasticSearchScroll(client, initialResponse, batchSize);
 
@@ -88,7 +88,7 @@ public class ElasticSearchScrollTest {
     }
 
     @Test
-    public void shouldThrowNoSuchElementWhenReadingPastEnd() throws IOException {
+    public void shouldThrowNoSuchElementWhenReadingPastEnd() {
         ElasticSearchClient client = Mockito.mock(ElasticSearchClient.class);
         ElasticSearchResponse initialResponse = Mockito.mock(ElasticSearchResponse.class);
         int batchSize = 5;
