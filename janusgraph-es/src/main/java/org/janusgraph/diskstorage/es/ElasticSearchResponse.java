@@ -25,6 +25,8 @@ public class ElasticSearchResponse {
 
     private String scrollId;
 
+    private String pitId;
+
     private List<RawQuery.Result<String>> results;
 
     public long getTook() {
@@ -53,5 +55,13 @@ public class ElasticSearchResponse {
 
     public void setScrollId(String scrollId) {
         this.scrollId = scrollId;
+    }
+
+    public String getPitId() {
+        return pitId;
+    }
+
+    public void setPitId(String pitId) {
+        this.pitId = pitId;
     }
 }

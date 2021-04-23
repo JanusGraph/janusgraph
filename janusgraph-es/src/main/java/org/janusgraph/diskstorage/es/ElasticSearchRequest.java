@@ -15,6 +15,7 @@
 package org.janusgraph.diskstorage.es;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.tinkerpop.shaded.jackson.annotation.JsonInclude;
 import org.apache.tinkerpop.shaded.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
@@ -76,6 +77,10 @@ public class ElasticSearchRequest {
         this.fields = fields;
     }
 
+    public void addSort(String key, String order) {
+        this.sorts.add(ImmutableMap.of(key, new RestSortInfo(order)));
+    }
+
     public void addSort(String key, String order, String unmappedType) {
         this.sorts.add(ImmutableMap.of(key, new RestSortInfo(order, unmappedType)));
     }
@@ -92,8 +97,14 @@ public class ElasticSearchRequest {
 
         String order;
 
+        // unmapped_type must not be specified for _score - see elasticsearch #17392
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         @JsonProperty("unmapped_type")
         String unmappedType;
+
+        public RestSortInfo(String order) {
+            this.order = order;
+        }
 
         public RestSortInfo(String order, String unmappedType) {
             this.order = order;

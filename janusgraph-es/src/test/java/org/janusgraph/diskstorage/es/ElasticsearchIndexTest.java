@@ -16,6 +16,8 @@ package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
 import org.apache.commons.configuration.BaseConfiguration;
@@ -43,6 +45,7 @@ import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.diskstorage.indexing.*;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.json.simple.JSONObject;
@@ -55,6 +58,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.shaded.com.google.common.collect.Sets;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -62,9 +66,12 @@ import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME;
@@ -202,6 +209,59 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         }
 
         tx = null;
+    }
+
+    @Test
+    public void testSearchWithPaginationAndIndexQuery() throws BackendException {
+        final String store = "vertex";
+        final List<String> reference = new ArrayList<>();
+        initialize(store);
+        for (int i = 0; i < 20; ++i) {
+            String documentName = "doc_" + i;
+            add(store, documentName, newDocument(i), true);
+            reference.add(documentName);
+        }
+        clopen();
+
+        // Random order
+        IndexQuery unorderedMatchAllQuery = new IndexQuery(store, PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 0));
+        assertEquals(Sets.newHashSet(reference), tx.queryStream(unorderedMatchAllQuery).collect(Collectors.toSet()));
+
+        // Weight-asc order
+        IndexQuery orderedMatchAllQuery1 = new IndexQuery(store,
+                                                  PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 0),
+                                                  ImmutableList.of(new IndexQuery.OrderEntry(WEIGHT, Order.ASC, Long.class)));
+        assertEquals(reference, tx.queryStream(orderedMatchAllQuery1).collect(Collectors.toList()));
+
+        // Weight-desc order
+        IndexQuery orderedMatchAllQuery2 = new IndexQuery(store,
+                                                         PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 0),
+                                                         ImmutableList.of(new IndexQuery.OrderEntry(WEIGHT, Order.DESC, Long.class)));
+        assertEquals(Lists.reverse(reference), tx.queryStream(orderedMatchAllQuery2).collect(Collectors.toList()));
+    }
+
+    @Test
+    public void testSearchWithPaginationAndRawQuery() throws BackendException {
+        final String store = "vertex";
+        final List<String> reference = new ArrayList<>();
+        initialize(store);
+        for (int i = 0; i < 20; ++i) {
+            String documentName = "doc_" + i;
+            add(store, documentName, newDocument(i), true);
+            reference.add(documentName);
+        }
+        clopen();
+
+        RawQuery unorderedMatchAllQuery = new RawQuery(store, "weight:[* TO *]", new Parameter[0]);
+        assertEquals(Sets.newHashSet(reference), tx.queryStream(unorderedMatchAllQuery)
+                                                   .map(RawQuery.Result::getResult)
+                                                   .collect(Collectors.toSet()));
+    }
+
+    private static Multimap<String, Object> newDocument(final double weight) {
+        final Multimap<String, Object> toReturn = HashMultimap.create();
+        toReturn.put(WEIGHT, weight);
+        return toReturn;
     }
 
     @Test

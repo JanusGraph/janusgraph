@@ -185,23 +185,27 @@ public abstract class AbstractESCompat {
         return boolFilter(query);
     }
 
+    /**
+     * Create request body from a request and additional parameters.
+     * When a parameter is both in the request and parameters, the one from parameters takes precedence.
+     */
     public Map<String,Object> createRequestBody(ElasticSearchRequest request, Parameter[] parameters) {
         final Map<String,Object> requestBody = createRequestBody(request.getQuery(), parameters);
 
         if(request.getSize() != null){
-            requestBody.put("size", request.getSize());
+            requestBody.putIfAbsent("size", request.getSize());
         }
 
         if(request.getFrom() != null){
-            requestBody.put("from", request.getFrom());
+            requestBody.putIfAbsent("from", request.getFrom());
         }
 
         if (!request.getSorts().isEmpty()) {
-            requestBody.put("sort", request.getSorts());
+            requestBody.putIfAbsent("sort", request.getSorts());
         }
 
         if(request.isDisableSourceRetrieval()){
-            requestBody.put("_source", false);
+            requestBody.putIfAbsent("_source", false);
         }
 
         return requestBody;

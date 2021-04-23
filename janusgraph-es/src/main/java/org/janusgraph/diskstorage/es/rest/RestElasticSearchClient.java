@@ -37,6 +37,7 @@ import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.diskstorage.es.ElasticMajorVersion;
 import org.janusgraph.diskstorage.es.ElasticSearchClient;
 import org.janusgraph.diskstorage.es.ElasticSearchMutation;
+import org.janusgraph.diskstorage.es.ElasticSearchResponse;
 import org.janusgraph.diskstorage.es.mapping.IndexMapping;
 import org.janusgraph.diskstorage.es.mapping.TypedIndexMappings;
 import org.janusgraph.diskstorage.es.mapping.TypelessIndexMappings;
@@ -102,7 +103,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     private boolean bulkRefreshEnabled = false;
 
-    private final String scrollKeepAlive;
+    private final String keepAlive;
 
     private final boolean useMappingTypes;
 
@@ -112,10 +113,19 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     private final String retryOnConflictKey;
     
-    public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean useMappingTypesForES7) {
+    public RestElasticSearchClient(RestClient delegate, int keepAlive, boolean useMappingTypesForES7) {
         this.delegate = delegate;
         majorVersion = getMajorVersion();
-        this.scrollKeepAlive = scrollKeepAlive+"s";
+        this.keepAlive = keepAlive + "s";
+        esVersion7 = ElasticMajorVersion.SEVEN.equals(majorVersion);
+        useMappingTypes = majorVersion.getValue() < 7 || (useMappingTypesForES7 && esVersion7);
+        retryOnConflictKey = majorVersion.getValue() >= 7 ? "retry_on_conflict" : "_retry_on_conflict";
+    }
+
+    RestElasticSearchClient(RestClient delegate, int keepAlive, boolean useMappingTypesForES7, ElasticMajorVersion version) {
+        this.delegate = delegate;
+        majorVersion = version;
+        this.keepAlive = keepAlive + "s";
         esVersion7 = ElasticMajorVersion.SEVEN.equals(majorVersion);
         useMappingTypes = majorVersion.getValue() < 7 || (useMappingTypesForES7 && esVersion7);
         retryOnConflictKey = majorVersion.getValue() >= 7 ? "retry_on_conflict" : "_retry_on_conflict";
@@ -278,6 +288,22 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     }
 
     @Override
+    public RestPitResponse createPit(String indexName) throws IOException {
+        final Request request = new Request(REQUEST_TYPE_POST, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_pit");
+        request.addParameter("keep_alive", keepAlive);
+        final Response response = performRequest(request, null);
+        try (final InputStream inputStream = response.getEntity().getContent()) {
+            return mapper.readValue(inputStream, RestPitResponse.class);
+        }
+    }
+
+    @Override
+    public void deletePit(String pitId) throws IOException {
+        Map<String,Object> body = ImmutableMap.of("id", pitId);
+        performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + "_pit", mapWriter.writeValueAsBytes(body));
+    }
+
+    @Override
     public Map getIndexSettings(String indexName) throws IOException {
         final Response response = performRequest(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_settings", null);
         try (final InputStream inputStream = response.getEntity().getContent()) {
@@ -428,21 +454,42 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     }
 
     @Override
-    public RestSearchResponse search(String indexName, Map<String,Object> requestData, boolean useScroll) throws IOException {
+    public RestSearchResponse search(String indexName, Map<String,Object> requestData) throws IOException {
         final StringBuilder path = new StringBuilder(REQUEST_SEPARATOR).append(indexName);
         path.append(REQUEST_SEPARATOR).append("_search");
-        if (useScroll) {
-            path.append(REQUEST_PARAM_BEGINNING).append("scroll=").append(scrollKeepAlive);
-        }
         return search(requestData, path.toString());
     }
 
     @Override
-    public RestSearchResponse search(String scrollId) throws IOException {
+    public RestSearchResponse searchWithScroll(String indexName, Map<String,Object> requestData) throws IOException {
+        final StringBuilder path = new StringBuilder(REQUEST_SEPARATOR).append(indexName);
+        path.append(REQUEST_SEPARATOR).append("_search")
+            .append(REQUEST_PARAM_BEGINNING).append("scroll=").append(keepAlive);
+        return search(requestData, path.toString());
+    }
+
+    @Override
+    public RestSearchResponse searchWithScroll(String scrollId) throws IOException {
         final Map<String, Object> requestData = new HashMap<>();
-        requestData.put("scroll", scrollKeepAlive);
+        requestData.put("scroll", keepAlive);
         requestData.put("scroll_id", scrollId);
         return search(requestData, REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll");
+    }
+
+    public ElasticSearchResponse searchAfterWithPit(String pitId, Map<String,Object> requestData) throws IOException {
+        Map<String,Object> requestDataCopy = new HashMap<>(requestData);
+        requestDataCopy.put("pit", ImmutableMap.of("id", pitId, "keep_alive", keepAlive));
+        return search(requestDataCopy, REQUEST_SEPARATOR + "_search");
+    }
+
+    @Override
+    public ElasticSearchResponse searchAfterWithPit(String pitId, Map<String,Object> requestData, List<Object> searchAfter) throws IOException {
+        Map<String,Object> requestDataCopy = new HashMap<>(requestData);
+        requestDataCopy.put("pit", ImmutableMap.of("id", pitId, "keep_alive", keepAlive));
+        if (searchAfter != null && !searchAfter.isEmpty()) {
+            requestDataCopy.put("search_after", searchAfter);
+        }
+        return search(requestDataCopy, REQUEST_SEPARATOR + "_search");
     }
 
     @Override
