@@ -1550,6 +1550,15 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 1, new boolean[]{true, true}, "mixed");
         evaluateQuery(tx.query().has("name", Text.CONTAINS_FUZZY, "Midle"), ElementCategory.VERTEX,
                 1, new boolean[]{true, true}, "mixed");
+        evaluateQuery(tx.query().orderBy("name", asc), ElementCategory.VERTEX,
+                3, new boolean[]{false, false}, tx.getPropertyKey("name"), Order.ASC);
+        evaluateQuery(tx.query().orderBy("name", desc), ElementCategory.VERTEX,
+                3, new boolean[]{false, false}, tx.getPropertyKey("name"), Order.DESC);
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "Long").orderBy("name", asc), ElementCategory.VERTEX,
+                2, new boolean[]{true, true}, tx.getPropertyKey("name"), Order.ASC, "mixed");
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "Long").orderBy("name", desc), ElementCategory.VERTEX,
+                2, new boolean[]{true, true}, tx.getPropertyKey("name"), Order.DESC, "mixed");
+
         for (final Vertex u : tx.getVertices()) {
             final String n = u.value("name");
             if (n.endsWith("Don")) {
