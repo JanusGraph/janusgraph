@@ -69,8 +69,7 @@ public class ElasticSearchScrollTest {
         setupResultMocks(initialResults, initialResponse, scrollId);
 
         List<RawQuery.Result<String>> secondResults = makeTestResults(batchSize-1);
-        Mockito.when(secondResponse.getResults()).thenReturn(secondResults.stream());
-        Mockito.when(secondResponse.numResults()).thenReturn(secondResults.size());
+        setupResultMocks(secondResults, secondResponse, scrollId);
 
         Mockito.when(client.search(scrollId)).thenReturn(secondResponse);
 
@@ -85,6 +84,51 @@ public class ElasticSearchScrollTest {
         scroll.next();
 
         Mockito.verify(client).deleteScroll(scrollId);
+    }
+
+    @Test
+    public void shouldUseTheMostRecentScrollId() throws IOException {
+        ElasticSearchClient client = Mockito.mock(ElasticSearchClient.class);
+        ElasticSearchResponse initialResponse = Mockito.mock(ElasticSearchResponse.class);
+        String initialScrollId = "initialScrollId";
+        ElasticSearchResponse secondResponse = Mockito.mock(ElasticSearchResponse.class);
+        String secondScrollId = "secondScrollId";
+        ElasticSearchResponse thirdResponse = Mockito.mock(ElasticSearchResponse.class);
+        String thirdScrollId = "thirdScrollId";
+        int batchSize = 5;
+
+        // Three pages with batchSize, batchSize and batchSize-1 results and different scrollIds on each page
+        setupResultMocks(makeTestResults(batchSize), initialResponse, initialScrollId);
+        Mockito.when(client.search(initialScrollId)).thenReturn(secondResponse);
+        setupResultMocks(makeTestResults(batchSize), secondResponse, secondScrollId);
+        Mockito.when(client.search(secondScrollId)).thenReturn(thirdResponse);
+        setupResultMocks(makeTestResults(batchSize - 1), thirdResponse, thirdScrollId);
+
+        // Initialize
+        ElasticSearchScroll scroll = new ElasticSearchScroll(client, initialResponse, batchSize);
+        for (int i = 0; i < batchSize; i++) {
+            scroll.next();
+        }
+
+        // Move to second page (new request on next/hasNext)
+        scroll.next();
+        Mockito.verify(client, Mockito.times(1)).search(initialScrollId);
+        for (int i = 0; i < batchSize - 1; i++) {
+            scroll.next();
+        }
+
+        // Move to third page (new request on next/hasNext)
+        scroll.next();
+        Mockito.verify(client, Mockito.times(1)).search(secondScrollId);
+
+        // Delete should be called since this is the last page
+        Mockito.verify(client).deleteScroll(thirdScrollId);
+
+        for (int i = 0; i < batchSize - 2; i++) {
+            scroll.next();
+        }
+
+        Assertions.assertThrows(NoSuchElementException.class, scroll::next);
     }
 
     @Test

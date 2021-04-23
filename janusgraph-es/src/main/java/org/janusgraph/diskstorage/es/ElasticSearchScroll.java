@@ -30,21 +30,22 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class ElasticSearchScroll implements Iterator<RawQuery.Result<String>> {
 
     private final BlockingQueue<RawQuery.Result<String>> queue;
-    private boolean isFinished;
     private final ElasticSearchClient client;
-    private final String scrollId;
     private final int batchSize;
+
+    private boolean isFinished;
+    private String scrollId;
 
     public ElasticSearchScroll(ElasticSearchClient client, ElasticSearchResponse initialResponse, int nbDocByQuery) {
         queue = new LinkedBlockingQueue<>();
         this.client = client;
-        this.scrollId = initialResponse.getScrollId();
         this.batchSize = nbDocByQuery;
         update(initialResponse);
     }
 
     private void update(ElasticSearchResponse response) {
         response.getResults().forEach(queue::add);
+        this.scrollId = response.getScrollId();
         this.isFinished = response.numResults() < this.batchSize;
         try {
             if (isFinished) client.deleteScroll(scrollId);
