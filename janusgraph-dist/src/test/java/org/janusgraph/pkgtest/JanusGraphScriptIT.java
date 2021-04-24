@@ -22,6 +22,11 @@ import org.junit.jupiter.api.Test;
  */
 public class JanusGraphScriptIT extends JanusGraphAssemblyBaseIT {
 
+    @Override
+    protected String getGraphName() {
+        return "janusgraph-script";
+    }
+
     @Test
     @Tag(TestCategory.FULL_TESTS)
     public void testGraphOfTheGodsGraphSONFull() throws Exception {

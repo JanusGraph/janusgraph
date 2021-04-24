@@ -47,7 +47,9 @@ public abstract class AbstractJanusGraphAssemblyIT extends JanusGraphAssemblyBas
 
     protected abstract String getServerConfigPath();
 
-    protected abstract String getGraphName();
+    protected Duration getDefaultTimeout()  {
+        return Duration.ofSeconds(30);
+    }
 
     @Test
     public void testSingleVertexInteractionAgainstGremlinSh() throws Exception {
@@ -136,7 +138,7 @@ public abstract class AbstractJanusGraphAssemblyIT extends JanusGraphAssemblyBas
         final boolean debug = false;
         ImmutableMap<String, String> contextVars = ImmutableMap.of("janusgraphServerConfig", getServerConfigPath());
         unzipAndRunExpect("janusgraph-server-sh.before.expect.vm", contextVars, full, debug);
-        assertTimeout(Duration.ofSeconds(30), () -> {
+        assertTimeout(getDefaultTimeout(), () -> {
             while (!serverListening("localhost", 8182)) {
                 Thread.sleep(1000);
             }

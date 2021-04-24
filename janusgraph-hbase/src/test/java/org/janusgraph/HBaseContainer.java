@@ -17,15 +17,15 @@ package org.janusgraph;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.diskstorage.hbase.AdminMask;
-import org.janusgraph.diskstorage.hbase.ConnectionMask;
-import org.janusgraph.diskstorage.hbase.HBaseCompat;
-import org.janusgraph.diskstorage.hbase.HBaseCompatLoader;
 import org.janusgraph.diskstorage.hbase.HBaseStoreManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
@@ -45,17 +45,35 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
     private static final Logger logger = LoggerFactory.getLogger(HBaseContainer.class);
 
     public static final String HBASE_TARGET_DIR = "test.hbase.targetdir";
+    public static final String HBASE_DOCKER_PATH = "janusgraph-hbase/docker";
     private static final String DEFAULT_VERSION = "2.2.7";
     private static final String DEFAULT_UID = "1000";
     private static final String DEFAULT_GID = "1000";
-
-    private final HBaseCompat compat;
 
     private static String getVersion() {
         String property = System.getProperty("hbase.docker.version");
         if (StringUtils.isNotEmpty(property))
             return property;
         return DEFAULT_VERSION;
+    }
+
+    private static Path getPath() {
+        try {
+            Path path = Paths.get(".").toRealPath();
+            if (path.getParent().endsWith("janusgraph")) {
+                path = Paths.get(path.toString(), "..").toRealPath();
+            }
+            return Paths.get(path.toString(), getRelativePath());
+        } catch (IOException ex) {
+            throw new JanusGraphException(ex);
+        }
+    }
+
+    private static String getRelativePath() {
+        String property = System.getProperty("hbase.docker.path");
+        if (StringUtils.isNotEmpty(property))
+            return property;
+        return HBASE_DOCKER_PATH;
     }
 
     private static String getUid() {
@@ -85,7 +103,7 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
 
     public HBaseContainer(boolean mountRoot) {
         super(new ImageFromDockerfile()
-            .withFileFromPath(".", Paths.get("docker"))
+            .withFileFromPath(".", getPath())
             .withBuildArg("HBASE_VERSION", getVersion())
             .withBuildArg("HBASE_UID", getUid())
             .withBuildArg("HBASE_GID", getGid()));
@@ -95,14 +113,14 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         addFixedExposedPort(16020, 16020);
         addFixedExposedPort(16030, 16030);
 
-        if (mountRoot){
+        if (mountRoot) {
             try {
-                Files.createDirectories(getHBaseRootdir());
+                Files.createDirectories(getHBaseRootDir());
             } catch (IOException e) {
                 logger.warn("failed to create folder", e);
                 throw new JanusGraphException(e);
             }
-            addFileSystemBind(getHBaseRootdir().toString(), "/data/hbase", BindMode.READ_WRITE);
+            addFileSystemBind(getHBaseRootDir().toString(), "/data/hbase", BindMode.READ_WRITE);
         }
 
         withCreateContainerCmdModifier(createContainerCmd -> {
@@ -110,17 +128,16 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
                 .withHostName("localhost");
         });
         waitingFor(Wait.forLogMessage(".*Master has completed initialization.*", 1));
-        compat = HBaseCompatLoader.getCompat(null);
     }
 
-    public Path getHBaseRootdir() {
+    public Path getHBaseRootDir() {
         return Paths.get(getTargetDir(), "hbase-root");
     }
 
-    private ConnectionMask createConnectionMask() throws IOException {
+    private Connection createConnection() throws IOException {
         Configuration entries = HBaseConfiguration.create();
         entries.set("hbase.zookeeper.quorum", "localhost");
-        return compat.createConnection(entries);
+        return ConnectionFactory.createConnection(entries);
     }
 
     /**
@@ -132,9 +149,8 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
      */
     public synchronized void createSnapshot(String snapshotName, String table)
         throws BackendException {
-        try (ConnectionMask hc = createConnectionMask();
-             AdminMask admin = hc.getAdmin()) {
-            admin.snapshot(snapshotName, table);
+        try (Connection hc = createConnection(); Admin admin = hc.getAdmin()) {
+            admin.snapshot(snapshotName, TableName.valueOf(table));
         } catch (Exception e) {
             logger.warn("Create HBase snapshot failed", e);
             throw new TemporaryBackendException("Create HBase snapshot failed", e);
@@ -148,8 +164,7 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
      * @throws IOException
      */
     public synchronized void deleteSnapshot(String snapshotName) throws IOException {
-        try (ConnectionMask hc = createConnectionMask();
-             AdminMask admin = hc.getAdmin()) {
+        try (Connection hc = createConnection(); Admin admin = hc.getAdmin()) {
             admin.deleteSnapshot(snapshotName);
         }
     }
