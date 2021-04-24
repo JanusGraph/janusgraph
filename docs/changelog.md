@@ -277,6 +277,32 @@ Following, classes are removed and have to be replaced by tinkerpop equivalent:
 | `org.janusgraph.channelizers.JanusGraphNioChannelizer` | `org.apache.tinkerpop.gremlin.server.channel.NioChannelizer` |
 | `org.janusgraph.channelizers.JanusGraphWsAndHttpChannelizer` | `org.apache.tinkerpop.gremlin.server.channel.WsAndHttpChannelizer` |
 
+##### Breaking change Lucene and Solr fuzzy predicates
+
+The text predicates `text.textFuzzy` and `text.textContainsFuzzy` have been updated in both the Lucene and Solr indexing
+backends to align with JanusGraph and Elastic. These predicates now inspect the query length to determine the Levenshtein
+distance, where previously they used the backend's default max distance of 2:
+
+- 0 for strings of one or two characters (exact match)
+- 1 for strings of three, four or five characters
+- 2 for strings of more than five characters
+
+**Change Matrix:**
+
+| text | query | previous result | new result |
+| --- | --- | --- | --- |
+| ah | ah | true | true |
+| ah | ai | true | **false** |
+| hop | hop | true | true |
+| hop | hap | true | true |
+| hop | hoop | true | true |
+| hop | hooop | true | **false** |
+| surprises | surprises | true | true |
+| surprises | surprizes | true | true |
+| surprises | surpprises | true | true |
+| surprises | surpprisess | false | false |
+
+
 ### Version 0.5.3 (Release Date: December 24, 2020)
 
 === "Maven"

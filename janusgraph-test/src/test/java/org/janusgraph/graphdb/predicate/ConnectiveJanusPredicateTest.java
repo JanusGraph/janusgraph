@@ -86,11 +86,6 @@ public abstract class ConnectiveJanusPredicateTest {
     }
 
     @Test
-    public void testHasNegationKo() {
-        assertFalse(getPredicate(Arrays.asList(Text.CONTAINS, Cmp.EQUAL)).hasNegation());
-    }
-
-    @Test
     public void testNegate() {
         assertEquals(getNegatePredicate(Arrays.asList(Geo.DISJOINT, Cmp.NOT_EQUAL)), getPredicate(Arrays.asList(Geo.INTERSECT, Cmp.EQUAL)).negate());
     }

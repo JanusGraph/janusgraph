@@ -68,6 +68,15 @@ g.V().has('booksummary', textContainsRegex('.*corn.*'))
 g.V().has('booksummary', textContainsFuzzy('unicorn'))
 ```
 
+The Elasticsearch backend extends this functionality and includes support for negations
+of the above predicates, as well as phrase matching:
+
+- `textNotContains`: is true if no words inside the text string match the query string
+- `textNotContainsPrefix`: is true if no words inside the text string begin with the query string
+- `textNotContainsRegex`: is true if no words inside the text string match the given regular expression
+- `textNotContainsFuzzy`:  is true if no words inside the text string are similar to the query string (based on Levenshtein edit distance)
+- `textNotContainsPhrase`:  is true if the text string does not contain the sequence of words in the query string
+
 String search predicates (see below) may be used in queries, but those
 require filtering in memory which can be very costly.
 
@@ -110,6 +119,13 @@ g.V().has('bookname', textPrefix('uni'))
 g.V().has('bookname', textRegex('.*corn.*'))
 g.V().has('bookname', textFuzzy('unicorn'))
 ```
+
+The Elasticsearch backend extends this functionality and includes support for negations
+of the above text predicates:
+
+- `textNotPrefix`: if the string value does not start with the given query string
+- `textNotRegex`: if the string value does not match the given regular expression in its entirety
+- `textNotFuzzy`: if the string value is not similar to the given query string (based on Levenshtein edit distance)
 
 Full-text search predicates may be used in queries, but those require
 filtering in memory which can be very costly.

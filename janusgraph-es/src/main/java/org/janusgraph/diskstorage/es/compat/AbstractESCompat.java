@@ -148,6 +148,10 @@ public abstract class AbstractESCompat {
         return match(key, value, null);
     }
 
+    public Map<String,Object> matchPhrase(String key, Object value) {
+        return ImmutableMap.of("match_phrase", ImmutableMap.of(key, value));
+    }
+
     public Map<String,Object> fuzzyMatch(String key, Object value) {
         return match(key, value, "AUTO");
     }

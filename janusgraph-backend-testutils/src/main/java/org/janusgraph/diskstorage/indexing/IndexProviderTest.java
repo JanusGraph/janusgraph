@@ -33,9 +33,12 @@ import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.testutil.RandomGenerator;
 
+import org.junit.Assume;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 import java.time.Duration;
@@ -45,6 +48,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.hamcrest.Matchers.is;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -1197,10 +1201,79 @@ public abstract class IndexProviderTest {
         assertFalse(index.exists());
     }
 
+    @ParameterizedTest
+    @MethodSource("org.janusgraph.core.attribute.TextArgument#text")
+    public void testTextPredicate(JanusGraphPredicate predicate, boolean expected, String value, String condition) throws BackendException {
+        assumeIndexSupportFor(Mapping.TEXT, predicate);
+        initializeWithDoc("vertex", "test1", TEXT, value, true);
+        testPredicateByCount((expected) ? 1 : 0, predicate, TEXT, condition);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.janusgraph.core.attribute.TextArgument#string")
+    public void testStringPredicate(JanusGraphPredicate predicate, boolean expected, String value, String condition) throws BackendException {
+        assumeIndexSupportFor(Mapping.STRING, predicate);
+        initializeWithDoc("vertex", "test1", NAME, value, true);
+        testPredicateByCount((expected) ? 1 : 0, predicate, NAME, condition);
+    }
+
     /* ==================================================================================
                             HELPER METHODS
      ==================================================================================*/
 
+    /**
+     * Initialize the store, and add a test document with the provided
+     * field/value pair.
+     *
+     * @param store
+     * @param docId
+     * @param field
+     * @param value
+     * @param isNew
+     * @throws BackendException
+     */
+    private void initializeWithDoc(String store, String docId, String field, String value, boolean isNew) throws BackendException {
+        initialize(store);
+
+        Multimap<String, Object> doc = HashMultimap.create();
+        doc.put(field, value);
+
+        add(store, docId, doc, isNew);
+
+        clopen();
+    }
+
+    /**
+     * Tests the index to ensure it supports the provided mapping,
+     * and the provided predicate.
+     *
+     * @param mapping
+     * @param predicate
+     */
+    protected void assumeIndexSupportFor(Mapping mapping, JanusGraphPredicate predicate) {
+        Assume.assumeThat("Index supports mapping"+mapping, indexFeatures.supportsStringMapping(mapping), is(true));
+        Assume.assumeThat("Index supports predicate "+predicate+" for mapping "+mapping, supportsPredicateFor(mapping, predicate), is(true));
+    }
+
+    protected boolean supportsPredicateFor(Mapping mapping, Class<?> dataType, Cardinality cardinality, JanusGraphPredicate predicate) {
+        return index.supports(new StandardKeyInformation(dataType, cardinality, mapping.asParameter()), predicate);
+    }
+
+    protected boolean supportsPredicateFor(Mapping mapping, Class<?> dataType, JanusGraphPredicate predicate) {
+        return supportsPredicateFor(mapping, dataType, Cardinality.SINGLE, predicate);
+    }
+
+    protected boolean supportsPredicateFor(Mapping mapping, JanusGraphPredicate predicate) {
+        return supportsPredicateFor(mapping, String.class, Cardinality.SINGLE, predicate);
+    }
+
+    protected long getDocCountByPredicate(JanusGraphPredicate predicate, String field, String condition) throws BackendException {
+        return tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(field, predicate, condition))).count();
+    }
+
+    private void testPredicateByCount(long expectation, JanusGraphPredicate predicate, String field, String condition) throws BackendException {
+        assertEquals(expectation, getDocCountByPredicate(predicate, field, condition));
+    }
 
     protected void initialize(String store) throws BackendException {
         for (final Map.Entry<String,KeyInformation> info : allKeys.entrySet()) {

@@ -27,13 +27,22 @@ The `Text` enum specifies the [Text Search](../index-backend/text-search.md) use
 
 * Text search predicates which match against the individual words inside a text string after it has been tokenized. These predicates are not case sensitive.
     - `textContains`: is true if (at least) one word inside the text string matches the query string
+    - `textNotContains`: is true if no words inside the text string match the query string
     - `textContainsPrefix`: is true if (at least) one word inside the text string begins with the query string
+    - `textNotContainsPrefix`: is true if no words inside the text string begin with the query string
     - `textContainsRegex`: is true if (at least) one word inside the text string matches the given regular expression
-    - `textContainsFuzzy`: is true if (at least) one word inside the text string is similar to the query String (based on Levenshtein edit distance)
+    - `textNotContainsRegex`: is true if no words inside the text string match the given regular expression
+    - `textContainsFuzzy`: is true if (at least) one word inside the text string is similar to the query string (based on Levenshtein edit distance)
+    - `textNotContainsFuzzy`:  is true if no words inside the text string are similar to the query string (based on Levenshtein edit distance)
+    - `textContainsPhrase`: is true if the text string contains the exact sequence of words in the query string
+    - `textNotContainsPhrase`:  is true if the text string does not contain the sequence of words in the query string
 * String search predicates which match against the entire string value
     - `textPrefix`: if the string value starts with the given query string
+    - `textNotPrefix`: if the string value does not start with the given query string
     - `textRegex`: if the string value matches the given regular expression in its entirety
+    - `textNotRegex`: if the string value does not match the given regular expression in its entirety
     - `textFuzzy`: if the string value is similar to the given query string (based on Levenshtein edit distance)
+    - `textNotFuzzy`: if the string value is not similar to the given query string (based on Levenshtein edit distance)
 
 See [Text Search](../index-backend/text-search.md) for more information about full-text and string search.
 

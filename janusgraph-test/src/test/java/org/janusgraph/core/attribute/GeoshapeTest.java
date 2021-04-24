@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.graphdb.attribute;
+package org.janusgraph.core.attribute;
 
 import org.janusgraph.core.attribute.GeoshapeSerializer;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;

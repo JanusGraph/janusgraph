@@ -351,5 +351,69 @@ public class QueryTest {
         assertEquals(0, graph.traversal().V().has("name", Text.textContainsFuzzy("valuable")).count().next());
     }
 
+    @Test
+    public void testTextContainsPhraseWithoutIndex() {
+        JanusGraphManagement mgmt = graph.openManagement();
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.commit();
+
+        tx.addVertex().property("name", "some value");
+        tx.addVertex().property("name", "other value");
+        tx.commit();
+
+        assertEquals(2, graph.traversal().V().has("name", Text.textContainsPhrase("value")).count().next());
+        assertEquals(1, graph.traversal().V().has("name", Text.textContainsPhrase("other value")).count().next());
+        assertEquals(0, graph.traversal().V().has("name", Text.textContainsPhrase("final value")).count().next());
+    }
+
+    @Test
+    public void testTextNegatedWithoutIndex() {
+        JanusGraphManagement mgmt = graph.openManagement();
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.commit();
+
+        tx.addVertex().property("name", "some value");
+        tx.addVertex().property("name", "other value");
+        tx.commit();
+
+        // Text.textNotFuzzy
+        assertEquals(1, graph.traversal().V().has("name", Text.textNotFuzzy("other values")).count().next());
+        assertEquals(2, graph.traversal().V().has("name", Text.textNotFuzzy("final values")).count().next());
+
+        // Text.textNotRegex
+        assertEquals(0, graph.traversal().V().has("name", Text.textNotRegex(".*value")).count().next());
+        assertEquals(1, graph.traversal().V().has("name", Text.textNotRegex("other.*")).count().next());
+        assertEquals(2, graph.traversal().V().has("name", Text.textNotRegex("final.*")).count().next());
+
+        // Text.textNotPrefix
+        assertEquals(1, graph.traversal().V().has("name", Text.textNotPrefix("other")).count().next());
+        assertEquals(2, graph.traversal().V().has("name", Text.textNotPrefix("final")).count().next());
+
+        // Text.textNotContains
+        assertEquals(0, graph.traversal().V().has("name", Text.textNotContains("value")).count().next());
+        assertEquals(1, graph.traversal().V().has("name", Text.textNotContains("other")).count().next());
+        assertEquals(2, graph.traversal().V().has("name", Text.textNotContains("final")).count().next());
+
+        // Text.textNotContainsFuzzy
+        assertEquals(0, graph.traversal().V().has("name", Text.textNotContainsFuzzy("values")).count().next());
+        assertEquals(1, graph.traversal().V().has("name", Text.textNotContainsFuzzy("others")).count().next());
+        assertEquals(2, graph.traversal().V().has("name", Text.textNotContainsFuzzy("final")).count().next());
+
+        // Text.textNotContainsRegex
+        assertEquals(0, graph.traversal().V().has("name", Text.textNotContainsRegex("val.*")).count().next());
+        assertEquals(1, graph.traversal().V().has("name", Text.textNotContainsRegex("oth.*")).count().next());
+        assertEquals(2, graph.traversal().V().has("name", Text.textNotContainsRegex("fin.*")).count().next());
+
+        // Text.textNotContainsPrefix
+        assertEquals(0, graph.traversal().V().has("name", Text.textNotContainsPrefix("val")).count().next());
+        assertEquals(1, graph.traversal().V().has("name", Text.textNotContainsPrefix("oth")).count().next());
+        assertEquals(2, graph.traversal().V().has("name", Text.textNotContainsPrefix("final")).count().next());
+
+        // Text.textNotContainsPhrase
+        assertEquals(0, graph.traversal().V().has("name", Text.textNotContainsPhrase("value")).count().next());
+        assertEquals(1, graph.traversal().V().has("name", Text.textNotContainsPhrase("other value")).count().next());
+        assertEquals(2, graph.traversal().V().has("name", Text.textNotContainsPhrase("final value")).count().next());
+    }
+
 }
 
